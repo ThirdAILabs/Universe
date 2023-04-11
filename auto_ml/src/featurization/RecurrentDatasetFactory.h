@@ -10,6 +10,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -34,7 +35,9 @@ class RecurrentDatasetFactory {
 
   std::pair<uint32_t, uint32_t> outputRange(uint32_t step);
 
-  uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
+  uint32_t elementIdAtStep(const BoltVector& output, uint32_t step,
+                           const std::unordered_set<uint32_t>& predictions,
+                           bool unique_predictions, bool no_eos);
 
   std::string elementString(uint32_t element_id);
 

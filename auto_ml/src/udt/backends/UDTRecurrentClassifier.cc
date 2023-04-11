@@ -12,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace thirdai::automl::udt {
 
@@ -116,23 +117,32 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
+  bool unique_predictions = true;
+  bool no_eos = true;
+
+  std::cout << "unique_predictions = " << unique_predictions
+            << " no_eos = " << no_eos << std::endl;
+
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   auto mutable_sample = sample;
 
   std::vector<std::string> predictions;
+  std::unordered_set<uint32_t> predicted_ids;
 
   for (uint32_t step = 0; step < _target->max_length; step++) {
     std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
         ->setOutputRange(_dataset_factory->outputRange(step));
     BoltVector output = _model->predictSingle(
         _dataset_factory->featurizeInput(mutable_sample), sparse_inference);
-    auto predicted_id = _dataset_factory->elementIdAtStep(output, step);
+    auto predicted_id = _dataset_factory->elementIdAtStep(
+        output, step, predicted_ids, unique_predictions, no_eos);
     if (_dataset_factory->isEOS(predicted_id)) {
       break;
     }
 
+    predicted_ids.insert(predicted_id);
     _dataset_factory->addPredictionToSample(mutable_sample, predicted_id);
     predictions.push_back(_dataset_factory->elementString(predicted_id));
   }
@@ -167,11 +177,18 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class) {
+  bool unique_predictions = true;
+  bool no_eos = true;
+
+  std::cout << "unique_predictions = " << unique_predictions
+            << " no_eos = " << no_eos << std::endl;
+
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
+  std::vector<std::unordered_set<uint32_t>> all_predicted_ids(samples.size());
   auto mutable_samples = samples;
 
   for (uint32_t step = 0; step < _target->max_length && !progress.allDone();
@@ -186,13 +203,15 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     for (uint32_t i = 0; i < batch_activations.getBatchSize(); i++) {
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
-        auto predicted_id =
-            _dataset_factory->elementIdAtStep(batch_activations[i], step);
+        auto predicted_id = _dataset_factory->elementIdAtStep(
+            batch_activations[i], step, all_predicted_ids[i],
+            unique_predictions, no_eos);
         if (_dataset_factory->isEOS(predicted_id)) {
           progress.markSampleDone(i);
           continue;
         }
 
+        all_predicted_ids[i].insert(predicted_id);
         _dataset_factory->addPredictionToSample(mutable_samples[i],
                                                 predicted_id);
         all_predictions[i].push_back(

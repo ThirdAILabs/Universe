@@ -4,7 +4,11 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <algorithm>
+#include <numeric>
+#include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -100,25 +104,35 @@ std::pair<uint32_t, uint32_t> RecurrenceAugmentation::outputRange(
   return {begin, end};
 }
 
-uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,
-                                                 uint32_t step) {
+uint32_t RecurrenceAugmentation::elementIdAtStep(
+    const BoltVector& output, uint32_t step,
+    const std::unordered_set<uint32_t>& predictions, bool unique_predictions,
+    bool no_eos) {
   if (!output.isDense()) {
     throw std::invalid_argument(
         "Cannot get sequence element name from dense output");
   }
   auto begin = step * _vocab.maxSize().value();
-  auto end = begin + _vocab.maxSize().value();
 
-  uint32_t arg_max = 0;
-  float max_act = -std::numeric_limits<float>::max();
-  for (uint32_t neuron = begin; neuron < end; neuron++) {
-    if (output.activations[neuron] > max_act) {
-      arg_max = neuron;
-      max_act = output.activations[neuron];
+  std::vector<uint32_t> active_neurons(_vocab.maxSize().value());
+  std::iota(active_neurons.begin(), active_neurons.end(), begin);
+
+  std::sort(active_neurons.begin(), active_neurons.end(),
+            [&output](size_t idx1, size_t idx2) {
+              return output.activations[idx1] > output.activations[idx2];
+            });
+
+  for (uint32_t neuron : active_neurons) {
+    bool valid = (!unique_predictions || !predictions.count(neuron)) &&
+                 (!no_eos || !isEOS(neuron));
+    if (!valid) {
+      return neuron;
     }
   }
 
-  return arg_max;
+  std::cout << "Unable to find non-eos unique prediction." << std::endl;
+
+  return active_neurons.front();
 }
 
 std::string RecurrenceAugmentation::elementString(uint32_t element_id) {

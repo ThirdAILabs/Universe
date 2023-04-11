@@ -116,9 +116,12 @@ std::pair<uint32_t, uint32_t> RecurrentDatasetFactory::outputRange(
   return _augmentation->outputRange(step);
 }
 
-uint32_t RecurrentDatasetFactory::elementIdAtStep(const BoltVector& output,
-                                                  uint32_t step) {
-  return _augmentation->elementIdAtStep(output, step);
+uint32_t RecurrentDatasetFactory::elementIdAtStep(
+    const BoltVector& output, uint32_t step,
+    const std::unordered_set<uint32_t>& predictions, bool unique_predictions,
+    bool no_eos) {
+  return _augmentation->elementIdAtStep(output, step, predictions,
+                                        unique_predictions, no_eos);
 }
 
 std::string RecurrentDatasetFactory::elementString(uint32_t element_id) {
