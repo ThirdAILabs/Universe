@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Categorical.h"
 #include "MachIndex.h"
+#include <dataset/src/blocks/Categorical.h>
 #include <exceptions/src/Exceptions.h>
 #include <variant>
 
-namespace thirdai::dataset {
-
-namespace tests {
+namespace thirdai::dataset::tests {
 class MachBlockTest;
-}  // namespace tests
+}  // namespace thirdai::dataset::tests
+
+namespace thirdai::dataset::mach {
 
 /**
  * A MachBlock applies to a a single column with potentially more than one
@@ -56,4 +56,4 @@ class MachBlock final : public CategoricalBlock {
 
 using MachBlockPtr = std::shared_ptr<MachBlock>;
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach

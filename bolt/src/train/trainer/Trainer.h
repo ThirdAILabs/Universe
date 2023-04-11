@@ -49,6 +49,15 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {});
 
+  metrics::History train_with_metric_names(
+      const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics = {},
+      const std::optional<LabeledDataset>& validation_data = std::nullopt,
+      const std::vector<std::string>& validation_metrics = {},
+      std::optional<uint32_t> steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {});
+
   /**
    * Performs evaluation on the model using the given validation data and
    * metrics.
@@ -56,6 +65,11 @@ class Trainer {
   metrics::History validate(
       const LabeledDataset& validation_data,
       const metrics::InputMetrics& validation_metrics = {},
+      bool use_sparsity = false);
+
+  metrics::History validate_with_metric_names(
+      const LabeledDataset& validation_data,
+      const std::vector<std::string>& validation_metrics = {},
       bool use_sparsity = false);
 
  private:

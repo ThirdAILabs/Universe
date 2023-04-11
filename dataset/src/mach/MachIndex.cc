@@ -1,6 +1,6 @@
 #include "MachIndex.h"
 
-namespace thirdai::dataset {
+namespace thirdai::dataset::mach {
 
 MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes,
                      uint32_t max_elements)
@@ -106,7 +106,7 @@ uint32_t StringCategoricalMachIndex::updateInternalIndex(
   return id;
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::StringCategoricalMachIndex)
-CEREAL_REGISTER_TYPE(thirdai::dataset::NumericCategoricalMachIndex)
+CEREAL_REGISTER_TYPE(thirdai::dataset::mach::StringCategoricalMachIndex)
+CEREAL_REGISTER_TYPE(thirdai::dataset::mach::NumericCategoricalMachIndex)

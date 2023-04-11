@@ -1,6 +1,7 @@
 #include "MachBlock.h"
 
-namespace thirdai::dataset {
+namespace thirdai::dataset::mach {
+
 MachBlock::MachBlock(ColumnIdentifier col, MachIndexPtr index,
                      std::optional<char> delimiter)
     : CategoricalBlock(std::move(col),
@@ -27,6 +28,6 @@ void MachBlock::encodeCategory(std::string_view category,
   }
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::MachBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::mach::MachBlock)

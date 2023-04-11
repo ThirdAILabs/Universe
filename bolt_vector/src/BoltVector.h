@@ -25,6 +25,9 @@ using TopKActivationsQueue =
                         std::greater<ValueIndexPair>>;
 
 struct FoundActiveNeuron {
+  // If pos is nullopt, then it means that we searched through a sparse
+  // BoltVector and the neuron was not found (the activation in this case will
+  // be 0).
   std::optional<size_t> pos;
   float activation;
 };
