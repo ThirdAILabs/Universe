@@ -453,6 +453,7 @@ pybind11_add_module(
   bolt/python_bindings/CallbacksPython.cc
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/NumpyConversions.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
