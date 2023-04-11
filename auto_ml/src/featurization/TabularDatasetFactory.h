@@ -7,6 +7,7 @@
 #include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
 #include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -90,7 +91,7 @@ class TabularDatasetFactory {
     return _labeled_featurizer->getDimensions().at(0);
   }
 
-  char delimiter() const { return _delimiter; }
+  char delimiter() const { return _options.delimiter; }
 
   ColumnDataTypes inputDataTypes() const {
     ColumnDataTypes input_data_types;
@@ -109,6 +110,8 @@ class TabularDatasetFactory {
           "setting.");
     }
   }
+
+  TabularOptions tabularOptions() { return _options; }
 
   void save_stream(std::ostream& output_stream) const;
 
@@ -166,7 +169,8 @@ class TabularDatasetFactory {
 
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
-  char _delimiter;
+
+  TabularOptions _options;
 };
 
 }  // namespace thirdai::automl::data

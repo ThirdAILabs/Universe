@@ -292,16 +292,16 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 
 StringEncoderPtr UDTMachClassifier::getEncoder(
     const std::string& activation_func, float distance_cutoff) const {
-  // TODO(Josh): This method is pretty hacky
-  if (_data_types.size() != 2) {
+  auto data_types = _dataset_factory->inputDataTypes();
+  if (data_types.size() != 2) {
     throw std::runtime_error(
         "Creating an encoder is only supported for UDT instantiations with a "
         "single text column and a target column, but there were not exactly "
         "two data types (found " +
-        std::to_string(_data_types.size()) + ")");
+        std::to_string(data_types.size()) + ")");
   }
   data::TextDataTypePtr text_type;
-  for (const auto& d : _data_types) {
+  for (const auto& d : data_types) {
     text_type = data::asText(d.second);
     if (text_type) {
       break;
@@ -318,16 +318,15 @@ StringEncoderPtr UDTMachClassifier::getEncoder(
                 ->getNodeByName("fc_1")
                 ->getInternalFullyConnectedLayers()
                 .at(0);
-  return std::make_shared<StringEncoder>(activation_func, fc->getWeights(),
-                                         fc->getBiases(), fc->getDim(),
-                                         text_type, _options, distance_cutoff);
+  return std::make_shared<TextEmbeddingModel>(
+      activation_func, fc->getWeights(), fc->getBiases(), fc->getDim(),
+      text_type, _dataset_factory->tabularOptions(), distance_cutoff);
 }
 
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation,
-          _data_types, _options);
+          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
 }
 
 }  // namespace thirdai::automl::udt

@@ -5,6 +5,11 @@
 
 namespace thirdai::dataset {
 
+/**
+ * This block processes a column with a single numerical value.
+ * TODO(Josh/David): Remove the DenseArray block in favor of this, since this
+ * uses a more general ColumnIdentifier.
+ */
 class NumericalBlock final : public Block {
  public:
   explicit NumericalBlock(ColumnIdentifier col) : _col(std::move(col)) {}

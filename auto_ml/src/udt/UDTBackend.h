@@ -3,7 +3,7 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
-#include <auto_ml/src/embedding_prototype/StringEncoder.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -213,7 +213,7 @@ class UDTBackend {
                                       float distance_cutoff) const {
     (void)activation_func;
     (void)distance_cutoff;
-    throw notSupported("get_encoder");
+    throw notSupported("get_embedding_model");
   }
 
  protected:

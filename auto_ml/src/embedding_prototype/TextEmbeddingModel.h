@@ -14,18 +14,18 @@ namespace thirdai::automl::udt {
 
 namespace py = pybind11;
 
-class StringEncoder;
-using StringEncoderPtr = std::shared_ptr<StringEncoder>;
+class TextEmbeddingModel;
+using StringEncoderPtr = std::shared_ptr<TextEmbeddingModel>;
 
-class StringEncoder {
+class TextEmbeddingModel {
  public:
-  explicit StringEncoder(const std::string& activation_func,
-                         const float* non_owning_pretrained_fc_weights,
-                         const float* non_owning_pretrained_fc_biases,
-                         uint32_t fc_dim,
-                         const data::TextDataTypePtr& data_type,
-                         const data::TabularOptions& options,
-                         float distance_cutoff);
+  explicit TextEmbeddingModel(const std::string& activation_func,
+                              const float* non_owning_pretrained_fc_weights,
+                              const float* non_owning_pretrained_fc_biases,
+                              uint32_t fc_dim,
+                              const data::TextDataTypePtr& data_type,
+                              const data::TabularOptions& options,
+                              float distance_cutoff);
 
   py::object supervisedTrain(const dataset::DataSourcePtr& data_source,
                              const std::string& input_col_1,
@@ -57,14 +57,14 @@ class StringEncoder {
 
   static StringEncoderPtr load_stream(std::istream& input_stream) {
     cereal::BinaryInputArchive iarchive(input_stream);
-    StringEncoderPtr deserialize_into(new StringEncoder());
+    StringEncoderPtr deserialize_into(new TextEmbeddingModel());
     iarchive(*deserialize_into);
 
     return deserialize_into;
   }
 
  private:
-  StringEncoder() {}
+  TextEmbeddingModel() {}
 
   friend cereal::access;
 

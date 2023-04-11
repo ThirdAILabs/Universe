@@ -5,7 +5,7 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/embedding_prototype/StringEncoder.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -146,7 +146,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
-      .def("get_encoder", &udt::UDT::getEncoder,
+      .def("get_embedding_model", &udt::UDT::getEncoder,
            py::arg("activation_func") = "linear",
            py::arg("distance_cutoff") = 1)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
@@ -155,16 +155,18 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
 
-  py::class_<udt::StringEncoder, udt::StringEncoderPtr>(module, "StringEncoder")
-      .def("supervised_train", &udt::StringEncoder::supervisedTrain,
+  py::class_<udt::TextEmbeddingModel, udt::StringEncoderPtr>(
+      module, "TextEmbeddingModel")
+      .def("supervised_train", &udt::TextEmbeddingModel::supervisedTrain,
            py::arg("data_source"), py::arg("input_col_1"),
            py::arg("input_col_2"), py::arg("label_col"),
            py::arg("learning_rate"), py::arg("epochs"),
            bolt::python::OutputRedirect())
-      .def("encode", &udt::StringEncoder::encode, py::arg("string"))
-      .def("encode_batch", &udt::StringEncoder::encodeBatch, py::arg("strings"))
-      .def("save", &udt::StringEncoder::save, py::arg("filename"))
-      .def_static("load", &udt::StringEncoder::load, py::arg("filename"));
+      .def("encode", &udt::TextEmbeddingModel::encode, py::arg("string"))
+      .def("encode_batch", &udt::TextEmbeddingModel::encodeBatch,
+           py::arg("strings"))
+      .def("save", &udt::TextEmbeddingModel::save, py::arg("filename"))
+      .def_static("load", &udt::TextEmbeddingModel::load, py::arg("filename"));
 }
 
 void createModelsSubmodule(py::module_& module) {

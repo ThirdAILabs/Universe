@@ -1,4 +1,4 @@
-#include "StringEncoder.h"
+#include "TextEmbeddingModel.h"
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
@@ -15,13 +15,12 @@
 
 namespace thirdai::automl::udt {
 
-StringEncoder::StringEncoder(const std::string& activation_func,
-                             const float* non_owning_pretrained_fc_weights,
-                             const float* non_owning_pretrained_fc_biases,
-                             uint32_t fc_dim,
-                             const data::TextDataTypePtr& data_type,
-                             const data::TabularOptions& options,
-                             float distance_cutoff)
+TextEmbeddingModel::TextEmbeddingModel(
+    const std::string& activation_func,
+    const float* non_owning_pretrained_fc_weights,
+    const float* non_owning_pretrained_fc_biases, uint32_t fc_dim,
+    const data::TextDataTypePtr& data_type, const data::TabularOptions& options,
+    float distance_cutoff)
     : _data_type(data_type), _options(options) {
   uint32_t input_dim = options.feature_hash_range;
 
@@ -48,7 +47,7 @@ StringEncoder::StringEncoder(const std::string& activation_func,
       /* force_parallel = */ false);
 }
 
-py::object StringEncoder::supervisedTrain(
+py::object TextEmbeddingModel::supervisedTrain(
     const dataset::DataSourcePtr& data_source, const std::string& input_col_1,
     const std::string& input_col_2, const std::string& label_col,
     float learning_rate, uint32_t epochs) {
@@ -91,7 +90,7 @@ py::object StringEncoder::supervisedTrain(
   return py::cast(trainer.train({input_data, labels}, learning_rate, epochs));
 }
 
-bolt::nn::model::ModelPtr StringEncoder::createEmbeddingModel(
+bolt::nn::model::ModelPtr TextEmbeddingModel::createEmbeddingModel(
     const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim) {
   auto input = bolt::nn::ops::Input::make(/* dim= */ input_dim);
 
@@ -105,7 +104,7 @@ bolt::nn::model::ModelPtr StringEncoder::createEmbeddingModel(
   return bolt::nn::model::Model::make({input}, {output}, {loss});
 }
 
-bolt::nn::tensor::TensorList StringEncoder::encodeBatch(
+bolt::nn::tensor::TensorList TextEmbeddingModel::encodeBatch(
     const std::vector<std::string>& strings) {
   MapInputBatch map_input;
   for (const auto& string : strings) {
@@ -117,11 +116,12 @@ bolt::nn::tensor::TensorList StringEncoder::encodeBatch(
   return _embedding_model->forward({input_tensors}, /* use_sparsity = */ false);
 }
 
-bolt::nn::tensor::TensorPtr StringEncoder::encode(const std::string& string) {
+bolt::nn::tensor::TensorPtr TextEmbeddingModel::encode(
+    const std::string& string) {
   return encodeBatch({string}).at(0);
 }
 
-bolt::nn::model::ModelPtr StringEncoder::createTwoTowerModel(
+bolt::nn::model::ModelPtr TextEmbeddingModel::createTwoTowerModel(
     const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
     float distance_cutoff) {
   auto input_1 = bolt::nn::ops::Input::make(/* dim= */ input_dim);

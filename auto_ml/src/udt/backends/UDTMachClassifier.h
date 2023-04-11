@@ -132,8 +132,6 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
-  data::ColumnDataTypes _data_types;
-  data::TabularOptions _options;
 };
 
 }  // namespace thirdai::automl::udt
