@@ -72,6 +72,12 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
+  /**
+   * Autotunes how often the hash tables and hash functions are rebuilt using
+   * the number of batches in the dataset and the batch size.
+   */
+  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,

@@ -154,6 +154,20 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
+                                           uint32_t batch_size) {
+  // TODO(Someone): Revisit this autotuning. It seems like for some datasets it
+  // will update too frequently, for instance 50 batches with a batch size of 2K
+  // will lead to updates every batch.
+  _reconstruct_hash_functions = std::max(num_batches / 4, 1U);
+
+  if (num_batches * batch_size >= 100000) {
+    _rebuild_hash_tables = std::max(num_batches / 100, 1U);
+  } else {
+    _rebuild_hash_tables = std::max(num_batches / 20, 1U);
+  }
+}
+
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
