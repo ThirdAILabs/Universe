@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
@@ -20,7 +21,7 @@ using TextEmbeddingModelPtr = std::shared_ptr<TextEmbeddingModel>;
 /**
  * This class represents an embedding model that turns text in to a vector
  * representation. It can be pretrained (usually in an unsupervised fashion)
- * and that finetuned using supervised positive and negative pairs.
+ * and then finetuned using supervised positive and negative pairs.
  */
 class TextEmbeddingModel {
  public:
@@ -91,12 +92,14 @@ class TextEmbeddingModel {
   static bolt::nn::model::ModelPtr createEmbeddingModel(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim);
 
-  static bolt::nn::model::ModelPtr createTwoTowerModel(
-      const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
-      float distance_cutoffs);
+  // Also returns a loss metric for training the two tower model
+  static std::pair<bolt::nn::model::ModelPtr, bolt::train::metrics::MetricPtr>
+  createTwoTowerModel(const bolt::nn::ops::FullyConnectedPtr& embedding_op,
+                      uint32_t input_dim, float distance_cutoffs);
 
   data::TabularDatasetFactoryPtr _embedding_factory;
   bolt::nn::model::ModelPtr _embedding_model, _two_tower_model;
+  bolt::train::metrics::MetricPtr _two_tower_metric_ptr;
   data::TextDataTypePtr _text_data_type;
   data::TabularOptions _options;
 };

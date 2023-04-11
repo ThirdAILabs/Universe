@@ -291,20 +291,15 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
     const std::string& activation_func, float distance_cutoff) const {
   auto data_types = _dataset_factory->inputDataTypes();
-  if (data_types.size() != 2) {
+  if (data_types.size() != 1) {
     throw std::runtime_error(
         "Creating a text embedding model is only supported for UDT "
-        "instantiations with a single text column and a target column, but "
-        "there were not exactly two data types (found " +
+        "instantiations with a single input text column and a target column, "
+        "but "
+        "there was not exactly one input data type (found " +
         std::to_string(data_types.size()) + ")");
   }
-  data::TextDataTypePtr text_type;
-  for (const auto& d : data_types) {
-    text_type = data::asText(d.second);
-    if (text_type) {
-      break;
-    }
-  }
+  data::TextDataTypePtr text_type = data::asText(data_types.begin()->second);
   if (!text_type) {
     throw std::runtime_error(
         "Creating a text embedding model is only supported for UDT "
