@@ -288,14 +288,14 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
-TextEmbeddingModelPtr UDTMachClassifier::getEncoder(
+TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
     const std::string& activation_func, float distance_cutoff) const {
   auto data_types = _dataset_factory->inputDataTypes();
   if (data_types.size() != 2) {
     throw std::runtime_error(
-        "Creating an encoder is only supported for UDT instantiations with a "
-        "single text column and a target column, but there were not exactly "
-        "two data types (found " +
+        "Creating a text embedding model is only supported for UDT "
+        "instantiations with a single text column and a target column, but "
+        "there were not exactly two data types (found " +
         std::to_string(data_types.size()) + ")");
   }
   data::TextDataTypePtr text_type;
@@ -307,9 +307,9 @@ TextEmbeddingModelPtr UDTMachClassifier::getEncoder(
   }
   if (!text_type) {
     throw std::runtime_error(
-        "Creating an encoder is only supported for UDT instantiations with a "
-        "single text column and a target column, but did not find a text "
-        "column.");
+        "Creating a text embedding model is only supported for UDT "
+        "instantiations with a single text column and a target column, but "
+        "we did not find a text column.");
   }
 
   auto fc = _classifier->model()

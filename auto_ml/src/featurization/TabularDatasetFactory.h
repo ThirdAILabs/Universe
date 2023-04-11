@@ -33,8 +33,8 @@ class TabularDatasetFactory {
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel) {
     return std::make_shared<TabularDatasetFactory>(
-        input_data_types, provided_temporal_relationships, label_blocks,
-        label_col_names, options, force_parallel);
+        std::move(input_data_types), provided_temporal_relationships,
+        label_blocks, label_col_names, options, force_parallel);
   }
 
   dataset::DatasetLoaderPtr getDatasetLoader(

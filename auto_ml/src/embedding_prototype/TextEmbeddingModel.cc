@@ -15,6 +15,7 @@
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Numerical.h>
 #include <pybind11/stl.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
@@ -24,6 +25,11 @@ TextEmbeddingModel::TextEmbeddingModel(
     float distance_cutoff)
     : _text_data_type(text_data_type), _options(std::move(options)) {
   uint32_t input_dim = embedding_op->inputDim();
+  if (options.feature_hash_range != input_dim) {
+    throw std::invalid_argument(
+        "The feature hash range of the tabular options passed in must equal "
+        "the input dimension.");
+  }
 
   _embedding_model = createEmbeddingModel(embedding_op, input_dim);
 
@@ -42,10 +48,10 @@ TextEmbeddingModel::TextEmbeddingModel(
 
 TextEmbeddingModelPtr TextEmbeddingModel::make(
     const bolt::nn::ops::FullyConnectedPtr& embedding_op,
-    const data::TextDataTypePtr& data_type, data::TabularOptions options,
+    const data::TextDataTypePtr& text_data_type, data::TabularOptions options,
     float distance_cutoff) {
   return std::make_shared<TextEmbeddingModel>(
-      embedding_op, data_type, std::move(options), distance_cutoff);
+      embedding_op, text_data_type, std::move(options), distance_cutoff);
 }
 
 py::object TextEmbeddingModel::supervisedTrain(

@@ -207,14 +207,17 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
-  virtual ~UDTBackend() = default;
-
-  virtual TextEmbeddingModelPtr getEncoder(const std::string& activation_func,
-                                           float distance_cutoff) const {
+  /*
+   * Returns a model that embeds text using the hidden layer of the UDT model.
+   */
+  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const {
     (void)activation_func;
     (void)distance_cutoff;
-    throw notSupported("get_embedding_model");
+    throw notSupported("get_text_embedding_model");
   }
+
+  virtual ~UDTBackend() = default;
 
  protected:
   UDTBackend() {}

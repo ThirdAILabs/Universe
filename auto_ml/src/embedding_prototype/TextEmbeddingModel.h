@@ -19,18 +19,26 @@ using TextEmbeddingModelPtr = std::shared_ptr<TextEmbeddingModel>;
 
 /**
  * This class represents an embedding model that turns text in to a vector
- * representation. It
+ * representation. It can be pretrained (usually in an unsupervised fashion)
+ * and that finetuned using supervised positive and negative pairs.
  */
 class TextEmbeddingModel {
  public:
+  /*
+   * The embedding_op passed in can have pretrained weights that
+   * come from a different model. We require that the input dimension of the
+   * embedding_op equal options.feature_hash_range, since the embedding model
+   * is a tabular featurizer followed by the fully connected embedding_op.
+   * The data_type should specify the featurization of the input text.
+   */
   explicit TextEmbeddingModel(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op,
-      const data::TextDataTypePtr& data_type, data::TabularOptions options,
+      const data::TextDataTypePtr& text_data_type, data::TabularOptions options,
       float distance_cutoff);
 
   static TextEmbeddingModelPtr make(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op,
-      const data::TextDataTypePtr& data_type, data::TabularOptions options,
+      const data::TextDataTypePtr& text_data_type, data::TabularOptions options,
       float distance_cutoff);
 
   py::object supervisedTrain(const dataset::DataSourcePtr& data_source,
