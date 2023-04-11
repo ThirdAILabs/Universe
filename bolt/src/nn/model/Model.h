@@ -141,9 +141,25 @@ class Model {
    * uuid, the date saved, number of train steps before the save, and the model
    * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
    */
-  void save(const std::string& filename, bool save_metadata = true) const;
+  void save(const std::string& filename, bool save_metadata = true);
 
+  /**
+   * Saves the model with optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void checkpoint(const std::string& filename, bool save_metadata = true);
+
+  /**
+   * Helper function to save the model to a stream.
+   */
   void save_stream(std::ostream& output_stream) const;
+
+  /**
+   * Controls if the model will save the optimizer along with the parameters.
+   */
+  void saveWithOptimizer(bool should_save_optimizer);
 
   /**
    * Loads the model and automatically initializes the optimizer state.

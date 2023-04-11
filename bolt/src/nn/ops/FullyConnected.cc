@@ -130,6 +130,10 @@ void FullyConnected::summary(std::ostream& summary,
   summary << "]";
 }
 
+void FullyConnected::saveWithOptimizer(bool should_save_optimizer) {
+  _kernel->saveWithOptimizer(should_save_optimizer);
+}
+
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;

@@ -216,9 +216,25 @@ Model::outputLabelPairs() const {
   return output_label_pairs;
 }
 
-void Model::save(const std::string& filename, bool save_metadata) const {
+void Model::save(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
+  saveWithOptimizer(false);
+
+  save_stream(output_stream);
+
+  if (save_metadata) {
+    saveMetadata(filename);
+  }
+}
+
+void Model::checkpoint(const std::string& filename, bool save_metadata) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
+  saveWithOptimizer(true);
+
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -229,6 +245,12 @@ void Model::save(const std::string& filename, bool save_metadata) const {
 void Model::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
+}
+
+void Model::saveWithOptimizer(bool should_save_optimizer) {
+  for (auto& op : _ops) {
+    op->saveWithOptimizer(should_save_optimizer);
+  }
 }
 
 std::shared_ptr<Model> Model::load(const std::string& filename) {
