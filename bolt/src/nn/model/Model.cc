@@ -187,14 +187,6 @@ std::vector<uint32_t> Model::inputDims() const {
   return dims;
 }
 
-std::vector<uint32_t> Model::labelDims() const {
-  std::vector<uint32_t> dims;
-  for (const auto& label : _labels) {
-    dims.push_back(label->dim());
-  }
-  return dims;
-}
-
 std::vector<std::vector<float>*> Model::gradients() const {
   std::vector<std::vector<float>*> grads;
 
