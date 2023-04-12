@@ -26,7 +26,7 @@ TextEmbeddingModel::TextEmbeddingModel(
     float distance_cutoff)
     : _text_data_type(text_data_type), _options(std::move(options)) {
   uint32_t input_dim = embedding_op->inputDim();
-  if (options.feature_hash_range != input_dim) {
+  if (_options.feature_hash_range != input_dim) {
     throw std::invalid_argument(
         "The feature hash range of the tabular options passed in must equal "
         "the input dimension.");
