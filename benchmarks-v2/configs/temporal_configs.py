@@ -5,11 +5,7 @@ from thirdai import bolt, data
 from .udt_configs import UDTBenchmarkConfig
 
 
-class TemporalBenchmarkConfig(UDTBenchmarkConfig):
-    temporal_relationships = {}
-
-
-class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
+class MovieLensUDTBenchmark(UDTBenchmarkConfig):
     config_name = "movie_lens_temporal"
     dataset_name = "movie_lens"
 
@@ -39,7 +35,7 @@ class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
         }
 
 
-class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
+class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
     config_name = "amazon_games_temporal"
     dataset_name = "amazon_games"
 
@@ -56,7 +52,7 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
     }
 
     learning_rate = 0.0001
-    num_epochs = 5
+    num_epochs = 50
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod
@@ -69,7 +65,7 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
         }
 
 
-class NetflixUDTBenchmark(TemporalBenchmarkConfig):
+class NetflixUDTBenchmark(UDTBenchmarkConfig):
     config_name = "netflix_temporal"
     dataset_name = "netflix_100M"
 

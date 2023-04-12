@@ -1,17 +1,19 @@
 import json
 import os
+import pandas as pd
+import time
+import numpy as np
 
 from thirdai import bolt, deployment
 
-from ..configs.temporal_configs import TemporalBenchmarkConfig
+from ..configs.temporal_configs import UDTBenchmarkConfig
 from .runner import Runner
 
 
-# This runner is temporary until https://github.com/ThirdAILabs/Universe/issues/1362 is addressed
 class TemporalRunner(Runner):
-    config_type = TemporalBenchmarkConfig
+    config_type = UDTBenchmarkConfig
 
-    def run_benchmark(config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger):
+    def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
         train_file = (
             os.path.join(path_prefix, config.train_file)
             if config.train_file is not None
@@ -75,3 +77,39 @@ class TemporalRunner(Runner):
                         mlflow_logger.log_additional_metric(key=k, value=v, step=epoch)
 
             model.reset_temporal_trackers()
+
+        # indexing train file so that train data user history is used for predictions
+        model.evaluate(train_file)
+
+        num_samples = 1000
+        test_data = pd.read_csv(test_file, low_memory=False)
+        sorted_idxs = np.sort(np.random.randint(0, len(test_data), size=num_samples))
+
+        test_data_samples = []
+        for _, row in test_data.iterrows():
+            sample = dict(row)
+            sample = {x: str(y) for x, y in sample.items()}
+            test_data_samples.append(sample)
+
+        test_data_sample = test_data.iloc[sorted_idxs]
+        inference_samples = []
+        for i, (_, row) in enumerate(test_data_sample.iterrows()):
+            sample = dict(row)
+            label = sample[config.target]
+            del sample[config.target]
+            sample = {x: str(y) for x, y in sample.items()}
+            inference_samples.append((sample, label, sorted_idxs[i]))
+                
+        start_time = time.time()
+        prev_idx = 0
+        for sample, label, test_data_idx in inference_samples:
+            if test_data_idx > prev_idx:
+                model.index_batch(input_samples=test_data_samples[prev_idx:test_data_idx])
+                prev_idx = test_data_idx
+            model.predict(sample)
+        end_time = time.time()
+        time_per_predict = int(np.around(1000 * (end_time - start_time) / num_samples))
+
+        print(f"average_predict_time = {time_per_predict}ms")
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(key="average_predict_time", value=time_per_predict)
