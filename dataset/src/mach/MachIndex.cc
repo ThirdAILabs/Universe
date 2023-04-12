@@ -40,7 +40,7 @@ std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
 std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
     uint32_t hash_val) const {
   if (!_hash_to_entities.count(hash_val)) {
-    throw std::invalid_argument("Invalid id to decode.");
+    return {};
   }
   return _hash_to_entities.at(hash_val);
 }
@@ -85,7 +85,7 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
 std::vector<std::string> StringCategoricalMachIndex::entitiesByHash(
     uint32_t hash_val) const {
   if (!_hash_to_entities.count(hash_val)) {
-    throw std::invalid_argument("Invalid id to decode.");
+    return {};
   }
   return _hash_to_entities.at(hash_val);
 }
