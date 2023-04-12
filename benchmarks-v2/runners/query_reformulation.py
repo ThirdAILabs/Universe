@@ -46,14 +46,16 @@ class QueryReformulationRunner(Runner):
 
         num_samples = 10000
         test_data = pd.read_csv(test_file, low_memory=False)
-        test_data_sample = test_data.iloc[np.random.randint(0, len(test_data), size=num_samples)]
+        test_data_sample = test_data.iloc[
+            np.random.randint(0, len(test_data), size=num_samples)
+        ]
         inference_samples = []
         for _, row in test_data_sample.iterrows():
             sample = dict(row)
             label = sample[config.target_column]
             sample = sample[config.source_column]
             inference_samples.append((sample, label))
-                
+
         start_time = time.time()
         for sample, label in inference_samples:
             model.predict(sample, top_k=5)
@@ -62,4 +64,6 @@ class QueryReformulationRunner(Runner):
 
         print(f"average_predict_time = {time_per_predict}ms")
         if mlflow_logger:
-            mlflow_logger.log_additional_metric(key="average_predict_time", value=time_per_predict)
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time", value=time_per_predict
+            )

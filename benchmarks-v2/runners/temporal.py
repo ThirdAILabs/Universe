@@ -1,9 +1,9 @@
 import json
 import os
-import pandas as pd
 import time
-import numpy as np
 
+import numpy as np
+import pandas as pd
 from thirdai import bolt, deployment
 
 from ..configs.temporal_configs import UDTBenchmarkConfig
@@ -81,7 +81,7 @@ class TemporalRunner(Runner):
         # indexing train file so that train data user history is used for predictions
         model.evaluate(train_file)
 
-        num_samples = 1000
+        num_samples = 10000
         test_data = pd.read_csv(test_file, low_memory=False)
         sorted_idxs = np.sort(np.random.randint(0, len(test_data), size=num_samples))
 
@@ -99,12 +99,14 @@ class TemporalRunner(Runner):
             del sample[config.target]
             sample = {x: str(y) for x, y in sample.items()}
             inference_samples.append((sample, label, sorted_idxs[i]))
-                
+
         start_time = time.time()
         prev_idx = 0
         for sample, label, test_data_idx in inference_samples:
             if test_data_idx > prev_idx:
-                model.index_batch(input_samples=test_data_samples[prev_idx:test_data_idx])
+                model.index_batch(
+                    input_samples=test_data_samples[prev_idx:test_data_idx]
+                )
                 prev_idx = test_data_idx
             model.predict(sample)
         end_time = time.time()
@@ -112,4 +114,6 @@ class TemporalRunner(Runner):
 
         print(f"average_predict_time = {time_per_predict}ms")
         if mlflow_logger:
-            mlflow_logger.log_additional_metric(key="average_predict_time", value=time_per_predict)
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time", value=time_per_predict
+            )

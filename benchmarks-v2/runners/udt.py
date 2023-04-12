@@ -1,15 +1,14 @@
 import json
 import os
-
-import pandas as pd
-import numpy as np
-from thirdai import bolt, deployment
 import time
+
+import numpy as np
+import pandas as pd
+from thirdai import bolt, deployment
 
 from ..configs.udt_configs import UDTBenchmarkConfig
 from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
-
 
 
 class UDTRunner(Runner):
@@ -98,7 +97,9 @@ class UDTRunner(Runner):
 
         num_samples = 10000
         test_data = pd.read_csv(test_file, low_memory=False)
-        test_data_sample = test_data.iloc[np.random.randint(0, len(test_data), size=num_samples)]
+        test_data_sample = test_data.iloc[
+            np.random.randint(0, len(test_data), size=num_samples)
+        ]
         inference_samples = []
         for _, row in test_data_sample.iterrows():
             sample = dict(row)
@@ -106,7 +107,7 @@ class UDTRunner(Runner):
             del sample[config.target]
             sample = {x: str(y) for x, y in sample.items()}
             inference_samples.append((sample, label))
-                
+
         start_time = time.time()
         for sample, label in inference_samples:
             model.predict(sample)
@@ -115,4 +116,6 @@ class UDTRunner(Runner):
 
         print(f"average_predict_time = {time_per_predict}ms")
         if mlflow_logger:
-            mlflow_logger.log_additional_metric(key="average_predict_time", value=time_per_predict)
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time", value=time_per_predict
+            )
