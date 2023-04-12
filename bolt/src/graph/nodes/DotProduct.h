@@ -25,6 +25,10 @@ class DotProductNode final
 
   void initOptimizer() final {}
 
+  void saveWithOptimizer(bool should_save_optimizer) final {
+    (void)should_save_optimizer;
+  };
+
   std::shared_ptr<DotProductNode> setPredecessors(NodePtr lhs, NodePtr rhs);
 
   bool hasParameters() final { return false; }

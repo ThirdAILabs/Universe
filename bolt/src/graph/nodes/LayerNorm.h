@@ -61,6 +61,10 @@ class LayerNormNode final : public Node,
 
   bool hasParameters() final { return false; }
 
+  void saveWithOptimizer(bool should_save_optimizer) final {
+    (void)should_save_optimizer;
+  };
+
  private:
   void compileImpl() final { _compiled = true; }
 

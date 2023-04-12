@@ -218,6 +218,7 @@ MetricData BoltGraph::train(
       logAndSaveIfNeeded(train_config, train_metrics);
       auto validation_metrics = validateIfNeeded(train_config);
 
+      train_metrics.logBatchMetrics();
       callbacks.onBatchEnd(*this, train_state);
     }
 
@@ -706,6 +707,12 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
 void BoltGraph::disableSparseParameterUpdates() {
   for (NodePtr& node : _nodes) {
     node->disableSparseParameterUpdates();
+  }
+}
+
+void BoltGraph::saveWithOptimizer(bool should_save_optimizer) {
+  for (NodePtr& node : _nodes) {
+    node->saveWithOptimizer(should_save_optimizer);
   }
 }
 

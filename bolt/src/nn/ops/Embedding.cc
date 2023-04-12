@@ -79,6 +79,10 @@ void Embedding::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+std::vector<std::vector<float>*> Embedding::gradients() {
+  return {&_kernel->getRawEmbeddingBlockGradient()};
+}
+
 void Embedding::summary(std::ostream& summary,
                         const autograd::ComputationList& inputs,
                         const autograd::Computation* output) const {
@@ -106,6 +110,17 @@ void Embedding::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
 
   _kernel->initOptimizer();
+}
+
+std::shared_ptr<Embedding> Embedding::duplicateWithNewReduction(
+    const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input) {
+  auto new_kernel =
+      _kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
+
+  std::string new_name = nextEmbeddingOpName() + "_shared_" + name();
+  return std::shared_ptr<Embedding>(
+      new Embedding(std::move(new_kernel), new_name));
 }
 
 }  // namespace thirdai::bolt::nn::ops
