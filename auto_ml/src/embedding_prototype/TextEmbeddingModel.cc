@@ -1,4 +1,5 @@
 #include "TextEmbeddingModel.h"
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
@@ -40,7 +41,7 @@ TextEmbeddingModel::TextEmbeddingModel(
   const data::ColumnDataTypes& input_data_types = {{"text", text_data_type}};
   _embedding_factory = data::TabularDatasetFactory::make(
       input_data_types,
-      /* temporal_tracking_relationships = */ {},
+      /* provided_temporal_relationships = */ {},
       /* label_blocks = */ {},
       /* label_col_names = */ {},
       /* options = */ _options,
@@ -68,17 +69,17 @@ py::object TextEmbeddingModel::supervisedTrain(
 
   auto supervised_factory_1 = data::TabularDatasetFactory::make(
       input_data_types_1,
-      /* temporal_tracking_relationships = */ {},
+      /* provided_temporal_relationships = */ {},
       /* label_blocks = */ {label_block},
       /* label_col_names = */ {},
-      /* tabular_options = */ _options,
+      /* options = */ _options,
       /* force_parallel = */ false);
   auto supervised_factory_2 = data::TabularDatasetFactory::make(
       input_data_types_2,
-      /* temporal_tracking_relationships = */ {},
+      /* provided_temporal_relationships = */ {},
       /* label_blocks = */ {label_block},
       /* label_col_names = */ {},
-      /* tabular_options = */ _options,
+      /* options = */ _options,
       /* force_parallel = */ false);
 
   auto train_dataset_loader_1 =
@@ -104,7 +105,7 @@ py::object TextEmbeddingModel::supervisedTrain(
   return py::cast(trainer.train(tensor_data, learning_rate, epochs));
 }
 
-bolt::nn::tensor::TensorList TextEmbeddingModel::encodeBatch(
+py::object TextEmbeddingModel::encodeBatch(
     const std::vector<std::string>& strings) {
   MapInputBatch map_input;
   for (const auto& string : strings) {
@@ -113,12 +114,14 @@ bolt::nn::tensor::TensorList TextEmbeddingModel::encodeBatch(
   auto input_vectors = _embedding_factory->featurizeInputBatch(map_input).at(0);
   auto input_tensors = bolt::nn::tensor::Tensor::convert(
       input_vectors, _embedding_model->inputDims().at(0));
-  return _embedding_model->forward({input_tensors}, /* use_sparsity = */ false);
+  auto output =
+      _embedding_model->forward({input_tensors}, /* use_sparsity = */ false);
+
+  return bolt::nn::python::tensorToNumpy(output.at(0));
 }
 
-bolt::nn::tensor::TensorPtr TextEmbeddingModel::encode(
-    const std::string& string) {
-  return encodeBatch({string}).at(0);
+py::object TextEmbeddingModel::encode(const std::string& string) {
+  return encodeBatch({string});
 }
 
 bolt::nn::model::ModelPtr TextEmbeddingModel::createEmbeddingModel(

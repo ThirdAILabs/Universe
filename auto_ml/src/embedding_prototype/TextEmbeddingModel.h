@@ -48,10 +48,9 @@ class TextEmbeddingModel {
                              const std::string& label_col, float learning_rate,
                              uint32_t epochs);
 
-  bolt::nn::tensor::TensorPtr encode(const std::string& string);
+  py::object encode(const std::string& string);
 
-  bolt::nn::tensor::TensorList encodeBatch(
-      const std::vector<std::string>& strings);
+  py::object encodeBatch(const std::vector<std::string>& strings);
 
   void save(const std::string& filename) const {
     std::ofstream filestream =
