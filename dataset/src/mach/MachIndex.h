@@ -88,7 +88,8 @@ class NumericCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _hash_to_entities);
+    archive(cereal::base_class<MachIndex>(this), _hash_to_entities,
+            _entity_to_hashes);
   }
 
   // TODO(david) should we use a set instead of a vector for storing entities?
@@ -135,7 +136,7 @@ class StringCategoricalMachIndex : public MachIndex {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<MachIndex>(this), _entity_to_id,
-            _hash_to_entities, _current_vocab_size);
+            _hash_to_entities, _entity_to_hashes, _current_vocab_size);
   }
 
   std::unordered_map<std::string, uint32_t> _entity_to_id;
