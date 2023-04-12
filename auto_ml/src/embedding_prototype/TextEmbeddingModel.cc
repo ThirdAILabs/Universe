@@ -34,7 +34,7 @@ TextEmbeddingModel::TextEmbeddingModel(
 
   _embedding_model = createEmbeddingModel(embedding_op, input_dim);
 
-  std::tie(_two_tower_model, _two_tower_metric_ptr) =
+  _two_tower_model =
       createTwoTowerModel(embedding_op, input_dim, distance_cutoff);
 
   const data::ColumnDataTypes& input_data_types = {{"text", text_data_type}};
@@ -101,9 +101,7 @@ py::object TextEmbeddingModel::supervisedTrain(
   bolt::train::LabeledDataset tensor_data = {tensor_data_x, tensor_data_y};
 
   bolt::train::Trainer trainer(_two_tower_model);
-  return py::cast(
-      trainer.train(tensor_data, learning_rate, epochs,
-                    {{"euclidean_contrastive_loss", _two_tower_metric_ptr}}));
+  return py::cast(trainer.train(tensor_data, learning_rate, epochs));
 }
 
 bolt::nn::tensor::TensorList TextEmbeddingModel::encodeBatch(
@@ -137,8 +135,7 @@ bolt::nn::model::ModelPtr TextEmbeddingModel::createEmbeddingModel(
   return bolt::nn::model::Model::make({input}, {output}, {loss});
 }
 
-std::pair<bolt::nn::model::ModelPtr, bolt::train::metrics::MetricPtr>
-TextEmbeddingModel::createTwoTowerModel(
+bolt::nn::model::ModelPtr TextEmbeddingModel::createTwoTowerModel(
     const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
     float distance_cutoff) {
   auto input_1 = bolt::nn::ops::Input::make(/* dim= */ input_dim);
@@ -154,9 +151,7 @@ TextEmbeddingModel::createTwoTowerModel(
   auto loss = bolt::nn::loss::EuclideanContrastive::make(
       output_1, output_2, label, distance_cutoff);
 
-  auto model = bolt::nn::model::Model::make({input_1, input_2},
-                                            {output_1, output_2}, {loss});
-  auto loss_metric = std::make_shared<bolt::train::metrics::LossMetric>(loss);
-  return {model, loss_metric};
+  return bolt::nn::model::Model::make({input_1, input_2}, {output_1, output_2},
+                                      {loss});
 }
 }  // namespace thirdai::automl::udt

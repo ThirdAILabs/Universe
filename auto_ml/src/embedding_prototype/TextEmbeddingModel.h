@@ -86,20 +86,18 @@ class TextEmbeddingModel {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_embedding_factory, _embedding_model, _two_tower_model,
-            _two_tower_metric_ptr, _text_data_type, _options);
+            _text_data_type, _options);
   }
 
   static bolt::nn::model::ModelPtr createEmbeddingModel(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim);
 
-  // Also returns a loss metric for training the two tower model
-  static std::pair<bolt::nn::model::ModelPtr, bolt::train::metrics::MetricPtr>
-  createTwoTowerModel(const bolt::nn::ops::FullyConnectedPtr& embedding_op,
-                      uint32_t input_dim, float distance_cutoffs);
+  bolt::nn::model::ModelPtr createTwoTowerModel(
+      const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
+      float distance_cutoffs);
 
   data::TabularDatasetFactoryPtr _embedding_factory;
   bolt::nn::model::ModelPtr _embedding_model, _two_tower_model;
-  bolt::train::metrics::MetricPtr _two_tower_metric_ptr;
   data::TextDataTypePtr _text_data_type;
   data::TabularOptions _options;
 };
