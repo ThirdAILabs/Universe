@@ -92,7 +92,7 @@ class TextEmbeddingModel {
   static bolt::nn::model::ModelPtr createEmbeddingModel(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim);
 
-  bolt::nn::model::ModelPtr createTwoTowerModel(
+  static bolt::nn::model::ModelPtr createTwoTowerModel(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
       float distance_cutoffs);
 

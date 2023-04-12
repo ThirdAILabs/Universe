@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from thirdai import bolt, dataset
 
-pytextmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit]
 
 
 def get_distance(embedding_model, string_1, string_2):
