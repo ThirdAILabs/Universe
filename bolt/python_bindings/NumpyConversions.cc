@@ -6,7 +6,7 @@
 namespace thirdai::bolt::nn::python {
 
 template <typename T>
-py::array_t<T, py::array::c_style | py::array::forcecast> createArray(
+py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
     const T* data, uint32_t rows, uint32_t cols) {
   uint64_t flattened_dim = rows * cols;
 
@@ -16,10 +16,10 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArray(
   py::capsule free_when_done(data_copy,
                              [](void* ptr) { delete static_cast<T*>(ptr); });
 
+  // This is so that if we have a tensor with a single row we return a (N,)
+  // numpy array instead of a (N,1). This is useful during inference on a single
+  // sample.
   if (rows == 1) {
-    // Handles the case where we are converting a single vector as well as
-    // multiple. This is so that this method works both for predict single and
-    // predict batch.
     return py::array_t<T, py::array::c_style | py::array::forcecast>(
         cols, data_copy, free_when_done);
   }
@@ -36,11 +36,13 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor) {
   }
 
   auto activations =
-      createArray(tensor->activationsPtr(), tensor->batchSize(), *nonzeros);
+      createArrayCopy(/* data= */ tensor->activationsPtr(),
+                      /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros);
 
   if (tensor->activeNeuronsPtr()) {
-    auto active_neurons =
-        createArray(tensor->activeNeuronsPtr(), tensor->batchSize(), *nonzeros);
+    auto active_neurons = createArrayCopy(
+        /* data= */ tensor->activeNeuronsPtr(), /* rows= */ tensor->batchSize(),
+        /* cols= */ *nonzeros);
 
     return std::move(
         py::make_tuple(std::move(active_neurons), std::move(activations)));
