@@ -11,30 +11,29 @@ MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes,
 NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
                                                          uint32_t num_hashes,
                                                          uint32_t max_elements)
-    : MachIndex(output_range, num_hashes, max_elements) {}
+    : MachIndex(output_range, num_hashes, max_elements) {
+  for (uint32_t element = 0; element < max_elements; element++) {
+    std::string element_string = std::to_string(element);
 
-std::vector<uint32_t> NumericCategoricalMachIndex::hashAndStoreEntity(
+    auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
+                                                   _output_range);
+
+    for (auto& hash : hashes) {
+      _hash_to_entity[hash].push_back(element_string);
+    }
+  }
+}
+
+std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
     const std::string& string) {
-  char* end;
-  uint32_t id = std::strtoul(string.data(), &end, 10);
+  uint32_t id = std::strtoul(string.data(), nullptr, 10);
   if (id >= _max_elements) {
     throw std::invalid_argument("Received label " + std::to_string(id) +
                                 " larger than or equal to n_target_classes.");
   }
+
   auto hashes =
       hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-
-  // Only update the map if we've not seen this id before
-  // TODO(david) should we use a set instead of a vector for storing entities?
-#pragma omp critical(numeric_mach_index_update)
-  if (!_seen_ids.count(id)) {
-    {
-      _seen_ids.insert(id);
-      for (auto& hash : hashes) {
-        _hash_to_entity[hash].push_back(string);
-      }
-    }
-  }
 
   return hashes;
 }
@@ -53,7 +52,7 @@ StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
     : MachIndex(output_range, num_hashes, max_elements),
       _current_vocab_size(0) {}
 
-std::vector<uint32_t> StringCategoricalMachIndex::hashAndStoreEntity(
+std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
     const std::string& string) {
   if (indexIsFull()) {
     if (!_entity_to_id.count(string)) {

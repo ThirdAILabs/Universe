@@ -8,7 +8,7 @@ class MockMachIndex : public mach::MachIndex {
  public:
   MockMachIndex() {}
 
-  std::vector<uint32_t> hashAndStoreEntity(const std::string& string) final {
+  std::vector<uint32_t> hashEntity(const std::string& string) final {
     std::unordered_map<std::string, std::vector<uint32_t>> map = {
         {"0", {0, 1}},
         {"1", {1, 2}},

@@ -29,7 +29,7 @@ class MachIndex {
   /**
    * Hashes the given string "num_hashes" times to "output_range" dimension.
    */
-  virtual std::vector<uint32_t> hashAndStoreEntity(
+  virtual std::vector<uint32_t> hashEntity(
       const std::string& string) = 0;
 
   uint32_t outputRange() const { return _output_range; }
@@ -40,7 +40,7 @@ class MachIndex {
 
   /**
    * Returns all entities that have previously hashed to the input hash_val in a
-   * previous call to hashAndStoreEntity
+   * previous call to hashEntity
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
@@ -63,6 +63,11 @@ class MachIndex {
 
 using MachIndexPtr = std::shared_ptr<MachIndex>;
 
+/**
+ * Assumes each input entity can be converted to an integer x where 0 < x <
+ * max_elements. Since the inputs are known beforehand this index is built on
+ * construction.
+ */
 class NumericCategoricalMachIndex : public MachIndex {
  public:
   NumericCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
@@ -74,7 +79,7 @@ class NumericCategoricalMachIndex : public MachIndex {
         output_range, num_hashes, max_elements);
   }
 
-  std::vector<uint32_t> hashAndStoreEntity(const std::string& string) final;
+  std::vector<uint32_t> hashEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
@@ -84,10 +89,10 @@ class NumericCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _seen_ids, _hash_to_entity);
+    archive(cereal::base_class<MachIndex>(this), _hash_to_entity);
   }
 
-  std::unordered_set<uint32_t> _seen_ids;
+  // TODO(david) should we use a set instead of a vector for storing entities?
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entity;
 };
 
@@ -105,7 +110,7 @@ class StringCategoricalMachIndex : public MachIndex {
         output_range, num_hashes, max_elements);
   }
 
-  std::vector<uint32_t> hashAndStoreEntity(const std::string& string) final;
+  std::vector<uint32_t> hashEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 

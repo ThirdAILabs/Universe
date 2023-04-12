@@ -232,7 +232,7 @@ static std::string variantToString(
 py::object UDTMachClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   std::vector<uint32_t> hashed_neurons =
-      _mach_label_block->index()->hashAndStoreEntity(variantToString(label));
+      _mach_label_block->index()->hashEntity(variantToString(label));
 
   auto back_node = _classifier->model()->getNodes().back();
 
