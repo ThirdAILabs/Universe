@@ -1,17 +1,20 @@
+import argparse
+import json
+import os
+import re
+
 import mlflow
 import pandas as pd
-from mlflow.tracking import MlflowClient
-import os
-import toml
 import requests
-import json
+import toml
+from mlflow.tracking import MlflowClient
+
 from .runners.runner_map import runner_map
-import re
-import argparse
 
 SLACK_WEBHOOK = (
     "https://hooks.slack.com/services/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"
 )
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Benchmark a dataset with Bolt")
@@ -39,6 +42,7 @@ def parse_arguments():
         help="Controls if the experiment is logged to the '_benchmark' experiment or the regular experiment. This should only be used for the github actions benchmark runner.",
     )
     return parser.parse_args()
+
 
 def process_mlflow_dataframe(mlflow_runs, num_runs, client):
     mlflow_runs = mlflow_runs[mlflow_runs["status"] == "FINISHED"]
@@ -100,12 +104,13 @@ if __name__ == "__main__":
 
     slack_payload_text = ""
     for config in configs:
-        exp_name = f"{config.config_name}_benchmark" if args.official_benchmark else config.config_name
-
+        exp_name = (
+            f"{config.config_name}_benchmark"
+            if args.official_benchmark
+            else config.config_name
+        )
         df_md = extract_mlflow_data(exp_name, markdown=True)
         slack_payload_text += f"*{exp_name}* ```{df_md}``` \n"
-    
+
     slack_payload = {"text": slack_payload_text}
     requests.post(SLACK_WEBHOOK, json.dumps(slack_payload))
-
-
