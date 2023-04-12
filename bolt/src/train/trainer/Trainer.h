@@ -50,7 +50,8 @@ class Trainer {
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
-      bool autotune_rehash_rebuild = false);
+      bool autotune_rehash_rebuild = false, bool verbose = true,
+      std::optional<uint32_t> logging_interval = std::nullopt);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -60,7 +61,8 @@ class Trainer {
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
-      bool autotune_rehash_rebuild = false);
+      bool autotune_rehash_rebuild = false, bool verbose = true,
+      std::optional<uint32_t> logging_interval = std::nullopt);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -72,7 +74,8 @@ class Trainer {
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
-      bool autotune_rehash_rebuild = false);
+      bool autotune_rehash_rebuild = false, bool verbose = true,
+      std::optional<uint32_t> logging_interval = std::nullopt);
 
   /**
    * Performs evaluation on the model using the given validation data and
@@ -81,17 +84,17 @@ class Trainer {
   metrics::History validate(
       const LabeledDataset& validation_data,
       const metrics::InputMetrics& validation_metrics = {},
-      bool use_sparsity = false);
+      bool use_sparsity = false, bool verbose = true);
 
   metrics::History validate_with_metric_names(
       const LabeledDataset& validation_data,
       const std::vector<std::string>& validation_metrics = {},
-      bool use_sparsity = false);
+      bool use_sparsity = false, bool verbose = true);
 
   metrics::History validate_with_dataset_loader(
       const dataset::DatasetLoaderPtr& validation_data,
       const std::vector<std::string>& validation_metrics = {},
-      bool use_sparsity = false);
+      bool use_sparsity = false, bool verbose = true);
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -101,6 +104,12 @@ class Trainer {
    */
   std::string formatTrainLogLine(const std::string& metric_summary,
                                  uint32_t batches, int64_t time);
+
+  /**
+   * Format intermediate train log line for reporting metrics and status within
+   * epochs when determined by the logging interval.
+   */
+  std::string formatIntermediateLogLine(const std::string& metric_summary);
 
   /**
    * Returns a formatted log line for the result of each call to validate.
