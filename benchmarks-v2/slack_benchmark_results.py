@@ -104,8 +104,8 @@ if __name__ == "__main__":
 
         df_md = extract_mlflow_data(exp_name, markdown=True)
         slack_payload_text += f"*{exp_name}* ```{df_md}``` \n"
-        slack_payload = {"text": slack_payload_text}
-
+    
+    slack_payload = {"text": slack_payload_text}
     requests.post(SLACK_WEBHOOK, json.dumps(slack_payload))
 
 
