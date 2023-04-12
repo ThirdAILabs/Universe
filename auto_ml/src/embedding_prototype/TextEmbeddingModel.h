@@ -86,7 +86,7 @@ class TextEmbeddingModel {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_embedding_factory, _embedding_model, _two_tower_model,
-            _text_data_type, _options);
+            _two_tower_metric_ptr, _text_data_type, _options);
   }
 
   static bolt::nn::model::ModelPtr createEmbeddingModel(

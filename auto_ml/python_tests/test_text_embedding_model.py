@@ -22,7 +22,6 @@ def test_basic_text_embedding_model():
         target="index",
         n_target_classes=100,
         integer_target=True,
-        model_config="/Users/josh/tanh.config",
         options={"extreme_classification": True, "embedding_dimension": 256},
     )
 
@@ -57,6 +56,3 @@ def test_basic_text_embedding_model():
     print(distance_1, distance_2, distance_3)
     assert distance_1 < distance_2
     assert distance_2 == distance_3
-
-
-test_basic_text_embedding_model()
