@@ -116,6 +116,10 @@ class StringCategoricalMachIndex : public MachIndex {
         output_range, num_hashes, max_elements);
   }
 
+  /**
+   * This call also builds the index at the same time and stores the given
+   * string. This is thread safe.
+   */
   std::vector<uint32_t> hashEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
