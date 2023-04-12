@@ -8,53 +8,54 @@ namespace thirdai::automl::udt::utils {
 
 py::object thirdai::automl::udt::utils::Classifier::train(
     dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDatasetLoader>& validation,
+    const ValidationDatasetLoader& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
+    const std::vector<bolt::train::callbacks::CallbackPtr>& callbacks,
+    bool verbose, std::optional<uint32_t> logging_interval,
     licensing::TrainPermissionsToken token) {
+  (void)token;
+
   uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  bolt::TrainConfig train_config =
-      getTrainConfig(epochs, learning_rate, validation, metrics, callbacks,
-                     verbose, logging_interval);
+  bolt::train::Trainer trainer(_model);
 
-  auto output = utils::train(
-      _model, dataset, train_config, batch_size, max_in_memory_batches,
-      /* freeze_hash_tables= */ _freeze_hash_tables, token);
+  auto history = trainer.train_with_dataset_loader(
+      dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
+      metrics, validation.first, validation.second.metrics(),
+      validation.second.stepsPerValidation(),
+      validation.second.sparseInference(), callbacks,
+      /* autotune_rehash_rebuild= */ true);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
-   * some metric. This can improve performance particularly on datasets with a
-   * class imbalance.
+   * some metric. This can improve performance particularly on datasets with
+   * a class imbalance.
    */
-  if (_model->outputDim() == 2) {
-    if (validation && !validation->second.metrics().empty()) {
-      validation->first->restart();
+  if (_model->outputs().at(0)->dim() == 2) {
+    if (!validation.second.metrics().empty()) {
+      validation.first->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ validation->first,
-              /* metric_name= */ validation->second.metrics().at(0));
+              /* dataset= */ validation.first,
+              /* metric_name= */ validation.second.metrics().at(0));
 
-    } else if (!train_config.metrics().empty()) {
+    } else if (!metrics.empty()) {
       dataset->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* dataset= */ dataset,
-              /* metric_name= */ train_config.metrics().at(0));
+              /* metric_name= */ metrics.at(0));
     }
   }
 
-  return py::cast(output);
+  return py::cast(history);
 }
 
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
-                                bool sparse_inference,
-                                bool return_predicted_class, bool verbose,
-                                bool return_metrics) {
+                                bool sparse_inference, bool verbose) {
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose,
                            /* return_activations = */ !return_metrics);
