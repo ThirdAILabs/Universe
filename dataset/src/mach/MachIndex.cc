@@ -18,8 +18,10 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
     auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
                                                    _output_range);
 
+    _entity_to_hashes.push_back(hashes);
+
     for (auto& hash : hashes) {
-      _hash_to_entity[hash].push_back(element_string);
+      _hash_to_entities[hash].push_back(element_string);
     }
   }
 }
@@ -32,18 +34,15 @@ std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
                                 " larger than or equal to n_target_classes.");
   }
 
-  auto hashes =
-      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-
-  return hashes;
+  return _entity_to_hashes[id];
 }
 
 std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
     uint32_t hash_val) const {
-  if (!_hash_to_entity.count(hash_val)) {
+  if (!_hash_to_entities.count(hash_val)) {
     throw std::invalid_argument("Invalid id to decode.");
   }
-  return _hash_to_entity.at(hash_val);
+  return _hash_to_entities.at(hash_val);
 }
 
 StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
@@ -63,14 +62,11 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
     }
   }
 
-  auto hashes =
-      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-
   uint32_t id;
 #pragma omp critical(string_mach_index_update)
   {
     if (!_entity_to_id.count(string)) {
-      id = updateInternalIndex(string, hashes);
+      id = updateInternalIndex(string);
     } else {
       id = _entity_to_id.at(string);
     }
@@ -83,24 +79,28 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
                                 std::to_string(_max_elements) + ".");
   }
 
-  return hashes;
+  return _entity_to_hashes[string];
 }
 
 std::vector<std::string> StringCategoricalMachIndex::entitiesByHash(
     uint32_t hash_val) const {
-  if (!_hash_to_entities_map.count(hash_val)) {
+  if (!_hash_to_entities.count(hash_val)) {
     throw std::invalid_argument("Invalid id to decode.");
   }
-  return _hash_to_entities_map.at(hash_val);
+  return _hash_to_entities.at(hash_val);
 }
 
 uint32_t StringCategoricalMachIndex::updateInternalIndex(
-    const std::string& string, const std::vector<uint32_t>& hashes) {
+    const std::string& string) {
+  auto hashes =
+      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
+  _entity_to_hashes[string] = hashes;
+
   uint32_t id = _entity_to_id.size();
   _entity_to_id[string] = id;
   _current_vocab_size++;
   for (const auto& hash : hashes) {
-    _hash_to_entities_map[hash].push_back(string);
+    _hash_to_entities[hash].push_back(string);
   }
   return id;
 }

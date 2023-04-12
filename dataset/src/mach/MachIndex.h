@@ -88,11 +88,12 @@ class NumericCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _hash_to_entity);
+    archive(cereal::base_class<MachIndex>(this), _hash_to_entities);
   }
 
   // TODO(david) should we use a set instead of a vector for storing entities?
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entity;
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
+  std::vector<std::vector<uint32_t>> _entity_to_hashes;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -120,8 +121,7 @@ class StringCategoricalMachIndex : public MachIndex {
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
  private:
-  uint32_t updateInternalIndex(const std::string& string,
-                               const std::vector<uint32_t>& hashes);
+  uint32_t updateInternalIndex(const std::string& string);
 
   bool indexIsFull() { return _current_vocab_size == _max_elements; }
 
@@ -131,12 +131,15 @@ class StringCategoricalMachIndex : public MachIndex {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<MachIndex>(this), _entity_to_id,
-            _hash_to_entities_map, _current_vocab_size);
+            _hash_to_entities, _current_vocab_size);
   }
 
   std::unordered_map<std::string, uint32_t> _entity_to_id;
+
   // TODO(david) for saving memory we can store the ids in this map instead
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities_map;
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
+  std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
+
   std::atomic_uint32_t _current_vocab_size;
 };
 
