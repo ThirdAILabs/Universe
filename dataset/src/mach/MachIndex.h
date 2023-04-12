@@ -29,8 +29,7 @@ class MachIndex {
   /**
    * Hashes the given string "num_hashes" times to "output_range" dimension.
    */
-  virtual std::vector<uint32_t> hashEntity(
-      const std::string& string) = 0;
+  virtual std::vector<uint32_t> hashEntity(const std::string& string) = 0;
 
   uint32_t outputRange() const { return _output_range; }
 
@@ -99,6 +98,12 @@ class NumericCategoricalMachIndex : public MachIndex {
 using NumericCategoricalMachIndexPtr =
     std::shared_ptr<NumericCategoricalMachIndex>;
 
+/**
+ * This index assumes input entities may be arbitrary strings, meaning we cannot
+ * know the input distribution at construction time and must build the index
+ * during use (training). The index is built in a threadsafe way and fails once
+ * its seen more than max_elements unique entities.
+ */
 class StringCategoricalMachIndex : public MachIndex {
  public:
   StringCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
