@@ -32,17 +32,22 @@ class MachIndex {
   virtual std::vector<uint32_t> hashAndStoreEntity(
       const std::string& string) = 0;
 
-  uint32_t outputRange() const { return _output_range; }
-
-  uint32_t numHashes() const { return _num_hashes; }
-
-  uint32_t maxElements() const { return _max_elements; }
-
   /**
    * Returns all entities that have previously hashed to the input hash_val in a
    * previous call to hashAndStoreEntity
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
+
+  virtual void manualAdd(const std::vector<uint32_t>& hashes,
+                         const std::string& string) = 0;
+
+  virtual void erase(const std::string& string) = 0;
+
+  uint32_t outputRange() const { return _output_range; }
+
+  uint32_t numHashes() const { return _num_hashes; }
+
+  uint32_t maxElements() const { return _max_elements; }
 
   virtual ~MachIndex() = default;
 
@@ -78,6 +83,11 @@ class NumericCategoricalMachIndex : public MachIndex {
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
+  void manualAdd(const std::vector<uint32_t>& hashes,
+                 const std::string& string) final;
+
+  void erase(const std::string& string) final;
+
  private:
   NumericCategoricalMachIndex() {}
 
@@ -87,6 +97,7 @@ class NumericCategoricalMachIndex : public MachIndex {
     archive(cereal::base_class<MachIndex>(this), _seen_ids, _hash_to_entity);
   }
 
+  std::unordered_map<std::string, std::vector<uint32_t>> _manually_added_elems;
   std::unordered_set<uint32_t> _seen_ids;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entity;
 };
@@ -108,6 +119,14 @@ class StringCategoricalMachIndex : public MachIndex {
   std::vector<uint32_t> hashAndStoreEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
+
+  void manualAdd(const std::vector<uint32_t>& hashes,
+                 const std::string& string) final {
+    (void)hashes;
+    (void)string;
+  }
+
+  void erase(const std::string& string) final { (void)string; }
 
  private:
   uint32_t updateInternalIndex(const std::string& string,

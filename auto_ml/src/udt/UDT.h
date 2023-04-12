@@ -135,6 +135,15 @@ class UDT {
                                      top_k_per_eval_aggregation);
   }
 
+  void introduce(const MapInputBatch& sample,
+                 const std::variant<uint32_t, std::string>& new_label) {
+    return _backend->introduce(sample, new_label);
+  }
+
+  void forget(const std::variant<uint32_t, std::string>& label) {
+    return _backend->forget(label);
+  }
+
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 
   void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }

@@ -206,6 +206,25 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
+  /**
+   * Introduces a new label to the model. Specifically for text classification
+   * models since we pass in some text description of the new label.
+   */
+  virtual void introduce(const MapInputBatch& sample,
+                         const std::variant<uint32_t, std::string>& new_label) {
+    (void)sample;
+    (void)new_label;
+    throw notSupported("introduce");
+  }
+
+  /**
+   * Forget a given label such that it is impossible to predict in the future.
+   */
+  virtual void forget(const std::variant<uint32_t, std::string>& label) {
+    (void)label;
+    throw notSupported("forget");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:

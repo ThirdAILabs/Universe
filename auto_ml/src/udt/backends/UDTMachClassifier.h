@@ -88,6 +88,33 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  void introduce(const MapInputBatch& samples,
+                 const std::variant<uint32_t, std::string>& new_label) final {
+    BoltBatch output = _classifier->model()->predictSingleBatch(
+        _dataset_factory->featurizeInputBatch(samples),
+        /* sparse_inference = */ false);
+
+    if (output.getBatchSize() != 1) {
+      throw std::invalid_argument("not one sample");
+    }
+
+    auto top_K = output[0].findKLargestActivations(
+        _mach_label_block->index()->numHashes());
+
+    std::vector<uint32_t> new_hashes;
+    while (!top_K.empty()) {
+      auto [_, active_neuron] = top_K.top();
+      new_hashes.push_back(active_neuron);
+      top_K.pop();
+    }
+    _mach_label_block->index()->manualAdd(new_hashes,
+                                          variantToString(new_label));
+  }
+
+  void forget(const std::variant<uint32_t, std::string>& label) final {
+    _mach_label_block->index()->erase(variantToString(label));
+  }
+
  private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
@@ -96,6 +123,17 @@ class UDTMachClassifier final : public UDTBackend {
         /* integer_target = */
         static_cast<bool>(
             dataset::mach::asNumericIndex(_mach_label_block->index())));
+  }
+
+  static std::string variantToString(
+      const std::variant<uint32_t, std::string>& variant) {
+    if (std::holds_alternative<std::string>(variant)) {
+      return std::get<std::string>(variant);
+    }
+    if (std::holds_alternative<uint32_t>(variant)) {
+      return std::to_string(std::get<uint32_t>(variant));
+    }
+    throw std::invalid_argument("Invalid input type.");
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {

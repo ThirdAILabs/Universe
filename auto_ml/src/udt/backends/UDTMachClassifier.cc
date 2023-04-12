@@ -218,17 +218,6 @@ py::object UDTMachClassifier::embedding(const MapInput& sample) {
   return utils::convertBoltVectorToNumpy(emb);
 }
 
-static std::string variantToString(
-    const std::variant<uint32_t, std::string>& variant) {
-  if (std::holds_alternative<std::string>(variant)) {
-    return std::get<std::string>(variant);
-  }
-  if (std::holds_alternative<uint32_t>(variant)) {
-    return std::to_string(std::get<uint32_t>(variant));
-  }
-  throw std::invalid_argument("Invalid input type.");
-}
-
 py::object UDTMachClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   std::vector<uint32_t> hashed_neurons =
