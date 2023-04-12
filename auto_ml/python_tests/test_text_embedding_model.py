@@ -7,8 +7,8 @@ pytestmark = [pytest.mark.unit]
 
 
 def get_distance(embedding_model, string_1, string_2):
-    embedding_1 = embedding_model.encode(string_1).activations.flatten()
-    embedding_2 = embedding_model.encode(string_2).activations.flatten()
+    embedding_1 = embedding_model.encode(string_1)
+    embedding_2 = embedding_model.encode(string_2)
     return np.linalg.norm(embedding_1 - embedding_2)
 
 
