@@ -63,8 +63,7 @@ jobs:
         run: bin/python-test.sh -m release
 
   distributed-python-tests:
-    runs-on: 
-      labels: ubuntu-20.04-16core
+    runs-on: ubuntu-latest-16-cores
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
