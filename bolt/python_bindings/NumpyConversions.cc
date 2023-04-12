@@ -17,6 +17,9 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArray(
                              [](void* ptr) { delete static_cast<T*>(ptr); });
 
   if (rows == 1) {
+    // Handles the case where we are converting a single vector as well as
+    // multiple. This is so that this method works both for predict single and
+    // predict batch.
     return py::array_t<T, py::array::c_style | py::array::forcecast>(
         cols, data_copy, free_when_done);
   }
@@ -37,7 +40,7 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor) {
 
   if (tensor->activeNeuronsPtr()) {
     auto active_neurons =
-        createArray(tensor->activationsPtr(), tensor->batchSize(), *nonzeros);
+        createArray(tensor->activeNeuronsPtr(), tensor->batchSize(), *nonzeros);
 
     return std::move(
         py::make_tuple(std::move(active_neurons), std::move(activations)));
