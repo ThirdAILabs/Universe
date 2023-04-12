@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Validation.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
@@ -54,10 +55,13 @@ class Classifier {
 
   const auto& model() const { return _model; }
 
-  bool freezeHashTables() const { return _freeze_hash_tables; }
-
  private:
+  uint32_t predictedClass(const BoltVector& output);
+
   py::object predictedClasses(const bolt::nn::tensor::TensorPtr& output);
+
+  std::vector<std::vector<float>> getBinaryClassificationScores(
+      const dataset::BoltDatasetList& dataset);
 
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
       const dataset::DatasetLoaderPtr& dataset, const std::string& metric_name);
