@@ -8,6 +8,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -142,9 +143,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-std::vector<uint32_t> FullyConnected::dimensions() const {
-  return {_kernel->getDim(), _kernel->getInputDim()};
-}
+uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
 
 const float* FullyConnected::weightsPtr() const {
   return _kernel->getWeightsPtr();
@@ -152,6 +151,12 @@ const float* FullyConnected::weightsPtr() const {
 
 const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
+}
+
+void FullyConnected::setWeightsAndBiases(const float* weights,
+                                         const float* biases) {
+  _kernel->setWeights(weights);
+  _kernel->setBiases(biases);
 }
 
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
