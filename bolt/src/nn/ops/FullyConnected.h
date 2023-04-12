@@ -73,6 +73,14 @@ class FullyConnected final
   const float* biasesPtr() const;
 
   /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
+
+  /**
    * Autotunes how often the hash tables and hash functions are rebuilt using
    * the number of batches in the dataset and the batch size.
    */

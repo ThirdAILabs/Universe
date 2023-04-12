@@ -154,6 +154,10 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
+  _kernel->freezeHashTables(insert_labels_if_not_found);
+}
+
 void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
                                            uint32_t batch_size) {
   // TODO(Someone): Revisit this autotuning. It seems like for some datasets it
