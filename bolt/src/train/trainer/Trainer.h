@@ -85,6 +85,11 @@ class Trainer {
       const std::vector<std::string>& validation_metrics = {},
       bool use_sparsity = false);
 
+  metrics::History validate_with_dataset_loader(
+      const dataset::DatasetLoaderPtr& validation_data,
+      const std::vector<std::string>& validation_metrics = {},
+      bool use_sparsity = false);
+
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 

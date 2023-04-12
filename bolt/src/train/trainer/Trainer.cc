@@ -218,6 +218,14 @@ metrics::History Trainer::validate_with_metric_names(
                   /* use_sparsity= */ use_sparsity);
 }
 
+metrics::History Trainer::validate_with_dataset_loader(
+    const dataset::DatasetLoaderPtr& validation_data,
+    const std::vector<std::string>& validation_metrics, bool use_sparsity) {
+  return validate_with_metric_names(
+      loadData(validation_data, /* batch_size= */ 2048).value(),
+      validation_metrics, use_sparsity);
+}
+
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
   if (data.first.size() != data.second.size()) {
     throw std::invalid_argument(
