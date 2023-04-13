@@ -72,6 +72,7 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            py::arg("steps_per_validation") = std::nullopt,
            py::arg("use_sparsity_in_validation") = false,
            py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           py::arg("autotune_rehash_rebuild") = false,
            bolt::python::OutputRedirect())
       .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
@@ -81,6 +82,7 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            py::arg("steps_per_validation") = std::nullopt,
            py::arg("use_sparsity_in_validation") = false,
            py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           py::arg("autotune_rehash_rebuild") = false,
            bolt::python::OutputRedirect())
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),
