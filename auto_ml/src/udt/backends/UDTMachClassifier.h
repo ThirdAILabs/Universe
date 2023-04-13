@@ -117,6 +117,15 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const std::variant<uint32_t, std::string>& label) final {
     _mach_label_block->index()->erase(variantToString(label));
+
+    if (_mach_label_block->index()->numElements() == 0) {
+      std::cout << "Warning. Every learned class has been forgotten. The model "
+                   "will currently return nothing on calls to evaluate, "
+                   "predict, or predictBatch.";
+    }
+
+    _min_num_eval_results = std::min(_min_num_eval_results,
+                                     _mach_label_block->index()->numElements());
   }
 
   TextEmbeddingModelPtr getTextEmbeddingModel(
@@ -128,19 +137,23 @@ class UDTMachClassifier final : public UDTBackend {
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName(),
         /* integer_target = */
-        static_cast<bool>(
-            dataset::mach::asNumericIndex(_mach_label_block->index())));
+        integerTarget());
   }
 
-  static std::string variantToString(
+  bool integerTarget() const {
+    return static_cast<bool>(
+        dataset::mach::asNumericIndex(_mach_label_block->index()));
+  }
+
+  std::string variantToString(
       const std::variant<uint32_t, std::string>& variant) {
-    if (std::holds_alternative<std::string>(variant)) {
+    if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
       return std::get<std::string>(variant);
     }
-    if (std::holds_alternative<uint32_t>(variant)) {
+    if (std::holds_alternative<uint32_t>(variant) && integerTarget()) {
       return std::to_string(std::get<uint32_t>(variant));
     }
-    throw std::invalid_argument("Invalid input type.");
+    throw std::invalid_argument("Invalid class type.");
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
