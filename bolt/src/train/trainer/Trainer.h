@@ -75,20 +75,17 @@ class Trainer {
    * Performs evaluation on the model using the given validation data and
    * metrics.
    */
-  metrics::History validate(
-      const LabeledDataset& validation_data,
-      const metrics::InputMetrics& validation_metrics = {},
-      bool use_sparsity = false);
+  metrics::History validate(const LabeledDataset& data,
+                            const metrics::InputMetrics& metrics = {},
+                            bool use_sparsity = false);
 
   metrics::History validate_with_metric_names(
-      const LabeledDataset& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
+      const LabeledDataset& data, const std::vector<std::string>& metrics = {},
       bool use_sparsity = false);
 
   metrics::History validate_with_dataset_loader(
-      const dataset::DatasetLoaderPtr& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
-      bool use_sparsity = false);
+      const dataset::DatasetLoaderPtr& data,
+      const std::vector<std::string>& metrics = {}, bool use_sparsity = false);
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -105,9 +102,12 @@ class Trainer {
   std::string formatValidateLogLine(const std::string& metric_summary,
                                     uint32_t batches, int64_t time);
 
-  std::optional<LabeledDataset> loadData(
+  LabeledDataset loadAllWrapper(const dataset::DatasetLoaderPtr& dataset_loader,
+                                uint32_t batch_size);
+
+  std::optional<LabeledDataset> loadSomeWrapper(
       const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
-      std::optional<uint32_t> max_batches_opt = std::nullopt);
+      uint32_t max_batches);
 
   nn::model::ModelPtr _model;
 

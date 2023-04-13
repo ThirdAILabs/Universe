@@ -12,6 +12,8 @@
 
 namespace thirdai::bolt::train {
 
+constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
+
 Trainer::Trainer(nn::model::ModelPtr model)
     : _model(std::move(model)), _epoch(0) {
   _history = std::make_shared<metrics::History>();
@@ -141,11 +143,11 @@ metrics::History Trainer::train_with_dataset_loader(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks) {
   if (!max_in_memory_batches) {
-    auto train_data = loadData(train_data_loader, batch_size).value();
+    auto train_data = loadAllWrapper(train_data_loader, batch_size);
 
     std::optional<LabeledDataset> validation_data = std::nullopt;
     if (validation_data_loader) {
-      validation_data = loadData(validation_data_loader, batch_size);
+      validation_data = loadAllWrapper(validation_data_loader, batch_size);
     }
 
     return train_with_metric_names(train_data, learning_rate, epochs,
@@ -154,37 +156,43 @@ metrics::History Trainer::train_with_dataset_loader(
                                    use_sparsity_in_validation, callbacks);
   }
 
+  // We have duplicate code here for loading validation data because for
+  // Temporal transformations loading the validation data after the training
+  // data is important. We do not do this for the streaming case because it
+  // would require doing a first pass over the training data before loading the
+  // validation data.
   std::optional<LabeledDataset> validation_data = std::nullopt;
   if (validation_data_loader) {
-    validation_data = loadData(validation_data_loader, batch_size);
+    validation_data = loadAllWrapper(validation_data_loader, batch_size);
   }
 
   for (uint32_t e = 0; e < epochs; e++) {
-    while (auto train_chunk =
-               loadData(train_data_loader, batch_size, max_in_memory_batches)) {
+    while (auto train_chunk = loadSomeWrapper(train_data_loader, batch_size,
+                                              *max_in_memory_batches)) {
       train_with_metric_names(train_chunk.value(), learning_rate, epochs,
                               train_metrics, validation_data,
                               validation_metrics, steps_per_validation,
                               use_sparsity_in_validation, callbacks);
     }
+    train_data_loader->restart();
   }
 
   return *_history;
 }
 
-metrics::History Trainer::validate(
-    const LabeledDataset& validation_data,
-    const metrics::InputMetrics& validation_metrics_in, bool use_sparsity) {
-  metrics::MetricCollection validation_metrics(validation_metrics_in);
+metrics::History Trainer::validate(const LabeledDataset& data,
+                                   const metrics::InputMetrics& metrics_in,
+                                   bool use_sparsity) {
+  metrics::MetricCollection validation_metrics(metrics_in);
 
-  uint32_t num_batches = validation_data.first.size();
+  uint32_t num_batches = data.first.size();
   ProgressBar bar("validate", num_batches);
 
   utils::Timer val_timer;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    const nn::tensor::TensorList& inputs = validation_data.first.at(batch_idx);
-    const nn::tensor::TensorList& labels = validation_data.second.at(batch_idx);
+    const nn::tensor::TensorList& inputs = data.first.at(batch_idx);
+    const nn::tensor::TensorList& labels = data.second.at(batch_idx);
 
     _model->forward(inputs, labels, /* use_sparsity= */ use_sparsity);
 
@@ -210,20 +218,20 @@ metrics::History Trainer::validate(
 }
 
 metrics::History Trainer::validate_with_metric_names(
-    const LabeledDataset& validation_data,
-    const std::vector<std::string>& validation_metrics, bool use_sparsity) {
-  return validate(/* validation_data= */ validation_data,
-                  /* validation_metrics= */
-                  metrics::fromMetricNames(_model, validation_metrics, "val_"),
-                  /* use_sparsity= */ use_sparsity);
+    const LabeledDataset& data, const std::vector<std::string>& metrics,
+    bool use_sparsity) {
+  return validate(
+      /* data= */ data,
+      /* metrics= */ metrics::fromMetricNames(_model, metrics, "val_"),
+      /* use_sparsity= */ use_sparsity);
 }
 
 metrics::History Trainer::validate_with_dataset_loader(
-    const dataset::DatasetLoaderPtr& validation_data,
-    const std::vector<std::string>& validation_metrics, bool use_sparsity) {
+    const dataset::DatasetLoaderPtr& data,
+    const std::vector<std::string>& metrics, bool use_sparsity) {
   return validate_with_metric_names(
-      loadData(validation_data, /* batch_size= */ 2048).value(),
-      validation_metrics, use_sparsity);
+      /* data= */ loadAllWrapper(data, /* batch_size= */ DEFAULT_BATCH_SIZE),
+      /* metrics= */ metrics, /* use_sparsity= */ use_sparsity);
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
@@ -251,12 +259,19 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
   return logline;
 }
 
-std::optional<LabeledDataset> Trainer::loadData(
-    const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
-    std::optional<uint32_t> max_batches_opt) {
-  uint32_t max_batches =
-      max_batches_opt.value_or(std::numeric_limits<uint32_t>::max());
+LabeledDataset Trainer::loadAllWrapper(
+    const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size) {
+  auto data = loadSomeWrapper(dataset_loader, batch_size,
+                              std::numeric_limits<uint32_t>::max());
+  if (!data) {
+    throw std::runtime_error("Unable to load data from data source.");
+  }
+  return std::move(data.value());
+}
 
+std::optional<LabeledDataset> Trainer::loadSomeWrapper(
+    const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+    uint32_t max_batches) {
   auto datasets = dataset_loader->loadSome(batch_size, max_batches);
   if (!datasets) {
     return std::nullopt;
