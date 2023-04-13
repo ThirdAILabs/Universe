@@ -110,8 +110,9 @@ class UDTMachClassifier final : public UDTBackend {
       new_hashes.push_back(active_neuron);
       top_K.pop();
     }
-    _mach_label_block->index()->manualAdd(new_hashes,
-                                          variantToString(new_label));
+
+    _mach_label_block->index()->manualAdd(variantToString(new_label),
+                                          new_hashes);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) final {

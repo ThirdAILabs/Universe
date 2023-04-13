@@ -2,23 +2,20 @@
 
 namespace thirdai::dataset::mach {
 
-MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes,
-                     uint32_t max_elements)
-    : _output_range(output_range),
-      _num_hashes(num_hashes),
-      _max_elements(max_elements) {}
+MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes)
+    : _output_range(output_range), _num_hashes(num_hashes) {}
 
 NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
                                                          uint32_t num_hashes,
-                                                         uint32_t max_elements)
-    : MachIndex(output_range, num_hashes, max_elements) {
-  for (uint32_t element = 0; element < max_elements; element++) {
+                                                         uint32_t num_elements)
+    : MachIndex(output_range, num_hashes) {
+  for (uint32_t element = 0; element < num_elements; element++) {
     std::string element_string = std::to_string(element);
 
     auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
                                                    _output_range);
 
-    _entity_to_hashes.push_back(hashes);
+    _entity_to_hashes[element] = hashes;
 
     for (auto& hash : hashes) {
       _hash_to_entities[hash].push_back(element_string);
@@ -28,14 +25,11 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
 
 std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
     const std::string& string) {
-  if (_manually_added_elems.count(string)) {
-    return _manually_added_elems[string];
-  }
-
   uint32_t id = std::strtoul(string.data(), nullptr, 10);
-  if (id >= _max_elements) {
-    throw std::invalid_argument("Received label " + std::to_string(id) +
-                                " larger than or equal to n_target_classes.");
+
+  if (!_entity_to_hashes.count(id)) {
+    throw std::invalid_argument(
+        "Received unexpected label: " + std::to_string(id) + ".");
   }
 
   return _entity_to_hashes[id];
@@ -49,65 +43,49 @@ std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
   return _hash_to_entities.at(hash_val);
 }
 
-void NumericCategoricalMachIndex::manualAdd(const std::vector<uint32_t>& hashes,
-                                            const std::string& string) {
+void NumericCategoricalMachIndex::manualAdd(
+    const std::string& string, const std::vector<uint32_t>& hashes) {
   if (hashes.size() != _num_hashes) {
     throw std::invalid_argument("Wrong number of hashes for index.");
   }
 
   uint32_t id = std::strtoul(string.data(), nullptr, 10);
 
-  if (id > _max_elements) {
-    throw std::invalid_argument("Label is too large. Next label should be: " +
-                                std::to_string(_max_elements) + ".");
-  }
-
-  if (id == _max_elements) {
-    ++_max_elements;
-  }
-
-  if (_seen_ids.count(id)) {
+  if (_entity_to_hashes.count(id)) {
     throw std::invalid_argument(
         "Manually adding a previously seen label: " + string +
         ". Please use a new label for any new insertions.");
   }
 
-  _seen_ids.insert(id);
   for (const auto& hash : hashes) {
-    _hash_to_entity[hash].push_back(string);
+    _hash_to_entities[hash].push_back(string);
   }
 
-  _manually_added_elems[string] = hashes;
+  _entity_to_hashes[id] = hashes;
 }
 
 void NumericCategoricalMachIndex::erase(const std::string& string) {
   uint32_t id = std::strtoul(string.data(), nullptr, 10);
-  if (id >= _max_elements) {
-    throw std::invalid_argument("Received label " + std::to_string(id) +
-                                " larger than or equal to n_target_classes.");
-  }
-  auto hashes =
-      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-
-  if (!_seen_ids.count(id)) {
-    throw std::invalid_argument(
-        "Trying to forget an non-existent label: " + string + ".");
+  if (!_entity_to_hashes.count(id)) {
+    throw std::invalid_argument("Tried to forget label " + string +
+                                " which does not exist.");
   }
 
-  _seen_ids.erase(id);
-  _manually_added_elems.erase(id);
+  std::vector<uint32_t> hashes = _entity_to_hashes[id];
+  _entity_to_hashes.erase(id);
 
   for (const auto& hash : hashes) {
-    auto new_end_itr = std::remove(_hash_to_entity[hash].begin(),
-                                   _hash_to_entity[hash].end(), string);
-    _hash_to_entity[hash].erase(new_end_itr, _hash_to_entity[hash].end());
+    auto new_end_itr = std::remove(_hash_to_entities[hash].begin(),
+                                   _hash_to_entities[hash].end(), string);
+    _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
   }
 }
 
 StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
                                                        uint32_t num_hashes,
                                                        uint32_t max_elements)
-    : MachIndex(output_range, num_hashes, max_elements),
+    : MachIndex(output_range, num_hashes),
+      _max_elements(max_elements),
       _current_vocab_size(0) {}
 
 std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(

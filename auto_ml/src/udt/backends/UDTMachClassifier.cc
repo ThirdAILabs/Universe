@@ -260,18 +260,18 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
     throw std::invalid_argument("Params must not be 0.");
   }
 
-  if (min_num_eval_results > top_k_per_eval_aggregation) {
+  uint32_t output_range = _mach_label_block->index()->outputRange();
+  if (top_k_per_eval_aggregation > output_range) {
     throw std::invalid_argument(
-        "min_num_eval_results must be <= top_k_per_eval_aggregation.");
+        "Cannot eval with top_k_per_eval_aggregation greater than " +
+        std::to_string(output_range) + ".");
   }
 
-  uint32_t n_target_classes = _mach_label_block->index()->maxElements();
-  if (min_num_eval_results > n_target_classes ||
-      top_k_per_eval_aggregation > n_target_classes) {
+  uint32_t num_classes = _mach_label_block->index()->numElements();
+  if (min_num_eval_results > num_classes) {
     throw std::invalid_argument(
-        "Both min_num_eval_results and top_k_per_eval_aggregation must be less "
-        "than or equal to n_target_classes = " +
-        std::to_string(n_target_classes) + ".");
+        "Cannot return more results than the model is trained to predict " +
+        std::to_string(num_classes) + ".");
   }
 
   _min_num_eval_results = min_num_eval_results;

@@ -24,7 +24,7 @@ namespace thirdai::dataset::mach {
  */
 class MachIndex {
  public:
-  MachIndex(uint32_t output_range, uint32_t num_hashes, uint32_t max_elements);
+  MachIndex(uint32_t output_range, uint32_t num_hashes);
 
   /**
    * Hashes the given string "num_hashes" times to "output_range" dimension.
@@ -37,23 +37,25 @@ class MachIndex {
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
-  virtual void manualAdd(const std::vector<uint32_t>& hashes,
-                         const std::string& string) = 0;
+  /**
+   * Manually adds the
+   */
+  virtual void manualAdd(const std::string& string,
+                         const std::vector<uint32_t>& hashes) = 0;
 
   virtual void erase(const std::string& string) = 0;
+
+  virtual uint32_t numElements() const = 0;
 
   uint32_t outputRange() const { return _output_range; }
 
   uint32_t numHashes() const { return _num_hashes; }
-
-  uint32_t maxElements() const { return _max_elements; }
 
   virtual ~MachIndex() = default;
 
  protected:
   uint32_t _output_range;
   uint32_t _num_hashes;
-  uint32_t _max_elements;
 
   MachIndex() {}
 
@@ -61,7 +63,7 @@ class MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_output_range, _num_hashes, _max_elements);
+    archive(_output_range, _num_hashes);
   }
 };
 
@@ -75,22 +77,24 @@ using MachIndexPtr = std::shared_ptr<MachIndex>;
 class NumericCategoricalMachIndex : public MachIndex {
  public:
   NumericCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
-                              uint32_t max_elements);
+                              uint32_t num_elements);
 
   static auto make(uint32_t output_range, uint32_t num_hashes,
-                   uint32_t max_elements) {
+                   uint32_t num_elements) {
     return std::make_shared<NumericCategoricalMachIndex>(
-        output_range, num_hashes, max_elements);
+        output_range, num_hashes, num_elements);
   }
 
   std::vector<uint32_t> hashEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
-  void manualAdd(const std::vector<uint32_t>& hashes,
-                 const std::string& string) final;
+  void manualAdd(const std::string& string,
+                 const std::vector<uint32_t>& hashes) final;
 
   void erase(const std::string& string) final;
+
+  uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
  private:
   NumericCategoricalMachIndex() {}
@@ -98,15 +102,12 @@ class NumericCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _manually_added_elems,
-            _hash_to_entities, _entity_to_hashes);
+    archive(cereal::base_class<MachIndex>(this), _entity_to_hashes,
+            _hash_to_entities);
   }
 
-  std::unordered_map<std::string, std::vector<uint32_t>> _manually_added_elems;
-
-  // TODO(david) should we use a set instead of a vector for storing entities?
+  std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
-  std::vector<std::vector<uint32_t>> _entity_to_hashes;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -137,13 +138,15 @@ class StringCategoricalMachIndex : public MachIndex {
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
-  void manualAdd(const std::vector<uint32_t>& hashes,
-                 const std::string& string) final {
+  void manualAdd(const std::string& string,
+                 const std::vector<uint32_t>& hashes) final {
     (void)hashes;
     (void)string;
   }
 
   void erase(const std::string& string) final { (void)string; }
+
+  uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
  private:
   uint32_t updateInternalIndex(const std::string& string);
@@ -155,15 +158,17 @@ class StringCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _entity_to_id,
-            _hash_to_entities, _entity_to_hashes, _current_vocab_size);
+    archive(cereal::base_class<MachIndex>(this), _max_elements, _entity_to_id,
+            _entity_to_hashes, _hash_to_entities, _current_vocab_size);
   }
+
+  uint32_t _max_elements;
 
   std::unordered_map<std::string, uint32_t> _entity_to_id;
 
   // TODO(david) for saving memory we can store the ids in this map instead
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
   std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
 
   std::atomic_uint32_t _current_vocab_size;
 };
