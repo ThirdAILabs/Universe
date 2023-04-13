@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
+#include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -35,22 +35,21 @@ class UDT {
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval);
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics);
+                      bool sparse_inference, bool verbose);
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class);
@@ -68,7 +67,7 @@ class UDT {
                        float learning_rate, uint32_t epochs,
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
-                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
                        bool verbose) {
     return _backend->coldstart(data, strong_column_names, weak_column_names,
@@ -135,9 +134,9 @@ class UDT {
                                      top_k_per_eval_aggregation);
   }
 
-  bolt::BoltGraphPtr model() const { return _backend->model(); }
+  ModelPtr model() const { return _backend->model(); }
 
-  void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }
+  void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();

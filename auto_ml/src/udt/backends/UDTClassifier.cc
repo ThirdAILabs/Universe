@@ -3,10 +3,11 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
-#include <bolt/src/graph/ExecutionConfig.h>
-#include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -55,10 +56,10 @@ py::object UDTClassifier::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  std::optional<ValidationDatasetLoader> validation_dataset_loader =
-      std::nullopt;
+  ValidationDatasetLoader validation_dataset_loader = {nullptr,
+                                                       ValidationArgs({})};
   if (validation) {
     validation_dataset_loader =
         ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
@@ -84,9 +85,10 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
 
   bolt::MetricAggregator metric_aggregator(metrics);
 
-  model->trainOnBatch(std::move(inputs), labels, learning_rate,
-                      metric_aggregator, /* rebuild_hash_tables_interval= */ 25,
-                      /* reconstruct_hash_functions_interval= */ 100);
+  // model->trainOnBatch(std::move(inputs), labels, learning_rate,
+  //                     metric_aggregator, /* rebuild_hash_tables_interval= */
+  //                     25,
+  //                     /* reconstruct_hash_functions_interval= */ 100);
 
   metric_aggregator.logAndReset();
 
@@ -95,13 +97,10 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
-                                   bool sparse_inference,
-                                   bool return_predicted_class, bool verbose,
-                                   bool return_metrics) {
+                                   bool sparse_inference, bool verbose) {
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  return _classifier->evaluate(dataset, metrics, sparse_inference,
-                               return_predicted_class, verbose, return_metrics);
+  return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
@@ -143,7 +142,7 @@ py::object UDTClassifier::coldstart(
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
-    const std::vector<bolt::CallbackPtr>& callbacks,
+    const std::vector<CallbackPtr>& callbacks,
     std::optional<size_t> max_in_memory_batches, bool verbose) {
   auto metadata = getColdStartMetaData();
 
@@ -170,18 +169,16 @@ py::object UDTClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   uint32_t neuron_id = labelToNeuronId(label);
 
-  auto fc_layers = _classifier->model()
-                       ->getNodes()
-                       .back()
-                       ->getInternalFullyConnectedLayers();
+  auto outputs = _classifier->model()->outputs();
 
-  if (fc_layers.size() != 1) {
+  if (outputs.size() != 1) {
     throw std::invalid_argument(
         "This UDT architecture currently doesn't support getting entity "
         "embeddings.");
   }
+  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
 
-  auto weights = fc_layers.front()->getWeightsByNeuron(neuron_id);
+  auto weights = fc->kernel()->getWeightsByNeuron(neuron_id);
 
   utils::NumpyArray<float> np_weights(weights.size());
 

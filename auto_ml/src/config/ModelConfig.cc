@@ -1,13 +1,13 @@
 #include "ModelConfig.h"
 #include "Parameter.h"
-#include <bolt/src/graph/DatasetContext.h>
-#include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/nodes/Embedding.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
-#include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/nn/loss/BinaryCrossEntropy.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
@@ -53,17 +53,19 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
   return nullptr;
 }
 
+using CreatedComputations =
+    std::unordered_map<std::string, bolt::nn::autograd::ComputationPtr>;
+
 /**
  * Helper function to get the predecessor of a node.
  */
-bolt::NodePtr getPredecessor(
-    const json& config,
-    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+bolt::nn::autograd::ComputationPtr getPredecessor(
+    const json& config, const CreatedComputations& created_comps) {
   std::string predecessor = getString(config, "predecessor");
-  if (!created_nodes.count(predecessor)) {
+  if (!created_comps.count(predecessor)) {
     throw std::invalid_argument("Could not find node '" + predecessor + "'.");
   }
-  return created_nodes.at(predecessor);
+  return created_comps.at(predecessor);
 }
 
 /**
@@ -72,26 +74,21 @@ bolt::NodePtr getPredecessor(
  * config. Optionally a field 'sampling_config' can be specified. If it is
  * not present the sampling parameters will be autotuned if not specified.
  */
-bolt::NodePtr buildFullyConnectedNode(
+bolt::nn::autograd::ComputationPtr buildFullyConnected(
     const json& config, const ArgumentMap& args,
-    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+    const CreatedComputations& created_comps) {
   uint32_t dim = integerParameter(config, "dim", args);
   float sparsity = floatParameter(config, "sparsity", args);
   std::string activation = stringParameter(config, "activation", args);
 
   auto sampling_config = getSamplingConfig(config, args);
 
-  bolt::FullyConnectedNodePtr layer;
-  if (sampling_config) {
-    layer = bolt::FullyConnectedNode::make(dim, sparsity, activation,
-                                           sampling_config);
-  } else {
-    layer = bolt::FullyConnectedNode::makeAutotuned(dim, sparsity, activation);
-  }
+  auto predecessor = getPredecessor(config, created_comps);
 
-  layer->addPredecessor(getPredecessor(config, created_nodes));
+  auto layer = bolt::nn::ops::FullyConnected::make(
+      dim, predecessor->dim(), sparsity, activation, sampling_config);
 
-  return layer;
+  return layer->apply(predecessor);
 }
 
 /**
@@ -101,9 +98,9 @@ bolt::NodePtr buildFullyConnectedNode(
  * 'num_tokens_per_input' can be specified to indicate the number of tokens in
  * each sample. This field is only required for concatenation reductions.
  */
-bolt::EmbeddingNodePtr buildEmbeddingNode(
+bolt::nn::autograd::ComputationPtr buildEmbedding(
     const json& config, const ArgumentMap& args,
-    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+    const CreatedComputations& created_comps) {
   uint32_t num_lookups =
       integerParameter(config, "num_embedding_lookups", args);
   uint32_t lookup_size = integerParameter(config, "lookup_size", args);
@@ -117,29 +114,21 @@ bolt::EmbeddingNodePtr buildEmbeddingNode(
         integerParameter(config, "num_tokens_per_input", args);
   }
 
-  bolt::EmbeddingNodePtr layer =
-      bolt::EmbeddingNode::make(num_lookups, lookup_size, log_block_size,
-                                reduction, num_tokens_per_input);
+  auto layer =
+      bolt::nn::ops::Embedding::make(num_lookups, lookup_size, log_block_size,
+                                     reduction, num_tokens_per_input);
 
-  bolt::NodePtr predecessor = getPredecessor(config, created_nodes);
-
-  if (auto input = std::dynamic_pointer_cast<bolt::Input>(predecessor)) {
-    layer->addInput(input);
-  } else {
-    throw std::invalid_argument(
-        "Predecessor of an embedding node must be an input.");
-  }
-  return layer;
+  return layer->apply(getPredecessor(config, created_comps));
 }
 
 /**
- * Helper function to construct the inputs. Matches the input dims to the input
- * names provided in the config. Updates created nodes to contain the created
- * inputs.
+ * Helper function to construct the inputs. Matches the input dims to the
+ * input names provided in the config. Updates created nodes to contain the
+ * created inputs.
  */
-std::vector<bolt::InputPtr> getInputs(
+bolt::nn::autograd::ComputationList getInputs(
     const json& config, const std::vector<uint32_t>& input_dims,
-    std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+    CreatedComputations& created_comps) {
   auto json_inputs = getArray(config, "inputs");
   if (config["inputs"].size() != input_dims.size()) {
     throw std::invalid_argument(
@@ -147,23 +136,24 @@ std::vector<bolt::InputPtr> getInputs(
         "number of input dims provided to the model.");
   }
 
-  std::vector<bolt::InputPtr> inputs;
+  bolt::nn::autograd::ComputationList inputs;
   for (uint32_t i = 0; i < input_dims.size(); i++) {
-    inputs.push_back(bolt::Input::make(input_dims[i]));
+    inputs.push_back(bolt::nn::ops::Input::make(input_dims[i]));
 
     if (!json_inputs[i].is_string()) {
       throw std::invalid_argument("Expect inputs to be an array of strings.");
     }
-    created_nodes[json_inputs[i].get<std::string>()] = inputs.back();
+    created_comps[json_inputs[i].get<std::string>()] = inputs.back();
   }
   return inputs;
 }
 
-bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
-                              const std::vector<uint32_t>& input_dims) {
-  std::unordered_map<std::string, bolt::NodePtr> created_nodes;
+bolt::nn::model::ModelPtr buildModel(const json& config,
+                                     const ArgumentMap& args,
+                                     const std::vector<uint32_t>& input_dims) {
+  CreatedComputations created_comps;
 
-  auto inputs = getInputs(config, input_dims, created_nodes);
+  auto inputs = getInputs(config, input_dims, created_comps);
 
   for (const auto& node_config : getArray(config, "nodes")) {
     if (!node_config.is_object()) {
@@ -174,39 +164,49 @@ bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
 
     std::string type = getString(node_config, "type");
     if (type == "fully_connected") {
-      created_nodes[name] =
-          buildFullyConnectedNode(node_config, args, created_nodes);
+      created_comps[name] =
+          buildFullyConnected(node_config, args, created_comps);
     } else if (type == "embedding") {
-      created_nodes[name] =
-          buildEmbeddingNode(node_config, args, created_nodes);
+      created_comps[name] = buildEmbedding(node_config, args, created_comps);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");
     }
   }
 
-  std::string output = getString(config, "output");
-  if (!created_nodes.count(output)) {
-    throw std::invalid_argument("Could not find node '" + output + "'.");
+  std::string output_name = getString(config, "output");
+  if (!created_comps.count(output_name)) {
+    throw std::invalid_argument("Could not find node '" + output_name + "'.");
+  }
+  auto output = created_comps.at(output_name);
+
+  auto labels = bolt::nn::ops::Input::make(output->dim());
+
+  bolt::nn::loss::LossPtr loss;
+  std::string loss_name = getString(config, "loss");
+
+  if (text::lower(loss_name) == "CategoricalCrossEntropy") {
+    loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+  } else if (text::lower(loss_name) == "BinaryCrossEntropy") {
+    loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
+  } else {
+    throw std::invalid_argument("Invalid loss function '" + loss_name +
+                                "' provided in model config.");
   }
 
-  auto loss = bolt::getLossFunction(getString(config, "loss"));
-
-  auto model =
-      std::make_shared<bolt::BoltGraph>(inputs, created_nodes.at(output));
-
-  model->compile(loss);
+  auto model = bolt::nn::model::Model::make(inputs, {output}, {loss});
 
   return model;
 }
 
 /**
- * This is a helper function to both encrypt and decrypt a config by XORing each
- * byte in the config string with a byte from a random cipher. This ensures that
- * the config is not human readable, and also that the same byte will be
- * unlikely to have the same encoded value in different places (unless they a
- * seperated by a number of bytes that is a multiple of the cipher). Because of
- * the nature of XOR this function can both encrypt and decrypt the configs.
+ * This is a helper function to both encrypt and decrypt a config by XORing
+ * each byte in the config string with a byte from a random cipher. This
+ * ensures that the config is not human readable, and also that the same byte
+ * will be unlikely to have the same encoded value in different places (unless
+ * they a seperated by a number of bytes that is a multiple of the cipher).
+ * Because of the nature of XOR this function can both encrypt and decrypt the
+ * configs.
  */
 std::string xorConfig(const std::string& config) {
   std::vector<uint8_t> cipher = {

@@ -1,7 +1,7 @@
 #include "UDTMachClassifier.h"
-#include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/mach/MachBlock.h>
@@ -71,10 +71,10 @@ py::object UDTMachClassifier::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  std::optional<ValidationDatasetLoader> validation_dataset_loader =
-      std::nullopt;
+  ValidationDatasetLoader validation_dataset_loader = {nullptr,
+                                                       ValidationArgs({})};
   if (validation) {
     validation_dataset_loader =
         ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
@@ -93,20 +93,7 @@ py::object UDTMachClassifier::train(
 
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
-                                       bool sparse_inference,
-                                       bool return_predicted_class,
-                                       bool verbose, bool return_metrics) {
-  if (return_predicted_class) {
-    throw std::invalid_argument(
-        "UDT Extreme Classification does not support the "
-        "return_predicted_class flag.");
-  }
-  if (return_metrics) {
-    throw std::invalid_argument(
-        "UDT Extreme Classification does not support the "
-        "return_metrics flag.");
-  }
-
+                                       bool sparse_inference, bool verbose) {
   auto eval_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 

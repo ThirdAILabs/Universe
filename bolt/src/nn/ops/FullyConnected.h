@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -19,7 +20,7 @@ class FullyConnected final
   // compatability concerns.
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
-      const std::string& activation, SamplingConfigPtr sampling,
+      const std::string& activation, SamplingConfigPtr sampling = nullptr,
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
@@ -73,6 +74,11 @@ class FullyConnected final
   const float* biasesPtr() const;
 
   /**
+   * Returns the kernel of the layer
+   */
+  const std::shared_ptr<FullyConnectedLayer>& kernel() const;
+
+  /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted
    * into the hash tables at the buckets that were probed when they are not
@@ -85,6 +91,10 @@ class FullyConnected final
    * the number of batches in the dataset and the batch size.
    */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+
+  static auto cast(const ops::OpPtr& op) {
+    return std::dynamic_pointer_cast<FullyConnected>(op);
+  }
 
  private:
   FullyConnected(

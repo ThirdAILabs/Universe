@@ -29,7 +29,7 @@ py::object thirdai::automl::udt::utils::Classifier::train(
         max_in_memory_batches, metrics, validation.first,
         validation.second.metrics(), validation.second.stepsPerValidation(),
         validation.second.sparseInference(), callbacks,
-        /* autotune_rehash_rebuild= */ true);
+        /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
 
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     epochs--;
@@ -40,7 +40,7 @@ py::object thirdai::automl::udt::utils::Classifier::train(
       metrics, validation.first, validation.second.metrics(),
       validation.second.stepsPerValidation(),
       validation.second.sparseInference(), callbacks,
-      /* autotune_rehash_rebuild= */ true);
+      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
@@ -72,8 +72,8 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 bool sparse_inference, bool verbose) {
   bolt::train::Trainer trainer(_model);
 
-  auto history =
-      trainer.validate_with_dataset_loader(dataset, metrics, sparse_inference);
+  auto history = trainer.validate_with_dataset_loader(
+      dataset, metrics, sparse_inference, verbose);
 
   return py::cast(history);
 }

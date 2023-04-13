@@ -330,7 +330,7 @@ std::optional<LabeledDataset> Trainer::loadData(
 
 void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   for (const auto& op : _model->ops()) {
-    if (auto fc = std::dynamic_pointer_cast<nn::ops::FullyConnected>(op)) {
+    if (auto fc = nn::ops::FullyConnected::cast(op)) {
       fc->autotuneRehashRebuild(/* num_batches= */ num_batches,
                                 /* batch_size= */ batch_size);
     }

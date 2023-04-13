@@ -101,14 +101,14 @@ UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
   }
 }
 
-py::object UDT::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
+                      uint32_t epochs,
+                      const std::optional<ValidationDataSource>& validation,
+                      std::optional<size_t> batch_size,
+                      std::optional<size_t> max_in_memory_batches,
+                      const std::vector<std::string>& metrics,
+                      const std::vector<CallbackPtr>& callbacks, bool verbose,
+                      std::optional<uint32_t> logging_interval) {
   bolt::utils::Timer timer;
 
   auto output = _backend->train(data, learning_rate, epochs, validation,
@@ -140,19 +140,10 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
 
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
-                         bool sparse_inference, bool return_predicted_class,
-                         bool verbose, bool return_metrics) {
-  if (return_predicted_class && return_metrics) {
-    throw std::invalid_argument(
-        "At most one of return_predicted_class and return_metrics should be "
-        "true.");
-  }
-
+                         bool sparse_inference, bool verbose) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->evaluate(data, metrics, sparse_inference,
-                         return_predicted_class, verbose, return_metrics);
+  auto result = _backend->evaluate(data, metrics, sparse_inference, verbose);
 
   timer.stop();
   telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
