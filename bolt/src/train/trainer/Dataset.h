@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 
 namespace thirdai::bolt::train {
@@ -13,5 +14,11 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
                         std::vector<uint32_t> dims);
 
 Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim);
+
+nn::tensor::TensorList convertBatch(const std::vector<BoltBatch>& batches,
+                                    const std::vector<uint32_t>& dims);
+
+nn::tensor::TensorList convertVectors(const std::vector<BoltVector>& vectors,
+                                      const std::vector<uint32_t>& dims);
 
 }  // namespace thirdai::bolt::train

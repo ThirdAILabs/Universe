@@ -81,13 +81,7 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 py::object Classifier::predict(std::vector<BoltVector>&& inputs,
                                bool sparse_inference,
                                bool return_predicted_class) {
-  auto input_dims = _model->inputDims();
-
-  bolt::nn::tensor::TensorList tensors;
-  for (uint32_t i = 0; i < inputs.size(); i++) {
-    tensors.push_back(
-        bolt::nn::tensor::Tensor::convert(inputs[i], input_dims[i]));
-  }
+  auto tensors = bolt::train::convertVectors(inputs, _model->inputDims());
 
   auto output = _model->forward(tensors, sparse_inference).at(0);
 
@@ -101,13 +95,7 @@ py::object Classifier::predict(std::vector<BoltVector>&& inputs,
 py::object Classifier::predictBatch(std::vector<BoltBatch>&& batches,
                                     bool sparse_inference,
                                     bool return_predicted_class) {
-  auto input_dims = _model->inputDims();
-
-  bolt::nn::tensor::TensorList tensors;
-  for (uint32_t i = 0; i < batches.size(); i++) {
-    tensors.push_back(
-        bolt::nn::tensor::Tensor::convert(batches[i], input_dims[i]));
-  }
+  auto tensors = bolt::train::convertBatch(batches, _model->inputDims());
 
   auto output = _model->forward(tensors, sparse_inference).at(0);
 

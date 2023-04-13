@@ -3,8 +3,11 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/Validation.h>
@@ -125,13 +128,19 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
     target_neuron = labelToNeuronId(*target_class);
   }
 
-  auto [gradients_indices, gradients_ratio] =
-      _classifier->model()->getInputGradientSingle(
-          /* input_data= */ {_dataset_factory->featurizeInput(sample)},
-          /* explain_prediction_using_highest_activation= */ true,
-          /* neuron_to_explain= */ target_neuron);
+  auto input_vec = _dataset_factory->featurizeInput(sample).at(0);
+
+  bolt::nn::rca::RCAInputGradients gradients;
+  if (target_class) {
+    gradients = bolt::nn::rca::explainNeuron(_classifier->model(), input_vec,
+                                             labelToNeuronId(*target_class));
+  } else {
+    gradients =
+        bolt::nn::rca::explainPrediction(_classifier->model(), input_vec);
+  }
+
   auto explanation =
-      _dataset_factory->explain(gradients_indices, gradients_ratio, sample);
+      _dataset_factory->explain(gradients.first, gradients.second, sample);
 
   return explanation;
 }
@@ -158,11 +167,17 @@ py::object UDTClassifier::coldstart(
 
 py::object UDTClassifier::embedding(const MapInput& sample) {
   auto input_vector = _dataset_factory->featurizeInput(sample);
-  BoltVector emb =
-      _classifier->model()->predictSingle(std::move(input_vector),
-                                          /* use_sparse_inference= */ false,
-                                          /* output_node_name= */ "fc_1");
-  return utils::convertBoltVectorToNumpy(emb);
+
+  auto& model = _classifier->model();
+
+  auto tensors = bolt::train::convertVectors(input_vector, model->inputDims());
+
+  model->forward(tensors, /* use_sparsity= */ false);
+
+  // TODO(Nicholas) better way of accessing emb.
+  auto emb = (*(model->computationOrder().end() - 2))->tensor();
+
+  return bolt::nn::python::tensorToNumpy(emb);
 }
 
 py::object UDTClassifier::entityEmbedding(
