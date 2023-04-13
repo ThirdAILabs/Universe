@@ -31,14 +31,14 @@ class UDTBenchmarkConfig(ABC):
     options = {}
 
     learning_rate = None
-    num_epochs = 0
+    num_epochs = None
     integer_target = False
     callbacks = []
     metrics = ["categorical_accuracy"]
 
     # Cold Start configs
-    cold_start_learning_rate = 0
-    cold_start_num_epochs = 0
+    cold_start_learning_rate = None
+    cold_start_num_epochs = None
     cold_start_train_file = None
     strong_column_names = []
     weak_column_names = []
