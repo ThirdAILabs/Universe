@@ -41,6 +41,12 @@ def parse_arguments():
         action="store_true",
         help="Controls if the experiment is logged to the '_benchmark' experiment or the regular experiment. This should only be used for the github actions benchmark runner.",
     )
+    parser.add_argument(
+        "--num_runs",
+        type=int,
+        default=1,
+        help="How many runs to display in slack message",
+    )
     return parser.parse_args()
 
 
@@ -102,15 +108,24 @@ if __name__ == "__main__":
             f"Could match regular expression '{args.config}' to any configs."
         )
 
-    slack_payload_text = ""
+    slack_payload_list = [""]
+    slack_payload_idx = 0
     for config in configs:
         exp_name = (
             f"{config.config_name}_benchmark"
             if args.official_benchmark
             else config.config_name
         )
-        df_md = extract_mlflow_data(exp_name, markdown=True)
-        slack_payload_text += f"*{exp_name}* ```{df_md}``` \n"
+        df_md = extract_mlflow_data(exp_name, num_runs=args.num_runs, markdown=True)
+        slack_payload_text = f"*{exp_name}* ```{df_md}``` \n"
+        line_length = len(slack_payload_text.split("\n")[0].split("```")[1])
 
-    slack_payload = {"text": slack_payload_text}
-    requests.post(SLACK_WEBHOOK, json.dumps(slack_payload))
+        # We limit each message to under 4000 characters
+        if len(slack_payload_list[slack_payload_idx]) + len(slack_payload_text) >= 4000 - line_length:
+            slack_payload_list.append(slack_payload_text)
+            slack_payload_idx += 1
+        else:
+            slack_payload_list[slack_payload_idx] += slack_payload_text
+
+    for payload in slack_payload_list:
+        requests.post(SLACK_WEBHOOK, json.dumps({"text": payload}))
