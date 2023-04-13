@@ -26,7 +26,6 @@ class MovieLensUDTBenchmark(UDTBenchmarkConfig):
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "userId": bolt.types.categorical(),
@@ -56,7 +55,6 @@ class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "userId": bolt.types.categorical(),
@@ -86,7 +84,6 @@ class NetflixUDTBenchmark(UDTBenchmarkConfig):
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "user": bolt.types.categorical(),

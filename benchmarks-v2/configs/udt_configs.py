@@ -63,6 +63,7 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     learning_rate = 1e-2
     num_epochs = 3
 
+    @staticmethod
     def get_data_types(path_prefix):
         return {"text": bolt.types.text(), "label": bolt.types.categorical()}
 
@@ -81,6 +82,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     learning_rate = 1e-2
     num_epochs = 3
 
+    @staticmethod
     def get_data_types(path_prefix):
         return {"content": bolt.types.text(), "label": bolt.types.categorical()}
 
@@ -98,6 +100,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     learning_rate = 1e-2
     num_epochs = 1
 
+    @staticmethod
     def get_data_types(path_prefix):
         data_types = {}
 
@@ -151,6 +154,7 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
         )
     ]
 
+    @staticmethod
     def get_data_types(path_prefix):
         data_types = {
             "0": bolt.types.numerical(range=(0, 640)),
@@ -187,6 +191,7 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
         )
     ]
 
+    @staticmethod
     def get_data_types(path_prefix):
         return {
             "step": bolt.types.categorical(),
@@ -242,6 +247,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         "loss": "BinaryCrossEntropyLoss",
     }
 
+    @staticmethod
     def get_data_types(path_prefix):
         return {
             "labels": bolt.types.categorical(delimiter=","),
@@ -269,7 +275,6 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     num_epochs = 4
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {f"col{i}": bolt.types.categorical() for i in range(55)}
 
@@ -302,7 +307,6 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     ]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         file = os.path.join(path_prefix, BlackFridayUDTBenchmark.train_file)
 
@@ -337,7 +341,6 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     ]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         file = os.path.join(path_prefix, DiamondsUDTBenchmark.train_file)
 
@@ -374,7 +377,6 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     ]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         file = os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
 
@@ -403,7 +405,6 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
     options = {"embedding_dimension": 1024}
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -433,7 +434,6 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
     weak_column_names = ["DESCRIPTION", "BRAND"]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "LABEL_IDS": bolt.types.categorical(delimiter=";"),
@@ -471,7 +471,6 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
     ]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -502,7 +501,6 @@ class YelpChiUDTBenchmark(UDTBenchmarkConfig):
     ]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "node_id": bolt.types.node_id(),
@@ -535,7 +533,6 @@ class PokecUDTBenchmark(UDTBenchmarkConfig):
     ]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "node_id": bolt.types.node_id(),
@@ -556,16 +553,14 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     test_file = "lstm_translit/test_asm.csv"
 
     target = "output_seq"
-    integer_target = True
     n_target_classes = 26
     delimiter = ","
 
-    num_epochs = 3
+    num_epochs = 5
     learning_rate = 1e-3
     metrics = ["categorical_accuracy"]
 
     @staticmethod
-    @abstractmethod
     def get_data_types(path_prefix):
         return {
             "input_seq": bolt.types.sequence(delimiter=" "),
