@@ -547,6 +547,7 @@ class PokecUDTBenchmark(UDTBenchmarkConfig):
             "neighbors": bolt.types.neighbors(),
         }
 
+
 class TranslitUDTBenchmark(UDTBenchmarkConfig):
     config_name = "translit_udt"
     dataset_name = "translit"
@@ -567,6 +568,6 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     @abstractmethod
     def get_data_types(path_prefix):
         return {
-            "input_seq": bolt.types.sequence(delimiter=' '),
-            "output_seq": bolt.types.sequence(max_length=30, delimiter=' ')
+            "input_seq": bolt.types.sequence(delimiter=" "),
+            "output_seq": bolt.types.sequence(max_length=30, delimiter=" "),
         }
