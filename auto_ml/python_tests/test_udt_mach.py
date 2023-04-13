@@ -13,9 +13,9 @@ SIMPLE_TEST_FILE = "mach_udt_test.csv"
 def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_dim=256):
     with open(SIMPLE_TEST_FILE, "w") as f:
         f.write("text,label\n")
-        f.write("haha,0\n")
-        f.write("haha,1\n")
-        f.write("haha,2\n")
+        f.write("haha one time,0\n")
+        f.write("haha two times,1\n")
+        f.write("haha thrice occurances,2\n")
         if invalid_data:
             f.write("haha,3\n")
 
@@ -30,7 +30,7 @@ def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_di
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
-            "extreme_output_dim": 10,
+            "extreme_output_dim": 100,
         },
     )
 
@@ -222,7 +222,7 @@ def test_mach_udt_decode_params():
 
     with pytest.raises(
         ValueError,
-        match=r"Cannot eval with top_k_per_eval_aggregation greater than 10.",
+        match=r"Cannot eval with top_k_per_eval_aggregation greater than 100.",
     ):
         model.set_decode_params(1, 11)
 
@@ -241,7 +241,7 @@ def test_mach_udt_decode_params():
 def test_mach_udt_invalid_class_type(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
-    label = 1 if integer_target else "1"
+    label = "1" if integer_target else 1
 
     with pytest.raises(
         ValueError,
@@ -256,16 +256,20 @@ def test_mach_udt_invalid_class_type(integer_target):
         model.introduce([{"text": "something"}], label)
 
 
+# TODO MAKE WORKING
 @pytest.mark.parametrize("integer_target", [True, False])
 def test_mach_udt_introduce_and_forget(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
     label = 4 if integer_target else "4"
 
-    model.introduce([{"text": "something or another"}], label)
-    assert model.predict({"text": "something or another"})[0][0] == str(label)
+    sample = {"text": "something or another with lots of words"}
+    print(model.predict(sample))
+    model.introduce([sample], label)
+    print(model.predict(sample))
+    assert model.predict(sample)[0][0] == str(label)
     model.forget(label)
-    assert model.predict({"text": "something or another"})[0][0] != str(label)
+    assert model.predict(sample)[0][0] != str(label)
 
 
 @pytest.mark.parametrize("integer_target", [True, False])

@@ -18,31 +18,37 @@
 namespace thirdai::dataset::mach {
 
 /**
- * Interface for a MachIndex. Should support hashing string entities
- * "num_hashes" times to "output_range" dimension, and stores an inverted index
- * in preparation for later calls to entitesByHash.
+ * Interface for a MachIndex. A MachIndex is an object that should map back and
+ * forth between string entities and numeric hashes. Each string entity is
+ * associated with "num_hashes" hashes each modded to "output_range". The index
+ * should also store which entities are associated with each hash.
  */
 class MachIndex {
  public:
   MachIndex(uint32_t output_range, uint32_t num_hashes);
 
   /**
-   * Hashes the given string "num_hashes" times to "output_range" dimension.
+   * Retrieves the index's hashes for the given string. Should return
+   * "num_hashes" hashes, each under "output_range" dimension. May alter the
+   * index on call. Should be threadsafe in order to be used in parallel data
+   * processing via MachBlock and TabularFeaturizer.
    */
   virtual std::vector<uint32_t> hashEntity(const std::string& string) = 0;
 
   /**
-   * Returns all entities that have previously hashed to the input hash_val in a
-   * previous call to hashEntity
+   * Retrieves all entities that have hashed to "hash_val" in the index.
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
   /**
-   * Manually adds the
+   * Manually adds the given string into the index with the given hashes.
    */
   virtual void manualAdd(const std::string& string,
                          const std::vector<uint32_t>& hashes) = 0;
 
+  /**
+   * Erases the given string from the index.
+   */
   virtual void erase(const std::string& string) = 0;
 
   virtual uint32_t numElements() const = 0;

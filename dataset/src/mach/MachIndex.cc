@@ -143,9 +143,44 @@ uint32_t StringCategoricalMachIndex::updateInternalIndex(
 }
 
 void StringCategoricalMachIndex::manualAdd(
-    const std::string& string, const std::vector<uint32_t>& hashes) {}
+    const std::string& string, const std::vector<uint32_t>& hashes) {
+  if (hashes.size() != _num_hashes) {
+    throw std::invalid_argument("Wrong number of hashes for index.");
+  }
 
-void StringCategoricalMachIndex::erase(const std::string& string) {}
+  if (_entity_to_hashes.count(string)) {
+    throw std::invalid_argument(
+        "Manually adding a previously seen label: " + string +
+        ". Please use a new label for any new insertions.");
+  }
+
+  for (const auto& hash : hashes) {
+    _hash_to_entities[hash].push_back(string);
+  }
+
+  _entity_to_hashes[string] = hashes;
+
+  /**
+   * The use of _max_elements in StringCategoricalMachIndex is primarily for 
+   */
+  ++_max_elements;
+}
+
+void StringCategoricalMachIndex::erase(const std::string& string) {
+  if (!_entity_to_hashes.count(string)) {
+    throw std::invalid_argument("Tried to forget label " + string +
+                                " which does not exist.");
+  }
+
+  std::vector<uint32_t> hashes = _entity_to_hashes[string];
+  _entity_to_hashes.erase(string);
+
+  for (const auto& hash : hashes) {
+    auto new_end_itr = std::remove(_hash_to_entities[hash].begin(),
+                                   _hash_to_entities[hash].end(), string);
+    _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
+  }
+}
 
 }  // namespace thirdai::dataset::mach
 

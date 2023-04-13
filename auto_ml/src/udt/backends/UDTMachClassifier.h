@@ -107,9 +107,11 @@ class UDTMachClassifier final : public UDTBackend {
     std::vector<uint32_t> new_hashes;
     while (!top_K.empty()) {
       auto [_, active_neuron] = top_K.top();
+      std::cout << active_neuron << " ";
       new_hashes.push_back(active_neuron);
       top_K.pop();
     }
+    std::cout << std::endl;
 
     _mach_label_block->index()->manualAdd(variantToString(new_label),
                                           new_hashes);
@@ -121,7 +123,8 @@ class UDTMachClassifier final : public UDTBackend {
     if (_mach_label_block->index()->numElements() == 0) {
       std::cout << "Warning. Every learned class has been forgotten. The model "
                    "will currently return nothing on calls to evaluate, "
-                   "predict, or predictBatch.";
+                   "predict, or predictBatch."
+                << std::endl;
     }
 
     _min_num_eval_results = std::min(_min_num_eval_results,
