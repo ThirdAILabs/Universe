@@ -243,10 +243,16 @@ def test_mach_udt_invalid_class_type(integer_target):
 
     label = 1 if integer_target else "1"
 
-    with pytest.raises(ValueError, match=r"Invalid class type."):
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
+    ):
         model.get_entity_embedding(label)
 
-    with pytest.raises(ValueError, match=r"Invalid class type."):
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
+    ):
         model.introduce([{"text": "something"}], label)
 
 
@@ -284,18 +290,39 @@ def test_mach_udt_forget_non_existing_class(integer_target):
         model.forget(1000 if integer_target else "1000")
 
 
-def test_mach_udt_forgetting_everything():
-    pass
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_forgetting_everything(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    if integer_target:
+        model.forget(0)
+        model.forget(1)
+        model.forget(2)
+    else:
+        model.forget("0")
+        model.forget("1")
+        model.forget("2")
+
+    assert len(model.predict({"text": "something"})) == 0
 
 
-def test_mach_udt_cant_predict_forgotten():
-    pass
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_cant_predict_forgotten(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    model.set_decode_params(3, 3)
+    assert "0" in [class_name for class_name, _ in model.predict({"text": "something"})]
+    model.forget(0 if integer_target else "0")
+    assert "0" not in [
+        class_name for class_name, _ in model.predict({"text": "something"})
+    ]
 
 
-def test_mach_udt_min_num_eval_results_adjusts_on_forget():
-    model = train_simple_mach_udt(integer_target=True)
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
 
-    model.forget(1000)
-
-
-# introduce too many classes to the model with the same hashes, what happens
+    model.set_decode_params(3, 3)
+    assert len(model.predict({"text": "something"})) == 3
+    model.forget(2 if integer_target else "2")
+    assert len(model.predict({"text": "something"})) == 2

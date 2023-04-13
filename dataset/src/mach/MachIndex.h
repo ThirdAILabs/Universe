@@ -139,12 +139,9 @@ class StringCategoricalMachIndex : public MachIndex {
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
   void manualAdd(const std::string& string,
-                 const std::vector<uint32_t>& hashes) final {
-    (void)hashes;
-    (void)string;
-  }
+                 const std::vector<uint32_t>& hashes) final;
 
-  void erase(const std::string& string) final { (void)string; }
+  void erase(const std::string& string) final;
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
 

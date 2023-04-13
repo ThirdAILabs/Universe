@@ -142,6 +142,11 @@ uint32_t StringCategoricalMachIndex::updateInternalIndex(
   return id;
 }
 
+void StringCategoricalMachIndex::manualAdd(
+    const std::string& string, const std::vector<uint32_t>& hashes) {}
+
+void StringCategoricalMachIndex::erase(const std::string& string) {}
+
 }  // namespace thirdai::dataset::mach
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::mach::StringCategoricalMachIndex)

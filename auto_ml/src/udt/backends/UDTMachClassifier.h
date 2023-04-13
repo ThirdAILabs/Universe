@@ -132,6 +132,11 @@ class UDTMachClassifier final : public UDTBackend {
       const std::string& activation_func, float distance_cutoff) const final;
 
  private:
+  bool integerTarget() const {
+    return static_cast<bool>(
+        dataset::mach::asNumericIndex(_mach_label_block->index()));
+  }
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
@@ -140,21 +145,8 @@ class UDTMachClassifier final : public UDTBackend {
         integerTarget());
   }
 
-  bool integerTarget() const {
-    return static_cast<bool>(
-        dataset::mach::asNumericIndex(_mach_label_block->index()));
-  }
-
   std::string variantToString(
-      const std::variant<uint32_t, std::string>& variant) {
-    if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
-      return std::get<std::string>(variant);
-    }
-    if (std::holds_alternative<uint32_t>(variant) && integerTarget()) {
-      return std::to_string(std::get<uint32_t>(variant));
-    }
-    throw std::invalid_argument("Invalid class type.");
-  }
+      const std::variant<uint32_t, std::string>& variant);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this

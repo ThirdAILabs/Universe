@@ -266,7 +266,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
         "Cannot eval with top_k_per_eval_aggregation greater than " +
         std::to_string(output_range) + ".");
   }
-  
+
   uint32_t num_classes = _mach_label_block->index()->numElements();
   if (min_num_eval_results > num_classes) {
     throw std::invalid_argument(
@@ -277,6 +277,19 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 
   _min_num_eval_results = min_num_eval_results;
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+}
+
+std::string UDTMachClassifier::variantToString(
+    const std::variant<uint32_t, std::string>& variant) {
+  if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
+    return std::get<std::string>(variant);
+  }
+  if (std::holds_alternative<uint32_t>(variant) && integerTarget()) {
+    return std::to_string(std::get<uint32_t>(variant));
+  }
+  throw std::invalid_argument(
+      "Invalid class type. If integer_target=True please use integers as "
+      "classes, otherwise use strings.");
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
