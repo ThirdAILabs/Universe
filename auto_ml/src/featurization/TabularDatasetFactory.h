@@ -7,6 +7,7 @@
 #include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
 #include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -24,6 +25,17 @@ class TabularDatasetFactory {
       const std::vector<dataset::BlockPtr>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel);
+
+  static auto make(
+      ColumnDataTypes input_data_types,
+      const UserProvidedTemporalRelationships& provided_temporal_relationships,
+      const std::vector<dataset::BlockPtr>& label_blocks,
+      std::set<std::string> label_col_names, const TabularOptions& options,
+      bool force_parallel) {
+    return std::make_shared<TabularDatasetFactory>(
+        std::move(input_data_types), provided_temporal_relationships,
+        label_blocks, std::move(label_col_names), options, force_parallel);
+  }
 
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);
@@ -76,7 +88,7 @@ class TabularDatasetFactory {
     return _labeled_featurizer->getDimensions().at(0);
   }
 
-  char delimiter() const { return _delimiter; }
+  char delimiter() const { return _options.delimiter; }
 
   ColumnDataTypes inputDataTypes() const {
     ColumnDataTypes input_data_types;
@@ -95,6 +107,8 @@ class TabularDatasetFactory {
           "setting.");
     }
   }
+
+  TabularOptions tabularOptions() { return _options; }
 
   void save_stream(std::ostream& output_stream) const;
 
@@ -152,7 +166,8 @@ class TabularDatasetFactory {
 
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
-  char _delimiter;
+
+  TabularOptions _options;
 };
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;

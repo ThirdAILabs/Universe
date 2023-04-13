@@ -58,20 +58,24 @@ def train_distributed_bolt_check(
         for filename in train_files
     ]
     train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
-    distributed_model = db.DistributedDataParallel(
+    distributed_trainer = db.DistributedDataParallel(
         cluster_config=ray_two_node_cluster_config(request.param),
         model=model,
         train_config=train_config,
         train_sources=train_sources,
     )
-    distributed_model.train()
+    for _ in range(train_config.num_epochs):
+        while distributed_trainer.step():
+            pass
 
-    check_models_are_same_on_first_two_nodes(distributed_model)
+        distributed_trainer.restart_data()
+
+    check_models_are_same_on_first_two_nodes(distributed_trainer)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     test_data, test_labels = dataset.load_bolt_svm_dataset(test_file, batch_size=256)
 
-    metrics = distributed_model.get_model().evaluate(
+    metrics = distributed_trainer.get_model().evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
 

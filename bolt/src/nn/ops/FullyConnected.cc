@@ -8,6 +8,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -142,9 +143,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-std::vector<uint32_t> FullyConnected::dimensions() const {
-  return {_kernel->getDim(), _kernel->getInputDim()};
-}
+uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
 
 const float* FullyConnected::weightsPtr() const {
   return _kernel->getWeightsPtr();
@@ -158,18 +157,10 @@ void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
   _kernel->freezeHashTables(insert_labels_if_not_found);
 }
 
-void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
-                                           uint32_t batch_size) {
-  // TODO(Someone): Revisit this autotuning. It seems like for some datasets it
-  // will update too frequently, for instance 50 batches with a batch size of 2K
-  // will lead to updates every batch.
-  _reconstruct_hash_functions = std::max(num_batches / 4, 1U);
-
-  if (num_batches * batch_size >= 100000) {
-    _rebuild_hash_tables = std::max(num_batches / 100, 1U);
-  } else {
-    _rebuild_hash_tables = std::max(num_batches / 20, 1U);
-  }
+void FullyConnected::setWeightsAndBiases(const float* weights,
+                                         const float* biases) {
+  _kernel->setWeights(weights);
+  _kernel->setBiases(biases);
 }
 
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;

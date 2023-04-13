@@ -5,7 +5,9 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 
 namespace thirdai::bolt::train {
@@ -58,19 +60,32 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {});
 
+  metrics::History train_with_dataset_loader(
+      const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
+      uint32_t epochs, uint32_t batch_size,
+      std::optional<uint32_t> max_in_memory_batches = std::nullopt,
+      const std::vector<std::string>& train_metrics = {},
+      const dataset::DatasetLoaderPtr& validation_data_loader = nullptr,
+      const std::vector<std::string>& validation_metrics = {},
+      std::optional<uint32_t> steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {});
+
   /**
    * Performs evaluation on the model using the given validation data and
    * metrics.
    */
-  metrics::History validate(
-      const LabeledDataset& validation_data,
-      const metrics::InputMetrics& validation_metrics = {},
-      bool use_sparsity = false);
+  metrics::History validate(const LabeledDataset& data,
+                            const metrics::InputMetrics& metrics = {},
+                            bool use_sparsity = false);
 
   metrics::History validate_with_metric_names(
-      const LabeledDataset& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
+      const LabeledDataset& data, const std::vector<std::string>& metrics = {},
       bool use_sparsity = false);
+
+  metrics::History validate_with_dataset_loader(
+      const dataset::DatasetLoaderPtr& data,
+      const std::vector<std::string>& metrics = {}, bool use_sparsity = false);
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -86,6 +101,13 @@ class Trainer {
    */
   std::string formatValidateLogLine(const std::string& metric_summary,
                                     uint32_t batches, int64_t time);
+
+  LabeledDataset loadAllWrapper(const dataset::DatasetLoaderPtr& dataset_loader,
+                                uint32_t batch_size);
+
+  std::optional<LabeledDataset> loadSomeWrapper(
+      const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+      uint32_t max_batches);
 
   nn::model::ModelPtr _model;
 
