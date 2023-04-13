@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -290,40 +291,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
     const std::string& activation_func, float distance_cutoff) const {
-  auto data_types = _dataset_factory->inputDataTypes();
-  if (data_types.size() != 1) {
-    throw std::runtime_error(
-        "Creating a text embedding model is only supported for UDT "
-        "instantiations with a single input text column and a target column, "
-        "but "
-        "there was not exactly one input data type (found " +
-        std::to_string(data_types.size()) + ")");
-  }
-  data::TextDataTypePtr text_type = data::asText(data_types.begin()->second);
-  if (!text_type) {
-    throw std::runtime_error(
-        "Creating a text embedding model is only supported for UDT "
-        "instantiations with a single text column and a target column, but "
-        "we did not find a text column.");
-  }
-
-  auto fc = _classifier->model()
-                ->getNodeByName("fc_1")
-                ->getInternalFullyConnectedLayers()
-                .at(0);
-
-  auto tabular_options = _dataset_factory->tabularOptions();
-
-  auto fc_op = bolt::nn::ops::FullyConnected::make(
-      /* dim = */ fc->getDim(),
-      /* input_dim = */ fc->getInputDim(), /* sparsity= */ 1.0,
-      /* activation = */ activation_func,
-      /* sampling = */ nullptr);
-
-  fc_op->setWeightsAndBiases(fc->getWeightsPtr(), fc->getBiasesPtr());
-
-  return TextEmbeddingModel::make(fc_op, text_type, tabular_options,
-                                  distance_cutoff);
+  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
+                                  activation_func, distance_cutoff);
 }
 
 template <class Archive>
