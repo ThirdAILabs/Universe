@@ -131,12 +131,6 @@ class Model {
   std::vector<uint32_t> inputDims() const;
 
   /**
-   * Returns the expected dimensions of the labels the model is expecting, in
-   * the order they are expected.
-   */
-  std::vector<uint32_t> labelDims() const;
-
-  /**
    * Returns a list of references to gradients of all parameters in the model.
    */
   std::vector<std::vector<float>*> gradients() const;
