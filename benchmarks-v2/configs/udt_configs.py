@@ -546,3 +546,27 @@ class PokecUDTBenchmark(UDTBenchmarkConfig):
             "target": bolt.types.categorical(),
             "neighbors": bolt.types.neighbors(),
         }
+
+class TranslitUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "translit_udt"
+    dataset_name = "translit"
+
+    train_file = "lstm_translit/train_asm.csv"
+    test_file = "lstm_translit/test_asm.csv"
+
+    target = "output_seq"
+    integer_target = True
+    n_target_classes = 26
+    delimiter = ","
+
+    num_epochs = 3
+    learning_rate = 1e-3
+    metrics = ["categorical_accuracy"]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "input_seq": bolt.types.sequence(delimiter=' '),
+            "output_seq": bolt.types.sequence(max_length=30, delimiter=' ')
+        }
