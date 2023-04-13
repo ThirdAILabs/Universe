@@ -72,7 +72,9 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client):
     df = mlflow_runs[display_columns]
     df = df.rename(
         columns={
-            col: col.split(".")[-1] for col in df.columns if col.startswith("metrics")
+            col: ".".join(col.split(".")[1:])
+            for col in df.columns
+            if col.startswith("metrics")
         }
     )
     return df
@@ -117,11 +119,15 @@ if __name__ == "__main__":
             else config.config_name
         )
         df_md = extract_mlflow_data(exp_name, num_runs=args.num_runs, markdown=True)
+
         slack_payload_text = f"*{exp_name}* ```{df_md}``` \n"
         line_length = len(slack_payload_text.split("\n")[0].split("```")[1])
 
         # We limit each message to under 4000 characters
-        if len(slack_payload_list[slack_payload_idx]) + len(slack_payload_text) >= 4000 - line_length:
+        if (
+            len(slack_payload_list[slack_payload_idx]) + len(slack_payload_text)
+            >= 4000 - line_length
+        ):
             slack_payload_list.append(slack_payload_text)
             slack_payload_idx += 1
         else:
