@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -100,5 +101,10 @@ class TextEmbeddingModel {
   data::TextDataTypePtr _text_data_type;
   data::TabularOptions _options;
 };
+
+TextEmbeddingModelPtr createTextEmbeddingModel(
+    const bolt::BoltGraphPtr& model,
+    const data::TabularDatasetFactoryPtr& dataset_factory,
+    const std::string& activation_func, float distance_cutoff);
 
 }  // namespace thirdai::automl::udt
