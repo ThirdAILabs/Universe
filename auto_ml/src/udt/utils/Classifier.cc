@@ -78,32 +78,25 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
-py::object Classifier::predict(std::vector<BoltVector>&& inputs,
+py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
                                bool sparse_inference,
                                bool return_predicted_class) {
-  auto tensors = bolt::train::convertVectors(inputs, _model->inputDims());
-
-  auto output = _model->forward(tensors, sparse_inference).at(0);
-
-  if (return_predicted_class) {
-    return py::cast(predictedClass(output->getVector(0)));
-  }
-
-  return bolt::nn::python::tensorToNumpy(output);
-}
-
-py::object Classifier::predictBatch(std::vector<BoltBatch>&& batches,
-                                    bool sparse_inference,
-                                    bool return_predicted_class) {
-  auto tensors = bolt::train::convertBatch(batches, _model->inputDims());
-
-  auto output = _model->forward(tensors, sparse_inference).at(0);
+  auto output = _model->forward(inputs, sparse_inference).at(0);
 
   if (return_predicted_class) {
     return predictedClasses(output);
   }
 
   return bolt::nn::python::tensorToNumpy(output);
+}
+
+py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {
+  // TODO(Nicholas): Sparsity could speed this up, and wouldn't affet the
+  // embeddings if the sparsity is in the output layer and the embeddings are
+  // from the hidden layer.
+  _model->forward(inputs, /* use_sparsity= */ false);
+
+  return bolt::nn::python::tensorToNumpy(_emb->tensor());
 }
 
 uint32_t Classifier::predictedClass(const BoltVector& output) {
@@ -115,6 +108,10 @@ uint32_t Classifier::predictedClass(const BoltVector& output) {
 
 py::object Classifier::predictedClasses(
     const bolt::nn::tensor::TensorPtr& output) {
+  if (output->batchSize() == 1) {
+    return py::cast(predictedClass(output->getVector(0)));
+  }
+
   utils::NumpyArray<uint32_t> predictions(output->batchSize());
   for (uint32_t i = 0; i < output->batchSize(); i++) {
     predictions.mutable_at(i) = predictedClass(output->getVector(i));
@@ -171,6 +168,9 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
 #pragma omp parallel for default(none) \
     shared(labels, best_metric_value, best_threshold, metric_name, scores)
   for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
+    // TODO(Nicholas): This is still using the old metric from bolt v1. The bolt
+    // v2 metrics are more intertwined with the computation graph and would be
+    // harder to use in this way.
     auto metric = bolt::makeMetric(metric_name);
 
     float threshold =
@@ -222,7 +222,7 @@ template void Classifier::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Classifier::serialize(Archive& archive) {
-  archive(_model, _freeze_hash_tables, _binary_prediction_threshold);
+  archive(_model, _emb, _freeze_hash_tables, _binary_prediction_threshold);
 }
 
 }  // namespace thirdai::automl::udt::utils

@@ -1,5 +1,6 @@
 #include "UDTRecurrentClassifier.h"
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
+#include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -52,7 +53,7 @@ py::object UDTRecurrentClassifier::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
@@ -80,8 +81,7 @@ py::object UDTRecurrentClassifier::train(
 
 py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool return_predicted_class, bool verbose,
-    bool return_metrics) {
+    bool sparse_inference, bool verbose) {
   throwIfSparseInference(sparse_inference);
 
   bolt::EvalConfig eval_config =

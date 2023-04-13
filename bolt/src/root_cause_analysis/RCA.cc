@@ -5,7 +5,15 @@
 
 namespace thirdai::bolt::nn::rca {
 
-tensor::TensorPtr createTensorWithGrad(const BoltVector& vector, uint32_t dim) {
+tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
+                                       uint32_t dim) {
+  if (inputs.size() != 1 || inputs.at(0)->batchSize() != 1) {
+    throw std::invalid_argument(
+        "RCA is only supported for single inputs and batch size 1.");
+  }
+
+  const BoltVector& vector = inputs.at(0)->getVector(0);
+
   tensor::TensorPtr tensor;
   if (!vector.isDense()) {
     tensor = tensor::Tensor::sparse(/* batch_size= */ 1, /* dim= */ dim,
@@ -27,9 +35,9 @@ tensor::TensorPtr createTensorWithGrad(const BoltVector& vector, uint32_t dim) {
   return tensor;
 }
 
-RCAInputGradients explainNeuron(model::ModelPtr& model,
-                                const tensor::TensorPtr& input,
-                                uint32_t neuron) {
+RCAInputGradients explainNeuronHelper(model::ModelPtr& model,
+                                      const tensor::TensorPtr& input,
+                                      uint32_t neuron) {
   auto label = tensor::Tensor::sparse(/* batch_size= */ 1,
                                       /* dim= */ model->labelDims().at(0),
                                       /* nonzeros= */ 1);
@@ -52,7 +60,7 @@ RCAInputGradients explainNeuron(model::ModelPtr& model,
 }
 
 RCAInputGradients explainPrediction(model::ModelPtr& model,
-                                    const BoltVector& input_vec) {
+                                    const tensor::TensorList& input_vec) {
   if (model->inputDims().size() != 1 || model->outputs().size() != 1) {
     throw std::invalid_argument(
         "RCA is only supported for models with a single input and output.");
@@ -65,11 +73,12 @@ RCAInputGradients explainPrediction(model::ModelPtr& model,
 
   uint32_t prediction = output->getVector(0).getHighestActivationId();
 
-  return explainNeuron(model, input, prediction);
+  return explainNeuronHelper(model, input, prediction);
 }
 
 RCAInputGradients explainNeuron(model::ModelPtr& model,
-                                const BoltVector& input_vec, uint32_t neuron) {
+                                const tensor::TensorList& input_vec,
+                                uint32_t neuron) {
   if (model->inputDims().size() != 1 || model->outputs().size() != 1) {
     throw std::invalid_argument(
         "RCA is only supported for models with a single input and output.");
@@ -77,7 +86,7 @@ RCAInputGradients explainNeuron(model::ModelPtr& model,
 
   auto input = createTensorWithGrad(input_vec, model->inputDims()[0]);
 
-  return explainNeuron(model, input, neuron);
+  return explainNeuronHelper(model, input, neuron);
 }
 
 }  // namespace thirdai::bolt::nn::rca

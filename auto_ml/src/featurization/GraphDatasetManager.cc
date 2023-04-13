@@ -1,4 +1,5 @@
 #include "GraphDatasetManager.h"
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -36,7 +37,7 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       createGraphInfoAndGraphBlocks(_data_types);
 
   std::vector<dataset::BlockPtr> feature_blocks = makeNonTemporalInputBlocks(
-      /* data_types = */ _data_types,
+      /* input_data_types = */ _data_types,
       /* label_col_names = */ {_target_col},
       /* temporal_relationships = */ {},
       /* vectors_map = */ {},
@@ -65,7 +66,7 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
-      /* blocks = */ {dataset::BlockList({graph_blocks.builder_block})},
+      /* block_lists = */ {dataset::BlockList({graph_blocks.builder_block})},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 }
@@ -136,7 +137,7 @@ void GraphDatasetManager::serialize(Archive& archive) {
           _graph_info);
 }
 
-std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
+TensorList GraphDatasetManager::featurizeInputBatch(
     const dataset::MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);
   std::vector<std::vector<BoltVector>> batches =
@@ -148,13 +149,15 @@ std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
     result.emplace_back(std::move(batch));
   }
 
-  return result;
+  return bolt::train::convertBatch(result,
+                                   _inference_featurizer->getDimensions());
 }
 
-std::vector<BoltVector> GraphDatasetManager::featurizeInput(
-    const dataset::MapInput& input) {
+TensorList GraphDatasetManager::featurizeInput(const dataset::MapInput& input) {
   dataset::MapSampleRef input_ref(input);
-  return _inference_featurizer->featurize(input_ref);
+  return bolt::train::convertVectors(
+      _inference_featurizer->featurize(input_ref),
+      _inference_featurizer->getDimensions());
 }
 
 }  // namespace thirdai::automl::data

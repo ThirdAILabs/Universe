@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -79,26 +80,7 @@ class UDTClassifier final : public UDTBackend {
   void setModel(const ModelPtr& model) final {
     ModelPtr& curr_model = _classifier->model();
 
-    auto vec_eq = [](const auto& a, const auto& b) -> bool {
-      if (a.size() != b.size()) {
-        return false;
-      }
-      for (uint32_t i = 0; i < a.size(); i++) {
-        if (a[i] != b[i]) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    if (!vec_eq(curr_model->inputDims(), model->inputDims())) {
-      throw std::invalid_argument("Input dim mismatch in set_model.");
-    }
-
-    if (model->outputs().size() != 1 ||
-        model->outputs().at(0)->dim() != curr_model->outputs().at(0)->dim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
+    utils::verifyCanSetModel(curr_model, model);
 
     curr_model = model;
   }

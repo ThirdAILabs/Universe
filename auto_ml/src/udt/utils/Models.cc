@@ -8,12 +8,14 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
 
-bolt::nn::model::ModelPtr buildModel(
-    uint32_t input_dim, uint32_t output_dim, const config::ArgumentMap& args,
-    const std::optional<std::string>& model_config, bool use_sigmoid_bce) {
+ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
+                    const config::ArgumentMap& args,
+                    const std::optional<std::string>& model_config,
+                    bool use_sigmoid_bce) {
   if (model_config) {
     return utils::loadModel({input_dim}, output_dim, *model_config);
   }
@@ -40,9 +42,8 @@ float autotuneSparsity(uint32_t dim) {
 
 }  // namespace
 
-bolt::nn::model::ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                                       uint32_t output_dim,
-                                       bool use_sigmoid_bce) {
+ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
+                      uint32_t output_dim, bool use_sigmoid_bce) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
@@ -70,9 +71,8 @@ bolt::nn::model::ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   return model;
 }
 
-bolt::nn::model::ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
-                                    uint32_t output_dim,
-                                    const std::string& config_path) {
+ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+                   const std::string& config_path) {
   config::ArgumentMap parameters;
   parameters.insert("output_dim", output_dim);
 
@@ -81,7 +81,34 @@ bolt::nn::model::ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
   return config::buildModel(json_config, parameters, input_dims);
 }
 
-bool hasSoftmaxOutput(const bolt::nn::model::ModelPtr& model) {
+void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
+  auto vec_eq = [](const auto& a, const auto& b) -> bool {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (uint32_t i = 0; i < a.size(); i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  if (!vec_eq(curr_model->inputDims(), new_model->inputDims())) {
+    throw std::invalid_argument("Input dim mismatch in set_model.");
+  }
+
+  if (new_model->outputs().size() != 1 ||
+      new_model->outputs().at(0)->dim() != curr_model->outputs().at(0)->dim()) {
+    throw std::invalid_argument("Output dim mismatch in set_model.");
+  }
+
+  if (!vec_eq(curr_model->labelDims(), new_model->labelDims())) {
+    throw std::invalid_argument("Label dim mismatch in set_model.");
+  }
+}
+
+bool hasSoftmaxOutput(const ModelPtr& model) {
   auto outputs = model->outputs();
   if (outputs.size() > 1) {
     return false;  // TODO(Nicholas): Should this throw?

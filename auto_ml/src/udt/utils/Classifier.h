@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/Datasets.h>
@@ -23,6 +25,14 @@ class Classifier {
       throw std::invalid_argument(
           "Classifier utility is intended for single output models.");
     }
+
+    auto computations = _model->computationOrder();
+
+    // This defines the embedding as the second to last computatation in the
+    // computation graph.
+    // TODO(Nicholas): should this be configurable using the model config, and
+    // have a default for the default model.
+    _emb = computations.at(computations.size() - 2);
   }
 
   static std::shared_ptr<Classifier> make(
@@ -45,11 +55,10 @@ class Classifier {
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose);
 
-  py::object predict(std::vector<BoltVector>&& inputs, bool sparse_inference,
-                     bool return_predicted_class);
+  py::object predict(const bolt::nn::tensor::TensorList& inputs,
+                     bool sparse_inference, bool return_predicted_class);
 
-  py::object predictBatch(std::vector<BoltBatch>&& batches,
-                          bool sparse_inference, bool return_predicted_class);
+  py::object embedding(const bolt::nn::tensor::TensorList& inputs);
 
   auto& model() { return _model; }
 
@@ -73,6 +82,7 @@ class Classifier {
   void serialize(Archive& archive);
 
   bolt::nn::model::ModelPtr _model;
+  bolt::nn::autograd::ComputationPtr _emb;
 
   bool _freeze_hash_tables;
   std::optional<float> _binary_prediction_threshold;

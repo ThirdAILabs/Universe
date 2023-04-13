@@ -1,4 +1,5 @@
 #include "UDTMachClassifier.h"
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/Validation.h>
@@ -97,35 +98,10 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   auto eval_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose,
-                           /* return_activations = */ !return_metrics);
-
-  auto loaded_data = eval_dataset_loader->loadAll(
-      /* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] =
-      utils::splitDataLabels(std::move(loaded_data));
-
-  auto output = _classifier->model()
-                    ->evaluate(test_data, test_labels, eval_config)
-                    .second;
-
-  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities(
-      output.numSamples());
-#pragma omp parallel for default(none) shared(output, predicted_entities)
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector output_activations = output.getSampleAsNonOwningBoltVector(i);
-    auto predictions = dataset::mach::topKUnlimitedDecode(
-        /* output = */ output_activations,
-        /* index = */ _mach_label_block->index(),
-        /* min_num_eval_results = */ _min_num_eval_results,
-        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
-    predicted_entities[i] = predictions;
-  }
-
   // TODO(david) eventually we should use backend specific metrics
 
-  return py::cast(predicted_entities);
+  return _classifier->evaluate(eval_dataset_loader, metrics, sparse_inference,
+                               verbose);
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
@@ -137,8 +113,11 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
         "return_predicted_class flag.");
   }
 
-  BoltVector output = _classifier->model()->predictSingle(
+  auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
+
+  const BoltVector& output = outputs.at(0)->getVector(0);
+
   auto decoded_output = dataset::mach::topKUnlimitedDecode(
       /* output = */ output,
       /* index = */ _mach_label_block->index(),
@@ -157,14 +136,16 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
         "return_predicted_class flag.");
   }
 
-  BoltBatch outputs = _classifier->model()->predictSingleBatch(
-      _dataset_factory->featurizeInputBatch(samples), sparse_inference);
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               sparse_inference)
+                     .at(0);
 
   std::vector<std::vector<std::pair<std::string, double>>> predicted_entities(
-      outputs.getBatchSize());
+      outputs->batchSize());
 #pragma omp parallel for default(none) shared(outputs, predicted_entities)
-  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-    auto vector = outputs[i];
+  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
+    const BoltVector& vector = outputs->getVector(i);
     auto predictions = dataset::mach::topKUnlimitedDecode(
         /* output = */ vector,
         /* index = */ _mach_label_block->index(),
@@ -176,13 +157,21 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predicted_entities);
 }
 
+void UDTMachClassifier::setModel(const ModelPtr& model) {
+  bolt::nn::model::ModelPtr& curr_model = _classifier->model();
+
+  utils::verifyCanSetModel(curr_model, model);
+
+  curr_model = model;
+}
+
 py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
-    const std::vector<bolt::CallbackPtr>& callbacks,
+    const std::vector<CallbackPtr>& callbacks,
     std::optional<size_t> max_in_memory_batches, bool verbose) {
   auto metadata = getColdStartMetaData();
 
@@ -197,12 +186,7 @@ py::object UDTMachClassifier::coldstart(
 }
 
 py::object UDTMachClassifier::embedding(const MapInput& sample) {
-  auto input_vector = _dataset_factory->featurizeInput(sample);
-  BoltVector emb =
-      _classifier->model()->predictSingle(std::move(input_vector),
-                                          /* use_sparse_inference= */ false,
-                                          /* output_node_name= */ "fc_1");
-  return utils::convertBoltVectorToNumpy(emb);
+  return _classifier->embedding(_dataset_factory->featurizeInput(sample));
 }
 
 static std::string variantToString(
@@ -221,15 +205,25 @@ py::object UDTMachClassifier::entityEmbedding(
   std::vector<uint32_t> hashed_neurons =
       _mach_label_block->index()->hashAndStoreEntity(variantToString(label));
 
-  auto back_node = _classifier->model()->getNodes().back();
+  auto outputs = _classifier->model()->outputs();
 
-  auto fc_layers = back_node->getInternalFullyConnectedLayers();
+  if (outputs.size() != 1) {
+    throw std::invalid_argument(
+        "This UDT architecture currently doesn't support getting entity "
+        "embeddings.");
+  }
+  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  if (!fc) {
+    throw std::invalid_argument(
+        "This UDT architecture currently doesn't support getting entity "
+        "embeddings.");
+  }
 
-  assert(fc_layers.size() == 1);
+  auto fc_layer = fc->kernel();
 
-  std::vector<float> averaged_embedding(fc_layers.front()->getInputDim());
+  std::vector<float> averaged_embedding(fc_layer->getInputDim());
   for (uint32_t neuron_id : hashed_neurons) {
-    auto weights = fc_layers.front()->getWeightsByNeuron(neuron_id);
+    auto weights = fc_layer->getWeightsByNeuron(neuron_id);
     if (weights.size() != averaged_embedding.size()) {
       throw std::invalid_argument("Output dim mismatch.");
     }

@@ -47,14 +47,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   ModelPtr model() const final { return _classifier->model(); }
 
-  void setModel(const ModelPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier->model();
-
-    if (curr_model->outputDim() != curr_model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
-    curr_model = model;
-  }
+  void setModel(const ModelPtr& model) final;
 
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,

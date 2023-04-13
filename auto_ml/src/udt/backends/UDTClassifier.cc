@@ -61,13 +61,12 @@ py::object UDTClassifier::train(
     const std::vector<std::string>& metrics,
     const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  ValidationDatasetLoader validation_dataset_loader = {nullptr,
-                                                       ValidationArgs({})};
+  ValidationDatasetLoader validation_dataset_loader;
   if (validation) {
     validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
-                                    validation->first, /* shuffle= */ false),
-                                validation->second);
+        std::make_pair(_dataset_factory->getDatasetLoader(validation->first,
+                                                          /* shuffle= */ false),
+                       validation->second);
   }
 
   auto train_dataset_loader =
@@ -86,16 +85,13 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
 
-  bolt::MetricAggregator metric_aggregator(metrics);
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
 
-  // model->trainOnBatch(std::move(inputs), labels, learning_rate,
-  //                     metric_aggregator, /* rebuild_hash_tables_interval= */
-  //                     25,
-  //                     /* reconstruct_hash_functions_interval= */ 100);
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
 
-  metric_aggregator.logAndReset();
-
-  return py::cast(metric_aggregator.getOutputFromInference());
+  return py::none();
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -115,20 +111,14 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class) {
-  return _classifier->predictBatch(
-      _dataset_factory->featurizeInputBatch(samples), sparse_inference,
-      return_predicted_class);
+  return _classifier->predict(_dataset_factory->featurizeInputBatch(samples),
+                              sparse_inference, return_predicted_class);
 }
 
 std::vector<dataset::Explanation> UDTClassifier::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
-  std::optional<uint32_t> target_neuron = std::nullopt;
-  if (target_class) {
-    target_neuron = labelToNeuronId(*target_class);
-  }
-
-  auto input_vec = _dataset_factory->featurizeInput(sample).at(0);
+  auto input_vec = _dataset_factory->featurizeInput(sample);
 
   bolt::nn::rca::RCAInputGradients gradients;
   if (target_class) {
@@ -166,18 +156,7 @@ py::object UDTClassifier::coldstart(
 }
 
 py::object UDTClassifier::embedding(const MapInput& sample) {
-  auto input_vector = _dataset_factory->featurizeInput(sample);
-
-  auto& model = _classifier->model();
-
-  auto tensors = bolt::train::convertVectors(input_vector, model->inputDims());
-
-  model->forward(tensors, /* use_sparsity= */ false);
-
-  // TODO(Nicholas) better way of accessing emb.
-  auto emb = (*(model->computationOrder().end() - 2))->tensor();
-
-  return bolt::nn::python::tensorToNumpy(emb);
+  return _classifier->embedding(_dataset_factory->featurizeInput(sample));
 }
 
 py::object UDTClassifier::entityEmbedding(
@@ -192,6 +171,11 @@ py::object UDTClassifier::entityEmbedding(
         "embeddings.");
   }
   auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  if (!fc) {
+    throw std::invalid_argument(
+        "This UDT architecture currently doesn't support getting entity "
+        "embeddings.");
+  }
 
   auto weights = fc->kernel()->getWeightsByNeuron(neuron_id);
 

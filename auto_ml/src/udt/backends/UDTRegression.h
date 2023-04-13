@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -21,19 +22,18 @@ class UDTRegression final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool sparse_inference, bool verbose) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final;
@@ -41,7 +41,7 @@ class UDTRegression final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class) final;
 
-  bolt::BoltGraphPtr model() const final { return _model; }
+  ModelPtr model() const final { return _model; }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -57,7 +57,7 @@ class UDTRegression final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive);
 
-  bolt::BoltGraphPtr _model;
+  ModelPtr _model;
   data::TabularDatasetFactoryPtr _dataset_factory;
 
   dataset::RegressionBinningStrategy _binning;
