@@ -7,6 +7,10 @@ namespace thirdai::bolt::nn::tensor {
 
 Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
     : _dim(dim), _nonzeros(nonzeros) {
+  if (nonzeros == 0) {
+    throw std::invalid_argument("Cannot allocate tensor with 0 nonzeros.");
+  }
+
   if (nonzeros < dim) {
     _active_neurons.assign(batch_size * nonzeros, 0);
   }
@@ -39,6 +43,9 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
   bool is_dense = batch.begin()->isDense();
 
   for (const auto& vec : batch) {
+    if (vec.len == 0) {
+      throw std::invalid_argument("Cannot convert empty vector to tensor.");
+    }
     if (vec.isDense() != is_dense) {
       throw std::invalid_argument(
           "All vectors in batch must have same sparsity to convert to tensor.");

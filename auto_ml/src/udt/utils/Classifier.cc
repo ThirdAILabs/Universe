@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
@@ -24,8 +25,9 @@ py::object thirdai::automl::udt::utils::Classifier::train(
 
   bolt::train::Trainer trainer(_model);
 
+  bolt::train::metrics::History history;
   if (_freeze_hash_tables) {
-    trainer.train_with_dataset_loader(
+    history = trainer.train_with_dataset_loader(
         dataset, learning_rate, /* epochs= */ 1, batch_size,
         max_in_memory_batches, metrics, validation.first,
         validation.second.metrics(), validation.second.stepsPerValidation(),
@@ -33,15 +35,19 @@ py::object thirdai::automl::udt::utils::Classifier::train(
         /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
 
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+
+    dataset->restart();
     epochs--;
   }
 
-  auto history = trainer.train_with_dataset_loader(
-      dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
-      metrics, validation.first, validation.second.metrics(),
-      validation.second.stepsPerValidation(),
-      validation.second.sparseInference(), callbacks,
-      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+  if (epochs > 0) {
+    history = trainer.train_with_dataset_loader(
+        dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
+        metrics, validation.first, validation.second.metrics(),
+        validation.second.stepsPerValidation(),
+        validation.second.sparseInference(), callbacks,
+        /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+  }
 
   /**
    * For binary classification we tune the prediction threshold to optimize

@@ -14,44 +14,36 @@ def test_svm_udt_on_mnist(download_mnist_dataset):
     )
 
     metrics = model.train(train_file, epochs=2, metrics=["categorical_accuracy"])
-    assert metrics["categorical_accuracy"][-1] > 0
+    assert metrics["train_categorical_accuracy"][-1] > 0
 
-    original_metrics = model.evaluate(
-        test_file, metrics=["categorical_accuracy"], return_metrics=True
-    )
+    original_metrics = model.evaluate(test_file, metrics=["categorical_accuracy"])
 
-    assert original_metrics["categorical_accuracy"] > 0.8
+    assert original_metrics["val_categorical_accuracy"][-1] > 0.8
 
     model.save("udt_mnist.svm")
 
     model = bolt.UniversalDeepTransformer.load("udt_mnist.svm")
 
-    new_metrics = model.evaluate(
-        test_file, metrics=["categorical_accuracy"], return_metrics=True
-    )
+    new_metrics = model.evaluate(test_file, metrics=["categorical_accuracy"])
 
     assert (
-        original_metrics["categorical_accuracy"] == new_metrics["categorical_accuracy"]
+        original_metrics["val_categorical_accuracy"][-1]
+        == new_metrics["val_categorical_accuracy"][-1]
     )
 
 
 def test_svm_udt_predict_consistency(download_mnist_dataset):
-    train_file, test_file = download_mnist_dataset
+    _, test_file = download_mnist_dataset
 
     model = bolt.UniversalDeepTransformer(
         file_format="svm", n_target_classes=10, input_dim=784
     )
 
-    one_line_train_file = "mnist_one_line.svm"
-    with open(train_file) as in_file:
-        with open(one_line_train_file, "w") as out_file:
-            line = in_file.readline()
-            pairs = [pair.split(":") for pair in line.split()[1:]]
-            predict_sample = {a: b for a, b in pairs}
-            out_file.write(line)
+    with open(test_file) as in_file:
+        line = in_file.readline()
+        pairs = [pair.split(":") for pair in line.split()[1:]]
+        predict_sample = {a: b for a, b in pairs}
 
     act_1 = model.predict(predict_sample)
-    act_2 = model.predict_batch([predict_sample])[0]
-    act_3 = model.evaluate(one_line_train_file)[0]
+    act_2 = model.predict_batch([predict_sample])
     np.testing.assert_allclose(act_1, act_2, rtol=10**-3)
-    np.testing.assert_allclose(act_2, act_3, rtol=10**-3)
