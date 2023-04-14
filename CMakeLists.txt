@@ -465,9 +465,7 @@ pybind11_add_module(
   auto_ml/python_bindings/AutomlPython.cc
   auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
   auto_ml/src/udt/UDT.cc
-  auto_ml/src/udt/utils/Conversion.cc
   auto_ml/src/udt/utils/Models.cc
-  auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTMachClassifier.cc
