@@ -10,6 +10,7 @@ from mlflow.tracking import MlflowClient
 
 from .runners.runner_map import runner_map
 
+# Posts to daily_udt_benchmarks channel
 SLACK_WEBHOOK = (
     "https://hooks.slack.com/services/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"
 )
@@ -22,7 +23,7 @@ def parse_arguments():
         type=str,
         required=True,
         choices=["udt", "bolt_fc", "dlrm"],
-        help="Which runner to use to run the benchmark.",
+        help="Which runner to retrieve benchmark results for.",
     )
     parser.add_argument(
         "--config",
