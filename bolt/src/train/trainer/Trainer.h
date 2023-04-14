@@ -49,9 +49,7 @@ class Trainer {
       const metrics::InputMetrics& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
-      const std::vector<callbacks::CallbackPtr>& callbacks = {},
-      bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      const std::vector<callbacks::CallbackPtr>& callbacks = {});
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -60,9 +58,7 @@ class Trainer {
       const std::vector<std::string>& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
-      const std::vector<callbacks::CallbackPtr>& callbacks = {},
-      bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      const std::vector<callbacks::CallbackPtr>& callbacks = {});
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -73,28 +69,23 @@ class Trainer {
       const std::vector<std::string>& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
-      const std::vector<callbacks::CallbackPtr>& callbacks = {},
-      bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      const std::vector<callbacks::CallbackPtr>& callbacks = {});
 
   /**
    * Performs evaluation on the model using the given validation data and
    * metrics.
    */
-  metrics::History validate(
-      const LabeledDataset& validation_data,
-      const metrics::InputMetrics& validation_metrics = {},
-      bool use_sparsity = false, bool verbose = true);
+  metrics::History validate(const LabeledDataset& data,
+                            const metrics::InputMetrics& metrics = {},
+                            bool use_sparsity = false);
 
   metrics::History validate_with_metric_names(
-      const LabeledDataset& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
-      bool use_sparsity = false, bool verbose = true);
+      const LabeledDataset& data, const std::vector<std::string>& metrics = {},
+      bool use_sparsity = false);
 
   metrics::History validate_with_dataset_loader(
-      const dataset::DatasetLoaderPtr& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
-      bool use_sparsity = false, bool verbose = true);
+      const dataset::DatasetLoaderPtr& data,
+      const std::vector<std::string>& metrics = {}, bool use_sparsity = false);
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -106,29 +97,17 @@ class Trainer {
                                  uint32_t batches, int64_t time);
 
   /**
-   * Format intermediate train log line for reporting metrics and status within
-   * epochs when determined by the logging interval.
-   */
-  std::string formatIntermediateLogLine(const std::string& metric_summary);
-
-  /**
    * Returns a formatted log line for the result of each call to validate.
    */
   std::string formatValidateLogLine(const std::string& metric_summary,
                                     uint32_t batches, int64_t time);
 
-  /**
-   * Loads data from a dataset loader and converts it to tensors.
-   */
-  std::optional<LabeledDataset> loadData(
-      const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
-      std::optional<uint32_t> max_batches_opt = std::nullopt);
+  LabeledDataset loadAllWrapper(const dataset::DatasetLoaderPtr& dataset_loader,
+                                uint32_t batch_size);
 
-  /**
-   * Invokes the autotuner for rehash and rebuild based on the size of the
-   * dataset.
-   */
-  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+  std::optional<LabeledDataset> loadSomeWrapper(
+      const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+      uint32_t max_batches);
 
   nn::model::ModelPtr _model;
 

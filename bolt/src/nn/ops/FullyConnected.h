@@ -2,7 +2,6 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
-#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -20,7 +19,7 @@ class FullyConnected final
   // compatability concerns.
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
-      const std::string& activation, SamplingConfigPtr sampling = nullptr,
+      const std::string& activation, SamplingConfigPtr sampling,
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
@@ -59,9 +58,9 @@ class FullyConnected final
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
   /**
-   * Returns the dimensions of the layer as {dim, input_dim}.
+   * Returns the input dim of the fully connected layer.
    */
-  std::vector<uint32_t> dimensions() const;
+  uint32_t inputDim() const;
 
   /**
    * Returns a non-owning pointer to the weights.
@@ -73,28 +72,8 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
-  /**
-   * Returns the kernel of the layer
-   */
-  const std::shared_ptr<FullyConnectedLayer>& kernel() const;
-
-  /**
-   * Freezes all hash tables in the model. The parameter
-   * insert_labels_if_not_found controls if label neurons should be inserted
-   * into the hash tables at the buckets that were probed when they are not
-   * found during training.
-   */
-  void freezeHashTables(bool insert_labels_if_not_found);
-
-  /**
-   * Autotunes how often the hash tables and hash functions are rebuilt using
-   * the number of batches in the dataset and the batch size.
-   */
-  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
-
-  static auto cast(const ops::OpPtr& op) {
-    return std::dynamic_pointer_cast<FullyConnected>(op);
-  }
+  void setWeightsAndBiases(const float* weights_to_set,
+                           const float* biases_to_set);
 
  private:
   FullyConnected(
