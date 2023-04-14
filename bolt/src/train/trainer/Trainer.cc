@@ -28,7 +28,8 @@ metrics::History Trainer::train(
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
-    bool autotune_rehash_rebuild) {
+    bool autotune_rehash_rebuild, bool verbose,
+    std::optional<uint32_t> logging_interval) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
@@ -36,7 +37,7 @@ metrics::History Trainer::train(
 
   if (autotune_rehash_rebuild) {
     autotuneRehashRebuild(train_data.first.size(),
-                          train_data.first.at(0).size());
+                          train_data.first.at(0).at(0)->batchSize());
   }
 
   auto train_state = TrainState::make(learning_rate);
@@ -55,7 +56,7 @@ metrics::History Trainer::train(
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();
-    ProgressBar bar("train", num_batches);
+    auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
     utils::Timer epoch_timer;
 
@@ -73,7 +74,9 @@ metrics::History Trainer::train(
 
       callbacks.onBatchEnd();
 
-      bar.increment();
+      if (bar) {
+        bar->increment();
+      }
 
       ++steps_since_validation;
       if (steps_per_validation &&
@@ -81,6 +84,11 @@ metrics::History Trainer::train(
         validate(*validation_data, validation_metrics,
                  use_sparsity_in_validation);
         steps_since_validation = 0;
+      }
+
+      if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
+        logging::info(
+            formatIntermediateLogLine(train_metrics.summarizeLastStep()));
       }
 
       if (train_state->isTrainingStopped()) {
@@ -97,12 +105,15 @@ metrics::History Trainer::train(
 
     std::string log_line = formatTrainLogLine(
         train_metrics.summarizeLastStep(), num_batches, epoch_timer.seconds());
-    bar.close(log_line);
     logging::info(log_line);
+
+    if (bar) {
+      bar->close(log_line);
+    }
 
     train_metrics.reset();
 
-    // This condition ensures that if we steps_per_validation coincides with the
+    // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
     if (validation_data && steps_since_validation != 0) {
@@ -127,7 +138,8 @@ metrics::History Trainer::train_with_metric_names(
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
-    bool autotune_rehash_rebuild) {
+    bool autotune_rehash_rebuild, bool verbose,
+    std::optional<uint32_t> logging_interval) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -138,7 +150,8 @@ metrics::History Trainer::train_with_metric_names(
       /* steps_per_validation= */ steps_per_validation,
       /* use_sparsity_in_validation= */ use_sparsity_in_validation,
       /* callbacks= */ callbacks,
-      /* autotune_rehash_rebuild= */ autotune_rehash_rebuild);
+      /* autotune_rehash_rebuild= */ autotune_rehash_rebuild,
+      /* verbose= */ verbose, /* logging_interval= */ logging_interval);
 }
 
 metrics::History Trainer::train_with_dataset_loader(
@@ -151,7 +164,8 @@ metrics::History Trainer::train_with_dataset_loader(
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
-    bool autotune_rehash_rebuild) {
+    bool autotune_rehash_rebuild, bool verbose,
+    std::optional<uint32_t> logging_interval) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size);
 
@@ -163,7 +177,7 @@ metrics::History Trainer::train_with_dataset_loader(
     return train_with_metric_names(
         train_data, learning_rate, epochs, train_metrics, validation_data,
         validation_metrics, steps_per_validation, use_sparsity_in_validation,
-        callbacks, autotune_rehash_rebuild);
+        callbacks, autotune_rehash_rebuild, verbose, logging_interval);
   }
 
   // We have duplicate code here for loading validation data because for
@@ -182,7 +196,8 @@ metrics::History Trainer::train_with_dataset_loader(
       train_with_metric_names(
           train_chunk.value(), learning_rate, epochs, train_metrics,
           validation_data, validation_metrics, steps_per_validation,
-          use_sparsity_in_validation, callbacks, autotune_rehash_rebuild);
+          use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
+          verbose, logging_interval);
     }
     train_data_loader->restart();
   }
@@ -192,11 +207,11 @@ metrics::History Trainer::train_with_dataset_loader(
 
 metrics::History Trainer::validate(const LabeledDataset& data,
                                    const metrics::InputMetrics& metrics_in,
-                                   bool use_sparsity) {
+                                   bool use_sparsity, bool verbose) {
   metrics::MetricCollection validation_metrics(metrics_in);
 
   uint32_t num_batches = data.first.size();
-  ProgressBar bar("validate", num_batches);
+  auto bar = ProgressBar::makeOptional(verbose, "validate", num_batches);
 
   utils::Timer val_timer;
 
@@ -208,7 +223,9 @@ metrics::History Trainer::validate(const LabeledDataset& data,
 
     validation_metrics.recordBatch(inputs.at(0)->batchSize());
 
-    bar.increment();
+    if (bar) {
+      bar->increment();
+    }
   }
 
   val_timer.stop();
@@ -219,8 +236,11 @@ metrics::History Trainer::validate(const LabeledDataset& data,
 
   std::string log_line = formatValidateLogLine(
       validation_metrics.summarizeLastStep(), num_batches, val_timer.seconds());
-  bar.close(log_line);
   logging::info(log_line);
+
+  if (bar) {
+    bar->close(log_line);
+  }
 
   validation_metrics.reset();
 
@@ -229,19 +249,20 @@ metrics::History Trainer::validate(const LabeledDataset& data,
 
 metrics::History Trainer::validate_with_metric_names(
     const LabeledDataset& data, const std::vector<std::string>& metrics,
-    bool use_sparsity) {
+    bool use_sparsity, bool verbose) {
   return validate(
       /* data= */ data,
       /* metrics= */ metrics::fromMetricNames(_model, metrics, "val_"),
-      /* use_sparsity= */ use_sparsity);
+      /* use_sparsity= */ use_sparsity, /* verbose= */ verbose);
 }
 
 metrics::History Trainer::validate_with_dataset_loader(
     const dataset::DatasetLoaderPtr& data,
-    const std::vector<std::string>& metrics, bool use_sparsity) {
+    const std::vector<std::string>& metrics, bool use_sparsity, bool verbose) {
   return validate_with_metric_names(
       /* data= */ loadAllWrapper(data, /* batch_size= */ DEFAULT_BATCH_SIZE),
-      /* metrics= */ metrics, /* use_sparsity= */ use_sparsity);
+      /* metrics= */ metrics, /* use_sparsity= */ use_sparsity,
+      /* verbose= */ verbose);
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
@@ -256,6 +277,15 @@ std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
   std::string logline = fmt::format(
       "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
+
+  return logline;
+}
+
+std::string Trainer::formatIntermediateLogLine(
+    const std::string& metric_summary) {
+  std::string logline =
+      fmt::format("train | epoch {} | train_steps {} | {}", _epoch,
+                  _model->trainSteps(), metric_summary);
 
   return logline;
 }
