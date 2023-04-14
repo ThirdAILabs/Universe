@@ -57,7 +57,7 @@ class MapSampleRef final : public ColumnarInputSample {
 
   std::string_view column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
-      {}
+      return {};
     }
     return _columns.at(column.name());
   }
