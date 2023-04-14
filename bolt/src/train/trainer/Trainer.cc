@@ -8,7 +8,6 @@
 #include <utils/Logging.h>
 #include <chrono>
 #include <limits>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 
