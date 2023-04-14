@@ -81,20 +81,18 @@ class Trainer {
    * Performs evaluation on the model using the given validation data and
    * metrics.
    */
-  metrics::History validate(
-      const LabeledDataset& validation_data,
-      const metrics::InputMetrics& validation_metrics = {},
-      bool use_sparsity = false, bool verbose = true);
+  metrics::History validate(const LabeledDataset& data,
+                            const metrics::InputMetrics& metrics = {},
+                            bool use_sparsity = false, bool verbose = true);
 
   metrics::History validate_with_metric_names(
-      const LabeledDataset& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
+      const LabeledDataset& data, const std::vector<std::string>& metrics = {},
       bool use_sparsity = false, bool verbose = true);
 
   metrics::History validate_with_dataset_loader(
-      const dataset::DatasetLoaderPtr& validation_data,
-      const std::vector<std::string>& validation_metrics = {},
-      bool use_sparsity = false, bool verbose = true);
+      const dataset::DatasetLoaderPtr& data,
+      const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
+      bool verbose = true);
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -118,17 +116,17 @@ class Trainer {
                                     uint32_t batches, int64_t time);
 
   /**
-   * Loads data from a dataset loader and converts it to tensors.
-   */
-  std::optional<LabeledDataset> loadData(
-      const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
-      std::optional<uint32_t> max_batches_opt = std::nullopt);
-
-  /**
    * Invokes the autotuner for rehash and rebuild based on the size of the
    * dataset.
    */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+
+  LabeledDataset loadAllWrapper(const dataset::DatasetLoaderPtr& dataset_loader,
+                                uint32_t batch_size);
+
+  std::optional<LabeledDataset> loadSomeWrapper(
+      const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+      uint32_t max_batches);
 
   nn::model::ModelPtr _model;
 

@@ -21,7 +21,7 @@ void MachBlock::encodeCategory(std::string_view category,
   (void)num_categories_in_sample;
   auto id_str = std::string(category);
 
-  auto hashes = _index->hashAndStoreEntity(std::string(category));
+  auto hashes = _index->hashEntity(std::string(category));
 
   for (const auto& hash : hashes) {
     vec.addSparseFeatureToSegment(hash, 1.0);

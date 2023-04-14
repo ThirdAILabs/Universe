@@ -58,9 +58,9 @@ class FullyConnected final
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
   /**
-   * Returns the dimensions of the layer as {dim, input_dim}.
+   * Returns the input dim of the fully connected layer.
    */
-  std::vector<uint32_t> dimensions() const;
+  uint32_t inputDim() const;
 
   /**
    * Returns a non-owning pointer to the weights.
@@ -80,11 +80,18 @@ class FullyConnected final
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
+  void setWeightsAndBiases(const float* weights_to_set,
+                           const float* biases_to_set);
+
   /**
    * Autotunes how often the hash tables and hash functions are rebuilt using
    * the number of batches in the dataset and the batch size.
    */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+
+  static auto cast(const ops::OpPtr& op) {
+    return std::dynamic_pointer_cast<FullyConnected>(op);
+  }
 
  private:
   FullyConnected(

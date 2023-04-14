@@ -1,5 +1,6 @@
 #include "Dataset.h"
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::bolt::train {
 
@@ -11,7 +12,10 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
 
   if (dims.size() != datasets.size()) {
     throw std::invalid_argument(
-        "Expected number of dimensions to match the number of datasets.");
+        "Expected number of dimensions to match the number of datasets, but "
+        "found " +
+        std::to_string(dims.size()) + " dims and " +
+        std::to_string(datasets.size()) + " datasets.");
   }
 
   uint32_t num_batches = datasets.front()->numBatches();

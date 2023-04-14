@@ -286,8 +286,9 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
                                const std::string& type) {
   if (batches.size() != inputs.size()) {
     std::stringstream error;
-    error << "Expected " << inputs.size() << " " << type << " but received "
-          << batches.size() << ".";
+    error << "When preparing the model for the next batch, expected "
+          << inputs.size() << " " << type << " but received " << batches.size()
+          << ".";
     throw std::invalid_argument(error.str());
   }
 
@@ -311,17 +312,16 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
 }
 
 uint32_t Model::setInput(const tensor::TensorList& input_batches) {
-  return setBatchHelper(_inputs, input_batches, "inputs");
+  return setBatchHelper(_inputs, input_batches, "input batches");
 }
 
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
-  return setBatchHelper(_labels, label_batches, "labels");
+  return setBatchHelper(_labels, label_batches, "label batches");
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
-    auto fully_connected =
-        std::dynamic_pointer_cast<ops::FullyConnected>(output->op());
+    auto fully_connected = ops::FullyConnected::cast(output->op());
 
     if (fully_connected) {
       output->addInput(label);

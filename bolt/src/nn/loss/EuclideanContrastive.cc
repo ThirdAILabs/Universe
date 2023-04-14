@@ -1,4 +1,8 @@
 #include "EuclideanContrastive.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVectorUtils.h>
 #include <cmath>
@@ -126,4 +130,12 @@ float EuclideanContrastive::euclideanDistanceSquared(
   return euclidean_distance_squared;
 }
 
+template <class Archive>
+void EuclideanContrastive::serialize(Archive& archive) {
+  archive(cereal::base_class<Loss>(this), _output_1, _output_2, _labels,
+          _dissimilar_cutoff_distance);
+}
+
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::EuclideanContrastive)
