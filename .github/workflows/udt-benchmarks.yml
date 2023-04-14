@@ -32,16 +32,17 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - name: Notify slack benchmark results
-        if: success()
+      - name: Build docker
+        run: bin/docker-benchmarking-build.sh
+
+      - name: Build Package and Run Benchmark
         env:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
-        run: |
-          export MLFLOW_TRACKING_USERNAME=$USERNAME
-          export MLFLOW_TRACKING_PASSWORD=$PASSWORD
-          pip3 install mlflow pandas requests
-          python3 -m benchmarks-v2.slack_benchmark_results --runner udt --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com
+        run: >- 
+          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && python3 Universe.benchmarks-v2.slack_benchmark_results --runner udt --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com"
+      - name: Delete Container
+        run: sudo docker system prune -a -f
 
       - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: success()
@@ -52,4 +53,3 @@ jobs:
           channel_id: daily_udt_benchmarks
           status: SUCCESS
           color: good
-
