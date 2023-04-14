@@ -72,8 +72,26 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
+  /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
+
   void setWeightsAndBiases(const float* weights_to_set,
                            const float* biases_to_set);
+
+  /**
+   * Autotunes how often the hash tables and hash functions are rebuilt using
+   * the number of batches in the dataset and the batch size.
+   */
+  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+
+  static auto cast(const ops::OpPtr& op) {
+    return std::dynamic_pointer_cast<FullyConnected>(op);
+  }
 
  private:
   FullyConnected(
