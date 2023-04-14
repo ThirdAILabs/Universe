@@ -107,6 +107,14 @@ class UDTClassifier final : public UDTBackend {
         _label_block->delimiter(), _label_block->columnName(), integerTarget());
   }
 
+
+  std::pair<const float*, uint64_t> getParams() final;
+
+  void setParams(const float* new_params, uint64_t flattened_dim) final;
+
+  std::pair<const float*, uint64_t> getOptimizers()final ;
+
+  void setOptimizers(const float* new_params, uint64_t flattened_dim) final;
  private:
   dataset::CategoricalBlockPtr labelBlock(
       const std::string& target_name,

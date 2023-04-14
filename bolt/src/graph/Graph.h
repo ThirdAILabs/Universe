@@ -123,6 +123,14 @@ class BoltGraph {
 
   void saveWithOptimizer(bool should_save_optimizer);
 
+  /*
+   * The following function are just implemented for FullyConnected Nodes, for implementing 
+   * Fedreted learning.
+  */
+  std::vector<std::vector<float>*> params();
+
+
+  std::vector<std::vector<float>*> optims();
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::checkLicense(); }
@@ -190,14 +198,6 @@ class BoltGraph {
   void verifyGraphProperties();
 
 
-  /*
-   * The following function are just implemented for FullyConnected Nodes, for implementing 
-   * Fedreted learning.
-  */
-  std::vector<std::vector<float>*> params();
-
-
-  std::vector<std::vector<float>*> optims();
 
 
 
