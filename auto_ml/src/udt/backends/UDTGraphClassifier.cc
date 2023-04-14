@@ -42,8 +42,7 @@ py::object UDTGraphClassifier::train(
   auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
       data, /* shuffle = */ true);
 
-  ValidationDatasetLoader validation_dataset_loader = {nullptr,
-                                                       ValidationArgs({})};
+  ValidationDatasetLoader validation_dataset_loader;
   if (validation) {
     validation_dataset_loader = ValidationDatasetLoader(
         _dataset_manager->indexAndGetLabeledDatasetLoader(

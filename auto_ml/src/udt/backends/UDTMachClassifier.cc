@@ -75,8 +75,7 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& metrics,
     const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  ValidationDatasetLoader validation_dataset_loader = {nullptr,
-                                                       ValidationArgs({})};
+  ValidationDatasetLoader validation_dataset_loader;
   if (validation) {
     validation_dataset_loader =
         ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
