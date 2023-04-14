@@ -153,6 +153,10 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
+  _kernel->freezeHashTables(insert_labels_if_not_found);
+}
+
 void FullyConnected::setWeightsAndBiases(const float* weights,
                                          const float* biases) {
   _kernel->setWeights(weights);

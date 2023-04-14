@@ -142,6 +142,14 @@ class Model {
   std::vector<std::vector<float>*> gradients() const;
 
   /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
+
+  /**
    * Saves the model without optimizer state. Save metadata indicates if a
    * metadata file should also be created which gives the thirdai version, model
    * uuid, the date saved, number of train steps before the save, and the model

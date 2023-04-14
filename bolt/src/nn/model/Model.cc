@@ -206,6 +206,16 @@ std::vector<std::vector<float>*> Model::gradients() const {
   return grads;
 }
 
+void Model::freezeHashTables(bool insert_labels_if_not_found) {
+  for (auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->freezeHashTables(insert_labels_if_not_found);
+    }
+  }
+}
+
 std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
 Model::outputLabelPairs() const {
   std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
