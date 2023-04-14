@@ -41,7 +41,7 @@ jobs:
           export MLFLOW_TRACKING_USERNAME=$USERNAME
           export MLFLOW_TRACKING_PASSWORD=$PASSWORD
           pip3 install mlflow pandas requests
-          python3 benchmarks-v2/slack_benchmark_results --runner udt --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com
+          python3 benchmarks-v2/slack_benchmark_results.py --runner udt --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com
 
       - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: success()
