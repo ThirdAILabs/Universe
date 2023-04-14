@@ -3,7 +3,9 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -79,6 +81,9 @@ class UDTMachClassifier final : public UDTBackend {
   void verifyCanDistribute() const final {
     _dataset_factory->verifyCanDistribute();
   }
+
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const final;
 
  private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
