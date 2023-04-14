@@ -113,7 +113,7 @@ metrics::History Trainer::train(
 
     train_metrics.reset();
 
-    // This condition ensures that if  steps_per_validation coincides with the
+    // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
     if (validation_data && steps_since_validation != 0) {
