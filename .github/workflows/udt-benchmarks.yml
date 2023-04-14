@@ -37,7 +37,7 @@ jobs:
         env:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
-        run: >- 
+        run: |
           export MLFLOW_TRACKING_USERNAME=$USERNAME
           export MLFLOW_TRACKING_PASSWORD=$PASSWORD
           pip3 install mlflow pandas requests
@@ -53,12 +53,3 @@ jobs:
           status: SUCCESS
           color: good
 
-      - name: Notify slack fail
-        if: failure()
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel_id: daily_udt_benchmarks
-          status: FAILED
-          color: danger
