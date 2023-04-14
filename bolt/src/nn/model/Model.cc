@@ -311,8 +311,7 @@ uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
 
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
-    auto fully_connected =
-        std::dynamic_pointer_cast<ops::FullyConnected>(output->op());
+    auto fully_connected = ops::FullyConnected::cast(output->op());
 
     if (fully_connected) {
       output->addInput(label);

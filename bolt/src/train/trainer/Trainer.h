@@ -49,7 +49,8 @@ class Trainer {
       const metrics::InputMetrics& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
-      const std::vector<callbacks::CallbackPtr>& callbacks = {});
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
+      bool autotune_rehash_rebuild = false);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -58,7 +59,8 @@ class Trainer {
       const std::vector<std::string>& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
-      const std::vector<callbacks::CallbackPtr>& callbacks = {});
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
+      bool autotune_rehash_rebuild = false);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -69,7 +71,8 @@ class Trainer {
       const std::vector<std::string>& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
-      const std::vector<callbacks::CallbackPtr>& callbacks = {});
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
+      bool autotune_rehash_rebuild = false);
 
   /**
    * Performs evaluation on the model using the given validation data and
@@ -101,6 +104,12 @@ class Trainer {
    */
   std::string formatValidateLogLine(const std::string& metric_summary,
                                     uint32_t batches, int64_t time);
+
+  /**
+   * Invokes the autotuner for rehash and rebuild based on the size of the
+   * dataset.
+   */
+  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
   LabeledDataset loadAllWrapper(const dataset::DatasetLoaderPtr& dataset_loader,
                                 uint32_t batch_size);

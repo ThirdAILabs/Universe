@@ -1,4 +1,5 @@
 #include "Trainer.h"
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/utils/ProgressBar.h>
@@ -26,10 +27,16 @@ metrics::History Trainer::train(
     const metrics::InputMetrics& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
-    const std::vector<callbacks::CallbackPtr>& callbacks_in) {
+    const std::vector<callbacks::CallbackPtr>& callbacks_in,
+    bool autotune_rehash_rebuild) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
+  }
+
+  if (autotune_rehash_rebuild) {
+    autotuneRehashRebuild(train_data.first.size(),
+                          train_data.first.at(0).size());
   }
 
   auto train_state = TrainState::make(learning_rate);
@@ -119,7 +126,8 @@ metrics::History Trainer::train_with_metric_names(
     const std::vector<std::string>& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
-    const std::vector<callbacks::CallbackPtr>& callbacks) {
+    const std::vector<callbacks::CallbackPtr>& callbacks,
+    bool autotune_rehash_rebuild) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -129,7 +137,8 @@ metrics::History Trainer::train_with_metric_names(
       metrics::fromMetricNames(_model, validation_metrics, "val_"),
       /* steps_per_validation= */ steps_per_validation,
       /* use_sparsity_in_validation= */ use_sparsity_in_validation,
-      /* callbacks= */ callbacks);
+      /* callbacks= */ callbacks,
+      /* autotune_rehash_rebuild= */ autotune_rehash_rebuild);
 }
 
 metrics::History Trainer::train_with_dataset_loader(
@@ -141,7 +150,8 @@ metrics::History Trainer::train_with_dataset_loader(
     const std::vector<std::string>& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
-    const std::vector<callbacks::CallbackPtr>& callbacks) {
+    const std::vector<callbacks::CallbackPtr>& callbacks,
+    bool autotune_rehash_rebuild) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size);
 
@@ -150,10 +160,10 @@ metrics::History Trainer::train_with_dataset_loader(
       validation_data = loadAllWrapper(validation_data_loader, batch_size);
     }
 
-    return train_with_metric_names(train_data, learning_rate, epochs,
-                                   train_metrics, validation_data,
-                                   validation_metrics, steps_per_validation,
-                                   use_sparsity_in_validation, callbacks);
+    return train_with_metric_names(
+        train_data, learning_rate, epochs, train_metrics, validation_data,
+        validation_metrics, steps_per_validation, use_sparsity_in_validation,
+        callbacks, autotune_rehash_rebuild);
   }
 
   // We have duplicate code here for loading validation data because for
@@ -169,10 +179,10 @@ metrics::History Trainer::train_with_dataset_loader(
   for (uint32_t e = 0; e < epochs; e++) {
     while (auto train_chunk = loadSomeWrapper(train_data_loader, batch_size,
                                               *max_in_memory_batches)) {
-      train_with_metric_names(train_chunk.value(), learning_rate, epochs,
-                              train_metrics, validation_data,
-                              validation_metrics, steps_per_validation,
-                              use_sparsity_in_validation, callbacks);
+      train_with_metric_names(
+          train_chunk.value(), learning_rate, epochs, train_metrics,
+          validation_data, validation_metrics, steps_per_validation,
+          use_sparsity_in_validation, callbacks, autotune_rehash_rebuild);
     }
     train_data_loader->restart();
   }
@@ -257,6 +267,15 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
+}
+
+void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
+  for (const auto& op : _model->ops()) {
+    if (auto fc = std::dynamic_pointer_cast<nn::ops::FullyConnected>(op)) {
+      fc->autotuneRehashRebuild(/* num_batches= */ num_batches,
+                                /* batch_size= */ batch_size);
+    }
+  }
 }
 
 LabeledDataset Trainer::loadAllWrapper(
