@@ -131,9 +131,23 @@ class Model {
   std::vector<uint32_t> inputDims() const;
 
   /**
+   * Returns the expected dimensions of the labels the model is expecting, in
+   * the order they are expected.
+   */
+  std::vector<uint32_t> labelDims() const;
+
+  /**
    * Returns a list of references to gradients of all parameters in the model.
    */
   std::vector<std::vector<float>*> gradients() const;
+
+  /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a

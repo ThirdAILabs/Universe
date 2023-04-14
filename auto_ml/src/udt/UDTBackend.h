@@ -3,6 +3,7 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -204,6 +205,16 @@ class UDTBackend {
     (void)min_num_eval_results;
     (void)top_k_per_eval_aggregation;
     throw notSupported("set_decode_params");
+  }
+
+  /*
+   * Returns a model that embeds text using the hidden layer of the UDT model.
+   */
+  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const {
+    (void)activation_func;
+    (void)distance_cutoff;
+    throw notSupported("get_text_embedding_model");
   }
 
   virtual ~UDTBackend() = default;
