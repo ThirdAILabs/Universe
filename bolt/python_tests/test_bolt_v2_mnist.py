@@ -57,18 +57,13 @@ def test_bolt_on_mnist(load_mnist_bolt_v2):
         train_data=train_data,
         learning_rate=0.0001,
         epochs=3,
-        train_metrics={
-            "train_loss": bolt.train.metrics.LossMetric(loss),
-        },
+        train_metrics=["loss"],
         validation_data=test_data,
-        validation_metrics={
-            "val_loss": bolt.train.metrics.LossMetric(loss),
-            "val_acc": bolt.train.metrics.CategoricalAccuracy(output, labels),
-        },
+        validation_metrics=["loss", "categorical_accuracy"],
     )
 
     # Accuracy should be ~0.93
-    assert history["val_acc"][-1] >= 0.9
+    assert history["val_categorical_accuracy"][-1] >= 0.9
 
     history = trainer.validate(
         validation_data=test_data,

@@ -18,7 +18,10 @@ class Loss {
   /**
    * Computes the loss gradients for the outputs used by this loss function for
    * the given sample in the batch and sets the gradients of the output
-   * tensor(s) used in this loss function.
+   * tensor(s) used in this loss function. The training loop updates in the
+   * direction of this gradient, so if you are trying to minimize the loss make
+   * sure to use the negative partial derivative. You should also make sure to
+   * divide the final value by the batch size.
    */
   virtual void gradients(uint32_t index_in_batch,
                          uint32_t batch_size) const = 0;

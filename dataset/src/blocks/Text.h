@@ -87,8 +87,8 @@ class PairGramTextBlock final : public TextBlock {
 
  protected:
   void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> pairgrams =
-        token_encoding::pairgrams(token_encoding::tokenize(text::split(text)));
+    std::vector<uint32_t> pairgrams = token_encoding::pairgrams(
+        token_encoding::tokenize(text::split(text, /* delimiter= */ ' ')));
     token_encoding::mod(pairgrams, _dim);
     for (auto& [index, value] : token_encoding::sumRepeatedIndices(pairgrams)) {
       vec.addSparseFeatureToSegment(index, value);

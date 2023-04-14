@@ -1,6 +1,7 @@
 #include "MachBlock.h"
 
-namespace thirdai::dataset {
+namespace thirdai::dataset::mach {
+
 MachBlock::MachBlock(ColumnIdentifier col, MachIndexPtr index,
                      std::optional<char> delimiter)
     : CategoricalBlock(std::move(col),
@@ -20,13 +21,13 @@ void MachBlock::encodeCategory(std::string_view category,
   (void)num_categories_in_sample;
   auto id_str = std::string(category);
 
-  auto hashes = _index->hashAndStoreEntity(std::string(category));
+  auto hashes = _index->hashEntity(std::string(category));
 
   for (const auto& hash : hashes) {
     vec.addSparseFeatureToSegment(hash, 1.0);
   }
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::MachBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::mach::MachBlock)

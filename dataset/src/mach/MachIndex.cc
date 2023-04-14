@@ -1,6 +1,6 @@
 #include "MachIndex.h"
 
-namespace thirdai::dataset {
+namespace thirdai::dataset::mach {
 
 MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes,
                      uint32_t max_elements)
@@ -11,40 +11,38 @@ MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes,
 NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
                                                          uint32_t num_hashes,
                                                          uint32_t max_elements)
-    : MachIndex(output_range, num_hashes, max_elements) {}
+    : MachIndex(output_range, num_hashes, max_elements) {
+  for (uint32_t element = 0; element < max_elements; element++) {
+    std::string element_string = std::to_string(element);
 
-std::vector<uint32_t> NumericCategoricalMachIndex::hashAndStoreEntity(
+    auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
+                                                   _output_range);
+
+    _entity_to_hashes.push_back(hashes);
+
+    for (auto& hash : hashes) {
+      _hash_to_entities[hash].push_back(element_string);
+    }
+  }
+}
+
+std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
     const std::string& string) {
-  char* end;
-  uint32_t id = std::strtoul(string.data(), &end, 10);
+  uint32_t id = std::strtoul(string.data(), nullptr, 10);
   if (id >= _max_elements) {
     throw std::invalid_argument("Received label " + std::to_string(id) +
                                 " larger than or equal to n_target_classes.");
   }
-  auto hashes =
-      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
 
-  // Only update the map if we've not seen this id before
-  // TODO(david) should we use a set instead of a vector for storing entities?
-#pragma omp critical(numeric_mach_index_update)
-  if (!_seen_ids.count(id)) {
-    {
-      _seen_ids.insert(id);
-      for (auto& hash : hashes) {
-        _hash_to_entity[hash].push_back(string);
-      }
-    }
-  }
-
-  return hashes;
+  return _entity_to_hashes[id];
 }
 
 std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
     uint32_t hash_val) const {
-  if (!_hash_to_entity.count(hash_val)) {
-    throw std::invalid_argument("Invalid id to decode.");
+  if (!_hash_to_entities.count(hash_val)) {
+    return {};
   }
-  return _hash_to_entity.at(hash_val);
+  return _hash_to_entities.at(hash_val);
 }
 
 StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
@@ -53,7 +51,7 @@ StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
     : MachIndex(output_range, num_hashes, max_elements),
       _current_vocab_size(0) {}
 
-std::vector<uint32_t> StringCategoricalMachIndex::hashAndStoreEntity(
+std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
     const std::string& string) {
   if (indexIsFull()) {
     if (!_entity_to_id.count(string)) {
@@ -64,14 +62,11 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashAndStoreEntity(
     }
   }
 
-  auto hashes =
-      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-
   uint32_t id;
 #pragma omp critical(string_mach_index_update)
   {
     if (!_entity_to_id.count(string)) {
-      id = updateInternalIndex(string, hashes);
+      id = updateInternalIndex(string);
     } else {
       id = _entity_to_id.at(string);
     }
@@ -84,29 +79,33 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashAndStoreEntity(
                                 std::to_string(_max_elements) + ".");
   }
 
-  return hashes;
+  return _entity_to_hashes[string];
 }
 
 std::vector<std::string> StringCategoricalMachIndex::entitiesByHash(
     uint32_t hash_val) const {
-  if (!_hash_to_entities_map.count(hash_val)) {
-    throw std::invalid_argument("Invalid id to decode.");
+  if (!_hash_to_entities.count(hash_val)) {
+    return {};
   }
-  return _hash_to_entities_map.at(hash_val);
+  return _hash_to_entities.at(hash_val);
 }
 
 uint32_t StringCategoricalMachIndex::updateInternalIndex(
-    const std::string& string, const std::vector<uint32_t>& hashes) {
+    const std::string& string) {
+  auto hashes =
+      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
+  _entity_to_hashes[string] = hashes;
+
   uint32_t id = _entity_to_id.size();
   _entity_to_id[string] = id;
   _current_vocab_size++;
   for (const auto& hash : hashes) {
-    _hash_to_entities_map[hash].push_back(string);
+    _hash_to_entities[hash].push_back(string);
   }
   return id;
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::StringCategoricalMachIndex)
-CEREAL_REGISTER_TYPE(thirdai::dataset::NumericCategoricalMachIndex)
+CEREAL_REGISTER_TYPE(thirdai::dataset::mach::StringCategoricalMachIndex)
+CEREAL_REGISTER_TYPE(thirdai::dataset::mach::NumericCategoricalMachIndex)

@@ -2,14 +2,17 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/MachBlock.h>
+#include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <stdexcept>
 
@@ -88,21 +91,17 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
- private:
-  /**
-   * Given the output activations to a mach model, decode using the mach index
-   * back to the original documents. Documents may be strings or integers.
-   * TODO(david) implement the more efficient version.
-   */
-  std::vector<std::pair<std::string, double>> machSingleDecode(
-      const BoltVector& output);
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const final;
 
+ private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName(),
         /* integer_target = */
-        static_cast<bool>(dataset::asNumericIndex(_mach_label_block->index())));
+        static_cast<bool>(
+            dataset::mach::asNumericIndex(_mach_label_block->index())));
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
@@ -129,7 +128,7 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive);
 
   std::shared_ptr<utils::Classifier> _classifier;
-  dataset::MachBlockPtr _mach_label_block;
+  dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;

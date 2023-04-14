@@ -7,6 +7,8 @@
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/metrics/PrecisionAtK.h>
+#include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/DistributedTrainingWrapper.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -70,10 +72,31 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            py::arg("steps_per_validation") = std::nullopt,
            py::arg("use_sparsity_in_validation") = false,
            py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           py::arg("autotune_rehash_rebuild") = false,
+           py::arg("verbose") = true,
+           py::arg("logging_interval") = std::nullopt,
+           bolt::python::OutputRedirect())
+      .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
+           py::arg("learning_rate"), py::arg("epochs") = 1,
+           py::arg("train_metrics") = std::vector<std::string>(),
+           py::arg("validation_data") = std::nullopt,
+           py::arg("validation_metrics") = std::vector<std::string>(),
+           py::arg("steps_per_validation") = std::nullopt,
+           py::arg("use_sparsity_in_validation") = false,
+           py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           py::arg("autotune_rehash_rebuild") = false,
+           py::arg("verbose") = true,
+           py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),
-           py::arg("use_sparsity") = false, bolt::python::OutputRedirect());
+           py::arg("use_sparsity") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect())
+      .def("validate", &Trainer::validate_with_metric_names,
+           py::arg("validation_data"),
+           py::arg("validation_metrics") = std::vector<std::string>(),
+           py::arg("use_sparsity") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect());
 
   py::class_<GradientReference>(train, "GradientReference")
       .def("get_gradients", &GradientReference::getGradients)
@@ -127,6 +150,18 @@ void createBoltV2TrainSubmodule(py::module_& module) {
       .def(py::init<nn::autograd::ComputationPtr,
                     nn::autograd::ComputationPtr>(),
            py::arg("outputs"), py::arg("labels"));
+
+  py::class_<metrics::PrecisionAtK, std::shared_ptr<metrics::PrecisionAtK>,
+             metrics::Metric>(metrics, "PrecisionAtK")
+      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
+
+  py::class_<metrics::RecallAtK, std::shared_ptr<metrics::RecallAtK>,
+             metrics::Metric>(metrics, "RecallAtK")
+      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   auto callbacks = train.def_submodule("callbacks");
 

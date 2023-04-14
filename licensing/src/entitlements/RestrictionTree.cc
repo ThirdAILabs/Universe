@@ -64,7 +64,7 @@ ModelRestrictions::ModelRestrictions(
   }
 
   for (const auto& entitlement : entitlement_strings) {
-    auto split_entitlement = text::split(entitlement);
+    auto split_entitlement = text::split(entitlement, /* delimiter= */ ' ');
     if (text::startsWith(entitlement, MAX_TRAIN_SAMPLES_ENTITLEMENT_START)) {
       if (split_entitlement.size() != 2) {
         throw exceptions::LicenseCheckException(
