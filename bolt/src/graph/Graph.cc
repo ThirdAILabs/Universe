@@ -652,6 +652,28 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
   }
 }
 
+  std::vector<std::vector<float>*> BoltGraph::getParameters(){
+    std::vector<std::vector<float>*> params;
+    for(auto &node: _nodes){
+      if(node->type() != "fc"){
+        throw std::invalid_argument("This function is only meant to be called by UDT.");
+      }
+      params.insert(params.end(), node->)
+    }
+  }
+
+  void BoltGraph::setParameters(){
+
+  }
+
+  std::vector<std::vector<float>*> BoltGraph::getOptimizerStates(){
+
+  }
+
+  void BoltGraph::setOptimizerStates(){
+
+  }
+
 void BoltGraph::processOutputCallback(
     const std::optional<std::function<void(const BoltVector&)>>&
         output_callback,

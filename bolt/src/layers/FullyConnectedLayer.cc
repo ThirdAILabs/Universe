@@ -1,6 +1,7 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/layers/Optimizer.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
@@ -10,6 +11,7 @@
 #include <exception>
 #include <numeric>
 #include <random>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace thirdai::bolt {
@@ -705,6 +707,17 @@ float* FullyConnectedLayer::getWeights() const {
   std::copy(_weights.begin(), _weights.end(), weights_copy);
 
   return weights_copy;
+}
+
+/* We are only passing the velocity and momentum, as fedreted
+   learning happens at end of each batch and gradients are always
+   zero(for Adam Optimizer) at the end of a batch training */
+std::vector<std::vector<float>*> FullyConnectedLayer::optim() {
+  return {&_weight_optimizer->velocity, &_weight_optimizer->momentum, &_bias_optimizer->velocity, &_bias_optimizer->momentum};
+}
+
+std::vector<std::vector<float>*> FullyConnectedLayer::params() {
+  return {&_weights, &_biases};
 }
 
 void FullyConnectedLayer::setTrainable(bool trainable) {

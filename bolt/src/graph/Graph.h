@@ -11,6 +11,7 @@
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -187,6 +188,20 @@ class BoltGraph {
   void verifyInputForGraph(const DatasetContextBase& context);
 
   void verifyGraphProperties();
+
+
+  /*
+   * The following function are just implemented for FullyConnected Nodes, for implementing 
+   * Fedreted learning.
+  */
+  std::vector<std::vector<float>*> getParameters();
+
+  void setParameters();
+
+  std::vector<std::vector<float>*> getOptimizerStates();
+
+  void setOptimizerStates();
+
 
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);

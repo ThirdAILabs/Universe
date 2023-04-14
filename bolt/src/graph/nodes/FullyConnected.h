@@ -72,6 +72,11 @@ class FullyConnectedNode final
   float* getWeightGradientsPtr();
 
   float* getBiasGradientsPtr();
+
+  std::vector<std::vector<float>*> optim();
+
+  std::vector<std::vector<float>*> params();
+
   void disableSparseParameterUpdates() final;
 
   void saveWithOptimizer(bool should_save_optimizer) final;

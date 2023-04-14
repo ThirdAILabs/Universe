@@ -201,6 +201,26 @@ float* FullyConnectedNode::getBiasGradientsPtr() {
   return _layer->getBiasGradientsPtr();
 }
 
+std::vector<std::vector<float>*> FullyConnectedNode::params() {
+  if (getState() != NodeState::PreparedForBatchProcessing &&
+      getState() != NodeState::Compiled) {
+    throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state to call "
+        "params.");
+  }
+  return _layer->params();
+}
+
+std::vector<std::vector<float>*> FullyConnectedNode::optim() {
+  if (getState() != NodeState::PreparedForBatchProcessing &&
+      getState() != NodeState::Compiled) {
+    throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state to call "
+        "optim.");
+  }
+  return _layer->optim();
+}
+
 void FullyConnectedNode::disableSparseParameterUpdates() {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {

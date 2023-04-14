@@ -140,6 +140,10 @@ class FullyConnectedLayer final {
 
   void initOptimizer();
 
+  std::vector<std::vector<float>*> optim();
+
+  std::vector<std::vector<float>*> params();
+  
   ~FullyConnectedLayer() = default;
 
  private:
