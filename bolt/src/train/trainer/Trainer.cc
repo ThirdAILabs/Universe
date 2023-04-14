@@ -114,10 +114,9 @@ metrics::History Trainer::train(
 
     train_metrics.reset();
 
-    // This condition ensures that if we steps_per_validation coincides with
-    // the end of the epoch that we don't validate twice: once above when we
-    // reach the validation interval and once when we reach the end of the
-    // epoch.
+    // This condition ensures that if  steps_per_validation coincides with the
+    // end of the epoch that we don't validate twice: once above when we reach
+    // the validation interval and once when we reach the end of the epoch.
     if (validation_data && steps_since_validation != 0) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
@@ -185,8 +184,8 @@ metrics::History Trainer::train_with_dataset_loader(
   // We have duplicate code here for loading validation data because for
   // Temporal transformations loading the validation data after the training
   // data is important. We do not do this for the streaming case because it
-  // would require doing a first pass over the training data before loading
-  // the validation data.
+  // would require doing a first pass over the training data before loading the
+  // validation data.
   std::optional<LabeledDataset> validation_data = std::nullopt;
   if (validation_data_loader) {
     validation_data = loadAllWrapper(validation_data_loader, batch_size);
