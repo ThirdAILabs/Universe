@@ -11,9 +11,8 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/Validation.h>
-#include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <licensing/src/CheckLicense.h>
@@ -179,7 +178,7 @@ py::object UDTClassifier::entityEmbedding(
 
   auto weights = fc->kernel()->getWeightsByNeuron(neuron_id);
 
-  utils::NumpyArray<float> np_weights(weights.size());
+  NumpyArray<float> np_weights(weights.size());
 
   std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
 
@@ -187,9 +186,9 @@ py::object UDTClassifier::entityEmbedding(
 }
 
 TextEmbeddingModelPtr UDTClassifier::getTextEmbeddingModel(
-    const std::string& activation_func, float distance_cutoff) const {
+    float distance_cutoff) const {
   return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
-                                  activation_func, distance_cutoff);
+                                  distance_cutoff);
 }
 
 dataset::CategoricalBlockPtr UDTClassifier::labelBlock(

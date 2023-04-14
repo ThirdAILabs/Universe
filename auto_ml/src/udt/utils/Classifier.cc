@@ -1,9 +1,10 @@
 #include "Classifier.h"
 #include <cereal/archives/binary.hpp>
-#include "Train.h"
 #include <bolt/python_bindings/NumpyConversions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
 
 namespace thirdai::automl::udt::utils {
@@ -112,7 +113,7 @@ py::object Classifier::predictedClasses(
     return py::cast(predictedClass(output->getVector(0)));
   }
 
-  utils::NumpyArray<uint32_t> predictions(output->batchSize());
+  NumpyArray<uint32_t> predictions(output->batchSize());
   for (uint32_t i = 0; i < output->batchSize(); i++) {
     predictions.mutable_at(i) = predictedClass(output->getVector(i));
   }
@@ -140,6 +141,15 @@ std::vector<std::vector<float>> Classifier::getBinaryClassificationScores(
   return scores;
 }
 
+// Splits a vector of datasets as returned by a dataset loader (where the labels
+// are the last dataset in the list)
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
+    dataset::BoltDatasetList&& datasets) {
+  auto labels = datasets.back();
+  datasets.pop_back();
+  return {datasets, labels};
+}
+
 std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
     const dataset::DatasetLoaderPtr& dataset, const std::string& metric_name) {
   // The number of samples used is capped to ensure tuning is fast even for
@@ -157,7 +167,7 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   // Did this instead of structured binding auto [data, labels] = ...
   // since Clang-Tidy would throw this error around pragma omp parallel:
   // "reference to local binding 'labels' declared in enclosing function"
-  auto split_data = utils::splitDataLabels(std::move(*loaded_data_opt));
+  auto split_data = splitDataLabels(std::move(*loaded_data_opt));
   auto labels = std::move(split_data.second);
 
   auto scores = getBinaryClassificationScores(split_data.first);

@@ -5,7 +5,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/mach/MachDecode.h>
 #include <pybind11/stl.h>
@@ -238,7 +238,7 @@ py::object UDTMachClassifier::entityEmbedding(
     weight /= averaged_embedding.size();
   }
 
-  utils::NumpyArray<float> np_weights(averaged_embedding.size());
+  NumpyArray<float> np_weights(averaged_embedding.size());
 
   std::copy(averaged_embedding.begin(), averaged_embedding.end(),
             np_weights.mutable_data());
@@ -271,9 +271,9 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
-    const std::string& activation_func, float distance_cutoff) const {
+    float distance_cutoff) const {
   return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
-                                  activation_func, distance_cutoff);
+                                  distance_cutoff);
 }
 
 template <class Archive>

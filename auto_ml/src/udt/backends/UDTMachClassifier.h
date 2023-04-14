@@ -83,7 +83,7 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   TextEmbeddingModelPtr getTextEmbeddingModel(
-      const std::string& activation_func, float distance_cutoff) const final;
+      float distance_cutoff) const final;
 
  private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {

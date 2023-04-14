@@ -6,9 +6,8 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
 
 namespace thirdai::automl::udt {
@@ -112,7 +111,7 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
   auto outputs = _model->forward(_dataset_factory->featurizeInputBatch(samples),
                                  sparse_inference);
 
-  utils::NumpyArray<float> predictions(outputs.at(0)->batchSize());
+  NumpyArray<float> predictions(outputs.at(0)->batchSize());
   for (uint32_t i = 0; i < outputs.at(0)->batchSize(); i++) {
     predictions.mutable_at(i) = unbinActivations(outputs.at(0)->getVector(i));
   }

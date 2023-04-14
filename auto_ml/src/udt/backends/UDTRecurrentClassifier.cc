@@ -1,9 +1,8 @@
 #include "UDTRecurrentClassifier.h"
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
@@ -99,7 +98,7 @@ py::object UDTRecurrentClassifier::evaluate(
   }
 
   if (return_predicted_class) {
-    utils::NumpyArray<uint32_t> predictions(output.numSamples());
+    NumpyArray<uint32_t> predictions(output.numSamples());
     for (uint32_t i = 0; i < output.numSamples(); i++) {
       BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
       predictions.mutable_at(i) = activation_vec.getHighestActivationId();

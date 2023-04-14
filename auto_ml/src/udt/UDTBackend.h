@@ -14,9 +14,9 @@
 #include <optional>
 #include <stdexcept>
 
-namespace py = pybind11;
-
 namespace thirdai::automl::udt {
+
+namespace py = pybind11;
 
 using bolt::train::callbacks::CallbackPtr;
 
@@ -214,8 +214,7 @@ class UDTBackend {
    * Returns a model that embeds text using the hidden layer of the UDT model.
    */
   virtual TextEmbeddingModelPtr getTextEmbeddingModel(
-      const std::string& activation_func, float distance_cutoff) const {
-    (void)activation_func;
+      float distance_cutoff) const {
     (void)distance_cutoff;
     throw notSupported("get_text_embedding_model");
   }
