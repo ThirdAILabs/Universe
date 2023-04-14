@@ -1,9 +1,11 @@
 #pragma once
 
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/DataSource.h>
 
 namespace thirdai::automl::udt {
@@ -35,11 +37,9 @@ class UDTSVMClassifier final : public UDTBackend {
 
   ModelPtr model() const final { return _classifier->model(); }
 
-  void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != curr_model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
+  void setModel(const ModelPtr& model) final {
+    ModelPtr& curr_model = _classifier->model();
+    utils::verifyCanSetModel(curr_model, model);
     curr_model = model;
   }
 
