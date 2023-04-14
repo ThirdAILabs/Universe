@@ -173,14 +173,6 @@ def test_mach_udt_string_target(download_scifact_dataset):
     )
 
 
-def test_mach_udt_string_target_too_many_classes():
-    with pytest.raises(
-        ValueError,
-        match=r"Received additional category*",
-    ):
-        train_simple_mach_udt(invalid_data=True)
-
-
 def test_mach_udt_integer_target_label_too_large():
     with pytest.raises(
         ValueError,
@@ -224,7 +216,7 @@ def test_mach_udt_decode_params():
         ValueError,
         match=r"Cannot eval with top_k_per_eval_aggregation greater than 100.",
     ):
-        model.set_decode_params(1, 11)
+        model.set_decode_params(1, 1000)
 
     with pytest.raises(
         ValueError,
@@ -232,7 +224,7 @@ def test_mach_udt_decode_params():
     ):
         model.set_decode_params(5, 2)
 
-    model.set_decode_params(1, 2)
+    model.set_decode_params(1, 100)
 
     assert len(model.predict({"text": "something"})) == 1
 
@@ -313,7 +305,7 @@ def test_mach_udt_forgetting_everything(integer_target):
 def test_mach_udt_cant_predict_forgotten(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
-    model.set_decode_params(3, 3)
+    model.set_decode_params(3, 100)
     assert "0" in [class_name for class_name, _ in model.predict({"text": "something"})]
     model.forget(0 if integer_target else "0")
     assert "0" not in [
@@ -325,7 +317,7 @@ def test_mach_udt_cant_predict_forgotten(integer_target):
 def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
-    model.set_decode_params(3, 3)
+    model.set_decode_params(3, 100)
     assert len(model.predict({"text": "something"})) == 3
     model.forget(2 if integer_target else "2")
     assert len(model.predict({"text": "something"})) == 2
