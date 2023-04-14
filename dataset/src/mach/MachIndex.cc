@@ -82,38 +82,22 @@ void NumericCategoricalMachIndex::erase(const std::string& string) {
 }
 
 StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
-                                                       uint32_t num_hashes,
-                                                       uint32_t max_elements)
-    : MachIndex(output_range, num_hashes),
-      _max_elements(max_elements),
-      _current_vocab_size(0) {}
+                                                       uint32_t num_hashes)
+    : MachIndex(output_range, num_hashes) {}
 
 std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
     const std::string& string) {
-  if (indexIsFull()) {
-    if (!_entity_to_id.count(string)) {
-      throw std::invalid_argument("Received additional category " + string +
-                                  " totalling greater than the max number "
-                                  "of expected categories: " +
-                                  std::to_string(_max_elements) + ".");
-    }
-  }
-
-  uint32_t id;
 #pragma omp critical(string_mach_index_update)
   {
-    if (!_entity_to_id.count(string)) {
-      id = updateInternalIndex(string);
-    } else {
-      id = _entity_to_id.at(string);
-    }
-  }
+    if (!_entity_to_hashes.count(string)) {
+      auto hashes =
+          hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
+      _entity_to_hashes[string] = hashes;
 
-  if (id >= _max_elements) {
-    throw std::invalid_argument("Received additional category " + string +
-                                " totalling greater than the max number "
-                                "of expected categories: " +
-                                std::to_string(_max_elements) + ".");
+      for (const auto& hash : hashes) {
+        _hash_to_entities[hash].push_back(string);
+      }
+    }
   }
 
   return _entity_to_hashes[string];
@@ -125,21 +109,6 @@ std::vector<std::string> StringCategoricalMachIndex::entitiesByHash(
     return {};
   }
   return _hash_to_entities.at(hash_val);
-}
-
-uint32_t StringCategoricalMachIndex::updateInternalIndex(
-    const std::string& string) {
-  auto hashes =
-      hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-  _entity_to_hashes[string] = hashes;
-
-  uint32_t id = _entity_to_id.size();
-  _entity_to_id[string] = id;
-  _current_vocab_size++;
-  for (const auto& hash : hashes) {
-    _hash_to_entities[hash].push_back(string);
-  }
-  return id;
 }
 
 void StringCategoricalMachIndex::manualAdd(
@@ -159,11 +128,6 @@ void StringCategoricalMachIndex::manualAdd(
   }
 
   _entity_to_hashes[string] = hashes;
-
-  /**
-   * The use of _max_elements in StringCategoricalMachIndex is primarily for 
-   */
-  ++_max_elements;
 }
 
 void StringCategoricalMachIndex::erase(const std::string& string) {

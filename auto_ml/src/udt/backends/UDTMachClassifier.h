@@ -107,11 +107,9 @@ class UDTMachClassifier final : public UDTBackend {
     std::vector<uint32_t> new_hashes;
     while (!top_K.empty()) {
       auto [_, active_neuron] = top_K.top();
-      std::cout << active_neuron << " ";
       new_hashes.push_back(active_neuron);
       top_K.pop();
     }
-    std::cout << std::endl;
 
     _mach_label_block->index()->manualAdd(variantToString(new_label),
                                           new_hashes);

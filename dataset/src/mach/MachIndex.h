@@ -122,18 +122,15 @@ using NumericCategoricalMachIndexPtr =
 /**
  * This index assumes input entities may be arbitrary strings, meaning we cannot
  * know the input distribution at construction time and must build the index
- * during use (training). The index is built in a threadsafe way and fails once
- * its seen more than max_elements unique entities.
+ * during use (training).
  */
 class StringCategoricalMachIndex : public MachIndex {
  public:
-  StringCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
-                             uint32_t max_elements);
+  StringCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes);
 
-  static auto make(uint32_t output_range, uint32_t num_hashes,
-                   uint32_t max_elements) {
-    return std::make_shared<StringCategoricalMachIndex>(
-        output_range, num_hashes, max_elements);
+  static auto make(uint32_t output_range, uint32_t num_hashes) {
+    return std::make_shared<StringCategoricalMachIndex>(output_range,
+                                                        num_hashes);
   }
 
   /**
@@ -152,28 +149,17 @@ class StringCategoricalMachIndex : public MachIndex {
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
  private:
-  uint32_t updateInternalIndex(const std::string& string);
-
-  bool indexIsFull() { return _current_vocab_size == _max_elements; }
-
   StringCategoricalMachIndex() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _max_elements, _entity_to_id,
-            _entity_to_hashes, _hash_to_entities, _current_vocab_size);
+    archive(cereal::base_class<MachIndex>(this), _entity_to_hashes,
+            _hash_to_entities);
   }
 
-  uint32_t _max_elements;
-
-  std::unordered_map<std::string, uint32_t> _entity_to_id;
-
-  // TODO(david) for saving memory we can store the ids in this map instead
   std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
-
-  std::atomic_uint32_t _current_vocab_size;
 };
 
 using StringCategoricalMachIndexPtr =

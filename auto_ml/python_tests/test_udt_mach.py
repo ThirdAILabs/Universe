@@ -256,7 +256,6 @@ def test_mach_udt_invalid_class_type(integer_target):
         model.introduce([{"text": "something"}], label)
 
 
-# TODO MAKE WORKING
 @pytest.mark.parametrize("integer_target", [True, False])
 def test_mach_udt_introduce_and_forget(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)

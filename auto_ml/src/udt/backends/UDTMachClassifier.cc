@@ -48,8 +48,7 @@ UDTMachClassifier::UDTMachClassifier(
         /* max_elements = */ n_target_classes);
   } else {
     mach_index = dataset::mach::StringCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* max_elements = */ n_target_classes);
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
   }
 
   _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
