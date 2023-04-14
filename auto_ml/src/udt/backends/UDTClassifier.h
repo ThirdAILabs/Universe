@@ -80,7 +80,7 @@ class UDTClassifier final : public UDTBackend {
 
   void setModel(const bolt::BoltGraphPtr& model) final {
     bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != curr_model->outputDim()) {
+    if (curr_model->outputDim() != model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
     curr_model = model;
