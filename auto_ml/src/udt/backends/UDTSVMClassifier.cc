@@ -59,7 +59,6 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                return_predicted_class, verbose, return_metrics);
 }
 
-
 py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class) {
