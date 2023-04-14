@@ -194,13 +194,11 @@ class BoltGraph {
    * The following function are just implemented for FullyConnected Nodes, for implementing 
    * Fedreted learning.
   */
-  std::vector<std::vector<float>*> getParameters();
+  std::vector<std::vector<float>*> params();
 
-  void setParameters();
 
-  std::vector<std::vector<float>*> getOptimizerStates();
+  std::vector<std::vector<float>*> optims();
 
-  void setOptimizerStates();
 
 
   void updateSampling(uint32_t rebuild_hash_tables_batch,
