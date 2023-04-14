@@ -158,10 +158,11 @@ def test_invalid_column_name_in_udt_predict():
         target="target",
         n_target_classes=2,
     )
+
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Searched for column 'text_col' which does not exist in the input sample."
+            f"Input column name 'HAHAHA' not found in data_types."
         ),
     ):
         model.predict({"HAHAHA": "some text"})
