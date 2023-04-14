@@ -41,6 +41,12 @@ class TabularDatasetFactory {
       const dataset::DataSourcePtr& data_source, bool shuffle);
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) {
+    for (const auto& [column_name, _] : input) {
+      if (!_data_types.count(column_name)) {
+        throw std::invalid_argument("Input column name '" + column_name +
+                                    "' not found in data_types.");
+      }
+    }
     dataset::MapSampleRef input_ref(input);
     return _inference_featurizer->featurize(input_ref);
   }
