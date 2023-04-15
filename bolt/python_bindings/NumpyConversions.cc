@@ -7,7 +7,7 @@ namespace thirdai::bolt::nn::python {
 
 template <typename T>
 py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
-    const T* data, uint32_t rows, uint32_t cols) {
+    const T* data, uint32_t rows, uint32_t cols, bool single_row_to_vector) {
   uint64_t flattened_dim = rows * cols;
 
   T* data_copy = new T[flattened_dim];
@@ -19,7 +19,7 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
   // This is so that if we have a tensor with a single row we return a (N,)
   // numpy array instead of a (N,1). This is useful during inference on a single
   // sample.
-  if (rows == 1) {
+  if (rows == 1 && single_row_to_vector) {
     return py::array_t<T, py::array::c_style | py::array::forcecast>(
         cols, data_copy, free_when_done);
   }
@@ -27,7 +27,8 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
       {rows, cols}, data_copy, free_when_done);
 }
 
-py::object tensorToNumpy(const tensor::TensorPtr& tensor) {
+py::object tensorToNumpy(const tensor::TensorPtr& tensor,
+                         bool single_row_to_vector) {
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
     throw std::runtime_error(
@@ -37,12 +38,14 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor) {
 
   auto activations =
       createArrayCopy(/* data= */ tensor->activationsPtr(),
-                      /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros);
+                      /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros,
+                      /* single_row_to_vector= */ single_row_to_vector);
 
   if (tensor->activeNeuronsPtr()) {
     auto active_neurons = createArrayCopy(
         /* data= */ tensor->activeNeuronsPtr(), /* rows= */ tensor->batchSize(),
-        /* cols= */ *nonzeros);
+        /* cols= */ *nonzeros,
+        /* single_row_to_vector= */ single_row_to_vector);
 
     return std::move(
         py::make_tuple(std::move(active_neurons), std::move(activations)));

@@ -35,17 +35,17 @@ def train_udt_on_yelp_chi(download_yelp_chi_dataset):
     # so this will not leak testing information.
     model.index_nodes(eval_data_path)
 
-    auc = 0.5  # Silences warning about auc possibly being unset
-    for epoch in range(15):
+    auc = None
+    for _ in range(15):
         train_metrics = model.train(
             train_data_path,
             learning_rate=0.001,
             epochs=1,
             metrics=["categorical_accuracy"],
         )
-        assert train_metrics["categorical_accuracy"][-1] > 0
+        assert train_metrics["train_categorical_accuracy"][-1] > 0
 
-        activations = model.evaluate("yelp_test.csv")
+        activations = model.predict_batch([x[0] for x in inference_samples])
         auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
         print("AUC: ", auc)
 
@@ -65,7 +65,7 @@ def test_udt_yelp_chi_save_load(train_udt_on_yelp_chi, download_yelp_chi_dataset
     ground_truth = [inference_sample[1] for inference_sample in inference_samples]
     model.save("udt_graph.serialized")
     model = bolt.UniversalDeepTransformer.load("udt_graph.serialized")
-    activations = model.evaluate("yelp_test.csv")
+    activations = model.predict_batch([x[0] for x in inference_samples])
     new_auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
     assert new_auc == auc
 
@@ -137,9 +137,7 @@ def test_graph_clearing_and_indexing():
 
     chunk_id_to_test = 7
     old_accuracy = model.evaluate(
-        f"graph_chunk_{chunk_id_to_test}.csv",
-        metrics=["categorical_accuracy"],
-        return_metrics=True,
+        f"graph_chunk_{chunk_id_to_test}.csv", metrics=["categorical_accuracy"]
     )
     model.clear_graph()
     with pytest.raises(
@@ -152,11 +150,12 @@ def test_graph_clearing_and_indexing():
     for chunk_id in range(chunk_id_to_test):
         model.index_nodes(f"graph_chunk_{chunk_id}.csv")
     new_accuracy = model.evaluate(
-        f"graph_chunk_{chunk_id_to_test}.csv",
-        metrics=["categorical_accuracy"],
-        return_metrics=True,
+        f"graph_chunk_{chunk_id_to_test}.csv", metrics=["categorical_accuracy"]
     )
-    assert old_accuracy["categorical_accuracy"] == new_accuracy["categorical_accuracy"]
+    assert (
+        old_accuracy["val_categorical_accuracy"][-1]
+        == new_accuracy["val_categorical_accuracy"][-1]
+    )
 
 
 def test_no_neighbors_causes_no_errors():

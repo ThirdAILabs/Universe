@@ -24,18 +24,6 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         integer_target=True,
     )
 
-    class FinalMetricCallback(bolt.callbacks.Callback):
-        def __init__(self):
-            super().__init__()
-            self.ending_train_metric = 0
-
-        def on_train_end(self, model, train_state):
-            self.ending_train_metric = train_state.get_train_metric_values(
-                "categorical_accuracy"
-            )[-1]
-
-    final_metric = FinalMetricCallback()
-
     metrics = model.cold_start(
         filename=catalog_file,
         strong_column_names=["TITLE"],
@@ -43,13 +31,11 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         learning_rate=0.001,
         epochs=5,
         metrics=["categorical_accuracy"],
-        callbacks=[final_metric],
     )
 
     os.remove(catalog_file)
 
-    assert final_metric.ending_train_metric > 0.5
-    assert metrics["categorical_accuracy"][-1] == final_metric.ending_train_metric
+    assert metrics["train_categorical_accuracy"][-1] > 0.5
 
 
 def setup_testing_file(missing_values, bad_csv_line):

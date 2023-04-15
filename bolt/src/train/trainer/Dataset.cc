@@ -1,5 +1,6 @@
 #include "Dataset.h"
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <exception>
 #include <stdexcept>
 #include <string>
 
@@ -30,14 +31,25 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
 
   std::vector<nn::tensor::TensorList> batches(num_batches);
 
+  std::exception_ptr err;
+
 #pragma omp parallel for default(none) \
-    shared(num_batches, datasets, batches, dims)
+    shared(num_batches, datasets, batches, dims, err)
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     for (uint32_t dataset_idx = 0; dataset_idx < datasets.size();
          dataset_idx++) {
-      batches.at(batch_idx).push_back(nn::tensor::Tensor::convert(
-          datasets[dataset_idx]->at(batch_idx), dims.at(dataset_idx)));
+      try {
+        batches.at(batch_idx).push_back(nn::tensor::Tensor::convert(
+            datasets[dataset_idx]->at(batch_idx), dims.at(dataset_idx)));
+      } catch (...) {
+#pragma omp critical
+        err = std::current_exception();
+      }
     }
+  }
+
+  if (err) {
+    std::rethrow_exception(err);
   }
 
   return batches;

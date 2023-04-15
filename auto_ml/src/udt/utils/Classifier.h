@@ -56,7 +56,8 @@ class Classifier {
                       bool sparse_inference, bool verbose);
 
   py::object predict(const bolt::nn::tensor::TensorList& inputs,
-                     bool sparse_inference, bool return_predicted_class);
+                     bool sparse_inference, bool return_predicted_class,
+                     bool single);
 
   py::object embedding(const bolt::nn::tensor::TensorList& inputs);
 

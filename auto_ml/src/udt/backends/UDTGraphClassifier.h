@@ -29,13 +29,15 @@ class UDTGraphClassifier final : public UDTBackend {
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final {
     return _classifier->predict(_dataset_manager->featurizeInput(sample),
-                                sparse_inference, return_predicted_class);
+                                sparse_inference, return_predicted_class,
+                                /* single= */ true);
   }
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class) final {
     return _classifier->predict(_dataset_manager->featurizeInputBatch(samples),
-                                sparse_inference, return_predicted_class);
+                                sparse_inference, return_predicted_class,
+                                /* single= */ false);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {

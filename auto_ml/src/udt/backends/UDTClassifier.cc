@@ -104,14 +104,16 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class) {
   return _classifier->predict(_dataset_factory->featurizeInput(sample),
-                              sparse_inference, return_predicted_class);
+                              sparse_inference, return_predicted_class,
+                              /* single= */ true);
 }
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class) {
   return _classifier->predict(_dataset_factory->featurizeInputBatch(samples),
-                              sparse_inference, return_predicted_class);
+                              sparse_inference, return_predicted_class,
+                              /* single= */ false);
 }
 
 std::vector<dataset::Explanation> UDTClassifier::explain(

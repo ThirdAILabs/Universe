@@ -62,7 +62,8 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
   auto inputs = bolt::train::convertVectors(
       {dataset::SvmDatasetLoader::toSparseVector(sample)},
       _classifier->model()->inputDims());
-  return _classifier->predict(inputs, sparse_inference, return_predicted_class);
+  return _classifier->predict(inputs, sparse_inference, return_predicted_class,
+                              /* single= */ true);
 }
 
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
@@ -71,7 +72,8 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
   auto inputs = bolt::train::convertBatch(
       {dataset::SvmDatasetLoader::toSparseVectors(samples)},
       _classifier->model()->inputDims());
-  return _classifier->predict(inputs, sparse_inference, return_predicted_class);
+  return _classifier->predict(inputs, sparse_inference, return_predicted_class,
+                              /* single= */ false);
 }
 
 template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&);
