@@ -211,6 +211,16 @@ void FullyConnectedNode::disableSparseParameterUpdates() {
   _layer->disableSparseParameterUpdates();
 }
 
+void FullyConnectedNode::saveWithOptimizer(bool should_save_optimizer) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot call saveWithOptimizer until the model "
+        "containing the node is compiled.");
+  }
+  _layer->saveWithOptimizer(should_save_optimizer);
+}
+
 void FullyConnectedNode::compileImpl() {
   assert(_config.has_value());
   _layer = std::make_shared<FullyConnectedLayer>(_config.value(),

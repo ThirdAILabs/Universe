@@ -25,6 +25,10 @@ class DataSource {
 
 using DataSourcePtr = std::shared_ptr<DataSource>;
 
+// This class should remain final because we require for demo licensing that the
+// passed in source is a FileDataSource so the user can't trickily add extra
+// functionality (and making it not final would allow it to be extended and
+// its methods overwritten with tricky behavior).
 class FileDataSource final : public DataSource {
  public:
   explicit FileDataSource(const std::string& filename)
@@ -71,6 +75,9 @@ class FileDataSource final : public DataSource {
   std::string resourceName() const final { return _filename; }
 
  private:
+  // In the same vein as the above comment about demo licensing, these fields
+  // should not be settable after the constructor, since we want _filename to
+  // always refer to _file.
   std::ifstream _file;
   std::string _filename;
 };

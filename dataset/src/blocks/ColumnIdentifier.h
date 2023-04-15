@@ -22,38 +22,17 @@ struct ColumnIdentifier {
   ColumnIdentifier(const std::string& column_name)
       : _column_number(std::nullopt), _column_name(column_name) {}
 
-  bool consistentWith(const ColumnIdentifier& other) const {
-    return hasName() == other.hasName() && hasNumber() == other.hasNumber();
-  }
+  bool consistentWith(const ColumnIdentifier& other) const;
 
-  bool hasName() const { return !!_column_name; }
+  bool hasName() const;
 
-  const std::string& name() const {
-    if (!_column_name) {
-      throw std::runtime_error(
-          "Tried to get missing column name from ColumnIdentifier.");
-    }
-    return _column_name.value();
-  }
+  const std::string& name() const;
 
-  bool hasNumber() const { return _column_number.has_value(); }
+  bool hasNumber() const;
 
-  uint32_t number() const {
-    if (!_column_number) {
-      throw std::runtime_error(
-          "Tried to get missing column number from ColumnIdentifier.");
-    }
-    return _column_number.value();
-  }
+  uint32_t number() const;
 
-  void updateColumnNumber(const ColumnNumberMap& column_number_map) {
-    if (!hasName()) {
-      throw std::logic_error(
-          "Cannot update the column number of a ColumnIdentifier that does not "
-          "have a column name.");
-    }
-    _column_number = column_number_map.at(name());
-  }
+  void updateColumnNumber(const ColumnNumberMap& column_number_map);
 
   friend bool operator==(const ColumnIdentifier& lhs,
                          const ColumnIdentifier& rhs) {

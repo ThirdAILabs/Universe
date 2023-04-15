@@ -76,8 +76,8 @@ MaskedSentenceFeaturizer::processRow(const std::string& row) {
   BoltVector label = BoltVector::makeSparseVector(
       masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
-  auto pairgrams =
-      token_encoding::pairgrams(token_encoding::tokenize(text::split(row)));
+  auto pairgrams = token_encoding::pairgrams(
+      token_encoding::tokenize(text::split(row, /* delimiter= */ ' ')));
   token_encoding::mod(pairgrams, _output_range);
   auto dedpulicated_pairgrams = token_encoding::sumRepeatedIndices(pairgrams);
 

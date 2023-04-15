@@ -320,17 +320,24 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Embedding.cc
+    bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
+    bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
+    bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
     bolt/src/train/metrics/CategoricalAccuracy.cc
+    bolt/src/train/metrics/PrecisionAtK.cc
+    bolt/src/train/metrics/RecallAtK.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
+    bolt/src/train/trainer/DistributedTrainingWrapper.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
@@ -368,12 +375,25 @@ set(THIRDAI_SOURCES
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
+    dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
+    dataset/src/featurizers/TextGenerationFeaturizer.cc
+    dataset/src/utils/CsvParser.cc
+    dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
     dataset/src/featurizers/MaskedSentenceFeaturizer.cc
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
+    dataset/src/blocks/GraphBlocks.cc
+    dataset/src/blocks/BlockList.cc
+    dataset/src/blocks/ColumnIdentifier.cc
+    dataset/src/blocks/RecurrenceAugmentation.cc
+    dataset/src/blocks/Sequence.cc
+    dataset/src/mach/MachDecode.cc
+    dataset/src/mach/MachIndex.cc
+    dataset/src/mach/MachBlock.cc
+    dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -384,21 +404,26 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
-    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
-    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc
+    auto_ml/src/featurization/TabularDatasetFactory.cc
+    auto_ml/src/featurization/RecurrentDatasetFactory.cc
+    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
-    utils/StringManipulation.cc)
+    utils/StringManipulation.cc
+    utils/UUID.cc
+    licensing/src/entitlements/RestrictionTree.cc
+    licensing/src/entitlements/Entitlements.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
-      licensing/src/heartbeat/Heartbeat.cc licensing/src/CheckLicenseEnabled.cc)
+      ${THIRDAI_SOURCES} licensing/src/methods/keygen/KeygenCommunication.cc
+      licensing/src/methods/heartbeat/Heartbeat.cc
+      licensing/src/CheckLicenseEnabled.cc)
 else()
   set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
@@ -428,6 +453,7 @@ pybind11_add_module(
   bolt/python_bindings/CallbacksPython.cc
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/NumpyConversions.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
@@ -436,10 +462,20 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/src/models/ModelPipeline.cc
-  auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
+  auto_ml/src/udt/UDT.cc
+  auto_ml/src/udt/utils/Conversion.cc
+  auto_ml/src/udt/utils/Models.cc
+  auto_ml/src/udt/utils/Train.cc
+  auto_ml/src/udt/utils/Classifier.cc
+  auto_ml/src/udt/backends/UDTClassifier.cc
+  auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
+  auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTSVMClassifier.cc
+  auto_ml/src/udt/backends/UDTGraphClassifier.cc
+  auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/models/TextClassifier.cc
-  auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

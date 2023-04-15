@@ -15,6 +15,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -38,10 +39,12 @@ class BoltGraph {
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
+        _total_samples_trained_on(0),
         _epoch(0),
         _updates(0),
         _tracked_metric(nullptr) {
     thirdai::licensing::checkLicense();
+    licensing::entitlements().verifyAllowedOutputDim(_output->outputDim());
   }
 
   /*
@@ -117,6 +120,8 @@ class BoltGraph {
 
   NodePtr output() { return _output; }
 
+  void saveWithOptimizer(bool should_save_optimizer);
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::checkLicense(); }
@@ -124,8 +129,14 @@ class BoltGraph {
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
-  void logValidateAndSave(const TrainConfig& train_config,
-                          MetricAggregator& train_metrics);
+  std::optional<InferenceMetricData> validateAndSaveIfBest(
+      const TrainConfig& train_config, const ValidationContext& validation);
+
+  std::optional<InferenceMetricData> validateIfNeeded(
+      const TrainConfig& train_config);
+
+  void logAndSaveIfNeeded(const TrainConfig& train_config,
+                          MetricAggregator& train_metrics) const;
 
   void processEvaluationBatch(uint64_t batch_size,
                               const BoltBatch* batch_labels,
@@ -216,6 +227,11 @@ class BoltGraph {
   std::vector<std::shared_ptr<FullyConnectedLayer>>
       _internal_fully_connected_layers;
 
+  // Tracks the number of examples the model has been trained with so far (if
+  // the model is trained for 10 epochs with 1000 samples / epoch, this will
+  // be 10,000). This is used to establish constraints for licensing.
+  uint64_t _total_samples_trained_on;
+
   std::shared_ptr<LossFunction> _loss;
 
   // TODO(blaise/david): Factor out _epoch and _updates and put
@@ -238,6 +254,11 @@ class BoltGraph {
     bool compatableWith(uint32_t batch_size, bool using_sparsity) const {
       return batch_size <= _allocated_batch_size &&
              using_sparsity == _using_sparsity;
+    }
+
+    void clear() {
+      _using_sparsity = false;
+      _allocated_batch_size = 0;
     }
 
     bool isOptimizerInitialized() const { return _optimizer_initialized; }

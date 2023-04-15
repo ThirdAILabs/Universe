@@ -13,14 +13,17 @@ class Tensor {
  public:
   Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
 
-  Tensor(BoltBatch&& batch, uint32_t dim);
+  Tensor(const BoltBatch& batch, uint32_t dim);
 
   static std::shared_ptr<Tensor> dense(uint32_t batch_size, uint32_t dim);
 
   static std::shared_ptr<Tensor> sparse(uint32_t batch_size, uint32_t dim,
                                         uint32_t nonzeros);
 
-  static std::shared_ptr<Tensor> convert(BoltBatch&& batch, uint32_t dim);
+  static std::shared_ptr<Tensor> convert(const BoltBatch& batch, uint32_t dim);
+
+  static std::shared_ptr<Tensor> convert(const BoltVector& vector,
+                                         uint32_t dim);
 
   /**
    * Returns the dimension of the vectors in the tensor.

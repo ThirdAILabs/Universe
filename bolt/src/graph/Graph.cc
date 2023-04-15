@@ -2,6 +2,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include "ExecutionConfig.h"
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
 #include <bolt/src/callbacks/Callback.h>
@@ -14,6 +15,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/Logging.h>
 #include <algorithm>
 #include <chrono>
@@ -65,8 +67,46 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
-                                   MetricAggregator& train_metrics) {
+std::optional<InferenceMetricData> BoltGraph::validateAndSaveIfBest(
+    const TrainConfig& train_config, const ValidationContext& validation) {
+  auto [validation_metrics, _] =
+      evaluate(validation.data(), validation.labels(), validation.config());
+  const std::optional<SaveContext>& save_context = train_config.saveContext();
+
+  if (save_context && _tracked_metric != nullptr) {
+    auto query = validation_metrics.find(_tracked_metric->name());
+    if (query != validation_metrics.end()) {
+      double candidate = query->second;
+      if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
+        _best_validation_metric = candidate;
+        const std::string checkpoint_path =
+            save_context->prefix() + ".best.bolt";
+        logging::info("Saving best model to {}", checkpoint_path);
+        save(checkpoint_path);
+      }
+    } else {
+      logging::error(
+          "Metric {} to be used for save-per-best not found in tracked "
+          "metrics. ",
+          _tracked_metric->name());
+    }
+  }
+  return validation_metrics;
+}
+
+std::optional<InferenceMetricData> BoltGraph::validateIfNeeded(
+    const TrainConfig& train_config) {
+  const std::optional<ValidationContext>& validation =
+      train_config.getValidationContext();
+  if (validation && validation->frequency() != 0 &&
+      (_updates % validation->frequency() == 0)) {
+    return validateAndSaveIfBest(train_config, validation.value());
+  }
+  return std::nullopt;
+}
+
+void BoltGraph::logAndSaveIfNeeded(const TrainConfig& train_config,
+                                   MetricAggregator& train_metrics) const {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | train_steps {} | {}", (_epoch), _updates,
@@ -80,33 +120,6 @@ void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
     const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
     logging::info("Saving most recent model to {}", checkpoint_path);
     save(checkpoint_path);
-  }
-
-  const std::optional<ValidationContext>& validation =
-      train_config.getValidationContext();
-  if (validation && validation->frequency() != 0 &&
-      (_updates % validation->frequency() == 0)) {
-    auto [validation_metrics, _] = evaluate(
-        validation->data(), validation->labels(), validation->config());
-
-    if (save_context && _tracked_metric != nullptr) {
-      auto query = validation_metrics.find(_tracked_metric->name());
-      if (query != validation_metrics.end()) {
-        double candidate = query->second;
-        if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
-          _best_validation_metric = candidate;
-          const std::string checkpoint_path =
-              save_context->prefix() + ".best.bolt";
-          logging::info("Saving best model to {}", checkpoint_path);
-          save(checkpoint_path);
-        }
-      } else {
-        logging::error(
-            "Metric {} to be used for save-per-best not found in tracked "
-            "metrics. ",
-            _tracked_metric->name());
-      }
-    }
   }
 }
 
@@ -202,10 +215,17 @@ MetricData BoltGraph::train(
         bar->increment();
       }
 
-      logValidateAndSave(train_config, train_metrics);
+      logAndSaveIfNeeded(train_config, train_metrics);
+      auto validation_metrics = validateIfNeeded(train_config);
 
+      train_metrics.logBatchMetrics();
       callbacks.onBatchEnd(*this, train_state);
     }
+
+    // We clear the batch processing state to force the model state to be
+    // reallocated if sparsity in a layer is changed before the next call to
+    // train, evaluate, predict, etc.
+    _batch_processing_state.clear();
 
     auto train_end = std::chrono::high_resolution_clock::now();
     int64_t epoch_time =
@@ -292,6 +312,10 @@ void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
                                      MetricAggregator& metrics) {
+  _total_samples_trained_on += batch_labels.getBatchSize();
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_samples_trained_on);
+
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
@@ -433,6 +457,11 @@ BoltGraph::getInputGradientSingle(
                        label_vector, /*batch_size= */ 1);
   backpropagate(/*vec_index= */ 0);
 
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
+
   // We reset the gradients to nullptr here to prevent the bolt vector
   // from freeing the memory which is owned by the std::vector we used to
   // store the gradients
@@ -510,6 +539,11 @@ InferenceResult BoltGraph::evaluate(
     outputTracker.saveOutputBatch(_output, batch_size);
   }
 
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
+
   auto test_end = std::chrono::high_resolution_clock::now();
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
@@ -556,6 +590,11 @@ BoltVector BoltGraph::predictSingle(
         /* vec_index = */ 0);
   }
 
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
+
   return output_copy;
 }
 
@@ -580,6 +619,11 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
     forward(vec_index, nullptr);
     outputs[vec_index] = _output->getOutputVector(vec_index);
   }
+
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
 
   return BoltBatch(std::move(outputs));
 }
@@ -663,6 +707,12 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
 void BoltGraph::disableSparseParameterUpdates() {
   for (NodePtr& node : _nodes) {
     node->disableSparseParameterUpdates();
+  }
+}
+
+void BoltGraph::saveWithOptimizer(bool should_save_optimizer) {
+  for (NodePtr& node : _nodes) {
+    node->saveWithOptimizer(should_save_optimizer);
   }
 }
 
@@ -851,9 +901,12 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
-  licensing::disableForDemoLicenses();
+  // We don't need to have these verify calls anywhere else because all model
+  // saves defer to this function
+  licensing::entitlements().verifySaveLoad();
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch, _updates);
+          _epoch, _updates, _total_samples_trained_on);
+  licensing::entitlements().verifyAllowedOutputDim(_output->outputDim());
 }
 
 void BoltGraph::save(const std::string& filename) const {

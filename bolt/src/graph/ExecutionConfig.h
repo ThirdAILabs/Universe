@@ -317,6 +317,10 @@ class TrainState {
     if (val_context.has_value()) {
       validation_metric_names = val_context->config().getMetricNames();
     }
+
+    for (const auto& metric : train_metric_aggregator.getMetrics()) {
+      train_metric_names.push_back(metric->name());
+    }
   }
 
   float learning_rate;
@@ -331,6 +335,7 @@ class TrainState {
 
   std::vector<double> epoch_times;
 
+  std::vector<std::string> train_metric_names;
   std::vector<std::string> validation_metric_names;
 
   MetricAggregator& getTrainMetricAggregator() {
@@ -350,6 +355,10 @@ class TrainState {
 
   MetricData getAllTrainMetrics() {
     return train_metric_aggregator.getOutput();
+  }
+
+  MetricData getAllTrainBatchMetrics() {
+    return train_metric_aggregator.getBatchMetrics();
   }
 
   const std::vector<double>& getValidationMetricValues(

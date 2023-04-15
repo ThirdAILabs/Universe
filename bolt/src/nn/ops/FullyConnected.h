@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -45,6 +46,8 @@ class FullyConnected final
 
   void disableSparseParameterUpdates() final;
 
+  std::vector<std::vector<float>*> gradients() final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
@@ -55,9 +58,9 @@ class FullyConnected final
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
   /**
-   * Returns the dimensions of the layer as {dim, input_dim}.
+   * Returns the input dim of the fully connected layer.
    */
-  std::vector<uint32_t> dimensions() const;
+  uint32_t inputDim() const;
 
   /**
    * Returns a non-owning pointer to the weights.
@@ -68,6 +71,27 @@ class FullyConnected final
    * Returns a non-owning pointer to the biases.
    */
   const float* biasesPtr() const;
+
+  /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
+
+  void setWeightsAndBiases(const float* weights_to_set,
+                           const float* biases_to_set);
+
+  /**
+   * Autotunes how often the hash tables and hash functions are rebuilt using
+   * the number of batches in the dataset and the batch size.
+   */
+  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+
+  static auto cast(const ops::OpPtr& op) {
+    return std::dynamic_pointer_cast<FullyConnected>(op);
+  }
 
  private:
   FullyConnected(
@@ -83,6 +107,18 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+
+  FullyConnected() {}
+
+  friend class cereal::access;
+
+  // We use save/load instead of serialize so we can ensure the optimizer is
+  // initialized when the model is loaded.
+  template <class Archive>
+  void save(Archive& archive) const;
+
+  template <class Archive>
+  void load(Archive& archive);
 };
 
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;

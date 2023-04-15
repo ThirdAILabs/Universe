@@ -1,8 +1,14 @@
 #include "FullyConnected.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/specialize.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -44,6 +50,7 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
 void FullyConnected::forward(const autograd::ComputationList& inputs,
                              tensor::TensorPtr& output, uint32_t index_in_batch,
                              bool training) {
+  assert(inputs.size() == 1 || inputs.size() == 2);
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
   const BoltVector* labels = nullptr;
@@ -57,6 +64,8 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
 void FullyConnected::backpropagate(autograd::ComputationList& inputs,
                                    tensor::TensorPtr& output,
                                    uint32_t index_in_batch) {
+  assert(inputs.size() == 1 || inputs.size() == 2);
+
   BoltVector& input = inputs[0]->tensor()->getVector(index_in_batch);
 
   if (input.hasGradients()) {
@@ -100,6 +109,10 @@ void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+std::vector<std::vector<float>*> FullyConnected::gradients() {
+  return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
+}
+
 void FullyConnected::summary(std::ostream& summary,
                              const autograd::ComputationList& inputs,
                              const autograd::Computation* output) const {
@@ -130,9 +143,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-std::vector<uint32_t> FullyConnected::dimensions() const {
-  return {_kernel->getDim(), _kernel->getInputDim()};
-}
+uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
 
 const float* FullyConnected::weightsPtr() const {
   return _kernel->getWeightsPtr();
@@ -142,4 +153,64 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
+  _kernel->freezeHashTables(insert_labels_if_not_found);
+}
+
+void FullyConnected::setWeightsAndBiases(const float* weights,
+                                         const float* biases) {
+  _kernel->setWeights(weights);
+  _kernel->setBiases(biases);
+}
+
+void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
+                                           uint32_t batch_size) {
+  // TODO(Someone): Revisit this autotuning. It seems like for some datasets it
+  // will update too frequently, for instance 50 batches with a batch size of 2K
+  // will lead to updates every batch.
+  _reconstruct_hash_functions = std::max(num_batches / 4, 1U);
+
+  if (num_batches * batch_size >= 100000) {
+    _rebuild_hash_tables = std::max(num_batches / 100, 1U);
+  } else {
+    _rebuild_hash_tables = std::max(num_batches / 20, 1U);
+  }
+}
+
+template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
+
+template <class Archive>
+void FullyConnected::save(Archive& archive) const {
+  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
+          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
+          _updates_since_reconstruct_hash_functions);
+}
+
+template void FullyConnected::load(cereal::BinaryInputArchive&);
+
+template <class Archive>
+void FullyConnected::load(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
+          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
+          _updates_since_reconstruct_hash_functions);
+
+  _kernel->initOptimizer();
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::nn::ops::FullyConnected,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::FullyConnected)

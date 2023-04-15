@@ -1,3 +1,5 @@
+from typing import Callable
+
 import ray
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
@@ -22,15 +24,22 @@ class PrimaryWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.nn.Model,
+        model_lambda: Callable[[], bolt.nn.Model],
+        licensing_lambda: Callable[[], None],
         train_source,
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        validation_context,
     ):
+        if validation_context != None:
+            train_config = self.add_validation_to_train_config(
+                validation_context, train_config
+            )
         super().__init__(
             num_workers=num_workers,
-            model_to_wrap=model_to_wrap,
+            model_lambda=model_lambda,
+            licensing_lambda=licensing_lambda,
             train_source=train_source,
             id=0,
             primary_worker=self,
@@ -38,6 +47,32 @@ class PrimaryWorker(Worker):
             communication_type=communication_type,
             log_dir=log_dir,
         )
+
+    def add_validation_to_train_config(self, validation_context, train_config):
+        validation_context.validation_source.load(shuffle=False)
+        load = validation_context.validation_source.next()
+        if load == None:
+            raise ValueError("validation dataset shouldn't be empty")
+        if not validation_context.validation_source.dataset_finished:
+            raise ValueError("Validation Dataset should not be loaded using streaming.")
+
+        validation_eval_config = bolt.EvalConfig().with_metrics(
+            validation_context.metrics
+        )
+
+        if validation_context.sparse_inference:
+            validation_eval_config.enable_sparse_inference()
+
+        validation_data, validation_label = load
+        train_config.with_validation(
+            validation_data=[validation_data],
+            validation_labels=validation_label,
+            eval_config=validation_eval_config,
+            validation_frequency=validation_context.validation_frequency,
+            # We are just using the first metrics for save best model
+            save_best_per_metric=validation_context.metrics[0],
+        )
+        return train_config
 
     def gradients_avg(self):
         """
@@ -57,3 +92,6 @@ class PrimaryWorker(Worker):
         """
         self.weights_biases = self.return_params()
         return self.weights_biases
+
+    def validate_and_save_if_best(self):
+        return self.model.validate_and_save_if_best()

@@ -10,6 +10,10 @@ namespace thirdai::bolt {
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;
 
+namespace tests {
+class ReduceLROnPlateauTest;
+}  // namespace tests
+
 // TODO(Geordie): Instead of hard coding the options, use a static map.
 class MetricAggregator {
  public:
@@ -35,6 +39,12 @@ class MetricAggregator {
     }
   }
 
+  void logBatchMetrics() {
+    for (auto& metric : _metrics) {
+      _batch_output[metric->name()].push_back(metric->value());
+    }
+  }
+
   std::string summary() {
     std::stringstream stream;
     stream << "{";
@@ -49,6 +59,8 @@ class MetricAggregator {
   }
 
   MetricData getOutput() { return _output; }
+
+  MetricData getBatchMetrics() { return _batch_output; }
 
   std::vector<double>& getSingleOutput(const std::string& metric_name) {
     if (_output.count(metric_name) != 0) {
@@ -68,9 +80,14 @@ class MetricAggregator {
 
   uint32_t getNumMetricsTracked() { return _metrics.size(); }
 
+  std::vector<std::shared_ptr<Metric>> getMetrics() const { return _metrics; }
+
+  friend class tests::ReduceLROnPlateauTest;
+
  private:
   std::vector<std::shared_ptr<Metric>> _metrics;
   MetricData _output;
+  MetricData _batch_output;
 };
 
 }  // namespace thirdai::bolt

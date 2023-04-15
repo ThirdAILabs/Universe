@@ -143,3 +143,69 @@ def test_train_state_correctly_updates_metrics():
 
     for collected_acc, actual_acc in zip(actual_accuracies, collected_accuracies):
         assert collected_acc == actual_acc
+
+
+def train_simple_udt_with_callback(callback, metrics):
+    train_filename = "train_file.csv"
+    with open(train_filename, "w") as f:
+        f.write("label,feature\n")
+        f.write("0,1\n")
+        f.write("0,1\n")
+        f.write("1,2\n")
+        f.write("1,2\n")
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "label": bolt.types.categorical(),
+            "feature": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=2,
+    )
+
+    return model.train(train_filename, epochs=10, metrics=metrics, callbacks=[callback])
+
+
+def test_overfitting_callback_invalid_threshold():
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid threshold -1.000000 for metric categorical_accuracy.",
+    ):
+        callback = bolt.callbacks.Overfitting("categorical_accuracy", -1)
+
+
+def test_overfitting_callback_reaches_threshold_and_stops():
+    callback = bolt.callbacks.Overfitting("categorical_accuracy", 0.97)
+
+    metrics = train_simple_udt_with_callback(callback, ["categorical_accuracy"])
+
+    assert metrics["categorical_accuracy"][-1] > 0.97
+    assert len(metrics["epoch_times"]) < 10
+
+
+def test_overfitting_callback_invalid_metric_name():
+    with pytest.raises(ValueError, match=r"'dummy' is not a valid metric."):
+        callback = bolt.callbacks.Overfitting("dummy", 0.97)
+
+
+def test_overfitting_callback_metric_not_passed():
+    callback = bolt.callbacks.Overfitting("categorical_accuracy", 0.97)
+
+    with pytest.raises(
+        ValueError, match=r"Metric: categorical_accuracy not found in training metrics."
+    ):
+        train_simple_udt_with_callback(callback, [])
+
+
+def test_reduce_lr_on_plateau_callback_missing_metric():
+    callback = bolt.callbacks.ReduceLROnPlateau("categorical_accuracy")
+    with pytest.raises(
+        ValueError,
+        match=r"ReduceLROnPlateau: Could not find metric categorical_accuracy in list of provided train metrics.",
+    ):
+        train_simple_udt_with_callback(callback, [])
+
+
+def test_reduce_lr_on_plateau_callback():
+    callback = bolt.callbacks.ReduceLROnPlateau("categorical_accuracy")
+    train_simple_udt_with_callback(callback, ["categorical_accuracy"])
