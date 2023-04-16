@@ -178,7 +178,7 @@ def test_save_load():
 
     eval_res = model.evaluate(TEST_FILE)
     saved_eval_res = saved_model.evaluate(TEST_FILE)
-    assert (eval_res == saved_eval_res).all()
+    assert eval_res == saved_eval_res
 
     model.index(single_update())
     saved_model.index(single_update())
@@ -243,7 +243,7 @@ def test_entity_embedding(embedding_dim, integer_label):
     for output_id, output_label in enumerate(output_labels):
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
-        weights = model._get_model().get_layer("fc_2").weights.get()
+        weights = model._get_model()["fc_2"].weights
 
         assert (weights[output_id] == embedding).all()
 
@@ -362,20 +362,11 @@ def test_works_without_temporal_relationships():
     # No assertion as we just want to know that there is no error.
 
 
-def test_return_eval_metrics():
-    model = make_simple_trained_model()
-
-    metrics = model.evaluate(
-        TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
-    )
-    assert metrics["categorical_accuracy"] >= 0
-
-
 def test_return_train_metrics():
     model = make_simple_trained_model()
 
     metrics = model.train(TEST_FILE, epochs=1, metrics=["categorical_accuracy"])
-    assert metrics["categorical_accuracy"][-1] >= 0
+    assert metrics["train_categorical_accuracy"][-1] >= 0
 
 
 def test_return_train_metrics_streamed():
@@ -395,8 +386,8 @@ def test_return_train_metrics_streamed():
         batch_size=max_in_memory_batches,
     )
 
-    assert metrics["categorical_accuracy"][-1] >= 0
-    assert len(metrics["categorical_accuracy"]) == num_samples / batch_size
+    assert metrics["train_categorical_accuracy"][-1] >= 0
+    assert len(metrics["train_categorical_accuracy"]) == num_samples / batch_size
 
 
 @pytest.mark.parametrize("encoding", ["none", "local", "global"])
@@ -413,17 +404,9 @@ def test_udt_override_input_dim():
         options={"input_dim": 200},
     )
 
-    summary = udt_model._get_model().summary(detailed=True, print=False)
+    input_dim = udt_model._get_model()["fc_1"].weights.shape[1]
 
-    expected_summary = """
-    ======================= Bolt Model =======================
-    input_1 (Input): dim=200
-    input_1 -> fc_1 (FullyConnected): dim=512, sparsity=1, act_func=ReLU
-    fc_1 -> fc_2 (FullyConnected): dim=40, sparsity=1, act_func=Softmax
-    ============================================================
-    """
-
-    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+    assert input_dim == 200
 
 
 @pytest.mark.unit
@@ -488,11 +471,9 @@ def test_char_k_contextual_text_encoding():
 
     model.train(train_filename, epochs=10, learning_rate=0.001)
 
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
+    metrics = model.evaluate(test_filename, metrics=["categorical_accuracy"])
 
-    assert metrics["categorical_accuracy"] == 1
+    assert metrics["val_categorical_accuracy"][-1] == 1
 
     os.remove(train_filename)
     os.remove(test_filename)

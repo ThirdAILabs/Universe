@@ -45,5 +45,5 @@ def test_svm_udt_predict_consistency(download_mnist_dataset):
         predict_sample = {a: b for a, b in pairs}
 
     act_1 = model.predict(predict_sample)
-    act_2 = model.predict_batch([predict_sample])
+    act_2 = model.predict_batch([predict_sample])[0]
     np.testing.assert_allclose(act_1, act_2, rtol=10**-3)

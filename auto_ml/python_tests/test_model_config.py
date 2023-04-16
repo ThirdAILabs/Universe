@@ -59,7 +59,7 @@ def get_config(have_user_specified_parameters: bool = False):
             },
         ],
         "output": "fc_4",
-        "loss": "CategoricalCrossEntropyLoss",
+        "loss": "CategoricalCrossEntropy",
     }
 
     return config
@@ -80,7 +80,7 @@ def verify_model_summary(config, params, input_dims, expected_summary):
 
     os.remove(CONFIG_FILE)
 
-    summary = model.summary(detailed=True, print=False)
+    summary = model.summary(print=False)
 
     assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
 

@@ -33,9 +33,7 @@ ACCURACY_THRESHOLD = 0.8
 
 def train_and_evaluate(model_to_test, train_path, test_path, inference_samples):
     model_to_test.train(train_path, epochs=5, learning_rate=0.01)
-    acc = compute_evaluate_accuracy(
-        model_to_test, test_path, inference_samples, use_class_name=True
-    )
+    acc = compute_evaluate_accuracy(model_to_test, test_path)
     assert acc >= ACCURACY_THRESHOLD
 
 

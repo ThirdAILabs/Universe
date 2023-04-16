@@ -185,9 +185,9 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
   bolt::nn::loss::LossPtr loss;
   std::string loss_name = getString(config, "loss");
 
-  if (text::lower(loss_name) == "CategoricalCrossEntropy") {
+  if (text::lower(loss_name) == "categoricalcrossentropy") {
     loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
-  } else if (text::lower(loss_name) == "BinaryCrossEntropy") {
+  } else if (text::lower(loss_name) == "binaryerossentropy") {
     loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
   } else {
     throw std::invalid_argument("Invalid loss function '" + loss_name +

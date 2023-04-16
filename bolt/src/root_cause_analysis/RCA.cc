@@ -53,8 +53,8 @@ RCAInputGradients explainNeuronHelper(model::ModelPtr& model,
     gradients.first = std::vector<uint32_t>(
         input_vec.active_neurons, input_vec.active_neurons + input_vec.len);
   }
-  gradients.second.assign(input_vec.activations,
-                          input_vec.activations + input_vec.len);
+  gradients.second.assign(input_vec.gradients,
+                          input_vec.gradients + input_vec.len);
 
   return gradients;
 }
