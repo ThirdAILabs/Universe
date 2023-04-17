@@ -64,6 +64,9 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client):
     # Drop the epoch times column since it is no longer needed after calculating training time
     mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True)
 
+    # Drop learning rate column since we don't need to display it as a recorded metric in Slack
+    mlflow_runs.drop(columns=["metrics.learning_rate"], inplace=True)
+
     # Convert the start time timestamp into a date to make it easier to read
     mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
 
