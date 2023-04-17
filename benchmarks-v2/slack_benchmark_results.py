@@ -23,28 +23,28 @@ def parse_arguments():
         type=str,
         required=True,
         choices=["udt", "bolt_fc", "dlrm"],
-        help="Which runner to retrieve benchmark results for.",
+        help="The runner to retrieve benchmark results for.",
     )
     parser.add_argument(
         "--config",
         type=str,
         default="",
-        help="Regular expression indicating which configs to run for the given runner.",
+        help="Regular expression indicating which configs to retrieve for the given runner.", # Empty string returns all configs for the given runner.
     )
     parser.add_argument(
         "--mlflow_uri",
         type=str,
-        help="MLflow URI to log metrics and artifacts.",
+        help="MLflow URI to read metrics from.",
     )
     parser.add_argument(
         "--official_benchmark",
         action="store_true",
-        help="Controls if the experiment is logged to the '_benchmark' experiment or the regular experiment. This should only be used for the github actions benchmark runner.",
+        help="Controls if the experiments retrieved are '_benchmark' experiments or regular experiments. This should be used to retrieve experiments run by the github actions benchmark runner.",
     )
     parser.add_argument(
         "--num_runs",
         type=int,
-        default=1,
+        default=3,
         help="How many runs to display in slack message",
     )
     return parser.parse_args()
