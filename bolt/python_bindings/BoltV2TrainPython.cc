@@ -3,6 +3,7 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
@@ -53,6 +54,10 @@ class GradientReference {
 
 void defineTrainer(py::module_& train);
 
+void defineMetrics(py::module_& train);
+
+void defineCallbacks(py::module_& train);
+
 void defineDistributedTrainer(py::module_& train);
 
 void createBoltV2TrainSubmodule(py::module_& module) {
@@ -66,6 +71,8 @@ void createBoltV2TrainSubmodule(py::module_& module) {
    * ==============================================================
    */
   defineTrainer(train);
+  defineMetrics(train);
+  defineCallbacks(train);
 #endif
 
   defineDistributedTrainer(train);
@@ -115,7 +122,9 @@ void defineTrainer(py::module_& train) {
            py::arg("validation_metrics") = std::vector<std::string>(),
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
            bolt::python::OutputRedirect());
+}
 
+void defineMetrics(py::module_& train) {
   auto metrics = train.def_submodule("metrics");
 
   py::class_<metrics::Metric, metrics::MetricPtr>(metrics, "Metric");  // NOLINT
@@ -142,7 +151,9 @@ void defineTrainer(py::module_& train) {
       .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
                     uint32_t>(),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
+}
 
+void defineCallbacks(py::module_& train) {
   auto callbacks = train.def_submodule("callbacks");
 
   py::class_<callbacks::Callback, callbacks::CallbackPtr>(callbacks,  // NOLINT
@@ -157,6 +168,11 @@ void defineTrainer(py::module_& train) {
            py::arg("decay_factor") = 0.1, py::arg("threshold") = 1e-3,
            py::arg("relative_threshold") = true, py::arg("maximize") = true,
            py::arg("min_lr") = 0);
+
+  py::class_<callbacks::Overfitting, std::shared_ptr<callbacks::Overfitting>,
+             callbacks::Callback>(callbacks, "Overfitting")
+      .def(py::init<std::string, float, bool>(), py::arg("metric"),
+           py::arg("threshold") = 0.97, py::arg("maximize") = true);
 }
 
 void defineDistributedTrainer(py::module_& train) {
