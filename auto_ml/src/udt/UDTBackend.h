@@ -206,21 +206,21 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
-  virtual  std::pair<const float*, uint64_t> getParams(){
+  virtual std::pair<const float*, uint64_t> getParams() {
     throw notSupported("get_params");
   }
 
-  virtual void setParams(const float* new_params, uint64_t flattened_dim){
+  virtual void setParams(const float* new_params, uint64_t flattened_dim) {
     (void)new_params;
     (void)flattened_dim;
     throw notSupported("set_params");
   }
 
-  virtual  std::pair<const float*, uint64_t> getOptimizers(){
+  virtual std::pair<const float*, uint64_t> getOptimizers() {
     throw notSupported("get_optimizers");
   }
 
-  virtual void setOptimizers(const float* new_params, uint64_t flattened_dim){
+  virtual void setOptimizers(const float* new_params, uint64_t flattened_dim) {
     (void)new_params;
     (void)flattened_dim;
     throw notSupported("set_optimizers");

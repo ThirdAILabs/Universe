@@ -652,33 +652,33 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
   }
 }
 
-  std::vector<std::vector<float>*> BoltGraph::params(){
-    std::vector<std::vector<float>*> params;
-    for(auto &node: _nodes){
-      if(node->type() != "fc"){
-        throw std::invalid_argument("This function is only meant to be called by UDT.");
-      }
-      FullyConnectedNode* fc_node =
-              dynamic_cast<FullyConnectedNode*>(node.get());
-      params.insert(params.end(), fc_node->params().begin(), fc_node->params().end());
+std::vector<std::vector<float>*> BoltGraph::params() {
+  std::vector<std::vector<float>*> params;
+  for (auto& node : _nodes) {
+    if (node->type() != "fc") {
+      throw std::invalid_argument(
+          "This function is only meant to be called by UDT.");
     }
-    return params;
+    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    params.insert(params.end(), fc_node->params().begin(),
+                  fc_node->params().end());
   }
+  return params;
+}
 
-
-  std::vector<std::vector<float>*> BoltGraph::optims(){
-    std::vector<std::vector<float>*> optims;
-    for(auto &node: _nodes){
-      if(node->type() != "fc"){
-        throw std::invalid_argument("This function is only meant to be called by UDT.");
-      }
-      FullyConnectedNode* fc_node =
-              dynamic_cast<FullyConnectedNode*>(node.get());
-      optims.insert(optims.end(), fc_node->optim().begin(), fc_node->optim().end());
+std::vector<std::vector<float>*> BoltGraph::optims() {
+  std::vector<std::vector<float>*> optims;
+  for (auto& node : _nodes) {
+    if (node->type() != "fc") {
+      throw std::invalid_argument(
+          "This function is only meant to be called by UDT.");
     }
-    return optims;
+    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    optims.insert(optims.end(), fc_node->optim().begin(),
+                  fc_node->optim().end());
   }
-
+  return optims;
+}
 
 void BoltGraph::processOutputCallback(
     const std::optional<std::function<void(const BoltVector&)>>&

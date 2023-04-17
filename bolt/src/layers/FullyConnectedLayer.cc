@@ -713,7 +713,8 @@ float* FullyConnectedLayer::getWeights() const {
    learning happens at end of each batch and gradients are always
    zero(for Adam Optimizer) at the end of a batch training */
 std::vector<std::vector<float>*> FullyConnectedLayer::optim() {
-  return {&_weight_optimizer->velocity, &_weight_optimizer->momentum, &_bias_optimizer->velocity, &_bias_optimizer->momentum};
+  return {&_weight_optimizer->velocity, &_weight_optimizer->momentum,
+          &_bias_optimizer->velocity, &_bias_optimizer->momentum};
 }
 
 std::vector<std::vector<float>*> FullyConnectedLayer::params() {

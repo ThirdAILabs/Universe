@@ -75,62 +75,61 @@ py::object UDTClassifier::train(
       logging_interval, licensing::TrainPermissionsToken(data));
 }
 
-uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& params){
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& params) {
   uint64_t total_dim = 0;
-  for(const auto* param: params){
+  for (const auto* param : params) {
     total_dim += param->size();
   }
   return total_dim;
 }
 
-std::pair<const float*, uint64_t> readFlattenedData(const std::vector<std::vector<float>*>& data_to_flatten){
-
+std::pair<const float*, uint64_t> readFlattenedData(
+    const std::vector<std::vector<float>*>& data_to_flatten) {
   uint64_t total_dim = sumFlattenedDims(data_to_flatten);
   float* combined_data_to_flatten = new float[total_dim];
   uint64_t offset = 0;
-  for(const auto* param: data_to_flatten){
-    std::copy(param->data(), param->data()+param->size(), combined_data_to_flatten + offset);
+  for (const auto* param : data_to_flatten) {
+    std::copy(param->data(), param->data() + param->size(),
+              combined_data_to_flatten + offset);
     offset += param->size();
   }
   return {combined_data_to_flatten, total_dim};
 }
 
-void writeFlattenedData(const std::vector<std::vector<float>*>& data_to_flatten, const float* new_data, uint64_t flattened_dim){
-
-    uint64_t total_dim  = sumFlattenedDims(data_to_flatten);
-    if(total_dim != flattened_dim){
-      std::stringstream error;
-      error << "Expected " << total_dim
+void writeFlattenedData(const std::vector<std::vector<float>*>& data_to_flatten,
+                        const float* new_data, uint64_t flattened_dim) {
+  uint64_t total_dim = sumFlattenedDims(data_to_flatten);
+  if (total_dim != flattened_dim) {
+    std::stringstream error;
+    error << "Expected " << total_dim
           << " parameters in setGradients, but received " << flattened_dim
           << " parameters.";
-      throw std::invalid_argument(error.str());
-    }
-    uint64_t offset = 0;
-    for(auto* param: data_to_flatten){
-      std::copy(new_data + offset, new_data + offset + param->size(), param->data());
-      offset += param->size();
-    }
+    throw std::invalid_argument(error.str());
+  }
+  uint64_t offset = 0;
+  for (auto* param : data_to_flatten) {
+    std::copy(new_data + offset, new_data + offset + param->size(),
+              param->data());
+    offset += param->size();
+  }
 }
 
-std::pair<const float*, uint64_t> UDTClassifier::getParams(){
+std::pair<const float*, uint64_t> UDTClassifier::getParams() {
   return readFlattenedData(_classifier->model()->params());
 }
 
- void  UDTClassifier::setParams(const float* new_params, uint64_t flattened_dim){
-    writeFlattenedData(_classifier->model()->params(), new_params, flattened_dim);
-
+void UDTClassifier::setParams(const float* new_params, uint64_t flattened_dim) {
+  writeFlattenedData(_classifier->model()->params(), new_params, flattened_dim);
 }
 
-  std::pair<const float*, uint64_t>  UDTClassifier::getOptimizers(){
-   
+std::pair<const float*, uint64_t> UDTClassifier::getOptimizers() {
   return readFlattenedData(_classifier->model()->optims());
-  }
+}
 
-  void  UDTClassifier::setOptimizers(const float* new_params, uint64_t flattened_dim){
-    writeFlattenedData(_classifier->model()->optims(), new_params, flattened_dim);
-
-  }
- 
+void UDTClassifier::setOptimizers(const float* new_params,
+                                  uint64_t flattened_dim) {
+  writeFlattenedData(_classifier->model()->optims(), new_params, flattened_dim);
+}
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
                                      float learning_rate,
