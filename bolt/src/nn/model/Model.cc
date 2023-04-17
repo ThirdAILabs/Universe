@@ -14,6 +14,7 @@
 #include <chrono>
 #include <ctime>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
@@ -50,13 +51,7 @@ Model::Model(autograd::ComputationList inputs,
 
   matchOutputFullyConnectedLayersWithLabels();
 
-  // This will block the user if they have any limit on the output_dim or the
-  // number of training samples.
-  // TODO(Nicholas, Josh): Implement these checks.
-  licensing::entitlements().verifyAllowedOutputDim(
-      licensing::Entitlements::NO_LIMIT);
-  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
-      licensing::Entitlements::NO_LIMIT);
+  verifyAllowedOutputDim();
 }
 
 std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
@@ -88,6 +83,9 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
                          const tensor::TensorList& labels) {
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_training_samples);
+
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -336,6 +334,14 @@ void Model::saveMetadata(const std::string& save_path) const {
 #endif
 }
 
+void Model::verifyAllowedOutputDim() const {
+  uint64_t total_output_dim = std::transform_reduce(
+      _outputs.begin(), _outputs.end(), 0UL, std::plus(),
+      [](const auto& output) { return output->op()->dim(); });
+
+  licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
+}
+
 template void Model::serialize(cereal::BinaryInputArchive&);
 template void Model::serialize(cereal::BinaryOutputArchive&);
 
@@ -344,7 +350,10 @@ void Model::serialize(Archive& archive) {
   licensing::entitlements().verifySaveLoad();
 
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _allocation_manager, _train_steps, _model_uuid);
+          _allocation_manager, _train_steps, _model_uuid,
+          _total_training_samples);
+
+  verifyAllowedOutputDim();
 }
 
 }  // namespace thirdai::bolt::nn::model

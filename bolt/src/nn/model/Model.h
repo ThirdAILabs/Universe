@@ -195,6 +195,8 @@ class Model {
    */
   void saveMetadata(const std::string& save_path) const;
 
+  void verifyAllowedOutputDim() const;
+
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;
   autograd::ComputationList _labels;
@@ -208,6 +210,7 @@ class Model {
   uint32_t _train_steps;
 
   std::string _model_uuid;
+  uint64_t _total_training_samples = 0;
 
   Model() : _allocation_manager() { licensing::checkLicense(); }
 
