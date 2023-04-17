@@ -170,7 +170,7 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
     return py::array_t<float>(flattened_dim, params, free_when_done);
   }
 
-  void UDT::setParams(py::array_t<float> new_params){
+  void UDT::setParams(py::array_t<float> &new_params){
        if (new_params.ndim() != 1) {
       throw std::invalid_argument("Expected params to be flattened.");
     }
@@ -189,7 +189,7 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
   }
 
-  void UDT::setOptimizers(py::array_t<float> new_optims){
+  void UDT::setOptimizers(py::array_t<float> &new_optims){
          if (new_optims.ndim() != 1) {
       throw std::invalid_argument("Expected optimizers to be flattened.");
     }
