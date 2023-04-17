@@ -28,11 +28,6 @@ class Entitlements {
 
   void verifyDataSource(const dataset::DataSourcePtr& source) const;
 
-  // This can be passed to verifyAllowedNumberOfTrainingSamples or
-  // verifyAllowedOutputDim to assert that there are no limits on these
-  // parameters, as any limit will cause them it to fail.
-  static constexpr uint64_t NO_LIMIT = std::numeric_limits<uint64_t>::max() - 1;
-
  private:
   std::optional<ModelRestrictions> getModelRestrictions() const;
 

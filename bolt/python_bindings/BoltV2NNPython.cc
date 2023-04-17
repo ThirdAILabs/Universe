@@ -54,9 +54,56 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
+void defineTensor(py::module_& nn);
+
+void defineOps(py::module_& nn);
+
+void defineLosses(py::module_& nn);
+
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
+  py::class_<model::Model, model::ModelPtr>(nn, "Model")
+#if THIRDAI_EXPOSE_ALL
+      /**
+       * ==============================================================
+       * WARNING: If this THIRDAI_EXPOSE_ALL is removed then license
+       * checks must be added to train_on_batch. Also methods such as
+       * summary, ops, __getitem__, etc. should remain hidden.
+       * ==============================================================
+       */
+      .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
+           py::arg("losses"))
+      .def("forward",
+           py::overload_cast<const tensor::TensorList&, bool>(
+               &model::Model::forward),
+           py::arg("inputs"), py::arg("use_sparsity"))
+      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
+           py::arg("labels"))
+      .def("update_parameters", &model::Model::updateParameters,
+           py::arg("learning_rate"))
+      .def("ops", &model::Model::ops)
+      .def("__getitem__", &model::Model::getOp, py::arg("name"))
+      .def("outputs", &model::Model::outputs)
+      .def("labels", &model::Model::labels)
+      .def("summary", &model::Model::summary, py::arg("print") = true)
+#endif
+      .def("save", &model::Model::save, py::arg("filename"),
+           py::arg("save_metadata") = true)
+      .def_static("load", &model::Model::load, py::arg("filename"))
+      .def(thirdai::bolt::python::getPickleFunction<model::Model>());
+
+#if THIRDAI_EXPOSE_ALL
+  defineTensor(nn);
+
+  defineOps(nn);
+
+  defineLosses(nn);
+
+#endif
+}
+
+void defineTensor(py::module_& nn) {
   py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
       .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
                tensor::Tensor::convert)),
@@ -79,7 +126,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
             return toNumpy(tensor, tensor->gradientsPtr());
           },
           py::return_value_policy::reference_internal);
+}
 
+void defineOps(py::module_& nn) {
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
       .def("dim", &autograd::Computation::dim)
       .def("tensor", &autograd::Computation::tensor)
@@ -118,30 +167,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("__call__", &ops::Concatenate::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
+}
 
-  py::class_<model::Model, model::ModelPtr>(nn, "Model")
-      .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"))
-      .def("forward",
-           py::overload_cast<const tensor::TensorList&, bool>(
-               &model::Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity"))
-#if THIRDAI_EXPOSE_ALL
-      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
-           py::arg("labels"))
-      .def("update_parameters", &model::Model::updateParameters,
-           py::arg("learning_rate"))
-      .def("ops", &model::Model::ops)
-      .def("__getitem__", &model::Model::getOp, py::arg("name"))
-      .def("outputs", &model::Model::outputs)
-      .def("labels", &model::Model::labels)
-      .def("summary", &model::Model::summary, py::arg("print") = true)
-#endif
-      .def("save", &model::Model::save, py::arg("filename"),
-           py::arg("save_metadata") = true)
-      .def_static("load", &model::Model::load, py::arg("filename"))
-      .def(thirdai::bolt::python::getPickleFunction<model::Model>());
-
+void defineLosses(py::module_& nn) {
   auto loss = nn.def_submodule("losses");
 
   py::class_<loss::Loss, loss::LossPtr>(loss, "Loss");  // NOLINT
