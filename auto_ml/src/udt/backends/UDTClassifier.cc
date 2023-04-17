@@ -83,7 +83,7 @@ uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& params){
   return total_dim;
 }
 
-std::pair<const float*, uint64_t> readFlattenedData(std::vector<std::vector<float>*> &data_to_flatten){
+std::pair<const float*, uint64_t> readFlattenedData(const std::vector<std::vector<float>*>& data_to_flatten){
 
   uint64_t total_dim = sumFlattenedDims(data_to_flatten);
   float* combined_data_to_flatten = new float[total_dim];
@@ -95,7 +95,7 @@ std::pair<const float*, uint64_t> readFlattenedData(std::vector<std::vector<floa
   return {combined_data_to_flatten, total_dim};
 }
 
-void writeFlattenedData(std::vector<std::vector<float>*> &data_to_flatten, const float* new_data, uint64_t flattened_dim){
+void writeFlattenedData(const std::vector<std::vector<float>*>& data_to_flatten, const float* new_data, uint64_t flattened_dim){
 
     uint64_t total_dim  = sumFlattenedDims(data_to_flatten);
     if(total_dim != flattened_dim){

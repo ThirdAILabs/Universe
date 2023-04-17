@@ -5,6 +5,7 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
+#include <pybind11/numpy.h>
 #include <stdexcept>
 #include <string>
 
@@ -142,6 +143,14 @@ class UDT {
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }
+
+    py::object getParams() ;
+
+  void setParams(py::array_t<float> new_params) ;
+
+  py::object getOptimizers() ;
+
+  void setOptimizers(py::array_t<float> new_optims) ;
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 

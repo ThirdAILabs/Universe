@@ -11,6 +11,7 @@
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
+#include <pybind11/numpy.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <cstddef>
 #include <memory>
@@ -159,6 +160,43 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
   return result;
 }
+
+    py::object UDT::getParams(){
+    auto [params, flattened_dim] = _backend->getParams();
+
+    py::capsule free_when_done(
+        params, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return py::array_t<float>(flattened_dim, params, free_when_done);
+  }
+
+  void UDT::setParams(py::array_t<float> new_params){
+       if (new_params.ndim() != 1) {
+      throw std::invalid_argument("Expected params to be flattened.");
+    }
+
+    uint64_t flattened_dim = new_params.shape(0);
+    _backend->setParams(new_params.data(), flattened_dim);
+  }
+
+  py::object UDT::getOptimizers(){
+    auto [optims, flattened_dim] = _backend->getOptimizers();
+
+    py::capsule free_when_done(
+        optims, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return py::array_t<float>(flattened_dim, optims, free_when_done);
+
+  }
+
+  void UDT::setOptimizers(py::array_t<float> new_optims){
+         if (new_optims.ndim() != 1) {
+      throw std::invalid_argument("Expected optimizers to be flattened.");
+    }
+
+    uint64_t flattened_dim = new_optims.shape(0);
+    _backend->setOptimizers(new_optims.data(), flattened_dim);
+  }
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                         bool return_predicted_class) {
