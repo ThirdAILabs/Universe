@@ -128,7 +128,7 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            &DistributedTrainingWrapper::validationAndSaveBest,
            bolt::python::OutputRedirect())
       .def("should_save_optimizer",
-           &DistributedTrainingWrapper::saveWithOptimizer,
+           &DistributedTrainingWrapper::setSerializeOptimizer,
            py::arg("should_save_optimizer"));
 
   auto metrics = train.def_submodule("metrics");

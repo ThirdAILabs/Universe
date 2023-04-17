@@ -220,7 +220,7 @@ void Model::save(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-  saveWithOptimizer(false);
+  setSerializeOptimizer(false);
 
   save_stream(output_stream);
 
@@ -233,7 +233,7 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-  saveWithOptimizer(true);
+  setSerializeOptimizer(true);
 
   save_stream(output_stream);
 
@@ -247,9 +247,9 @@ void Model::save_stream(std::ostream& output_stream) const {
   oarchive(*this);
 }
 
-void Model::saveWithOptimizer(bool should_save_optimizer) {
+void Model::setSerializeOptimizer(bool should_save_optimizer) {
   for (auto& op : _ops) {
-    op->saveWithOptimizer(should_save_optimizer);
+    op->setSerializeOptimizer(should_save_optimizer);
   }
 }
 

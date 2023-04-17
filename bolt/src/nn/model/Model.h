@@ -159,7 +159,7 @@ class Model {
   /**
    * Controls if the model will save the optimizer along with the parameters.
    */
-  void saveWithOptimizer(bool should_save_optimizer);
+  void setSerializeOptimizer(bool should_save_optimizer);
 
   /**
    * Loads the model and automatically initializes the optimizer state.

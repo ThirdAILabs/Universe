@@ -110,11 +110,10 @@ class Op {
                        const autograd::Computation* output) const = 0;
 
   /**
-   * Controls if the op should save the optimizer along with the
-   * parameters.
+   * Controls if the op should save the optimizer along with the parameters.
    */
-  virtual void saveWithOptimizer(bool should_save_optimizer) {
-    (void)should_save_optimizer;
+  virtual void setSerializeOptimizer(bool setSerializeOptimizer) {
+    (void)setSerializeOptimizer;
   }
 
   /**

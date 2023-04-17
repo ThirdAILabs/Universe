@@ -56,8 +56,8 @@ class DistributedTrainingWrapper {
 
   void setGradients(const float* new_grad, uint64_t flattened_dim);
 
-  void saveWithOptimizer(bool should_save_optimizer) {
-    _model->saveWithOptimizer(should_save_optimizer);
+  void setSerializeOptimizer(bool should_serialize_optimizer) {
+    _model->setSerializeOptimizer(should_serialize_optimizer);
   }
 
  private:
