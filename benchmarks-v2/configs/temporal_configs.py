@@ -1,6 +1,4 @@
-from abc import abstractmethod
-
-from thirdai import bolt, data
+from thirdai import bolt
 
 from .udt_configs import UDTBenchmarkConfig
 

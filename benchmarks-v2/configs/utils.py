@@ -4,6 +4,9 @@ from sklearn.metrics import roc_auc_score
 from thirdai import bolt
 
 
+# This class allows a metric function to be invoked as a callback after every epoch
+# of training a UDT model. This class is used when we want to record an evaluation
+# metric that doesn't exist in UDT, or more generally if we want custom evaluation logic.
 class AdditionalMetricCallback(bolt.callbacks.Callback):
     def __init__(
         self,
@@ -16,7 +19,7 @@ class AdditionalMetricCallback(bolt.callbacks.Callback):
         super().__init__()
 
         self.metric_name = metric_name
-        self.metric_fn = metric_fn
+        self.metric_fn = metric_fn  # function that takes in UDT model and test file path and outputs metric value to record
         self.test_file = test_file
         self.model = model
         self.mlflow_logger = mlflow_logger
@@ -44,7 +47,7 @@ class AdditionalMetricCallback(bolt.callbacks.Callback):
         self.step += 1
 
 
-def roc_auc_with_target_name(target_name, positive_label="1"):
+def get_roc_auc_metric_fn(target_name, positive_label="1"):
     def roc_auc_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file, low_memory=False)
@@ -62,7 +65,7 @@ def roc_auc_with_target_name(target_name, positive_label="1"):
     return roc_auc_additional_metric
 
 
-def gnn_roc_auc_with_target_name(target_name):
+def get_gnn_roc_auc_metric_fn(target_name):
     def roc_auc_additional_metric(model, test_file):
         df = pd.read_csv(test_file)
         inference_samples = []
@@ -72,8 +75,6 @@ def gnn_roc_auc_with_target_name(target_name):
             del sample[target_name]
             sample = {x: str(y) for x, y in sample.items()}
             inference_samples.append((sample, label))
-
-        ground_truth = [inference_sample[1] for inference_sample in inference_samples]
 
         predictions = []
         ground_truths = []
@@ -90,7 +91,7 @@ def gnn_roc_auc_with_target_name(target_name):
     return roc_auc_additional_metric
 
 
-def mse_with_target_name(target_name):
+def get_mse_metric_fn(target_name):
     def mse_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
@@ -103,7 +104,7 @@ def mse_with_target_name(target_name):
     return mse_additional_metric
 
 
-def mae_with_target_name(target_name):
+def get_mae_metric_fn(target_name):
     def mae_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
@@ -116,145 +117,99 @@ def mae_with_target_name(target_name):
     return mae_additional_metric
 
 
-def mach_recall_at_5_with_target_name(target_name, target_delimeter=None):
-    def recall_at_5_additional_metric(model, test_file):
+def get_mach_recall_at_k_metric_fn(target_name, k=1, target_delimeter=None):
+    # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
+    assert 1 <= k <= 5
+
+    def recall_at_k_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
         labels = df[target_name].to_numpy()
 
-        # Assumes mach activations return top 5 highest scoring predictions
-        predictions = [[score[0] for score in scores] for scores in activations]
-        labels = [[idx for idx in idxs.split(target_delimeter)] for idxs in labels]
+        predictions = [
+            [idx for idx, score in top_5_idx_score_pairs[:k]]
+            for top_5_idx_score_pairs in activations
+        ]
+        labels = [idxs.split(target_delimeter) for idxs in labels]
 
-        recall_at_5 = sum(
-            [
-                len([pred for pred in predictions[i] if pred in labels[i]])
-                / len(labels[i])
-                for i in range(len(labels))
-            ]
-        ) / len(labels)
+        num_true_positives = 0
+        num_total_positives = 0
 
-        return recall_at_5
+        for i, top_k_idxs in enumerate(predictions):
+            num_true_positives += len(
+                [1 for pred in predictions[i] if pred in labels[i]]
+            )
+            num_total_positives += len(labels[i])
 
-    return recall_at_5_additional_metric
+        recall_at_k = num_true_positives / num_total_positives
+
+        return recall_at_k
+
+    return recall_at_k_additional_metric
 
 
-def mach_precision_at_1_with_target_name(target_name, target_delimeter=None):
-    def precision_at_1_additional_metric(model, test_file):
+def get_mach_precision_at_k_metric_fn(target_name, k=1, target_delimeter=None):
+    # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
+    assert 1 <= k <= 5
+
+    def precision_at_k_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
         labels = df[target_name].to_numpy()
 
-        predictions = [[score[0] for score in scores] for scores in activations]
-        labels = [[idx for idx in idxs.split(target_delimeter)] for idxs in labels]
+        predictions = [
+            [idx for idx, score in top_5_idx_score_pairs[:k]]
+            for top_5_idx_score_pairs in activations
+        ]
+        labels = [idxs.split(target_delimeter) for idxs in labels]
 
-        precision_at_1 = sum(
-            [1 if predictions[i][0] in labels[i] else 0 for i in range(len(labels))]
-        ) / len(labels)
+        num_true_positives = 0
+        num_predicted_positives = 0
 
-        return precision_at_1
+        for i, top_k_idxs in enumerate(predictions):
+            num_true_positives += len(
+                [1 for pred in predictions[i] if pred in labels[i]]
+            )
+            num_predicted_positives += k
 
-    return precision_at_1_additional_metric
+        precision_at_k = num_true_positives / num_predicted_positives
+
+        return precision_at_k
+
+    return precision_at_k_additional_metric
 
 
-def qr_recall_at_5_with_target_name(target_name):
-    def recall_at_5_additional_metric(model, test_file):
-        predictions = model.evaluate(filename=test_file, top_k=5)[0]
+def get_qr_recall_at_k_metric_fn(target_name, k=1):
+    def recall_at_k_additional_metric(model, test_file):
+        predictions = model.evaluate(filename=test_file, top_k=k)[0]  # shape of (-1, k)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
+        labels = df[target_name].to_numpy()  # shape of (-1,)
 
-        num_correct = 0
+        num_true_positives = 0
         for i in range(len(predictions)):
+            # We assume that query reformulation ground truth has one correct answer
             if labels[i] in predictions[i]:
-                num_correct += 1
-        recall_at_5 = num_correct / len(labels)
+                num_true_positives += 1
+        recall_at_k = num_true_positives / len(predictions)
 
-        return recall_at_5
+        return recall_at_k
 
-    return recall_at_5_additional_metric
+    return recall_at_k_additional_metric
 
 
-def qr_precision_at_1_with_target_name(target_name):
-    def precision_at_1_additional_metric(model, test_file):
-        predictions = model.evaluate(filename=test_file, top_k=1)[0]
+def get_qr_precision_at_k_metric_fn(target_name, k=1):
+    def precision_at_k_additional_metric(model, test_file):
+        predictions = model.evaluate(filename=test_file, top_k=k)[0]  # shape of (-1, k)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
+        labels = df[target_name].to_numpy()  # shape of (-1,)
 
-        num_correct = 0
+        num_true_positives = 0
         for i in range(len(predictions)):
+            # We assume that query reformulation ground truth has one correct answer
             if labels[i] in predictions[i]:
-                num_correct += 1
-        precision_at_1 = num_correct / len(labels)
+                num_true_positives += 1 / k
+        precision_at_k = num_true_positives / len(predictions)
 
-        return precision_at_1
+        return precision_at_k
 
-    return precision_at_1_additional_metric
-
-
-pokec_col_ranges = [
-    [0.0, 1.0],
-    [0.0, 100.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [13.0, 112.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-    [0.0, 1.0],
-]
+    return precision_at_k_additional_metric

@@ -3,19 +3,44 @@ import os
 
 from thirdai import bolt, deployment
 
-from ..configs.query_reformulation_configs import QueryReformulationBenchmarkConfig
+from ..configs.query_reformulation_configs import *
 from .runner import Runner
 
 
 class QueryReformulationRunner(Runner):
     config_type = QueryReformulationBenchmarkConfig
 
+    @staticmethod
     def run_benchmark(
         config: QueryReformulationBenchmarkConfig, path_prefix: str, mlflow_logger
     ):
         train_file = os.path.join(path_prefix, config.train_file)
         test_file = os.path.join(path_prefix, config.test_file)
 
+        model = create_model(config, path_prefix)
+
+        model.train(train_file)
+
+        for metric_name, metric_fn in config.additional_metric_fns.items():
+            metric_val = metric_fn(model, test_file)
+
+            print(f"{metric_name} = {metric_val}")
+            mlflow_logger.log_additional_metric(
+                key=metric_name, value=metric_val, step=0
+            )
+
+        average_predict_time_ms = QueryReformulationRunner.get_average_predict_time(
+            model, test_file, config, num_samples=10000
+        )
+
+        print(f"average_predict_time_ms = {average_predict_time_ms}ms")
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time_ms", value=average_predict_time_ms
+            )
+
+    @staticmethod
+    def create_model(config, path_prefix):
         if config.model_config is not None:
             model_config_path = config.config_name + "_model.config"
             deployment.dump_config(
@@ -34,17 +59,10 @@ class QueryReformulationRunner(Runner):
         if model_config_path:
             os.remove(model_config_path)
 
-        model.train(train_file)
+        return model
 
-        for metric_name, metric_fn in config.additional_metric_fns.items():
-            metric_val = metric_fn(model, test_file)
-
-            print(f"{metric_name} = {metric_val}")
-            mlflow_logger.log_additional_metric(
-                key=metric_name, value=metric_val, step=0
-            )
-
-        num_samples = 10000
+    @staticmethod
+    def get_average_predict_time(model, test_file, config, num_samples=10000):
         test_data = pd.read_csv(test_file, low_memory=False)
         test_data_sample = test_data.iloc[
             np.random.randint(0, len(test_data), size=num_samples)
@@ -60,10 +78,7 @@ class QueryReformulationRunner(Runner):
         for sample, label in inference_samples:
             model.predict(sample, top_k=5)
         end_time = time.time()
-        time_per_predict = int(np.around(1000 * (end_time - start_time) / num_samples))
-
-        print(f"average_predict_time = {time_per_predict}ms")
-        if mlflow_logger:
-            mlflow_logger.log_additional_metric(
-                key="average_predict_time", value=time_per_predict
-            )
+        average_predict_time_ms = int(
+            np.around(1000 * (end_time - start_time) / num_samples)
+        )
+        return average_predict_time_ms

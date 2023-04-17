@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 from thirdai import bolt, deployment
 
-from ..configs.temporal_configs import UDTBenchmarkConfig
+from ..configs.temporal_configs import *
 from .runner import Runner
 
 
 class TemporalRunner(Runner):
     config_type = UDTBenchmarkConfig
 
+    @staticmethod
     def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
         train_file = (
             os.path.join(path_prefix, config.train_file)
@@ -26,38 +27,13 @@ class TemporalRunner(Runner):
         )
         test_file = os.path.join(path_prefix, config.test_file)
 
-        if config.model_config_path:
-            model_config_path = os.path.join(path_prefix, config.model_config_path)
-        elif config.model_config is not None:
-            model_config_path = config.config_name + "_model.config"
-            deployment.dump_config(
-                config=json.dumps(config.model_config),
-                filename=model_config_path,
-            )
-        else:
-            model_config_path = None
-
-        data_types = config.get_data_types(path_prefix)
-        model = bolt.UniversalDeepTransformer(
-            data_types=data_types,
-            target=config.target,
-            integer_target=config.integer_target,
-            n_target_classes=config.n_target_classes,
-            temporal_tracking_relationships=config.temporal_relationships,
-            delimiter=config.delimiter,
-            model_config=model_config_path,
-            options=config.options,
-        )
+        model = TemporalRunner.create_model(config, path_prefix)
 
         for callback in config.callbacks:
             if isinstance(callback, AdditionalMetricCallback):
                 callback.set_test_file(test_file)
                 callback.set_model(model)
                 callback.set_mlflow_logger(mlflow_logger)
-
-        if model_config_path:
-            if os.path.join(path_prefix, config.model_config_path) != model_config_path:
-                os.remove(model_config_path)
 
         for epoch in range(config.num_epochs):
             model.train(
@@ -81,7 +57,18 @@ class TemporalRunner(Runner):
         # indexing train file so that train data user history is used for predictions
         model.evaluate(train_file)
 
-        num_samples = 10000
+        average_predict_time_ms = TemporalRunner.get_average_predict_time(
+            model, test_file, config, num_samples=10000
+        )
+
+        print(f"average_predict_time_ms = {average_predict_time_ms}ms")
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time_ms", value=average_predict_time_ms
+            )
+
+    @staticmethod
+    def get_average_predict_time(model, test_file, config, num_samples=10000):
         test_data = pd.read_csv(test_file, low_memory=False)
         sorted_idxs = np.sort(np.random.randint(0, len(test_data), size=num_samples))
 
@@ -110,10 +97,7 @@ class TemporalRunner(Runner):
                 prev_idx = test_data_idx
             model.predict(sample)
         end_time = time.time()
-        time_per_predict = int(np.around(1000 * (end_time - start_time) / num_samples))
-
-        print(f"average_predict_time = {time_per_predict}ms")
-        if mlflow_logger:
-            mlflow_logger.log_additional_metric(
-                key="average_predict_time", value=time_per_predict
-            )
+        average_predict_time_ms = int(
+            np.around(1000 * (end_time - start_time) / num_samples)
+        )
+        return average_predict_time_ms

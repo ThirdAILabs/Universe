@@ -1,17 +1,14 @@
 import os
 from abc import ABC, abstractmethod
 
-from thirdai import bolt, data
+import pandas as pd
+from thirdai import bolt
 
 from .utils import (
     AdditionalMetricCallback,
-    gnn_roc_auc_with_target_name,
-    mach_precision_at_1_with_target_name,
-    mach_recall_at_5_with_target_name,
-    mae_with_target_name,
-    mse_with_target_name,
-    pokec_col_ranges,
-    roc_auc_with_target_name,
+    get_mae_metric_fn,
+    get_mse_metric_fn,
+    get_roc_auc_metric_fn,
 )
 
 
@@ -60,7 +57,7 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     n_target_classes = 2
     delimiter = "\t"
 
-    learning_rate = 1e-2
+    learning_rate = 0.01
     num_epochs = 3
 
     @staticmethod
@@ -79,7 +76,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     n_target_classes = 2
     delimiter = "\t"
 
-    learning_rate = 1e-2
+    learning_rate = 0.01
     num_epochs = 3
 
     @staticmethod
@@ -97,7 +94,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     target = "label"
     n_target_classes = 2
 
-    learning_rate = 1e-2
+    learning_rate = 0.01
     num_epochs = 1
 
     @staticmethod
@@ -143,14 +140,14 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
     target = "label"
     n_target_classes = 2
 
-    learning_rate = 1e-3
+    learning_rate = 0.001
     num_epochs = 100
 
     metrics = ["categorical_accuracy"]
     callbacks = [
         AdditionalMetricCallback(
             metric_name="roc_auc",
-            metric_fn=roc_auc_with_target_name("label", "ad."),
+            metric_fn=get_roc_auc_metric_fn("label", "ad."),
         )
     ]
 
@@ -180,14 +177,14 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
     target = "isFraud"
     n_target_classes = 2
 
-    learning_rate = 1e-3
+    learning_rate = 0.001
     num_epochs = 2
 
     metrics = ["categorical_accuracy"]
     callbacks = [
         AdditionalMetricCallback(
             metric_name="roc_auc",
-            metric_fn=roc_auc_with_target_name("isFraud", "1"),
+            metric_fn=get_roc_auc_metric_fn("isFraud", "1"),
         )
     ]
 
@@ -298,21 +295,30 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="mse",
-            metric_fn=mse_with_target_name("Purchase"),
+            metric_fn=get_mse_metric_fn("Purchase"),
         ),
         AdditionalMetricCallback(
             metric_name="mae",
-            metric_fn=mae_with_target_name("Purchase"),
+            metric_fn=get_mae_metric_fn("Purchase"),
         ),
     ]
 
     @staticmethod
     def get_data_types(path_prefix):
-        file = os.path.join(path_prefix, BlackFridayUDTBenchmark.train_file)
-
-        col_types = data.get_udt_col_types(file)
-        del col_types["Unnamed: 0"]
-        return col_types
+        return {
+            "Gender": bolt.types.categorical(),
+            "Age": bolt.types.categorical(),
+            "Occupation": bolt.types.categorical(),
+            "City_Category": bolt.types.categorical(),
+            "Stay_In_Current_City_Years": bolt.types.categorical(),
+            "Marital_Status": bolt.types.categorical(),
+            "Product_Category_1": bolt.types.categorical(),
+            "Product_Category_2": bolt.types.categorical(),
+            "Product_Category_3": bolt.types.categorical(),
+            "Purchase": bolt.types.numerical(
+                range=(5.225746673713202, 10.084141052229386)
+            ),
+        }
 
 
 class DiamondsUDTBenchmark(UDTBenchmarkConfig):
@@ -332,21 +338,30 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="mse",
-            metric_fn=mse_with_target_name("price"),
+            metric_fn=get_mse_metric_fn("price"),
         ),
         AdditionalMetricCallback(
             metric_name="mae",
-            metric_fn=mae_with_target_name("price"),
+            metric_fn=get_mae_metric_fn("price"),
         ),
     ]
 
     @staticmethod
     def get_data_types(path_prefix):
-        file = os.path.join(path_prefix, DiamondsUDTBenchmark.train_file)
-
-        col_types = data.get_udt_col_types(file)
-        del col_types["Unnamed: 0"]
-        return col_types
+        return {
+            "carat": bolt.types.numerical(range=(0.2, 5.01)),
+            "cut": bolt.types.categorical(),
+            "color": bolt.types.categorical(),
+            "clarity": bolt.types.categorical(),
+            "depth": bolt.types.numerical(range=(43, 79)),
+            "table": bolt.types.numerical(range=(43, 79)),
+            "x": bolt.types.numerical(range=(0, 10.74)),
+            "y": bolt.types.numerical(range=(0, 58.9)),
+            "z": bolt.types.numerical(range=(0, 31.8)),
+            "price": bolt.types.numerical(
+                range=(5.7899601708972535, 9.842887930407198)
+            ),
+        }
 
 
 class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
@@ -368,181 +383,27 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="mse",
-            metric_fn=mse_with_target_name("y"),
+            metric_fn=get_mse_metric_fn("y"),
         ),
         AdditionalMetricCallback(
             metric_name="mae",
-            metric_fn=mae_with_target_name("y"),
+            metric_fn=get_mae_metric_fn("y"),
         ),
     ]
 
     @staticmethod
     def get_data_types(path_prefix):
-        file = os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
-
-        col_types = data.get_udt_col_types(file)
-        del col_types["Unnamed: 0"]
-        return col_types
-
-
-class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
-    config_name = "scifact_cold_start_udt"
-    dataset_name = "scifact"
-
-    cold_start_train_file = "scifact/unsupervised.csv"
-    test_file = "scifact/tst_supervised.csv"
-
-    target = "DOC_ID"
-    integer_target = True
-    n_target_classes = 5183
-    delimiter = ","
-
-    metrics = ["precision@1", "recall@5"]
-    cold_start_num_epochs = 5
-    cold_start_learning_rate = 1e-3
-    strong_column_names = ["TITLE"]
-    weak_column_names = ["TEXT"]
-    options = {"embedding_dimension": 1024}
-
-    @staticmethod
-    def get_data_types(path_prefix):
-        return {
-            "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
-        }
-
-
-class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
-    config_name = "cooking_cold_start_udt"
-    dataset_name = "cooking"
-
-    cold_start_train_file = (
-        "catalog_recommender/cooking/reformatted_trn_unsupervised.csv"
-    )
-    test_file = "catalog_recommender/cooking/reformatted_tst_supervised.csv"
-
-    target = "LABEL_IDS"
-    integer_target = True
-    n_target_classes = 26109
-    delimiter = ","
-    model_config_path = "catalog_recommender/cooking/cooking_model_config"
-
-    metrics = ["precision@1", "recall@100"]
-    cold_start_num_epochs = 15
-    cold_start_learning_rate = 1e-3
-    strong_column_names = []
-    weak_column_names = ["DESCRIPTION", "BRAND"]
-
-    @staticmethod
-    def get_data_types(path_prefix):
-        return {
-            "LABEL_IDS": bolt.types.categorical(delimiter=";"),
-            "QUERY": bolt.types.text(contextual_encoding="local"),
-        }
-
-
-class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
-    config_name = "scifact_mach_udt"
-    dataset_name = "scifact"
-
-    train_file = "scifact/trn_supervised.csv"
-    test_file = "scifact/tst_supervised.csv"
-
-    target = "DOC_ID"
-    integer_target = True
-    n_target_classes = 5183
-    delimiter = ","
-
-    num_epochs = 10
-    learning_rate = 1e-3
-    options = {"extreme_classification": True, "embedding_dimension": 1024}
-    metrics = []
-    callbacks = [
-        AdditionalMetricCallback(
-            metric_name="precision@1",
-            metric_fn=mach_precision_at_1_with_target_name(
-                "DOC_ID", target_delimeter=":"
-            ),
-        ),
-        AdditionalMetricCallback(
-            metric_name="recall@5",
-            metric_fn=mach_recall_at_5_with_target_name("DOC_ID", target_delimeter=":"),
-        ),
-    ]
-
-    @staticmethod
-    def get_data_types(path_prefix):
-        return {
-            "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
-        }
-
-
-class YelpChiUDTBenchmark(UDTBenchmarkConfig):
-    config_name = "yelp_chi_udt"
-    dataset_name = "yelp_chi"
-
-    train_file = "yelp_chi/yelp_train.csv"
-    test_file = "yelp_chi/yelp_test.csv"
-
-    target = "target"
-    integer_target = True
-    n_target_classes = 2
-    delimiter = ","
-
-    num_epochs = 15
-    learning_rate = 1e-3
-    metrics = ["categorical_accuracy"]
-    callbacks = [
-        AdditionalMetricCallback(
-            metric_name="roc_auc",
-            metric_fn=gnn_roc_auc_with_target_name("target"),
+        data = pd.read_csv(
+            os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
         )
-    ]
-
-    @staticmethod
-    def get_data_types(path_prefix):
-        return {
-            "node_id": bolt.types.node_id(),
-            **{f"col_{i}": bolt.types.numerical([0, 1]) for i in range(32)},
-            "target": bolt.types.categorical(),
-            "neighbors": bolt.types.neighbors(),
+        data_types = {
+            f"X{i}": bolt.types.categorical()
+            for i in range(3, 386)
+            if f"X{i}" in data.columns
         }
 
-
-class PokecUDTBenchmark(UDTBenchmarkConfig):
-    config_name = "pokec_udt"
-    dataset_name = "pokec"
-
-    train_file = "pokec/train.csv"
-    test_file = "pokec/train.csv"
-
-    target = "target"
-    integer_target = True
-    n_target_classes = 2
-    delimiter = ","
-
-    num_epochs = 15
-    learning_rate = 1e-3
-    metrics = ["categorical_accuracy"]
-    callbacks = [
-        AdditionalMetricCallback(
-            metric_name="roc_auc",
-            metric_fn=gnn_roc_auc_with_target_name("target"),
-        )
-    ]
-
-    @staticmethod
-    def get_data_types(path_prefix):
-        return {
-            "node_id": bolt.types.node_id(),
-            **{
-                f"col_{col_name}": bolt.types.numerical(col_range)
-                for col_name, col_range in enumerate(pokec_col_ranges)
-            },
-            "target": bolt.types.categorical(),
-            "neighbors": bolt.types.neighbors(),
-        }
+        data_types["y"] = bolt.types.numerical(range=(72.5, 265.32))
+        return data_types
 
 
 class TranslitUDTBenchmark(UDTBenchmarkConfig):
@@ -557,7 +418,7 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     delimiter = ","
 
     num_epochs = 5
-    learning_rate = 1e-3
+    learning_rate = 0.001
     metrics = ["categorical_accuracy"]
 
     @staticmethod

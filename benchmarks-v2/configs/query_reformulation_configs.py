@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 from .utils import (
     AdditionalMetricCallback,
-    qr_precision_at_1_with_target_name,
-    qr_recall_at_5_with_target_name,
+    get_qr_precision_at_k_metric_fn,
+    get_qr_recall_at_k_metric_fn,
 )
 
 
@@ -35,6 +35,6 @@ class CQICQUDTBenchmark(QueryReformulationBenchmarkConfig):
     dataset_size = "large"
 
     additional_metric_fns = {
-        "recall@5": qr_recall_at_5_with_target_name("correct_queries"),
-        "precision@1": qr_precision_at_1_with_target_name("correct_queries"),
+        "recall@5": get_qr_recall_at_k_metric_fn("correct_queries", k=5),
+        "precision@1": get_qr_precision_at_k_metric_fn("correct_queries", k=1),
     }

@@ -6,7 +6,10 @@ import numpy as np
 import pandas as pd
 from thirdai import bolt, deployment
 
-from ..configs.udt_configs import UDTBenchmarkConfig
+from ..configs.cold_start_configs import *
+from ..configs.graph_configs import *
+from ..configs.mach_configs import *
+from ..configs.udt_configs import *
 from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
 
@@ -14,6 +17,7 @@ from .runner import Runner
 class UDTRunner(Runner):
     config_type = UDTBenchmarkConfig
 
+    @staticmethod
     def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
         train_file = (
             os.path.join(path_prefix, config.train_file)
@@ -27,47 +31,30 @@ class UDTRunner(Runner):
         )
         test_file = os.path.join(path_prefix, config.test_file)
 
-        if config.model_config_path:
-            model_config_path = os.path.join(path_prefix, config.model_config_path)
-        elif config.model_config is not None:
-            model_config_path = config.config_name + "_model.config"
-            deployment.dump_config(
-                config=json.dumps(config.model_config),
-                filename=model_config_path,
-            )
-        else:
-            model_config_path = None
+        model = UDTRunner.create_model(config, path_prefix)
 
-        data_types = config.get_data_types(path_prefix)
-        model = bolt.UniversalDeepTransformer(
-            data_types=data_types,
-            target=config.target,
-            integer_target=config.integer_target,
-            n_target_classes=config.n_target_classes,
-            temporal_tracking_relationships=config.temporal_relationships,
-            delimiter=config.delimiter,
-            model_config=model_config_path,
-            options=config.options,
+        validation = (
+            bolt.Validation(
+                test_file,
+                metrics=config.metrics,
+            )
+            if config.metrics
+            else None
         )
-        validation = bolt.Validation(
-            test_file,
-            metrics=config.metrics,
-        )
+
         for callback in config.callbacks:
             if isinstance(callback, AdditionalMetricCallback):
                 callback.set_test_file(test_file)
                 callback.set_model(model)
                 callback.set_mlflow_logger(mlflow_logger)
 
-        if model_config_path:
-            if os.path.join(path_prefix, config.model_config_path) != model_config_path:
-                os.remove(model_config_path)
-
-        # If the config has the neighbors type, we can assume a GNN backend
-        contains_neighbors = any(
-            [type(t) == bolt.types.neighbors for t in data_types.values()]
+        has_gnn_backend = any(
+            [
+                type(t) == bolt.types.neighbors
+                for t in config.get_data_types(path_prefix).values()
+            ]
         )
-        if contains_neighbors:
+        if has_gnn_backend:
             test_file_dir = os.path.dirname(test_file)
             if not os.path.exists(os.path.join(test_file_dir, "gnn_index.csv")):
                 df = pd.read_csv(test_file)
@@ -75,7 +62,7 @@ class UDTRunner(Runner):
                 df.to_csv(os.path.join(test_file_dir, "gnn_index.csv"), index=False)
             model.index_nodes(os.path.join(test_file_dir, "gnn_index.csv"))
 
-        if config.cold_start_num_epochs:
+        if cold_start_train_file is not None:
             model.cold_start(
                 cold_start_train_file,
                 epochs=config.cold_start_num_epochs,
@@ -86,7 +73,7 @@ class UDTRunner(Runner):
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
 
-        if config.num_epochs:
+        if train_file is not None:
             model.train(
                 train_file,
                 epochs=config.num_epochs,
@@ -95,7 +82,18 @@ class UDTRunner(Runner):
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
 
-        num_samples = 10000
+        average_predict_time_ms = UDTRunner.get_average_predict_time(
+            model, test_file, config, 10000
+        )
+
+        print(f"average_predict_time_ms = {average_predict_time_ms}ms")
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time_ms", value=average_predict_time_ms
+            )
+
+    @staticmethod
+    def get_average_predict_time(model, test_file, config, num_samples=10000):
         test_data = pd.read_csv(test_file, low_memory=False)
         test_data_sample = test_data.iloc[
             np.random.randint(0, len(test_data), size=num_samples)
@@ -112,10 +110,7 @@ class UDTRunner(Runner):
         for sample, label in inference_samples:
             model.predict(sample)
         end_time = time.time()
-        time_per_predict = int(np.around(1000 * (end_time - start_time) / num_samples))
-
-        print(f"average_predict_time = {time_per_predict}ms")
-        if mlflow_logger:
-            mlflow_logger.log_additional_metric(
-                key="average_predict_time", value=time_per_predict
-            )
+        average_predict_time_ms = int(
+            np.around(1000 * (end_time - start_time) / num_samples)
+        )
+        return average_predict_time_ms

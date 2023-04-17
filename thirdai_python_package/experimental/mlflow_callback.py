@@ -116,7 +116,7 @@ class MlflowCallback(bolt.callbacks.Callback):
         mlflow.end_run()
 
     def _clean(self, key):
-        # mlflow doesn't like when metrics have "@" in them (e.g. "precision@k")
+        # mlflow doesn't like when metrics have "@", "(", or ")" in them (e.g. "precision@k")
         key = key.replace("(", "_")
         key = key.replace(")", "")
         key = key.replace("@", "_")
