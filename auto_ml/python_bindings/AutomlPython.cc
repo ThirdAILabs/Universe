@@ -154,9 +154,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def("get_params", &udt::UDT::getParams)
-      .def("get_optims", &udt::UDT::getOptimizers)
+      .def("get_optimizers", &udt::UDT::getOptimizers)
       .def("set_params", &udt::UDT::setParams, py::arg("new_params"))
-      .def("set_params", &udt::UDT::setOptimizers, py::arg("new_optims"))
+      .def("set_optimizers", &udt::UDT::setOptimizers, py::arg("new_optims"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
 
   py::class_<udt::TextEmbeddingModel, udt::TextEmbeddingModelPtr>(
