@@ -6,14 +6,16 @@
 
 namespace thirdai::bolt::nn::rca {
 
-using RCAInputGradients =
-    std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>;
+struct RCAGradients {
+  std::optional<std::vector<uint32_t>> indices;
+  std::vector<float> gradients;
+};
 
-RCAInputGradients explainPrediction(model::ModelPtr& model,
-                                    const tensor::TensorList& input_vec);
+RCAGradients explainPrediction(model::ModelPtr& model,
+                               const tensor::TensorList& input_vec);
 
-RCAInputGradients explainNeuron(model::ModelPtr& model,
-                                const tensor::TensorList& input_vec,
-                                uint32_t neuron);
+RCAGradients explainNeuron(model::ModelPtr& model,
+                           const tensor::TensorList& input_vec,
+                           uint32_t neuron);
 
 }  // namespace thirdai::bolt::nn::rca
