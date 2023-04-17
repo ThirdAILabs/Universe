@@ -36,6 +36,8 @@ class Embedding final : public Op,
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
+  void setSerializeOptimizer(bool should_serialize_optimizer) final;
+
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
   std::shared_ptr<Embedding> duplicateWithNewReduction(

@@ -145,6 +145,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("summary", &model::Model::summary, py::arg("print") = true)
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
+      .def("checkpoint", &model::Model::checkpoint, py::arg("filename"),
+           py::arg("save_metadata") = true)
       .def_static("load", &model::Model::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<model::Model>());
 
