@@ -70,7 +70,7 @@ class UDT {
                        const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
                        bool verbose);
-                       
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
   }
