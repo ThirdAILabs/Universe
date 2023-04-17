@@ -126,7 +126,6 @@ def modify_udt():
             verbose=verbose,
         )
 
-
     delattr(bolt.UDT, "train")
     delattr(bolt.UDT, "evaluate")
     delattr(bolt.UDT, "cold_start")
