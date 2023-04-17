@@ -42,6 +42,13 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* temporal_relationships = */ {},
       /* vectors_map = */ {},
       /* options = */ options);
+
+  if (_data_types.size() == 3) {
+    throw std::invalid_argument(
+        "Must specify a column with features other than neighbors, node ids, "
+        "and target.");
+  }
+
   feature_blocks.push_back(graph_blocks.normalized_neighbors_block);
 
   auto feature_blocklist =
@@ -94,8 +101,6 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
   std::vector<dataset::ColumnIdentifier> feature_col_names;
   std::string neighbor_col_name, node_id_col_name;
   GraphBlocks graph_blocks;
-  GraphInfoPtr graph_info =
-      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
 
   // TODO(Josh): Look in to combining non-numeric data from neighbors as well,
   // e.g. for a string column concatenating each neighbor's text.
@@ -108,6 +113,9 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
       feature_col_names.push_back(col_name);
     }
   }
+
+  GraphInfoPtr graph_info =
+      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
 
   // TODO(Josh): Do a thorough ablation study (this block seems only marginally
   // useful on yelp). This should include looking at binning vs. non binning

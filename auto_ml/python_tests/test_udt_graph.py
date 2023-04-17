@@ -107,6 +107,7 @@ def get_no_features_gnn(num_classes):
             "node_id": bolt.types.node_id(),
             "target": bolt.types.categorical(),
             "neighbors": bolt.types.neighbors(),
+            "feature": bolt.types.numerical(range=(0, 2)),
         },
         target="target",
         n_target_classes=num_classes,
@@ -132,6 +133,7 @@ def test_graph_clearing_and_indexing():
         df["neighbors"] = [
             max(0, node_id - 1) for node_id in range(chunk_start, chunk_end)
         ]
+        df["feature"] = np.ones(shape=chunk_size)
         df.to_csv(f"graph_chunk_{chunk}.csv", index=False)
         model.train(f"graph_chunk_{chunk}.csv", epochs=1)
 
@@ -166,6 +168,7 @@ def test_no_neighbors_causes_no_errors():
     df["node_id"] = np.arange(0, 100)
     df["target"] = np.full(shape=100, fill_value=1)
     df["neighbors"] = ["" for _ in range(100)]
+    df["feature"] = np.ones(shape=100)
 
     df.to_csv(f"boring_graph.csv", index=False)
     model.train("boring_graph.csv")

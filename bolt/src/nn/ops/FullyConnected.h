@@ -50,6 +50,8 @@ class FullyConnected final
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
+  void setSerializeOptimizer(bool should_serialize_optimizer) final;
+
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.

@@ -56,6 +56,10 @@ class DistributedTrainingWrapper {
 
   void setGradients(const float* new_grad, uint64_t flattened_dim);
 
+  void setSerializeOptimizer(bool should_serialize_optimizer) {
+    _model->setSerializeOptimizer(should_serialize_optimizer);
+  }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
