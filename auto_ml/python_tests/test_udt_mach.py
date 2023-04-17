@@ -1,9 +1,9 @@
 import os
 
+import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
 from thirdai import bolt
-import pandas as pd
 
 pytestmark = [pytest.mark.unit]
 

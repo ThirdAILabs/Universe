@@ -20,9 +20,8 @@ class FullyConnected final
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
-      uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
-      uint32_t reconstruct_hash_functions =
-          std::numeric_limits<uint32_t>::max());
+      uint32_t rebuild_hash_tables = 4,
+      uint32_t reconstruct_hash_functions = 100);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
