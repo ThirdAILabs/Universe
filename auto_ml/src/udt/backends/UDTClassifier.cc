@@ -121,7 +121,7 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
   auto input_vec = _dataset_factory->featurizeInput(sample);
 
-  bolt::nn::rca::RCAInputGradients gradients;
+  bolt::nn::rca::RCAGradients gradients;
   if (target_class) {
     gradients = bolt::nn::rca::explainNeuron(_classifier->model(), input_vec,
                                              labelToNeuronId(*target_class));
@@ -131,7 +131,7 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
   }
 
   auto explanation =
-      _dataset_factory->explain(gradients.first, gradients.second, sample);
+      _dataset_factory->explain(gradients.indices, gradients.gradients, sample);
 
   return explanation;
 }
