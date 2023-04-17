@@ -49,14 +49,12 @@ ACCURACY_THRESHOLD = 0.8
 
 def train_and_evaluate(model_to_test, train_path, test_path, inference_samples):
     model_to_test.train(train_path, epochs=5, learning_rate=0.01)
-    acc = compute_evaluate_accuracy(
-        model_to_test, test_path, inference_samples, use_class_name=True
-    )
+    acc = compute_evaluate_accuracy(model_to_test, test_path)
     assert acc >= ACCURACY_THRESHOLD
 
 
 @mock_s3
-def test_utd_census_income_s3(download_census_income, s3):
+def test_udt_census_income_s3(download_census_income, s3):
     local_train_file, local_test_file, inference_samples = download_census_income
     s3_train_path, s3_test_path = setup_census_on_s3(
         s3, local_train_file, local_test_file

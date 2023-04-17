@@ -21,7 +21,9 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
 
     for (uint32_t i = 0; i < vector.len; i++) {
       if (vector.active_neurons[i] >= dim) {
-        throw std::invalid_argument("Bad index");
+        throw std::invalid_argument(
+            "Recieved input index " + std::to_string(vector.active_neurons[i]) +
+            " for input with dimension " + std::to_string(dim) + ".");
       }
       tensor->getVector(0).active_neurons[i] = vector.active_neurons[i];
     }

@@ -1,11 +1,7 @@
 import os
-import random
-from collections import defaultdict
 
-import pandas as pd
 import pytest
 from download_dataset_fixtures import download_amazon_kaggle_product_catalog_sampled
-from model_test_utils import compute_evaluate_accuracy
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit]
@@ -57,7 +53,6 @@ def run_coldstart(
     strong_columns=["strong"],
     weak_columns=["weak1", "weak2"],
     validation=None,
-    callbacks=[],
     missing_values=False,
     bad_csv_line=False,
     epochs=5,
@@ -81,7 +76,6 @@ def run_coldstart(
         learning_rate=0.01,
         epochs=epochs,
         validation=validation,
-        callbacks=callbacks,
     )
 
     os.remove(filename)
@@ -100,22 +94,6 @@ def test_coldstart_validation():
     run_coldstart(validation=validation)
 
     os.remove(val_filename)
-
-
-def test_coldstart_callbacks():
-    class CountCallback(bolt.callbacks.Callback):
-        def __init__(self):
-            super().__init__()
-            self.epoch_count = 0
-
-        def on_epoch_end(self, model, train_state):
-            self.epoch_count += 1
-
-    count_callback = CountCallback()
-
-    run_coldstart(callbacks=[count_callback], epochs=5)
-
-    assert count_callback.epoch_count == 5
 
 
 def test_coldstart_missing_strong_or_weak():

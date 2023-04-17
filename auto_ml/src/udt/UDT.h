@@ -69,12 +69,8 @@ class UDT {
                        const std::optional<ValidationDataSource>& validation,
                        const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
-                       bool verbose) {
-    return _backend->coldstart(data, strong_column_names, weak_column_names,
-                               learning_rate, epochs, metrics, validation,
-                               callbacks, max_in_memory_batches, verbose);
-  }
-
+                       bool verbose);
+                       
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
   }

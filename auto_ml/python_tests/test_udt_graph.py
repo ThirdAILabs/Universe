@@ -173,6 +173,4 @@ def test_no_neighbors_causes_no_errors():
     df.to_csv(f"boring_graph.csv", index=False)
     model.train("boring_graph.csv")
 
-    model.evaluate(
-        "boring_graph.csv", metrics=["categorical_accuracy"], return_metrics=True
-    )["categorical_accuracy"]
+    model.evaluate("boring_graph.csv", metrics=["categorical_accuracy"])

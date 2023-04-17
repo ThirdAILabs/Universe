@@ -11,6 +11,7 @@
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <cstddef>
 #include <memory>
@@ -117,6 +118,9 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       std::optional<uint32_t> logging_interval) {
   bolt::utils::Timer timer;
 
+  licensing::TrainPermissionsToken token(data);
+  (void)token;
+
   auto output = _backend->train(data, learning_rate, epochs, validation,
                                 batch_size, max_in_memory_batches, metrics,
                                 callbacks, verbose, logging_interval);
@@ -129,6 +133,8 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
 
 py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
                            const std::vector<std::string>& metrics) {
+  licensing::entitlements().verifyFullAccess();
+
   bolt::utils::Timer timer;
 
   auto output = _backend->trainBatch(batch, learning_rate, metrics);
@@ -197,6 +203,23 @@ std::vector<dataset::Explanation> UDT::explain(
       /* explain_time_seconds= */ timer.seconds());
 
   return result;
+}
+
+py::object UDT::coldstart(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          float learning_rate, uint32_t epochs,
+                          const std::vector<std::string>& metrics,
+                          const std::optional<ValidationDataSource>& validation,
+                          const std::vector<CallbackPtr>& callbacks,
+                          std::optional<size_t> max_in_memory_batches,
+                          bool verbose) {
+  licensing::TrainPermissionsToken token(data);
+  (void)token;
+
+  return _backend->coldstart(data, strong_column_names, weak_column_names,
+                             learning_rate, epochs, metrics, validation,
+                             callbacks, max_in_memory_batches, verbose);
 }
 
 void UDT::save(const std::string& filename) const {

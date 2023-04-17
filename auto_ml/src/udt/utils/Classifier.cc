@@ -94,7 +94,7 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
   auto output = _model->forward(inputs, sparse_inference).at(0);
 
   if (return_predicted_class) {
-    return predictedClasses(output);
+    return predictedClasses(output, single);
   }
 
   return bolt::nn::python::tensorToNumpy(output,
@@ -118,8 +118,8 @@ uint32_t Classifier::predictedClass(const BoltVector& output) {
 }
 
 py::object Classifier::predictedClasses(
-    const bolt::nn::tensor::TensorPtr& output) {
-  if (output->batchSize() == 1) {
+    const bolt::nn::tensor::TensorPtr& output, bool single) {
+  if (output->batchSize() == 1 && single) {
     return py::cast(predictedClass(output->getVector(0)));
   }
 

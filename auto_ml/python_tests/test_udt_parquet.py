@@ -37,7 +37,7 @@ def train_and_evaluate(model_to_test, train_path, test_path, inference_samples):
     assert acc >= ACCURACY_THRESHOLD
 
 
-def test_utd_census_income_s3(census_parquet):
+def test_udt_census_income_parquet(census_parquet):
     local_train_file, local_test_file, inference_samples = census_parquet
     model = get_udt_census_income_model()
     train_and_evaluate(model, local_train_file, local_test_file, inference_samples)

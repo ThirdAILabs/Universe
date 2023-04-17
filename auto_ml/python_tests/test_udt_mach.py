@@ -131,7 +131,6 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
             "recall@10",
         ],
         validation=validation,
-        callbacks=[],
     )
 
     return model, metrics, supervised_tst

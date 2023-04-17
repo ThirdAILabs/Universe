@@ -68,7 +68,8 @@ class Classifier {
  private:
   uint32_t predictedClass(const BoltVector& output);
 
-  py::object predictedClasses(const bolt::nn::tensor::TensorPtr& output);
+  py::object predictedClasses(const bolt::nn::tensor::TensorPtr& output,
+                              bool single);
 
   std::vector<std::vector<float>> getBinaryClassificationScores(
       const dataset::BoltDatasetList& dataset);
