@@ -83,11 +83,12 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
                          const tensor::TensorList& labels) {
-  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
-      _total_training_samples);
-
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
+
+  _total_training_samples += input_batch_size;
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_training_samples);
 
   if (input_batch_size != label_batch_size) {
     throw std::invalid_argument(
