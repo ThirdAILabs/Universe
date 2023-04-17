@@ -97,18 +97,34 @@ class UDTMachClassifier final : public UDTBackend {
         _dataset_factory->featurizeInputBatch(samples),
         /* sparse_inference = */ false);
 
-    if (output.getBatchSize() != 1) {
-      throw std::invalid_argument("not one sample");
+    // TODO(david): try summing scores instead of frequency counting
+    std::unordered_map<uint32_t, uint32_t> candidate_hashes;
+
+    for (const auto& vector : output) {
+      auto top_K = vector.findKLargestActivations(
+          _mach_label_block->index()->numHashes());
+
+      while (!top_K.empty()) {
+        auto [_, active_neuron] = top_K.top();
+        if (!candidate_hashes.count(active_neuron)) {
+          candidate_hashes[active_neuron] = 0;
+        } else {
+          candidate_hashes[active_neuron] += 1;
+        }
+        top_K.pop();
+      }
     }
 
-    auto top_K = output[0].findKLargestActivations(
-        _mach_label_block->index()->numHashes());
+    std::vector<std::pair<uint32_t, uint32_t>> best_hashes(
+        candidate_hashes.begin(), candidate_hashes.end());
+    std::sort(
+        best_hashes.begin(), best_hashes.end(),
+        [](auto& left, auto& right) { return left.second > right.second; });
 
-    std::vector<uint32_t> new_hashes;
-    while (!top_K.empty()) {
-      auto [_, active_neuron] = top_K.top();
-      new_hashes.push_back(active_neuron);
-      top_K.pop();
+    std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
+    for (uint32_t i = 0; i < _mach_label_block->index()->numHashes(); i++) {
+      auto [hash, _] = best_hashes[i];
+      new_hashes[i] = hash;
     }
 
     _mach_label_block->index()->manualAdd(variantToString(new_label),
