@@ -41,7 +41,7 @@ UDT::UDT(data::ColumnDataTypes data_types,
     tabular_options.feature_hash_range =
         user_args.get<uint32_t>("fhr", "integer");
   }
-  
+
   if (!data_types.count(target_col)) {
     throw std::invalid_argument(
         "Target column provided was not found in data_types.");

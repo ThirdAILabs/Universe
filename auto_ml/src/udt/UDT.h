@@ -151,14 +151,13 @@ class UDT {
     return _backend->getTextEmbeddingModel(activation_func, distance_cutoff);
   }
 
+  py::object getParams();
 
-py::object getParams() ;
+  void setParams(py::array_t<float>& new_params);
 
-void setParams(py::array_t<float>& new_params) ;
+  py::object getOptimizers();
 
-py::object getOptimizers();
-
-void setOptimizers(py::array_t<float>& new_optims) ;
+  void setOptimizers(py::array_t<float>& new_optims);
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
