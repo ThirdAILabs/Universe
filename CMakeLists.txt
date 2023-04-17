@@ -323,10 +323,12 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
+    bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
+    bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
@@ -451,6 +453,7 @@ pybind11_add_module(
   bolt/python_bindings/CallbacksPython.cc
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/NumpyConversions.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
@@ -459,6 +462,7 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Conversion.cc
   auto_ml/src/udt/utils/Models.cc

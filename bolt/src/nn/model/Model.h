@@ -94,6 +94,11 @@ class Model {
   const autograd::ComputationList& labels() const;
 
   /**
+   * Returns the loss functions of the model.
+   */
+  const std::vector<loss::LossPtr>& losses() const;
+
+  /**
    * Returns a list of all ops.
    */
   const std::vector<ops::OpPtr>& ops() const;
@@ -126,17 +131,23 @@ class Model {
   std::vector<uint32_t> inputDims() const;
 
   /**
+   * Returns the expected dimensions of the labels the model is expecting, in
+   * the order they are expected.
+   */
+  std::vector<uint32_t> labelDims() const;
+
+  /**
    * Returns a list of references to gradients of all parameters in the model.
    */
   std::vector<std::vector<float>*> gradients() const;
 
   /**
-   * Returns a list of pairs of matching outputs and labels. A label and output
-   * match if they are both used in a loss function with no other labels or
-   * outputs.
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
    */
-  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-  outputLabelPairs() const;
+  void freezeHashTables(bool insert_labels_if_not_found);
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -178,6 +189,14 @@ class Model {
    * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
+
+  /**
+   * Returns a list of pairs of matching outputs and labels. A label and output
+   * match if they are both used in a loss function with no other labels or
+   * outputs.
+   */
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+  outputLabelPairs() const;
 
   /**
    * When a loss is applied to a single output computation coming from a fully

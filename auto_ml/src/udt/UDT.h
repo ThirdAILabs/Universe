@@ -144,13 +144,10 @@ class UDT {
     return _backend->tabularDatasetFactory();
   }
 
-  py::object getParams();
-
-  void setParams(py::array_t<float>& new_params);
-
-  py::object getOptimizers();
-
-  void setOptimizers(py::array_t<float>& new_optims);
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const {
+    return _backend->getTextEmbeddingModel(activation_func, distance_cutoff);
+  }
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 

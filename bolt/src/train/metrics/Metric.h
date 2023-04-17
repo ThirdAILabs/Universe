@@ -108,10 +108,18 @@ class MetricCollection {
   std::vector<MetricPtr> _metrics;
 };
 
-InputMetrics metricsForSingleOutputModel(
-    const std::vector<std::string>& metric_names,
-    const nn::autograd::ComputationPtr& output,
-    const nn::autograd::ComputationPtr& labels);
+/**
+ * Creates a set of metrics for the given model based on the metric names.
+ * Expects that the model only has a single output and label so that it knows
+ * what outputs in the model the metrics should be for. The prefix is prepended
+ * to the metric names that are used to identify the metric. This is so that if
+ * the use specifies "loss" as both a train and validation metric, the model
+ * will invoke this method with the prefixes "train_" and "val_" so that the
+ * names are distinct.
+ */
+InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+                             const std::vector<std::string>& metric_names,
+                             const std::string& prefix = "");
 
 float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
                               const std::atomic_uint64_t& denominator);

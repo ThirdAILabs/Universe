@@ -147,3 +147,20 @@ def test_invalid_char_k_contextual_text_encoding(invalid_encoding):
             target="target",
             n_target_classes=2,
         )
+
+
+def test_invalid_column_name_in_udt_predict():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text_col": bolt.types.text(contextual_encoding="local"),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=2,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"Input column name 'HAHAHA' not found in data_types."),
+    ):
+        model.predict({"HAHAHA": "some text"})

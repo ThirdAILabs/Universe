@@ -36,6 +36,12 @@ UDT::UDT(data::ColumnDataTypes data_types,
   tabular_options.delimiter = delimiter;
   tabular_options.feature_hash_range = user_args.get<uint32_t>(
       "input_dim", "integer", defaults::FEATURE_HASH_RANGE);
+  if (user_args.contains("fhr")) {
+    // For the QT app distribution we want to be able to override the input_dim
+    // without revealing any information about the architecture.
+    tabular_options.feature_hash_range =
+        user_args.get<uint32_t>("fhr", "integer");
+  }
 
   if (!data_types.count(target_col)) {
     throw std::invalid_argument(

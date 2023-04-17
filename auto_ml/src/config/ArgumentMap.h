@@ -38,6 +38,8 @@ class ArgumentMap {
     }
   }
 
+  bool contains(const std::string& key) const { return _arguments.count(key); }
+
   const auto& arguments() const { return _arguments; }
 
  private:

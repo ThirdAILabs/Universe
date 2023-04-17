@@ -1,17 +1,15 @@
 #pragma once
 
-#include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/nn/tensor/Tensor.h>
-#include <limits>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
 
-class Input final : public Op, public std::enable_shared_from_this<Input> {
+class LayerNorm final : public Op,
+                        public std::enable_shared_from_this<LayerNorm> {
  public:
-  // TODO(Nicholas) add nonzeros as option.
-  static autograd::ComputationPtr make(uint32_t dim);
+  static std::shared_ptr<LayerNorm> make();
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -29,24 +27,33 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   void disableSparseParameterUpdates() final;
 
-  std::vector<std::vector<float>*> gradients() final { return {}; };
+  std::vector<std::vector<float>*> gradients() final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
+  autograd::ComputationPtr apply(const autograd::ComputationPtr& input);
+
  private:
-  Input(uint32_t dim, std::optional<uint32_t> nonzeros);
+  LayerNorm();
 
-  uint32_t _dim;
-  std::optional<uint32_t> _nonzeros;
+  template <bool DENSE>
+  void forward(const BoltVector& input, BoltVector& output);
 
-  Input() {}
+  template <bool DENSE>
+  void backpropagate(BoltVector& input, const BoltVector& output);
 
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
+  static std::pair<float, float> moments(const BoltVector& vector);
+
+  static constexpr float EPSILON = 1e-6;
+
+  std::vector<float> _gamma;
+  std::vector<float> _beta;
+
+  AdamOptimizer _gamma_optimizer;
+  AdamOptimizer _beta_optimizer;
 };
 
-using InputPtr = std::shared_ptr<Input>;
+using LayerNormPtr = std::shared_ptr<LayerNorm>;
 
 }  // namespace thirdai::bolt::nn::ops
