@@ -177,7 +177,8 @@ TextEmbeddingModelPtr createTextEmbeddingModel(
         "we did not find a text column.");
   }
 
-  auto fc_op = bolt::nn::ops::FullyConnected::cast(model->getOp("fc_1"));
+  auto fc_op =
+      bolt::nn::ops::FullyConnected::cast(model->opExecutionOrder().at(0));
 
   auto tabular_options = dataset_factory->tabularOptions();
 
