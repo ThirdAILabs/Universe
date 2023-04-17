@@ -200,13 +200,12 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
 }
 
 /**
- * This is a helper function to both encrypt and decrypt a config by XORing
- * each byte in the config string with a byte from a random cipher. This
- * ensures that the config is not human readable, and also that the same byte
- * will be unlikely to have the same encoded value in different places (unless
- * they a seperated by a number of bytes that is a multiple of the cipher).
- * Because of the nature of XOR this function can both encrypt and decrypt the
- * configs.
+ * This is a helper function to both encrypt and decrypt a config by XORing each
+ * byte in the config string with a byte from a random cipher. This ensures that
+ * the config is not human readable, and also that the same byte will be
+ * unlikely to have the same encoded value in different places (unless they a
+ * seperated by a number of bytes that is a multiple of the cipher). Because of
+ * the nature of XOR this function can both encrypt and decrypt the configs.
  */
 std::string xorConfig(const std::string& config) {
   std::vector<uint8_t> cipher = {
