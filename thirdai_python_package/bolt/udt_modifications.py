@@ -37,7 +37,6 @@ def modify_udt():
     original_train = bolt.UDT.train
     original_evaluate = bolt.UDT.evaluate
     original_cold_start = bolt.UDT.cold_start
-    original_introduce_documents = bolt.UDT.introduce_documents
 
     def _convert_validation(validation: Optional[bolt.Validation]) -> None:
         if validation is not None:
@@ -127,19 +126,26 @@ def modify_udt():
             verbose=verbose,
         )
 
+
+    delattr(bolt.UDT, "train")
+    delattr(bolt.UDT, "evaluate")
+    delattr(bolt.UDT, "cold_start")
+
+    bolt.UDT.train = wrapped_train
+    bolt.UDT.evaluate = wrapped_evaluate
+    bolt.UDT.cold_start = wrapped_cold_start
+
+
+def modify_mach_udt():
+    original_introduce_documents = bolt.UDT.introduce_documents
+
     def wrapped_introduce_documents(self, filename):
         data_source = _create_data_source(filename)
 
         return original_introduce_documents(self, data_source)
 
-    delattr(bolt.UDT, "train")
-    delattr(bolt.UDT, "evaluate")
-    delattr(bolt.UDT, "cold_start")
     delattr(bolt.UDT, "introduce_documents")
 
-    bolt.UDT.train = wrapped_train
-    bolt.UDT.evaluate = wrapped_evaluate
-    bolt.UDT.cold_start = wrapped_cold_start
     bolt.UDT.introduce_documents = wrapped_introduce_documents
 
 

@@ -134,10 +134,10 @@ void defineAutomlInModule(py::module_& module) {
       .def("set_decode_params", &udt::UDT::setDecodeParams,
            py::arg("min_num_eval_results"),
            py::arg("top_k_per_eval_aggregation"))
+      .def("introduce_documents", &udt::UDT::introduceDocuments,
+           py::arg("data_source"))
       .def("introduce", &udt::UDT::introduce, py::arg("input_batch"),
            py::arg("new_label"))
-      .def("introduce_documents", &udt::UDT::introduceDocuments,
-           py::arg("data"))
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
