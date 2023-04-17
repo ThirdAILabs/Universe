@@ -243,7 +243,7 @@ def test_entity_embedding(embedding_dim, integer_label):
     for output_id, output_label in enumerate(output_labels):
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
-        weights = model._get_model()["fc_2"].weights
+        weights = model._get_model().ops()[1].weights
 
         assert (weights[output_id] == embedding).all()
 
@@ -404,7 +404,7 @@ def test_udt_override_input_dim():
         options={"input_dim": 200},
     )
 
-    input_dim = udt_model._get_model()["fc_1"].weights.shape[1]
+    input_dim = udt_model._get_model().ops()[0].weights.shape[1]
 
     assert input_dim == 200
 
