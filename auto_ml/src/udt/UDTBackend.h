@@ -225,6 +225,7 @@ class UDTBackend {
     (void)new_params;
     (void)flattened_dim;
     throw notSupported("set_optimizers");
+  }
   /*
    * Returns a model that embeds text using the hidden layer of the UDT model.
    */
