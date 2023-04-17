@@ -2,9 +2,12 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -51,7 +54,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setModel(const bolt::BoltGraphPtr& model) final {
     bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != curr_model->outputDim()) {
+    if (curr_model->outputDim() != model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
     curr_model = model;
@@ -87,6 +90,9 @@ class UDTMachClassifier final : public UDTBackend {
   void verifyCanDistribute() const final {
     _dataset_factory->verifyCanDistribute();
   }
+
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const final;
 
  private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {

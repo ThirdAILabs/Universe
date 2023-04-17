@@ -95,6 +95,11 @@ class Model {
   const autograd::ComputationList& labels() const;
 
   /**
+   * Returns the loss functions of the model.
+   */
+  const std::vector<loss::LossPtr>& losses() const;
+
+  /**
    * Returns a list of all ops.
    */
   const std::vector<ops::OpPtr>& ops() const;
@@ -127,17 +132,23 @@ class Model {
   std::vector<uint32_t> inputDims() const;
 
   /**
+   * Returns the expected dimensions of the labels the model is expecting, in
+   * the order they are expected.
+   */
+  std::vector<uint32_t> labelDims() const;
+
+  /**
    * Returns a list of references to gradients of all parameters in the model.
    */
   std::vector<std::vector<float>*> gradients() const;
 
   /**
-   * Returns a list of pairs of matching outputs and labels. A label and output
-   * match if they are both used in a loss function with no other labels or
-   * outputs.
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
    */
-  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-  outputLabelPairs() const;
+  void freezeHashTables(bool insert_labels_if_not_found);
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -145,9 +156,25 @@ class Model {
    * uuid, the date saved, number of train steps before the save, and the model
    * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
    */
-  void save(const std::string& filename, bool save_metadata = true) const;
+  void save(const std::string& filename, bool save_metadata = true);
 
+  /**
+   * Saves the model with optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void checkpoint(const std::string& filename, bool save_metadata = true);
+
+  /**
+   * Helper function to save the model to a stream.
+   */
   void save_stream(std::ostream& output_stream) const;
+
+  /**
+   * Controls if the model will save the optimizer along with the parameters.
+   */
+  void setSerializeOptimizer(bool should_save_optimizer);
 
   /**
    * Loads the model and automatically initializes the optimizer state.
@@ -179,6 +206,14 @@ class Model {
    * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
+
+  /**
+   * Returns a list of pairs of matching outputs and labels. A label and output
+   * match if they are both used in a loss function with no other labels or
+   * outputs.
+   */
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+  outputLabelPairs() const;
 
   /**
    * When a loss is applied to a single output computation coming from a fully

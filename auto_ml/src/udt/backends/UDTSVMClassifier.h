@@ -36,6 +36,14 @@ class UDTSVMClassifier final : public UDTBackend {
 
   bolt::BoltGraphPtr model() const final { return _classifier->model(); }
 
+  void setModel(const bolt::BoltGraphPtr& model) final {
+    bolt::BoltGraphPtr& curr_model = _classifier->model();
+    if (curr_model->outputDim() != model->outputDim()) {
+      throw std::invalid_argument("Output dim mismatch in set_model.");
+    }
+    curr_model = model;
+  }
+
  private:
   static dataset::DatasetLoaderPtr svmDatasetLoader(
       dataset::DataSourcePtr data_source, bool shuffle);

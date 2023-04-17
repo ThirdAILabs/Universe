@@ -98,7 +98,7 @@ class Op {
    * Returns references to all of the gradients of the op. Used for distributed
    * training.
    */
-  virtual std::vector<std::vector<float>*> gradients() const = 0;
+  virtual std::vector<std::vector<float>*> gradients() = 0;
 
   /**
    * Appends a line to the summary to describe the op when applied to the given
@@ -108,6 +108,13 @@ class Op {
   virtual void summary(std::ostream& summary,
                        const autograd::ComputationList& inputs,
                        const autograd::Computation* output) const = 0;
+
+  /**
+   * Controls if the op should save the optimizer along with the parameters.
+   */
+  virtual void setSerializeOptimizer(bool setSerializeOptimizer) {
+    (void)setSerializeOptimizer;
+  }
 
   /**
    * Returns the name of the op. All of the ops in a model must have a unique

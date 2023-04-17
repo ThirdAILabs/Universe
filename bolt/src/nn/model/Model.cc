@@ -3,6 +3,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
+#include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -139,6 +140,8 @@ const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
 const autograd::ComputationList& Model::labels() const { return _labels; }
 
+const std::vector<loss::LossPtr>& Model::losses() const { return _losses; }
+
 const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
 
 ops::OpPtr Model::getOp(const std::string& name) const {
@@ -192,6 +195,14 @@ std::vector<uint32_t> Model::inputDims() const {
   return dims;
 }
 
+std::vector<uint32_t> Model::labelDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& label : _labels) {
+    dims.push_back(label->dim());
+  }
+  return dims;
+}
+
 std::vector<std::vector<float>*> Model::gradients() const {
   std::vector<std::vector<float>*> grads;
 
@@ -201,6 +212,16 @@ std::vector<std::vector<float>*> Model::gradients() const {
   }
 
   return grads;
+}
+
+void Model::freezeHashTables(bool insert_labels_if_not_found) {
+  for (auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->freezeHashTables(insert_labels_if_not_found);
+    }
+  }
 }
 
 std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
@@ -221,9 +242,25 @@ Model::outputLabelPairs() const {
   return output_label_pairs;
 }
 
-void Model::save(const std::string& filename, bool save_metadata) const {
+void Model::save(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
+  setSerializeOptimizer(false);
+
+  save_stream(output_stream);
+
+  if (save_metadata) {
+    saveMetadata(filename);
+  }
+}
+
+void Model::checkpoint(const std::string& filename, bool save_metadata) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
+  setSerializeOptimizer(true);
+
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -234,6 +271,12 @@ void Model::save(const std::string& filename, bool save_metadata) const {
 void Model::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
+}
+
+void Model::setSerializeOptimizer(bool should_save_optimizer) {
+  for (auto& op : _ops) {
+    op->setSerializeOptimizer(should_save_optimizer);
+  }
 }
 
 std::shared_ptr<Model> Model::load(const std::string& filename) {
@@ -273,8 +316,9 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
                                const std::string& type) {
   if (batches.size() != inputs.size()) {
     std::stringstream error;
-    error << "Expected " << inputs.size() << " " << type << " but received "
-          << batches.size() << ".";
+    error << "When preparing the model for the next batch, expected "
+          << inputs.size() << " " << type << " but received " << batches.size()
+          << ".";
     throw std::invalid_argument(error.str());
   }
 
@@ -298,17 +342,16 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
 }
 
 uint32_t Model::setInput(const tensor::TensorList& input_batches) {
-  return setBatchHelper(_inputs, input_batches, "inputs");
+  return setBatchHelper(_inputs, input_batches, "input batches");
 }
 
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
-  return setBatchHelper(_labels, label_batches, "labels");
+  return setBatchHelper(_labels, label_batches, "label batches");
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
-    auto fully_connected =
-        std::dynamic_pointer_cast<ops::FullyConnected>(output->op());
+    auto fully_connected = ops::FullyConnected::cast(output->op());
 
     if (fully_connected) {
       output->addInput(label);

@@ -90,10 +90,31 @@ void defineTrainer(py::module_& train) {
            py::arg("steps_per_validation") = std::nullopt,
            py::arg("use_sparsity_in_validation") = false,
            py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           py::arg("autotune_rehash_rebuild") = false,
+           py::arg("verbose") = true,
+           py::arg("logging_interval") = std::nullopt,
+           bolt::python::OutputRedirect())
+      .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
+           py::arg("learning_rate"), py::arg("epochs") = 1,
+           py::arg("train_metrics") = std::vector<std::string>(),
+           py::arg("validation_data") = std::nullopt,
+           py::arg("validation_metrics") = std::vector<std::string>(),
+           py::arg("steps_per_validation") = std::nullopt,
+           py::arg("use_sparsity_in_validation") = false,
+           py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           py::arg("autotune_rehash_rebuild") = false,
+           py::arg("verbose") = true,
+           py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),
-           py::arg("use_sparsity") = false, bolt::python::OutputRedirect());
+           py::arg("use_sparsity") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect())
+      .def("validate", &Trainer::validate_with_metric_names,
+           py::arg("validation_data"),
+           py::arg("validation_metrics") = std::vector<std::string>(),
+           py::arg("use_sparsity") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect());
 
   auto metrics = train.def_submodule("metrics");
 
@@ -175,7 +196,10 @@ void defineDistributedTrainer(py::module_& train) {
            bolt::python::OutputRedirect())
       .def("validate_and_save_if_best",
            &DistributedTrainingWrapper::validationAndSaveBest,
-           bolt::python::OutputRedirect());
+           bolt::python::OutputRedirect())
+      .def("should_save_optimizer",
+           &DistributedTrainingWrapper::setSerializeOptimizer,
+           py::arg("should_save_optimizer"));
 }
 
 }  // namespace thirdai::bolt::train::python

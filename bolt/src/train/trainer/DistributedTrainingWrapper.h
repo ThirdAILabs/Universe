@@ -56,6 +56,10 @@ class DistributedTrainingWrapper {
 
   void setGradients(const float* new_grad, uint64_t flattened_dim);
 
+  void setSerializeOptimizer(bool should_serialize_optimizer) {
+    _model->setSerializeOptimizer(should_serialize_optimizer);
+  }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
@@ -63,10 +67,6 @@ class DistributedTrainingWrapper {
 
   static uint64_t sumFlattenedDims(
       const std::vector<std::vector<float>*>& grads);
-
-  static metrics::InputMetrics createMetrics(
-      const nn::model::ModelPtr& model,
-      const std::vector<std::string>& metrics);
 
   bool shouldLogMetrics() const {
     return _worker_id == 0 && _logging_interval &&
@@ -80,7 +80,7 @@ class DistributedTrainingWrapper {
   float _learning_rate;
   metrics::MetricCollection _train_metrics;
   std::optional<uint32_t> _logging_interval;
-  metrics::InputMetrics _validation_metrics;
+  std::vector<std::string> _validation_metrics;
   bool _use_sparsity_in_validation;
 
   metrics::History _train_metric_history;

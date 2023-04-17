@@ -80,7 +80,7 @@ class UDTClassifier final : public UDTBackend {
 
   void setModel(const bolt::BoltGraphPtr& model) final {
     bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != curr_model->outputDim()) {
+    if (curr_model->outputDim() != model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
     curr_model = model;
@@ -106,6 +106,9 @@ class UDTClassifier final : public UDTBackend {
     return std::make_shared<cold_start::ColdStartMetaData>(
         _label_block->delimiter(), _label_block->columnName(), integerTarget());
   }
+
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const final;
 
  private:
   dataset::CategoricalBlockPtr labelBlock(

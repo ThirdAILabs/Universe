@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -232,7 +233,7 @@ static std::string variantToString(
 py::object UDTMachClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   std::vector<uint32_t> hashed_neurons =
-      _mach_label_block->index()->hashAndStoreEntity(variantToString(label));
+      _mach_label_block->index()->hashEntity(variantToString(label));
 
   auto back_node = _classifier->model()->getNodes().back();
 
@@ -286,6 +287,12 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 
   _min_num_eval_results = min_num_eval_results;
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+}
+
+TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
+    const std::string& activation_func, float distance_cutoff) const {
+  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
+                                  activation_func, distance_cutoff);
 }
 
 template <class Archive>
