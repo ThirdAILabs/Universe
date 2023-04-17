@@ -51,9 +51,27 @@ class GradientReference {
   DistributedTrainingWrapperPtr _model;
 };
 
+void defineTrainer(py::module_& train);
+
+void defineDistributedTrainer(py::module_& train);
+
 void createBoltV2TrainSubmodule(py::module_& module) {
   auto train = module.def_submodule("train");
 
+#if THIRDAI_EXPOSE_ALL
+  /**
+   * ==============================================================
+   * WARNING: If this THIRDAI_EXPOSE_ALL is removed then license
+   * checks must be added to the train method.
+   * ==============================================================
+   */
+  defineTrainer(train);
+#endif
+
+  defineDistributedTrainer(train);
+}
+
+void defineTrainer(py::module_& train) {
   // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
   // this.
   train.def("convert_dataset", convertDataset, py::arg("dataset"),
@@ -98,47 +116,6 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
            bolt::python::OutputRedirect());
 
-  py::class_<GradientReference>(train, "GradientReference")
-      .def("get_gradients", &GradientReference::getGradients)
-      .def("set_gradients", &GradientReference::setGradients,
-           py::arg("flattened_gradients"));
-
-  py::class_<DistributedTrainingWrapper, DistributedTrainingWrapperPtr>(
-      train, "DistributedTrainingWrapper")
-      .def(py::init<const nn::model::ModelPtr&, const TrainConfig&, uint32_t>(),
-           py::arg("model"), py::arg("train_config"), py::arg("worker_id"))
-      .def("compute_and_store_batch_gradients",
-           &DistributedTrainingWrapper::computeAndStoreBatchGradients,
-           py::arg("batch_idx"))
-      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
-      .def("num_batches", &DistributedTrainingWrapper::numBatches)
-      .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"))
-      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
-      .def_property_readonly(
-          "model",
-          [](DistributedTrainingWrapper& wrapped_model) {
-            return wrapped_model.getModel();
-          },
-          py::return_value_policy::reference_internal)
-      .def("freeze_hash_tables", &DistributedTrainingWrapper::freezeHashTables,
-           py::arg("insert_labels_if_not_found"))
-      .def(
-          "gradient_reference",
-          [](DistributedTrainingWrapperPtr& model) {
-            return GradientReference(model);
-          },
-          py::return_value_policy::reference_internal)
-      .def("get_updated_metrics",
-           &DistributedTrainingWrapper::getTrainingMetrics,
-           bolt::python::OutputRedirect())
-      .def("validate_and_save_if_best",
-           &DistributedTrainingWrapper::validationAndSaveBest,
-           bolt::python::OutputRedirect())
-      .def("should_save_optimizer",
-           &DistributedTrainingWrapper::setSerializeOptimizer,
-           py::arg("should_save_optimizer"));
-
   auto metrics = train.def_submodule("metrics");
 
   py::class_<metrics::Metric, metrics::MetricPtr>(metrics, "Metric");  // NOLINT
@@ -180,6 +157,49 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            py::arg("decay_factor") = 0.1, py::arg("threshold") = 1e-3,
            py::arg("relative_threshold") = true, py::arg("maximize") = true,
            py::arg("min_lr") = 0);
+}
+
+void defineDistributedTrainer(py::module_& train) {
+  py::class_<GradientReference>(train, "GradientReference")
+      .def("get_gradients", &GradientReference::getGradients)
+      .def("set_gradients", &GradientReference::setGradients,
+           py::arg("flattened_gradients"));
+
+  py::class_<DistributedTrainingWrapper, DistributedTrainingWrapperPtr>(
+      train, "DistributedTrainingWrapper")
+      .def(py::init<const nn::model::ModelPtr&, const TrainConfig&, uint32_t>(),
+           py::arg("model"), py::arg("train_config"), py::arg("worker_id"))
+      .def("compute_and_store_batch_gradients",
+           &DistributedTrainingWrapper::computeAndStoreBatchGradients,
+           py::arg("batch_idx"))
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+      .def("num_batches", &DistributedTrainingWrapper::numBatches)
+      .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
+           py::arg("train_data"), py::arg("train_labels"))
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
+      .def_property_readonly(
+          "model",
+          [](DistributedTrainingWrapper& wrapped_model) {
+            return wrapped_model.getModel();
+          },
+          py::return_value_policy::reference_internal)
+      .def("freeze_hash_tables", &DistributedTrainingWrapper::freezeHashTables,
+           py::arg("insert_labels_if_not_found"))
+      .def(
+          "gradient_reference",
+          [](DistributedTrainingWrapperPtr& model) {
+            return GradientReference(model);
+          },
+          py::return_value_policy::reference_internal)
+      .def("get_updated_metrics",
+           &DistributedTrainingWrapper::getTrainingMetrics,
+           bolt::python::OutputRedirect())
+      .def("validate_and_save_if_best",
+           &DistributedTrainingWrapper::validationAndSaveBest,
+           bolt::python::OutputRedirect())
+      .def("should_save_optimizer",
+           &DistributedTrainingWrapper::setSerializeOptimizer,
+           py::arg("should_save_optimizer"));
 }
 
 }  // namespace thirdai::bolt::train::python
