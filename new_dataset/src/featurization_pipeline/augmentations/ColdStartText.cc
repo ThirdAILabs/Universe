@@ -83,26 +83,19 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::vector<std::string> augmented_data;
 
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
+    std::string labels = (*label_column)[row_id];
+
     std::string weak_text = concatenateStringColumnEntries(
         columns, row_id, _weak_column_names, /* delimiter= */ ". ");
 
     std::string strong_text = concatenateStringColumnEntries(
         columns, row_id, _strong_column_names, /* delimiter= */ " ");
-    // Now that we have both the weak and strong text, pass them into the
-    // phrase generation pipeline to self-supervised (label, phrase) pairs.
-    Phrase strong_phrase = getStrongPhrase(strong_text);
-    PhraseCollection phrases = getWeakPhrases(weak_text);
-    mergeStrongWithWeak(phrases, strong_phrase);
 
-    std::string labels = (*label_column)[row_id];
-    for (const auto& phrase : phrases) {
-      // Add (label, phrase) to the output data.
-      std::string output_text;
-      for (const auto& word : phrase) {
-        output_text.append(word);
-        output_text.append(" ");
-      }
-      augmented_data.push_back(output_text);
+    std::vector<std::string> augmented_samples =
+        augmentSingleRow(strong_text, weak_text);
+
+    for (const auto& sample : augmented_samples) {
+      augmented_data.push_back(sample);
       augmented_labels.push_back(labels);
     }
   }
@@ -126,6 +119,28 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
   return augmented_column_map;
+}
+
+std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
+    std::string& strong_text, std::string& weak_text) {
+  // Now that we have both the weak and strong text, pass them into the
+  // phrase generation pipeline to self-supervised (label, phrase) pairs.
+  Phrase strong_phrase = getStrongPhrase(strong_text);
+  PhraseCollection phrases = getWeakPhrases(weak_text);
+  mergeStrongWithWeak(phrases, strong_phrase);
+
+  std::vector<std::string> output_samples;
+  for (const auto& phrase : phrases) {
+    // Add (label, phrase) to the output data.
+    std::string output_text;
+    for (const auto& word : phrase) {
+      output_text.append(word);
+      output_text.append(" ");
+    }
+    output_samples.push_back(output_text);
+  }
+
+  return output_samples;
 }
 
 void ColdStartTextAugmentation::replacePunctuationWithSpaces(std::string& s) {

@@ -255,9 +255,8 @@ def test_mach_udt_introduce_and_forget(integer_target):
     label = 4 if integer_target else "4"
 
     sample = {"text": "something or another with lots of words"}
-    print(model.predict(sample))
+    assert model.predict(sample)[0][0] != str(label)
     model.introduce([sample], label)
-    print(model.predict(sample))
     assert model.predict(sample)[0][0] == str(label)
     model.forget(label)
     assert model.predict(sample)[0][0] != str(label)

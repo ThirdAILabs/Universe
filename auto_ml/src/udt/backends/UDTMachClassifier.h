@@ -14,6 +14,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -91,13 +92,38 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  void introduceDocuments(const dataset::DataSourcePtr& data) final {
+    auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
+        data, _dataset_factory->delimiter());
+
+    auto metadata = getColdStartMetaData();
+
+    std::string text_column_name =
+        _dataset_factory->inputDataTypes().begin()->first;
+
+    thirdai::data::ColdStartTextAugmentation augmentation(
+        /* strong_column_names= */ {"TITLE"},
+        /* weak_column_names= */ {"TEXT"},
+        /* label_column_name= */ metadata->getLabelColumn(),
+        /* output_column_name= */ text_column_name);
+
+    std::vector<std::pair<MapInputBatch, uint32_t>> samples_doc =
+        augmentation.getSamplesPerDoc(dataset);
+
+    for (const auto& [samples, doc] : samples_doc) {
+      introduce(samples, doc);
+    }
+  }
+
   void introduce(const MapInputBatch& samples,
                  const std::variant<uint32_t, std::string>& new_label) final {
     BoltBatch output = _classifier->model()->predictSingleBatch(
         _dataset_factory->featurizeInputBatch(samples),
         /* sparse_inference = */ false);
 
-    // TODO(david): try summing scores instead of frequency counting
+    // map from output hash to pair of frequency, score
+    // a hash appearing more frequently is more indicative than the score but
+    // the score is helpful for tiebreaking
     std::unordered_map<uint32_t, uint32_t> candidate_hashes;
 
     for (const auto& vector : output) {
@@ -105,10 +131,13 @@ class UDTMachClassifier final : public UDTBackend {
           _mach_label_block->index()->numHashes());
 
       while (!top_K.empty()) {
-        auto [_, active_neuron] = top_K.top();
+        auto [activation, active_neuron] = top_K.top();
         if (!candidate_hashes.count(active_neuron)) {
-          candidate_hashes[active_neuron] = 0;
+          // candidate_hashes[active_neuron] = std::make_pair(1, activation);
+          candidate_hashes[active_neuron] = 1;
         } else {
+          // candidate_hashes[active_neuron].first += 1;
+          // candidate_hashes[active_neuron].second += activation;
           candidate_hashes[active_neuron] += 1;
         }
         top_K.pop();
@@ -117,13 +146,20 @@ class UDTMachClassifier final : public UDTBackend {
 
     std::vector<std::pair<uint32_t, uint32_t>> best_hashes(
         candidate_hashes.begin(), candidate_hashes.end());
-    std::sort(
-        best_hashes.begin(), best_hashes.end(),
-        [](auto& left, auto& right) { return left.second > right.second; });
+    std::sort(best_hashes.begin(), best_hashes.end(),
+              [](auto& left, auto& right) {
+                // auto [left_frequency, left_score] = left.second;
+                // auto [right_frequency, right_score] = right.second;
+                // if (left_frequency == right_frequency) {
+                //   return left_score > right_score;
+                // }
+                // return left_frequency > right_frequency;
+                return left.second > right.second;
+              });
 
     std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
     for (uint32_t i = 0; i < _mach_label_block->index()->numHashes(); i++) {
-      auto [hash, _] = best_hashes[i];
+      auto [hash, freq_score_pair] = best_hashes[i];
       new_hashes[i] = hash;
     }
 
@@ -140,9 +176,6 @@ class UDTMachClassifier final : public UDTBackend {
                    "predict, or predictBatch."
                 << std::endl;
     }
-
-    _min_num_eval_results = std::min(_min_num_eval_results,
-                                     _mach_label_block->index()->numElements());
   }
 
   TextEmbeddingModelPtr getTextEmbeddingModel(
