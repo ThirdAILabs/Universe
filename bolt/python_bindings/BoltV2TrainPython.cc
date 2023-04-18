@@ -3,6 +3,7 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
@@ -51,9 +52,33 @@ class GradientReference {
   DistributedTrainingWrapperPtr _model;
 };
 
+void defineTrainer(py::module_& train);
+
+void defineMetrics(py::module_& train);
+
+void defineCallbacks(py::module_& train);
+
+void defineDistributedTrainer(py::module_& train);
+
 void createBoltV2TrainSubmodule(py::module_& module) {
   auto train = module.def_submodule("train");
 
+#if THIRDAI_EXPOSE_ALL
+  /**
+   * ==============================================================
+   * WARNING: If this THIRDAI_EXPOSE_ALL is removed then license
+   * checks must be added to the train method.
+   * ==============================================================
+   */
+  defineTrainer(train);
+  defineMetrics(train);
+  defineCallbacks(train);
+#endif
+
+  defineDistributedTrainer(train);
+}
+
+void defineTrainer(py::module_& train) {
   // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
   // this.
   train.def("convert_dataset", convertDataset, py::arg("dataset"),
@@ -97,7 +122,60 @@ void createBoltV2TrainSubmodule(py::module_& module) {
            py::arg("validation_metrics") = std::vector<std::string>(),
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
            bolt::python::OutputRedirect());
+}
 
+void defineMetrics(py::module_& train) {
+  auto metrics = train.def_submodule("metrics");
+
+  py::class_<metrics::Metric, metrics::MetricPtr>(metrics, "Metric");  // NOLINT
+
+  py::class_<metrics::LossMetric, std::shared_ptr<metrics::LossMetric>,
+             metrics::Metric>(metrics, "LossMetric")
+      .def(py::init<nn::loss::LossPtr>(), py::arg("loss_fn"));
+
+  py::class_<metrics::CategoricalAccuracy,
+             std::shared_ptr<metrics::CategoricalAccuracy>, metrics::Metric>(
+      metrics, "CategoricalAccuracy")
+      .def(py::init<nn::autograd::ComputationPtr,
+                    nn::autograd::ComputationPtr>(),
+           py::arg("outputs"), py::arg("labels"));
+
+  py::class_<metrics::PrecisionAtK, std::shared_ptr<metrics::PrecisionAtK>,
+             metrics::Metric>(metrics, "PrecisionAtK")
+      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
+
+  py::class_<metrics::RecallAtK, std::shared_ptr<metrics::RecallAtK>,
+             metrics::Metric>(metrics, "RecallAtK")
+      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
+}
+
+void defineCallbacks(py::module_& train) {
+  auto callbacks = train.def_submodule("callbacks");
+
+  py::class_<callbacks::Callback, callbacks::CallbackPtr>(callbacks,  // NOLINT
+                                                          "Callback");
+
+  py::class_<callbacks::ReduceLROnPlateau,
+             std::shared_ptr<callbacks::ReduceLROnPlateau>,
+             callbacks::Callback>(callbacks, "ReduceLROnPlateau")
+      .def(py::init<std::string, uint32_t, uint32_t, float, float, bool, bool,
+                    float>(),
+           py::arg("metric"), py::arg("patience") = 10, py::arg("cooldown") = 0,
+           py::arg("decay_factor") = 0.1, py::arg("threshold") = 1e-3,
+           py::arg("relative_threshold") = true, py::arg("maximize") = true,
+           py::arg("min_lr") = 0);
+
+  py::class_<callbacks::Overfitting, std::shared_ptr<callbacks::Overfitting>,
+             callbacks::Callback>(callbacks, "Overfitting")
+      .def(py::init<std::string, float, bool>(), py::arg("metric"),
+           py::arg("threshold") = 0.97, py::arg("maximize") = true);
+}
+
+void defineDistributedTrainer(py::module_& train) {
   py::class_<GradientReference>(train, "GradientReference")
       .def("get_gradients", &GradientReference::getGradients)
       .def("set_gradients", &GradientReference::setGradients,
@@ -138,48 +216,6 @@ void createBoltV2TrainSubmodule(py::module_& module) {
       .def("should_save_optimizer",
            &DistributedTrainingWrapper::setSerializeOptimizer,
            py::arg("should_save_optimizer"));
-
-  auto metrics = train.def_submodule("metrics");
-
-  py::class_<metrics::Metric, metrics::MetricPtr>(metrics, "Metric");  // NOLINT
-
-  py::class_<metrics::LossMetric, std::shared_ptr<metrics::LossMetric>,
-             metrics::Metric>(metrics, "LossMetric")
-      .def(py::init<nn::loss::LossPtr>(), py::arg("loss_fn"));
-
-  py::class_<metrics::CategoricalAccuracy,
-             std::shared_ptr<metrics::CategoricalAccuracy>, metrics::Metric>(
-      metrics, "CategoricalAccuracy")
-      .def(py::init<nn::autograd::ComputationPtr,
-                    nn::autograd::ComputationPtr>(),
-           py::arg("outputs"), py::arg("labels"));
-
-  py::class_<metrics::PrecisionAtK, std::shared_ptr<metrics::PrecisionAtK>,
-             metrics::Metric>(metrics, "PrecisionAtK")
-      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    uint32_t>(),
-           py::arg("outputs"), py::arg("labels"), py::arg("k"));
-
-  py::class_<metrics::RecallAtK, std::shared_ptr<metrics::RecallAtK>,
-             metrics::Metric>(metrics, "RecallAtK")
-      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    uint32_t>(),
-           py::arg("outputs"), py::arg("labels"), py::arg("k"));
-
-  auto callbacks = train.def_submodule("callbacks");
-
-  py::class_<callbacks::Callback, callbacks::CallbackPtr>(callbacks,  // NOLINT
-                                                          "Callback");
-
-  py::class_<callbacks::ReduceLROnPlateau,
-             std::shared_ptr<callbacks::ReduceLROnPlateau>,
-             callbacks::Callback>(callbacks, "ReduceLROnPlateau")
-      .def(py::init<std::string, uint32_t, uint32_t, float, float, bool, bool,
-                    float>(),
-           py::arg("metric"), py::arg("patience") = 10, py::arg("cooldown") = 0,
-           py::arg("decay_factor") = 0.1, py::arg("threshold") = 1e-3,
-           py::arg("relative_threshold") = true, py::arg("maximize") = true,
-           py::arg("min_lr") = 0);
 }
 
 }  // namespace thirdai::bolt::train::python

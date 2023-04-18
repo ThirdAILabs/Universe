@@ -153,8 +153,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Bolt V2
   auto bolt_v2_submodule = m.def_submodule("bolt_v2");
-#if THIRDAI_EXPOSE_ALL
   thirdai::bolt::nn::python::createBoltV2NNSubmodule(bolt_v2_submodule);
   thirdai::bolt::train::python::createBoltV2TrainSubmodule(bolt_v2_submodule);
-#endif
 }
