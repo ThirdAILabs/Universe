@@ -70,7 +70,6 @@ if __name__ == "__main__":
         )
 
     for config in configs:
-
         # REMOVE BEFORE MERGING TO MAIN
         if config.num_epochs:
             config.num_epochs = 1
