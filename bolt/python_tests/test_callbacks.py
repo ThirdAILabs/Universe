@@ -1,7 +1,7 @@
 import os.path
 
 import pytest
-from thirdai import bolt
+from thirdai import bolt, bolt_v2
 
 from utils import gen_numpy_training_data, get_simple_dag_model
 
@@ -175,11 +175,11 @@ def test_overfitting_callback_invalid_threshold():
 
 
 def test_overfitting_callback_reaches_threshold_and_stops():
-    callback = bolt.callbacks.Overfitting("categorical_accuracy", 0.97)
+    callback = bolt_v2.train.callbacks.Overfitting("train_categorical_accuracy", 0.97)
 
     metrics = train_simple_udt_with_callback(callback, ["categorical_accuracy"])
 
-    assert metrics["categorical_accuracy"][-1] > 0.97
+    assert metrics["train_categorical_accuracy"][-1] > 0.97
     assert len(metrics["epoch_times"]) < 10
 
 
@@ -189,23 +189,23 @@ def test_overfitting_callback_invalid_metric_name():
 
 
 def test_overfitting_callback_metric_not_passed():
-    callback = bolt.callbacks.Overfitting("categorical_accuracy", 0.97)
+    callback = bolt_v2.train.callbacks.Overfitting("categorical_accuracy")
 
     with pytest.raises(
-        ValueError, match=r"Metric: categorical_accuracy not found in training metrics."
+        ValueError, match=r"Unable to find metric: 'categorical_accuracy'."
     ):
         train_simple_udt_with_callback(callback, [])
 
 
 def test_reduce_lr_on_plateau_callback_missing_metric():
-    callback = bolt.callbacks.ReduceLROnPlateau("categorical_accuracy")
+    callback = bolt_v2.train.callbacks.ReduceLROnPlateau("categorical_accuracy")
     with pytest.raises(
         ValueError,
-        match=r"ReduceLROnPlateau: Could not find metric categorical_accuracy in list of provided train metrics.",
+        match=r"Unable to find metric: 'categorical_accuracy'.",
     ):
         train_simple_udt_with_callback(callback, [])
 
 
 def test_reduce_lr_on_plateau_callback():
-    callback = bolt.callbacks.ReduceLROnPlateau("categorical_accuracy")
+    callback = bolt_v2.train.callbacks.ReduceLROnPlateau("train_categorical_accuracy")
     train_simple_udt_with_callback(callback, ["categorical_accuracy"])

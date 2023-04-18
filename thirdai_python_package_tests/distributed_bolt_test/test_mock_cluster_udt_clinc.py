@@ -64,7 +64,6 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         batch_size=256,
         epochs=1,
         learning_rate=0.02,
-        metrics=["mean_squared_error"],
         verbose=True,
         max_in_memory_batches=10,
         validation=validation,
