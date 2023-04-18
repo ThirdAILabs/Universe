@@ -60,6 +60,10 @@ class DistributedTrainingWrapper {
     _model->setSerializeOptimizer(should_serialize_optimizer);
   }
 
+  void updateLearningRate(float learning_rate) {
+    _learning_rate = learning_rate;
+  }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
