@@ -253,7 +253,6 @@ void createDistributedPreprocessingWrapper(py::module_& module) {
   py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
       distributed_preprocessing_submodule, "ColdStartMetaData")
       .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
-  ;
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

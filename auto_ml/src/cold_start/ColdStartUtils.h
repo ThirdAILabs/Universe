@@ -5,6 +5,7 @@
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <memory>
 #include <stdexcept>
 
@@ -61,8 +62,7 @@ class ColdStartMetaData {
  * This function implements the preprocessing of training data for Cold-Start
  * PreTraining. We need this preprocessing to make sure there is one source for
  * both serial and distributed pre-processing for cold-start.
- */
-/*
+ *
  * Note(pratkpranav): In the distributed setting, this particular function runs
  * independently on each of the worker, hence almost any additions should be
  * fine except the additions which involves going through the whole training
@@ -74,4 +74,5 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& weak_column_names,
     data::TabularDatasetFactoryPtr& dataset_factory,
     ColdStartMetaDataPtr& metadata);
+
 }  // namespace thirdai::automl::cold_start

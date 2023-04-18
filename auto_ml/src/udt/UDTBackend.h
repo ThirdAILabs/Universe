@@ -208,8 +208,8 @@ class UDTBackend {
   }
 
   /**
-   * Introduces a new label to the model. Specifically for text classification
-   * models since we pass in some text description of the new label.
+   * Introduces new documents to the model and used in conjunction with
+   * coldstart.
    */
   virtual void introduceDocuments(const dataset::DataSourcePtr& data) {
     (void)data;
@@ -217,8 +217,8 @@ class UDTBackend {
   }
 
   /**
-   * Introduces a new label to the model. Specifically for text classification
-   * models since we pass in some text description of the new label.
+   * Introduces a new label to the model given a batch of representative samples
+   * of that label.
    */
   virtual void introduce(const MapInputBatch& sample,
                          const std::variant<uint32_t, std::string>& new_label) {

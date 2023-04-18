@@ -254,6 +254,12 @@ py::object UDTMachClassifier::entityEmbedding(
 }
 
 void UDTMachClassifier::introduceDocuments(const dataset::DataSourcePtr& data) {
+  if (!_coldstart_column_names.has_value()) {
+    throw std::invalid_argument(
+        "Cannot introduce documents without calling cold start first.");
+  }
+  auto [strong_columns, weak_columns] = *_coldstart_column_names;
+
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
       data, _dataset_factory->delimiter());
 
@@ -263,15 +269,15 @@ void UDTMachClassifier::introduceDocuments(const dataset::DataSourcePtr& data) {
       _dataset_factory->inputDataTypes().begin()->first;
 
   thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ {"TITLE"},
-      /* weak_column_names= */ {"TEXT"},
+      /* strong_column_names= */ strong_columns,
+      /* weak_column_names= */ weak_columns,
       /* label_column_name= */ metadata->getLabelColumn(),
       /* output_column_name= */ text_column_name);
 
-  std::vector<std::pair<MapInputBatch, uint32_t>> samples_doc =
+  std::vector<std::pair<MapInputBatch, uint32_t>> samples_per_doc =
       augmentation.getSamplesPerDoc(dataset);
 
-  for (const auto& [samples, doc] : samples_doc) {
+  for (const auto& [samples, doc] : samples_per_doc) {
     introduce(samples, doc);
   }
 }
@@ -283,45 +289,42 @@ void UDTMachClassifier::introduce(
       _dataset_factory->featurizeInputBatch(samples),
       /* sparse_inference = */ false);
 
-  // map from output hash to pair of frequency, score
-  // a hash appearing more frequently is more indicative than the score but
-  // the score is helpful for tiebreaking
-  std::unordered_map<uint32_t, uint32_t> candidate_hashes;
-
+  // map from output hash to an aggregated pair of (frequency, score)
+  std::unordered_map<uint32_t, std::pair<uint32_t, float>> hash_freq_and_scores;
   for (const auto& vector : output) {
     auto top_K =
         vector.findKLargestActivations(_mach_label_block->index()->numHashes());
 
     while (!top_K.empty()) {
       auto [activation, active_neuron] = top_K.top();
-      if (!candidate_hashes.count(active_neuron)) {
-        // candidate_hashes[active_neuron] = std::make_pair(1, activation);
-        candidate_hashes[active_neuron] = 1;
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = std::make_pair(1, activation);
       } else {
-        // candidate_hashes[active_neuron].first += 1;
-        // candidate_hashes[active_neuron].second += activation;
-        candidate_hashes[active_neuron] += 1;
+        hash_freq_and_scores[active_neuron].first += 1;
+        hash_freq_and_scores[active_neuron].second += activation;
       }
       top_K.pop();
     }
   }
 
-  std::vector<std::pair<uint32_t, uint32_t>> best_hashes(
-      candidate_hashes.begin(), candidate_hashes.end());
-  std::sort(best_hashes.begin(), best_hashes.end(),
+  // We sort the hashes first by number of occurances and tiebreak with the
+  // higher aggregated score if necessary. We don't only use the activations
+  // since those typically aren't as useful as the frequencies.
+  std::vector<std::pair<uint32_t, std::pair<uint32_t, float>>> sorted_hashes(
+      hash_freq_and_scores.begin(), hash_freq_and_scores.end());
+  std::sort(sorted_hashes.begin(), sorted_hashes.end(),
             [](auto& left, auto& right) {
-              // auto [left_frequency, left_score] = left.second;
-              // auto [right_frequency, right_score] = right.second;
-              // if (left_frequency == right_frequency) {
-              //   return left_score > right_score;
-              // }
-              // return left_frequency > right_frequency;
-              return left.second > right.second;
+              auto [left_frequency, left_score] = left.second;
+              auto [right_frequency, right_score] = right.second;
+              if (left_frequency == right_frequency) {
+                return left_score > right_score;
+              }
+              return left_frequency > right_frequency;
             });
 
   std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
   for (uint32_t i = 0; i < _mach_label_block->index()->numHashes(); i++) {
-    auto [hash, freq_score_pair] = best_hashes[i];
+    auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes[i] = hash;
   }
 
@@ -387,7 +390,8 @@ TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
+          _dataset_factory, _coldstart_column_names, _min_num_eval_results,
+          _top_k_per_eval_aggregation);
 }
 
 }  // namespace thirdai::automl::udt
