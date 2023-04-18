@@ -215,7 +215,10 @@ void defineDistributedTrainer(py::module_& train) {
            bolt::python::OutputRedirect())
       .def("should_save_optimizer",
            &DistributedTrainingWrapper::setSerializeOptimizer,
-           py::arg("should_save_optimizer"));
+           py::arg("should_save_optimizer"))
+      .def("update_learning_rate",
+           &DistributedTrainingWrapper::updateLearningRate,
+           py::arg("updated_learning_rate"));
 }
 
 }  // namespace thirdai::bolt::train::python
