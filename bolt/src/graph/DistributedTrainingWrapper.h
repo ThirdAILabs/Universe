@@ -92,8 +92,8 @@ class DistributedTrainingWrapper {
     _train_context = new_context;
   }
 
-  void updateLearningRate(float updated_learning_rate) {
-    _learning_rate = updated_learning_rate;
+  void updateLearningRate(float learning_rate) {
+    _learning_rate = learning_rate;
   }
   void freezeHashTables(bool insert_labels_if_not_found) {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);

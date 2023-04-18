@@ -60,8 +60,8 @@ class DistributedTrainingWrapper {
     _model->setSerializeOptimizer(should_serialize_optimizer);
   }
 
-  void updateLearningRate(float updated_learning_rate) {
-    _learning_rate = updated_learning_rate;
+  void updateLearningRate(float learning_rate) {
+    _learning_rate = learning_rate;
   }
 
  private:
