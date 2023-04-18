@@ -73,17 +73,15 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
     # check whether validation accuracy is increasing each time
     for metrics_next, metrics_prev in zip(validation_metrics[1:], validation_metrics):
         assert (
-            metrics_next["categorical_accuracy"] > metrics_prev["categorical_accuracy"]
+            metrics_next["val_categorical_accuracy"]
+            > metrics_prev["val_categorical_accuracy"]
         )
 
-    assert (
-        udt_model.evaluate(
-            f"{os.getcwd()}/{TEST_FILE}",
-            metrics=["categorical_accuracy"],
-            return_metrics=True,
-        )["categorical_accuracy"]
-        > 0.7
+    metrics = udt_model.evaluate(
+        f"{os.getcwd()}/{TEST_FILE}",
+        metrics=["categorical_accuracy"],
     )
+    assert metrics["val_categorical_accuracy"][-1] > 0.7
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
