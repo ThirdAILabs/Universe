@@ -11,10 +11,10 @@ from .runner import Runner
 
 
 class TemporalRunner(Runner):
-    config_type = UDTBenchmarkConfig
+    config_type = TemporalBenchmarkConfig
 
     @staticmethod
-    def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
+    def run_benchmark(config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger):
         train_file = (
             os.path.join(path_prefix, config.train_file)
             if config.train_file is not None
