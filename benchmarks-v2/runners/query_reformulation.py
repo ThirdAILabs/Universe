@@ -1,7 +1,7 @@
 import json
 import os
-import pandas as pd
 
+import pandas as pd
 from thirdai import bolt, deployment
 
 from ..configs.query_reformulation_configs import *
