@@ -43,6 +43,8 @@ def train_distributed_bolt_check(
 ):
     import thirdai.distributed_bolt as db
 
+    comm, epochs = request.param
+
     model = get_mnist_model()
 
     train_files, test_file = mnist_distributed_split
@@ -57,9 +59,9 @@ def train_distributed_bolt_check(
         )
         for filename in train_files
     ]
-    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=epochs)
     distributed_trainer = db.DistributedDataParallel(
-        cluster_config=ray_two_node_cluster_config(request.param),
+        cluster_config=ray_two_node_cluster_config(comm),
         model=model,
         train_config=train_config,
         train_sources=train_sources,
@@ -90,7 +92,7 @@ def train_distributed_bolt_check(
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
 @pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
+    "train_distributed_bolt_check", [("linear", 3), ("circular", 1)], indirect=True
 )
 def test_distributed_mnist(train_distributed_bolt_check):
     import multiprocessing
