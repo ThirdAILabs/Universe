@@ -253,17 +253,22 @@ py::object UDTMachClassifier::entityEmbedding(
   return std::move(np_weights);
 }
 
-void UDTMachClassifier::introduceDocuments(const dataset::DataSourcePtr& data) {
-  if (!_augmentation.has_value()) {
-    throw std::invalid_argument(
-        "Cannot introduce documents without calling coldstart first.");
-  }
+void UDTMachClassifier::introduceDocuments(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names) {
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ _mach_label_block->columnName(),
+      /* output_column_name= */
+      _dataset_factory->inputDataTypes().begin()->first);
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
       data, _dataset_factory->delimiter());
 
   std::vector<std::pair<MapInputBatch, uint32_t>> samples_per_doc =
-      _augmentation->getSamplesPerDoc(dataset);
+      augmentation.getSamplesPerDoc(dataset);
 
   for (const auto& [samples, doc] : samples_per_doc) {
     introduce(samples, doc);
@@ -272,13 +277,43 @@ void UDTMachClassifier::introduceDocuments(const dataset::DataSourcePtr& data) {
 
 void UDTMachClassifier::introduceDocument(
     const MapInput& document,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
     const std::variant<uint32_t, std::string>& new_label) {
-  if (!_augmentation.has_value()) {
-    throw std::invalid_argument(
-        "Cannot introduce a document without calling coldstart first.");
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ _mach_label_block->columnName(),
+      /* output_column_name= */
+      _dataset_factory->inputDataTypes().begin()->first);
+
+  std::string strong_text;
+  for (const auto& strong_col : strong_column_names) {
+    if (!document.count(strong_col)) {
+      throw std::invalid_argument(
+          "Strong column not found in the provided document.");
+    }
+    strong_text.append(document.at(strong_col));
+    strong_text.append(" ");
   }
-  (void)document;
-  (void)new_label;
+  std::string weak_text;
+  for (const auto& weak_col : weak_column_names) {
+    if (!document.count(weak_col)) {
+      throw std::invalid_argument(
+          "Weak column not found in the provided document.");
+    }
+    weak_text.append(document.at(weak_col));
+    weak_text.append(" ");
+  }
+
+  MapInputBatch batch;
+  for (const auto& row :
+       augmentation.augmentSingleRow(strong_text, weak_text)) {
+    MapInput input = {{_dataset_factory->inputDataTypes().begin()->first, row}};
+    batch.push_back(input);
+  }
+
+  introduce(batch, new_label);
 }
 
 void UDTMachClassifier::introduce(
@@ -389,8 +424,7 @@ TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _augmentation, _min_num_eval_results,
-          _top_k_per_eval_aggregation);
+          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
 }
 
 }  // namespace thirdai::automl::udt

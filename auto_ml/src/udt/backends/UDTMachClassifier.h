@@ -81,10 +81,15 @@ class UDTMachClassifier final : public UDTBackend {
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
 
-  void introduceDocuments(const dataset::DataSourcePtr& data) final;
+  void introduceDocuments(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names) final;
 
   void introduceDocument(
       const MapInput& document,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label) final;
 
   void introduce(const MapInputBatch& samples,
@@ -150,9 +155,6 @@ class UDTMachClassifier final : public UDTBackend {
 
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
-  std::optional<thirdai::data::ColdStartTextAugmentation> _augmentation =
-      std::nullopt;
-
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
 };

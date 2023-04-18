@@ -135,13 +135,18 @@ class UDT {
                                      top_k_per_eval_aggregation);
   }
 
-  void introduceDocuments(const dataset::DataSourcePtr& data) {
-    _backend->introduceDocuments(data);
+  void introduceDocuments(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names) {
+    _backend->introduceDocuments(data, strong_column_names, weak_column_names);
   }
 
   void introduceDocument(const MapInput& document,
+                         const std::vector<std::string>& strong_column_names,
+                         const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label) {
-    _backend->introduceDocument(document, new_label);
+    _backend->introduceDocument(document, strong_column_names,
+                                weak_column_names, new_label);
   }
 
   void introduce(const MapInputBatch& sample,

@@ -320,3 +320,14 @@ def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
     assert len(model.predict({"text": "something"})) == 3
     model.forget(2 if integer_target else "2")
     assert len(model.predict({"text": "something"})) == 2
+
+
+def test_mach_udt_introduce_document():
+    model = train_simple_mach_udt()
+
+    model.introduce_document(
+        {"title": "this is a title", "description": "this is a description"},
+        strong_column_names=["title"],
+        weak_column_names=["description"],
+        label="1000",
+    )

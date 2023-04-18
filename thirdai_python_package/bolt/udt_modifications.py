@@ -138,10 +138,17 @@ def modify_udt():
 def modify_mach_udt():
     original_introduce_documents = bolt.UDT.introduce_documents
 
-    def wrapped_introduce_documents(self, filename):
+    def wrapped_introduce_documents(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+    ):
         data_source = _create_data_source(filename)
 
-        return original_introduce_documents(self, data_source)
+        return original_introduce_documents(
+            self, data_source, strong_column_names, weak_column_names
+        )
 
     delattr(bolt.UDT, "introduce_documents")
 

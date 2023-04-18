@@ -211,8 +211,13 @@ class UDTBackend {
    * Introduces new documents to the model from a data source. Used in
    * conjunction with coldstart.
    */
-  virtual void introduceDocuments(const dataset::DataSourcePtr& data) {
+  virtual void introduceDocuments(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names) {
     (void)data;
+    (void)strong_column_names;
+    (void)weak_column_names;
     throw notSupported("introduce_documents");
   }
 
@@ -222,8 +227,12 @@ class UDTBackend {
    */
   virtual void introduceDocument(
       const MapInput& document,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label) {
     (void)document;
+    (void)strong_column_names;
+    (void)weak_column_names;
     (void)new_label;
     throw notSupported("introduce_document");
   }
