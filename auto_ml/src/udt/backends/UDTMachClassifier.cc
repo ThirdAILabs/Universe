@@ -254,36 +254,32 @@ py::object UDTMachClassifier::entityEmbedding(
 }
 
 void UDTMachClassifier::introduceDocuments(const dataset::DataSourcePtr& data) {
-  if (!_coldstart_column_names.has_value()) {
+  if (!_augmentation.has_value()) {
     throw std::invalid_argument(
-        "Cannot introduce documents without calling cold start first.");
+        "Cannot introduce documents without calling coldstart first.");
   }
-  auto [strong_columns, weak_columns] = *_coldstart_column_names;
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
       data, _dataset_factory->delimiter());
 
-  auto metadata = getColdStartMetaData();
-
-  std::string text_column_name =
-      _dataset_factory->inputDataTypes().begin()->first;
-
-  thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_columns,
-      /* weak_column_names= */ weak_columns,
-      /* label_column_name= */ metadata->getLabelColumn(),
-      /* output_column_name= */ text_column_name);
-
   std::vector<std::pair<MapInputBatch, uint32_t>> samples_per_doc =
-      augmentation.getSamplesPerDoc(dataset);
+      _augmentation->getSamplesPerDoc(dataset);
 
   for (const auto& [samples, doc] : samples_per_doc) {
     introduce(samples, doc);
   }
 }
 
-void introduceDocument(const MapInput& document,
-                       const std::variant<uint32_t, std::string>& new_label) {}
+void UDTMachClassifier::introduceDocument(
+    const MapInput& document,
+    const std::variant<uint32_t, std::string>& new_label) {
+  if (!_augmentation.has_value()) {
+    throw std::invalid_argument(
+        "Cannot introduce a document without calling coldstart first.");
+  }
+  (void)document;
+  (void)new_label;
+}
 
 void UDTMachClassifier::introduce(
     const MapInputBatch& samples,
@@ -393,7 +389,7 @@ TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _coldstart_column_names, _min_num_eval_results,
+          _dataset_factory, _augmentation, _min_num_eval_results,
           _top_k_per_eval_aggregation);
 }
 

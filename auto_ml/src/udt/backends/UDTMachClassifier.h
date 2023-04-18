@@ -150,8 +150,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
-  std::optional<std::pair<std::vector<std::string>, std::vector<std::string>>>
-      _coldstart_column_names = std::nullopt;
+  std::optional<thirdai::data::ColdStartTextAugmentation> _augmentation =
+      std::nullopt;
 
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
