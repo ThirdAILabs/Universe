@@ -55,7 +55,7 @@ class TemporalRunner(Runner):
             model.reset_temporal_trackers()
 
         # indexing train file so that train data user history is used for predictions
-        model.evaluate(train_file)
+        model.index_batch(train_file)
 
         average_predict_time_ms = TemporalRunner.get_average_predict_time(
             model, test_file, config, num_samples=10000

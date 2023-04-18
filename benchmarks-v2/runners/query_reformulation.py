@@ -1,5 +1,6 @@
 import json
 import os
+import pandas as pd
 
 from thirdai import bolt, deployment
 
@@ -17,7 +18,7 @@ class QueryReformulationRunner(Runner):
         train_file = os.path.join(path_prefix, config.train_file)
         test_file = os.path.join(path_prefix, config.test_file)
 
-        model = create_model(config, path_prefix)
+        model = QueryReformulationRunner.create_model(config, path_prefix)
 
         model.train(train_file)
 
