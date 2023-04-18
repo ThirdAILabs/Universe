@@ -76,4 +76,4 @@ jobs:
         run: bin/build.py --extras test
 
       - name: Run python distributed tests
-        run: bin/python-test.sh -m distributed
+        run: bin/python-test.sh -m distributed --durations=0
