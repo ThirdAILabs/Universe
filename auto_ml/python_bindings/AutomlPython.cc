@@ -136,6 +136,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("top_k_per_eval_aggregation"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"))
+      .def("introduce_document", &udt::UDT::introduceDocument,
+           py::arg("document"), py::arg("label"))
       .def("introduce", &udt::UDT::introduce, py::arg("input_batch"),
            py::arg("new_label"))
       .def("forget", &udt::UDT::forget, py::arg("label"))

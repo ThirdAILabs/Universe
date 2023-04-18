@@ -208,12 +208,19 @@ class UDTBackend {
   }
 
   /**
-   * Introduces new documents to the model and used in conjunction with
-   * coldstart.
+   * Introduces new documents to the model. Used in conjunction with coldstart.
    */
   virtual void introduceDocuments(const dataset::DataSourcePtr& data) {
     (void)data;
     throw notSupported("introduce_documents");
+  }
+
+  virtual void introduceDocument(
+      const MapInput& document,
+      const std::variant<uint32_t, std::string>& new_label) {
+    (void)document;
+    (void)new_label;
+    throw notSupported("introduce_document");
   }
 
   /**

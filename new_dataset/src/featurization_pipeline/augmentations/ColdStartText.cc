@@ -348,4 +348,40 @@ void ColdStartTextAugmentation::mergeStrongWithWeak(
   }
 }
 
+std::vector<std::pair<dataset::MapInputBatch, uint32_t>>
+ColdStartTextAugmentation::getSamplesPerDoc(const ColumnMap& columns) {
+  auto label_column = columns.getStringColumn(_label_column_name);
+
+  std::vector<std::pair<dataset::MapInputBatch, uint32_t>> samples_per_docs;
+
+  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
+    std::string labels = (*label_column)[row_id];
+
+    std::string weak_text = concatenateStringColumnEntries(
+        columns, row_id, _weak_column_names, /* delimiter= */ ". ");
+
+    std::string strong_text = concatenateStringColumnEntries(
+        columns, row_id, _strong_column_names, /* delimiter= */ " ");
+
+    std::vector<std::string> augmented_samples =
+        augmentSingleRow(strong_text, weak_text);
+
+    uint32_t label = std::stoi(labels);
+
+    dataset::MapInputBatch samples;
+    for (const auto& sample : augmented_samples) {
+      std::unordered_map<std::string, std::string> map = {
+          {_output_column_name, sample}};
+      samples.push_back(map);
+    }
+
+    std::pair<dataset::MapInputBatch, uint32_t> samples_per_doc =
+        std::make_pair(samples, label);
+
+    samples_per_docs.push_back(samples_per_doc);
+  }
+
+  return samples_per_docs;
+}
+
 }  // namespace thirdai::data

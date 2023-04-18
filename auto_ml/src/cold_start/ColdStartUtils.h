@@ -5,7 +5,6 @@
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <memory>
 #include <stdexcept>
 

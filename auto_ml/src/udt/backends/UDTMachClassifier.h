@@ -83,6 +83,10 @@ class UDTMachClassifier final : public UDTBackend {
 
   void introduceDocuments(const dataset::DataSourcePtr& data) final;
 
+  void introduceDocument(
+      const MapInput& document,
+      const std::variant<uint32_t, std::string>& new_label) final;
+
   void introduce(const MapInputBatch& samples,
                  const std::variant<uint32_t, std::string>& new_label) final;
 

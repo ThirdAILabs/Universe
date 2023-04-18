@@ -139,6 +139,11 @@ class UDT {
     _backend->introduceDocuments(data);
   }
 
+  void introduceDocument(const MapInput& document,
+                         const std::variant<uint32_t, std::string>& new_label) {
+    _backend->introduceDocument(document, new_label);
+  }
+
   void introduce(const MapInputBatch& sample,
                  const std::variant<uint32_t, std::string>& new_label) {
     _backend->introduce(sample, new_label);

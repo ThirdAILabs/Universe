@@ -282,6 +282,9 @@ void UDTMachClassifier::introduceDocuments(const dataset::DataSourcePtr& data) {
   }
 }
 
+void introduceDocument(const MapInput& document,
+                       const std::variant<uint32_t, std::string>& new_label) {}
+
 void UDTMachClassifier::introduce(
     const MapInputBatch& samples,
     const std::variant<uint32_t, std::string>& new_label) {
