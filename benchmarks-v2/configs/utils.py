@@ -199,7 +199,6 @@ def get_qr_recall_at_k_metric_fn(target_column, k=1):
 
 def get_qr_precision_at_k_metric_fn(target_column, k=1):
     def precision_at_k_additional_metric(model, test_file):
-
         # Recall@k / k = Precision@k when there is only one true ground truth per sample
         recall_at_k_additional_metric = get_qr_recall_at_k_metric_fn(target_column, k=k)
         precision_at_k = recall_at_k_additional_metric(model, test_file) / k

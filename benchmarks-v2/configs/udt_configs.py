@@ -147,7 +147,9 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="roc_auc",
-            metric_fn=get_roc_auc_metric_fn(target_column="label", positive_label="ad."),
+            metric_fn=get_roc_auc_metric_fn(
+                target_column="label", positive_label="ad."
+            ),
         )
     ]
 
@@ -184,7 +186,9 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="roc_auc",
-            metric_fn=get_roc_auc_metric_fn(target_column="isFraud", positive_label="1"),
+            metric_fn=get_roc_auc_metric_fn(
+                target_column="isFraud", positive_label="1"
+            ),
         )
     ]
 
@@ -315,9 +319,7 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
             "Product_Category_1": bolt.types.categorical(),
             "Product_Category_2": bolt.types.categorical(),
             "Product_Category_3": bolt.types.categorical(),
-            "Purchase": bolt.types.numerical(
-                range=(5, 11)
-            ),
+            "Purchase": bolt.types.numerical(range=(5, 11)),
         }
 
 
@@ -393,10 +395,7 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
 
     @staticmethod
     def get_data_types(path_prefix):
-
-        filename = (
-            os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
-        )
+        filename = os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
         with open(filename) as f:
             column_names = f.readline().strip().split(",")[1:]
 

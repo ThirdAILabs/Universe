@@ -36,5 +36,7 @@ class CQICQUDTBenchmark(QueryReformulationBenchmarkConfig):
 
     additional_metric_fns = {
         "recall@5": get_qr_recall_at_k_metric_fn(target_column="correct_queries", k=5),
-        "precision@1": get_qr_precision_at_k_metric_fn(target_column="correct_queries", k=1),
+        "precision@1": get_qr_precision_at_k_metric_fn(
+            target_column="correct_queries", k=1
+        ),
     }
