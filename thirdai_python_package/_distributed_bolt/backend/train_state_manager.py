@@ -188,3 +188,11 @@ class TrainStateManager:
 
     def validate_and_save_if_best(self):
         return ray.get(self.workers[0].validate_and_save_if_best.remote())
+
+    def update_learning_rate(self, updated_learning_rate):
+        ray.get(
+            [
+                worker.update_learning_rate.remote(updated_learning_rate)
+                for worker in self.workers
+            ]
+        )
