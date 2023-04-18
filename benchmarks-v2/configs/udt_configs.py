@@ -147,7 +147,7 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="roc_auc",
-            metric_fn=get_roc_auc_metric_fn("label", "ad."),
+            metric_fn=get_roc_auc_metric_fn(target_column="label", positive_label="ad."),
         )
     ]
 
@@ -184,7 +184,7 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="roc_auc",
-            metric_fn=get_roc_auc_metric_fn("isFraud", "1"),
+            metric_fn=get_roc_auc_metric_fn(target_column="isFraud", positive_label="1"),
         )
     ]
 
@@ -295,11 +295,11 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="mse",
-            metric_fn=get_mse_metric_fn("Purchase"),
+            metric_fn=get_mse_metric_fn(target_column="Purchase"),
         ),
         AdditionalMetricCallback(
             metric_name="mae",
-            metric_fn=get_mae_metric_fn("Purchase"),
+            metric_fn=get_mae_metric_fn(target_column="Purchase"),
         ),
     ]
 
@@ -316,7 +316,7 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
             "Product_Category_2": bolt.types.categorical(),
             "Product_Category_3": bolt.types.categorical(),
             "Purchase": bolt.types.numerical(
-                range=(5.225746673713202, 10.084141052229386)
+                range=(5, 11)
             ),
         }
 
@@ -338,11 +338,11 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="mse",
-            metric_fn=get_mse_metric_fn("price"),
+            metric_fn=get_mse_metric_fn(target_column="price"),
         ),
         AdditionalMetricCallback(
             metric_name="mae",
-            metric_fn=get_mae_metric_fn("price"),
+            metric_fn=get_mae_metric_fn(target_column="price"),
         ),
     ]
 
@@ -383,23 +383,27 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     callbacks = [
         AdditionalMetricCallback(
             metric_name="mse",
-            metric_fn=get_mse_metric_fn("y"),
+            metric_fn=get_mse_metric_fn(target_column="y"),
         ),
         AdditionalMetricCallback(
             metric_name="mae",
-            metric_fn=get_mae_metric_fn("y"),
+            metric_fn=get_mae_metric_fn(target_column="y"),
         ),
     ]
 
     @staticmethod
     def get_data_types(path_prefix):
-        data = pd.read_csv(
+
+        filename = (
             os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
         )
+        with open(filename) as f:
+            column_names = f.readline().strip().split(",")[1:]
+
         data_types = {
             f"X{i}": bolt.types.categorical()
             for i in range(3, 386)
-            if f"X{i}" in data.columns
+            if f"X{i}" in column_names
         }
 
         data_types["y"] = bolt.types.numerical(range=(72.5, 265.32))

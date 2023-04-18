@@ -47,11 +47,11 @@ class AdditionalMetricCallback(bolt.callbacks.Callback):
         self.step += 1
 
 
-def get_roc_auc_metric_fn(target_name, positive_label="1"):
+def get_roc_auc_metric_fn(target_column, positive_label="1"):
     def roc_auc_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file, low_memory=False)
-        labels = df[target_name].to_numpy()
+        labels = df[target_column].to_numpy()
 
         if model.class_name(0) == positive_label:
             predictions = activations[:, 0]
@@ -65,14 +65,14 @@ def get_roc_auc_metric_fn(target_name, positive_label="1"):
     return roc_auc_additional_metric
 
 
-def get_gnn_roc_auc_metric_fn(target_name):
+def get_gnn_roc_auc_metric_fn(target_column):
     def roc_auc_additional_metric(model, test_file):
         df = pd.read_csv(test_file)
         inference_samples = []
         for _, row in df.iterrows():
             sample = dict(row)
-            label = sample[target_name]
-            del sample[target_name]
+            label = sample[target_column]
+            del sample[target_column]
             sample = {x: str(y) for x, y in sample.items()}
             inference_samples.append((sample, label))
 
@@ -91,11 +91,11 @@ def get_gnn_roc_auc_metric_fn(target_name):
     return roc_auc_additional_metric
 
 
-def get_mse_metric_fn(target_name):
+def get_mse_metric_fn(target_column):
     def mse_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
+        labels = df[target_column].to_numpy()
 
         mse = np.mean(np.square(activations - labels))
 
@@ -104,11 +104,11 @@ def get_mse_metric_fn(target_name):
     return mse_additional_metric
 
 
-def get_mae_metric_fn(target_name):
+def get_mae_metric_fn(target_column):
     def mae_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
+        labels = df[target_column].to_numpy()
 
         mae = np.mean(np.abs(activations - labels))
 
@@ -117,14 +117,13 @@ def get_mae_metric_fn(target_name):
     return mae_additional_metric
 
 
-def get_mach_recall_at_k_metric_fn(target_name, k=1, target_delimeter=None):
+def get_mach_recall_at_k_metric_fn(target_column, k=1, target_delimeter=None):
     # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
-    assert 1 <= k <= 5
 
     def recall_at_k_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
+        labels = df[target_column].to_numpy()
 
         predictions = [
             [idx for idx, score in top_5_idx_score_pairs[:k]]
@@ -148,14 +147,15 @@ def get_mach_recall_at_k_metric_fn(target_name, k=1, target_delimeter=None):
     return recall_at_k_additional_metric
 
 
-def get_mach_precision_at_k_metric_fn(target_name, k=1, target_delimeter=None):
+def get_mach_precision_at_k_metric_fn(target_column, k=1, target_delimeter=None):
     # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
+    # TODO(Kartik): Add option for mach udt to return more than top 5 highest activations
     assert 1 <= k <= 5
 
     def precision_at_k_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
+        labels = df[target_column].to_numpy()
 
         predictions = [
             [idx for idx, score in top_5_idx_score_pairs[:k]]
@@ -179,11 +179,11 @@ def get_mach_precision_at_k_metric_fn(target_name, k=1, target_delimeter=None):
     return precision_at_k_additional_metric
 
 
-def get_qr_recall_at_k_metric_fn(target_name, k=1):
+def get_qr_recall_at_k_metric_fn(target_column, k=1):
     def recall_at_k_additional_metric(model, test_file):
         predictions = model.evaluate(filename=test_file, top_k=k)[0]  # shape of (-1, k)
         df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()  # shape of (-1,)
+        labels = df[target_column].to_numpy()  # shape of (-1,)
 
         num_true_positives = 0
         for i in range(len(predictions)):
@@ -197,19 +197,12 @@ def get_qr_recall_at_k_metric_fn(target_name, k=1):
     return recall_at_k_additional_metric
 
 
-def get_qr_precision_at_k_metric_fn(target_name, k=1):
+def get_qr_precision_at_k_metric_fn(target_column, k=1):
     def precision_at_k_additional_metric(model, test_file):
-        predictions = model.evaluate(filename=test_file, top_k=k)[0]  # shape of (-1, k)
-        df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()  # shape of (-1,)
 
-        num_true_positives = 0
-        for i in range(len(predictions)):
-            # We assume that query reformulation ground truth has one correct answer
-            if labels[i] in predictions[i]:
-                num_true_positives += 1 / k
-        precision_at_k = num_true_positives / len(predictions)
-
+        # Recall@k / k = Precision@k when there is only one true ground truth per sample
+        recall_at_k_additional_metric = get_qr_recall_at_k_metric_fn(target_column, k=k)
+        precision_at_k = recall_at_k_additional_metric(model, test_file) / k
         return precision_at_k
 
     return precision_at_k_additional_metric

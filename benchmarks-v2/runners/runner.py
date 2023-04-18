@@ -26,6 +26,7 @@ class Runner(ABC):
 
     @staticmethod
     def create_model(config, path_prefix):
+        config_is_temp = False
         if config.model_config_path:
             model_config_path = os.path.join(path_prefix, config.model_config_path)
         elif config.model_config is not None:
@@ -34,6 +35,7 @@ class Runner(ABC):
                 config=json.dumps(config.model_config),
                 filename=model_config_path,
             )
+            config_is_temp = True
         else:
             model_config_path = None
 
@@ -49,8 +51,7 @@ class Runner(ABC):
             options=config.options,
         )
 
-        if model_config_path:
-            if os.path.join(path_prefix, config.model_config_path) != model_config_path:
-                os.remove(model_config_path)
+        if config_is_temp:
+            os.remove(model_config_path)
 
         return model
