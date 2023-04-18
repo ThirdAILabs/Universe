@@ -70,12 +70,6 @@ if __name__ == "__main__":
         )
 
     for config in configs:
-        # REMOVE BEFORE MERGING TO MAIN
-        if config.num_epochs:
-            config.num_epochs = 1
-        if config.cold_start_num_epochs:
-            config.cold_start_num_epochs = 1
-
         if args.mlflow_uri and args.run_name:
             mlflow_logger = MlflowCallback(
                 tracking_uri=args.mlflow_uri,
