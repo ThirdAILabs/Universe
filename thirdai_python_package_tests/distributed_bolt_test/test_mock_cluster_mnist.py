@@ -79,7 +79,7 @@ def train_distributed_bolt_mnist(
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     test_data, test_labels = dataset.load_bolt_svm_dataset(test_file, batch_size=256)
 
-    metrics = distributed_trainer.get_model().evaluate(
+    (metrics,) = distributed_trainer.get_model().evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
 
