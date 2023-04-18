@@ -101,14 +101,15 @@ def train_distributed_bolt_v2(ray_cluster_config, train_files, test_file):
 # Ray install is working at all. Marking it only with
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
-@pytest.mark.parametrize("comm_type", ["linear"])
-def test_distributed_mnist_bolt_v2(
-    comm_type, ray_two_node_cluster_config, mnist_distributed_split
+def test_distributed_mnist_bolt_v2_linear(
+    ray_two_node_cluster_config, mnist_distributed_split
 ):
     import multiprocessing
 
     if multiprocessing.cpu_count() < 2:
         assert False, "not enough cpus for distributed training"
+
+    comm_type = "linear"
 
     train_files, test_file = mnist_distributed_split
 
