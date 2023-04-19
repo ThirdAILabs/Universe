@@ -69,7 +69,7 @@ class TemporalRunner(Runner):
 
     @staticmethod
     def get_average_predict_time(model, test_file, config, num_samples=10000):
-        test_data = pd.read_csv(test_file, low_memory=False)
+        test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         sorted_idxs = np.sort(np.random.randint(0, len(test_data), size=num_samples))
 
         test_data_samples = []
