@@ -55,8 +55,8 @@ void NormalizedNeighborVectorsBlock::buildSegment(ColumnarInputSample& input,
   std::vector<float> sum_neighbor_features(featureDim(), 0);
 
   for (uint64_t neighbor_id : _graph_ptr->neighbors(node_id)) {
-    std::vector<float> neighbor_feature;
-    neighbor_feature = _graph_ptr->featureVector(neighbor_id);
+    const std::vector<float>& neighbor_feature =
+        _graph_ptr->featureVector(neighbor_id);
     for (uint64_t d = 0; d < featureDim(); d++) {
       sum_neighbor_features.at(d) += neighbor_feature.at(d);
     }

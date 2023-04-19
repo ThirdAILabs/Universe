@@ -1,6 +1,7 @@
 #include "DistributedTrainingWrapper.h"
 #include <bolt/src/train/metrics/Metric.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/Logging.h>
 
 namespace thirdai::bolt::train {
@@ -42,6 +43,8 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
 
 void DistributedTrainingWrapper::computeAndStoreBatchGradients(
     uint32_t batch_idx) {
+  licensing::entitlements().verifyFullAccess();
+
   if (numBatches() <= batch_idx) {
     throw std::invalid_argument(
         "Cannot compute gradients for invalid batch index: " +
