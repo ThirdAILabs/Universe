@@ -45,6 +45,3 @@ def test_telemetry_bad_s3_file():
             optional_endpoint_url=f"http://127.0.0.1:{MOTO_SERVER_PORT}",
         )
     telemetry.stop()
-
-
-# TODO(Josh): Consider adding a test that writes and reads from real s3

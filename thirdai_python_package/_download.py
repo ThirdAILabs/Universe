@@ -4,11 +4,6 @@ import pathlib
 CACHE_DIR = pathlib.Path.home() / ".cache" / "thirdai"
 
 
-# TODO(josh): These methods aren't robust (they relies on the user having curl
-# and tar working on their machine), but the python requests library wasn't
-# working to download from dropbox so I am just going with this for now.
-# We should make this a more robust solution like huggingface's dataset
-# library.
 def _unzip_targz(targz_path, destination_parent_folder):
     os.system(f"tar -xzf {targz_path} -C {destination_parent_folder}")
 

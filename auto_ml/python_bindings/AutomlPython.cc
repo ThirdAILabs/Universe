@@ -260,7 +260,7 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def("__str__", &automl::data::DataType::toString)
       .def("__repr__", &automl::data::DataType::toString);
 
-  // TODO(Josh): Add docs here and elsewhere
+  // TODO(Any): Add docs for graph UDT types
   py::class_<automl::data::NeighborsDataType, automl::data::DataType,
              automl::data::NeighborsDataTypePtr>(udt_types_submodule,
                                                  "neighbors")

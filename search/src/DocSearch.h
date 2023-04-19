@@ -20,12 +20,12 @@
 
 namespace thirdai::search {
 
-// 
+//
 /**
  * Represents a service that allows document addition, removal, and queries.
- * For now, can represent at most 2^32 - 1 documents. Right now this only has 
- * support for documents with a max of 256 embeddings. If there are more than 
- * 256 embeddings, it silently truncates. This class is NOT currently safe to 
+ * For now, can represent at most 2^32 - 1 documents. Right now this only has
+ * support for documents with a max of 256 embeddings. If there are more than
+ * 256 embeddings, it silently truncates. This class is NOT currently safe to
  * call concurrently.
  */
 class DocSearch {

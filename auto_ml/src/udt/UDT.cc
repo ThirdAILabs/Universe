@@ -14,6 +14,7 @@
 #include <telemetry/src/PrometheusClient.h>
 #include <cstddef>
 #include <memory>
+#include <ratio>
 #include <sstream>
 #include <stdexcept>
 
@@ -135,11 +136,9 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
 
   timer.stop();
 
-  // TODO(Josh/Geordie): It's highly likely that this is less than a second, so
-  // the telemetry won't have meaningful information. Should use milliseconds
-  // for everything in telemetry?
   telemetry::client.trackTraining(
-      /* training_time_seconds= */ timer.seconds());
+      /* training_time_seconds = */ timer.elapsed<std::chrono::nanoseconds>() /
+      1000000000.0);
 
   return output;
 }

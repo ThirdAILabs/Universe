@@ -19,9 +19,6 @@ class Transformation {
  public:
   virtual void apply(ColumnMap& columns) = 0;
 
-  // TODO(Nicholas/Josh): Add method for if the transformation can be
-  // distributed (i.e. no state).
-
   virtual ~Transformation() = default;
 
  private:

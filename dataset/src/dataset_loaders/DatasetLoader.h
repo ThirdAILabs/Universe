@@ -41,9 +41,7 @@ class DatasetLoader final {
     return _featurizer->getDimensions().at(0);
   }
 
-  uint32_t getLabelDim() {
-    return _featurizer->getDimensions().at(1);
-  }
+  uint32_t getLabelDim() { return _featurizer->getDimensions().at(1); }
 
  private:
   // Adds batches to the buffer until the data source is finished or the buffer

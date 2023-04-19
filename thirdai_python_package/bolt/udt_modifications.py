@@ -143,9 +143,6 @@ def modify_graph_udt():
 
         original_index_nodes_method(self, data_source)
 
-    # TODO(Josh)
-    # wrapped_index.__doc__ = udt_graph_index_doc
-
     delattr(bolt.UDT, "index_nodes")
 
     bolt.UDT.index_nodes = wrapped_index_nodes
