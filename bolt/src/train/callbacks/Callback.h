@@ -42,7 +42,7 @@ class Callback {
 
   TrainStatePtr& getTrainState() { return train_state; }
 
-  metrics::History getHistory() { return *history; }
+  metrics::History getHistory() const { return *history; }
 
   /**
    * Sets the model field in the callback so it can access the model. Cannot be
