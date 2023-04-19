@@ -331,3 +331,19 @@ def test_mach_udt_introduce_document():
         weak_column_names=["description"],
         label="1000",
     )
+
+
+def test_mach_udt_introduce_documents():
+    model = train_simple_mach_udt(integer_target=True)
+
+    new_docs = "NEW_DOCS.csv"
+    with open(new_docs, "w") as f:
+        f.write("label,title,description\n")
+        f.write("4,some title,some description\n")
+        f.write("5,some other title,some other description\n")
+
+    model.introduce_documents(
+        new_docs,
+        strong_column_names=["title"],
+        weak_column_names=["description"],
+    )
