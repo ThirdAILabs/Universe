@@ -47,7 +47,7 @@ def parse_arguments():
         "--slack_webhook",
         type=str,
         default="",
-        help="Slack channel endpoint to ping",
+        help="Slack channel endpoint for posting messages to",
     )
     return parser.parse_args()
 
