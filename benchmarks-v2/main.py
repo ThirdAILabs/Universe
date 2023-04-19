@@ -15,7 +15,7 @@ def parse_arguments():
         "--runner",
         type=str,
         required=True,
-        choices=["udt", "bolt_fc", "dlrm"],
+        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
         help="Which runner to use to run the benchmark.",
     )
     parser.add_argument(
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     )
     if len(configs) == 0:
         raise ValueError(
-            f"Could match regular expression '{args.config}' to any configs."
+            f"Couldn't match regular expression '{args.config}' to any configs."
         )
 
     for config in configs:
