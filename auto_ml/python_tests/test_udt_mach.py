@@ -245,7 +245,7 @@ def test_mach_udt_invalid_class_type(integer_target):
         ValueError,
         match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
     ):
-        model.introduce([{"text": "something"}], label)
+        model.introduce_label([{"text": "something"}], label)
 
 
 @pytest.mark.parametrize("integer_target", [True, False])
@@ -256,7 +256,7 @@ def test_mach_udt_introduce_and_forget(integer_target):
 
     sample = {"text": "something or another with lots of words"}
     assert model.predict(sample)[0][0] != str(label)
-    model.introduce([sample], label)
+    model.introduce_label([sample], label)
     assert model.predict(sample)[0][0] == str(label)
     model.forget(label)
     assert model.predict(sample)[0][0] != str(label)
@@ -270,7 +270,7 @@ def test_mach_udt_introduce_existing_class(integer_target):
         ValueError,
         match=r"Manually adding a previously seen label: 0. Please use a new label for any new insertions.",
     ):
-        model.introduce([{"text": "something"}], 0 if integer_target else "0")
+        model.introduce_label([{"text": "something"}], 0 if integer_target else "0")
 
 
 @pytest.mark.parametrize("integer_target", [True, False])

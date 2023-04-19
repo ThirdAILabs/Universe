@@ -149,9 +149,9 @@ class UDT {
                                 weak_column_names, new_label);
   }
 
-  void introduce(const MapInputBatch& sample,
-                 const std::variant<uint32_t, std::string>& new_label) {
-    _backend->introduce(sample, new_label);
+  void introduceLabel(const MapInputBatch& sample,
+                      const std::variant<uint32_t, std::string>& new_label) {
+    _backend->introduceLabel(sample, new_label);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {

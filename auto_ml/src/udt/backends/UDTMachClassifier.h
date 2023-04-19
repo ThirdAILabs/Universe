@@ -92,8 +92,9 @@ class UDTMachClassifier final : public UDTBackend {
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label) final;
 
-  void introduce(const MapInputBatch& samples,
-                 const std::variant<uint32_t, std::string>& new_label) final;
+  void introduceLabel(
+      const MapInputBatch& samples,
+      const std::variant<uint32_t, std::string>& new_label) final;
 
   void forget(const std::variant<uint32_t, std::string>& label) final;
 

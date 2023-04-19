@@ -112,6 +112,8 @@ class NumericCategoricalMachIndex : public MachIndex {
             _hash_to_entities);
   }
 
+  // we don't use a vector here because if we forget elements we won't have
+  // contiguous integers as entities
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
 };

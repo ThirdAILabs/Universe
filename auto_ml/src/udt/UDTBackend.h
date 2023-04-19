@@ -187,7 +187,7 @@ class UDTBackend {
    * training.
    */
   virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    throw notSupported("getColdStartMetaData");
+    throw notSupported("get_cold_start_meta_data");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {
@@ -241,11 +241,12 @@ class UDTBackend {
    * Introduces a new label to the model given a batch of representative samples
    * of that label.
    */
-  virtual void introduce(const MapInputBatch& sample,
-                         const std::variant<uint32_t, std::string>& new_label) {
+  virtual void introduceLabel(
+      const MapInputBatch& sample,
+      const std::variant<uint32_t, std::string>& new_label) {
     (void)sample;
     (void)new_label;
-    throw notSupported("introduce");
+    throw notSupported("introduce_label");
   }
 
   /**

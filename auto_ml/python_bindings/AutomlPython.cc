@@ -140,7 +140,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"))
-      .def("introduce", &udt::UDT::introduce, py::arg("input_batch"),
+      .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"))
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)

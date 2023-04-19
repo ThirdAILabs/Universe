@@ -271,7 +271,7 @@ void UDTMachClassifier::introduceDocuments(
       augmentation.getSamplesPerDoc(dataset);
 
   for (const auto& [samples, doc] : samples_per_doc) {
-    introduce(samples, doc);
+    introduceLabel(samples, doc);
   }
 }
 
@@ -313,10 +313,10 @@ void UDTMachClassifier::introduceDocument(
     batch.push_back(input);
   }
 
-  introduce(batch, new_label);
+  introduceLabel(batch, new_label);
 }
 
-void UDTMachClassifier::introduce(
+void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples,
     const std::variant<uint32_t, std::string>& new_label) {
   BoltBatch output = _classifier->model()->predictSingleBatch(
