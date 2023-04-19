@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import re
 
 import mlflow
 import pandas as pd
