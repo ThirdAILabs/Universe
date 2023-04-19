@@ -16,7 +16,7 @@ struct RCAGradients {
 };
 
 /**
- * Commutes the gradients w.r.t the inputs by assigning a label of 1.0 to the
+ * Computes the gradients w.r.t the inputs by assigning a label of 1.0 to the
  * correct label and computing gradients. These input gradients then represent
  * what changes in the input would make the activation of the predicted neuron
  * closer to 1.0.
@@ -25,7 +25,7 @@ RCAGradients explainPrediction(model::ModelPtr& model,
                                const tensor::TensorList& input_vec);
 
 /**
- * Commutes the gradients w.r.t the inputs by assigning a label of 1.0 to the
+ * Computes the gradients w.r.t the inputs by assigning a label of 1.0 to the
  * specified neuron and computing gradients. These input gradients then
  * represent what changes in the input would make the activation of the given
  * neuron closer to 1.0.
