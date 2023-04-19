@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
@@ -52,6 +53,10 @@ class LayerNorm final : public Op,
 
   AdamOptimizer _gamma_optimizer;
   AdamOptimizer _beta_optimizer;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using LayerNormPtr = std::shared_ptr<LayerNorm>;

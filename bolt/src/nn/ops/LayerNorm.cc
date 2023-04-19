@@ -1,3 +1,7 @@
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
@@ -168,4 +172,16 @@ autograd::ComputationPtr LayerNorm::apply(
   return autograd::Computation::make(shared_from_this(), {input});
 }
 
+template void LayerNorm::serialize(cereal::BinaryInputArchive&);
+template void LayerNorm::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void LayerNorm::serialize(Archive& archive) {
+  // The optimizer is small so we can always serialize it.
+  archive(cereal::base_class<Op>(this), _gamma, _beta, _gamma_optimizer,
+          _beta_optimizer);
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::LayerNorm)
