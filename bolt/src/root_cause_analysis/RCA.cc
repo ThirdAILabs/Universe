@@ -46,6 +46,10 @@ RCAGradients explainNeuronHelper(model::ModelPtr& model,
   label->getVector(0).active_neurons[0] = neuron;
   label->getVector(0).activations[0] = 1.0;
 
+  // This does not update parameters, however it will compute gradients for the
+  // parameters. This is an issue with RCA, both with bolt v1 and bolt v2 that
+  // needs to be addressed if there is ever a use case for continuing to train
+  // after getting explanations.
   model->trainOnBatch({input}, {label});
 
   RCAGradients gradients;
