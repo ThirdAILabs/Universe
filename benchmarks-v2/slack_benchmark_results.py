@@ -68,7 +68,7 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client):
 
     # Drop learning rate column since we don't need to display it as a recorded metric in Slack
 
-    mlflow_runs.drop(columns=["metrics.learning_rate"], inplace=True, errors='ignore')
+    mlflow_runs.drop(columns=["metrics.learning_rate"], inplace=True, errors="ignore")
 
     # Convert the start time timestamp into a date to make it easier to read
     mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
@@ -103,7 +103,6 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     for runner_name in args.runner:
-
         runner = runner_map[runner_name.lower()]
 
         configs = get_configs(runner=runner, config_regex=args.config)

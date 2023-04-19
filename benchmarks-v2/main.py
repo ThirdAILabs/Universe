@@ -71,7 +71,9 @@ if __name__ == "__main__":
                     run_name=f"{args.run_name}_{str(date.today())}",
                     experiment_args={"dataset": config.dataset_name},
                 )
-                mlflow_logger.log_additional_param("thirdai_version", thirdai.__version__)
+                mlflow_logger.log_additional_param(
+                    "thirdai_version", thirdai.__version__
+                )
             else:
                 mlflow_logger = None
 

@@ -1,5 +1,6 @@
 import re
 
+
 def get_configs(config_regex, runner):
     config_re = re.compile(config_regex)
     configs = [
