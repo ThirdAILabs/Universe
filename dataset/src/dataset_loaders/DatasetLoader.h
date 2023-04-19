@@ -37,14 +37,11 @@ class DatasetLoader final {
   void restart();
 
   uint32_t getInputDim() {
-    // TODO(Josh): This is assuming we have one input and one label
-    // dataset
+    // TODO(Nick/Geordie): Replace this with a getInputDims() call.
     return _featurizer->getDimensions().at(0);
   }
 
   uint32_t getLabelDim() {
-    // TODO(Josh): Again, this is assuming we have one input and one label
-    // dataset
     return _featurizer->getDimensions().at(1);
   }
 

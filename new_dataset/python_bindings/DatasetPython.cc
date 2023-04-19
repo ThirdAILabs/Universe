@@ -8,7 +8,6 @@ namespace thirdai::dataset::python {
 namespace py = pybind11;
 
 void createDataSubmodule(py::module_& dataset_submodule) {
-  // TODO(Josh): Add other numpy methods
   dataset_submodule.def("from_np", &numpy::denseNumpyToDataset,
                         py::arg("data"));
 
@@ -82,9 +81,6 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   py::class_<numpy::NumpyDataset, Dataset, numpy::NumpyDatasetPtr>(
       dataset_submodule, "NumpyDataset");  // NOLINT
-
-  // TODO(Josh): We can always add various other python specific methods later:
-  //  contains, reverse, append, concatenate, etc.
 }
 
 }  // namespace thirdai::dataset::python

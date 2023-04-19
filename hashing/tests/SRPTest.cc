@@ -5,7 +5,6 @@
 
 using thirdai::hashing::CosineSim;
 
-// TODO(josh): Move these to a seperate header file
 uint32_t num_tests = 100, seed = 42;
 uint32_t hashes_per_table = 1, num_tables = 10000, dim = 1000;
 float sparsity = 0.3;
