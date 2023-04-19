@@ -16,8 +16,6 @@
 
 namespace thirdai::automl::udt {
 
-namespace py = pybind11;
-
 using bolt::train::callbacks::CallbackPtr;
 
 using bolt::nn::model::ModelPtr;

@@ -66,7 +66,7 @@ def get_config(have_user_specified_parameters: bool = False):
     return config
 
 
-def compary_summaries(model, expected_summary):
+def compare_summaries(model, expected_summary):
     summary = model.summary(print=False)
 
     summary = textwrap.dedent(summary).strip().replace("\n", "")
@@ -76,7 +76,7 @@ def compary_summaries(model, expected_summary):
     )
 
     # In bolt v2 names are assigned by session not by model, and so which numbers
-    # as assigned to each op/tensor is not deterministic based on which tests run.
+    # are assigned to each op/tensor is not deterministic based on which tests run.
     expected_summary = expected_summary.replace("NUM", R"\d+")
 
     assert re.match(expected_summary, summary)
@@ -97,7 +97,7 @@ def verify_model_summary(config, params, input_dims, expected_summary):
 
     os.remove(CONFIG_FILE)
 
-    compary_summaries(model, expected_summary)
+    compare_summaries(model, expected_summary)
 
 
 @pytest.mark.unit
@@ -192,7 +192,7 @@ def test_udt_model_config_override():
     =================================================
     """
 
-    compary_summaries(udt_model._get_model(), expected_summary)
+    compare_summaries(udt_model._get_model(), expected_summary)
 
 
 @pytest.mark.unit

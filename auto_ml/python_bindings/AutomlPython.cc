@@ -452,7 +452,7 @@ std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
 
 void UDTFactory::save_udt(const udt::UDT& classifier,
                           const std::string& filename) {
-  // classifier.model()->saveWithOptimizer(false);
+  classifier.model()->setSerializeOptimizer(false);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
@@ -461,7 +461,7 @@ void UDTFactory::save_udt(const udt::UDT& classifier,
 
 void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
                                 const std::string& filename) {
-  // classifier.model()->saveWithOptimizer(true);
+  classifier.model()->setSerializeOptimizer(true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);

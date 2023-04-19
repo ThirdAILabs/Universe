@@ -10,6 +10,22 @@
 
 namespace thirdai::automl::udt::utils {
 
+Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
+    : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {
+  if (_model->outputs().size() != 1) {
+    throw std::invalid_argument(
+        "Classifier utility is intended for single output models.");
+  }
+
+  auto computations = _model->computationOrder();
+
+  // This defines the embedding as the second to last computatation in the
+  // computation graph.
+  // TODO(Nicholas): should this be configurable using the model config, and
+  // have a default for the default model.
+  _emb = computations.at(computations.size() - 2);
+}
+
 py::object thirdai::automl::udt::utils::Classifier::train(
     dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
     const ValidationDatasetLoader& validation,
@@ -17,28 +33,26 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<bolt::train::callbacks::CallbackPtr>& callbacks,
-    bool verbose, std::optional<uint32_t> logging_interval,
-    licensing::TrainPermissionsToken token) {
-  (void)token;
-
+    bool verbose, std::optional<uint32_t> logging_interval) {
   uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   bolt::train::Trainer trainer(_model);
+
+  const auto& [val_data, val_args] = validation;
 
   bolt::train::metrics::History history;
   if (_freeze_hash_tables) {
     history = trainer.train_with_dataset_loader(
         dataset, learning_rate, /* epochs= */ 1, batch_size,
-        max_in_memory_batches, metrics, validation.first,
-        validation.second.metrics(), validation.second.stepsPerValidation(),
-        validation.second.sparseInference(), callbacks,
+        max_in_memory_batches, metrics, val_data, val_args.metrics(),
+        val_args.stepsPerValidation(), val_args.sparseInference(), callbacks,
         /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
 
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     dataset->restart();
-    if (validation.first) {
-      validation.first->restart();
+    if (val_data) {
+      val_data->restart();
     }
     epochs--;
   }
@@ -46,9 +60,8 @@ py::object thirdai::automl::udt::utils::Classifier::train(
   if (epochs > 0) {
     history = trainer.train_with_dataset_loader(
         dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
-        metrics, validation.first, validation.second.metrics(),
-        validation.second.stepsPerValidation(),
-        validation.second.sparseInference(), callbacks,
+        metrics, val_data, val_args.metrics(), val_args.stepsPerValidation(),
+        val_args.sparseInference(), callbacks,
         /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
   }
 
@@ -58,12 +71,12 @@ py::object thirdai::automl::udt::utils::Classifier::train(
    * a class imbalance.
    */
   if (_model->outputs().at(0)->dim() == 2) {
-    if (!validation.second.metrics().empty()) {
-      validation.first->restart();
+    if (!val_args.metrics().empty()) {
+      val_data->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ validation.first,
-              /* metric_name= */ validation.second.metrics().at(0));
+              /* dataset= */ val_data,
+              /* metric_name= */ val_args.metrics().at(0));
 
     } else if (!metrics.empty()) {
       dataset->restart();
@@ -102,7 +115,7 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
 }
 
 py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {
-  // TODO(Nicholas): Sparsity could speed this up, and wouldn't affet the
+  // TODO(Nicholas): Sparsity could speed this up, and wouldn't affect the
   // embeddings if the sparsity is in the output layer and the embeddings are
   // from the hidden layer.
   _model->forward(inputs, /* use_sparsity= */ false);

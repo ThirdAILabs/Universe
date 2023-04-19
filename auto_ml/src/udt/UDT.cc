@@ -116,10 +116,9 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       const std::vector<std::string>& metrics,
                       const std::vector<CallbackPtr>& callbacks, bool verbose,
                       std::optional<uint32_t> logging_interval) {
-  bolt::utils::Timer timer;
+  licensing::entitlements().verifyDataSource(data);
 
-  licensing::TrainPermissionsToken token(data);
-  (void)token;
+  bolt::utils::Timer timer;
 
   auto output = _backend->train(data, learning_rate, epochs, validation,
                                 batch_size, max_in_memory_batches, metrics,
@@ -214,8 +213,7 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
                           const std::vector<CallbackPtr>& callbacks,
                           std::optional<size_t> max_in_memory_batches,
                           bool verbose) {
-  licensing::TrainPermissionsToken token(data);
-  (void)token;
+  licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
                              learning_rate, epochs, metrics, validation,

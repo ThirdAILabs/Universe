@@ -19,21 +19,7 @@ namespace thirdai::automl::udt::utils {
 
 class Classifier {
  public:
-  Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
-      : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {
-    if (_model->outputs().size() != 1) {
-      throw std::invalid_argument(
-          "Classifier utility is intended for single output models.");
-    }
-
-    auto computations = _model->computationOrder();
-
-    // This defines the embedding as the second to last computatation in the
-    // computation graph.
-    // TODO(Nicholas): should this be configurable using the model config, and
-    // have a default for the default model.
-    _emb = computations.at(computations.size() - 2);
-  }
+  Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables);
 
   static std::shared_ptr<Classifier> make(
       const bolt::nn::model::ModelPtr& model, bool freeze_hash_tables) {
@@ -47,9 +33,7 @@ class Classifier {
       std::optional<size_t> max_in_memory_batches,
       const std::vector<std::string>& metrics,
       const std::vector<bolt::train::callbacks::CallbackPtr>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval,
-      licensing::TrainPermissionsToken token =
-          licensing::TrainPermissionsToken());
+      bool verbose, std::optional<uint32_t> logging_interval);
 
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
