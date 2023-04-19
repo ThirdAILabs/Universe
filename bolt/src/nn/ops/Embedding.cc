@@ -92,6 +92,10 @@ void Embedding::summary(std::ostream& summary,
   summary << "]";
 }
 
+void Embedding::setSerializeOptimizer(bool should_serialize_optimizer) {
+  _kernel->saveWithOptimizer(should_serialize_optimizer);
+}
+
 autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
