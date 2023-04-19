@@ -17,13 +17,13 @@ def parse_arguments():
         nargs="+",
         required=True,
         choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
-        help="Which runner to use to run the benchmark.",
+        help="Which runners to use to run the benchmark.",
     )
     parser.add_argument(
         "--config",
         type=str,
         default="",
-        help="Regular expression indicating which configs to run for the given runner.",
+        help="Regular expression indicating which configs to run for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
         "--path_prefix",

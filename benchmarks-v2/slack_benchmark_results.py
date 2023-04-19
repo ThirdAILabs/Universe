@@ -25,7 +25,7 @@ def parse_arguments():
         "--config",
         type=str,
         default="",
-        help="Regular expression indicating which configs to retrieve for the given runner.",  # Empty string returns all configs for the given runner.
+        help="Regular expression indicating which configs to retrieve for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
         "--mlflow_uri",
