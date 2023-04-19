@@ -253,24 +253,69 @@ py::object UDTMachClassifier::entityEmbedding(
   return std::move(np_weights);
 }
 
+std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
+  if (_dataset_factory->inputDataTypes().size() != 1 ||
+      !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
+    throw std::invalid_argument(
+        "Introducing documents can only be used when UDT is configured with a "
+        "single text input column and target column. The current model is "
+        "configured with " +
+        std::to_string(_dataset_factory->inputDataTypes().size()) +
+        " input columns.");
+  }
+
+  return _dataset_factory->inputDataTypes().begin()->first;
+}
+
+std::unordered_map<uint32_t, MapInputBatch>
+UDTMachClassifier::aggregateSamplesByDoc(
+    const thirdai::data::ColumnMap& augmented_data,
+    const std::string& text_column_name, const std::string& label_column_name) {
+  auto text_column = augmented_data.getStringColumn(text_column_name);
+  auto label_column = augmented_data.getStringColumn(label_column_name);
+
+  assert(label_column->numRows() == text_column.numRows());
+
+  std::unordered_map<uint32_t, MapInputBatch> samples_by_doc;
+  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
+    std::string labels = (*label_column)[row_id];
+    std::string text = (*text_column)[row_id];
+
+    // TODO(david) this is hardcoded, account for multilabel and string vs
+    // integer label
+    uint32_t label = std::stoi(labels);
+
+    MapInput input = {{text_column_name, text}};
+    samples_by_doc[label].push_back(input);
+  }
+
+  return samples_by_doc;
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
-  thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _mach_label_block->columnName(),
-      /* output_column_name= */
-      _dataset_factory->inputDataTypes().begin()->first);
+  std::string text_column_name = textColumnForDocumentIntroduction();
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
       data, _dataset_factory->delimiter());
 
-  std::vector<std::pair<MapInputBatch, uint32_t>> samples_per_doc =
-      augmentation.getSamplesPerDoc(dataset);
+  std::string label_column_name = _mach_label_block->columnName();
 
-  for (const auto& [samples, doc] : samples_per_doc) {
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ label_column_name,
+      /* output_column_name= */ text_column_name);
+
+  auto augmented_data = augmentation.apply(dataset);
+
+  std::unordered_map<uint32_t, MapInputBatch> samples_per_doc =
+      aggregateSamplesByDoc(augmented_data, text_column_name,
+                            label_column_name);
+
+  for (const auto& [doc, samples] : samples_per_doc) {
     introduceLabel(samples, doc);
   }
 }
@@ -280,36 +325,18 @@ void UDTMachClassifier::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     const std::variant<uint32_t, std::string>& new_label) {
+  std::string text_column_name = textColumnForDocumentIntroduction();
+
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
       /* label_column_name= */ _mach_label_block->columnName(),
       /* output_column_name= */
-      _dataset_factory->inputDataTypes().begin()->first);
-
-  std::string strong_text;
-  for (const auto& strong_col : strong_column_names) {
-    if (!document.count(strong_col)) {
-      throw std::invalid_argument(
-          "Strong column not found in the provided document.");
-    }
-    strong_text.append(document.at(strong_col));
-    strong_text.append(" ");
-  }
-  std::string weak_text;
-  for (const auto& weak_col : weak_column_names) {
-    if (!document.count(weak_col)) {
-      throw std::invalid_argument(
-          "Weak column not found in the provided document.");
-    }
-    weak_text.append(document.at(weak_col));
-    weak_text.append(" ");
-  }
+      text_column_name);
 
   MapInputBatch batch;
-  for (const auto& row :
-       augmentation.augmentSingleRow(strong_text, weak_text)) {
-    MapInput input = {{_dataset_factory->inputDataTypes().begin()->first, row}};
+  for (const auto& row : augmentation.augmentMapInput(document)) {
+    MapInput input = {{text_column_name, row}};
     batch.push_back(input);
   }
 
