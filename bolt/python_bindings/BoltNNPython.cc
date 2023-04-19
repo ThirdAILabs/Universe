@@ -165,6 +165,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
+      .def("set_trainable",&FullyConnectedNode::setTrainable, py::arg("trainable"))
 #endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),

@@ -440,6 +440,8 @@ def test_udt_train_batch():
         integer_target=True,
     )
 
+    model._get_model().get_layer("fc_2").set_trainable(True)
+
     samples = [
         {"query": "this is zero", "target": "0"},
         {"query": "this is one", "target": "1"},

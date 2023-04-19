@@ -80,6 +80,8 @@ class FullyConnectedNode final
 
   std::string type() const final { return "fc"; }
 
+  void setTrainable(bool trainable) {_layer->setTrainable(trainable);}
+
  private:
   void compileImpl() final;
 
