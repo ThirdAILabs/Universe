@@ -16,6 +16,8 @@ def build_model(n_classes):
         dim=200, sparsity=0.3, input_dim=n_classes, activation="relu"
     )(vector_input)
 
+    hidden = bolt.nn.LayerNorm()(hidden)
+
     token_input = bolt.nn.Input(dim=n_classes)
 
     embedding = bolt.nn.Embedding(
@@ -78,7 +80,7 @@ def check_metadata_file(model, save_filename):
 def train_model(model, train_data, train_labels):
     for x, y in zip(train_data, train_labels):
         model.train_on_batch(x, y)
-        model.update_parameters(learning_rate=0.1)
+        model.update_parameters(learning_rate=0.05)
 
 
 def evaluate_model(model, test_data, test_labels_np):

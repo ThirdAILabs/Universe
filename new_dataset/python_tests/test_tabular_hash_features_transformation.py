@@ -1,6 +1,7 @@
 import pytest
 from dataset_utils import (
     get_random_str_column,
+    nonzeros_from_sparse_bolt_dataset,
     sparse_bolt_dataset_to_numpy,
     verify_pairgrams_distribution,
     verify_unigrams_distribution,
@@ -46,10 +47,10 @@ def create_and_tabular_hash_random_dataset(use_pairgrams):
 
 
 def test_cross_column_pairgrams():
-    pairgram_dataset = sparse_bolt_dataset_to_numpy(
+    pairgram_nonzeros = nonzeros_from_sparse_bolt_dataset(
         create_and_tabular_hash_random_dataset(use_pairgrams=True)
     )
-    verify_pairgrams_distribution(pairgram_dataset, OUTPUT_RANGE, NUM_WORDS)
+    verify_pairgrams_distribution(pairgram_nonzeros, OUTPUT_RANGE)
 
 
 def test_cross_column_unigrams():

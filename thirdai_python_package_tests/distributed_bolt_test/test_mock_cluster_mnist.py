@@ -37,11 +37,15 @@ def get_mnist_model():
     return model
 
 
-@pytest.fixture(scope="module")
-def train_distributed_bolt_check(
-    request, ray_two_node_cluster_config, mnist_distributed_split
+def train_distributed_bolt_mnist(
+    comm, epochs, ray_cluster_config, mnist_distributed_split
 ):
+    import multiprocessing
+
     import thirdai.distributed_bolt as db
+
+    if multiprocessing.cpu_count() < 2:
+        assert False, "not enough cpus for distributed training"
 
     model = get_mnist_model()
 
@@ -57,9 +61,9 @@ def train_distributed_bolt_check(
         )
         for filename in train_files
     ]
-    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=epochs)
     distributed_trainer = db.DistributedDataParallel(
-        cluster_config=ray_two_node_cluster_config(request.param),
+        cluster_config=ray_cluster_config(comm),
         model=model,
         train_config=train_config,
         train_sources=train_sources,
@@ -75,27 +79,32 @@ def train_distributed_bolt_check(
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     test_data, test_labels = dataset.load_bolt_svm_dataset(test_file, batch_size=256)
 
-    metrics = distributed_trainer.get_model().evaluate(
+    (metrics,) = distributed_trainer.get_model().evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
 
     print(metrics)
 
-    yield metrics
+    return metrics
 
 
-# This test requires the Ray library, but we don't skip it if Ray isn't
-# installed because if someone is running it part of the test may be if the
-# Ray install is working at all. Marking it only with
-# pytestmark.mark.distributed prevents it from running in our normal unit and
-# integration test pipeline where ray isn't a dependency.
-@pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
-)
-def test_distributed_mnist(train_distributed_bolt_check):
-    import multiprocessing
+def test_distributed_mnist_linear(ray_two_node_cluster_config, mnist_distributed_split):
+    metrics = train_distributed_bolt_mnist(
+        comm="linear",
+        epochs=3,
+        ray_cluster_config=ray_two_node_cluster_config,
+        mnist_distributed_split=mnist_distributed_split,
+    )
+    assert metrics["categorical_accuracy"] >= 0.9
 
-    if multiprocessing.cpu_count() < 2:
-        assert False, "not enough cpus for distributed training"
 
-    assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
+def test_distributed_mnist_circular(
+    ray_two_node_cluster_config, mnist_distributed_split
+):
+    metrics = train_distributed_bolt_mnist(
+        comm="circular",
+        epochs=1,
+        ray_cluster_config=ray_two_node_cluster_config,
+        mnist_distributed_split=mnist_distributed_split,
+    )
+    assert metrics["categorical_accuracy"] >= 0.9
