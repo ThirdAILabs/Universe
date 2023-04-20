@@ -4,6 +4,7 @@
 #include <bolt/src/utils/Timer.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/Versions.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMachClassifier.h>
@@ -256,11 +257,12 @@ bool UDT::hasGraphInputs(const data::ColumnDataTypes& data_types) {
       std::to_string(node_id_col_count) + " node id data types.");
 }
 
-template void UDT::serialize(cereal::BinaryInputArchive&);
-template void UDT::serialize(cereal::BinaryOutputArchive&);
+template void UDT::serialize(cereal::BinaryInputArchive&, uint32_t version);
+template void UDT::serialize(cereal::BinaryOutputArchive&, uint32_t version);
 
 template <class Archive>
-void UDT::serialize(Archive& archive) {
+void UDT::serialize(Archive& archive, const uint32_t version) {
+  versions::checkVersion(version, versions::UDT_BASE_VERSION, "UDT_BASE");
   archive(_backend);
 }
 
@@ -291,3 +293,5 @@ void UDT::throwUnsupportedUDTConfigurationError(
 }
 
 }  // namespace thirdai::automl::udt
+
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDT, thirdai::automl::udt::versions::UDT_BASE_VERSION)

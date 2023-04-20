@@ -7,6 +7,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -252,3 +253,4 @@ void UDTClassifier::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTClassifier)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTClassifier, thirdai::automl::udt::versions::UDT_CLASSIFIER_VERSION)
