@@ -264,8 +264,8 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     config_name = "forest_cover_type_udt"
     dataset_name = "forest_cover_type"
 
-    train_file = "tabular_benchmarks/ForestCoverType/train_udt.csv"
-    test_file = "tabular_benchmarks/ForestCoverType/test_udt.csv"
+    train_file = "tabular_benchmarks/ForestCoverType/train_udt_no_index.csv"
+    test_file = "tabular_benchmarks/ForestCoverType/test_udt_no_index.csv"
 
     target = "col54"
     n_target_classes = 7
