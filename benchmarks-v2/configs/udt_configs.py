@@ -371,9 +371,7 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     dataset_name = "mercedes_benz_greener"
 
     train_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_train_no_index.csv"
-    test_file = (
-        "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test_no_index.csv"
-    )
+    test_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test_no_index.csv"
 
     target = "y"
     n_target_classes = None
