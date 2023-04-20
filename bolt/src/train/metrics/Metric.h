@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <atomic>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -91,7 +92,7 @@ class MetricCollection {
    * there values in the history under the key <prefix>_<metric_name>. This is
    * used to distinguish train vs validation metrics.
    */
-  void updateHistory(HistoryPtr& history);
+  void updateHistory(History& history);
 
   /**
    * Creates a string summary of the current values of the metrics.
@@ -106,5 +107,24 @@ class MetricCollection {
  private:
   std::vector<MetricPtr> _metrics;
 };
+
+/**
+ * Creates a set of metrics for the given model based on the metric names.
+ * Expects that the model only has a single output and label so that it knows
+ * what outputs in the model the metrics should be for. The prefix is prepended
+ * to the metric names that are used to identify the metric. This is so that if
+ * the use specifies "loss" as both a train and validation metric, the model
+ * will invoke this method with the prefixes "train_" and "val_" so that the
+ * names are distinct.
+ */
+InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+                             const std::vector<std::string>& metric_names,
+                             const std::string& prefix = "");
+
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator);
+
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k);
 
 }  // namespace thirdai::bolt::train::metrics

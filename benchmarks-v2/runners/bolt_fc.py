@@ -2,7 +2,7 @@ from thirdai import bolt
 
 from ..configs.bolt_configs import BoltBenchmarkConfig
 from .runner import Runner
-from .utils import fix_mlflow_metric_name, get_train_and_eval_configs
+from .utils import get_train_and_eval_configs
 
 
 class BoltFullyConnectedRunner(Runner):
@@ -35,7 +35,6 @@ class BoltFullyConnectedRunner(Runner):
 
             if mlflow_logger:
                 for k, v in predict_output[0].items():
-                    key = fix_mlflow_metric_name(k)
                     mlflow_logger.log_additional_metric(key=key, value=v, step=epoch)
 
 

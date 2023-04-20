@@ -1,20 +1,20 @@
 #pragma once
 
-#include "Categorical.h"
 #include "MachIndex.h"
+#include <dataset/src/blocks/Categorical.h>
 #include <exceptions/src/Exceptions.h>
 #include <variant>
 
-namespace thirdai::dataset {
-
-namespace tests {
+namespace thirdai::dataset::tests {
 class MachBlockTest;
-}  // namespace tests
+}  // namespace thirdai::dataset::tests
+
+namespace thirdai::dataset::mach {
 
 /**
  * A MachBlock applies to a a single column with potentially more than one
  * category (as specified by the delimiter). For each category found, we will
- * update the given MachIndex by calls to hashAndStoreEntity. This will hash the
+ * update the given MachIndex by calls to hashEntity. This will hash the
  * given category some number of times and return those hashes. It will also
  * store an inverted index from hashes to entities.
  */
@@ -56,4 +56,4 @@ class MachBlock final : public CategoricalBlock {
 
 using MachBlockPtr = std::shared_ptr<MachBlock>;
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach

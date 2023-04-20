@@ -1,10 +1,12 @@
 #include "UDTMachClassifier.h"
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
-#include <dataset/src/blocks/MachBlock.h>
+#include <dataset/src/mach/MachBlock.h>
+#include <dataset/src/mach/MachDecode.h>
 #include <pybind11/stl.h>
 
 namespace thirdai::automl::udt {
@@ -39,19 +41,19 @@ UDTMachClassifier::UDTMachClassifier(
   // TODO(david) should we freeze hash tables for mach? how does this work
   // with coldstart?
 
-  dataset::MachIndexPtr mach_index;
+  dataset::mach::MachIndexPtr mach_index;
   if (integer_target) {
-    mach_index = dataset::NumericCategoricalMachIndex::make(
+    mach_index = dataset::mach::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ n_target_classes);
   } else {
-    mach_index = dataset::StringCategoricalMachIndex::make(
+    mach_index = dataset::mach::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ n_target_classes);
   }
 
-  _mach_label_block = dataset::MachBlock::make(target_name, mach_index,
-                                               target_config->delimiter);
+  _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
+                                                     target_config->delimiter);
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
@@ -127,46 +129,17 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
 #pragma omp parallel for default(none) shared(output, predicted_entities)
   for (uint32_t i = 0; i < output.numSamples(); i++) {
     BoltVector output_activations = output.getSampleAsNonOwningBoltVector(i);
-    auto predictions = machSingleDecode(output_activations);
+    auto predictions = dataset::mach::topKUnlimitedDecode(
+        /* output = */ output_activations,
+        /* index = */ _mach_label_block->index(),
+        /* min_num_eval_results = */ _min_num_eval_results,
+        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
     predicted_entities[i] = predictions;
   }
 
   // TODO(david) eventually we should use backend specific metrics
 
   return py::cast(predicted_entities);
-}
-
-std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
-    const BoltVector& output) {
-  auto top_K = output.findKLargestActivations(_top_k_per_eval_aggregation);
-
-  std::unordered_map<std::string, double> entity_to_scores;
-  while (!top_K.empty()) {
-    auto [activation, active_neuron] = top_K.top();
-    std::vector<std::string> entities =
-        _mach_label_block->index()->entitiesByHash(active_neuron);
-    for (const auto& entity : entities) {
-      if (!entity_to_scores.count(entity)) {
-        entity_to_scores[entity] = activation;
-      } else {
-        entity_to_scores[entity] += activation;
-      }
-    }
-    top_K.pop();
-  }
-
-  std::vector<std::pair<std::string, double>> entity_scores(
-      entity_to_scores.begin(), entity_to_scores.end());
-  std::sort(entity_scores.begin(), entity_scores.end(),
-            [](auto& left, auto& right) { return left.second > right.second; });
-
-  uint32_t num_to_return =
-      std::min<uint32_t>(_min_num_eval_results, entity_scores.size());
-
-  entity_scores = std::vector<std::pair<std::string, double>>(
-      entity_scores.begin(), entity_scores.begin() + num_to_return);
-
-  return entity_scores;
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
@@ -180,7 +153,11 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
 
   BoltVector output = _classifier->model()->predictSingle(
       _dataset_factory->featurizeInput(sample), sparse_inference);
-  auto decoded_output = machSingleDecode(output);
+  auto decoded_output = dataset::mach::topKUnlimitedDecode(
+      /* output = */ output,
+      /* index = */ _mach_label_block->index(),
+      /* min_num_eval_results = */ _min_num_eval_results,
+      /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
 
   return py::cast(decoded_output);
 }
@@ -202,7 +179,11 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
 #pragma omp parallel for default(none) shared(outputs, predicted_entities)
   for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
     auto vector = outputs[i];
-    auto predictions = machSingleDecode(vector);
+    auto predictions = dataset::mach::topKUnlimitedDecode(
+        /* output = */ vector,
+        /* index = */ _mach_label_block->index(),
+        /* min_num_eval_results = */ _min_num_eval_results,
+        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
     predicted_entities[i] = predictions;
   }
 
@@ -215,7 +196,8 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
-    const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
+    const std::vector<bolt::CallbackPtr>& callbacks,
+    std::optional<size_t> max_in_memory_batches, bool verbose) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
@@ -223,7 +205,7 @@ py::object UDTMachClassifier::coldstart(
 
   return train(data_source, learning_rate, epochs, validation,
                /* batch_size_opt = */ std::nullopt,
-               /* max_in_memory_batches= */ std::nullopt, metrics,
+               /* max_in_memory_batches= */ max_in_memory_batches, metrics,
                /* callbacks= */ callbacks, /* verbose= */ verbose,
                /* logging_interval= */ std::nullopt);
 }
@@ -251,7 +233,7 @@ static std::string variantToString(
 py::object UDTMachClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   std::vector<uint32_t> hashed_neurons =
-      _mach_label_block->index()->hashAndStoreEntity(variantToString(label));
+      _mach_label_block->index()->hashEntity(variantToString(label));
 
   auto back_node = _classifier->model()->getNodes().back();
 
@@ -305,6 +287,12 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 
   _min_num_eval_results = min_num_eval_results;
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+}
+
+TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
+    const std::string& activation_func, float distance_cutoff) const {
+  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
+                                  activation_func, distance_cutoff);
 }
 
 template <class Archive>

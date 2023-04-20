@@ -3,6 +3,7 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -96,6 +97,7 @@ class UDTBackend {
     (void)model;
     throw notSupported("modifying underlying model");
   }
+
   /**
    * Determines if the model can support distributed training. By default
    * backends do not support distributed training.
@@ -126,7 +128,8 @@ class UDTBackend {
       const std::vector<std::string>& weak_column_names, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       const std::optional<ValidationDataSource>& validation,
-      const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
+      const std::vector<bolt::CallbackPtr>& callbacks,
+      std::optional<size_t> max_in_memory_batches, bool verbose) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -135,6 +138,7 @@ class UDTBackend {
     (void)metrics;
     (void)validation;
     (void)callbacks;
+    (void)max_in_memory_batches;
     (void)verbose;
     throw notSupported("cold_start");
   }
@@ -201,6 +205,16 @@ class UDTBackend {
     (void)min_num_eval_results;
     (void)top_k_per_eval_aggregation;
     throw notSupported("set_decode_params");
+  }
+
+  /*
+   * Returns a model that embeds text using the hidden layer of the UDT model.
+   */
+  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
+      const std::string& activation_func, float distance_cutoff) const {
+    (void)activation_func;
+    (void)distance_cutoff;
+    throw notSupported("get_text_embedding_model");
   }
 
   virtual ~UDTBackend() = default;

@@ -14,7 +14,8 @@ struct TestDatasetGenerators {
   // vectors of the labels, with some small amount of noise added.
   static std::tuple<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr>
   generateSimpleVectorDataset(uint32_t n_classes, uint32_t n_batches,
-                              uint32_t batch_size, bool noisy_dataset) {
+                              uint32_t batch_size, bool noisy_dataset,
+                              bool sparse = false) {
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
     std::normal_distribution<float> data_dist(0, noisy_dataset ? 1.0 : 0.1);
@@ -26,11 +27,24 @@ struct TestDatasetGenerators {
       std::vector<BoltVector> vectors;
       for (uint32_t i = 0; i < batch_size; i++) {
         uint32_t label = label_dist(gen);
-        BoltVector v(n_classes, true, false);
+        BoltVector v(/*l= */ n_classes, /* is_dense= */ true,
+                     /* has_gradient*/ false);
         std::generate(v.activations, v.activations + n_classes,
                       [&]() { return data_dist(gen); });
         if (!noisy_dataset) {
           v.activations[label] += 1.0;
+        }
+        if (sparse) {
+          auto top_k_indices = v.findKLargestActivations(n_classes / 2);
+          v = BoltVector(/*l= */ top_k_indices.size(), /* is_dense= */ false,
+                         /* has_gradient*/ false);
+          uint32_t index = 0;
+          while (!top_k_indices.empty()) {
+            v.active_neurons[index] = top_k_indices.top().second;
+            v.activations[index] = top_k_indices.top().first;
+            index++;
+            top_k_indices.pop();
+          }
         }
         vectors.push_back(std::move(v));
         labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));

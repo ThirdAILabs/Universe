@@ -143,7 +143,8 @@ py::object UDTClassifier::coldstart(
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
-    const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
+    const std::vector<bolt::CallbackPtr>& callbacks,
+    std::optional<size_t> max_in_memory_batches, bool verbose) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
@@ -151,7 +152,7 @@ py::object UDTClassifier::coldstart(
 
   return train(data_source, learning_rate, epochs, validation,
                /* batch_size = */ std::nullopt,
-               /* max_in_memory_batches= */ std::nullopt, metrics,
+               /* max_in_memory_batches= */ max_in_memory_batches, metrics,
                /* callbacks= */ callbacks, /* verbose= */ verbose,
                /* logging_interval= */ std::nullopt);
 }
@@ -187,6 +188,12 @@ py::object UDTClassifier::entityEmbedding(
   std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
 
   return std::move(np_weights);
+}
+
+TextEmbeddingModelPtr UDTClassifier::getTextEmbeddingModel(
+    const std::string& activation_func, float distance_cutoff) const {
+  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
+                                  activation_func, distance_cutoff);
 }
 
 dataset::CategoricalBlockPtr UDTClassifier::labelBlock(

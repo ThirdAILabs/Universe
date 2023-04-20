@@ -2,9 +2,11 @@ import os
 import textwrap
 from functools import wraps
 from time import time
+from typing import Callable
 
+import thirdai
 import thirdai._distributed_bolt.backend.communication as comm
-from thirdai._thirdai import bolt, logging
+from thirdai._thirdai import bolt, bolt_v2, logging
 
 
 def timed(f):
@@ -33,19 +35,28 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.nn.Model,
+        model_lambda: Callable[[], bolt.nn.Model],
+        licensing_lambda: Callable[[], None],
         train_source,
         id: int,
         primary_worker,
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
-        validation_context=None,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
+
+        # These next two steps are necessary to satisfy our licensing system.
+        # Deserializing a model requires a valid license, so we can't pass the
+        # model directly in to the constructor. Instead, we pass in a lambda
+        # that we run to initialize licensing, then a lambda that we call to
+        # get and deserialize the model.
+        licensing_lambda()
+        model_to_wrap = model_lambda()
+
         self.train_source = train_source
         self.train_source.load()
 
@@ -60,7 +71,13 @@ class Worker:
 
         logging.info(f"sub_task initializing_model on worker-{id}")
         start = time()
-        self.model = bolt.DistributedTrainingWrapper(
+        # TODO(Nick): Remove hasattr check
+        DistributedTrainingWrapper = (
+            bolt_v2.train.DistributedTrainingWrapper
+            if hasattr(bolt_v2, "nn") and isinstance(model_to_wrap, bolt_v2.nn.Model)
+            else bolt.DistributedTrainingWrapper
+        )
+        self.model = DistributedTrainingWrapper(
             model=model_to_wrap,
             train_config=train_config,
             worker_id=id,
@@ -257,6 +274,9 @@ class Worker:
 
     def get_updated_metrics(self):
         return self.model.get_updated_metrics()
+
+    def update_learning_rate(self, learning_rate):
+        self.model.update_learning_rate(learning_rate)
 
     def model(self, with_optimizer):
         # setting with_optimizer flag, here implies that model would be serialized/pickled with optimizer. It is similar to how save/checkpoint works as pickling also uses cereal.

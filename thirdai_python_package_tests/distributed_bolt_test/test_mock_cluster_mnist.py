@@ -12,40 +12,13 @@ import numpy as np
 import pytest
 from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
+    mnist_distributed_split,
     ray_two_node_cluster_config,
-    split_into_2,
 )
+from download_dataset_fixtures import download_mnist_dataset
 from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.distributed]
-
-
-# TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
-# it until we change the structure of our python tests
-def setup_module():
-    import os
-
-    path = "mnist_data"
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    if not os.path.exists("mnist_data/xaa") or not os.path.exists("mnist_data/xab"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-        split_into_2(
-            file_to_split="mnist",
-            destination_file_1="mnist_data/part1",
-            destination_file_2="mnist_data/part2",
-        )
-
-    if not os.path.exists("mnist_data/mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-        os.system("mv mnist.t mnist_data/")
 
 
 def get_mnist_model():
@@ -64,61 +37,74 @@ def get_mnist_model():
     return model
 
 
-@pytest.fixture(scope="module")
-def train_distributed_bolt_check(request, ray_two_node_cluster_config):
+def train_distributed_bolt_mnist(
+    comm, epochs, ray_cluster_config, mnist_distributed_split
+):
+    import multiprocessing
+
     import thirdai.distributed_bolt as db
 
+    if multiprocessing.cpu_count() < 2:
+        assert False, "not enough cpus for distributed training"
+
     model = get_mnist_model()
+
+    train_files, test_file = mnist_distributed_split
 
     # Because we explicitly specified the Ray working folder as this test
     # directory, but the current working directory where we downloaded mnist
     # may be anywhere, we give explicit paths for the mnist filenames
     train_sources = [
         db.DistributedSvmDatasetLoader(
-            filename,
+            f"{os.getcwd()}/{filename}",
             batch_size=256,
         )
-        for filename in [
-            f"{os.getcwd()}/mnist_data/part1",
-            f"{os.getcwd()}/mnist_data/part2",
-        ]
+        for filename in train_files
     ]
-    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
-    distributed_model = db.DistributedDataParallel(
-        cluster_config=ray_two_node_cluster_config(request.param),
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=epochs)
+    distributed_trainer = db.DistributedDataParallel(
+        cluster_config=ray_cluster_config(comm),
         model=model,
         train_config=train_config,
         train_sources=train_sources,
     )
-    distributed_model.train()
+    for _ in range(train_config.num_epochs):
+        while distributed_trainer.step():
+            pass
 
-    check_models_are_same_on_first_two_nodes(distributed_model)
+        distributed_trainer.restart_data()
+
+    check_models_are_same_on_first_two_nodes(distributed_trainer)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
-    test_data, test_labels = dataset.load_bolt_svm_dataset(
-        "mnist_data/mnist.t", batch_size=256
-    )
-    metrics = distributed_model.get_model().evaluate(
+    test_data, test_labels = dataset.load_bolt_svm_dataset(test_file, batch_size=256)
+
+    (metrics,) = distributed_trainer.get_model().evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
 
     print(metrics)
 
-    yield metrics
+    return metrics
 
 
-# This test requires the Ray library, but we don't skip it if Ray isn't
-# installed because if someone is running it part of the test may be if the
-# Ray install is working at all. Marking it only with
-# pytestmark.mark.distributed prevents it from running in our normal unit and
-# integration test pipeline where ray isn't a dependency.
-@pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
-)
-def test_distributed_mnist(train_distributed_bolt_check):
-    import multiprocessing
+def test_distributed_mnist_linear(ray_two_node_cluster_config, mnist_distributed_split):
+    metrics = train_distributed_bolt_mnist(
+        comm="linear",
+        epochs=3,
+        ray_cluster_config=ray_two_node_cluster_config,
+        mnist_distributed_split=mnist_distributed_split,
+    )
+    assert metrics["categorical_accuracy"] >= 0.9
 
-    if multiprocessing.cpu_count() < 2:
-        assert False, "not enough cpus for distributed training"
 
-    assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
+def test_distributed_mnist_circular(
+    ray_two_node_cluster_config, mnist_distributed_split
+):
+    metrics = train_distributed_bolt_mnist(
+        comm="circular",
+        epochs=1,
+        ray_cluster_config=ray_two_node_cluster_config,
+        mnist_distributed_split=mnist_distributed_split,
+    )
+    assert metrics["categorical_accuracy"] >= 0.9

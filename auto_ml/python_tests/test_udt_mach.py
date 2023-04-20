@@ -211,7 +211,7 @@ def test_mach_udt_embedding():
 
     model = train_simple_mach_udt(integer_target=False)
 
-    embedding = model.embedding_representation({"QUERY": "some sample query"})
+    embedding = model.embedding_representation({"text": "some sample query"})
 
     assert embedding.shape == (256,)
 

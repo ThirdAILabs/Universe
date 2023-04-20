@@ -124,6 +124,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
 
   py::class_<Node, NodePtr>(nn_submodule, "Node")
       .def_property_readonly("name", [](Node& node) { return node.name(); })
+      .def("freeze", &Node::freeze)
+      .def("unfreeze", &Node::unfreeze)
       .def("disable_sparse_parameter_updates",
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
@@ -637,7 +639,10 @@ That's all for now, folks! More docs coming soon :)
            bolt::python::OutputRedirect())
       .def("should_save_optimizer",
            &thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer,
-           py::arg("should_save_optimizer"));
+           py::arg("should_save_optimizer"))
+      .def("update_learning_rate",
+           &thirdai::bolt::DistributedTrainingWrapper::updateLearningRate,
+           py::arg("learning_rate"));
 
   createLossesSubmodule(nn_submodule);
 }
