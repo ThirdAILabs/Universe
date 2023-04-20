@@ -8,14 +8,14 @@
 
 namespace thirdai::dataset {
 
-typedef struct DatasetShuffleConfig {
+struct DatasetShuffleConfig {
   explicit DatasetShuffleConfig(size_t min_vecs_in_buffer = 64000,
                                 uint32_t seed = time(NULL))
       : min_buffer_size(min_vecs_in_buffer), seed(seed) {}
 
   size_t min_buffer_size;
   uint32_t seed;
-} DatasetShuffleConfig;
+};
 
 const uint32_t DEFAULT_FEATURIZATION_BATCH_SIZE = 2048;
 
