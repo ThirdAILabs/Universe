@@ -8,7 +8,7 @@ from thirdai import bolt, deployment
 
 from ..configs.temporal_configs import *
 from .runner import Runner
-
+from ..configs.utils import AdditionalMetricCallback
 
 class TemporalRunner(Runner):
     config_type = UDTBenchmarkConfig
@@ -44,9 +44,7 @@ class TemporalRunner(Runner):
             )
 
             if len(config.metrics) > 0:
-                metrics = model.evaluate(
-                    test_file, metrics=config.metrics, return_metrics=True
-                )
+                metrics = model.evaluate(test_file, metrics=config.metrics)
 
                 if mlflow_logger:
                     for k, v in metrics.items():
