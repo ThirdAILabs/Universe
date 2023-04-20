@@ -44,14 +44,8 @@ class QueryReformulationRunner(Runner):
 
     @staticmethod
     def create_model(config, path_prefix):
-        if config.model_config is not None:
-            model_config_path = config.config_name + "_model.config"
-            deployment.dump_config(
-                config=json.dumps(config.model_config),
-                filename=model_config_path,
-            )
-        else:
-            model_config_path = None
+        
+        model_config_path, config_is_temp = QueryReformulationRunner.get_model_config_path(config, path_prefix)
 
         model = bolt.UniversalDeepTransformer(
             source_column=config.source_column,
@@ -59,7 +53,7 @@ class QueryReformulationRunner(Runner):
             dataset_size=config.dataset_size,
         )
 
-        if model_config_path:
+        if config_is_temp:
             os.remove(model_config_path)
 
         return model

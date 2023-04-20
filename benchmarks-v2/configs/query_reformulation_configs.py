@@ -13,9 +13,11 @@ class QueryReformulationBenchmarkConfig(ABC):
     source_column = None
     target_column = None
     dataset_size = None
+    delimiter = ","
 
     additional_metric_fns = {}
     model_config = None
+    model_config_path = None
     options = {}
 
 

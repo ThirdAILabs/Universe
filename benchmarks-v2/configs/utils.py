@@ -119,6 +119,7 @@ def get_mae_metric_fn(target_column):
 
 def get_mach_recall_at_k_metric_fn(target_column, k=1, target_delimeter=None):
     # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
+    assert 1 <= k <= 5
 
     def recall_at_k_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
