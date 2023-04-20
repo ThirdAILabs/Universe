@@ -1,12 +1,11 @@
-import json
 import os
 import time
 
 import numpy as np
 import pandas as pd
-from thirdai import bolt, deployment
 
 from ..configs.temporal_configs import *
+from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
 
 
