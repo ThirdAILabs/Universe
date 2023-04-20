@@ -44,8 +44,10 @@ class QueryReformulationRunner(Runner):
 
     @staticmethod
     def create_model(config, path_prefix):
-        
-        model_config_path, config_is_temp = QueryReformulationRunner.get_model_config_path(config, path_prefix)
+        (
+            model_config_path,
+            config_is_temp,
+        ) = QueryReformulationRunner.get_model_config_path(config, path_prefix)
 
         model = bolt.UniversalDeepTransformer(
             source_column=config.source_column,

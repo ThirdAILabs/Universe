@@ -26,7 +26,7 @@ class Runner(ABC):
         model, test_file, config, path_prefix, num_samples=10000
     ):
         raise NotImplementedError
-    
+
     @staticmethod
     def get_model_config_path(config, path_prefix):
         config_is_temp = False
@@ -46,8 +46,9 @@ class Runner(ABC):
 
     @staticmethod
     def create_model(config, path_prefix):
-        
-        model_config_path, config_is_temp = Runner.get_model_config_path(config, path_prefix)
+        model_config_path, config_is_temp = Runner.get_model_config_path(
+            config, path_prefix
+        )
 
         data_types = config.get_data_types(path_prefix)
         model = bolt.UniversalDeepTransformer(
