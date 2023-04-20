@@ -53,6 +53,7 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
+        batches_to_skip=0,
         *args,
         **kwargs,
     ):
@@ -64,6 +65,7 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
+        self.batches_to_skip = batches_to_skip
 
     def load(self):
         data_source = self.data_source_factory(*self.args, **self.kwargs)
@@ -72,6 +74,14 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
             featurizer=self.featurizer,
             shuffle=self.shuffle,
         )
+        # Note(pratik): This would still be approximate. Since, seed for buffer
+        # shuffling would be different.
+        while self.batches_to_skip > 0:
+            num_batches_to_load = min(self.batches_to_skip, self.max_in_memory_batches)
+            self.generator.load_some(
+                num_batches=num_batches_to_load, batch_size=self.batch_size
+            )
+            self.batches_to_skip -= num_batches_to_load
 
     def next(self):
         if self.dataset_finished:
