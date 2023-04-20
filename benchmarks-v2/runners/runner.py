@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 
-from thirdai import bolt
+from thirdai import bolt, deployment
 
 
 class Runner(ABC):
