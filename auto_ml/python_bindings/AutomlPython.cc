@@ -14,6 +14,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <optional>
 
 namespace thirdai::automl::python {
 
@@ -173,7 +174,8 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
       models_submodule, "TabularDatasetFactory")
       .def("get_dataset_loader", &data::TabularDatasetFactory::getDatasetLoader,
-           py::arg("data_source"), py::arg("training"))
+           py::arg("data_source"), py::arg("training"),
+           py::arg("shuffle_config") = std::nullopt)
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(

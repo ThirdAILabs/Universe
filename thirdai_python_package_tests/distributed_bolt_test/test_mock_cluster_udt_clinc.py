@@ -2,7 +2,7 @@ import os
 
 import pytest
 from distributed_utils import ray_two_node_cluster_config, remove_files
-from thirdai import bolt
+from thirdai import bolt, dataset
 from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
@@ -67,6 +67,7 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         verbose=True,
         max_in_memory_batches=10,
         validation=validation,
+        min_vecs_in_buffer=5000,
     )
     validation_metrics = training_and_validation_metrics["validation_metrics"]
 

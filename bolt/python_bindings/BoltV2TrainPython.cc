@@ -1,4 +1,5 @@
 #include "BoltV2TrainPython.h"
+#include "PyCallback.h"
 #include "PybindUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
@@ -12,6 +13,7 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/DistributedTrainingWrapper.h>
+#include <bolt/src/train/trainer/TrainState.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -156,8 +158,17 @@ void defineMetrics(py::module_& train) {
 void defineCallbacks(py::module_& train) {
   auto callbacks = train.def_submodule("callbacks");
 
-  py::class_<callbacks::Callback, callbacks::CallbackPtr>(callbacks,  // NOLINT
-                                                          "Callback");
+  py::class_<TrainState, TrainStatePtr>(train, "TrainState")
+      .def_property("learning_rate", &TrainState::learningRate,
+                    &TrainState::updateLearningRate)
+      .def("stop_training", &TrainState::stopTraining);
+
+  py::class_<callbacks::Callback, PyCallback, callbacks::CallbackPtr>(
+      callbacks, "Callback")
+      .def(py::init<>())
+      .def_property_readonly("model", &callbacks::Callback::getModel)
+      .def_property_readonly("train_state", &callbacks::Callback::getTrainState)
+      .def_property_readonly("history", &callbacks::Callback::getHistory);
 
   py::class_<callbacks::ReduceLROnPlateau,
              std::shared_ptr<callbacks::ReduceLROnPlateau>,

@@ -38,6 +38,12 @@ class Callback {
   // Called after each training batch.
   virtual void onBatchEnd() {}
 
+  bolt::nn::model::ModelPtr& getModel() { return model; }
+
+  TrainStatePtr& getTrainState() { return train_state; }
+
+  metrics::History getHistory() const { return *history; }
+
   /**
    * Sets the model field in the callback so it can access the model. Cannot be
    * called more than once on a given callback object, i.e. a callback cannot be
