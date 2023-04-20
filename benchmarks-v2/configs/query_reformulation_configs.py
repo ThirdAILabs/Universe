@@ -17,7 +17,6 @@ class QueryReformulationBenchmarkConfig(ABC):
 
     additional_metric_fns = {}
     model_config = None
-    model_config_path = None
     options = {}
 
 

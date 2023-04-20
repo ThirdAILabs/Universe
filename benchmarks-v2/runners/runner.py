@@ -28,27 +28,15 @@ class Runner(ABC):
         raise NotImplementedError
 
     @staticmethod
-    def get_model_config_path(config, path_prefix):
-        config_is_temp = False
-        if config.model_config_path:
-            model_config_path = os.path.join(path_prefix, config.model_config_path)
-        elif config.model_config is not None:
+    def create_model(config, path_prefix):
+        if config.model_config is not None:
             model_config_path = config.config_name + "_model.config"
             deployment.dump_config(
                 config=json.dumps(config.model_config),
                 filename=model_config_path,
             )
-            config_is_temp = True
         else:
             model_config_path = None
-
-        return model_config_path, config_is_temp
-
-    @staticmethod
-    def create_model(config, path_prefix):
-        model_config_path, config_is_temp = Runner.get_model_config_path(
-            config, path_prefix
-        )
 
         data_types = config.get_data_types(path_prefix)
         model = bolt.UniversalDeepTransformer(
@@ -62,7 +50,7 @@ class Runner(ABC):
             options=config.options,
         )
 
-        if config_is_temp:
+        if model_config_path:
             os.remove(model_config_path)
 
         return model

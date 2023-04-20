@@ -1,9 +1,10 @@
+import json
 import os
 import time
 
 import numpy as np
 import pandas as pd
-from thirdai import bolt
+from thirdai import bolt, deployment
 
 from ..configs.query_reformulation_configs import *
 from .runner import Runner
@@ -43,10 +44,14 @@ class QueryReformulationRunner(Runner):
 
     @staticmethod
     def create_model(config, path_prefix):
-        (
-            model_config_path,
-            config_is_temp,
-        ) = QueryReformulationRunner.get_model_config_path(config, path_prefix)
+        if config.model_config is not None:
+            model_config_path = config.config_name + "_model.config"
+            deployment.dump_config(
+                config=json.dumps(config.model_config),
+                filename=model_config_path,
+            )
+        else:
+            model_config_path = None
 
         model = bolt.UniversalDeepTransformer(
             source_column=config.source_column,
@@ -54,7 +59,7 @@ class QueryReformulationRunner(Runner):
             dataset_size=config.dataset_size,
         )
 
-        if config_is_temp:
+        if model_config_path:
             os.remove(model_config_path)
 
         return model
