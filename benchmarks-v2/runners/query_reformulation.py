@@ -2,6 +2,7 @@ import json
 import os
 
 import pandas as pd
+import numpy as np
 from thirdai import bolt, deployment
 
 from ..configs.query_reformulation_configs import *
@@ -31,7 +32,7 @@ class QueryReformulationRunner(Runner):
             )
 
         average_predict_time_ms = QueryReformulationRunner.get_average_predict_time(
-            model, test_file, config, num_samples=10000
+            model, test_file, config, path_prefix, num_samples=10000
         )
 
         print(f"average_predict_time_ms = {average_predict_time_ms}ms")
@@ -63,7 +64,7 @@ class QueryReformulationRunner(Runner):
         return model
 
     @staticmethod
-    def get_average_predict_time(model, test_file, config, num_samples=10000):
+    def get_average_predict_time(model, test_file, config, path_prefix, num_samples=10000):
         test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         test_data_sample = test_data.iloc[
             np.random.randint(0, len(test_data), size=num_samples)
