@@ -131,10 +131,10 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::string textColumnForDocumentIntroduction();
 
-  static std::unordered_map<uint32_t, MapInputBatch> aggregateSamplesByDoc(
-      const thirdai::data::ColumnMap& augmented_data,
-      const std::string& text_column_name,
-      const std::string& label_column_name);
+  std::unordered_map<std::variant<uint32_t, std::string>, MapInputBatch>
+  aggregateSamplesByDoc(const thirdai::data::ColumnMap& augmented_data,
+                        const std::string& text_column_name,
+                        const std::string& label_column_name);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this

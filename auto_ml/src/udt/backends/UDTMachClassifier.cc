@@ -267,7 +267,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
-std::unordered_map<uint32_t, MapInputBatch>
+std::unordered_map<std::variant<uint32_t, std::string>, MapInputBatch>
 UDTMachClassifier::aggregateSamplesByDoc(
     const thirdai::data::ColumnMap& augmented_data,
     const std::string& text_column_name, const std::string& label_column_name) {
@@ -276,17 +276,19 @@ UDTMachClassifier::aggregateSamplesByDoc(
 
   assert(label_column->numRows() == text_column.numRows());
 
-  std::unordered_map<uint32_t, MapInputBatch> samples_by_doc;
+  std::unordered_map<std::variant<uint32_t, std::string>, MapInputBatch>
+      samples_by_doc;
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
-    std::string labels = (*label_column)[row_id];
+    std::string string_label = (*label_column)[row_id];
+    uint32_t integer_label = std::stoi(string_label);
     std::string text = (*text_column)[row_id];
 
-    // TODO(david) this is hardcoded, account for multilabel and string vs
-    // integer label
-    uint32_t label = std::stoi(labels);
-
     MapInput input = {{text_column_name, text}};
-    samples_by_doc[label].push_back(input);
+    if (integerTarget()) {
+      samples_by_doc[integer_label].push_back(input);
+    } else {
+      samples_by_doc[string_label].push_back(input);
+    }
   }
 
   return samples_by_doc;
@@ -311,11 +313,13 @@ void UDTMachClassifier::introduceDocuments(
 
   auto augmented_data = augmentation.apply(dataset);
 
-  std::unordered_map<uint32_t, MapInputBatch> samples_per_doc =
-      aggregateSamplesByDoc(augmented_data, text_column_name,
-                            label_column_name);
+  auto samples_per_doc = aggregateSamplesByDoc(augmented_data, text_column_name,
+                                               label_column_name);
 
   for (const auto& [doc, samples] : samples_per_doc) {
+    for (auto sample: samples) {
+      std::cout << sample[text_column_name] << std::endl;
+    }
     introduceLabel(samples, doc);
   }
 }
