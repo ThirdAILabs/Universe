@@ -347,3 +347,5 @@ def test_mach_udt_introduce_documents():
         strong_column_names=["title"],
         weak_column_names=["description"],
     )
+
+    os.remove(new_docs)
