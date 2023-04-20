@@ -71,10 +71,10 @@ py::object UDTClassifier::train(
   auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  return _classifier->train(
-      train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
-      batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
-      logging_interval, licensing::TrainPermissionsToken(data));
+  return _classifier->train(train_dataset_loader, learning_rate, epochs,
+                            validation_dataset_loader, batch_size_opt,
+                            max_in_memory_batches, metrics, callbacks, verbose,
+                            logging_interval);
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
