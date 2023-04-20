@@ -264,8 +264,8 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     config_name = "forest_cover_type_udt"
     dataset_name = "forest_cover_type"
 
-    train_file = "tabular_benchmarks/ForestCoverType/train_udt.csv"
-    test_file = "tabular_benchmarks/ForestCoverType/test_udt.csv"
+    train_file = "tabular_benchmarks/ForestCoverType/train_udt_no_index.csv"
+    test_file = "tabular_benchmarks/ForestCoverType/test_udt_no_index.csv"
 
     target = "col54"
     n_target_classes = 7
@@ -284,8 +284,8 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     config_name = "black_friday_udt"
     dataset_name = "black_friday"
 
-    train_file = "tabular_regression/reg_cat/black_friday_shuf_train_with_header.csv"
-    test_file = "tabular_regression/reg_cat/black_friday_test.csv"
+    train_file = "tabular_regression/reg_cat/black_friday_train_no_index.csv"
+    test_file = "tabular_regression/reg_cat/black_friday_test_no_index.csv"
 
     target = "Purchase"
     n_target_classes = None
@@ -327,8 +327,8 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     config_name = "diamonds_udt"
     dataset_name = "diamonds"
 
-    train_file = "tabular_regression/reg_cat/diamonds_shuf_train_with_header.csv"
-    test_file = "tabular_regression/reg_cat/diamonds_test.csv"
+    train_file = "tabular_regression/reg_cat/diamonds_train_no_index.csv"
+    test_file = "tabular_regression/reg_cat/diamonds_test_no_index.csv"
 
     target = "price"
     n_target_classes = None
@@ -370,10 +370,8 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     config_name = "mercedes_benz_greener_udt"
     dataset_name = "mercedes_benz_greener"
 
-    train_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_shuf_train_with_header.csv"
-    test_file = (
-        "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test.csv"
-    )
+    train_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_train_no_index.csv"
+    test_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test_no_index.csv"
 
     target = "y"
     n_target_classes = None

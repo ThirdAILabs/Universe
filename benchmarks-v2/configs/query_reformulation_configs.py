@@ -1,10 +1,6 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
-from .utils import (
-    AdditionalMetricCallback,
-    get_qr_precision_at_k_metric_fn,
-    get_qr_recall_at_k_metric_fn,
-)
+from .utils import get_qr_precision_at_k_metric_fn, get_qr_recall_at_k_metric_fn
 
 
 class QueryReformulationBenchmarkConfig(ABC):

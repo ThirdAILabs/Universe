@@ -3,7 +3,13 @@ from thirdai import bolt
 from .udt_configs import UDTBenchmarkConfig
 
 
-class MovieLensUDTBenchmark(UDTBenchmarkConfig):
+# This class is used to identify configs that are run
+# with the temporal runner
+class TemporalBenchmarkConfig(UDTBenchmarkConfig):
+    pass
+
+
+class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
     config_name = "movie_lens_temporal"
     dataset_name = "movie_lens"
 
@@ -32,7 +38,7 @@ class MovieLensUDTBenchmark(UDTBenchmarkConfig):
         }
 
 
-class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
+class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
     config_name = "amazon_games_temporal"
     dataset_name = "amazon_games"
 
@@ -61,7 +67,7 @@ class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
         }
 
 
-class NetflixUDTBenchmark(UDTBenchmarkConfig):
+class NetflixUDTBenchmark(TemporalBenchmarkConfig):
     config_name = "netflix_temporal"
     dataset_name = "netflix_100M"
 
