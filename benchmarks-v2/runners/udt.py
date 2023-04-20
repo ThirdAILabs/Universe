@@ -93,7 +93,9 @@ class UDTRunner(Runner):
             )
 
     @staticmethod
-    def get_average_predict_time(model, test_file, config, path_prefix, num_samples=10000):
+    def get_average_predict_time(
+        model, test_file, config, path_prefix, num_samples=10000
+    ):
         test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         test_data_sample = test_data.iloc[
             np.random.randint(0, len(test_data), size=num_samples)
