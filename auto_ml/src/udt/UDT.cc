@@ -14,7 +14,6 @@
 #include <telemetry/src/PrometheusClient.h>
 #include <cstddef>
 #include <memory>
-#include <ratio>
 #include <sstream>
 #include <stdexcept>
 

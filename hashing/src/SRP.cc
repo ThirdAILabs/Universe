@@ -10,7 +10,7 @@ namespace thirdai::hashing {
 
 // TODO(Any). This class is currently untested (though it is also not clear
 // is is useful, so at some point we may delete it).
-SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
+SignedRandomProjection::SignedRandomProjection(uint32_t input_dim,
                                                uint32_t srps_per_table,
                                                uint32_t num_tables,
                                                uint32_t seed)
@@ -44,7 +44,7 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
   delete[] a;
 }
 
-void SparseRandomProjection::hashSingleDense(const float* values, uint32_t dim,
+void SignedRandomProjection::hashSingleDense(const float* values, uint32_t dim,
                                              uint32_t* output) const {
   assert(dim == _dim);
   (void)dim;
@@ -66,7 +66,7 @@ void SparseRandomProjection::hashSingleDense(const float* values, uint32_t dim,
   }
 }
 
-void SparseRandomProjection::hashSingleSparse(const uint32_t* indices,
+void SignedRandomProjection::hashSingleSparse(const uint32_t* indices,
                                               const float* values,
                                               uint32_t length,
                                               uint32_t* output) const {
@@ -95,7 +95,7 @@ void SparseRandomProjection::hashSingleSparse(const uint32_t* indices,
   }
 }
 
-SparseRandomProjection::~SparseRandomProjection() {
+SignedRandomProjection::~SignedRandomProjection() {
   delete[] _random_bits;
   delete[] _hash_indices;
 }

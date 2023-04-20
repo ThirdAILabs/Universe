@@ -175,7 +175,6 @@ BoltVector BoltVector::copy() const {
   return vec;
 }
 
-// TODO(Any): Delete copy constructor and copy assignment
 BoltVector::BoltVector(const BoltVector& other)
     : len(other.len), _owns_data(true) {
   if (other.active_neurons != nullptr) {
