@@ -134,7 +134,7 @@ def test_distributed_mach_cold_start(
             "precision@1",
             "recall@10",
         ],
-        shuffle_config=dataset.ShuffleConfig(min_vecs_in_buffer=5000),
+        min_vecs_in_buffer=5000,
     )
 
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])

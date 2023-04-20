@@ -105,7 +105,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         train_file: str,
         batch_size: int,
         data_processor,
-        shuffle_config=None,
+        min_vecs_in_buffer=None,
         max_in_memory_batches: int = None,
     ):
         self.generator = None
@@ -114,16 +114,17 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
-        self.shuffle_config = shuffle_config
+        self.min_vecs_in_buffer = min_vecs_in_buffer
 
     def load(self, shuffle: bool = True):
-        shuffle_config_arg = (
-            {"shuffle_config": self.shuffle_config}
-            if self.shuffle_config is not None
-            else {}
-        )
         self.generator = self.data_processor.get_dataset_loader(
-            _create_data_source(self.train_file), training=shuffle, **shuffle_config_arg
+            _create_data_source(self.train_file),
+            training=shuffle,
+            shuffle_config=(
+                dataset.ShuffleConfig(min_vecs_in_buffer=self.min_vecs_in_buffer)
+                if self.min_vecs_in_buffer is not None
+                else None
+            ),
         )
 
     def next(self):
@@ -155,7 +156,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         weak_column_names: List[str],
         data_processor,
         cold_start_meta_data,
-        shuffle_config=None,
+        min_vecs_in_buffer=None,
     ):
         self.generator = None
         self.train_file = train_file
@@ -166,7 +167,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.dataset_finished = False
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
-        self.shuffle_config = shuffle_config
+        self.min_vecs_in_buffer = min_vecs_in_buffer
 
     def load(self, shuffle: bool = True):
         original_data_source = _create_data_source(self.train_file)
@@ -179,13 +180,14 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
                 self.cold_start_meta_data,
             )
         )
-        shuffle_config_arg = (
-            {"shuffle_config": self.shuffle_config}
-            if self.shuffle_config is not None
-            else {}
-        )
         self.generator = self.data_processor.get_dataset_loader(
-            cold_start_data_source, training=shuffle, **shuffle_config_arg
+            cold_start_data_source,
+            training=shuffle,
+            shuffle_config=(
+                dataset.ShuffleConfig(min_vecs_in_buffer=self.min_vecs_in_buffer)
+                if self.min_vecs_in_buffer is not None
+                else None
+            ),
         )
 
 

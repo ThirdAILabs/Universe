@@ -49,10 +49,13 @@ TabularDatasetFactory::TabularDatasetFactory(
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle,
-    dataset::DatasetShuffleConfig shuffle_config) {
+    std::optional<dataset::DatasetShuffleConfig> shuffle_config) {
+  if (!shuffle_config.has_value()) {
+    shuffle_config = dataset::DatasetShuffleConfig();
+  }
   return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_featurizer,
-      /* shuffle= */ shuffle, shuffle_config);
+      /* shuffle= */ shuffle, shuffle_config.value());
 }
 
 std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(
