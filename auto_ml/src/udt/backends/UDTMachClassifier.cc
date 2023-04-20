@@ -218,8 +218,7 @@ py::object UDTMachClassifier::embedding(const MapInput& sample) {
   return utils::convertBoltVectorToNumpy(emb);
 }
 
-py::object UDTMachClassifier::entityEmbedding(
-    const std::variant<uint32_t, std::string>& label) {
+py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   std::vector<uint32_t> hashed_neurons =
       _mach_label_block->index()->hashEntity(variantToString(label));
 
@@ -267,24 +266,23 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
-std::unordered_map<std::variant<uint32_t, std::string>, MapInputBatch>
+std::unordered_map<Label, MapInputBatch>
 UDTMachClassifier::aggregateSamplesByDoc(
     const thirdai::data::ColumnMap& augmented_data,
     const std::string& text_column_name, const std::string& label_column_name) {
   auto text_column = augmented_data.getStringColumn(text_column_name);
   auto label_column = augmented_data.getStringColumn(label_column_name);
 
-  assert(label_column->numRows() == text_column.numRows());
+  assert(label_column->numRows() == text_column->numRows());
 
-  std::unordered_map<std::variant<uint32_t, std::string>, MapInputBatch>
-      samples_by_doc;
+  std::unordered_map<Label, MapInputBatch> samples_by_doc;
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string string_label = (*label_column)[row_id];
-    uint32_t integer_label = std::stoi(string_label);
     std::string text = (*text_column)[row_id];
 
     MapInput input = {{text_column_name, text}};
     if (integerTarget()) {
+      uint32_t integer_label = std::stoi(string_label);
       samples_by_doc[integer_label].push_back(input);
     } else {
       samples_by_doc[string_label].push_back(input);
@@ -317,9 +315,6 @@ void UDTMachClassifier::introduceDocuments(
                                                label_column_name);
 
   for (const auto& [doc, samples] : samples_per_doc) {
-    for (auto sample: samples) {
-      std::cout << sample[text_column_name] << std::endl;
-    }
     introduceLabel(samples, doc);
   }
 }
@@ -327,8 +322,7 @@ void UDTMachClassifier::introduceDocuments(
 void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    const std::variant<uint32_t, std::string>& new_label) {
+    const std::vector<std::string>& weak_column_names, const Label& new_label) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   thirdai::data::ColdStartTextAugmentation augmentation(
@@ -347,9 +341,8 @@ void UDTMachClassifier::introduceDocument(
   introduceLabel(batch, new_label);
 }
 
-void UDTMachClassifier::introduceLabel(
-    const MapInputBatch& samples,
-    const std::variant<uint32_t, std::string>& new_label) {
+void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
+                                       const Label& new_label) {
   BoltBatch output = _classifier->model()->predictSingleBatch(
       _dataset_factory->featurizeInputBatch(samples),
       /* sparse_inference = */ false);
@@ -396,8 +389,7 @@ void UDTMachClassifier::introduceLabel(
   _mach_label_block->index()->manualAdd(variantToString(new_label), new_hashes);
 }
 
-void UDTMachClassifier::forget(
-    const std::variant<uint32_t, std::string>& label) {
+void UDTMachClassifier::forget(const Label& label) {
   _mach_label_block->index()->erase(variantToString(label));
 
   if (_mach_label_block->index()->numElements() == 0) {
@@ -433,8 +425,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
-std::string UDTMachClassifier::variantToString(
-    const std::variant<uint32_t, std::string>& variant) {
+std::string UDTMachClassifier::variantToString(const Label& variant) {
   if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
     return std::get<std::string>(variant);
   }

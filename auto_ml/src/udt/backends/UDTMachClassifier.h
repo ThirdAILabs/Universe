@@ -19,6 +19,8 @@
 
 namespace thirdai::automl::udt {
 
+using Label = std::variant<uint32_t, std::string>;
+
 class UDTMachClassifier final : public UDTBackend {
  public:
   UDTMachClassifier(const data::ColumnDataTypes& input_data_types,
@@ -78,25 +80,22 @@ class UDTMachClassifier final : public UDTBackend {
    * embeddings are useful and which tweaks like summing vs averaging and tanh
    * vs reul make a difference.
    */
-  py::object entityEmbedding(
-      const std::variant<uint32_t, std::string>& label) final;
+  py::object entityEmbedding(const Label& label) final;
 
   void introduceDocuments(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names) final;
 
-  void introduceDocument(
-      const MapInput& document,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      const std::variant<uint32_t, std::string>& new_label) final;
+  void introduceDocument(const MapInput& document,
+                         const std::vector<std::string>& strong_column_names,
+                         const std::vector<std::string>& weak_column_names,
+                         const Label& new_label) final;
 
-  void introduceLabel(
-      const MapInputBatch& samples,
-      const std::variant<uint32_t, std::string>& new_label) final;
+  void introduceLabel(const MapInputBatch& samples,
+                      const Label& new_label) final;
 
-  void forget(const std::variant<uint32_t, std::string>& label) final;
+  void forget(const Label& label) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -122,19 +121,17 @@ class UDTMachClassifier final : public UDTBackend {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName(),
-        /* integer_target = */
-        integerTarget());
+        /* integer_target = */ integerTarget());
   }
 
-  std::string variantToString(
-      const std::variant<uint32_t, std::string>& variant);
+  std::string variantToString(const Label& variant);
 
   std::string textColumnForDocumentIntroduction();
 
-  std::unordered_map<std::variant<uint32_t, std::string>, MapInputBatch>
-  aggregateSamplesByDoc(const thirdai::data::ColumnMap& augmented_data,
-                        const std::string& text_column_name,
-                        const std::string& label_column_name);
+  std::unordered_map<Label, MapInputBatch> aggregateSamplesByDoc(
+      const thirdai::data::ColumnMap& augmented_data,
+      const std::string& text_column_name,
+      const std::string& label_column_name);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
