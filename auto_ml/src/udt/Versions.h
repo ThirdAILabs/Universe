@@ -19,6 +19,7 @@ constexpr uint32_t UDT_REGRESSION_VERSION = 0;
 
 constexpr uint32_t UDT_SVM_CLASSIFIER_VERSION = 0;
 
-void checkVersion(uint32_t input_version, uint32_t expected_version, std::string class_name);
+void checkVersion(uint32_t input_version, uint32_t expected_version,
+                  std::string& class_name);
 
-} // namespace thirdai::automl::udt::versions
+}  // namespace thirdai::automl::udt::versions

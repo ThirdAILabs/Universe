@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -142,11 +143,15 @@ float UDTRegression::unbinActivations(const BoltVector& output) const {
   return _binning.unbin(predicted_bin_index);
 }
 
-template void UDTRegression::serialize(cereal::BinaryInputArchive&);
-template void UDTRegression::serialize(cereal::BinaryOutputArchive&);
+template void UDTRegression::serialize(cereal::BinaryInputArchive&,
+                                       uint32_t version);
+template void UDTRegression::serialize(cereal::BinaryOutputArchive&,
+                                       uint32_t version);
 
 template <class Archive>
-void UDTRegression::serialize(Archive& archive) {
+void UDTRegression::serialize(Archive& archive, const uint32_t version) {
+  std::string class_name = "UDT_REGRESSION";
+  versions::checkVersion(version, versions::UDT_REGRESSION_VERSION, class_name);
   archive(cereal::base_class<UDTBackend>(this), _model, _dataset_factory,
           _binning, _freeze_hash_tables);
 }
@@ -154,3 +159,5 @@ void UDTRegression::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRegression)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRegression,
+                     thirdai::automl::udt::versions::UDT_REGRESSION_VERSION)

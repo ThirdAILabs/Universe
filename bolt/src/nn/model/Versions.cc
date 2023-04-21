@@ -1,9 +1,9 @@
-#include <exceptions/src/Exceptions.h>
+#include <stdexcept>
 #include "Versions.h"
 
-namespace thirdai::automl::udt::versions {
+namespace thirdai::bolt::nn::model::versions {
 
-void checkVersion(const uint32_t input_version, const uint32_t expected_version,
+void checkVersion(uint32_t input_version, uint32_t expected_version,
                   const std::string& class_name) {
   if (input_version != expected_version) {
     throw std::invalid_argument("Incompatible version. Expected version " +
@@ -13,4 +13,4 @@ void checkVersion(const uint32_t input_version, const uint32_t expected_version,
   }
 }
 
-}  // namespace thirdai::automl::udt::versions
+}  // namespace thirdai::bolt::nn::model::versions

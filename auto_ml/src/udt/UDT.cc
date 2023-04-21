@@ -262,7 +262,8 @@ template void UDT::serialize(cereal::BinaryOutputArchive&, uint32_t version);
 
 template <class Archive>
 void UDT::serialize(Archive& archive, const uint32_t version) {
-  versions::checkVersion(version, versions::UDT_BASE_VERSION, "UDT_BASE");
+  std::string class_name = "UDT_BASE";
+  versions::checkVersion(version, versions::UDT_BASE_VERSION, class_name);
   archive(_backend);
 }
 
@@ -294,4 +295,5 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDT, thirdai::automl::udt::versions::UDT_BASE_VERSION)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDT,
+                     thirdai::automl::udt::versions::UDT_BASE_VERSION)

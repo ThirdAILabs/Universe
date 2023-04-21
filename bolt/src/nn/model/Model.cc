@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/model/Versions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -386,12 +387,15 @@ void Model::verifyAllowedOutputDim() const {
   licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
 }
 
-template void Model::serialize(cereal::BinaryInputArchive&);
-template void Model::serialize(cereal::BinaryOutputArchive&);
+template void Model::serialize(cereal::BinaryInputArchive&, uint32_t version);
+template void Model::serialize(cereal::BinaryOutputArchive&, uint32_t version);
 
 template <class Archive>
-void Model::serialize(Archive& archive) {
+void Model::serialize(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
+
+  std::string class_name = "BOLT_MODEL";
+  versions::checkVersion(version, versions::BOLT_MODEL_VERSION, class_name);
 
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
           _allocation_manager, _train_steps, _model_uuid,
@@ -401,3 +405,6 @@ void Model::serialize(Archive& archive) {
 }
 
 }  // namespace thirdai::bolt::nn::model
+
+CEREAL_CLASS_VERSION(thirdai::bolt::nn::model::Model,
+                     thirdai::bolt::nn::model::versions::BOLT_MODEL_VERSION)

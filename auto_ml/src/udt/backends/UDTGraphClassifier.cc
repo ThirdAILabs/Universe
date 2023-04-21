@@ -2,6 +2,7 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
+#include <auto_ml/src/udt/Versions.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Train.h>
 
@@ -67,11 +68,16 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                return_predicted_class, verbose, return_metrics);
 }
 
-template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&);
-template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&);
+template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,
+                                            uint32_t version);
+template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,
+                                            uint32_t version);
 
 template <class Archive>
-void UDTGraphClassifier::serialize(Archive& archive) {
+void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string class_name = "UDT_GRAPH_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_GRAPH_CLASSIFIER_VERSION,
+                         class_name);
   archive(cereal::base_class<UDTBackend>(this), _classifier, _dataset_manager);
 }
 
@@ -125,3 +131,6 @@ bolt::BoltGraphPtr UDTGraphClassifier::createGNN(
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTGraphClassifier)
+CEREAL_CLASS_VERSION(
+    thirdai::automl::udt::UDTGraphClassifier,
+    thirdai::automl::udt::versions::UDT_GRAPH_CLASSIFIER_VERSION)

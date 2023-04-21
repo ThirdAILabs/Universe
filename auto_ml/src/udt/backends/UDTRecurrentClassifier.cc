@@ -1,5 +1,6 @@
 #include "UDTRecurrentClassifier.h"
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
+#include <auto_ml/src/udt/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -199,11 +200,17 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   return std::move(output);
 }
 
-template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&);
-template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&);
+template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
+                                                uint32_t version);
+template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&,
+                                                uint32_t version);
 
 template <class Archive>
-void UDTRecurrentClassifier::serialize(Archive& archive) {
+void UDTRecurrentClassifier::serialize(Archive& archive,
+                                       const uint32_t version) {
+  std::string class_name = "UDT_RECURRENT_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_RECURRENT_CLASSIFIER_VERSION,
+                         class_name);
   archive(cereal::base_class<UDTBackend>(this), _target, _model,
           _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
 }
@@ -211,3 +218,6 @@ void UDTRecurrentClassifier::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
+CEREAL_CLASS_VERSION(
+    thirdai::automl::udt::UDTRecurrentClassifier,
+    thirdai::automl::udt::versions::UDT_RECURRENT_CLASSIFIER_VERSION)
