@@ -51,14 +51,23 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
                              tensor::TensorPtr& output, uint32_t index_in_batch,
                              bool training) {
   assert(inputs.size() == 1 || inputs.size() == 2);
+
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
-  const BoltVector* labels = nullptr;
-  if (training && inputs.size() == 2) {
-    labels = &inputs[1]->tensor()->getVector(index_in_batch);
+  bool use_labels = training && inputs.size() == 2;
+
+  uint32_t start = output->vectorsForSampleStart(index_in_batch);
+  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+
+  const auto& input = inputs[0]->tensor();
+
+  for (uint32_t i = start; i < end; i++) {
+    const BoltVector* labels = nullptr;
+    if (use_labels) {
+      labels = &inputs[1]->tensor()->getVector(i);
+    }
+    _kernel->forward(input->getVector(i), output->getVector(i), labels);
   }
-  _kernel->forward(inputs[0]->tensor()->getVector(index_in_batch),
-                   output->getVector(index_in_batch), labels);
 }
 
 void FullyConnected::backpropagate(autograd::ComputationList& inputs,
@@ -66,12 +75,19 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
                                    uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
-  BoltVector& input = inputs[0]->tensor()->getVector(index_in_batch);
+  uint32_t start = output->vectorsForSampleStart(index_in_batch);
+  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
 
-  if (input.hasGradients()) {
-    _kernel->backpropagate(input, output->getVector(index_in_batch));
-  } else {
-    _kernel->backpropagateInputLayer(input, output->getVector(index_in_batch));
+  auto& input = inputs[0]->tensor();
+
+  for (uint32_t i = start; i < end; i++) {
+    BoltVector& input_vec = input->getVector(i);
+
+    if (input_vec.hasGradients()) {
+      _kernel->backpropagate(input_vec, output->getVector(i));
+    } else {
+      _kernel->backpropagateInputLayer(input_vec, output->getVector(i));
+    }
   }
 }
 

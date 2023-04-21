@@ -6,6 +6,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVectorUtils.h>
 #include <optional>
 #include <sstream>
@@ -16,54 +17,74 @@ namespace thirdai::bolt::nn::loss {
 ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output,
                                  autograd::ComputationPtr labels)
     : _output(std::move(output)), _labels(std::move(labels)) {
-  if (_output->dim() != _labels->dim()) {
+  if (_output->dims() != _labels->dims()) {
     std::stringstream error;
     error << "Cannot have comparative loss between output of dimension "
-          << _output->dim() << " and labels of dimension " << _labels->dim()
+          << "___"
+          << " and labels of dimension "
+          << "___"
           << ".";
     throw std::invalid_argument(error.str());
   }
 }
 
+namespace {
+constexpr bool DENSE = true;
+constexpr bool SPARSE = false;
+}  // namespace
+
 float ComparativeLoss::loss(uint32_t index_in_batch) const {
-  const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
-  const BoltVector& activations = _output->tensor()->getVector(index_in_batch);
+  const auto& activations = _output->tensor();
+  const auto& labels = _labels->tensor();
 
-  constexpr bool DENSE = true;
-  constexpr bool SPARSE = false;
+  uint32_t start = activations->vectorsForSampleStart(index_in_batch);
+  uint32_t end = activations->vectorsForSampleEnd(index_in_batch);
 
-  if (activations.isDense()) {
-    if (labels.isDense()) {
-      return loss<DENSE, DENSE>(activations, labels);
+  float total_loss = 0;
+  for (uint32_t i = start; i < end; i++) {
+    const BoltVector& act_vec = activations->getVector(i);
+    const BoltVector& label_vec = labels->getVector(i);
+    if (act_vec.isDense()) {
+      if (label_vec.isDense()) {
+        total_loss += loss<DENSE, DENSE>(act_vec, label_vec);
+      } else {
+        total_loss += loss<DENSE, SPARSE>(act_vec, label_vec);
+      }
+    } else {
+      if (label_vec.isDense()) {
+        total_loss += loss<SPARSE, DENSE>(act_vec, label_vec);
+      } else {
+        total_loss += loss<SPARSE, SPARSE>(act_vec, label_vec);
+      }
     }
-    return loss<DENSE, SPARSE>(activations, labels);
   }
-  if (labels.isDense()) {
-    return loss<SPARSE, DENSE>(activations, labels);
-  }
-  return loss<SPARSE, SPARSE>(activations, labels);
+
+  return total_loss;
 }
 
 void ComparativeLoss::gradients(uint32_t index_in_batch,
                                 uint32_t batch_size) const {
-  const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
-  BoltVector& activations = _output->tensor()->getVector(index_in_batch);
+  auto& activations = _output->tensor();
+  const auto& labels = _labels->tensor();
 
-  constexpr bool DENSE = true;
-  constexpr bool SPARSE = false;
+  uint32_t start = activations->vectorsForSampleStart(index_in_batch);
+  uint32_t end = activations->vectorsForSampleEnd(index_in_batch);
 
-  if (activations.isDense()) {
-    if (labels.isDense()) {
-      gradients<DENSE, DENSE>(activations, labels, batch_size);
+  for (uint32_t i = start; i < end; i++) {
+    BoltVector& act_vec = activations->getVector(i);
+    const BoltVector& label_vec = labels->getVector(i);
+    if (act_vec.isDense()) {
+      if (label_vec.isDense()) {
+        gradients<DENSE, DENSE>(act_vec, label_vec, batch_size);
+      } else {
+        gradients<DENSE, SPARSE>(act_vec, label_vec, batch_size);
+      }
     } else {
-      gradients<DENSE, SPARSE>(activations, labels, batch_size);
-    }
-  } else {
-    if (labels.isDense()) {
-      gradients<SPARSE, DENSE>(activations, labels, batch_size);
-
-    } else {
-      gradients<SPARSE, SPARSE>(activations, labels, batch_size);
+      if (label_vec.isDense()) {
+        gradients<SPARSE, DENSE>(act_vec, label_vec, batch_size);
+      } else {
+        gradients<SPARSE, SPARSE>(act_vec, label_vec, batch_size);
+      }
     }
   }
 }

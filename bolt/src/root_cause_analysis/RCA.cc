@@ -16,7 +16,7 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
 
   tensor::TensorPtr tensor;
   if (!vector.isDense()) {
-    tensor = tensor::Tensor::sparse(/* batch_size= */ 1, /* dim= */ dim,
+    tensor = tensor::Tensor::sparse({/* batch_size= */ 1, /* dim= */ dim},
                                     /* nonzeros= */ vector.len);
 
     for (uint32_t i = 0; i < vector.len; i++) {
@@ -28,7 +28,7 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
       tensor->getVector(0).active_neurons[i] = vector.active_neurons[i];
     }
   } else {
-    tensor = tensor::Tensor::dense(/* batch_size= */ 1, /* dim= */ dim);
+    tensor = tensor::Tensor::dense({/* batch_size= */ 1, /* dim= */ dim});
   }
 
   std::copy(vector.activations, vector.activations + vector.len,
@@ -40,9 +40,10 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
 RCAGradients explainNeuronHelper(model::ModelPtr& model,
                                  const tensor::TensorPtr& input,
                                  uint32_t neuron) {
-  auto label = tensor::Tensor::sparse(/* batch_size= */ 1,
-                                      /* dim= */ model->labelDims().at(0),
-                                      /* nonzeros= */ 1);
+  auto label =
+      tensor::Tensor::sparse({/* batch_size= */ 1,
+                              /* dim= */ model->labelDims().at(0).back()},
+                             /* nonzeros= */ 1);
   label->getVector(0).active_neurons[0] = neuron;
   label->getVector(0).activations[0] = 1.0;
 
@@ -72,7 +73,7 @@ RCAGradients explainPrediction(model::ModelPtr& model,
         "RCA is only supported for models with a single input and output.");
   }
 
-  auto input = createTensorWithGrad(input_vec, model->inputDims()[0]);
+  auto input = createTensorWithGrad(input_vec, model->inputDims()[0].back());
 
   // TODO(Nicholas): Should we use sparsity?
   auto output = model->forward({input}, /* use_sparsity= */ false).at(0);
@@ -90,7 +91,7 @@ RCAGradients explainNeuron(model::ModelPtr& model,
         "RCA is only supported for models with a single input and output.");
   }
 
-  auto input = createTensorWithGrad(input_vec, model->inputDims()[0]);
+  auto input = createTensorWithGrad(input_vec, model->inputDims()[0].back());
 
   return explainNeuronHelper(model, input, neuron);
 }

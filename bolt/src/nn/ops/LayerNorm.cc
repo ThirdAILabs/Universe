@@ -28,14 +28,21 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
                         bool training) {
   (void)training;
 
-  const BoltVector& input_vector =
-      inputs.at(0)->tensor()->getVector(index_in_batch);
-  BoltVector& output_vector = output->getVector(index_in_batch);
+  uint32_t start = output->vectorsForSampleStart(index_in_batch);
+  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
 
-  if (input_vector.isDense()) {
-    forward<true>(input_vector, output_vector);
-  } else {
-    forward<false>(input_vector, output_vector);
+  const auto& input = inputs[0]->tensor();
+
+  for (uint32_t i = start; i < end; i++) {
+    const BoltVector& input_vector = input->getVector(index_in_batch);
+
+    BoltVector& output_vector = output->getVector(index_in_batch);
+
+    if (input_vector.isDense()) {
+      forward<true>(input_vector, output_vector);
+    } else {
+      forward<false>(input_vector, output_vector);
+    }
   }
 }
 
@@ -63,13 +70,20 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
 void LayerNorm::backpropagate(autograd::ComputationList& inputs,
                               tensor::TensorPtr& output,
                               uint32_t index_in_batch) {
-  BoltVector& input_vector = inputs.at(0)->tensor()->getVector(index_in_batch);
-  const BoltVector& output_vector = output->getVector(index_in_batch);
+  uint32_t start = output->vectorsForSampleStart(index_in_batch);
+  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
 
-  if (input_vector.isDense()) {
-    backpropagate<true>(input_vector, output_vector);
-  } else {
-    backpropagate<false>(input_vector, output_vector);
+  const auto& input = inputs[0]->tensor();
+
+  for (uint32_t i = start; i < end; i++) {
+    BoltVector& input_vector = input->getVector(index_in_batch);
+    const BoltVector& output_vector = output->getVector(index_in_batch);
+
+    if (input_vector.isDense()) {
+      backpropagate<true>(input_vector, output_vector);
+    } else {
+      backpropagate<false>(input_vector, output_vector);
+    }
   }
 }
 

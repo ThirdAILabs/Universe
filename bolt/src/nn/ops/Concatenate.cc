@@ -29,13 +29,23 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
   (void)training;
   assert(!inputs.empty());
 
-  BoltVector& output_vector = output->getVector(index_in_batch);
+  uint32_t start = output->vectorsForSampleStart(index_in_batch);
+  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+
+  for (uint32_t i = start; i < end; i++) {
+    forward(inputs, output, i);
+  }
+}
+
+void Concatenate::forward(const autograd::ComputationList& inputs,
+                          tensor::TensorPtr& output, uint32_t index) const {
+  BoltVector& output_vector = output->getVector(index);
 
   uint32_t current_offset_in_output = 0;
 
   for (uint32_t input_idx = 0; input_idx < inputs.size(); input_idx++) {
     const BoltVector& input_vector =
-        inputs[input_idx]->tensor()->getVector(index_in_batch);
+        inputs[input_idx]->tensor()->getVector(index);
 
     std::copy(input_vector.activations,
               input_vector.activations + input_vector.len,
@@ -66,12 +76,23 @@ void Concatenate::backpropagate(autograd::ComputationList& inputs,
                                 uint32_t index_in_batch) {
   assert(!inputs.empty());
 
-  BoltVector& output_vector = output->getVector(index_in_batch);
+  uint32_t start = output->vectorsForSampleStart(index_in_batch);
+  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+
+  for (uint32_t i = start; i < end; i++) {
+    backpropagate(inputs, output, i);
+  }
+}
+
+void Concatenate::backpropagate(autograd::ComputationList& inputs,
+                                const tensor::TensorPtr& output,
+                                uint32_t index) {
+  BoltVector& output_vector = output->getVector(index);
 
   uint32_t current_offset_in_output = 0;
 
   for (auto& input : inputs) {
-    BoltVector& input_vector = input->tensor()->getVector(index_in_batch);
+    BoltVector& input_vector = input->tensor()->getVector(index);
 
     if (input_vector.hasGradients()) {
       for (uint32_t i = 0; i < input_vector.len; i++) {
@@ -127,7 +148,6 @@ void Concatenate::summary(std::ostream& summary,
 void verifyNonConcatenatedDimsMatch(const autograd::ComputationList& inputs) {
   if (inputs.empty()) {
     return;
-  
   }
   auto first_dims = inputs.at(0)->dims();
 

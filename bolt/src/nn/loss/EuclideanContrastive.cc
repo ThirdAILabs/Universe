@@ -25,18 +25,18 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
         "The cutoff margin for the distance between dissimilar points must be "
         "greater than 0.");
   }
-  if (_labels->dim() != 1) {
+  // TODO(Nicholas) check other label dims match other output dims
+  if (_labels->dims().back() != 1) {
     throw std::invalid_argument(
         "The dimension of the labels for contrastive loss must equal 1, but "
         "found labels with dimension " +
-        std::to_string(_labels->dim()));
+        std::to_string(_labels->dims().back()));
   }
-  if (_output_1->dim() != _output_2->dim()) {
+  if (_output_1->dims() != _output_2->dims()) {
     throw std::invalid_argument(
         "The dimension of the both outputs for contrastive loss must be the "
         "same, but found output 1 with dimension " +
-        std::to_string(_output_1->dim()) + " and output 2 with dimension " +
-        std::to_string(_output_2->dim()));
+        std::string("___") + " and output 2 with dimension " + "___");
   }
 }
 
@@ -53,37 +53,48 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
   // See bolt/src/nn/derivations/EuclideanContrastive.md for this derivation.
 
   (void)batch_size;
-  float label = _labels->tensor()->getVector(index_in_batch).activations[0];
-  auto& vec_1 = _output_1->tensor()->getVector(index_in_batch);
-  auto& vec_2 = _output_2->tensor()->getVector(index_in_batch);
+  const auto& labels = _labels->tensor();
+  auto& output_1 = _output_1->tensor();
+  auto& output_2 = _output_2->tensor();
 
-  float euclidean_distance =
-      std::sqrt(euclideanDistanceSquared(index_in_batch));
-  // If the euclidean distance between points is 0, they were likely the same
-  // input, or the network is in a degenerative state. Either way, the gradient
-  // will be nan or inf, and we don't want this so we treat it as a NOOP.
-  if (euclidean_distance == 0) {
-    return;
+  uint32_t start = labels->vectorsForSampleStart(index_in_batch);
+  uint32_t end = labels->vectorsForSampleEnd(index_in_batch);
+
+  for (uint32_t i = start; i < end; i++) {
+    auto& vec_1 = output_1->getVector(i);
+    auto& vec_2 = output_2->getVector(i);
+    float label = labels->getVector(i).activations[0];
+
+    float euclidean_distance =
+        std::sqrt(euclideanDistanceSquared(index_in_batch));
+    // If the euclidean distance between points is 0, they were likely the same
+    // input, or the network is in a degenerative state. Either way, the
+    // gradient will be nan or inf, and we don't want this so we treat it as a
+    // NOOP.
+    if (euclidean_distance == 0) {
+      return;
+    }
+    float multiplier =
+        (label -
+         ((1 - label) *
+          std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0) /
+          euclidean_distance)) /
+        batch_size;
+
+    bolt_vector::visitPair(
+        vec_1, vec_2,
+        [&vec_1, &vec_2, multiplier](FoundActiveNeuron neuron_1,
+                                     FoundActiveNeuron neuron_2) {
+          float update =
+              multiplier * (neuron_1.activation - neuron_2.activation);
+          if (neuron_1.pos) {
+            vec_1.gradients[neuron_1.pos.value()] -= update;
+          }
+          if (neuron_2.pos) {
+            vec_2.gradients[neuron_2.pos.value()] += update;
+          }
+        });
   }
-  float multiplier =
-      (label -
-       ((1 - label) *
-        std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0) /
-        euclidean_distance)) /
-      batch_size;
-
-  bolt_vector::visitPair(
-      vec_1, vec_2,
-      [&vec_1, &vec_2, multiplier](FoundActiveNeuron neuron_1,
-                                   FoundActiveNeuron neuron_2) {
-        float update = multiplier * (neuron_1.activation - neuron_2.activation);
-        if (neuron_1.pos) {
-          vec_1.gradients[neuron_1.pos.value()] -= update;
-        }
-        if (neuron_2.pos) {
-          vec_2.gradients[neuron_2.pos.value()] += update;
-        }
-      });
 }
 
 float EuclideanContrastive::loss(uint32_t index_in_batch) const {
