@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
+#include <utils/CerealWrapper.h>
 #include <vector>
 
 namespace thirdai::hashing {
@@ -45,3 +46,5 @@ class DWTAHashFunction final : public HashFunction {
 };
 
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::hashing::DWTAHashFunction)

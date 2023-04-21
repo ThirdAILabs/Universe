@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <utils/CerealWrapper.h>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
@@ -62,3 +63,5 @@ class LayerNorm final : public Op,
 using LayerNormPtr = std::shared_ptr<LayerNorm>;
 
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::ops::LayerNorm)

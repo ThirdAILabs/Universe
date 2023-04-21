@@ -3,6 +3,7 @@
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
+#include <utils/CerealWrapper.h>
 
 namespace thirdai::bolt::nn::ops {
 
@@ -71,3 +72,5 @@ class Embedding final : public Op,
 using EmbeddingPtr = std::shared_ptr<Embedding>;
 
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::ops::Embedding)

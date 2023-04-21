@@ -39,4 +39,4 @@ void BinaryCrossEntropy::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt::nn::loss
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::BinaryCrossEntropy)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::nn::loss::BinaryCrossEntropy)

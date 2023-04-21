@@ -183,4 +183,4 @@ Node::NodeState LayerNormNode::getState() const {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::LayerNormNode)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::LayerNormNode)

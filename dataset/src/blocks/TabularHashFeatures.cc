@@ -219,4 +219,4 @@ void forEachPairgramFromUnigram(const std::vector<uint32_t>& unigram_hashes,
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashFeatures)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::TabularHashFeatures)

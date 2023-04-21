@@ -157,4 +157,4 @@ void RecurrenceAugmentation::serialize(Archive& archive) {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::RecurrenceAugmentation)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::RecurrenceAugmentation)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
+#include <utils/CerealWrapper.h>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
@@ -50,3 +51,5 @@ class Concatenate final : public Op,
 using ConcatenatePtr = std::shared_ptr<Concatenate>;
 
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::ops::Concatenate)

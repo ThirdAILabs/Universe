@@ -11,6 +11,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <utils/CerealWrapper.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -363,3 +364,11 @@ using TemporalRelationships =
     std::map<std::string, std::vector<TemporalConfig>>;
 
 }  // namespace thirdai::automl::data
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::CategoricalDataType)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::NumericalDataType)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::DateDataType)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::TextDataType)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::SequenceDataType)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::NeighborsDataType)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::data::NodeIDDataType)

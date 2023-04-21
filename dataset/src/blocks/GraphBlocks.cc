@@ -159,6 +159,6 @@ void GraphBuilderBlock::serialize(Archive& archive) {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::NormalizedNeighborVectorsBlock)
-CEREAL_REGISTER_TYPE(thirdai::dataset::NeighborTokensBlock)
-CEREAL_REGISTER_TYPE(thirdai::dataset::GraphBuilderBlock)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::NormalizedNeighborVectorsBlock)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::NeighborTokensBlock)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::GraphBuilderBlock)

@@ -4,6 +4,7 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <utils/CerealWrapper.h>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -111,3 +112,7 @@ class RandomSamplingConfig final : public SamplingConfig {
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::DWTASamplingConfig)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::FastSRPSamplingConfig)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::RandomSamplingConfig)

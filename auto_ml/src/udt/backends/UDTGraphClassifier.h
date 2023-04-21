@@ -4,6 +4,7 @@
 #include <auto_ml/src/featurization/GraphDatasetManager.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <utils/CerealWrapper.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -65,3 +66,5 @@ class UDTGraphClassifier final : public UDTBackend {
 };
 
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::udt::UDTGraphClassifier)

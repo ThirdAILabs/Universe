@@ -251,4 +251,4 @@ void UDTClassifier::serialize(Archive& archive) {
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTClassifier)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::udt::UDTClassifier)

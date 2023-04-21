@@ -2,6 +2,7 @@
 
 #include "Loss.h"
 #include <bolt/src/nn/ops/Op.h>
+#include <utils/CerealWrapper.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -48,3 +49,5 @@ class EuclideanContrastive final : public Loss {
 using EuclideanContrastivePtr = std::shared_ptr<EuclideanContrastive>;
 
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::loss::EuclideanContrastive)

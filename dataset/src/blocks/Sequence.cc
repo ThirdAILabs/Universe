@@ -60,4 +60,4 @@ uint32_t SequenceBlock::sequenceHash(std::string_view element,
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::SequenceBlock)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::SequenceBlock)

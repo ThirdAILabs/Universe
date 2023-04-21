@@ -8,6 +8,7 @@
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
+#include <utils/CerealWrapper.h>
 #include <optional>
 #include <string>
 #include <vector>
@@ -58,3 +59,5 @@ class SentenceUnigram : public Transformation {
 };
 
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::data::SentenceUnigram)

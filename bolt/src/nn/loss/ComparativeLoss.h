@@ -3,6 +3,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <utils/CerealWrapper.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -63,3 +64,5 @@ class ComparativeLoss : public Loss {
 };
 
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::loss::ComparativeLoss)

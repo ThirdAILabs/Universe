@@ -123,6 +123,6 @@ void RandomSamplingConfig::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::DWTASamplingConfig)
-CEREAL_REGISTER_TYPE(thirdai::bolt::FastSRPSamplingConfig)
-CEREAL_REGISTER_TYPE(thirdai::bolt::RandomSamplingConfig)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::DWTASamplingConfig)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::FastSRPSamplingConfig)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::RandomSamplingConfig)

@@ -7,6 +7,7 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <utils/CerealWrapper.h>
 #include <utils/StringManipulation.h>
 #include <cstdint>
 #include <memory>
@@ -64,3 +65,5 @@ class SequenceBlock : public Block {
 using SequenceBlockPtr = std::shared_ptr<SequenceBlock>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::SequenceBlock)

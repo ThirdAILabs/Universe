@@ -221,4 +221,4 @@ TextGenerationFeaturizerPtr TextGenerationFeaturizer::load_stream(
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::TextGenerationFeaturizer)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::TextGenerationFeaturizer)

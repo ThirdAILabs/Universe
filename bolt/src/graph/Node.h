@@ -4,6 +4,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/CerealWrapper.h>
 #include <queue>
 #include <stdexcept>
 #include <string>
@@ -231,3 +232,5 @@ class Node {
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::Node)

@@ -94,4 +94,4 @@ dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
 }
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTSVMClassifier)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::udt::UDTSVMClassifier)

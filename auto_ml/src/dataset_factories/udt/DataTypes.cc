@@ -33,10 +33,10 @@ NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type) {
 
 }  // namespace thirdai::automl::data
 
-CEREAL_REGISTER_TYPE(thirdai::automl::data::CategoricalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NumericalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::DateDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::TextDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::SequenceDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NeighborsDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NodeIDDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::CategoricalDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::NumericalDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::DateDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::TextDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::SequenceDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::NeighborsDataType)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::data::NodeIDDataType)

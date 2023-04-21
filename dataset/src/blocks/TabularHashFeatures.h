@@ -10,6 +10,7 @@
 #include <hashing/src/UniversalHash.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <utils/CerealWrapper.h>
 #include <cstdlib>
 #include <optional>
 #include <unordered_map>
@@ -125,3 +126,5 @@ class TabularHashFeatures final : public Block {
 using TabularHashFeaturesPtr = std::shared_ptr<TabularHashFeatures>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::TabularHashFeatures)

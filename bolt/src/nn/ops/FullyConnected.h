@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <utils/CerealWrapper.h>
 #include <limits>
 #include <memory>
 
@@ -126,3 +127,5 @@ class FullyConnected final
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::ops::FullyConnected)

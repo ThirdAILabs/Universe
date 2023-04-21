@@ -153,4 +153,4 @@ void UDTRegression::serialize(Archive& archive) {
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRegression)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::udt::UDTRegression)

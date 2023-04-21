@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashFunction.h"
+#include <utils/CerealWrapper.h>
 #include <cstdint>
 
 namespace thirdai::hashing {
@@ -38,3 +39,5 @@ class FastSRP final : public HashFunction {
 };
 
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::hashing::FastSRP)

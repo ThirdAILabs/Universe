@@ -217,4 +217,4 @@ struct specialize<Archive, thirdai::bolt::nn::ops::FullyConnected,
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::FullyConnected)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::nn::ops::FullyConnected)

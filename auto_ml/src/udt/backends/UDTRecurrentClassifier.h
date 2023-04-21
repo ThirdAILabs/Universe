@@ -11,6 +11,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <utils/CerealWrapper.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -85,3 +86,5 @@ class UDTRecurrentClassifier final : public UDTBackend {
 };
 
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::udt::UDTRecurrentClassifier)

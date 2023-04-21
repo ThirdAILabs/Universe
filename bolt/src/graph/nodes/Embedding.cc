@@ -123,4 +123,4 @@ void EmbeddingNode::summarizeImpl(std::stringstream& summary,
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::EmbeddingNode)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::EmbeddingNode)

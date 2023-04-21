@@ -4,6 +4,7 @@
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/CerealWrapper.h>
 #include <cstdlib>
 #include <exception>
 #include <limits>
@@ -160,3 +161,7 @@ class GraphBuilderBlock final : public Block {
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::NormalizedNeighborVectorsBlock)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::NeighborTokensBlock)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::GraphBuilderBlock)

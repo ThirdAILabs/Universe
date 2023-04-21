@@ -3,6 +3,7 @@
 #include "MachIndex.h"
 #include <dataset/src/blocks/Categorical.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/CerealWrapper.h>
 #include <variant>
 
 namespace thirdai::dataset::tests {
@@ -57,3 +58,5 @@ class MachBlock final : public CategoricalBlock {
 using MachBlockPtr = std::shared_ptr<MachBlock>;
 
 }  // namespace thirdai::dataset::mach
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::mach::MachBlock)

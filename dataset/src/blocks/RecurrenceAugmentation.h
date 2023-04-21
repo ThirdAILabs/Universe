@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <utils/CerealWrapper.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
@@ -96,3 +97,5 @@ class RecurrenceAugmentation final : public Augmentation {
 using RecurrenceAugmentationPtr = std::shared_ptr<RecurrenceAugmentation>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::RecurrenceAugmentation)

@@ -107,5 +107,5 @@ uint32_t StringCategoricalMachIndex::updateInternalIndex(
 
 }  // namespace thirdai::dataset::mach
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::mach::StringCategoricalMachIndex)
-CEREAL_REGISTER_TYPE(thirdai::dataset::mach::NumericCategoricalMachIndex)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::mach::StringCategoricalMachIndex)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::mach::NumericCategoricalMachIndex)

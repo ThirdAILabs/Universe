@@ -201,7 +201,5 @@ template void SampledHashTable<uint64_t>::serialize(
 
 }  // namespace thirdai::hashtable
 
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint8_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::hashtable::SampledHashTable<uint32_t>)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::hashtable::SampledHashTable<uint64_t>)

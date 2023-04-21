@@ -5,6 +5,7 @@
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <utils/CerealWrapper.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -66,3 +67,5 @@ class UDTRegression final : public UDTBackend {
 };
 
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::udt::UDTRegression)

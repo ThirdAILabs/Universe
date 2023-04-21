@@ -303,4 +303,4 @@ void UDTMachClassifier::serialize(Archive& archive) {
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::udt::UDTMachClassifier)

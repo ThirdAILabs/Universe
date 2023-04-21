@@ -6,6 +6,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
 #include <json/include/nlohmann/json.hpp>
+#include <utils/CerealWrapper.h>
 #include <limits>
 #include <stdexcept>
 
@@ -143,3 +144,5 @@ class TextGenerationFeaturizer final : public Featurizer {
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::TextGenerationFeaturizer)

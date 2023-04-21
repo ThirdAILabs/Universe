@@ -124,3 +124,5 @@ class FullyConnectedNode final
 using FullyConnectedNodePtr = std::shared_ptr<FullyConnectedNode>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::FullyConnectedNode)

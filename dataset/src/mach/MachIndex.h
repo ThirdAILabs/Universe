@@ -10,6 +10,7 @@
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <utils/CerealWrapper.h>
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -161,3 +162,6 @@ static NumericCategoricalMachIndexPtr asNumericIndex(
 }
 
 }  // namespace thirdai::dataset::mach
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::mach::StringCategoricalMachIndex)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::dataset::mach::NumericCategoricalMachIndex)

@@ -96,4 +96,4 @@ template void SentenceUnigram::serialize<cereal::PortableBinaryOutputArchive>(
 
 }  // namespace thirdai::data
 
-CEREAL_REGISTER_TYPE(thirdai::data::SentenceUnigram)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::data::SentenceUnigram)

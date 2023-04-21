@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashTable.h"
+#include <utils/CerealWrapper.h>
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
@@ -132,3 +133,6 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 };
 
 }  // namespace thirdai::hashtable
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::hashtable::SampledHashTable<uint32_t>)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::hashtable::SampledHashTable<uint64_t>)

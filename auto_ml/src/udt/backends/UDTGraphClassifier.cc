@@ -124,4 +124,4 @@ bolt::BoltGraphPtr UDTGraphClassifier::createGNN(
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTGraphClassifier)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::udt::UDTGraphClassifier)

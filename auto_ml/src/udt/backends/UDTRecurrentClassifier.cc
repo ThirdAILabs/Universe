@@ -210,4 +210,4 @@ void UDTRecurrentClassifier::serialize(Archive& archive) {
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::automl::udt::UDTRecurrentClassifier)

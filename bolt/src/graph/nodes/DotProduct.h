@@ -107,3 +107,5 @@ class DotProductNode final
 using DotProductNodePtr = std::shared_ptr<DotProductNode>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::DotProductNode)

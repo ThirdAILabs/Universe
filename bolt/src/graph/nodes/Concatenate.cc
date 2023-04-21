@@ -215,4 +215,4 @@ Node::NodeState ConcatenateNode::getState() const {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::ConcatenateNode)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::ConcatenateNode)

@@ -141,4 +141,4 @@ template void DWTAHashFunction::serialize(cereal::BinaryOutputArchive&);
 
 }  // namespace thirdai::hashing
 
-CEREAL_REGISTER_TYPE(thirdai::hashing::DWTAHashFunction)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::hashing::DWTAHashFunction)

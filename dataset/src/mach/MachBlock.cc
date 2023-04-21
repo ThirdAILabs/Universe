@@ -30,4 +30,4 @@ void MachBlock::encodeCategory(std::string_view category,
 
 }  // namespace thirdai::dataset::mach
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::mach::MachBlock)
+CEREAL_REGISTER_TYPE_SOURCE(thirdai::dataset::mach::MachBlock)

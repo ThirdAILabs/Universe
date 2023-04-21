@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <utils/CerealWrapper.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
 #include <memory>
@@ -204,3 +205,10 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
 }
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::CategoricalCrossEntropyLoss)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::BinaryCrossEntropyLoss)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::MeanSquaredError)
+CEREAL_REGISTER_TYPE_HEADER(
+    thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::MarginBCE)

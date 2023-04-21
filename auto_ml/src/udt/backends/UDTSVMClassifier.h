@@ -5,6 +5,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/DataSource.h>
+#include <utils/CerealWrapper.h>
 
 namespace thirdai::automl::udt {
 
@@ -59,3 +60,5 @@ class UDTSVMClassifier final : public UDTBackend {
 };
 
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::automl::udt::UDTSVMClassifier)

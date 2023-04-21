@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
+#include <utils/CerealWrapper.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -35,3 +36,5 @@ class CategoricalCrossEntropy final : public ComparativeLoss {
 using CategoricalCrossEntropyPtr = std::shared_ptr<CategoricalCrossEntropy>;
 
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE_HEADER(thirdai::bolt::nn::loss::CategoricalCrossEntropy)
