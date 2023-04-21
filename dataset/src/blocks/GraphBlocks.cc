@@ -63,8 +63,6 @@ void NormalizedNeighborVectorsBlock::buildSegment(ColumnarInputSample& input,
   }
 
   // This normalizes the feature vector by the L1 sum
-  // TODO(Josh): Try out different ways of normalizing in future experiments/
-  // an ablation study
   float vector_sum =
       std::reduce(sum_neighbor_features.begin(), sum_neighbor_features.end());
   if (vector_sum != 0) {
@@ -141,7 +139,7 @@ void GraphBuilderBlock::buildSegment(ColumnarInputSample& input,
     dense_feature_vector.push_back(parseFloat(feature_col, input));
   }
 
-  // TODO(Josh): Make this delimiter configurable
+  // TODO(Any): Make this delimiter configurable
   std::vector<uint64_t> neighbors = parseUint64Array(
       std::string(input.column(_neighbor_col)), /* delimiter = */ ' ');
 

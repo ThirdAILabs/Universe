@@ -14,8 +14,7 @@ class MachBlockTest : public testing::Test {
  public:
   static mach::StringCategoricalMachIndexPtr stringMachIndex() {
     return mach::StringCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* max_elements = */ 1000);
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
   }
 
   static mach::NumericCategoricalMachIndexPtr numericMachIndex() {

@@ -5,13 +5,12 @@
 
 using thirdai::hashing::CosineSim;
 
-// TODO(josh): Move these to a seperate header file
 uint32_t num_tests = 100, seed = 42;
 uint32_t hashes_per_table = 1, num_tables = 10000, dim = 1000;
 float sparsity = 0.3;
 float max_sim_diff = 0.05, max_avg_sim_diff = 0.01;
 CosineSim cosine_sim_func(seed);
-thirdai::hashing::SparseRandomProjection normal_srp(dim, hashes_per_table,
+thirdai::hashing::SignedRandomProjection normal_srp(dim, hashes_per_table,
                                                     num_tables, seed);
 
 TEST(SRPTest, SparseHashing) {

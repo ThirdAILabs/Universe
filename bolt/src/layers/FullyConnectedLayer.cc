@@ -778,8 +778,9 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
 
   _sparse_dim = _sparsity * _dim;
 
-  // TODO(josh): Right now this is using the autotuning for DWTA even if this
-  // hash function isn't DWTA. Add autotuning for other hash function types.
+  // TODO(Nick): Right now we always switch to DWTA after setting sparsity
+  // instead of autotuning for whatever the existing hash function was. We
+  // should instead autotune the original hash function.
   if (_sparsity < 1.0) {
     auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
     std::random_device rd;

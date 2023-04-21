@@ -14,9 +14,6 @@ thirdai.egg-info
 # Ignore .serialized files
 *.serialized 
 
-# Ignore this binary server file. TODO(Josh): prevent it from being generated
-licensing/src/methods/server/data.pqt 
-
 # Ignore zipped files
 *.bz2
 *.gz

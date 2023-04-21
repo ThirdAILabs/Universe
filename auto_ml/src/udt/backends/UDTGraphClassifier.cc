@@ -22,7 +22,7 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
   _dataset_manager = std::make_shared<data::GraphDatasetManager>(
       data_types, target_col, n_target_classes, options);
 
-  // TODO(Josh): Add customization/autotuning like in UDTClassifier
+  // TODO(Any): Add customization/autotuning like in UDTClassifier
   auto model = createGNN(
       /* input_dims = */ _dataset_manager->getInputDims(),
       /* output_dim = */ _dataset_manager->getLabelDim());
