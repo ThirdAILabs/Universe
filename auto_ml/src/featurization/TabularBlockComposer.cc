@@ -89,10 +89,11 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
         // want is unigrams of the "words" separated by some delimiter
         // 2. text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
-        blocks.push_back(dataset::NGramTextBlock::make(
-            col_name, /* n= */ 1,
-            /* dim= */ std::numeric_limits<uint32_t>::max(),
-            *categorical->delimiter));
+        blocks.push_back(dataset::TextBlock::make(
+            /* col = */ col_name, /* tokenizer = */
+            dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
+            /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
             /* identifier= */ col_name));

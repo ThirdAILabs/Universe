@@ -28,21 +28,25 @@ class TextTokenizer {
 
 using TextTokenizerPtr = std::shared_ptr<TextTokenizer>;
 
-class WordTokenizer : public TextTokenizer {
+class NaiveSplitTokenizer : public TextTokenizer {
  public:
-  WordTokenizer() {}
+  explicit NaiveSplitTokenizer(char delimiter = ' ') : _delimiter(delimiter) {}
 
-  static auto make() { return std::make_shared<WordTokenizer>(); }
+  static auto make(char delimiter = ' ') {
+    return std::make_shared<NaiveSplitTokenizer>(delimiter);
+  }
 
   std::vector<std::string_view> apply(const std::string_view& input) final {
-    return text::split(input, ' ');
+    return text::split(input, _delimiter);
   }
 
  private:
+  char _delimiter;
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextTokenizer>(this));
+    archive(cereal::base_class<TextTokenizer>(this), _delimiter);
   }
 };
 

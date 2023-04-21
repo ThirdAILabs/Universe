@@ -10,7 +10,18 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
     return dataset::CharKGramTokenizer::make(/* k = */ k);
   }
 
-  throw std::invalid_argument("'char-k' (k is a number, e.g. 'char-5'), ");
+  if (string == "words") {
+    return dataset::NaiveSplitTokenizer::make();
+  }
+
+  if (string == "words-with-punctuation") {
+    return dataset::WordPunctTokenizer::make();
+  }
+
+  throw std::invalid_argument(
+      "Created text column with invalid tokenizer '" + string +
+      "', please choose one of 'words', 'words-with-punctuation', or 'char-k' "
+      "(k is a number, e.g. 'char-5').");
 }
 
 dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
@@ -24,7 +35,7 @@ dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
   if (contextual_encodings.count(string) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + string +
-        "' please choose one of 'none', 'local', or 'global'.");
+        "', please choose one of 'none', 'local', or 'global'.");
   };
 
   return contextual_encodings[string];

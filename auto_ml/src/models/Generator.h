@@ -486,9 +486,10 @@ class QueryCandidateGenerator {
     input_blocks.reserve(n_grams.size());
 
     for (auto n_gram : n_grams) {
-      input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
+      input_blocks.emplace_back(dataset::TextBlock::make(
           /* col = */ column_index,
-          /* k = */ n_gram,
+          /* tokenizer = */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
+          /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
           /* dim = */ _query_generator_config->defaultTextEncodingDim()));
     }
 
