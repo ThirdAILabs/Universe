@@ -17,6 +17,13 @@ class TextTokenizer {
       const std::string_view& input) = 0;
 
   virtual ~TextTokenizer() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using TextTokenizerPtr = std::shared_ptr<TextTokenizer>;
@@ -30,6 +37,13 @@ class WordTokenizer : public TextTokenizer {
   std::vector<std::string_view> apply(const std::string_view& input) final {
     return text::split(input, ' ');
   }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextTokenizer>(this));
+  }
 };
 
 class WordPunctTokenizer : public TextTokenizer {
@@ -40,6 +54,13 @@ class WordPunctTokenizer : public TextTokenizer {
 
   std::vector<std::string_view> apply(const std::string_view& input) final {
     return text::tokenizeSentence(input);
+  }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextTokenizer>(this));
   }
 };
 
@@ -57,6 +78,14 @@ class CharKGramTokenizer : public TextTokenizer {
 
  private:
   uint32_t _k;
+
+  CharKGramTokenizer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextTokenizer>(this), _k);
+  }
 };
 
 class TextEncoder {
@@ -74,6 +103,13 @@ class TextEncoder {
   }
 
   virtual ~TextEncoder() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using TextEncoderPtr = std::shared_ptr<TextEncoder>;
@@ -91,6 +127,14 @@ class NGramEncoder : public TextEncoder {
 
  private:
   uint32_t _n;
+
+  NGramEncoder() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextEncoder>(this), _n);
+  }
 };
 
 class PairGramEncoder : public TextEncoder {
@@ -102,6 +146,13 @@ class PairGramEncoder : public TextEncoder {
   std::vector<uint32_t> apply(
       const std::vector<std::string_view>& tokens) final {
     return token_encoding::pairgrams(token_encoding::hashTokens(tokens));
+  }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextEncoder>(this));
   }
 };
 
