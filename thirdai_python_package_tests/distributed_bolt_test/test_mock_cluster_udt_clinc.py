@@ -32,11 +32,6 @@ def get_clinc_udt_model(integer_target=False):
 
 
 # Tests that we can start a distributed job that trains for 0 epochs.
-# This is currently necessary because running ray distributed jobs in the
-# cibuildwheel docker container doesn't work: actors get killed randomly.
-# We still want a  release test that tests distributed and makes sure licensing
-# works, so this is the best we can do for now.
-# TODO(Josh/Pratik): Look into getting ray working with cibuildwheel
 @pytest.mark.release
 def test_distributed_start(ray_two_node_cluster_config):
     udt_model = get_clinc_udt_model(integer_target=True)

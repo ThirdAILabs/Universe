@@ -9,8 +9,7 @@
 #include <unordered_set>
 #include <utility>
 
-// TODO(josh): Add DWTA and Jaccard similarities and test those hash classes
-// TOOD(josh): Add Euclidean similarity
+// TODO(Any): Add a similarity test for DWTA
 namespace thirdai::hashing {
 
 struct SparseVecPair {

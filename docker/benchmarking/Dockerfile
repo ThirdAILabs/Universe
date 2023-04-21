@@ -38,7 +38,6 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
 # This means the Dockerfile needs to be built from the root directory
 # This will also copy everything, including files not tracked by git (build
 # files, venv, etc). 
-# TODO(josh): Copy just what we need, and remove the rm command below
 COPY . /Universe/
 
 RUN rm -rf /Universe/build

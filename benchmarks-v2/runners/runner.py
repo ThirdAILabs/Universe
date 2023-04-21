@@ -1,7 +1,8 @@
+import json
 import os
 from abc import ABC, abstractmethod
 
-from thirdai import bolt
+from thirdai import bolt, deployment
 
 
 class Runner(ABC):
@@ -21,7 +22,9 @@ class Runner(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_average_predict_time(model, test_file, config, num_samples=10000):
+    def get_average_predict_time(
+        model, test_file, config, path_prefix, num_samples=10000
+    ):
         raise NotImplementedError
 
     @staticmethod

@@ -102,8 +102,6 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
   std::string neighbor_col_name, node_id_col_name;
   GraphBlocks graph_blocks;
 
-  // TODO(Josh): Look in to combining non-numeric data from neighbors as well,
-  // e.g. for a string column concatenating each neighbor's text.
   for (const auto& [col_name, data_type] : data_types) {
     if (asNeighbors(data_type)) {
       neighbor_col_name = col_name;
@@ -117,7 +115,7 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
   GraphInfoPtr graph_info =
       std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
 
-  // TODO(Josh): Do a thorough ablation study (this block seems only marginally
+  // TODO(Any): Do a thorough ablation study (this block seems only marginally
   // useful on yelp). This should include looking at binning vs. non binning
   // for both these average features and the normal features.
   graph_blocks.normalized_neighbors_block =

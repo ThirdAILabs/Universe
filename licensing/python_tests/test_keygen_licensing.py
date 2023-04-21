@@ -10,7 +10,6 @@ pytestmark = [pytest.mark.release]
 # work. However, the fact that test_file_licensing.py passes, which includes bad
 # license file checks, shows that when we don't activate Keygen we do indeed
 # fall back to license files.
-# TODO(Josh): Consider how to refactor CI to test this more clearly.
 
 # I created this key on Keygen, and it is good for a while
 GOOD_KEY = "94TN-9LUT-KXWK-K4VE-CPEW-3U9K-3R7H-HREL"

@@ -1,20 +1,19 @@
-import json
 import os
 import time
 
 import numpy as np
 import pandas as pd
-from thirdai import bolt, deployment
 
 from ..configs.temporal_configs import *
+from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
 from ..configs.utils import AdditionalMetricCallback
 
 class TemporalRunner(Runner):
-    config_type = UDTBenchmarkConfig
+    config_type = TemporalBenchmarkConfig
 
     @staticmethod
-    def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
+    def run_benchmark(config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger):
         train_file = (
             os.path.join(path_prefix, config.train_file)
             if config.train_file is not None
@@ -53,10 +52,17 @@ class TemporalRunner(Runner):
             model.reset_temporal_trackers()
 
         # indexing train file so that train data user history is used for predictions
-        model.index_batch(train_file)
+        train_data = pd.read_csv(
+            train_file, low_memory=False, delimiter=config.delimiter
+        )
+        for _, row in train_data.iterrows():
+            sample = dict(row)
+            sample = {x: str(y) for x, y in sample.items()}
+            model.index(sample)
+        del train_data
 
         average_predict_time_ms = TemporalRunner.get_average_predict_time(
-            model, test_file, config, num_samples=10000
+            model, test_file, config, path_prefix, num_samples=10000
         )
 
         print(f"average_predict_time_ms = {average_predict_time_ms}ms")
@@ -66,8 +72,10 @@ class TemporalRunner(Runner):
             )
 
     @staticmethod
-    def get_average_predict_time(model, test_file, config, num_samples=10000):
-        test_data = pd.read_csv(test_file, low_memory=False)
+    def get_average_predict_time(
+        model, test_file, config, path_prefix, num_samples=10000
+    ):
+        test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         sorted_idxs = np.sort(np.random.randint(0, len(test_data), size=num_samples))
 
         test_data_samples = []
@@ -78,11 +86,12 @@ class TemporalRunner(Runner):
 
         test_data_sample = test_data.iloc[sorted_idxs]
         inference_samples = []
+        sample_col_names = config.get_data_types(path_prefix).keys()
         for i, (_, row) in enumerate(test_data_sample.iterrows()):
             sample = dict(row)
             label = sample[config.target]
             del sample[config.target]
-            sample = {x: str(y) for x, y in sample.items()}
+            sample = {x: str(y) for x, y in sample.items() if x in sample_col_names}
             inference_samples.append((sample, label, sorted_idxs[i]))
 
         start_time = time.time()

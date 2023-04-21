@@ -128,7 +128,7 @@ bolt::nn::model::ModelPtr TextEmbeddingModel::createEmbeddingModel(
 
   auto output = embedding_op->apply(input);
 
-  // TODO(Josh/Nick): This label and loss is only to get the model to compile.
+  // TODO(Nick): This label and loss is only to get the model to compile.
   // Remove once it is possible to create a model without a loss.
   auto label = bolt::nn::ops::Input::make(/* dim= */ embedding_op->dim());
   auto loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, label);
