@@ -46,7 +46,7 @@ UDTMachClassifier::UDTMachClassifier(
   if (integer_target) {
     mach_index = dataset::mach::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* max_elements = */ n_target_classes);
+        /* num_elements = */ n_target_classes);
   } else {
     mach_index = dataset::mach::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes);
@@ -323,15 +323,16 @@ void UDTMachClassifier::introduceDocument(
 
 void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
                                        const Label& new_label) {
-  BoltBatch output = _classifier->model()->predictSingleBatch(
-      _dataset_factory->featurizeInputBatch(samples),
-      /* sparse_inference = */ false);
+  auto output = _classifier->model()
+                    ->forward(_dataset_factory->featurizeInputBatch(samples),
+                              /* use_sparsity = */ false)
+                    .at(0);
 
   // map from output hash to an aggregated pair of (frequency, score)
   std::unordered_map<uint32_t, std::pair<uint32_t, float>> hash_freq_and_scores;
-  for (const auto& vector : output) {
-    auto top_K =
-        vector.findKLargestActivations(_mach_label_block->index()->numHashes());
+  for (uint32_t i = 0; i < output->batchSize(); i++) {
+    auto top_K = output->getVector(i).findKLargestActivations(
+        _mach_label_block->index()->numHashes());
 
     while (!top_K.empty()) {
       auto [activation, active_neuron] = top_K.top();
