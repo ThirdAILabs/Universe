@@ -92,7 +92,15 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
-uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
+tensor::Dims FullyConnected::dims(
+    const autograd::ComputationList& inputs) const {
+  assert(inputs.size() == 1);
+
+  auto dims = inputs.at(0)->dims();
+  dims.back() = _kernel->getDim();
+
+  return dims;
+}
 
 std::optional<uint32_t> FullyConnected::nonzeros(
     const autograd::ComputationList& inputs, bool use_sparsity) const {
@@ -136,11 +144,13 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
 }
 
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
-  if (input->dim() != _kernel->getInputDim()) {
+  uint32_t input_dim = input->dims().back();
+
+  if (input_dim != _kernel->getInputDim()) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
           << _kernel->getDim() << ", " << _kernel->getInputDim()
-          << ") to input tensor with dim " << input->dim() << ".";
+          << ") to input tensor with dim " << input_dim << ".";
 
     throw std::invalid_argument(error.str());
   }

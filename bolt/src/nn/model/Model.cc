@@ -187,18 +187,18 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
-std::vector<uint32_t> Model::inputDims() const {
-  std::vector<uint32_t> dims;
+std::vector<std::vector<uint32_t>> Model::inputDims() const {
+  std::vector<std::vector<uint32_t>> dims;
   for (const auto& input : _inputs) {
-    dims.push_back(input->dim());
+    dims.push_back(input->dims());
   }
   return dims;
 }
 
-std::vector<uint32_t> Model::labelDims() const {
-  std::vector<uint32_t> dims;
+std::vector<std::vector<uint32_t>> Model::labelDims() const {
+  std::vector<std::vector<uint32_t>> dims;
   for (const auto& label : _labels) {
-    dims.push_back(label->dim());
+    dims.push_back(label->dims());
   }
   return dims;
 }

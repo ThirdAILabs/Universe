@@ -15,12 +15,13 @@ std::string nextInputName() {
   return "input_" + std::to_string(++constructed);
 }
 
-Input::Input(uint32_t dim, std::optional<uint32_t> nonzeros)
-    : Op(nextInputName()), _dim(dim), _nonzeros(nonzeros) {}
+Input::Input(std::vector<uint32_t> dims, std::optional<uint32_t> nonzeros)
+    : Op(nextInputName()), _dims(std::move(dims)), _nonzeros(nonzeros) {}
 
 autograd::ComputationPtr Input::make(uint32_t dim) {
   return autograd::Computation::make(
-      std::shared_ptr<Input>(new Input(dim, /* nonzeros= */ std::nullopt)), {});
+      std::shared_ptr<Input>(new Input({dim}, /* nonzeros= */ std::nullopt)),
+      {});
 }
 
 void Input::forward(const autograd::ComputationList& inputs,
@@ -50,10 +51,17 @@ void Input::updateParameters(float learning_rate, uint32_t train_steps) {
       "UpdateParameters should not be called on input op.");
 }
 
-uint32_t Input::dim() const { return _dim; }
+std::vector<uint32_t> Input::dims(
+    const autograd::ComputationList& inputs) const {
+  assert(inputs.empty());
+  (void)inputs;
+
+  return _dims;
+}
 
 std::optional<uint32_t> Input::nonzeros(const autograd::ComputationList& inputs,
                                         bool use_sparsity) const {
+  assert(inputs.empty());
   (void)inputs;
   (void)use_sparsity;
   return _nonzeros;
@@ -73,7 +81,7 @@ template void Input::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Input::serialize(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _dim, _nonzeros);
+  archive(cereal::base_class<Op>(this), _dims, _nonzeros);
 }
 
 }  // namespace thirdai::bolt::nn::ops

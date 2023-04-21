@@ -70,7 +70,11 @@ class Op {
    */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
-  virtual uint32_t dim() const = 0;
+  /**
+   * Returns the output dimensions of the op for a given list of inputs that
+   * will be passed to the op's forward computation.
+   */
+  virtual tensor::Dims dims(const autograd::ComputationList& inputs) const = 0;
 
   /**
    * Returns the number of nonzeros in the ops output for a given list of

@@ -45,25 +45,28 @@ void Computation::backpropagate(uint32_t index_in_batch) {
   _op->backpropagate(_inputs, _output, index_in_batch);
 }
 
-uint32_t Computation::dim() const { return _op->dim(); }
+tensor::Dims Computation::dims() const { return _op->dims(_inputs); }
 
 std::optional<uint32_t> Computation::nonzeros(bool use_sparsity) const {
   return _op->nonzeros(_inputs, use_sparsity);
 }
 
 void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
-  uint32_t dim = _op->dim();
-  auto nonzeros = _op->nonzeros(_inputs, use_sparsity);
+  auto output_dims = this->dims();
+  auto nonzeros = this->nonzeros(use_sparsity);
   if (!nonzeros) {
     throw std::runtime_error(
         "Cannot allocate tensor for computation with unknown number of "
         "nonzeros.");
   }
 
-  if (*nonzeros < dim && use_sparsity) {
-    _output = tensor::Tensor::sparse(batch_size, dim, *nonzeros);
+  tensor::Dims dims = {batch_size};
+  dims.insert(dims.end(), output_dims.begin(), output_dims.end());
+
+  if (*nonzeros < output_dims.back() && use_sparsity) {
+    _output = tensor::Tensor::sparse(std::move(dims), *nonzeros);
   } else {
-    _output = tensor::Tensor::dense(batch_size, dim);
+    _output = tensor::Tensor::dense(std::move(dims));
   }
 }
 
@@ -72,10 +75,13 @@ void Computation::addInput(ComputationPtr input) {
 }
 
 void Computation::setTensor(tensor::TensorPtr tensor) {
-  if (tensor->dim() != dim()) {
+  auto input_dims = tensor->dims();
+  input_dims.erase(input_dims.begin());  // Erase batch size.
+
+  if (input_dims != dims()) {
     throw std::invalid_argument(
-        "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +
-        " to computation with output dim " + std::to_string(dim()) + ".");
+        "Cannot set tensor with dimension " + std::to_string(0) +
+        " to computation with output dim " + std::to_string(0) + ".");
   }
   _output = std::move(tensor);
 }

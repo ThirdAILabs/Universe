@@ -65,14 +65,21 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
 }
 
-uint32_t Embedding::dim() const { return _kernel->getOutputDim(); }
+tensor::Dims Embedding::dims(const autograd::ComputationList& inputs) const {
+  assert(inputs.size() == 1);
+
+  auto dims = inputs.at(0)->dims();
+  dims.back() = _kernel->getOutputDim();
+
+  return dims;
+}
 
 std::optional<uint32_t> Embedding::nonzeros(
     const autograd::ComputationList& inputs, bool use_sparsity) const {
   (void)inputs;
   (void)use_sparsity;
 
-  return dim();
+  return _kernel->getOutputDim();
 }
 
 void Embedding::disableSparseParameterUpdates() {

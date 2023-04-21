@@ -27,7 +27,7 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
                           tensor::TensorPtr& output, uint32_t index_in_batch,
                           bool training) {
   (void)training;
-  assert(inputs.size() >= 1);
+  assert(!inputs.empty());
 
   BoltVector& output_vector = output->getVector(index_in_batch);
 
@@ -64,7 +64,7 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
 void Concatenate::backpropagate(autograd::ComputationList& inputs,
                                 tensor::TensorPtr& output,
                                 uint32_t index_in_batch) {
-  assert(inputs.size() >= 1);
+  assert(!inputs.empty());
 
   BoltVector& output_vector = output->getVector(index_in_batch);
 
@@ -84,12 +84,16 @@ void Concatenate::backpropagate(autograd::ComputationList& inputs,
   }
 }
 
-uint32_t Concatenate::dim() const {
+tensor::Dims Concatenate::dims(const autograd::ComputationList& inputs) const {
   uint32_t total_dim = 0;
   for (uint32_t dim : _input_dims) {
     total_dim += dim;
   }
-  return total_dim;
+
+  auto dims = inputs.at(0)->dims();
+  dims.back() = total_dim;
+
+  return dims;
 }
 
 std::optional<uint32_t> Concatenate::nonzeros(
@@ -120,14 +124,33 @@ void Concatenate::summary(std::ostream& summary,
   summary << ") -> " << output->name();
 }
 
+void verifyNonConcatenatedDimsMatch(const autograd::ComputationList& inputs) {
+  if (inputs.empty()) {
+    return;
+  
+  }
+  auto first_dims = inputs.at(0)->dims();
+
+  for (const auto& input : inputs) {
+    for (uint32_t i = 0; i < first_dims.size() - 1; i++) {
+      if (input->dims()[i] != first_dims[i]) {
+        throw std::invalid_argument(
+            "Cannot concatenate inputs with dims _ and _.");
+      }
+    }
+  }
+}
+
 autograd::ComputationPtr Concatenate::apply(
     const autograd::ComputationList& inputs) {
+  verifyNonConcatenatedDimsMatch(inputs);
+
   if (_input_dims.empty()) {
     uint32_t current_neuron_offset = 0;
     for (const auto& input : inputs) {
-      _input_dims.push_back(input->dim());
+      _input_dims.push_back(input->dims().back());
       _neuron_offsets.push_back(current_neuron_offset);
-      current_neuron_offset += input->dim();
+      current_neuron_offset += input->dims().back();
     }
   } else {
     if (inputs.size() != _input_dims.size()) {
@@ -137,12 +160,12 @@ autograd::ComputationPtr Concatenate::apply(
       throw std::invalid_argument(error.str());
     }
     for (uint32_t input_idx = 0; input_idx < inputs.size(); input_idx++) {
-      if (inputs[input_idx]->dim() != _input_dims.at(input_idx)) {
+      uint32_t input_dim = inputs[input_idx]->dims().back();
+      if (input_dim != _input_dims.at(input_idx)) {
         std::stringstream error;
         error << "Expected input at index " << input_idx
               << " to Concatenate op to have dim " << _input_dims.at(input_idx)
-              << " but received input with dim " << inputs[input_idx]->dim()
-              << ".";
+              << " but received input with dim " << input_dim << ".";
         throw std::invalid_argument(error.str());
       }
     }

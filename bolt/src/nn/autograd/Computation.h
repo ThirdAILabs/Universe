@@ -58,7 +58,7 @@ class Computation {
   /**
    * Returns the output dimension of the computation.
    */
-  uint32_t dim() const;
+  tensor::Dims dims() const;
 
   /**
    * Returns the number of nonzeros the output tensor will contain depending on

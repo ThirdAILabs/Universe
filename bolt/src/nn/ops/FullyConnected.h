@@ -39,7 +39,7 @@ class FullyConnected final
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  uint32_t dim() const final;
+  tensor::Dims dims(const autograd::ComputationList& inputs) const final;
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final;

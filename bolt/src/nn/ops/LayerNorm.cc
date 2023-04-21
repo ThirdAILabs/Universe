@@ -135,10 +135,14 @@ void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
   _beta_optimizer.applyUpdate(_beta, learning_rate, train_steps);
 }
 
-uint32_t LayerNorm::dim() const { return _gamma.size(); }
+tensor::Dims LayerNorm::dims(const autograd::ComputationList& inputs) const {
+  assert(inputs.size() == 1);
+  return inputs.at(0)->dims();
+}
 
 std::optional<uint32_t> LayerNorm::nonzeros(
     const autograd::ComputationList& inputs, bool use_sparsity) const {
+  assert(inputs.size() == 1);
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
@@ -155,18 +159,21 @@ void LayerNorm::summary(std::ostream& summary,
           << output->name();
 }
 
+uint32_t LayerNorm::dim() const { return _gamma.size(); }
+
 autograd::ComputationPtr LayerNorm::apply(
     const autograd::ComputationPtr& input) {
+  uint32_t dim_to_normalize = input->dims().back();
   if (dim() == 0) {
-    _gamma.assign(input->dim(), 1.0);
-    _beta.assign(input->dim(), 0.0);
-    _gamma_optimizer = AdamOptimizer(input->dim());
-    _beta_optimizer = AdamOptimizer(input->dim());
-  } else if (input->dim() != dim()) {
+    _gamma.assign(dim_to_normalize, 1.0);
+    _beta.assign(dim_to_normalize, 0.0);
+    _gamma_optimizer = AdamOptimizer(dim_to_normalize);
+    _beta_optimizer = AdamOptimizer(dim_to_normalize);
+  } else if (input->dims().back() != dim()) {
     throw std::invalid_argument(
         "Cannot apply LayerNorm op for input with dimension " +
         std::to_string(dim()) + " to input with dimension " +
-        std::to_string(input->dim()) + ".");
+        std::to_string(dim_to_normalize) + ".");
   }
 
   return autograd::Computation::make(shared_from_this(), {input});

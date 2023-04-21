@@ -21,7 +21,7 @@ class LayerNorm final : public Op,
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  uint32_t dim() const final;
+  tensor::Dims dims(const autograd::ComputationList& inputs) const final;
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final;
@@ -32,6 +32,8 @@ class LayerNorm final : public Op,
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
+
+  uint32_t dim() const;
 
   autograd::ComputationPtr apply(const autograd::ComputationPtr& input);
 

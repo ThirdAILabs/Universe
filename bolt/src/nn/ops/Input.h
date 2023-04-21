@@ -22,7 +22,7 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  uint32_t dim() const final;
+  tensor::Dims dims(const autograd::ComputationList& inputs) const final;
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final;
@@ -35,9 +35,9 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
                const autograd::Computation* output) const final;
 
  private:
-  Input(uint32_t dim, std::optional<uint32_t> nonzeros);
+  Input(std::vector<uint32_t> dims, std::optional<uint32_t> nonzeros);
 
-  uint32_t _dim;
+  std::vector<uint32_t> _dims;
   std::optional<uint32_t> _nonzeros;
 
   Input() {}

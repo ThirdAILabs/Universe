@@ -1,25 +1,38 @@
 #include "Tensor.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <functional>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::tensor {
 
-Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
-    : _dim(dim), _nonzeros(nonzeros) {
-  if (nonzeros < dim) {
-    _active_neurons.assign(batch_size * nonzeros, 0);
+Tensor::Tensor(Dims dims, uint32_t nonzeros)
+    : _dims(std::move(dims)), _nonzeros(nonzeros) {
+  uint32_t num_vectors =
+      std::reduce(_dims.begin(), _dims.end() - 1, 1, std::multiplies<>());
+
+  _vectors_per_batch_element =
+      std::reduce(_dims.begin() + 1, _dims.end() - 1, 1, std::multiplies<>());
+
+  bool sparse = nonzeros < _dims.back();
+
+  if (sparse) {
+    _active_neurons.assign(num_vectors * nonzeros, 0);
+  } else if (nonzeros > _dims.back()) {
+    throw std::invalid_argument(
+        "The number of nonzeros cannot be larger than the final dimension.");
   }
 
-  _activations.assign(batch_size * nonzeros, 0.0);
-  _gradients.assign(batch_size * nonzeros, 0.0);
+  _activations.assign(num_vectors * nonzeros, 0.0);
+  _gradients.assign(num_vectors * nonzeros, 0.0);
 
-  _vectors.reserve(batch_size);
+  _vectors.reserve(num_vectors);
 
-  for (uint32_t offset = 0; offset < batch_size * nonzeros;
+  for (uint32_t offset = 0; offset < num_vectors * nonzeros;
        offset += nonzeros) {
     uint32_t* active_neurons = nullptr;
-    if (nonzeros < dim) {
+    if (sparse) {
       active_neurons = _active_neurons.data() + offset;
     }
 
@@ -31,7 +44,9 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
 }
 
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
-    : _dim(dim), _nonzeros(std::nullopt) {
+    : _dims({batch.getBatchSize(), dim}),
+      _nonzeros(std::nullopt),
+      _vectors_per_batch_element(1) {
   if (batch.getBatchSize() == 0) {
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
@@ -49,7 +64,7 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
       throw std::invalid_argument(
           "Cannot convert vector with gradients to tensor.");
     }
-    if (is_dense && vec.len != _dim) {
+    if (is_dense && vec.len != dim) {
       throw std::invalid_argument(
           "All dense vectors must have the same length to convert to tensor.");
     }
@@ -79,15 +94,13 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
   }
 }
 
-std::shared_ptr<Tensor> Tensor::dense(uint32_t batch_size, uint32_t dim) {
-  return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
-                                  /* nonzeros= */ dim);
+std::shared_ptr<Tensor> Tensor::dense(Dims dims) {
+  return std::make_shared<Tensor>(/* dims= */ dims,
+                                  /* nonzeros= */ dims.back());
 }
 
-std::shared_ptr<Tensor> Tensor::sparse(uint32_t batch_size, uint32_t dim,
-                                       uint32_t nonzeros) {
-  return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
-                                  /* nonzeros= */ nonzeros);
+std::shared_ptr<Tensor> Tensor::sparse(Dims dims, uint32_t nonzeros) {
+  return std::make_shared<Tensor>(/* dims= */ dims, /* nonzeros= */ nonzeros);
 }
 
 std::shared_ptr<Tensor> Tensor::convert(const BoltBatch& batch, uint32_t dim) {
@@ -100,16 +113,24 @@ std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
   return convert(batch, dim);
 }
 
-uint32_t Tensor::dim() const { return _dim; }
+const Dims& Tensor::dims() const { return _dims; }
 
 std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
 
 BoltVector& Tensor::getVector(uint32_t index) {
-  assert(index < _vectors.size());
+  assert(index < batchSize());
   return _vectors[index];
 }
 
-uint32_t Tensor::batchSize() const { return _vectors.size(); }
+uint32_t Tensor::vectorsForSampleStart(uint32_t index_in_batch) const {
+  return index_in_batch * _vectors_per_batch_element;
+}
+
+uint32_t Tensor::vectorsForSampleEnd(uint32_t index_in_batch) const {
+  return (index_in_batch + 1) * _vectors_per_batch_element;
+}
+
+uint32_t Tensor::batchSize() const { return _dims.front(); }
 
 const uint32_t* Tensor::activeNeuronsPtr() const {
   return _active_neurons.empty() ? nullptr : _active_neurons.data();

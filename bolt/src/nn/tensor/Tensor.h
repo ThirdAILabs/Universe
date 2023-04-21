@@ -5,20 +5,21 @@
 
 namespace thirdai::bolt::nn::tensor {
 
+using Dims = std::vector<uint32_t>;
+
 /**
- * A tensor represents a collection of vectors that are either the inputs to a
- * model or produced by one of its ops.
+ * A tensor represents a collection of vectors that are either the inputs to
+ * a model or produced by one of its ops.
  */
 class Tensor {
  public:
-  Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
+  Tensor(Dims dims, uint32_t nonzeros);
 
   Tensor(const BoltBatch& batch, uint32_t dim);
 
-  static std::shared_ptr<Tensor> dense(uint32_t batch_size, uint32_t dim);
+  static std::shared_ptr<Tensor> dense(Dims dims);
 
-  static std::shared_ptr<Tensor> sparse(uint32_t batch_size, uint32_t dim,
-                                        uint32_t nonzeros);
+  static std::shared_ptr<Tensor> sparse(Dims dims, uint32_t nonzeros);
 
   static std::shared_ptr<Tensor> convert(const BoltBatch& batch, uint32_t dim);
 
@@ -28,7 +29,7 @@ class Tensor {
   /**
    * Returns the dimension of the vectors in the tensor.
    */
-  uint32_t dim() const;
+  const Dims& dims() const;
 
   /**
    * Returns the number of nonzeros in each vector in the tensor. If this is not
@@ -42,6 +43,10 @@ class Tensor {
    */
   BoltVector& getVector(uint32_t index);
 
+  uint32_t vectorsForSampleStart(uint32_t index_in_batch) const;
+
+  uint32_t vectorsForSampleEnd(uint32_t index_in_batch) const;
+
   /**
    * Returns the number of vectors in the tensor.
    */
@@ -54,9 +59,9 @@ class Tensor {
   const float* gradientsPtr() const;
 
  private:
-  // TODO(Nicholas): Update this to support N dimensions (not required for V0).
-  uint32_t _dim;
+  Dims _dims;
   std::optional<uint32_t> _nonzeros;
+  uint32_t _vectors_per_batch_element;
 
   std::vector<BoltVector> _vectors;
 
