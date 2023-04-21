@@ -29,6 +29,8 @@ std::vector<std::pair<std::string, double>> topKUnlimitedDecode(
   std::sort(entity_scores.begin(), entity_scores.end(),
             [](auto& left, auto& right) { return left.second > right.second; });
 
+  // TODO(david) if entity_scores.size() < min_num_eval_results rerun the decode
+  // until we can return min_num_eval_results entities.
   uint32_t num_to_return =
       std::min<uint32_t>(min_num_eval_results, entity_scores.size());
 

@@ -71,8 +71,6 @@ void ConcatenateNode::forwardImpl(uint32_t vec_index,
                                   const BoltVector* labels) {
   // We currently do not allow a concatenation layer to be the last
   // layer in the graph.
-  // TODO(josh/nick): Add support for n sets of outputs, and if users want
-  // a concatenation layer as the last layer they can split the labels
   assert(labels == nullptr);
   (void)labels;
 

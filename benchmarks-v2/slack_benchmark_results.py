@@ -1,19 +1,12 @@
 import argparse
 import json
-import os
-import re
 
 import mlflow
-import pandas as pd
 import requests
 from mlflow.tracking import MlflowClient
 
 from .runners.runner_map import runner_map
-
-# Posts to daily_udt_benchmarks channel
-SLACK_WEBHOOK = (
-    "https://hooks.slack.com/services/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"
-)
+from .utils import get_configs
 
 
 def parse_arguments():
@@ -21,6 +14,7 @@ def parse_arguments():
     parser.add_argument(
         "--runner",
         type=str,
+        nargs="+",
         required=True,
         choices=["udt", "bolt_fc", "dlrm"],
         help="The runner to retrieve benchmark results for.",
@@ -29,7 +23,7 @@ def parse_arguments():
         "--config",
         type=str,
         default="",
-        help="Regular expression indicating which configs to retrieve for the given runner.",  # Empty string returns all configs for the given runner.
+        help="Regular expression indicating which configs to retrieve for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
         "--mlflow_uri",
@@ -46,6 +40,12 @@ def parse_arguments():
         type=int,
         default=3,
         help="How many runs to display in slack message",
+    )
+    parser.add_argument(
+        "--slack_webhook",
+        type=str,
+        default="",
+        help="Slack channel endpoint for posting messages to",
     )
     return parser.parse_args()
 
@@ -65,7 +65,8 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client):
     mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True)
 
     # Drop learning rate column since we don't need to display it as a recorded metric in Slack
-    mlflow_runs.drop(columns=["metrics.learning_rate"], inplace=True)
+
+    mlflow_runs.drop(columns=["metrics.learning_rate"], inplace=True, errors="ignore")
 
     # Convert the start time timestamp into a date to make it easier to read
     mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
@@ -99,42 +100,33 @@ def extract_mlflow_data(experiment_name, num_runs=1, markdown=False):
 if __name__ == "__main__":
     args = parse_arguments()
 
-    runner = runner_map[args.runner.lower()]
+    for runner_name in args.runner:
+        runner = runner_map[runner_name.lower()]
 
-    config_re = re.compile(args.config)
-    configs = list(
-        filter(
-            lambda config: config_re.match(config.config_name),
-            runner.config_type.__subclasses__(),
-        )
-    )
-    if len(configs) == 0:
-        raise ValueError(
-            f"Could match regular expression '{args.config}' to any configs."
-        )
+        configs = get_configs(runner=runner, config_regex=args.config)
 
-    slack_payload_list = [""]
-    slack_payload_idx = 0
-    for config in configs:
-        exp_name = (
-            f"{config.config_name}_benchmark"
-            if args.official_benchmark
-            else config.config_name
-        )
-        df_md = extract_mlflow_data(exp_name, num_runs=args.num_runs, markdown=True)
+        slack_payload_list = [""]
+        slack_payload_idx = 0
+        for config in configs:
+            exp_name = (
+                f"{config.config_name}_benchmark"
+                if args.official_benchmark
+                else config.config_name
+            )
+            df_md = extract_mlflow_data(exp_name, num_runs=args.num_runs, markdown=True)
 
-        slack_payload_text = f"*{exp_name}* ```{df_md}``` \n"
-        line_length = len(slack_payload_text.split("\n")[0].split("```")[1])
+            slack_payload_text = f"*{exp_name}* ```{df_md}``` \n"
+            line_length = len(slack_payload_text.split("\n")[0].split("```")[1])
 
-        # We limit each message to under 4000 characters
-        if (
-            len(slack_payload_list[slack_payload_idx]) + len(slack_payload_text)
-            >= 4000 - line_length
-        ):
-            slack_payload_list.append(slack_payload_text)
-            slack_payload_idx += 1
-        else:
-            slack_payload_list[slack_payload_idx] += slack_payload_text
+            # We limit each message to under 4000 characters
+            if (
+                len(slack_payload_list[slack_payload_idx]) + len(slack_payload_text)
+                >= 4000 - line_length
+            ):
+                slack_payload_list.append(slack_payload_text)
+                slack_payload_idx += 1
+            else:
+                slack_payload_list[slack_payload_idx] += slack_payload_text
 
-    for payload in slack_payload_list:
-        requests.post(SLACK_WEBHOOK, json.dumps({"text": payload}))
+        for payload in slack_payload_list:
+            requests.post(args.slack_webhook, json.dumps({"text": payload}))

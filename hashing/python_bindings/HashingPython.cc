@@ -5,8 +5,6 @@ namespace thirdai::hashing::python {
 void createHashingSubmodule(py::module_& module) {
   auto hashing_submodule = module.def_submodule("hashing");
 
-  // TODO(josh): Add proper sparse data type
-
   py::class_<HashFunction>(
       hashing_submodule, "HashFunction",
       "Represents an abstract hash function that maps input DenseVectors and "
@@ -18,7 +16,6 @@ void createHashingSubmodule(py::module_& module) {
       .def("get_range", &HashFunction::range,
            "All hashes returned from this function will be >= 0 and <= "
            "get_range().");
-  // TODO(josh): Add bindings for hashing numpy array and sparse data
 
   py::class_<DensifiedMinHash, HashFunction>(
       hashing_submodule, "MinHash",

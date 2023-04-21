@@ -195,7 +195,7 @@ using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
  *        1 4 5,0,1
  *        ,1,0
  *        9 2,2,0
- * TODO(Josh): Make the delimiter character configurable
+ * TODO(Any): Make the delimiter character configurable
  */
 struct NeighborsDataType : DataType {
   std::string toString() const final { return R"({"type": "neighbors"})"; }

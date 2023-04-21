@@ -13,6 +13,7 @@
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -47,10 +48,14 @@ TabularDatasetFactory::TabularDatasetFactory(
 }
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
-    const dataset::DataSourcePtr& data_source, bool shuffle) {
-  return std::make_unique<dataset::DatasetLoader>(data_source,
-                                                  _labeled_featurizer,
-                                                  /* shuffle= */ shuffle);
+    const dataset::DataSourcePtr& data_source, bool shuffle,
+    std::optional<dataset::DatasetShuffleConfig> shuffle_config) {
+  if (!shuffle_config.has_value()) {
+    shuffle_config = dataset::DatasetShuffleConfig();
+  }
+  return std::make_unique<dataset::DatasetLoader>(
+      data_source, _labeled_featurizer,
+      /* shuffle= */ shuffle, shuffle_config.value());
 }
 
 std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(

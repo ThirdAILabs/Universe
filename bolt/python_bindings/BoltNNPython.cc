@@ -174,7 +174,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      // TODO(Nick, Josh): sparsity can be def_property
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
@@ -568,8 +567,6 @@ That's all for now, folks! More docs coming soon :)
           "* detailed: boolean. Optional, default False. When specified to "
           "\"True\", summary will additionally return/print sampling config "
           "details for each layer in the network.")
-      // TODO(josh/nick): These are temporary until we have a better story
-      // for converting numpy to BoltGraphs
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "

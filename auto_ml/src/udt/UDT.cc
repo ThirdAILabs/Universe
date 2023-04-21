@@ -63,7 +63,7 @@ UDT::UDT(data::ColumnDataTypes data_types,
   }
 
   if (as_categorical && has_graph_inputs) {
-    // TODO(Josh): Add support for model config and user args
+    // TODO(Any): Add support for model config and user args
     _backend = std::make_unique<UDTGraphClassifier>(
         data_types, target_col, n_target_classes.value(), integer_target,
         tabular_options);
@@ -135,11 +135,9 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
 
   timer.stop();
 
-  // TODO(Josh/Geordie): It's highly likely that this is less than a second, so
-  // the telemetry won't have meaningful information. Should use milliseconds
-  // for everything in telemetry?
   telemetry::client.trackTraining(
-      /* training_time_seconds= */ timer.seconds());
+      /* training_time_seconds = */ timer.elapsed<std::chrono::nanoseconds>() /
+      1000000000.0);
 
   return output;
 }

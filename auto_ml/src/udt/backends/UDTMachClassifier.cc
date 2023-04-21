@@ -48,8 +48,7 @@ UDTMachClassifier::UDTMachClassifier(
         /* max_elements = */ n_target_classes);
   } else {
     mach_index = dataset::mach::StringCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* max_elements = */ n_target_classes);
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
   }
 
   _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
@@ -219,19 +218,7 @@ py::object UDTMachClassifier::embedding(const MapInput& sample) {
   return utils::convertBoltVectorToNumpy(emb);
 }
 
-static std::string variantToString(
-    const std::variant<uint32_t, std::string>& variant) {
-  if (std::holds_alternative<std::string>(variant)) {
-    return std::get<std::string>(variant);
-  }
-  if (std::holds_alternative<uint32_t>(variant)) {
-    return std::to_string(std::get<uint32_t>(variant));
-  }
-  throw std::invalid_argument("Invalid input type.");
-}
-
-py::object UDTMachClassifier::entityEmbedding(
-    const std::variant<uint32_t, std::string>& label) {
+py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   std::vector<uint32_t> hashed_neurons =
       _mach_label_block->index()->hashEntity(variantToString(label));
 
@@ -265,28 +252,189 @@ py::object UDTMachClassifier::entityEmbedding(
   return std::move(np_weights);
 }
 
+std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
+  if (_dataset_factory->inputDataTypes().size() != 1 ||
+      !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
+    throw std::invalid_argument(
+        "Introducing documents can only be used when UDT is configured with a "
+        "single text input column and target column. The current model is "
+        "configured with " +
+        std::to_string(_dataset_factory->inputDataTypes().size()) +
+        " input columns.");
+  }
+
+  return _dataset_factory->inputDataTypes().begin()->first;
+}
+
+std::unordered_map<Label, MapInputBatch>
+UDTMachClassifier::aggregateSamplesByDoc(
+    const thirdai::data::ColumnMap& augmented_data,
+    const std::string& text_column_name, const std::string& label_column_name) {
+  auto text_column = augmented_data.getStringColumn(text_column_name);
+  auto label_column = augmented_data.getStringColumn(label_column_name);
+
+  assert(label_column->numRows() == text_column->numRows());
+
+  std::unordered_map<Label, MapInputBatch> samples_by_doc;
+  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
+    std::string string_label = (*label_column)[row_id];
+    std::string text = (*text_column)[row_id];
+
+    MapInput input = {{text_column_name, text}};
+    if (integerTarget()) {
+      uint32_t integer_label = std::stoi(string_label);
+      samples_by_doc[integer_label].push_back(input);
+    } else {
+      samples_by_doc[string_label].push_back(input);
+    }
+  }
+
+  return samples_by_doc;
+}
+
+void UDTMachClassifier::introduceDocuments(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names) {
+  std::string text_column_name = textColumnForDocumentIntroduction();
+
+  auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
+      data, _dataset_factory->delimiter());
+
+  std::string label_column_name = _mach_label_block->columnName();
+
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ label_column_name,
+      /* output_column_name= */ text_column_name);
+
+  auto augmented_data = augmentation.apply(dataset);
+
+  auto samples_per_doc = aggregateSamplesByDoc(augmented_data, text_column_name,
+                                               label_column_name);
+
+  for (const auto& [doc, samples] : samples_per_doc) {
+    introduceLabel(samples, doc);
+  }
+}
+
+void UDTMachClassifier::introduceDocument(
+    const MapInput& document,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, const Label& new_label) {
+  std::string text_column_name = textColumnForDocumentIntroduction();
+
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ _mach_label_block->columnName(),
+      /* output_column_name= */
+      text_column_name);
+
+  MapInputBatch batch;
+  for (const auto& row : augmentation.augmentMapInput(document)) {
+    MapInput input = {{text_column_name, row}};
+    batch.push_back(input);
+  }
+
+  introduceLabel(batch, new_label);
+}
+
+void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
+                                       const Label& new_label) {
+  BoltBatch output = _classifier->model()->predictSingleBatch(
+      _dataset_factory->featurizeInputBatch(samples),
+      /* sparse_inference = */ false);
+
+  // map from output hash to an aggregated pair of (frequency, score)
+  std::unordered_map<uint32_t, std::pair<uint32_t, float>> hash_freq_and_scores;
+  for (const auto& vector : output) {
+    auto top_K =
+        vector.findKLargestActivations(_mach_label_block->index()->numHashes());
+
+    while (!top_K.empty()) {
+      auto [activation, active_neuron] = top_K.top();
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = std::make_pair(1, activation);
+      } else {
+        hash_freq_and_scores[active_neuron].first += 1;
+        hash_freq_and_scores[active_neuron].second += activation;
+      }
+      top_K.pop();
+    }
+  }
+
+  // We sort the hashes first by number of occurances and tiebreak with the
+  // higher aggregated score if necessary. We don't only use the activations
+  // since those typically aren't as useful as the frequencies.
+  std::vector<std::pair<uint32_t, std::pair<uint32_t, float>>> sorted_hashes(
+      hash_freq_and_scores.begin(), hash_freq_and_scores.end());
+  std::sort(sorted_hashes.begin(), sorted_hashes.end(),
+            [](auto& left, auto& right) {
+              auto [left_frequency, left_score] = left.second;
+              auto [right_frequency, right_score] = right.second;
+              if (left_frequency == right_frequency) {
+                return left_score > right_score;
+              }
+              return left_frequency > right_frequency;
+            });
+
+  std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
+  for (uint32_t i = 0; i < _mach_label_block->index()->numHashes(); i++) {
+    auto [hash, freq_score_pair] = sorted_hashes[i];
+    new_hashes[i] = hash;
+  }
+
+  _mach_label_block->index()->manualAdd(variantToString(new_label), new_hashes);
+}
+
+void UDTMachClassifier::forget(const Label& label) {
+  _mach_label_block->index()->erase(variantToString(label));
+
+  if (_mach_label_block->index()->numElements() == 0) {
+    std::cout << "Warning. Every learned class has been forgotten. The model "
+                 "will currently return nothing on calls to evaluate, "
+                 "predict, or predictBatch."
+              << std::endl;
+  }
+}
+
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
                                         uint32_t top_k_per_eval_aggregation) {
   if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
     throw std::invalid_argument("Params must not be 0.");
   }
 
-  if (min_num_eval_results > top_k_per_eval_aggregation) {
+  uint32_t output_range = _mach_label_block->index()->outputRange();
+  if (top_k_per_eval_aggregation > output_range) {
     throw std::invalid_argument(
-        "min_num_eval_results must be <= top_k_per_eval_aggregation.");
+        "Cannot eval with top_k_per_eval_aggregation greater than " +
+        std::to_string(output_range) + ".");
   }
 
-  uint32_t n_target_classes = _mach_label_block->index()->maxElements();
-  if (min_num_eval_results > n_target_classes ||
-      top_k_per_eval_aggregation > n_target_classes) {
+  uint32_t num_classes = _mach_label_block->index()->numElements();
+  if (min_num_eval_results > num_classes) {
     throw std::invalid_argument(
-        "Both min_num_eval_results and top_k_per_eval_aggregation must be less "
-        "than or equal to n_target_classes = " +
-        std::to_string(n_target_classes) + ".");
+        "Cannot return more results than the model is trained to predict. "
+        "Model currently can predict one of " +
+        std::to_string(num_classes) + " classes.");
   }
 
   _min_num_eval_results = min_num_eval_results;
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+}
+
+std::string UDTMachClassifier::variantToString(const Label& variant) {
+  if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
+    return std::get<std::string>(variant);
+  }
+  if (std::holds_alternative<uint32_t>(variant) && integerTarget()) {
+    return std::to_string(std::get<uint32_t>(variant));
+  }
+  throw std::invalid_argument(
+      "Invalid class type. If integer_target=True please use integers as "
+      "classes, otherwise use strings.");
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(

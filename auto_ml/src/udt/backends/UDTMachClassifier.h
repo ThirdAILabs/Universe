@@ -14,10 +14,13 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <utils/CerealWrapper.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
+
+using Label = std::variant<uint32_t, std::string>;
 
 class UDTMachClassifier final : public UDTBackend {
  public:
@@ -78,8 +81,22 @@ class UDTMachClassifier final : public UDTBackend {
    * embeddings are useful and which tweaks like summing vs averaging and tanh
    * vs reul make a difference.
    */
-  py::object entityEmbedding(
-      const std::variant<uint32_t, std::string>& label) final;
+  py::object entityEmbedding(const Label& label) final;
+
+  void introduceDocuments(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names) final;
+
+  void introduceDocument(const MapInput& document,
+                         const std::vector<std::string>& strong_column_names,
+                         const std::vector<std::string>& weak_column_names,
+                         const Label& new_label) final;
+
+  void introduceLabel(const MapInputBatch& samples,
+                      const Label& new_label) final;
+
+  void forget(const Label& label) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -96,14 +113,26 @@ class UDTMachClassifier final : public UDTBackend {
       const std::string& activation_func, float distance_cutoff) const final;
 
  private:
+  bool integerTarget() const {
+    return static_cast<bool>(
+        dataset::mach::asNumericIndex(_mach_label_block->index()));
+  }
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName(),
-        /* integer_target = */
-        static_cast<bool>(
-            dataset::mach::asNumericIndex(_mach_label_block->index())));
+        /* integer_target = */ integerTarget());
   }
+
+  std::string variantToString(const Label& variant);
+
+  std::string textColumnForDocumentIntroduction();
+
+  std::unordered_map<Label, MapInputBatch> aggregateSamplesByDoc(
+      const thirdai::data::ColumnMap& augmented_data,
+      const std::string& text_column_name,
+      const std::string& label_column_name);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
@@ -129,6 +158,7 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive);
 
   std::shared_ptr<utils::Classifier> _classifier;
+
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   uint32_t _min_num_eval_results;

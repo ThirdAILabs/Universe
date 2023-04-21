@@ -20,8 +20,6 @@ namespace thirdai::search::python {
 
 void createSearchSubmodule(py::module_& module);
 
-// TODO(josh): Make uint8_t configurable, will currently cut off all documents
-// at 256 embeddings
 class PyDocSearch final : public DocSearch {
  public:
   PyDocSearch(const std::vector<std::vector<float>>& centroids,
