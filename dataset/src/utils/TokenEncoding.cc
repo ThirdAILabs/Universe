@@ -29,15 +29,15 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
   return tokens;
 }
 
-std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words) {
-  std::vector<uint32_t> n_gram_tokens;
-  n_gram_tokens.reserve(words.size());
+std::vector<uint32_t> hashTokens(const std::vector<std::string_view>& strings) {
+  std::vector<uint32_t> hashes;
+  hashes.reserve(strings.size());
 
-  for (const auto& word : words) {
-    n_gram_tokens.push_back(seededMurmurHash(word.data(), word.size()));
+  for (const auto& string : strings) {
+    hashes.push_back(seededMurmurHash(string.data(), string.size()));
   }
 
-  return n_gram_tokens;
+  return hashes;
 }
 
 std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len) {
@@ -82,7 +82,7 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter) {
   auto words = thirdai::text::split(sentence, delimiter);
 
-  auto tokens = tokenize(words);
+  auto tokens = hashTokens(words);
 
   assert(words.size() == tokens.size());
   uint32_t length = words.size();

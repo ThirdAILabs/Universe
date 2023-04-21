@@ -70,6 +70,23 @@ std::vector<std::string_view> tokenizeSentence(std::string_view sentence) {
   return tokens;
 }
 
+std::vector<std::string_view> charKGrams(std::string_view text, uint32_t k) {
+  if (text.empty()) {
+    return {};
+  }
+  std::string lower_case_text = text::lower(text);
+
+  std::vector<std::string_view> char_k_grams;
+  size_t n_kgrams = text.size() >= k ? text.size() - (k - 1) : 1;
+  size_t len = std::min(text.size(), static_cast<size_t>(k));
+  for (uint32_t offset = 0; offset < n_kgrams; offset++) {
+    char_k_grams.push_back(
+        std::string_view(lower_case_text.data() + offset, len));
+  }
+
+  return char_k_grams;
+}
+
 std::string join(const std::vector<std::string>& strings,
                  const std::string& delimiter) {
   if (strings.empty()) {

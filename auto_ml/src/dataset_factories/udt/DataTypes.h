@@ -78,7 +78,7 @@ enum class TextEncodingType {
 };
 
 inline std::pair<TextEncodingType, std::optional<uint32_t>>
-getTextEncodingFromString(const std::string& encoding) {
+getTextEncoderFromString(const std::string& encoding) {
   if (std::regex_match(encoding, std::regex("char-[1-9]\\d*"))) {
     uint32_t k = std::strtol(encoding.data() + 5, nullptr, 10);
     return std::make_pair(TextEncodingType::CharacterKGram, k);
@@ -100,13 +100,13 @@ getTextEncodingFromString(const std::string& encoding) {
 }
 
 struct TextDataType final : public DataType {
-  explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
+  explicit TextDataType(const std::string& tokenizer = "words",
                         const std::string& contextual_encoding = "none")
-      : average_n_words(average_n_words),
-        contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
+      : tokenizer(getTextTokenizerFromString(tokenizer)),
+        encoder(getTextEncoderFromString(contextual_encoding)) {}
 
-  std::optional<double> average_n_words;
-  std::pair<TextEncodingType, std::optional<uint32_t>> contextual_encoding;
+  TextTokenizer tokenizer;
+  TextEncoder encoder;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
@@ -114,8 +114,7 @@ struct TextDataType final : public DataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), average_n_words,
-            contextual_encoding);
+    archive(cereal::base_class<DataType>(this), tokenizer, encoder);
   }
 };
 

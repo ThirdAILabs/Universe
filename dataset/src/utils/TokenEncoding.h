@@ -24,7 +24,7 @@ inline uint32_t seededMurmurHash(const char* key, uint32_t len) {
 /**
  * Hash each input word and return a list of tokens. Commonly called unigrams.
  */
-std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words);
+std::vector<uint32_t> hashTokens(const std::vector<std::string_view>& strings);
 
 /**
  * Takes in a list of hashed tokens and uses our combineHashes function to add
@@ -35,7 +35,7 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n);
 
 inline std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
                                     char delimiter = ' ') {
-  return ngrams(tokenize(text::split(sentence, delimiter)), /* n= */ n);
+  return ngrams(hashTokens(text::split(sentence, delimiter)), /* n= */ n);
 }
 
 /**
