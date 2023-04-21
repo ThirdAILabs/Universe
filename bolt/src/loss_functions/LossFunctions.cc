@@ -115,5 +115,6 @@ template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
 CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::CategoricalCrossEntropyLoss)
 CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::BinaryCrossEntropyLoss)
 CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::MeanSquaredError)
-CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
+CEREAL_REGISTER_TYPE_SOURCE(
+    thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
 CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::MarginBCE)

@@ -106,5 +106,4 @@ template void Node::serialize<cereal::PortableBinaryOutputArchive>(
 
 }  // namespace thirdai::bolt
 
-
 CEREAL_REGISTER_TYPE_SOURCE(thirdai::bolt::Node)

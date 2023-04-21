@@ -2,8 +2,8 @@
 
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <memory>
 #include <utils/CerealWrapper.h>
+#include <memory>
 
 namespace thirdai::bolt::nn::ops {
 
