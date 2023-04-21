@@ -83,8 +83,6 @@ class License {
   // This is a map rather than an unordered map because when creating
   // the string to verify, we want to be easily able to generate a deterministic
   // string from the map (and unordered maps have non deterministic orders)
-  // TODO(Josh): Consider making this an Entitlements object instead of this
-  // map, since only the keys are ever used anyways.
   std::map<std::string, std::string> _entitlements;
 };
 

@@ -1,5 +1,3 @@
-# TODO(josh): Add back mach benchmark
-
 import pathlib
 import sys
 
@@ -287,8 +285,6 @@ def construct_node(node_config):
 
 def get_loss(model_config):
     loss_string = config_get_required(model_config, "loss_fn").lower()
-    # TODO(josh/nick): Add an option to pass in the loss function as string to compile
-    # TODO(josh): Consider moving to python 3.10 so we have the match pattern
     if loss_string == "categoricalcrossentropyloss" or loss_string == "cce":
         return bolt.nn.losses.CategoricalCrossEntropy()
     if loss_string == "binarycrossentropyloss" or loss_string == "bce":

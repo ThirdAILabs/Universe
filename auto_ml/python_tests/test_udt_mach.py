@@ -11,17 +11,15 @@ pytestmark = [pytest.mark.unit]
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
 
 
-def make_simple_train_data(invalid=False):
+def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_dim=256):
     with open(SIMPLE_TEST_FILE, "w") as f:
         f.write("text,label\n")
-        f.write("haha,0\n")
-        f.write("haha,1\n")
-        f.write("haha,2\n")
-        if invalid:
+        f.write("haha one time,0\n")
+        f.write("haha two times,1\n")
+        f.write("haha thrice occurances,2\n")
+        if invalid_data:
             f.write("haha,3\n")
 
-
-def train_simple_mach_udt(integer_target, embedding_dim=256):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
@@ -30,10 +28,16 @@ def train_simple_mach_udt(integer_target, embedding_dim=256):
         target="label",
         n_target_classes=3,
         integer_target=integer_target,
-        options={"extreme_classification": True, "embedding_dimension": embedding_dim},
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": embedding_dim,
+            "extreme_output_dim": 100,
+        },
     )
 
-    model.train(SIMPLE_TEST_FILE, epochs=1, learning_rate=0.001)
+    model.train(SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001)
+
+    os.remove(SIMPLE_TEST_FILE)
 
     return model
 
@@ -173,33 +177,19 @@ def test_mach_udt_string_target(download_scifact_dataset):
     )
 
 
-def test_mach_udt_string_target_too_many_classes():
-    make_simple_train_data(invalid=True)
-
-    with pytest.raises(
-        ValueError,
-        match=r"Received additional category*",
-    ):
-        train_simple_mach_udt(integer_target=False)
-
-
 def test_mach_udt_integer_target_label_too_large():
-    make_simple_train_data(invalid=True)
-
     with pytest.raises(
         ValueError,
-        match=r"Received label 3 larger than or equal to n_target_classes.",
+        match=r"Received unexpected label: 3.",
     ):
-        train_simple_mach_udt(integer_target=True)
+        train_simple_mach_udt(integer_target=True, invalid_data=True)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     "embedding_dim, integer_label",
     [(128, True), (128, False), (256, True), (256, False)],
 )
 def test_mach_udt_entity_embedding(embedding_dim, integer_label):
-    make_simple_train_data()
     model = train_simple_mach_udt(
         integer_target=integer_label, embedding_dim=embedding_dim
     )
@@ -210,9 +200,7 @@ def test_mach_udt_entity_embedding(embedding_dim, integer_label):
 
 
 def test_mach_udt_embedding():
-    make_simple_train_data(invalid=False)
-
-    model = train_simple_mach_udt(integer_target=False)
+    model = train_simple_mach_udt()
 
     embedding = model.embedding_representation({"text": "some sample query"})
 
@@ -220,9 +208,7 @@ def test_mach_udt_embedding():
 
 
 def test_mach_udt_decode_params():
-    make_simple_train_data(invalid=False)
-
-    model = train_simple_mach_udt(integer_target=False)
+    model = train_simple_mach_udt()
 
     with pytest.raises(
         ValueError,
@@ -232,16 +218,138 @@ def test_mach_udt_decode_params():
 
     with pytest.raises(
         ValueError,
-        match=r"min_num_eval_results must be <= top_k_per_eval_aggregation.",
+        match=r"Cannot eval with top_k_per_eval_aggregation greater than 100.",
     ):
-        model.set_decode_params(2, 1)
+        model.set_decode_params(1, 1000)
 
     with pytest.raises(
         ValueError,
-        match=r"Both min_num_eval_results and top_k_per_eval_aggregation must be less than or equal to n_target_classes = 3.",
+        match=r"Cannot return more results than the model is trained to predict. Model currently can predict one of 3 classes.",
     ):
-        model.set_decode_params(5, 10)
+        model.set_decode_params(5, 2)
 
-    model.set_decode_params(1, 2)
+    model.set_decode_params(1, 100)
 
-    assert len(model.predict({"text": "hello"})) == 1
+    assert len(model.predict({"text": "something"})) == 1
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_invalid_class_type(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    label = "1" if integer_target else 1
+
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
+    ):
+        model.get_entity_embedding(label)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
+    ):
+        model.introduce_label([{"text": "something"}], label)
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_introduce_and_forget(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    label = 4 if integer_target else "4"
+
+    sample = {"text": "something or another with lots of words"}
+    assert model.predict(sample)[0][0] != str(label)
+    model.introduce_label([sample], label)
+    assert model.predict(sample)[0][0] == str(label)
+    model.forget(label)
+    assert model.predict(sample)[0][0] != str(label)
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_introduce_existing_class(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Manually adding a previously seen label: 0. Please use a new label for any new insertions.",
+    ):
+        model.introduce_label([{"text": "something"}], 0 if integer_target else "0")
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_forget_non_existing_class(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Tried to forget label 1000 which does not exist.",
+    ):
+        model.forget(1000 if integer_target else "1000")
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_forgetting_everything(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    if integer_target:
+        model.forget(0)
+        model.forget(1)
+        model.forget(2)
+    else:
+        model.forget("0")
+        model.forget("1")
+        model.forget("2")
+
+    assert len(model.predict({"text": "something"})) == 0
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_cant_predict_forgotten(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    model.set_decode_params(3, 100)
+    assert "0" in [class_name for class_name, _ in model.predict({"text": "something"})]
+    model.forget(0 if integer_target else "0")
+    assert "0" not in [
+        class_name for class_name, _ in model.predict({"text": "something"})
+    ]
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    model.set_decode_params(3, 100)
+    assert len(model.predict({"text": "something"})) == 3
+    model.forget(2 if integer_target else "2")
+    assert len(model.predict({"text": "something"})) == 2
+
+
+def test_mach_udt_introduce_document():
+    model = train_simple_mach_udt()
+
+    model.introduce_document(
+        {"title": "this is a title", "description": "this is a description"},
+        strong_column_names=["title"],
+        weak_column_names=["description"],
+        label="1000",
+    )
+
+
+def test_mach_udt_introduce_documents():
+    model = train_simple_mach_udt(integer_target=True)
+
+    new_docs = "NEW_DOCS.csv"
+    with open(new_docs, "w") as f:
+        f.write("label,title,description\n")
+        f.write("4,some title,some description\n")
+        f.write("5,some other title,some other description\n")
+
+    model.introduce_documents(
+        new_docs,
+        strong_column_names=["title"],
+        weak_column_names=["description"],
+    )
+
+    os.remove(new_docs)

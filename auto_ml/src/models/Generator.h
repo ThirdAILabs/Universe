@@ -355,14 +355,14 @@ class QueryCandidateGenerator {
     return {std::move(query_outputs), std::move(candidate_query_scores)};
   }
 
-  // TODO(Blaise/Josh): Because of our current flash implementation, this
-  // function doesn't always return k items per vector, but it should.
   /**
    * @brief Returns a list of recommended queries and Computes Recall at K
    * (R1@K).
    *
    * @param file_name: CSV file expected to have correct queries in column 0,
    * and incorrect queries in column 1.
+   * @param Requested number of items to return per query (we may return less
+   * than this many elements).
    * @return Recommended queries and the corresponding scores.
    */
   std::pair<std::vector<std::vector<std::string>>,

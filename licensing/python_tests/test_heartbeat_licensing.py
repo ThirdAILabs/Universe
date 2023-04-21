@@ -181,8 +181,6 @@ def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
         run_udt_training_routine()
     thirdai.licensing.end_heartbeat()
 
-    # TODO(Josh): Check that we are adding these failures to our Prometheus metrics
-
 
 def test_maintenance_of_valid_heartbeat(normal_license_server):
     """

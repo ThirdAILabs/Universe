@@ -18,9 +18,6 @@ namespace thirdai::bolt::tests {
 // state 3 = parameters initialized
 // state 4 = prepared for batch processing
 
-// TODO(Josh): Do we want to try to test forward and backpropogate and other
-//  methods that use assertions instead of exceptions?
-
 class NodeStateMachineTest {
  public:
   explicit NodeStateMachineTest(NodePtr node) : _node(std::move(node)) {
