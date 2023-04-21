@@ -11,6 +11,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/blocks/Text.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -70,34 +71,9 @@ struct CategoricalDataType final : public DataType {
 
 using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
 
-enum class TextEncodingType {
-  Unigrams,
-  Bigrams,
-  Pairgrams,
-  CharacterKGram,
-};
+dataset::TextTokenizerPtr getTextTokenizerFromString(const std::string& string);
 
-inline std::pair<TextEncodingType, std::optional<uint32_t>>
-getTextEncoderFromString(const std::string& encoding) {
-  if (std::regex_match(encoding, std::regex("char-[1-9]\\d*"))) {
-    uint32_t k = std::strtol(encoding.data() + 5, nullptr, 10);
-    return std::make_pair(TextEncodingType::CharacterKGram, k);
-  }
-
-  std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
-      {"none", TextEncodingType::Unigrams},
-      {"local", TextEncodingType::Bigrams},
-      {"global", TextEncodingType::Pairgrams},
-  };
-
-  if (contextual_encodings.count(encoding) == 0) {
-    throw std::invalid_argument(
-        "Created text column with invalid contextual_encoding '" + encoding +
-        "' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. "
-        "'char-5'), or 'global'.");
-  };
-  return std::make_pair(contextual_encodings[encoding], std::nullopt);
-}
+dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string);
 
 struct TextDataType final : public DataType {
   explicit TextDataType(const std::string& tokenizer = "words",
@@ -105,8 +81,8 @@ struct TextDataType final : public DataType {
       : tokenizer(getTextTokenizerFromString(tokenizer)),
         encoder(getTextEncoderFromString(contextual_encoding)) {}
 
-  TextTokenizer tokenizer;
-  TextEncoder encoder;
+  dataset::TextTokenizerPtr tokenizer;
+  dataset::TextEncoderPtr encoder;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 

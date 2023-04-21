@@ -3,6 +3,33 @@
 
 namespace thirdai::automl::data {
 
+dataset::TextTokenizerPtr getTextTokenizerFromString(
+    const std::string& string) {
+  if (std::regex_match(string, std::regex("char-[1-9]\\d*"))) {
+    uint32_t k = std::strtol(string.data() + 5, nullptr, 10);
+    return dataset::CharKGramTokenizer::make(/* k = */ k);
+  }
+
+  throw std::invalid_argument("'char-k' (k is a number, e.g. 'char-5'), ");
+}
+
+dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
+  std::unordered_map<std::string, dataset::TextEncoderPtr>
+      contextual_encodings = {
+          {"none", dataset::NGramEncoder::make(/* n = */ 1)},
+          {"local", dataset::NGramEncoder::make(/* n = */ 2)},
+          {"global", dataset::PairGramEncoder::make()},
+      };
+
+  if (contextual_encodings.count(string) == 0) {
+    throw std::invalid_argument(
+        "Created text column with invalid contextual_encoding '" + string +
+        "' please choose one of 'none', 'local', or 'global'.");
+  };
+
+  return contextual_encodings[string];
+}
+
 CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type) {
   return std::dynamic_pointer_cast<CategoricalDataType>(data_type);
 }

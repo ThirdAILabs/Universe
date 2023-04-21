@@ -25,6 +25,8 @@ class WordTokenizer : public TextTokenizer {
  public:
   WordTokenizer() {}
 
+  static auto make() { return std::make_shared<WordTokenizer>(); }
+
   std::vector<std::string_view> apply(const std::string_view& input) final {
     return text::split(input, ' ');
   }
@@ -34,6 +36,8 @@ class WordPunctTokenizer : public TextTokenizer {
  public:
   WordPunctTokenizer() {}
 
+  static auto make() { return std::make_shared<WordPunctTokenizer>(); }
+
   std::vector<std::string_view> apply(const std::string_view& input) final {
     return text::tokenizeSentence(input);
   }
@@ -42,6 +46,10 @@ class WordPunctTokenizer : public TextTokenizer {
 class CharKGramTokenizer : public TextTokenizer {
  public:
   explicit CharKGramTokenizer(uint32_t k) : _k(k) {}
+
+  static auto make(uint32_t k) {
+    return std::make_shared<CharKGramTokenizer>(k);
+  }
 
   std::vector<std::string_view> apply(const std::string_view& input) final {
     return text::charKGrams(input, _k);
@@ -74,6 +82,8 @@ class NGramEncoder : public TextEncoder {
  public:
   explicit NGramEncoder(uint32_t n) : _n(n) {}
 
+  static auto make(uint32_t n) { return std::make_shared<NGramEncoder>(n); }
+
   std::vector<uint32_t> apply(
       const std::vector<std::string_view>& tokens) final {
     return token_encoding::ngrams(token_encoding::hashTokens(tokens), _n);
@@ -87,6 +97,8 @@ class PairGramEncoder : public TextEncoder {
  public:
   PairGramEncoder() {}
 
+  static auto make() { return std::make_shared<PairGramEncoder>(); }
+
   std::vector<uint32_t> apply(
       const std::vector<std::string_view>& tokens) final {
     return token_encoding::pairgrams(token_encoding::hashTokens(tokens));
@@ -98,9 +110,19 @@ class PairGramEncoder : public TextEncoder {
  */
 class TextBlock : public Block {
  public:
-  explicit TextBlock(ColumnIdentifier col,
+  explicit TextBlock(ColumnIdentifier col, TextTokenizerPtr tokenizer,
+                     TextEncoderPtr encoder,
                      uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
-      : _dim(dim), _col(std::move(col)) {}
+      : _dim(dim),
+        _col(std::move(col)),
+        _tokenizer(std::move(tokenizer)),
+        _encoder(std::move(encoder)) {}
+
+  static auto make(ColumnIdentifier col, TextTokenizerPtr tokenizer,
+                   TextEncoderPtr encoder,
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
+    return std::make_shared<TextBlock>(col, tokenizer, encoder, dim);
+  }
 
   uint32_t featureDim() const final { return _dim; };
 
@@ -116,7 +138,7 @@ class TextBlock : public Block {
     return {_col, keyword};
   }
 
- private:
+ protected:
   void buildSegment(ColumnarInputSample& input,
                     SegmentedFeatureVector& vec) final {
     std::string_view text = input.column(_col);
@@ -134,6 +156,7 @@ class TextBlock : public Block {
     return {&_col};
   };
 
+ private:
   // Constructor for cereal.
   TextBlock() {}
 
