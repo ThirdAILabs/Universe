@@ -22,7 +22,7 @@ class AdditionalMetricCallback(bolt.train.callbacks.Callback):
         self.metric_name = metric_name
         self.metric_fn = metric_fn  # function that takes in UDT model and test file path and outputs metric value to record
         self.test_file = test_file
-        self.model = model
+        self.udt_model = model
         self.mlflow_logger = mlflow_logger
 
         self.step = 0
@@ -31,13 +31,13 @@ class AdditionalMetricCallback(bolt.train.callbacks.Callback):
         self.test_file = test_file
 
     def set_model(self, model):
-        self.model = model
+        self.udt_model = model
 
     def set_mlflow_logger(self, mlflow_logger):
         self.mlflow_logger = mlflow_logger
 
     def on_epoch_end(self):
-        metric_val = self.metric_fn(self.model, self.test_file)
+        metric_val = self.metric_fn(self.udt_model, self.test_file)
 
         print(f"{self.metric_name} = {metric_val}")
         if self.mlflow_logger:

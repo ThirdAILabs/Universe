@@ -113,6 +113,6 @@ class UDTRunner(Runner):
             model.predict(sample)
         end_time = time.time()
         average_predict_time_ms = int(
-            np.around(1000 * (end_time - start_time) / num_samples)
+            np.around(1000 * (end_time - start_time) / num_samples, decimals=3)
         )
         return average_predict_time_ms
