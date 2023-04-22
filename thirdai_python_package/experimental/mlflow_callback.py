@@ -103,18 +103,21 @@ class MlflowCallback(bolt.callbacks.Callback):
     def log_additional_metric(self, key, value, step=0):
         import mlflow  # import inside class to not force another package dependency
 
-        mlflow.log_metric(key, value, step=step)
+        mlflow.log_metric(self._clean(key), value, step=step)
 
     def log_additional_param(self, key, value):
         import mlflow  # import inside class to not force another package dependency
 
-        mlflow.log_param(key, value)
+        mlflow.log_param(self._clean(key), value)
 
     def end_run(self):
         import mlflow  # import inside class to not force another package dependency
 
         mlflow.end_run()
 
-    def _clean(self, metric_name):
-        # mlflow doesn't like when metrics have "@" in them (e.g. "precision@k")
-        return metric_name.replace("@", "-")
+    def _clean(self, key):
+        # mlflow doesn't like when metrics have "@", "(", or ")" in them (e.g. "precision@k")
+        key = key.replace("(", "_")
+        key = key.replace(")", "")
+        key = key.replace("@", "_")
+        return key

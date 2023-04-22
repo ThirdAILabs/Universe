@@ -393,8 +393,8 @@ void createDatasetSubmodule(py::module_& module) {
              std::shared_ptr<numpy::NumpyInMemoryDataset>, BoltDataset>(
       dataset_submodule, "NumpyInMemoryDataset");
 
-  // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
-  // TODO(josh): This segfaults if the user passes in an index that is too large
+  // TODO(Any): Add __iter__ method so we can do foreach loops in python and c++
+  // TODO(Any): This segfaults if the user passes in an index that is too large
   py::class_<BoltBatch>(dataset_submodule, "BoltBatch")
       .def("batch_size", &BoltBatch::getBatchSize)
       // We need to explicitly static cast these methods because there are

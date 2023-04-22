@@ -1,7 +1,7 @@
 import pytest
 from dataset_utils import (
     get_random_sentence_str_column,
-    sparse_bolt_dataset_to_numpy,
+    nonzeros_from_sparse_bolt_dataset,
     verify_pairgrams_distribution,
 )
 from thirdai import data
@@ -37,7 +37,7 @@ def create_random_sentence_pairgram_dataset():
 
 
 def test_sentence_pairgrams():
-    pairgram_dataset = sparse_bolt_dataset_to_numpy(
+    pairgram_nonzeros = nonzeros_from_sparse_bolt_dataset(
         create_random_sentence_pairgram_dataset()
     )
-    verify_pairgrams_distribution(pairgram_dataset, OUTPUT_RANGE, NUM_WORDS)
+    verify_pairgrams_distribution(pairgram_nonzeros, OUTPUT_RANGE)

@@ -19,7 +19,7 @@ class FullyConnected final
   // compatability concerns.
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
-      const std::string& activation, SamplingConfigPtr sampling,
+      const std::string& activation, SamplingConfigPtr sampling = nullptr,
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());

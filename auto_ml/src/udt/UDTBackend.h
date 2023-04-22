@@ -187,7 +187,7 @@ class UDTBackend {
    * training.
    */
   virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    throw notSupported("getColdStartMetaData");
+    throw notSupported("get_cold_start_meta_data");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {
@@ -205,6 +205,56 @@ class UDTBackend {
     (void)min_num_eval_results;
     (void)top_k_per_eval_aggregation;
     throw notSupported("set_decode_params");
+  }
+
+  /**
+   * Introduces new documents to the model from a data source. Used in
+   * conjunction with coldstart.
+   */
+  virtual void introduceDocuments(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names) {
+    (void)data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    throw notSupported("introduce_documents");
+  }
+
+  /**
+   * Introduces a single new document to the model from an in memory map input.
+   * Used in conjunction with coldstart.
+   */
+  virtual void introduceDocument(
+      const MapInput& document,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::variant<uint32_t, std::string>& new_label) {
+    (void)document;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)new_label;
+    throw notSupported("introduce_document");
+  }
+
+  /**
+   * Introduces a new label to the model given a batch of representative samples
+   * of that label.
+   */
+  virtual void introduceLabel(
+      const MapInputBatch& sample,
+      const std::variant<uint32_t, std::string>& new_label) {
+    (void)sample;
+    (void)new_label;
+    throw notSupported("introduce_label");
+  }
+
+  /**
+   * Forget a given label such that it is impossible to predict in the future.
+   */
+  virtual void forget(const std::variant<uint32_t, std::string>& label) {
+    (void)label;
+    throw notSupported("forget");
   }
 
   /*

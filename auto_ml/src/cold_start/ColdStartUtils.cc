@@ -84,4 +84,5 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
 
   return data_source;
 }
+
 }  // namespace thirdai::automl::cold_start

@@ -18,8 +18,8 @@
 
 namespace thirdai::licensing {
 
-// TODO(Josh): Refactor these into a single std::unique_ptr<LicensingMethod>
-// with a getEntitlements call
+// TODO(Any): Decide if we want to refactor these into a single
+// std::unique_ptr<LicensingMethod> with a getEntitlements call
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
 LicenseState _license_state;
 

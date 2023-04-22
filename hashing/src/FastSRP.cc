@@ -81,7 +81,6 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
   }
   delete[] bin_values;
 
-  // TODO(Josh, Patrick): Shouldn't we densify here too?
   compactHashBits(hashes, output, _num_tables, _hashes_per_table);
   for (uint32_t i = 0; i < _num_tables; i++) {
     output[i] %= _range;
@@ -91,8 +90,6 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
 
 void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
                                uint32_t length, uint32_t* output) const {
-  // TODO(josh, Patrick): Should we assert indices are within the expected
-  // dimension here (otherwise it's a segfault)
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 
@@ -104,6 +101,7 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
     for (uint32_t i = 0; i < length; i++) {
+      assert(base_bin_id + indices[i] < _bin_map.size());
       uint32_t binid = _bin_map[base_bin_id + indices[i]];
       if (binid < _num_hashes) {
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {

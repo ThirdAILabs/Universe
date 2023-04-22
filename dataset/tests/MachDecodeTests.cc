@@ -29,6 +29,16 @@ class MockMachIndex : public mach::MachIndex {
 
     return map[hash_val];
   }
+
+  void manualAdd(const std::string& string,
+                 const std::vector<uint32_t>& hashes) final {
+    (void)string;
+    (void)hashes;
+  }
+
+  void erase(const std::string& string) final { (void)string; }
+
+  uint32_t numElements() const final { return 4; }
 };
 
 TEST(MachDecodeTest, TestTopKUnlimitedDecode) {
