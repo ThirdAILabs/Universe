@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
 #include <memory>
@@ -80,6 +81,38 @@ class FileDataSource final : public DataSource {
   // always refer to _file.
   std::ifstream _file;
   std::string _filename;
+};
+
+class CsvDataSource final : public DataSource {
+ public:
+  CsvDataSource(DataSourcePtr source, char delimiter)
+      : _source(std::move(source)), _delimiter(delimiter) {}
+
+  std::optional<std::string> nextLine() final;
+
+  std::optional<std::vector<std::string>> nextBatch(
+      size_t target_batch_size) final;
+
+  std::string resourceName() const final { return _source->resourceName(); }
+
+  void restart() final {
+    _remains = {};
+    _source->restart();
+  }
+
+  static auto make(DataSourcePtr source, char delimiter) {
+    return std::make_shared<CsvDataSource>(std::move(source), delimiter);
+  }
+
+ private:
+  static std::optional<uint32_t> findNewline(
+      parsers::CSV::StateMachine& state_machine, const std::string& line);
+
+  std::optional<std::string> nextRawLine();
+
+  DataSourcePtr _source;
+  char _delimiter;
+  std::optional<std::string> _remains;
 };
 
 }  // namespace thirdai::dataset

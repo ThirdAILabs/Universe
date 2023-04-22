@@ -373,6 +373,7 @@ set(THIRDAI_SOURCES
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
     dataset/src/Vocabulary.cc
+    dataset/src/DataSource.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
