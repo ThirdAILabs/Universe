@@ -381,7 +381,7 @@ void Model::saveMetadata(const std::string& save_path) const {
 void Model::verifyAllowedOutputDim() const {
   uint64_t total_output_dim = std::transform_reduce(
       _outputs.begin(), _outputs.end(), 0UL, std::plus(),
-      [](const auto& output) { return output->op()->dim(); });
+      [](const auto& output) { return output->dims().back(); });
 
   licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
 }

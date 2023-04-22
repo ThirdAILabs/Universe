@@ -57,16 +57,15 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
   auto& output_1 = _output_1->tensor();
   auto& output_2 = _output_2->tensor();
 
-  uint32_t start = labels->vectorsForSampleStart(index_in_batch);
-  uint32_t end = labels->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = labels->rangeStart(index_in_batch);
+  uint32_t end = labels->rangeEnd(index_in_batch);
 
   for (uint32_t i = start; i < end; i++) {
     auto& vec_1 = output_1->getVector(i);
     auto& vec_2 = output_2->getVector(i);
     float label = labels->getVector(i).activations[0];
 
-    float euclidean_distance =
-        std::sqrt(euclideanDistanceSquared(index_in_batch));
+    float euclidean_distance = std::sqrt(euclideanDistanceSquared(i));
     // If the euclidean distance between points is 0, they were likely the same
     // input, or the network is in a degenerative state. Either way, the
     // gradient will be nan or inf, and we don't want this so we treat it as a
@@ -98,23 +97,33 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
 }
 
 float EuclideanContrastive::loss(uint32_t index_in_batch) const {
-  float label = _labels->tensor()->getVector(index_in_batch).activations[0];
+  const auto& labels = _labels->tensor();
 
-  float euclidean_distance_squared = euclideanDistanceSquared(index_in_batch);
-  // If the euclidean distance between points is 0, they were likely the same
-  // input, or the network is in a degenerative state. Either way, the gradient
-  // will be nan or inf, and we don't want this so we treat it as not
-  // contributing to the loss.
-  if (euclidean_distance_squared == 0) {
-    return 0;
+  uint32_t start = labels->rangeStart(index_in_batch);
+  uint32_t end = labels->rangeEnd(index_in_batch);
+
+  float total_loss = 0;
+  for (uint32_t i = start; i < end; i++) {
+    float label = labels->getVector(i).activations[0];
+
+    float euclidean_distance_squared = euclideanDistanceSquared(i);
+    // If the euclidean distance between points is 0, they were likely the same
+    // input, or the network is in a degenerative state. Either way, the
+    // gradient will be nan or inf, and we don't want this so we treat it as not
+    // contributing to the loss.
+    if (euclidean_distance_squared == 0) {
+      continue;
+    }
+    float euclidean_distance = std::sqrt(euclidean_distance_squared);
+    float cutoff_distance =
+        std::max<float>(0, _dissimilar_cutoff_distance - euclidean_distance);
+    float cutoff_distance_squared = cutoff_distance * cutoff_distance;
+
+    total_loss += label * 0.5 * euclidean_distance_squared +
+                  (1 - label) * cutoff_distance_squared;
   }
-  float euclidean_distance = std::sqrt(euclidean_distance_squared);
-  float cutoff_distance =
-      std::max<float>(0, _dissimilar_cutoff_distance - euclidean_distance);
-  float cutoff_distance_squared = cutoff_distance * cutoff_distance;
 
-  return label * 0.5 * euclidean_distance_squared +
-         (1 - label) * cutoff_distance_squared;
+  return total_loss / (end - start);
 }
 
 autograd::ComputationList EuclideanContrastive::outputsUsed() const {

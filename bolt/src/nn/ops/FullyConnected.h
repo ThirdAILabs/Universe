@@ -64,6 +64,8 @@ class FullyConnected final
    */
   uint32_t inputDim() const;
 
+  uint32_t dim() const;
+
   /**
    * Returns a non-owning pointer to the weights.
    */

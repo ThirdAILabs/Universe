@@ -43,9 +43,9 @@ class Tensor {
    */
   BoltVector& getVector(uint32_t index);
 
-  uint32_t vectorsForSampleStart(uint32_t index_in_batch) const;
+  uint32_t rangeStart(uint32_t index_in_batch) const;
 
-  uint32_t vectorsForSampleEnd(uint32_t index_in_batch) const;
+  uint32_t rangeEnd(uint32_t index_in_batch) const;
 
   /**
    * Returns the number of vectors in the tensor.

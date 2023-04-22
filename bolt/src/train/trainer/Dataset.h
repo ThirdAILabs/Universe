@@ -12,6 +12,13 @@ using LabeledDataset = std::pair<Dataset, Dataset>;
 Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
                         std::vector<uint32_t> dims);
 
+Dataset convertDatasetsForModelDims(
+    const std::vector<dataset::BoltDatasetPtr>& datasets,
+    const std::vector<nn::tensor::Dims>& dims);
+
 Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim);
+
+Dataset convertDatasetForModelDim(const dataset::BoltDatasetPtr& dataset,
+                                  nn::tensor::Dims dim);
 
 }  // namespace thirdai::bolt::train

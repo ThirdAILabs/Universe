@@ -11,11 +11,17 @@ PrecisionAtK::PrecisionAtK(nn::autograd::ComputationPtr outputs,
       _k(k) {}
 
 void PrecisionAtK::record(uint32_t index_in_batch) {
-  const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
-  const BoltVector& label = _labels->tensor()->getVector(index_in_batch);
+  const auto& output = _outputs->tensor();
+  const auto& labels = _labels->tensor();
 
-  _num_correct_predicted += truePositivesInTopK(output, label, _k);
-  _num_predicted += _k;
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
+
+  for (uint32_t i = start; i < end; i++) {
+    _num_correct_predicted +=
+        truePositivesInTopK(output->getVector(i), labels->getVector(i), _k);
+    _num_predicted += _k;
+  }
 }
 
 void PrecisionAtK::reset() {

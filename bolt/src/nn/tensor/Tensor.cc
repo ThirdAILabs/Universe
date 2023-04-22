@@ -122,11 +122,11 @@ BoltVector& Tensor::getVector(uint32_t index) {
   return _vectors[index];
 }
 
-uint32_t Tensor::vectorsForSampleStart(uint32_t index_in_batch) const {
+uint32_t Tensor::rangeStart(uint32_t index_in_batch) const {
   return index_in_batch * _vectors_per_batch_element;
 }
 
-uint32_t Tensor::vectorsForSampleEnd(uint32_t index_in_batch) const {
+uint32_t Tensor::rangeEnd(uint32_t index_in_batch) const {
   return (index_in_batch + 1) * _vectors_per_batch_element;
 }
 

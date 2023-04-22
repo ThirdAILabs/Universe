@@ -37,8 +37,8 @@ float ComparativeLoss::loss(uint32_t index_in_batch) const {
   const auto& activations = _output->tensor();
   const auto& labels = _labels->tensor();
 
-  uint32_t start = activations->vectorsForSampleStart(index_in_batch);
-  uint32_t end = activations->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = activations->rangeStart(index_in_batch);
+  uint32_t end = activations->rangeEnd(index_in_batch);
 
   float total_loss = 0;
   for (uint32_t i = start; i < end; i++) {
@@ -59,7 +59,7 @@ float ComparativeLoss::loss(uint32_t index_in_batch) const {
     }
   }
 
-  return total_loss;
+  return total_loss / (end - start);
 }
 
 void ComparativeLoss::gradients(uint32_t index_in_batch,
@@ -67,8 +67,8 @@ void ComparativeLoss::gradients(uint32_t index_in_batch,
   auto& activations = _output->tensor();
   const auto& labels = _labels->tensor();
 
-  uint32_t start = activations->vectorsForSampleStart(index_in_batch);
-  uint32_t end = activations->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = activations->rangeStart(index_in_batch);
+  uint32_t end = activations->rangeEnd(index_in_batch);
 
   for (uint32_t i = start; i < end; i++) {
     BoltVector& act_vec = activations->getVector(i);

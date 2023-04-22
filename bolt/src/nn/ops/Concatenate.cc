@@ -29,8 +29,8 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
   (void)training;
   assert(!inputs.empty());
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   for (uint32_t i = start; i < end; i++) {
     forward(inputs, output, i);
@@ -76,8 +76,8 @@ void Concatenate::backpropagate(autograd::ComputationList& inputs,
                                 uint32_t index_in_batch) {
   assert(!inputs.empty());
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   for (uint32_t i = start; i < end; i++) {
     backpropagate(inputs, output, i);

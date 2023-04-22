@@ -12,15 +12,21 @@ CategoricalAccuracy::CategoricalAccuracy(nn::autograd::ComputationPtr outputs,
       _num_samples(0) {}
 
 void CategoricalAccuracy::record(uint32_t index_in_batch) {
-  const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
-  const BoltVector& label = _labels->tensor()->getVector(index_in_batch);
+  const auto& output = _outputs->tensor();
+  const auto& labels = _labels->tensor();
 
-  uint32_t prediction = output.getHighestActivationId();
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
-  if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
-    _correct++;
+  for (uint32_t i = start; i < end; i++) {
+    uint32_t prediction = output->getVector(i).getHighestActivationId();
+
+    if (labels->getVector(i).findActiveNeuronNoTemplate(prediction).activation >
+        0) {
+      _correct++;
+    }
+    _num_samples++;
   }
-  _num_samples++;
 }
 
 void CategoricalAccuracy::reset() {

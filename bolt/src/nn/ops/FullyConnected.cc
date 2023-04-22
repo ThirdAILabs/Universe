@@ -56,8 +56,8 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
   // in active neuron set.
   bool use_labels = training && inputs.size() == 2;
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   const auto& input = inputs[0]->tensor();
 
@@ -75,8 +75,8 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
                                    uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   auto& input = inputs[0]->tensor();
 
@@ -166,7 +166,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
           << _kernel->getDim() << ", " << _kernel->getInputDim()
-          << ") to input tensor with dim " << input_dim << ".";
+          << ") to input tensor with last dim " << input_dim << ".";
 
     throw std::invalid_argument(error.str());
   }
@@ -174,6 +174,8 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
 }
 
 uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
+
+uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
 
 const float* FullyConnected::weightsPtr() const {
   return _kernel->getWeightsPtr();

@@ -318,18 +318,6 @@ LabeledDataset Trainer::loadAllWrapper(
   return std::move(data.value());
 }
 
-std::vector<uint32_t> mapToSingleDim(
-    const std::vector<std::vector<uint32_t>>& dims) {
-  std::vector<uint32_t> dims_1d;
-  dims_1d.reserve(dims.size());
-
-  for (const auto& dim : dims) {
-    dims_1d.push_back(dim.back());
-  }
-
-  return dims_1d;
-}
-
 std::optional<LabeledDataset> Trainer::loadSomeWrapper(
     const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
     uint32_t max_batches) {
@@ -338,8 +326,8 @@ std::optional<LabeledDataset> Trainer::loadSomeWrapper(
     return std::nullopt;
   }
 
-  auto input_dims = mapToSingleDim(_model->inputDims());
-  auto label_dims = mapToSingleDim(_model->labelDims());
+  auto input_dims = _model->inputDims();
+  auto label_dims = _model->labelDims();
 
   if (datasets->size() != (input_dims.size() + label_dims.size())) {
     std::stringstream error;
@@ -356,8 +344,8 @@ std::optional<LabeledDataset> Trainer::loadSomeWrapper(
       datasets->begin() + input_dims.size(), datasets->end());
 
   return std::make_optional<LabeledDataset>(
-      convertDatasets(input_datasets, input_dims),
-      convertDatasets(label_datasets, label_dims));
+      convertDatasetsForModelDims(input_datasets, input_dims),
+      convertDatasetsForModelDims(label_datasets, label_dims));
 }
 
 }  // namespace thirdai::bolt::train

@@ -1,5 +1,6 @@
 #include "DistributedTrainingWrapper.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
 #include <utils/Logging.h>
@@ -135,8 +136,9 @@ void DistributedTrainingWrapper::setGradients(const float* new_grad,
 std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
     const dataset::BoltDatasetList& data,
     const dataset::BoltDatasetPtr& labels) {
-  auto data_tensors = convertDatasets(data, _model->inputDims());
-  auto label_tensors = convertDataset(labels, _model->outputs().at(0)->dim());
+  auto data_tensors = convertDatasetsForModelDims(data, _model->inputDims());
+  auto label_tensors =
+      convertDatasetForModelDim(labels, _model->outputs().at(0)->dims());
 
   return std::make_optional<LabeledDataset>(std::move(data_tensors),
                                             std::move(label_tensors));

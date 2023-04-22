@@ -48,8 +48,8 @@ void Embedding::forward(const autograd::ComputationList& inputs,
   (void)training;
   assert(inputs.size() == 1);
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   const tensor::TensorPtr& input = inputs[0]->tensor();
 
@@ -63,8 +63,8 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
                               uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   const tensor::TensorPtr& input = inputs[0]->tensor();
 

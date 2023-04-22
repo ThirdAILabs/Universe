@@ -11,14 +11,21 @@ RecallAtK::RecallAtK(nn::autograd::ComputationPtr outputs,
       _k(k) {}
 
 void RecallAtK::record(uint32_t index_in_batch) {
-  const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
-  const BoltVector& label = _labels->tensor()->getVector(index_in_batch);
+  const auto& output = _outputs->tensor();
+  const auto& labels = _labels->tensor();
 
-  _num_correct_predicted += truePositivesInTopK(output, label, _k);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
-  for (uint32_t i = 0; i < label.len; i++) {
-    if (label.activations[i] > 0) {
-      _num_ground_truth++;
+  for (uint32_t i = start; i < end; i++) {
+    const auto& label_vec = labels->getVector(i);
+    _num_correct_predicted +=
+        truePositivesInTopK(output->getVector(i), label_vec, _k);
+
+    for (uint32_t i = 0; i < label_vec.len; i++) {
+      if (label_vec.activations[i] > 0) {
+        _num_ground_truth++;
+      }
     }
   }
 }

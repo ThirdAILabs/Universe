@@ -27,9 +27,10 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
                         tensor::TensorPtr& output, uint32_t index_in_batch,
                         bool training) {
   (void)training;
+  assert(inputs.size() == 1);
 
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   const auto& input = inputs[0]->tensor();
 
@@ -70,8 +71,10 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
 void LayerNorm::backpropagate(autograd::ComputationList& inputs,
                               tensor::TensorPtr& output,
                               uint32_t index_in_batch) {
-  uint32_t start = output->vectorsForSampleStart(index_in_batch);
-  uint32_t end = output->vectorsForSampleEnd(index_in_batch);
+  assert(inputs.size() == 1);
+
+  uint32_t start = output->rangeStart(index_in_batch);
+  uint32_t end = output->rangeEnd(index_in_batch);
 
   const auto& input = inputs[0]->tensor();
 
@@ -183,11 +186,10 @@ autograd::ComputationPtr LayerNorm::apply(
     _beta.assign(dim_to_normalize, 0.0);
     _gamma_optimizer = AdamOptimizer(dim_to_normalize);
     _beta_optimizer = AdamOptimizer(dim_to_normalize);
-  } else if (input->dims().back() != dim()) {
+  } else if (dim_to_normalize != dim()) {
     throw std::invalid_argument(
-        "Cannot apply LayerNorm op for input with dimension " +
-        std::to_string(dim()) + " to input with dimension " +
-        std::to_string(dim_to_normalize) + ".");
+        "Cannot apply LayerNorm op for dimension " + std::to_string(dim()) +
+        " to input with last dimension " + std::to_string(dim_to_normalize) + ".");
   }
 
   return autograd::Computation::make(shared_from_this(), {input});

@@ -38,16 +38,18 @@ py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
 
 template <typename T>
 py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
+  auto dims = tensor->dims();
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
     throw std::runtime_error(
         "Cannot convert tensor to numpy if the number of nonzeros is not "
         "fixed.");
   }
+
+  dims.back() = *nonzeros;
+
   if (data) {
-    py::array_t<T, py::array::c_style | py::array::forcecast> arr(
-        {tensor->batchSize(), *nonzeros}, data);
-    return py::object(std::move(arr));
+    return toNumpy(data, dims);
   }
   // We return None if the data is nullptr so that a user can access the field
   // and check if its None rather than dealing with an exception. For example:
@@ -133,13 +135,11 @@ void defineTensor(py::module_& nn) {
 
 void defineOps(py::module_& nn) {
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
-      .def("dim", &autograd::Computation::dim)
+      .def("dims", &autograd::Computation::dims)
       .def("tensor", &autograd::Computation::tensor)
       .def("name", &autograd::Computation::name);
 
-  py::class_<ops::Op, ops::OpPtr>(nn, "Op")
-      .def("dim", &ops::Op::dim)
-      .def("name", &ops::Op::name);
+  py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
 
   py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
       nn, "FullyConnected")
@@ -149,6 +149,7 @@ void defineOps(py::module_& nn) {
            py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnected::apply)
+      .def("dim", &ops::FullyConnected::dim)
       .def_property_readonly(
           "weights",
           [](const ops::FullyConnected& op) {

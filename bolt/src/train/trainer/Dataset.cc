@@ -42,9 +42,30 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
   return batches;
 }
 
+Dataset convertDatasetsForModelDims(
+    const std::vector<dataset::BoltDatasetPtr>& datasets,
+    const std::vector<nn::tensor::Dims>& dims) {
+  std::vector<uint32_t> single_dims;
+  for (const auto& dim : dims) {
+    if (dims.size() != 2) {
+      throw std::invalid_argument(
+          "Can only convert bolt batches to 2D tensors.");
+    }
+    single_dims.push_back(dim.back());
+  }
+
+  return convertDatasets(datasets, single_dims);
+}
+
 Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
   std::vector<dataset::BoltDatasetPtr> datasets = {dataset};
-  return convertDatasets({std::move(datasets)}, {dim});
+  return convertDatasets(datasets, {dim});
+}
+
+Dataset convertDatasetForModelDim(const dataset::BoltDatasetPtr& dataset,
+                                  nn::tensor::Dims dim) {
+  std::vector<dataset::BoltDatasetPtr> datasets = {dataset};
+  return convertDatasets(datasets, {std::move(dim)});
 }
 
 }  // namespace thirdai::bolt::train

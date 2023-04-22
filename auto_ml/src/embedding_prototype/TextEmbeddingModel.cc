@@ -94,7 +94,7 @@ py::object TextEmbeddingModel::supervisedTrain(
   auto boltv1_data_x = {boltv1_data_1.at(0), boltv1_data_2.at(0)};
   auto boltv1_data_y = boltv1_data_1.back();
 
-  bolt::train::Dataset tensor_data_x = bolt::train::convertDatasets(
+  bolt::train::Dataset tensor_data_x = bolt::train::convertDatasetsForModelDims(
       boltv1_data_x, _two_tower_model->inputDims());
   bolt::train::Dataset tensor_data_y =
       bolt::train::convertDataset(boltv1_data_y, 1);
@@ -113,7 +113,7 @@ py::object TextEmbeddingModel::encodeBatch(
   }
   auto input_vectors = _embedding_factory->featurizeInputBatch(map_input).at(0);
   auto input_tensors = bolt::nn::tensor::Tensor::convert(
-      input_vectors, _embedding_model->inputDims().at(0));
+      input_vectors, _embedding_model->inputDims().at(0).back());
   auto output =
       _embedding_model->forward({input_tensors}, /* use_sparsity = */ false);
 
