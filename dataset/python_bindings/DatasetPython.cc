@@ -113,19 +113,47 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &Block::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  // TODO(david) ADD PYBINDS IN THIS PR
-  //   py::class_<TextBlock, Block, TextBlockPtr>(
-  //       internal_dataset_submodule, "AbstractTextBlock",
-  //       "Abstract block for processing text (e.g. sentences / paragraphs).")
-  //       .def("is_dense", &TextBlock::isDense,
-  //            "Returns false since text blocks always produce sparse
-  //            features.")
-  //       .def("feature_dim", &TextBlock::featureDim,
-  //            "The dimension of the vector encoding.");
+  py::class_<TextTokenizer, TextTokenizerPtr>(  // NOLINT
+      internal_dataset_submodule, "TextTokenizer");
+
+  py::class_<CharKGramTokenizer, TextTokenizer,
+             std::shared_ptr<CharKGramTokenizer>>(internal_dataset_submodule,
+                                                  "CharKGramTokenizer")
+      .def(py::init<uint32_t>(), py::arg("k"));
+
+  py::class_<NaiveSplitTokenizer, TextTokenizer,
+             std::shared_ptr<NaiveSplitTokenizer>>(internal_dataset_submodule,
+                                                   "NaiveSplitTokenizer")
+      .def(py::init<char>(), py::arg("delimiter"));
+
+  py::class_<WordPunctTokenizer, TextTokenizer,
+             std::shared_ptr<WordPunctTokenizer>>(internal_dataset_submodule,
+                                                  "WordPunctTokenizer")
+      .def(py::init<>());
+
+  py::class_<TextEncoder, TextEncoderPtr>(  // NOLINT
+      internal_dataset_submodule, "TextEncoder");
+
+  py::class_<NGramEncoder, TextEncoder, std::shared_ptr<NGramEncoder>>(
+      internal_dataset_submodule, "NGramEncoder")
+      .def(py::init<uint32_t>(), py::arg("n"));
+
+  py::class_<PairGramEncoder, TextEncoder, std::shared_ptr<PairGramEncoder>>(
+      internal_dataset_submodule, "PairGramEncoder")
+      .def(py::init<>());
+
+  py::class_<TextBlock, Block, TextBlockPtr>(block_submodule, "TextBlock")
+      .def(py::init<uint32_t, TextTokenizerPtr, TextEncoderPtr, uint32_t>(),
+           py::arg("col"), py::arg("tokenizer") = NaiveSplitTokenizer::make(),
+           py::arg("encoder") = NGramEncoder::make(1),
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
+      .def("is_dense", &TextBlock::isDense)
+      .def("feature_dim", &TextBlock::featureDim);
 
   py::class_<CategoricalBlock, Block, CategoricalBlockPtr>(
       internal_dataset_submodule, "AbstractCategoricalBlock",
-      "A block that encodes categorical features (e.g. a numerical ID or an "
+      "A block that encodes categorical features (e.g. a numerical ID or "
+      "an "
       "identification string).")
       .def("is_dense", &CategoricalBlock::isDense,
            "Returns false since categorical blocks always produce sparse "
