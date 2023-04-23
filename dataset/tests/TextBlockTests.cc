@@ -168,11 +168,14 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
   std::vector<TextBlockPtr> blocks;
-  blocks.push_back(
-      NGramTextBlock::make(/* col= */ 0, /* n= */ 1, dim_for_encodings));
-  blocks.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
-  blocks.push_back(
-      CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
+  blocks.push_back(TextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks.push_back(TextBlock::make(
+      /* col= */ 1,
+      /* tokenizer = */ NaiveSplitTokenizer::make(),
+      /* encoder = */ PairGramEncoder::make(), dim_for_encodings));
+  blocks.push_back(TextBlock::make(
+      /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
+      dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSegmentedVecs(sentence_matrix, blocks);
@@ -238,16 +241,20 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
   std::vector<TextBlockPtr> blocks_2;
   // Duplicate each block. They will independently produce features
   // and we can check that the resulting vectors are equal.
-  blocks_1.push_back(
-      NGramTextBlock::make(/* col= */ 0, /* n= */ 1, dim_for_encodings));
-  blocks_2.push_back(
-      NGramTextBlock::make(/* col= */ 0, /* n= */ 1, dim_for_encodings));
-  blocks_1.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
-  blocks_2.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
-  blocks_1.push_back(
-      CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
-  blocks_2.push_back(
-      CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
+  blocks_1.push_back(TextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks_2.push_back(TextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks_1.push_back(TextBlock::make(/* col= */ 1,
+                                     /* encoder = */ PairGramEncoder::make(),
+                                     dim_for_encodings));
+  blocks_2.push_back(TextBlock::make(/* col= */ 1,
+                                     /* encoder = */ PairGramEncoder::make(),
+                                     dim_for_encodings));
+  blocks_1.push_back(TextBlock::make(
+      /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
+      dim_for_encodings));
+  blocks_2.push_back(TextBlock::make(
+      /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
+      dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs_1 =
       makeSegmentedVecs(sentence_matrix, blocks_1);
@@ -280,9 +287,10 @@ TEST_F(TextBlockTest, TextUnigramBlockWithDelimiter) {
 
   std::vector<TextBlockPtr> blocks;
 
-  blocks.push_back(NGramTextBlock::make(/* col= */ 0, /* n= */ 1,
-                                        /* dim= */ 100,
-                                        /* delimiter= */ '-'));
+  blocks.push_back(TextBlock::make(
+      /* col = */ 0,
+      /* tokenizer = */ NaiveSplitTokenizer::make(/* delimiter = */ '-'),
+      /* dim = */ 100));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSegmentedVecs(sentence_matrix, blocks);

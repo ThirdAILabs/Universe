@@ -489,7 +489,6 @@ class QueryCandidateGenerator {
       input_blocks.emplace_back(dataset::TextBlock::make(
           /* col = */ column_index,
           /* tokenizer = */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
-          /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
           /* dim = */ _query_generator_config->defaultTextEncodingDim()));
     }
 

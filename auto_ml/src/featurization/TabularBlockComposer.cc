@@ -92,7 +92,6 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
         blocks.push_back(dataset::TextBlock::make(
             /* col = */ col_name, /* tokenizer = */
             dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
-            /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
             /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(

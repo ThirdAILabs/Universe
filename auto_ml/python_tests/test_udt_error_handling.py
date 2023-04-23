@@ -111,6 +111,24 @@ def test_target_not_in_data_types():
         )
 
 
+def test_invalid_text_tokenizers():
+    invalid_tokenizer = "INVALID"
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Created text column with invalid tokenizer 'INVALID', please choose one of 'words', 'words-with-punctuation', or 'char-k' (k is a number, e.g. 'char-5')."
+        ),
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(tokenizer=invalid_tokenizer),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )
+
+
 def test_contextual_text_encodings():
     invalid_encoding = "INVALID"
     with pytest.raises(
