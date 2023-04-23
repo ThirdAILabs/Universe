@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from thirdai import bolt
-
+import time
 
 # This class allows a metric function to be invoked as a callback after every epoch
 # of training a UDT model. This class is used when we want to record an evaluation
@@ -65,23 +65,23 @@ def get_roc_auc_metric_fn(target_column, positive_label="1"):
     return roc_auc_additional_metric
 
 
-def get_gnn_roc_auc_metric_fn(target_column):
+
+def get_gnn_roc_auc_metric_fn(target_column, inference_batch_size=2048):
     def roc_auc_additional_metric(model, test_file):
         df = pd.read_csv(test_file)
-        inference_samples = []
-        for _, row in df.iterrows():
-            sample = dict(row)
-            label = sample[target_column]
-            del sample[target_column]
-            sample = {x: str(y) for x, y in sample.items()}
-            inference_samples.append((sample, label))
+        ground_truths = df[target_column]
+        del df[target_column]
 
         predictions = []
-        ground_truths = []
-        for sample, ground_truth in inference_samples:
-            prediction = model.predict(sample)
-            predictions.append(prediction)
-            ground_truths.append(ground_truth)
+        for start in range(0, len(df), inference_batch_size):
+            samples = []
+            for row_id in range(start, min(start + inference_batch_size, len(df))):
+                sample = dict(df.iloc[row_id])
+                sample = {x: str(y) for x, y in sample.items()}
+                samples.append(sample)
+
+            predictions += list(model.predict_batch(samples))
+            
         predictions = np.array(predictions)
 
         roc_auc = roc_auc_score(ground_truths, predictions[:, 1])
