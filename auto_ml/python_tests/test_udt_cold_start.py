@@ -49,7 +49,7 @@ def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
 
         if bad_csv_line:
             outfile.write("1,theres a new line,\n,")
-    
+
         if not integer_target:
             outfile.write("LMFAO,this is not an integer,,\n")
 
