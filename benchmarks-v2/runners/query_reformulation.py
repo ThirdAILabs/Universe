@@ -25,11 +25,11 @@ class QueryReformulationRunner(Runner):
         model.train(train_file)
 
         for metric_name, metric_fn in config.additional_metric_fns.items():
-            metric_val = metric_fn(model, test_file)
+            metric_value = metric_fn(model, test_file)
 
-            print(f"{metric_name} = {metric_val}")
+            print(f"{metric_name} = {metric_value}")
             mlflow_logger.log_additional_metric(
-                key=metric_name, value=metric_val, step=0
+                key=f"val_{metric_name}", value=metric_value, step=0
             )
 
         average_predict_time_ms = QueryReformulationRunner.get_average_predict_time(

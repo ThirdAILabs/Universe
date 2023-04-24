@@ -65,8 +65,15 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client):
     mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True, errors="ignore")
 
     # Drop learning rate column since we don't need to display it as a recorded metric in Slack
-
     mlflow_runs.drop(columns=["metrics.learning_rate"], inplace=True, errors="ignore")
+
+    # Drop test time because it is inconsistent between benchmarks due to some benchmarks using
+    # model.evaluate vs regular callbacks. The average predict time metric can be used instead
+    mlflow_runs.drop(columns=["metrics.test_time"], inplace=True, errors="ignore")
+    mlflow_runs.drop(columns=["metrics.val_test_time"], inplace=True, errors="ignore")
+
+    # Remove columns that contain only nan values, usually indicates deprecation of a metric
+    mlflow_runs.dropna(axis=1, how='all', inplace=True)
 
     # Convert the start time timestamp into a date to make it easier to read
     mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
