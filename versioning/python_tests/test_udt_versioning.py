@@ -23,12 +23,14 @@ def build_udt_model():
 
     return model
 
+
 def test_save_load_udt_model():
     model = build_udt_model()
     model_name = "udt_model"
     model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
     model.save(model_path)
     bolt.UniversalDeepTransformer.load(model_path)
+
 
 def test_load_old_udt_model():
     model_name = "old_udt_model"
