@@ -1,0 +1,9 @@
+thirdai_version=0.6.8+cda489ee
+model_uuid=469AADF685D3CCF8A7D985F47C8D2BFB
+date_saved=Mon Apr 24 12:44:06 2023
+train_steps_before_save=0
+model_summary=
+===================== Model =====================
+Input(input_1) -> tensor_1
+FullyConnected(fc_1): tensor_1 -> tensor_2 [dim=2, sparsity=0.4, activation=ReLU, sampling=(hash_function=DWTA, num_tables=205, range=512, reservoir_size=4, rebuild_hash_tables=10, reconstruct_hash_functions=100)]
+=================================================

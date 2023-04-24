@@ -14,17 +14,17 @@ def build_bolt_model():
     # Dummy bolt model to test serialization
 
     op = bolt.nn.FullyConnected(
-        dim=10,
-        input_dim=10,
+        dim=2,
+        input_dim=2,
         sparsity=0.4,
         activation="relu",
     )
 
-    input_layer = bolt.nn.Input(dim=10)
+    input_layer = bolt.nn.Input(dim=2)
 
     output_layer = op(input_layer)
 
-    labels = bolt.nn.Input(dim=10)
+    labels = bolt.nn.Input(dim=2)
 
     loss = bolt.nn.losses.CategoricalCrossEntropy(
         activations=output_layer, labels=labels
@@ -36,9 +36,10 @@ def build_bolt_model():
 
 
 def test_save_load_bolt_model():
-    model = build_bolt_model()
     model_name = "bolt_model"
     model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
+
+    model = build_bolt_model()
     model.save(model_path)
     bolt.nn.Model.load(model_path)
 
