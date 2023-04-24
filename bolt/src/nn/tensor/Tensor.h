@@ -74,4 +74,32 @@ using TensorPtr = std::shared_ptr<Tensor>;
 
 using TensorList = std::vector<TensorPtr>;
 
+inline bool areDimsEq(const Dims& a, const Dims& b,
+                      bool include_last_dim = true) {
+  if (a.size() != b.size()) {
+    return false;
+  }
+
+  uint32_t end = include_last_dim ? a.size() : a.size() - 1;
+  for (uint32_t i = 0; i < end; i++) {
+    if (a.at(i) != b.at(i)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+inline std::string toString(const Dims& dims) {
+  std::string str = "(";
+  for (uint32_t d : dims) {
+    str += std::to_string(d) + ", ";
+  }
+
+  str.pop_back();  // Remove last ', '
+  str.pop_back();
+
+  return str + ")";
+}
+
 }  // namespace thirdai::bolt::nn::tensor
