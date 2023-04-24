@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -42,10 +44,19 @@ class AdditionalMetricCallback(bolt.train.callbacks.Callback):
         print(f"{self.metric_name} = {metric_val}")
         if self.mlflow_logger:
             self.mlflow_logger.log_additional_metric(
-                key=self.metric_name, value=metric_val, step=self.step
+                key=f"val_{self._clean(self.metric_name)}",
+                value=metric_val,
+                step=self.step,
             )
 
         self.step += 1
+
+    def _clean(self, key):
+        # mlflow doesn't like when metrics have "@", "(", or ")" in them (e.g. "precision@k")
+        key = key.replace("(", "_")
+        key = key.replace(")", "")
+        key = key.replace("@", "_")
+        return key
 
 
 def create_test_samples(test_file, target_column):
@@ -83,23 +94,22 @@ def get_roc_auc_metric_fn(target_column, positive_label="1"):
     return roc_auc_additional_metric
 
 
-def get_gnn_roc_auc_metric_fn(target_column):
+def get_gnn_roc_auc_metric_fn(target_column, inference_batch_size=2048):
     def roc_auc_additional_metric(model, test_file):
         df = pd.read_csv(test_file)
-        inference_samples = []
-        for _, row in df.iterrows():
-            sample = dict(row)
-            label = sample[target_column]
-            del sample[target_column]
-            sample = {x: str(y) for x, y in sample.items()}
-            inference_samples.append((sample, label))
+        ground_truths = df[target_column]
+        del df[target_column]
 
         predictions = []
-        ground_truths = []
-        for sample, ground_truth in inference_samples:
-            prediction = model.predict(sample)
-            predictions.append(prediction)
-            ground_truths.append(ground_truth)
+        for start in range(0, len(df), inference_batch_size):
+            samples = []
+            for row_id in range(start, min(start + inference_batch_size, len(df))):
+                sample = dict(df.iloc[row_id])
+                sample = {x: str(y) for x, y in sample.items()}
+                samples.append(sample)
+
+            predictions += list(model.predict_batch(samples))
+
         predictions = np.array(predictions)
 
         roc_auc = roc_auc_score(ground_truths, predictions[:, 1])
@@ -137,6 +147,7 @@ def get_mae_metric_fn(target_column):
 
 def get_mach_recall_at_k_metric_fn(target_column, k=1, target_delimeter=None):
     # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
+    assert 1 <= k <= 5
 
     def recall_at_k_additional_metric(model, test_file):
         activations = get_activations(model, test_file, target_column)

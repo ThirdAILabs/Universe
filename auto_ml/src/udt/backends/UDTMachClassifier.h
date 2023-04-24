@@ -111,8 +111,7 @@ class UDTMachClassifier final : public UDTBackend {
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
-        /* label_column_name = */ _mach_label_block->columnName(),
-        /* integer_target = */ integerTarget());
+        /* label_column_name = */ _mach_label_block->columnName());
   }
 
   std::string variantToString(const Label& variant);

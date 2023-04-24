@@ -1,6 +1,7 @@
 #include "Metric.h"
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
+#include <bolt/src/train/metrics/FMeasure.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/PrecisionAtK.h>
 #include <bolt/src/train/metrics/RecallAtK.h>
@@ -85,6 +86,10 @@ InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<RecallAtK>(output, labels, k);
+    } else if (std::regex_match(name, std::regex(R"(f_measure\(0.\\d+\))"))) {
+      float threshold = std::stof(name.substr(name.find('(')));
+      metrics[prefix + name] =
+          std::make_shared<FMeasure>(output, labels, threshold);
     } else {
       throw std::invalid_argument("Metric '" + name +
                                   "' is not yet supported.");
