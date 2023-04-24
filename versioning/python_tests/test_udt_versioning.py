@@ -1,9 +1,10 @@
 import os
+from pathlib import Path
 
 import pytest
 from thirdai import bolt
 
-SERIALIZED_CLASS_DIR = "../versioning/python_tests/serialized_classes/"
+SERIALIZED_CLASS_DIR = Path(__file__).resolve().parent / "serialized_classes"
 ERROR_STRING = r"UDT_BASE, but got version 0"
 
 pytestmark = [pytest.mark.unit]

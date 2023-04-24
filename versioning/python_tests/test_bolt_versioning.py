@@ -1,9 +1,10 @@
 import os
+from pathlib import Path
 
 import pytest
 from thirdai import bolt_v2 as bolt
 
-SERIALIZED_CLASS_DIR = "../versioning/python_tests/serialized_classes/"
+SERIALIZED_CLASS_DIR = Path(__file__).resolve().parent / "serialized_classes"
 ERROR_STRING = r"BOLT_MODEL, but got version 0"
 
 pytestmark = [pytest.mark.unit]
