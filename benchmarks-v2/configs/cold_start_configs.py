@@ -43,7 +43,29 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
     integer_target = True
     n_target_classes = 26109
     delimiter = ","
-    model_config_path = "catalog_recommender/cooking/cooking_model_config"
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+            {
+                "name": "fc_1",
+                "type": "fully_connected",
+                "dim": 256,
+                "sparsity": 1.0,
+                "activation": "relu",
+                "predecessor": "input",
+            },
+            {
+                "name": "fc_2",
+                "type": "fully_connected",
+                "dim": 26109,
+                "sparsity": 0.02,
+                "activation": "sigmoid",
+                "predecessor": "fc_1",
+            },
+        ],
+        "output": "fc_2",
+        "loss": "BinaryCrossEntropyLoss",
+    }
 
     metrics = ["precision@1", "recall@100"]
     cold_start_num_epochs = 15

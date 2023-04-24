@@ -335,6 +335,7 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/CategoricalAccuracy.cc
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
+    bolt/src/train/metrics/FMeasure.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc

@@ -225,3 +225,29 @@ def test_recall_tie_behavior():
     ]
 
     evaluate_test_cases(test_cases, model, metrics, metric_name)
+
+
+def harmonic_mean(prec, rec):
+    return (2 * prec * rec) / (prec + rec)
+
+
+def test_fmeasure():
+    metric_name = "fmeasure"
+    model, metrics = build_metrics_test_model(
+        bolt.train.metrics.FMeasure, metric_name, {"threshold": 0.8}
+    )
+
+    test_cases = [
+        {
+            "x": [[0.85, 0.0, 0.9, 0.1, 0.4]],
+            "y": [[0.0, 1.0, 1.0, 1.0, 1.0]],
+            "correct_metric_val": harmonic_mean(prec=0.5, rec=0.25),
+        },
+        {
+            "x": [[0.4, 0.9, 0.0, 1.0, 0.0]],
+            "y": [[0.0, 0.0, 0.0, 1.0, 0.0]],
+            "correct_metric_val": harmonic_mean(prec=0.5, rec=1.0),
+        },
+    ]
+
+    evaluate_test_cases(test_cases, model, metrics, metric_name)

@@ -7,6 +7,7 @@
 #include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
+#include <bolt/src/train/metrics/FMeasure.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/metrics/PrecisionAtK.h>
@@ -153,6 +154,13 @@ void defineMetrics(py::module_& train) {
       .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
                     uint32_t>(),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
+
+  py::class_<metrics::FMeasure, std::shared_ptr<metrics::FMeasure>,
+             metrics::Metric>(metrics, "FMeasure")
+      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    float, float>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("threshold"),
+           py::arg("beta") = 1);
 }
 
 void defineCallbacks(py::module_& train) {
