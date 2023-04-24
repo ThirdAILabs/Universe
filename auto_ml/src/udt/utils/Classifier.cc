@@ -157,7 +157,7 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   std::optional<float> best_threshold = std::nullopt;
 
 #pragma omp parallel for default(none) shared( \
-        labels, best_metric_value, best_threshold, metric_name, activations)
+    labels, best_metric_value, best_threshold, metric_name, activations)
   for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
     auto metric = bolt::makeMetric(metric_name);
 
