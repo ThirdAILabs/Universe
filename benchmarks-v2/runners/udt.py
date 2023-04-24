@@ -82,7 +82,7 @@ class UDTRunner(Runner):
             )
 
         average_predict_time_ms = UDTRunner.get_average_predict_time(
-            model, test_file, config, path_prefix, 10000
+            model, test_file, config, path_prefix, 1000
         )
 
         print(f"average_predict_time_ms = {average_predict_time_ms}ms")
@@ -93,7 +93,7 @@ class UDTRunner(Runner):
 
     @staticmethod
     def get_average_predict_time(
-        model, test_file, config, path_prefix, num_samples=10000
+        model, test_file, config, path_prefix, num_samples=1000
     ):
         test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         test_data_sample = test_data.iloc[
@@ -112,7 +112,7 @@ class UDTRunner(Runner):
         for sample, label in inference_samples:
             model.predict(sample)
         end_time = time.time()
-        average_predict_time_ms = int(
+        average_predict_time_ms = float(
             np.around(1000 * (end_time - start_time) / num_samples, decimals=3)
         )
         return average_predict_time_ms

@@ -172,6 +172,7 @@ setup(
     install_requires=[
         "numpy",
         "typing_extensions",
+        "requests",
         "pandas>=1.2.0",
     ],
     extras_require={

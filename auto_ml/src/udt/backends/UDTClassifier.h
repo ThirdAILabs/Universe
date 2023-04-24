@@ -103,7 +103,7 @@ class UDTClassifier final : public UDTBackend {
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
-        _label_block->delimiter(), _label_block->columnName(), integerTarget());
+        _label_block->delimiter(), _label_block->columnName());
   }
 
   TextEmbeddingModelPtr getTextEmbeddingModel(

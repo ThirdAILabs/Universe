@@ -24,7 +24,6 @@ class UDTBenchmarkConfig(ABC):
     temporal_relationships = {}
     delimiter = ","
     model_config = None
-    model_config_path = None
     options = {}
 
     learning_rate = None
