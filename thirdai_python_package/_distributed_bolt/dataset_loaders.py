@@ -53,6 +53,7 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
+        with_prompt=True,
         batches_to_skip=0,
         *args,
         **kwargs,
@@ -62,6 +63,7 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.shuffle = shuffle
         self.data_source_factory = data_source_factory
+        self.with_prompt = with_prompt
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
@@ -94,8 +96,10 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
             load = self.generator.load_some(
                 num_batches=self.max_in_memory_batches, batch_size=self.batch_size
             )
+        if self.with_prompt:
+            return load
 
-        return load
+        return load[1:]
 
     def restart(self):
         self.generator.restart()
