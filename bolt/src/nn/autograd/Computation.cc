@@ -75,13 +75,13 @@ void Computation::addInput(ComputationPtr input) {
 }
 
 void Computation::setTensor(tensor::TensorPtr tensor) {
-  auto input_dims = tensor->dims();
+  tensor::Dims input_dims = tensor->dims();
   input_dims.erase(input_dims.begin());  // Erase batch size.
 
-  if (input_dims != dims()) {
+  if (tensor::areDimsEq(input_dims, dims())) {
     throw std::invalid_argument(
-        "Cannot set tensor with dimension " + std::to_string(0) +
-        " to computation with output dim " + std::to_string(0) + ".");
+        "Cannot set tensor with dimensions " + tensor::toString(input_dims) +
+        " to computation with dimensions " + tensor::toString(dims()) + ".");
   }
   _output = std::move(tensor);
 }

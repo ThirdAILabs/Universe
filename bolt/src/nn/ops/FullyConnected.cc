@@ -166,7 +166,8 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
           << _kernel->getDim() << ", " << _kernel->getInputDim()
-          << ") to input tensor with last dim " << input_dim << ".";
+          << ") to input tensor with dimensions "
+          << tensor::toString(input->dims()) << ".";
 
     throw std::invalid_argument(error.str());
   }

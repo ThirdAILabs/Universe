@@ -149,7 +149,7 @@ void verifyNonConcatenatedDimsMatch(const autograd::ComputationList& inputs) {
   if (inputs.empty()) {
     return;
   }
-  auto first_input_dims = inputs.at(0)->dims();
+  tensor::Dims first_input_dims = inputs.at(0)->dims();
 
   for (const auto& input : inputs) {
     if (!tensor::areDimsEq(first_input_dims, input->dims())) {

@@ -189,7 +189,7 @@ autograd::ComputationPtr LayerNorm::apply(
   } else if (dim_to_normalize != dim()) {
     throw std::invalid_argument(
         "Cannot apply LayerNorm op for dimension " + std::to_string(dim()) +
-        " to input with last dimension " + std::to_string(dim_to_normalize) + ".");
+        " to input with dimensions " + tensor::toString(input->dims()) + ".");
   }
 
   return autograd::Computation::make(shared_from_this(), {input});
