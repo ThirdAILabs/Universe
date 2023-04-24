@@ -7,7 +7,7 @@
 
 namespace thirdai::bolt::nn::tensor {
 
-Tensor::Tensor(Dims dims, uint32_t nonzeros)
+Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
     : _dims(std::move(dims)), _nonzeros(nonzeros) {
   uint32_t num_vectors =
       std::reduce(_dims.begin(), _dims.end() - 1, 1, std::multiplies<>());
@@ -25,7 +25,9 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros)
   }
 
   _activations.assign(num_vectors * nonzeros, 0.0);
-  _gradients.assign(num_vectors * nonzeros, 0.0);
+  if (with_grad) {
+    _gradients.assign(num_vectors * nonzeros, 0.0);
+  }
 
   _vectors.reserve(num_vectors);
 
@@ -36,11 +38,29 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros)
       active_neurons = _active_neurons.data() + offset;
     }
 
+    float* gradients = nullptr;
+    if (with_grad) {
+      gradients = _gradients.data() + offset;
+    }
+
     _vectors.emplace_back(
         /* active_neurons= */ active_neurons,
         /* activations= */ _activations.data() + offset,
-        /* gradients= */ _gradients.data() + offset, /* len= */ nonzeros);
+        /* gradients= */ gradients, /* len= */ nonzeros);
   }
+}
+
+Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
+               uint32_t nonzeros, bool with_grad)
+    : Tensor(std::move(dims), nonzeros, with_grad) {
+  if (sparse() && !indices) {
+    throw std::invalid_argument(
+        "Must specify tensor indices if nonzeros is less than the last "
+        "dimension.");
+  }
+
+  std::copy(indices, indices + _active_neurons.size(), _active_neurons.begin());
+  std::copy(values, values + _activations.size(), _activations.begin());
 }
 
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
@@ -96,11 +116,13 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
 
 std::shared_ptr<Tensor> Tensor::dense(Dims dims) {
   return std::make_shared<Tensor>(/* dims= */ dims,
-                                  /* nonzeros= */ dims.back());
+                                  /* nonzeros= */ dims.back(),
+                                  /* with_grad= */ true);
 }
 
 std::shared_ptr<Tensor> Tensor::sparse(Dims dims, uint32_t nonzeros) {
-  return std::make_shared<Tensor>(/* dims= */ dims, /* nonzeros= */ nonzeros);
+  return std::make_shared<Tensor>(/* dims= */ dims, /* nonzeros= */ nonzeros,
+                                  /* with_grad= */ true);
 }
 
 std::shared_ptr<Tensor> Tensor::convert(const BoltBatch& batch, uint32_t dim) {
@@ -116,6 +138,8 @@ std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
 const Dims& Tensor::dims() const { return _dims; }
 
 std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
+
+bool Tensor::sparse() const { return !_active_neurons.empty(); }
 
 BoltVector& Tensor::getVector(uint32_t index) {
   assert(index < batchSize());

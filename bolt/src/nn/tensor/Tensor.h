@@ -13,7 +13,10 @@ using Dims = std::vector<uint32_t>;
  */
 class Tensor {
  public:
-  Tensor(Dims dims, uint32_t nonzeros);
+  Tensor(Dims dims, uint32_t nonzeros, bool with_grad);
+
+  Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
+         uint32_t nonzeros, bool with_grad);
 
   Tensor(const BoltBatch& batch, uint32_t dim);
 
@@ -37,6 +40,8 @@ class Tensor {
    * output is dense then this is equivalent to calling dim().
    */
   std::optional<uint32_t> nonzeros() const;
+
+  bool sparse() const;
 
   /**
    * Returns the ith vector in the tensor.
