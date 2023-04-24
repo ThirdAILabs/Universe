@@ -117,29 +117,29 @@ void createDatasetSubmodule(py::module_& module) {
       internal_dataset_submodule, "TextTokenizer");
 
   py::class_<CharKGramTokenizer, TextTokenizer,
-             std::shared_ptr<CharKGramTokenizer>>(internal_dataset_submodule,
+             std::shared_ptr<CharKGramTokenizer>>(dataset_submodule,
                                                   "CharKGramTokenizer")
       .def(py::init<uint32_t>(), py::arg("k"));
 
   py::class_<NaiveSplitTokenizer, TextTokenizer,
-             std::shared_ptr<NaiveSplitTokenizer>>(internal_dataset_submodule,
+             std::shared_ptr<NaiveSplitTokenizer>>(dataset_submodule,
                                                    "NaiveSplitTokenizer")
       .def(py::init<char>(), py::arg("delimiter"));
 
   py::class_<WordPunctTokenizer, TextTokenizer,
-             std::shared_ptr<WordPunctTokenizer>>(internal_dataset_submodule,
+             std::shared_ptr<WordPunctTokenizer>>(dataset_submodule,
                                                   "WordPunctTokenizer")
       .def(py::init<>());
 
   py::class_<TextEncoder, TextEncoderPtr>(  // NOLINT
-      internal_dataset_submodule, "TextEncoder");
+      dataset_submodule, "TextEncoder");
 
   py::class_<NGramEncoder, TextEncoder, std::shared_ptr<NGramEncoder>>(
-      internal_dataset_submodule, "NGramEncoder")
+      dataset_submodule, "NGramEncoder")
       .def(py::init<uint32_t>(), py::arg("n"));
 
   py::class_<PairGramEncoder, TextEncoder, std::shared_ptr<PairGramEncoder>>(
-      internal_dataset_submodule, "PairGramEncoder")
+      dataset_submodule, "PairGramEncoder")
       .def(py::init<>());
 
   py::class_<TextBlock, Block, TextBlockPtr>(block_submodule, "TextBlock")
