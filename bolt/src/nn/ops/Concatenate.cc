@@ -152,7 +152,8 @@ void verifyNonConcatenatedDimsMatch(const autograd::ComputationList& inputs) {
   tensor::Dims first_input_dims = inputs.at(0)->dims();
 
   for (const auto& input : inputs) {
-    if (!tensor::areDimsEq(first_input_dims, input->dims())) {
+    if (!tensor::areDimsEq(first_input_dims, input->dims(),
+                           /* include_last_dim= */ false)) {
       throw std::invalid_argument(
           "Cannot concatenate tensors with dimensions " +
           tensor::toString(first_input_dims) + " and " +
