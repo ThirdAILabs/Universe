@@ -16,7 +16,7 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "dlrm"],
+        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
         help="The runner to retrieve benchmark results for.",
     )
     parser.add_argument(
@@ -62,7 +62,7 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client):
     )
 
     # Drop the epoch times column since it is no longer needed after calculating training time
-    mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True)
+    mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True, errors="ignore")
 
     # Drop learning rate column since we don't need to display it as a recorded metric in Slack
 
@@ -128,5 +128,6 @@ if __name__ == "__main__":
             else:
                 slack_payload_list[slack_payload_idx] += slack_payload_text
 
-        for payload in slack_payload_list:
-            requests.post(args.slack_webhook, json.dumps({"text": payload}))
+        if slack_payload_list[0] != "":
+            for payload in slack_payload_list:
+                requests.post(args.slack_webhook, json.dumps({"text": payload}))
