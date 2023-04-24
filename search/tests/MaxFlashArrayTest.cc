@@ -11,7 +11,6 @@ namespace thirdai::search {
 
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
-//  TODO(Josh): Move to util
 std::vector<BoltBatch> createBatches(std::vector<BoltVector>& input_vectors,
                                      uint32_t batch_size) {
   std::vector<BoltBatch> result;

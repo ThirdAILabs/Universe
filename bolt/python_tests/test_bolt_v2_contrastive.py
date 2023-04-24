@@ -36,7 +36,7 @@ def get_contrastive_and_embedding_models(
         losses=[contrastive_loss],
     )
 
-    # TODO(Josh): Replace with noop loss
+    # TODO(Nick): Replace with noop loss
     labels = bolt.nn.Input(dim=embedding_dim)
     embedding_output = output_op(input_1)
     loss = bolt.nn.losses.CategoricalCrossEntropy(embedding_output, labels)
@@ -139,6 +139,3 @@ def test_contrastive_number_embeddings():
 
     print(average_similar_distance, average_dissimilar_distance)
     assert average_similar_distance < average_dissimilar_distance
-
-
-# TODO(Josh): Add a test that specifically tests the exact contrastive formula

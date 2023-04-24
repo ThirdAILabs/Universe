@@ -359,6 +359,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/SamplingConfig.cc
     bolt/src/loss_functions/LossFunctions.cc
     bolt/src/metrics/Metric.cc
+    bolt/src/root_cause_analysis/RCA.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -456,7 +457,6 @@ pybind11_add_module(
   bolt/python_bindings/NumpyConversions.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
-  new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc

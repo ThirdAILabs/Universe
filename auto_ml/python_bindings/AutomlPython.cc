@@ -14,6 +14,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <optional>
 
 namespace thirdai::automl::python {
 
@@ -134,6 +135,15 @@ void defineAutomlInModule(py::module_& module) {
       .def("set_decode_params", &udt::UDT::setDecodeParams,
            py::arg("min_num_eval_results"),
            py::arg("top_k_per_eval_aggregation"))
+      .def("introduce_documents", &udt::UDT::introduceDocuments,
+           py::arg("data_source"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"))
+      .def("introduce_document", &udt::UDT::introduceDocument,
+           py::arg("document"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"), py::arg("label"))
+      .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
+           py::arg("label"))
+      .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -175,7 +185,8 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
       models_submodule, "TabularDatasetFactory")
       .def("get_dataset_loader", &data::TabularDatasetFactory::getDatasetLoader,
-           py::arg("data_source"), py::arg("training"))
+           py::arg("data_source"), py::arg("training"),
+           py::arg("shuffle_config") = std::nullopt)
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
@@ -248,7 +259,6 @@ void createDistributedPreprocessingWrapper(py::module_& module) {
   py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
       distributed_preprocessing_submodule, "ColdStartMetaData")
       .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
-  ;
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -260,7 +270,7 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def("__str__", &automl::data::DataType::toString)
       .def("__repr__", &automl::data::DataType::toString);
 
-  // TODO(Josh): Add docs here and elsewhere
+  // TODO(Any): Add docs for graph UDT types
   py::class_<automl::data::NeighborsDataType, automl::data::DataType,
              automl::data::NeighborsDataTypePtr>(udt_types_submodule,
                                                  "neighbors")

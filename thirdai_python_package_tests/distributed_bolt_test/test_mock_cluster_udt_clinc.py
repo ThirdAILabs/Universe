@@ -2,7 +2,7 @@ import os
 
 import pytest
 from distributed_utils import ray_two_node_cluster_config, remove_files
-from thirdai import bolt
+from thirdai import bolt, dataset
 from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
@@ -32,11 +32,6 @@ def get_clinc_udt_model(integer_target=False):
 
 
 # Tests that we can start a distributed job that trains for 0 epochs.
-# This is currently necessary because running ray distributed jobs in the
-# cibuildwheel docker container doesn't work: actors get killed randomly.
-# We still want a  release test that tests distributed and makes sure licensing
-# works, so this is the best we can do for now.
-# TODO(Josh/Pratik): Look into getting ray working with cibuildwheel
 @pytest.mark.release
 def test_distributed_start(ray_two_node_cluster_config):
     udt_model = get_clinc_udt_model(integer_target=True)
@@ -68,6 +63,7 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         verbose=True,
         max_in_memory_batches=10,
         validation=validation,
+        min_vecs_in_buffer=5000,
     )
     validation_metrics = training_and_validation_metrics["validation_metrics"]
 

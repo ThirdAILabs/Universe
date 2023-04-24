@@ -12,25 +12,19 @@
 
 namespace thirdai::search {
 
-// TODO(josh): This class is NOT currently safe to call concurrently.
-// Fix this.
 /**
  * Represents a collection of documents. We can incrementally update documents
  * and estimate the ColBERT score (sum of max similarities) between a query
  * and a document.
  * LABEL_T is an unsigned numerical type, currently uint8_t, uin16_t, uin32_t.
+ * This class is NOT currently safe to call concurrently.
  */
 template <typename LABEL_T>
 class MaxFlashArray {
  public:
   // This will own the hash function and delete it during the destructor
-  // TODO(josh): Remove naked pointers from hash function library so moves will
-  // work, then change this to a unique pointer.
   // Any documents passed in larger than max_doc_size or larger than
   // the max value of LABEL_T will be truncated.
-  // TODO(josh): Change truncation to error?
-  // TODO(josh): Make LABEL_T allowed to be different for each document, so
-  // it is as space efficient as possible
   MaxFlashArray(hashing::HashFunction* function, uint32_t hashes_per_table,
                 uint64_t max_doc_size = std::numeric_limits<LABEL_T>::max());
 

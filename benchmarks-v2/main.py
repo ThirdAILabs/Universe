@@ -1,11 +1,11 @@
 import argparse
-import re
 from datetime import date
 
 import thirdai
 from thirdai.experimental import MlflowCallback
 
 from .runners.runner_map import runner_map
+from .utils import get_configs
 
 
 def parse_arguments():
@@ -14,15 +14,16 @@ def parse_arguments():
     parser.add_argument(
         "--runner",
         type=str,
+        nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "dlrm"],
-        help="Which runner to use to run the benchmark.",
+        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
+        help="Which runners to use to run the benchmark.",
     )
     parser.add_argument(
         "--config",
         type=str,
         default="",
-        help="Regular expression indicating which configs to run for the given runner.",
+        help="Regular expression indicating which configs to run for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
         "--path_prefix",
@@ -55,37 +56,30 @@ def experiment_name(config_name: str, official_benchmark: str):
 if __name__ == "__main__":
     args = parse_arguments()
 
-    runner = runner_map[args.runner.lower()]
+    for runner_name in args.runner:
+        runner = runner_map[runner_name.lower()]
 
-    config_re = re.compile(args.config)
-    configs = list(
-        filter(
-            lambda config: config_re.match(config.config_name),
-            runner.config_type.__subclasses__(),
-        )
-    )
-    if len(configs) == 0:
-        raise ValueError(
-            f"Could match regular expression '{args.config}' to any configs."
-        )
+        configs = get_configs(runner=runner, config_regex=args.config)
 
-    for config in configs:
-        if args.mlflow_uri and args.run_name:
-            mlflow_logger = MlflowCallback(
-                tracking_uri=args.mlflow_uri,
-                experiment_name=experiment_name(
-                    config.config_name, args.official_benchmark
-                ),
-                run_name=f"{args.run_name}_{str(date.today())}",
-                experiment_args={"dataset": config.dataset_name},
+        for config in configs:
+            if args.mlflow_uri and args.run_name:
+                mlflow_logger = MlflowCallback(
+                    tracking_uri=args.mlflow_uri,
+                    experiment_name=experiment_name(
+                        config.config_name, args.official_benchmark
+                    ),
+                    run_name=f"{args.run_name}_{str(date.today())}",
+                    experiment_args={"dataset": config.dataset_name},
+                )
+                mlflow_logger.log_additional_param(
+                    "thirdai_version", thirdai.__version__
+                )
+            else:
+                mlflow_logger = None
+
+            runner.run_benchmark(
+                config=config, path_prefix=args.path_prefix, mlflow_logger=mlflow_logger
             )
-            mlflow_logger.log_additional_param("thirdai_version", thirdai.__version__)
-        else:
-            mlflow_logger = None
 
-        runner.run_benchmark(
-            config=config, path_prefix=args.path_prefix, mlflow_logger=mlflow_logger
-        )
-
-        if mlflow_logger:
-            mlflow_logger.end_run()
+            if mlflow_logger:
+                mlflow_logger.end_run()

@@ -10,7 +10,6 @@ namespace thirdai::hashing {
 /** Based off of the paper https://arxiv.org/pdf/1703.04664.pdf */
 class DensifiedMinHash final : public HashFunction {
  public:
-  // TODO(josh): Remove range when we have the hash function wrappers done
   DensifiedMinHash(uint32_t hashes_per_table, uint32_t num_tables,
                    uint32_t range, uint32_t seed = time(nullptr));
 

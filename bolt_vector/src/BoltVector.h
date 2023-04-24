@@ -70,8 +70,6 @@ struct BoltVector {
 
   BoltVector copy() const;
 
-  // TODO(Josh): Delete copy constructor and copy assignment (will help when
-  // we've moved to new Dataset and removed BoltBatches)
   BoltVector(const BoltVector& other);
 
   BoltVector(BoltVector&& other) noexcept;
