@@ -39,6 +39,7 @@ def test_save_load_bolt_model():
     model_name = "bolt_model"
     model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
     model.save(model_path)
+    bolt.nn.Model.load(model_path)
 
 
 def test_load_old_bolt_model():
