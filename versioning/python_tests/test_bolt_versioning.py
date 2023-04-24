@@ -1,15 +1,17 @@
+import os
+
 import pytest
 from thirdai import bolt_v2 as bolt
-import os
 
 SERIALIZED_CLASS_DIR = "../versioning/python_tests/serialized_classes/"
 ERROR_STRING = r"BOLT_MODEL, but got version 0"
 
 pytestmark = [pytest.mark.unit]
 
+
 def build_bolt_model():
     # Dummy bolt model to test serialization
-    
+
     op = bolt.nn.FullyConnected(
         dim=10,
         input_dim=10,
@@ -47,5 +49,3 @@ def test_load_old_bolt_model():
     # with version 0, which is older than any current bolt version
     with pytest.raises(ValueError, match=ERROR_STRING):
         bolt.nn.Model.load(model_path)
-
-

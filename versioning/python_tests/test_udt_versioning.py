@@ -8,6 +8,7 @@ ERROR_STRING = r"UDT_BASE, but got version 0"
 
 pytestmark = [pytest.mark.unit]
 
+
 def build_udt_model():
     # Dummy UDT model to test serialization
 
