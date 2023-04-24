@@ -31,7 +31,7 @@ void checkTensorContents(const tensor::TensorPtr& tensor) {
   uint32_t nonzeros = tensor->nonzeros().value();
   for (uint32_t i = 0; i < tensor->batchSize(); i++) {
     for (uint32_t j = 0; j < nonzeros; j++) {
-      if (nonzeros < tensor->dim()) {
+      if (nonzeros < tensor->dims().back()) {
         uint32_t active_neuron = tensor->activeNeuronsPtr()[i * nonzeros + j];
         ASSERT_EQ(active_neuron, i);
       }
@@ -46,10 +46,10 @@ void checkTensorContents(const tensor::TensorPtr& tensor) {
 }
 
 TEST(TensorTests, DenseTensor) {
-  auto tensor = tensor::Tensor::dense(/* batch_size= */ 4, /* dim= */ 10);
+  auto tensor = tensor::Tensor::dense({/* batch_size= */ 4, /* dim= */ 10});
 
   EXPECT_EQ(tensor->batchSize(), 4);
-  EXPECT_EQ(tensor->dim(), 10);
+  EXPECT_EQ(tensor->dims(), tensor::Dims({4, 10}));
   EXPECT_TRUE(tensor->nonzeros().has_value());
   EXPECT_EQ(tensor->nonzeros().value(), 10);
 
@@ -62,11 +62,11 @@ TEST(TensorTests, DenseTensor) {
 }
 
 TEST(TensorTests, SparseTensor) {
-  auto tensor = tensor::Tensor::sparse(/* batch_size= */ 4, /* dim= */ 10,
+  auto tensor = tensor::Tensor::sparse({/* batch_size= */ 4, /* dim= */ 10},
                                        /* nonzeros= */ 5);
 
   EXPECT_EQ(tensor->batchSize(), 4);
-  EXPECT_EQ(tensor->dim(), 10);
+  EXPECT_EQ(tensor->dims(), tensor::Dims({4, 10}));
   EXPECT_TRUE(tensor->nonzeros().has_value());
   EXPECT_EQ(tensor->nonzeros().value(), 5);
 
@@ -90,7 +90,7 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
   auto tensor = tensor::Tensor::convert(batch, 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
-  EXPECT_EQ(tensor->dim(), 4);
+  EXPECT_EQ(tensor->dims(), tensor::Dims({3, 4}));
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
   EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
@@ -115,7 +115,7 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   auto tensor = tensor::Tensor::convert(batch, 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
-  EXPECT_EQ(tensor->dim(), 8);
+  EXPECT_EQ(tensor->dims(), tensor::Dims({3, 8}));
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
   EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);

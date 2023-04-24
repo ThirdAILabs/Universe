@@ -78,7 +78,7 @@ void Computation::setTensor(tensor::TensorPtr tensor) {
   tensor::Dims input_dims = tensor->dims();
   input_dims.erase(input_dims.begin());  // Erase batch size.
 
-  if (tensor::areDimsEq(input_dims, dims())) {
+  if (!tensor::areDimsEq(input_dims, dims())) {
     throw std::invalid_argument(
         "Cannot set tensor with dimensions " + tensor::toString(input_dims) +
         " to computation with dimensions " + tensor::toString(dims()) + ".");

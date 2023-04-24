@@ -56,7 +56,7 @@ BoltVector denseLabel() {
 }
 
 tensor::TensorPtr sparseOutput() {
-  auto output = tensor::Tensor::sparse(/* batch_size= */ 1, /* dim= */ 8,
+  auto output = tensor::Tensor::sparse({/* batch_size= */ 1, /* dim= */ 8},
                                        /* nonzeros= */ 4);
 
   std::vector<uint32_t> indices = {0, 1, 4, 7};
@@ -72,7 +72,7 @@ tensor::TensorPtr sparseOutput() {
 }
 
 tensor::TensorPtr denseOutput() {
-  auto output = tensor::Tensor::dense(/* batch_size= */ 1, /* dim= */ 8);
+  auto output = tensor::Tensor::dense({/* batch_size= */ 1, /* dim= */ 8});
 
   std::vector<float> values = {0.0, 4.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0};
 

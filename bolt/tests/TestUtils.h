@@ -42,7 +42,11 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
-  uint32_t dim() const final { return _dim; }
+  tensor::Dims dims(const autograd::ComputationList& inputs) const final {
+    auto dims = inputs.at(0)->dims();
+    dims.back() = _dim;
+    return dims;
+  }
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final {
