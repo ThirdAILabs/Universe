@@ -1,9 +1,8 @@
-import json
 import os
 from pathlib import Path
 
 import pytest
-from thirdai import bolt, deployment
+from thirdai import bolt
 
 SERIALIZED_CLASS_DIR = Path(__file__).resolve().parent / "serialized_classes"
 ERROR_STRING = r"UDT_BASE, but got version 0"
@@ -14,34 +13,7 @@ pytestmark = [pytest.mark.unit]
 def build_udt_model():
     # Dummy UDT model to test serialization
 
-    model_config = {
-        "inputs": ["input"],
-        "nodes": [
-            {
-                "name": "hidden",
-                "type": "fully_connected",
-                "dim": 10,
-                "sparsity": 0.1,
-                "activation": "relu",
-                "predecessor": "input",
-            },
-            {
-                "name": "output",
-                "type": "fully_connected",
-                "dim": {"param_name": "output_dim"},
-                "sparsity": 0.1,
-                "activation": "sigmoid",
-                "predecessor": "hidden",
-            },
-        ],
-        "output": "output",
-        "loss": "BinaryCrossEntropyLoss",
-    }
     model_config_path = os.path.join(SERIALIZED_CLASS_DIR, "udt_model_config")
-    deployment.dump_config(
-        config=json.dumps(model_config),
-        filename=model_config_path,
-    )
 
     model = bolt.UniversalDeepTransformer(
         data_types={

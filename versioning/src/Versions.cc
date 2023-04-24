@@ -3,7 +3,7 @@
 
 namespace thirdai::versions {
 
-void checkVersion(uint32_t input_version, uint32_t expected_version,
+void checkVersion(const uint32_t input_version, const uint32_t expected_version,
                   const std::string& class_name) {
   if (input_version != expected_version) {
     throw std::invalid_argument("Incompatible version. Expected version " +
