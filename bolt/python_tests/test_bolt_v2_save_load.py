@@ -28,6 +28,8 @@ def build_model(n_classes):
         reduction="sum",
     )(token_input)
 
+    embedding = bolt.nn.Tanh()(embedding)
+
     concat = bolt.nn.Concatenate()([hidden, embedding])
 
     output1 = bolt.nn.FullyConnected(
@@ -93,7 +95,6 @@ def evaluate_model(model, test_data, test_labels_np):
         predictions = np.argmax(output.activations, axis=1)
         acc = np.mean(predictions == test_labels_np)
         assert acc >= 0.8
-
         accs.append(acc)
 
     return accs
