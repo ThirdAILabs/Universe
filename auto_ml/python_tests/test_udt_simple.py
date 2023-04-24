@@ -456,7 +456,7 @@ def test_udt_train_batch():
     assert (predictions == np.array([0, 1, 2])).all()
 
 
-def test_char_k_contextual_text_encoding():
+def test_char_k_text_tokenizer():
     # We want to check if UDT is actually using the character 3 gram block.
     # We do this by memorizing 3 character words then using those words as part
     # of unseen 4 character words in the test data.
@@ -479,7 +479,7 @@ def test_char_k_contextual_text_encoding():
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "text": bolt.types.text(contextual_encoding="char-3"),
+            "text": bolt.types.text(tokenizer="char-3"),
             "category": bolt.types.categorical(),
         },
         target="category",
