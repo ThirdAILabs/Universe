@@ -24,16 +24,16 @@ class CQICQUDTBenchmark(QueryReformulationBenchmarkConfig):
     config_name = "cq_icq_query_reformulation"
     dataset_name = "cq_icq_0.6"
 
-    train_file = "query_reformulation/train_udt.csv"
-    test_file = "query_reformulation/test_udt.csv"
+    train_file = "query_reformulation/udt_benchmark_train.csv"
+    test_file = "query_reformulation/udt_benchmark_test.csv"
 
-    source_column = "incorrect_queries"
-    target_column = "correct_queries"
+    source_column = "source_queries"
+    target_column = "target_queries"
     dataset_size = "large"
 
     additional_metric_fns = {
-        "recall@5": get_qr_recall_at_k_metric_fn(target_column="correct_queries", k=5),
+        "recall@5": get_qr_recall_at_k_metric_fn(target_column="target_queries", k=5),
         "precision@1": get_qr_precision_at_k_metric_fn(
-            target_column="correct_queries", k=1
+            target_column="target_queries", k=1
         ),
     }

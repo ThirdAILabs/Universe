@@ -87,6 +87,7 @@ class TemporalRunner(Runner):
             test_data_samples.append(sample)
 
         test_data_sample = test_data.iloc[sorted_idxs]
+        del test_data
         inference_samples = []
         sample_col_names = config.get_data_types(path_prefix).keys()
         for i, (_, row) in enumerate(test_data_sample.iterrows()):
