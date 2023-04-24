@@ -9,7 +9,7 @@ class FMeasure final : public Metric {
  public:
   explicit FMeasure(nn::autograd::ComputationPtr outputs,
                     nn::autograd::ComputationPtr labels, float threshold,
-                    float beta);
+                    float beta = 1);
 
   void record(uint32_t index_in_batch) final;
 
