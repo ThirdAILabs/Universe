@@ -3,6 +3,8 @@ from .dataset_loaders import (
     DistributedSvmDatasetLoader,
     DistributedTabularDatasetLoader,
     ValidationContext,
+    DistributedUDTDatasetLoader,
+    DistributedColdStartDatasetLoader,
 )
 from .distributed import (
     DistributedDataParallel,
