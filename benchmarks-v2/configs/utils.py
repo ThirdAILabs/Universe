@@ -43,7 +43,9 @@ class AdditionalMetricCallback(bolt.callbacks.Callback):
         print(f"{self.metric_name} = {metric_val}")
         if self.mlflow_logger:
             self.mlflow_logger.log_additional_metric(
-                key=f"val_{self._clean(self.metric_name)}", value=metric_val, step=self.step
+                key=f"val_{self._clean(self.metric_name)}",
+                value=metric_val,
+                step=self.step,
             )
 
         self.step += 1

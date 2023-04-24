@@ -49,7 +49,9 @@ class TemporalRunner(Runner):
 
                 if mlflow_logger:
                     for k, v in metrics.items():
-                        mlflow_logger.log_additional_metric(key=f"val_{k}", value=v, step=epoch)
+                        mlflow_logger.log_additional_metric(
+                            key=f"val_{k}", value=v, step=epoch
+                        )
 
             model.reset_temporal_trackers()
 
