@@ -55,7 +55,7 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
     }
 
     learning_rate = 0.0001
-    num_epochs = 50
+    num_epochs = 15
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod
@@ -69,9 +69,9 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
 
 class NetflixUDTBenchmark(TemporalBenchmarkConfig):
     config_name = "netflix_temporal"
-    dataset_name = "netflix_100M"
+    dataset_name = "netflix_10M"
 
-    train_file = "netflix/netflix_train.csv"
+    train_file = "netflix/netflix_train_10M.csv"
     test_file = "netflix/netflix_test.csv"
 
     target = "movie"
