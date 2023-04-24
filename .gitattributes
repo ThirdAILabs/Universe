@@ -1,3 +1,0 @@
-versioning/python_tests/serialized_classes/old_bolt_model filter=lfs diff=lfs merge=lfs -text
-versioning/python_tests/serialized_classes/old_udt_model filter=lfs diff=lfs merge=lfs -text
-versioning/python_tests/serialized_classes/old_bolt_model.metadata filter=lfs diff=lfs merge=lfs -text
