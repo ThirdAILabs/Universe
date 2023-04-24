@@ -7,7 +7,6 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -16,6 +15,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
+#include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
 #include <variant>

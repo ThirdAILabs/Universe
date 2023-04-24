@@ -2,9 +2,9 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
-#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
 
@@ -131,6 +131,5 @@ bolt::BoltGraphPtr UDTGraphClassifier::createGNN(
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTGraphClassifier)
-CEREAL_CLASS_VERSION(
-    thirdai::automl::udt::UDTGraphClassifier,
-    thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTGraphClassifier,
+                     thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION)

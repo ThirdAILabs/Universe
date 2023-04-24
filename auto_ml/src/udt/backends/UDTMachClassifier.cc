@@ -3,12 +3,12 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/mach/MachDecode.h>
 #include <pybind11/stl.h>
+#include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
 
@@ -313,6 +313,5 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
-CEREAL_CLASS_VERSION(
-    thirdai::automl::udt::UDTMachClassifier,
-    thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTMachClassifier,
+                     thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)

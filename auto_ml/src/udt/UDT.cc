@@ -4,7 +4,6 @@
 #include <bolt/src/utils/Timer.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMachClassifier.h>
@@ -13,6 +12,7 @@
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <versioning/src/Versions.h>
 #include <cstddef>
 #include <memory>
 #include <sstream>

@@ -15,7 +15,6 @@ void checkVersion(uint32_t input_version, uint32_t expected_version,
 
 constexpr uint32_t UDT_BASE_VERSION = 1;
 
-
 // UDT BACKEND VERSIONS
 
 constexpr uint32_t UDT_CLASSIFIER_VERSION = 1;
@@ -30,10 +29,8 @@ constexpr uint32_t UDT_REGRESSION_VERSION = 1;
 
 constexpr uint32_t UDT_SVM_CLASSIFIER_VERSION = 1;
 
-
 // BOLT VERSIONS
 
 constexpr uint32_t BOLT_MODEL_VERSION = 1;
 
-
-} // namespace thirdai::versions
+}  // namespace thirdai::versions

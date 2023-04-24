@@ -9,6 +9,8 @@ ERROR_STRING = r"UDT_BASE, but got version 0"
 pytestmark = [pytest.mark.unit]
 
 def build_udt_model():
+    # Dummy UDT model to test serialization
+
     model = bolt.UniversalDeepTransformer(
         data_types={
             "sample": bolt.types.text(),
@@ -22,8 +24,6 @@ def build_udt_model():
 
 
 def test_load_old_udt_model():
-    # This tests a udt model with an old version of bolt
-
     model_name = "old_udt_model"
     model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
 

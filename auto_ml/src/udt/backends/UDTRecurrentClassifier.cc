@@ -1,6 +1,5 @@
 #include "UDTRecurrentClassifier.h"
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
-#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -9,6 +8,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <versioning/src/Versions.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -218,6 +218,5 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
-CEREAL_CLASS_VERSION(
-    thirdai::automl::udt::UDTRecurrentClassifier,
-    thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRecurrentClassifier,
+                     thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION)

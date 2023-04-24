@@ -4,7 +4,6 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
-#include <versioning/src/Versions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -12,6 +11,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
 #include <utils/Version.h>
+#include <versioning/src/Versions.h>
 #include <algorithm>
 #include <chrono>
 #include <ctime>
