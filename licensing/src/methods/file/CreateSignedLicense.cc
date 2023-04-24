@@ -40,12 +40,12 @@ std::map<std::string, std::string> entitlementsFromUserInput() {
   }
 
   std::cout << "What should be the maximum output dimension for models? "
-               "Please choose a number < 2^64. Input m to choose 2^64 - 1."
+               "Please choose a number < 2^32. Input m to choose 2^32 - 1."
             << std::endl;
   std::cin >> input;
 
   uint64_t max_output_dim =
-      input == "m" ? std::numeric_limits<uint64_t>::max() : std::stoul(input);
+      input == "m" ? std::numeric_limits<uint32_t>::max() : std::stoull(input);
 
   entitlements[MAX_OUTPUT_DIM_ENTITLEMENT_START] =
       MAX_OUTPUT_DIM_ENTITLEMENT_START + " " + std::to_string(max_output_dim);
@@ -57,7 +57,7 @@ std::map<std::string, std::string> entitlementsFromUserInput() {
   std::cin >> input;
 
   uint64_t max_num_samples =
-      input == "m" ? std::numeric_limits<uint64_t>::max() : std::stoul(input);
+      input == "m" ? std::numeric_limits<uint64_t>::max() : std::stoull(input);
 
   entitlements[MAX_TRAIN_SAMPLES_ENTITLEMENT_START] =
       MAX_TRAIN_SAMPLES_ENTITLEMENT_START + " " +
