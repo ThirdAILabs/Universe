@@ -65,12 +65,12 @@ std::vector<uint32_t> unigramPreservingPairgrams(const uint32_t* tokens,
 void mod(std::vector<uint32_t>& tokens, uint32_t dim);
 
 /**
- * Compute unigram tokens of a given sentence, mod them by output_range, and
+ * Compute unigram tokens of the given words, mod them by output_range, and
  * return a map from the unigram token value to the source word. Used in
  * explainability.
  */
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    std::string_view sentence, uint32_t output_range, char delimiter = ' ');
+    std::vector<std::string_view> words, uint32_t output_range);
 
 /**
  * Given a vector of indices, sums repeated indices by multiplying the number of

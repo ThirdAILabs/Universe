@@ -3,9 +3,9 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Sequence.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
-#include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 
 namespace thirdai::automl::data {

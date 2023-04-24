@@ -12,7 +12,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>

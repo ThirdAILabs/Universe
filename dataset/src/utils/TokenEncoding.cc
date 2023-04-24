@@ -79,9 +79,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 }
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    std::string_view sentence, uint32_t output_range, char delimiter) {
-  auto words = thirdai::text::split(sentence, delimiter);
-
+    std::vector<std::string_view> words, uint32_t output_range) {
   auto tokens = hashTokens(words);
 
   assert(words.size() == tokens.size());

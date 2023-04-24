@@ -11,7 +11,8 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
-#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/text/TextEncoders.h>
+#include <dataset/src/blocks/text/TextTokenizers.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>

@@ -1,7 +1,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <random>
