@@ -250,3 +250,8 @@ using TextBlockPtr = std::shared_ptr<TextBlock>;
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::TextBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NaiveSplitTokenizer)
+CEREAL_REGISTER_TYPE(thirdai::dataset::WordPunctTokenizer)
+CEREAL_REGISTER_TYPE(thirdai::dataset::CharKGramTokenizer)
+CEREAL_REGISTER_TYPE(thirdai::dataset::PairGramEncoder)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NGramEncoder)
