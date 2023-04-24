@@ -38,7 +38,7 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
     assert metrics["categorical_accuracy"][-1] > 0.5
 
 
-def setup_testing_file(missing_values, bad_csv_line):
+def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
     filename = "DUMMY_COLDSTART.csv"
     with open(filename, "w") as outfile:
         outfile.write("category,strong,weak1,weak2\n")
@@ -49,6 +49,9 @@ def setup_testing_file(missing_values, bad_csv_line):
 
         if bad_csv_line:
             outfile.write("1,theres a new line,\n,")
+    
+        if not integer_target:
+            outfile.write("LMFAO,this is not an integer,,\n")
 
     return filename
 
@@ -63,7 +66,7 @@ def run_coldstart(
     epochs=5,
     integer_target=True,
 ):
-    filename = setup_testing_file(missing_values, bad_csv_line)
+    filename = setup_testing_file(missing_values, bad_csv_line, integer_target)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -71,7 +74,7 @@ def run_coldstart(
             "text": bolt.types.text(),
         },
         target="category",
-        n_target_classes=2,
+        n_target_classes=3,
         integer_target=integer_target,
     )
 
