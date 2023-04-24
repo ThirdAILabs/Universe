@@ -1,5 +1,6 @@
 #include "DataSource.h"
 #include <utils/StringManipulation.h>
+#include <iostream>
 
 namespace thirdai::dataset {
 
@@ -10,11 +11,17 @@ std::optional<std::string> CsvDataSource::nextLine() {
   while (!newline_position) {
     if (auto line = nextRawLine()) {
       newline_position = findNewline(state_machine, *line);
-      if (newline_position && newline_position != line->size()) {
-        buffer.push_back(line->substr(0, *newline_position));
-        _remains = line->substr(*newline_position);
-      } else {
+      if (!newline_position) {
         buffer.push_back(*line);
+      } else {
+        if (*newline_position == line->size()) {
+          buffer.push_back(*line);
+        } else if (*newline_position == line->size() - 1) {
+          buffer.push_back(line->substr(0, *newline_position));
+        } else {
+          buffer.push_back(line->substr(0, *newline_position));
+          _remains = line->substr(*newline_position);
+        }
       }
     } else {
       break;

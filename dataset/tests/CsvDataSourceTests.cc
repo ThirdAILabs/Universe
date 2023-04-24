@@ -57,4 +57,13 @@ TEST(CsvDataSourceTests, NonCommaDelimiter) {
                     {"\"line 1\ncolumn 1\"\t\"line 1\ncolumn 2\"",
                      "\"line 2\ncolumn 1\"\t\"line 2\ncolumn 2\""});
 }
+
+TEST(CsvDataSourceTests, EndsWithNewline) {
+  std::string input_string =
+      "\"line 1\ncolumn 1\"\t\"line 1\ncolumn 2\"\n"
+      "\"line 2\ncolumn 1\"\t\"line 2\ncolumn 2\"\n";
+  testCsvDataSource(input_string, /* delimiter= */ '\t',
+                    {"\"line 1\ncolumn 1\"\t\"line 1\ncolumn 2\"",
+                     "\"line 2\ncolumn 1\"\t\"line 2\ncolumn 2\""});
+}
 }  // namespace thirdai::dataset::tests
