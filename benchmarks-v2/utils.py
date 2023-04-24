@@ -1,4 +1,5 @@
 import re
+import warnings
 
 
 def get_configs(config_regex, runner):
@@ -9,7 +10,7 @@ def get_configs(config_regex, runner):
         if config.config_name is not None and config_re.match(config.config_name)
     ]
     if len(configs) == 0:
-        raise ValueError(
-            f"Couldn't match regular expression '{config_regex}' to any configs."
+        warnings.warn(
+            f"Couldn't match regular expression '{config_regex}' to any configs for {runner}."
         )
     return configs
