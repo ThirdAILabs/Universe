@@ -104,7 +104,7 @@ class FullyConnected final
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
 
-  bool _freeze;
+  bool _freeze = false;
 
   FullyConnected() {}
 

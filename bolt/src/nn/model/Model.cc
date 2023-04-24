@@ -123,6 +123,8 @@ autograd::ComputationList Model::computationOrder() const {
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
+const autograd::ComputationList& Model::labels() const { return _labels; }
+
 ops::OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {

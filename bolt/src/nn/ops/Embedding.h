@@ -73,7 +73,7 @@ class Embedding final : public Op,
 
   std::unique_ptr<EmbeddingLayer> _kernel;
 
-  bool _freeze;
+  bool _freeze = false;
 
   Embedding() {}
 
