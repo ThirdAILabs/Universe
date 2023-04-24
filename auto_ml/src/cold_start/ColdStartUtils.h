@@ -25,16 +25,13 @@ class ColdStartMetaData {
 
  public:
   ColdStartMetaData(std::optional<char> label_delimiter,
-                    std::string label_column_name, bool integer_target)
+                    std::string label_column_name)
       : _label_delimiter(label_delimiter),
-        _label_column_name(std::move(label_column_name)),
-        _integer_target(integer_target) {}
+        _label_column_name(std::move(label_column_name)) {}
 
   std::string getLabelColumn() const { return _label_column_name; }
 
   std::optional<char> getLabelDelimiter() { return _label_delimiter; }
-
-  bool integerTarget() const { return _integer_target; }
 
   void save(const std::string& filename) const;
 
@@ -54,7 +51,6 @@ class ColdStartMetaData {
 
   std::optional<char> _label_delimiter;
   std::string _label_column_name;
-  bool _integer_target;
 };
 
 /*
