@@ -1,4 +1,5 @@
 #include "FMeasure.h"
+#include <bolt/src/train/metrics/Metric.h>
 
 namespace thirdai::bolt::train::metrics {
 
@@ -46,17 +47,17 @@ void FMeasure::reset() {
 }
 
 float FMeasure::value() const {
-  double prec = static_cast<double>(_true_positives) /
-                (_true_positives + _false_positives);
-  double recall = static_cast<double>(_true_positives) /
-                  (_true_positives + _false_negatives);
+  float prec = static_cast<float>(_true_positives) /
+               (_true_positives + _false_positives);
+  float recall = static_cast<float>(_true_positives) /
+                 (_true_positives + _false_negatives);
 
   /*
     P = Precision
     R = Recall
     F = (1 + beta^2) * PR) / (beta^2 * P + R)
   */
-  double denom = _beta_squared * prec + recall;
+  float denom = _beta_squared * prec + recall;
 
   if (denom == 0) {
     return 0;
