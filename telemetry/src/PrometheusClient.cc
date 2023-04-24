@@ -5,6 +5,7 @@
 #include <utils/Logging.h>
 #include <utils/UUID.h>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace thirdai::telemetry {
 
@@ -117,6 +118,9 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
 }
 
 void PrometheusTelemetryClient::trackPrediction(double inference_time_seconds) {
+  incrementSimpleFloatMetric("total_prediction_time", inference_time_seconds);
+  incrementSimpleIntMetric("prediction_count", 1);
+
   if (_registry == nullptr) {
     return;
   }
@@ -125,6 +129,9 @@ void PrometheusTelemetryClient::trackPrediction(double inference_time_seconds) {
 
 void PrometheusTelemetryClient::trackBatchPredictions(
     double inference_time_seconds, uint32_t num_inferences) {
+  incrementSimpleFloatMetric("total_batch_prediction_time", inference_time_seconds);
+  incrementSimpleIntMetric("batch_prediction_count", 1);
+
   if (_registry == nullptr) {
     return;
   }
@@ -134,6 +141,9 @@ void PrometheusTelemetryClient::trackBatchPredictions(
 }
 
 void PrometheusTelemetryClient::trackExplanation(double explain_time_seconds) {
+  incrementSimpleFloatMetric("total_explain_time", explain_time_seconds);
+  incrementSimpleIntMetric("explain_count", 1);
+
   if (_registry == nullptr) {
     return;
   }
@@ -141,6 +151,9 @@ void PrometheusTelemetryClient::trackExplanation(double explain_time_seconds) {
 }
 
 void PrometheusTelemetryClient::trackTraining(double training_time_seconds) {
+  incrementSimpleFloatMetric("total_training_time", training_time_seconds);
+  incrementSimpleIntMetric("training_count", 1);
+
   if (_registry == nullptr) {
     return;
   }
@@ -148,10 +161,34 @@ void PrometheusTelemetryClient::trackTraining(double training_time_seconds) {
 }
 
 void PrometheusTelemetryClient::trackEvaluate(double evaluate_time_seconds) {
+  incrementSimpleFloatMetric("total_eval_time", evaluate_time_seconds);
+  incrementSimpleIntMetric("eval_count", 1);
+
   if (_registry == nullptr) {
     return;
   }
   _evaluation_histogram->Observe(evaluate_time_seconds);
+}
+
+void PrometheusTelemetryClient::incrementSimpleFloatMetric(
+    const std::string& simple_metric, float increment) {
+  if (!_simple_float_metrics.count(simple_metric)) {
+    _simple_float_metrics[simple_metric] = 0;
+  }
+  _simple_float_metrics[simple_metric] += increment;
+}
+
+void PrometheusTelemetryClient::incrementSimpleIntMetric(
+    const std::string& simple_metric, uint64_t increment) {
+  if (!_simple_float_metrics.count(simple_metric)) {
+    _simple_float_metrics[simple_metric] = 0;
+  }
+  _simple_int_metrics[simple_metric] += increment;
+}
+
+std::unordered_map<std::string, std::string> getSimpleMetrics() {
+  // TODO(Kartik)
+  throw exceptions::NotImplemented("Implement me!");
 }
 
 }  // namespace thirdai::telemetry

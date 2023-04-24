@@ -6,6 +6,7 @@
 #include <prometheus/registry.h>
 #include <optional>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace thirdai::telemetry {
 
@@ -53,6 +54,8 @@ class PrometheusTelemetryClient {
 
   void trackEvaluate(double evaluate_time_seconds);
 
+  std::unordered_map<std::string, std::string> getSimpleMetrics();
+
  private:
   PrometheusTelemetryClient()
       : _registry(nullptr),
@@ -93,6 +96,17 @@ class PrometheusTelemetryClient {
   // This will track # train calls, total train time, and a histogram of
   // train time. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _train_histogram;
+
+  // These track simple metrics we want to always store, even when we are 
+  // using a no-op prometheus client
+  std::unordered_map<std::string, float> _simple_float_metrics;
+  std::unordered_map<std::string, uint64_t> _simple_int_metrics;
+
+  void incrementSimpleFloatMetric(const std::string& simple_metric,
+                                  float increment);
+
+  void incrementSimpleIntMetric(const std::string& simple_metric,
+                                uint64_t increment);
 };
 
 }  // namespace thirdai::telemetry
