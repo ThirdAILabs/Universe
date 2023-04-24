@@ -249,7 +249,8 @@ std::pair<float, NumpyArray<float>> TextClassifier::binaryCrossEntropyLoss(
 
 // Reduction will sum up the loss values automatically between all the threads
 // omp uses.
-#pragma omp parallel for default(none) shared(batch_size, per_class_loss_ptr, labels_ptr) reduction(+ : loss)
+#pragma omp parallel for default(none) \
+    shared(batch_size, per_class_loss_ptr, labels_ptr) reduction(+ : loss)
   for (uint32_t class_id = 0; class_id < _n_classes; class_id++) {
     per_class_loss_ptr[class_id] = 0.0;
 

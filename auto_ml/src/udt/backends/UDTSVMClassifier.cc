@@ -3,7 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
-#include <auto_ml/src/udt/Versions.h>
+#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
@@ -102,4 +102,4 @@ dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTSVMClassifier)
 CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTSVMClassifier,
-                     thirdai::automl::udt::versions::UDT_SVM_CLASSIFIER_VERSION)
+                     thirdai::versions::UDT_SVM_CLASSIFIER_VERSION)

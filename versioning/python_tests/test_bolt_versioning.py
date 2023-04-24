@@ -1,0 +1,51 @@
+import pytest
+from thirdai import bolt_v2 as bolt
+import os
+
+SERIALIZED_CLASS_DIR = "../versioning/python_tests/serialized_classes/"
+ERROR_STRING = r"BOLT_MODEL, but got version 0"
+
+pytestmark = [pytest.mark.unit]
+
+def build_bolt_model():
+    # Dummy bolt model to test serialization
+    
+    op = bolt.nn.FullyConnected(
+        dim=10,
+        input_dim=10,
+        sparsity=0.4,
+        activation="relu",
+    )
+
+    input_layer = bolt.nn.Input(dim=10)
+
+    output_layer = op(input_layer)
+
+    labels = bolt.nn.Input(dim=10)
+
+    loss = bolt.nn.losses.CategoricalCrossEntropy(
+        activations=output_layer, labels=labels
+    )
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+
+    return model
+
+
+def test_save_load_bolt_model():
+    model = build_bolt_model()
+    model_name = "bolt_model"
+    model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
+    model.save(model_path)
+
+
+def test_load_old_bolt_model():
+    model_name = "old_bolt_model"
+    model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
+
+    # Expected to raise error because the bolt model being loaded was saved
+    # with version 0, which is older than any current bolt version
+    with pytest.raises(ValueError, match=ERROR_STRING):
+        bolt.nn.Model.load(model_path)
+
+

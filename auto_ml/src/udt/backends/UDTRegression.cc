@@ -4,7 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <auto_ml/src/udt/Defaults.h>
-#include <auto_ml/src/udt/Versions.h>
+#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -160,4 +160,4 @@ void UDTRegression::serialize(Archive& archive, const uint32_t version) {
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRegression)
 CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRegression,
-                     thirdai::automl::udt::versions::UDT_REGRESSION_VERSION)
+                     thirdai::versions::UDT_REGRESSION_VERSION)

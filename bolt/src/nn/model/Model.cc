@@ -4,7 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
-#include <bolt/src/nn/model/Versions.h>
+#include <versioning/src/Versions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -407,4 +407,4 @@ void Model::serialize(Archive& archive, const uint32_t version) {
 }  // namespace thirdai::bolt::nn::model
 
 CEREAL_CLASS_VERSION(thirdai::bolt::nn::model::Model,
-                     thirdai::bolt::nn::model::versions::BOLT_MODEL_VERSION)
+                     thirdai::versions::BOLT_MODEL_VERSION)

@@ -1,6 +1,6 @@
 #include "UDTRecurrentClassifier.h"
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
-#include <auto_ml/src/udt/Versions.h>
+#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -220,4 +220,4 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
 CEREAL_CLASS_VERSION(
     thirdai::automl::udt::UDTRecurrentClassifier,
-    thirdai::automl::udt::versions::UDT_RECURRENT_CLASSIFIER_VERSION)
+    thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION)

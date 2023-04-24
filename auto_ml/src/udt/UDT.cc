@@ -4,7 +4,7 @@
 #include <bolt/src/utils/Timer.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <auto_ml/src/udt/Versions.h>
+#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMachClassifier.h>
@@ -296,4 +296,4 @@ void UDT::throwUnsupportedUDTConfigurationError(
 }  // namespace thirdai::automl::udt
 
 CEREAL_CLASS_VERSION(thirdai::automl::udt::UDT,
-                     thirdai::automl::udt::versions::UDT_BASE_VERSION)
+                     thirdai::versions::UDT_BASE_VERSION)

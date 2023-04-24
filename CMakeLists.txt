@@ -416,7 +416,8 @@ set(THIRDAI_SOURCES
     utils/StringManipulation.cc
     utils/UUID.cc
     licensing/src/entitlements/RestrictionTree.cc
-    licensing/src/entitlements/Entitlements.cc)
+    licensing/src/entitlements/Entitlements.cc
+    versioning/src/Versions.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set

@@ -3,7 +3,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/Versions.h>
+#include <versioning/src/Versions.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/mach/MachBlock.h>
@@ -315,4 +315,4 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
 CEREAL_CLASS_VERSION(
     thirdai::automl::udt::UDTMachClassifier,
-    thirdai::automl::udt::versions::UDT_MACH_CLASSIFIER_VERSION)
+    thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)
