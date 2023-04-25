@@ -1,6 +1,8 @@
 import json
 import os
+import time
 
+import numpy as np
 import pandas as pd
 from thirdai import bolt, deployment
 
@@ -23,15 +25,15 @@ class QueryReformulationRunner(Runner):
         model.train(train_file)
 
         for metric_name, metric_fn in config.additional_metric_fns.items():
-            metric_val = metric_fn(model, test_file)
+            metric_value = metric_fn(model, test_file)
 
-            print(f"{metric_name} = {metric_val}")
+            print(f"{metric_name} = {metric_value}")
             mlflow_logger.log_additional_metric(
-                key=metric_name, value=metric_val, step=0
+                key=f"val_{metric_name}", value=metric_value, step=0
             )
 
         average_predict_time_ms = QueryReformulationRunner.get_average_predict_time(
-            model, test_file, config, num_samples=10000
+            model, test_file, config, path_prefix, num_samples=1000
         )
 
         print(f"average_predict_time_ms = {average_predict_time_ms}ms")
@@ -63,8 +65,10 @@ class QueryReformulationRunner(Runner):
         return model
 
     @staticmethod
-    def get_average_predict_time(model, test_file, config, num_samples=10000):
-        test_data = pd.read_csv(test_file, low_memory=False)
+    def get_average_predict_time(
+        model, test_file, config, path_prefix, num_samples=1000
+    ):
+        test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         test_data_sample = test_data.iloc[
             np.random.randint(0, len(test_data), size=num_samples)
         ]
@@ -79,7 +83,7 @@ class QueryReformulationRunner(Runner):
         for sample, label in inference_samples:
             model.predict(sample, top_k=5)
         end_time = time.time()
-        average_predict_time_ms = int(
-            np.around(1000 * (end_time - start_time) / num_samples)
+        average_predict_time_ms = float(
+            np.around(1000 * (end_time - start_time) / num_samples, decimals=3)
         )
         return average_predict_time_ms

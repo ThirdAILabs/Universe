@@ -7,6 +7,7 @@
 #include <licensing/src/entitlements/Entitlements.h>
 #include <chrono>
 #include <map>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -42,7 +43,7 @@ class License {
 
   // Gets a string that represents the state of the license. This is the state
   // that is signed by our private key and later verified by the public key.
-  std::string toString() const {
+  std::string toVerifiableString() const {
     std::string to_verify;
     to_verify += std::to_string(_expire_time_epoch_millis);
     to_verify += "|";
@@ -53,6 +54,19 @@ class License {
       to_verify += ",";
     }
     return to_verify;
+  }
+
+  // TODO(Any): One day use toHumanString for verifying licenses.
+  std::string toHumanString() const {
+    std::stringstream to_display;
+    to_display << "This is a license with an expiry time of "
+               << _expire_time_epoch_millis
+               << " epoch ms. Entitlements are as follows: ";
+    for (auto const& [_, val] : _entitlements) {
+      to_display << val;
+      to_display << ", ";
+    }
+    return to_display.str();
   }
 
   Entitlements entitlements() const {

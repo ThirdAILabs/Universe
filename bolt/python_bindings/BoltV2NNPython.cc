@@ -12,6 +12,7 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -217,6 +218,10 @@ void defineOps(py::module_& nn) {
   py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
       .def(py::init(&ops::LayerNorm::make))
       .def("__call__", &ops::LayerNorm::apply);
+
+  py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
+      .def(py::init(&ops::Tanh::make))
+      .def("__call__", &ops::Tanh::apply);
 
   nn.def("Input", py::overload_cast<uint32_t>(&ops::Input::make),
          py::arg("dim"));

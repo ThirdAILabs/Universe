@@ -135,6 +135,26 @@ def modify_udt():
     bolt.UDT.cold_start = wrapped_cold_start
 
 
+def modify_mach_udt():
+    original_introduce_documents = bolt.UDT.introduce_documents
+
+    def wrapped_introduce_documents(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+    ):
+        data_source = _create_data_source(filename)
+
+        return original_introduce_documents(
+            self, data_source, strong_column_names, weak_column_names
+        )
+
+    delattr(bolt.UDT, "introduce_documents")
+
+    bolt.UDT.introduce_documents = wrapped_introduce_documents
+
+
 def modify_graph_udt():
     original_index_nodes_method = bolt.UDT.index_nodes
 

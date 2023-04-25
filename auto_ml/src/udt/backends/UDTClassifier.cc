@@ -15,6 +15,8 @@
 #include <licensing/src/CheckLicense.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
+#include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
 #include <variant>
@@ -240,11 +242,18 @@ uint32_t UDTClassifier::labelToNeuronId(
   throw std::invalid_argument("Invalid entity type.");
 }
 
-template void UDTClassifier::serialize(cereal::BinaryInputArchive&);
-template void UDTClassifier::serialize(cereal::BinaryOutputArchive&);
+template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
+                                       const uint32_t version);
+template void UDTClassifier::serialize(cereal::BinaryOutputArchive&,
+                                       const uint32_t version);
 
 template <class Archive>
-void UDTClassifier::serialize(Archive& archive) {
+void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+  std::string class_name = "UDT_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_CLASSIFIER_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _class_name_to_neuron,
           _label_block, _classifier, _dataset_factory);
 }
@@ -252,3 +261,5 @@ void UDTClassifier::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTClassifier)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTClassifier,
+                     thirdai::versions::UDT_CLASSIFIER_VERSION)

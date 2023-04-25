@@ -25,16 +25,13 @@ class ColdStartMetaData {
 
  public:
   ColdStartMetaData(std::optional<char> label_delimiter,
-                    std::string label_column_name, bool integer_target)
+                    std::string label_column_name)
       : _label_delimiter(label_delimiter),
-        _label_column_name(std::move(label_column_name)),
-        _integer_target(integer_target) {}
+        _label_column_name(std::move(label_column_name)) {}
 
   std::string getLabelColumn() const { return _label_column_name; }
 
   std::optional<char> getLabelDelimiter() { return _label_delimiter; }
-
-  bool integerTarget() const { return _integer_target; }
 
   void save(const std::string& filename) const;
 
@@ -54,15 +51,13 @@ class ColdStartMetaData {
 
   std::optional<char> _label_delimiter;
   std::string _label_column_name;
-  bool _integer_target;
 };
 
 /*
  * This function implements the preprocessing of training data for Cold-Start
  * PreTraining. We need this preprocessing to make sure there is one source for
  * both serial and distributed pre-processing for cold-start.
- */
-/*
+ *
  * Note(pratkpranav): In the distributed setting, this particular function runs
  * independently on each of the worker, hence almost any additions should be
  * fine except the additions which involves going through the whole training
@@ -74,4 +69,5 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& weak_column_names,
     data::TabularDatasetFactoryPtr& dataset_factory,
     ColdStartMetaDataPtr& metadata);
+
 }  // namespace thirdai::automl::cold_start

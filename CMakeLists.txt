@@ -324,6 +324,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
+    bolt/src/nn/ops/Tanh.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -335,6 +336,7 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/CategoricalAccuracy.cc
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
+    bolt/src/train/metrics/FMeasure.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc
@@ -416,7 +418,8 @@ set(THIRDAI_SOURCES
     utils/StringManipulation.cc
     utils/UUID.cc
     licensing/src/entitlements/RestrictionTree.cc
-    licensing/src/entitlements/Entitlements.cc)
+    licensing/src/entitlements/Entitlements.cc
+    versioning/src/Versions.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set

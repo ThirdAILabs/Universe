@@ -36,7 +36,7 @@ ColdStartMetaDataPtr ColdStartMetaData::load_stream(
 
 template <class Archive>
 void ColdStartMetaData::serialize(Archive& archive) {
-  archive(_label_delimiter, _label_column_name, _integer_target);
+  archive(_label_delimiter, _label_column_name);
 }
 
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
@@ -45,11 +45,6 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& weak_column_names,
     data::TabularDatasetFactoryPtr& dataset_factory,
     ColdStartMetaDataPtr& metadata) {
-  if (!metadata->integerTarget()) {
-    throw std::invalid_argument(
-        "Cold start pretraining currently only supports integer labels.");
-  }
-
   if (dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
@@ -84,4 +79,5 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
 
   return data_source;
 }
+
 }  // namespace thirdai::automl::cold_start

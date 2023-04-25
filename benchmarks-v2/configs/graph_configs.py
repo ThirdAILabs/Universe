@@ -41,7 +41,7 @@ class PokecUDTBenchmark(UDTBenchmarkConfig):
     dataset_name = "pokec"
 
     train_file = "pokec/train.csv"
-    test_file = "pokec/train.csv"
+    test_file = "pokec/test.csv"
 
     target = "target"
     integer_target = True

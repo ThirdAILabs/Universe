@@ -1,7 +1,9 @@
 from .dataset_loaders import (
+    DistributedColdStartDatasetLoader,
     DistributedFeaturizerDatasetLoader,
     DistributedSvmDatasetLoader,
     DistributedTabularDatasetLoader,
+    DistributedUDTDatasetLoader,
     ValidationContext,
 )
 from .distributed import (
