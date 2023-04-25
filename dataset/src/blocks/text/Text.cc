@@ -19,9 +19,9 @@ void TextBlock::buildSegment(ColumnarInputSample& input,
                              SegmentedFeatureVector& vec) {
   std::string_view string = input.column(_col);
 
-  if (_lowercase) {
-    string = text::lower(input.column(_col));
-  }
+  // if (_lowercase) {
+  //   string = text::lower(input.column(_col));
+  // }
 
   std::vector<std::string_view> tokens = _tokenizer->apply(string);
   std::vector<uint32_t> indices = _encoder->apply(tokens);
