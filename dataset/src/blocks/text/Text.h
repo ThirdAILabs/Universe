@@ -25,14 +25,15 @@ class TextBlock : public Block {
         _encoder(std::move(encoder)),
         _dim(dim) {}
 
-  static auto make(ColumnIdentifier col, TextTokenizerPtr tokenizer,
-                   TextEncoderPtr encoder, bool lowercase = false,
+  static auto make(const ColumnIdentifier& col,
+                   const TextTokenizerPtr& tokenizer,
+                   const TextEncoderPtr& encoder, bool lowercase = false,
                    uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<TextBlock>(col, tokenizer, encoder, lowercase, dim);
   }
 
-  static auto make(ColumnIdentifier col, TextTokenizerPtr tokenizer,
-                   bool lowercase = false,
+  static auto make(const ColumnIdentifier& col,
+                   const TextTokenizerPtr& tokenizer, bool lowercase = false,
                    uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<TextBlock>(col, tokenizer,
                                        dataset::NGramEncoder::make(/* n = */ 1),
