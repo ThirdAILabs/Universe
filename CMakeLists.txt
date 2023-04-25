@@ -391,6 +391,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/text/Text.cc
     dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc

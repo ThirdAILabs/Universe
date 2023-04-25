@@ -143,9 +143,11 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<>());
 
   py::class_<TextBlock, Block, TextBlockPtr>(block_submodule, "TextBlock")
-      .def(py::init<uint32_t, TextTokenizerPtr, TextEncoderPtr, uint32_t>(),
+      .def(py::init<uint32_t, TextTokenizerPtr, TextEncoderPtr, bool,
+                    uint32_t>(),
            py::arg("col"), py::arg("tokenizer") = NaiveSplitTokenizer::make(),
            py::arg("encoder") = NGramEncoder::make(1),
+           py::arg("lowercase") = false,
            py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
       .def("is_dense", &TextBlock::isDense)
       .def("feature_dim", &TextBlock::featureDim);

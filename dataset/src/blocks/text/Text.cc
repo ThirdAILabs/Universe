@@ -1,6 +1,4 @@
 #include "Text.h"
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::dataset {
 

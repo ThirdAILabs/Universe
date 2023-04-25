@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "TextEncoders.h"
 #include "TextTokenizers.h"
 #include <dataset/src/blocks/BlockInterface.h>
@@ -24,15 +26,17 @@ class TextBlock : public Block {
         _dim(dim) {}
 
   static auto make(ColumnIdentifier col, TextTokenizerPtr tokenizer,
-                   TextEncoderPtr encoder,
+                   TextEncoderPtr encoder, bool lowercase = false,
                    uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<TextBlock>(col, tokenizer, encoder, dim);
+    return std::make_shared<TextBlock>(col, tokenizer, encoder, lowercase, dim);
   }
 
   static auto make(ColumnIdentifier col, TextTokenizerPtr tokenizer,
+                   bool lowercase = false,
                    uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<TextBlock>(
-        col, tokenizer, dataset::NGramEncoder::make(/* n = */ 1), dim);
+    return std::make_shared<TextBlock>(col, tokenizer,
+                                       dataset::NGramEncoder::make(/* n = */ 1),
+                                       lowercase, dim);
   }
 
   uint32_t featureDim() const final { return _dim; };

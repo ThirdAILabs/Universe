@@ -90,8 +90,11 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
         // 2. text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
         blocks.push_back(dataset::TextBlock::make(
-            /* col = */ col_name, /* tokenizer = */
+            /* col = */ col_name,
+            /* tokenizer = */
             dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
+            /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
+            /* lowercase = */ false,
             /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
