@@ -481,6 +481,7 @@ class DistributedDataParallel:
         self.replica_workers = self._initialize_replica_workers(
             cluster_config, ray_model_ref, licensing_lambda, train_sources
         )
+
         self.workers = [self.primary_worker] + self.replica_workers
 
         self.num_of_batches = min(
@@ -501,6 +502,7 @@ class DistributedDataParallel:
             self.communication_type,
         )
         self.current_epoch = 0
+        del ray_model_ref
 
     def step(self):
         has_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
@@ -541,7 +543,10 @@ class DistributedDataParallel:
         return distributed_train_metrics
 
     def get_model(self, worker_id=0, with_optimizer=False):
-        return ray.get(self.workers[worker_id].model.remote(with_optimizer))
+        model_ref = self.workers[worker_id].model.remote(with_optimizer)
+        model = ray.get(model_ref)
+        del model_ref
+        return model
 
     def _validate(self):
         # whether we need to validate
