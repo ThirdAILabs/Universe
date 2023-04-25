@@ -190,7 +190,7 @@ void checkDenseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
                       bool check_grads) {
   ASSERT_EQ(eigen.cols(), bolt->dims().back());
   ASSERT_EQ(eigen.rows(), N_VECS);
-  ASSERT_FALSE(bolt->sparse());
+  ASSERT_FALSE(bolt->isSparse());
   ASSERT_TRUE(bolt->nonzeros().has_value());
   ASSERT_EQ(bolt->nonzeros().value(), bolt->dims().back());
 
@@ -210,7 +210,7 @@ void checkSparseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
                        bool check_grads) {
   ASSERT_EQ(eigen.cols(), bolt->dims().back());
   ASSERT_EQ(eigen.rows(), N_VECS);
-  ASSERT_TRUE(bolt->sparse());
+  ASSERT_TRUE(bolt->isSparse());
   ASSERT_TRUE(bolt->nonzeros().has_value());
 
   uint32_t nonzeros = bolt->nonzeros().value();
@@ -246,13 +246,13 @@ void runTest(const EigenMatrix& eigen_input,
              const tensor::TensorPtr& bolt_input,
              const EigenMatrix& eigen_output_grad,
              const tensor::TensorPtr& bolt_output_grad) {
-  auto [input, op, output] = makeOp(bolt_output_grad->sparse() ? 0.5 : 1.0);
+  auto [input, op, output] = makeOp(bolt_output_grad->isSparse() ? 0.5 : 1.0);
 
   auto eigen_weights = weightsToEigen(op);
 
   input->setTensor(bolt_input);
 
-  if (bolt_output_grad->sparse()) {
+  if (bolt_output_grad->isSparse()) {
     auto labels = ops::Input::make({INNER_DIM_1, INNER_DIM_2, OUTPUT_DIM});
 
     output->addInput(labels);
@@ -265,7 +265,7 @@ void runTest(const EigenMatrix& eigen_input,
   auto eigen_output =
       eigenForward(eigen_input, eigen_weights, biasesToEigen(op));
 
-  if (bolt_output_grad->sparse()) {
+  if (bolt_output_grad->isSparse()) {
     checkSparseTensor(eigen_output, output->tensor(), /* check_grads= */ false);
   } else {
     checkDenseTensor(eigen_output, output->tensor(), /* check_grads= */ false);
@@ -278,7 +278,7 @@ void runTest(const EigenMatrix& eigen_input,
   auto eigen_input_grad =
       eigenBackpropagateInputGrads(eigen_output_grad, eigen_weights);
 
-  if (bolt_input->sparse()) {
+  if (bolt_input->isSparse()) {
     checkSparseTensor(eigen_input_grad, input->tensor(),
                       /* check_grads= */ true);
   } else {
@@ -318,8 +318,8 @@ TEST(FullyConnectedOpTests, DenseDense) {
 
   auto [eigen_output_grad, bolt_output_grad] = denseData(OUTPUT_DIM);
 
-  ASSERT_FALSE(bolt_input->sparse());
-  ASSERT_FALSE(bolt_output_grad->sparse());
+  ASSERT_FALSE(bolt_input->isSparse());
+  ASSERT_FALSE(bolt_output_grad->isSparse());
 
   runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
@@ -329,8 +329,8 @@ TEST(FullyConnectedOpTests, SparseDense) {
 
   auto [eigen_output_grad, bolt_output_grad] = denseData(OUTPUT_DIM);
 
-  ASSERT_TRUE(bolt_input->sparse());
-  ASSERT_FALSE(bolt_output_grad->sparse());
+  ASSERT_TRUE(bolt_input->isSparse());
+  ASSERT_FALSE(bolt_output_grad->isSparse());
 
   runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
@@ -341,8 +341,8 @@ TEST(FullyConnectedOpTests, DenseSparse) {
   auto [eigen_output_grad, bolt_output_grad] =
       sparseData(OUTPUT_DIM, OUTPUT_NONZEROS);
 
-  ASSERT_FALSE(bolt_input->sparse());
-  ASSERT_TRUE(bolt_output_grad->sparse());
+  ASSERT_FALSE(bolt_input->isSparse());
+  ASSERT_TRUE(bolt_output_grad->isSparse());
 
   runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
@@ -353,8 +353,8 @@ TEST(FullyConnectedOpTests, SparseSparse) {
   auto [eigen_output_grad, bolt_output_grad] =
       sparseData(OUTPUT_DIM, OUTPUT_NONZEROS);
 
-  ASSERT_TRUE(bolt_input->sparse());
-  ASSERT_TRUE(bolt_output_grad->sparse());
+  ASSERT_TRUE(bolt_input->isSparse());
+  ASSERT_TRUE(bolt_output_grad->isSparse());
 
   runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }

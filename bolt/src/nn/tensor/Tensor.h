@@ -46,7 +46,7 @@ class Tensor {
    */
   std::optional<uint32_t> nonzeros() const;
 
-  bool sparse() const;
+  bool isSparse() const;
 
   /**
    * Returns the ith vector in the tensor.

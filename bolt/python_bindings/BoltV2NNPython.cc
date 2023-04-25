@@ -62,7 +62,8 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
 }
 
 tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
-                                  const NumpyArray<float>& values) {
+                                  const NumpyArray<float>& values,
+                                  uint32_t last_dim) {
   if (indices.ndim() != values.ndim()) {
     throw std::invalid_argument(
         "Expected indices and values to have the same number of dimensions.");
@@ -75,8 +76,8 @@ tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
     }
     dims.push_back(indices.shape(i));
   }
-
-  uint32_t nonzeros = indices.shape(indices.ndim() - 1);
+  uint32_t nonzeros = dims.back();
+  dims.back() = last_dim;
 
   return tensor::Tensor::fromArray(indices.data(), values.data(), dims,
                                    nonzeros, /* with_grad= */ false);
@@ -148,8 +149,11 @@ void defineTensor(py::module_& nn) {
       .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
                tensor::Tensor::convert)),
            py::arg("vector"), py::arg("dim"))
-      .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"))
+      .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
+           py::arg("dense_dim"))
       .def(py::init(&fromNumpyDense), py::arg("values"))
+      .def("dims", &tensor::Tensor::dims)
+      .def("sparse", &tensor::Tensor::isSparse)
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {

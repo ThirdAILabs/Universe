@@ -1,13 +1,15 @@
+import numpy as np
 import pytest
 from thirdai import bolt_v2 as bolt
 
-from utils import gen_numpy_training_data
+from dataset import create_dataset
 
 N_CLASSES = 100
+INPUT_SHAPE = (20, 5, 2, N_CLASSES)
 
 
 def build_model():
-    input_layer = bolt.nn.Input(dim=N_CLASSES)
+    input_layer = bolt.nn.Input(dims=INPUT_SHAPE[1:])
 
     hidden_layer = bolt.nn.FullyConnected(
         dim=200,
@@ -24,7 +26,7 @@ def build_model():
         activation="softmax",
     )(norm_layer)
 
-    labels = bolt.nn.Input(dim=N_CLASSES)
+    labels = bolt.nn.Input(dims=INPUT_SHAPE[1:])
 
     loss = bolt.nn.losses.CategoricalCrossEntropy(
         activations=output_layer, labels=labels
@@ -37,21 +39,12 @@ def build_model():
     return model, metric
 
 
-def get_data(n_classes):
-    x, y = gen_numpy_training_data(n_classes=n_classes)
-
-    x = bolt.train.convert_dataset(x, dim=n_classes)
-    y = bolt.train.convert_dataset(y, dim=n_classes)
-
-    return x, y
-
-
 @pytest.mark.unit
 def test_op_sharing():
     model, metric = build_model()
 
-    train_data = get_data(N_CLASSES)
-    test_data = get_data(N_CLASSES)
+    train_data = create_dataset(shape=INPUT_SHAPE, n_batches=5)
+    test_data = create_dataset(shape=INPUT_SHAPE, n_batches=5)
 
     trainer = bolt.train.Trainer(model)
 
@@ -64,3 +57,14 @@ def test_op_sharing():
     )
 
     assert metrics["acc"][-1] >= 0.9  # Accuracy should be ~0.97-0.98.
+
+    for x, y in zip(test_data[0], test_data[1]):
+        preds = model.forward(x, use_sparsity=False)[0]
+        preds = np.argmax(preds.activations, axis=-1)
+
+        labels = y[0].active_neurons
+        labels = labels.reshape(labels.shape[:-1])
+
+        acc = np.mean(preds == labels)
+
+        assert acc >= 0.9

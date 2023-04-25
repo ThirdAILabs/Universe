@@ -38,7 +38,8 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
 }
 
 void Concatenate::forwardHelper(const autograd::ComputationList& inputs,
-                          tensor::TensorPtr& output, uint32_t index) const {
+                                tensor::TensorPtr& output,
+                                uint32_t index) const {
   BoltVector& output_vector = output->getVector(index);
 
   uint32_t current_offset_in_output = 0;
@@ -74,7 +75,6 @@ void Concatenate::forwardHelper(const autograd::ComputationList& inputs,
 void Concatenate::backpropagate(autograd::ComputationList& inputs,
                                 tensor::TensorPtr& output,
                                 uint32_t index_in_batch) {
-  std::cerr << "Backprop: " << index_in_batch << std::endl;
   assert(!inputs.empty());
 
   uint32_t start = output->rangeStart(index_in_batch);

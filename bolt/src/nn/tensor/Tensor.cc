@@ -53,17 +53,17 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
 Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
                uint32_t nonzeros, bool with_grad)
     : Tensor(std::move(dims), nonzeros, with_grad) {
-  if (sparse() && !indices) {
+  if (isSparse() && !indices) {
     throw std::invalid_argument(
         "Must specify tensor indices if nonzeros is less than the last "
         "dimension.");
   }
 
-  if (!sparse() && indices) {
+  if (!isSparse() && indices) {
     throw std::invalid_argument("Cannot specify indices for a dense tensor.");
   }
 
-  if (sparse()) {
+  if (isSparse()) {
     std::copy(indices, indices + _active_neurons.size(),
               _active_neurons.begin());
   }
@@ -154,7 +154,7 @@ const Dims& Tensor::dims() const { return _dims; }
 
 std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
 
-bool Tensor::sparse() const { return !_active_neurons.empty(); }
+bool Tensor::isSparse() const { return !_active_neurons.empty(); }
 
 BoltVector& Tensor::getVector(uint32_t index) {
   assert(index < batchSize());
