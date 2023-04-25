@@ -135,8 +135,8 @@ int main(int32_t argc, const char** argv) {
     }
     std::cout << "Was able to verify license with the public key!" << std::endl;
 
-    std::cout << "Saved license " << read_from_file.getLicense().toString()
-              << std::endl;
+    std::cout << "Saved license "
+              << read_from_file.getLicense().toVerifiableString() << std::endl;
   } catch (const std::exception& e) {
     std::cerr << "Create license failed with: " << e.what() << std::endl;
     return 1;

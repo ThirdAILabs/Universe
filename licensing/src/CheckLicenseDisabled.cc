@@ -26,7 +26,10 @@ void startHeartbeat(const std::string& heartbeat_url,
 
 void endHeartbeat() {}
 
-void setLicensePath(const std::string& license_path) { (void)license_path; }
+void setLicensePath(const std::string& license_path, bool verbose) {
+  (void)license_path;
+  (void)verbose;
+}
 
 LicenseState getLicenseState() { return {}; }
 
