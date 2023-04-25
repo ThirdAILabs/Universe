@@ -66,7 +66,10 @@ class TextBlock : public Block {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _col, _lowercase, _tokenizer,
+            _encoder, _dim);
+  }
 };
 
 using TextBlockPtr = std::shared_ptr<TextBlock>;

@@ -32,10 +32,4 @@ void TextBlock::buildSegment(ColumnarInputSample& input,
   }
 }
 
-template <class Archive>
-void TextBlock::serialize(Archive& archive) {
-  archive(cereal::base_class<Block>(this), _col, _lowercase, _tokenizer,
-          _encoder, _dim);
-}
-
 }  // namespace thirdai::dataset

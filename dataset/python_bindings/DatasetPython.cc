@@ -155,8 +155,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<CategoricalBlock, Block, CategoricalBlockPtr>(
       internal_dataset_submodule, "AbstractCategoricalBlock",
       "A block that encodes categorical features (e.g. a numerical ID or "
-      "an "
-      "identification string).")
+      "an identification string).")
       .def("is_dense", &CategoricalBlock::isDense,
            "Returns false since categorical blocks always produce sparse "
            "features.")
