@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include "TextEncoders.h"
 #include "TextTokenizers.h"
 #include <dataset/src/blocks/BlockInterface.h>
@@ -54,35 +52,11 @@ class TextBlock : public Block {
   bool isDense() const final { return false; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           ColumnarInputSample& input) final {
-    std::string_view string = input.column(_col);
-    if (_lowercase) {
-      string = text::lower(string);
-    }
-    std::vector<std::string_view> tokens = _tokenizer->apply(string);
-    std::string keyword =
-        _encoder->getResponsibleWord(tokens, index_within_block, _dim);
-
-    return {_col, keyword};
-  }
+                           ColumnarInputSample& input) final;
 
  protected:
   void buildSegment(ColumnarInputSample& input,
-                    SegmentedFeatureVector& vec) final {
-    std::string_view string = input.column(_col);
-
-    if (_lowercase) {
-      string = text::lower(string);
-    }
-
-    std::vector<std::string_view> tokens = _tokenizer->apply(string);
-    std::vector<uint32_t> indices = _encoder->apply(tokens);
-    token_encoding::mod(indices, _dim);
-
-    for (auto& [index, value] : token_encoding::sumRepeatedIndices(indices)) {
-      vec.addSparseFeatureToSegment(index, value);
-    }
-  }
+                    SegmentedFeatureVector& vec) final;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_col};
@@ -99,11 +73,8 @@ class TextBlock : public Block {
   uint32_t _dim;
 
   friend class cereal::access;
-  template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _col, _lowercase, _tokenizer,
-            _encoder, _dim);
-  }
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using TextBlockPtr = std::shared_ptr<TextBlock>;

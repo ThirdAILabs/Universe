@@ -116,7 +116,7 @@ def test_invalid_text_tokenizers():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Created text column with invalid tokenizer 'INVALID', please choose one of 'words', 'words-with-punctuation', or 'char-k' (k is a number, e.g. 'char-5')."
+            f"Created text column with invalid tokenizer 'INVALID', please choose one of 'words', 'words-punct', or 'char-k' (k is a number, e.g. 'char-5')."
         ),
     ):
         bolt.UniversalDeepTransformer(
@@ -154,7 +154,7 @@ def test_invalid_char_k_tokenizer(invalid_tokenizer):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Created text column with invalid tokenizer '{invalid_tokenizer}', please choose one of 'words', 'words-with-punctuation', or 'char-k' (k is a number, e.g. 'char-5')."
+            f"Created text column with invalid tokenizer '{invalid_tokenizer}', please choose one of 'words', 'words-punct', or 'char-k' (k is a number, e.g. 'char-5')."
         ),
     ):
         bolt.UniversalDeepTransformer(

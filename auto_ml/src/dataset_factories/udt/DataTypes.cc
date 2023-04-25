@@ -14,13 +14,13 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
     return dataset::NaiveSplitTokenizer::make();
   }
 
-  if (string == "words-with-punctuation") {
+  if (string == "words-punct") {
     return dataset::WordPunctTokenizer::make();
   }
 
   throw std::invalid_argument(
       "Created text column with invalid tokenizer '" + string +
-      "', please choose one of 'words', 'words-with-punctuation', or 'char-k' "
+      "', please choose one of 'words', 'words-punct', or 'char-k' "
       "(k is a number, e.g. 'char-5').");
 }
 
