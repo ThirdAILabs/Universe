@@ -168,7 +168,9 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
   std::vector<TextBlockPtr> blocks;
-  blocks.push_back(TextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks.push_back(TextBlock::make(
+      /* col= */ 0, /* tokenizer = */ dataset::NaiveSplitTokenizer::make(),
+      dim_for_encodings));
   blocks.push_back(TextBlock::make(
       /* col= */ 1,
       /* tokenizer = */ NaiveSplitTokenizer::make(),
@@ -241,14 +243,20 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
   std::vector<TextBlockPtr> blocks_2;
   // Duplicate each block. They will independently produce features
   // and we can check that the resulting vectors are equal.
-  blocks_1.push_back(TextBlock::make(/* col= */ 0, dim_for_encodings));
-  blocks_2.push_back(TextBlock::make(/* col= */ 0, dim_for_encodings));
-  blocks_1.push_back(TextBlock::make(/* col= */ 1,
-                                     /* encoder = */ PairGramEncoder::make(),
-                                     dim_for_encodings));
-  blocks_2.push_back(TextBlock::make(/* col= */ 1,
-                                     /* encoder = */ PairGramEncoder::make(),
-                                     dim_for_encodings));
+  blocks_1.push_back(TextBlock::make(
+      /* col= */ 0, /* tokenizer = */ dataset::NaiveSplitTokenizer::make(),
+      dim_for_encodings));
+  blocks_2.push_back(TextBlock::make(
+      /* col= */ 0, /* tokenizer = */ dataset::NaiveSplitTokenizer::make(),
+      dim_for_encodings));
+  blocks_1.push_back(TextBlock::make(
+      /* col= */ 1,
+      /* tokenizer = */ dataset::NaiveSplitTokenizer::make(),
+      /* encoder = */ PairGramEncoder::make(), dim_for_encodings));
+  blocks_2.push_back(TextBlock::make(
+      /* col= */ 1,
+      /* tokenizer = */ dataset::NaiveSplitTokenizer::make(),
+      /* encoder = */ PairGramEncoder::make(), dim_for_encodings));
   blocks_1.push_back(TextBlock::make(
       /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
       dim_for_encodings));

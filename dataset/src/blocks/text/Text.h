@@ -35,18 +35,6 @@ class TextBlock : public Block {
         col, tokenizer, dataset::NGramEncoder::make(/* n = */ 1), dim);
   }
 
-  static auto make(ColumnIdentifier col, TextEncoderPtr encoder,
-                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<TextBlock>(col, NaiveSplitTokenizer::make(),
-                                       encoder, dim);
-  }
-
-  static auto make(ColumnIdentifier col,
-                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<TextBlock>(col, NaiveSplitTokenizer::make(),
-                                       NGramEncoder::make(/* n = */ 1), dim);
-  }
-
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
