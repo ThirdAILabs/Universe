@@ -79,11 +79,29 @@ pybind11::detail::initimpl::pickle_factory<
       });
 }
 
-// This redirects std::out and std::err to pythons output and error streams,
-// respectively, so that prints followed by a flush are immediately visible,
-// even in notebooks. See the following link for more details:
-// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+/**
+ * OutputRedirect redirects std::out and std::err to pythons output and error
+ * streams, respectively, so that prints followed by a flush are immediately
+ *  visible, even in notebooks. See the following link for more details:
+ * https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+ * We disable this for windows by using a call guard with a NOOP type, since
+ * using py::print (which this redirects to) on windows without a console causes
+ * an error (see https://github.com/pybind/pybind11/issues/4088). See
+ * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#call-guard
+ * for more details on what a call guard is and why UselessWindowsType is safely
+ * a NOOP; in short, the call guard just constructs an instance of the empty
+ * UselessWindowsType struct before calling the function.
+ **/
+
+#if _WIN32
+
+struct UselessWindowsType {};
+using OutputRedirect = py::call_guard<UselessWindowsType>;
+
+#else
+struct UselessWindowsType {};
 using OutputRedirect =
     py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>;
 
+#endif
 }  // namespace thirdai::bolt::python
