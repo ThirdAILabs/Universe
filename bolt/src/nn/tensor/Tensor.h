@@ -68,6 +68,18 @@ class Tensor {
 
   const float* gradientsPtr() const;
 
+  const auto& activeNeurons() const { return _active_neurons; }
+
+  auto& activeNeurons() { return _active_neurons; }
+
+  const auto& activations() const { return _activations; }
+
+  auto& activations() { return _activations; }
+
+  const auto& gradients() const { return _gradients; }
+
+  auto& gradients() { return _gradients; }
+
  private:
   Dims _dims;
   std::optional<uint32_t> _nonzeros;

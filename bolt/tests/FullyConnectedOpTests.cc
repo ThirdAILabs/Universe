@@ -71,9 +71,8 @@ void setWeightsAndBiases(ops::FullyConnectedPtr& op) {
 }
 
 void setGradients(tensor::TensorPtr& tensor, const std::vector<float>& grads) {
-  float* grad_ptr = const_cast<float*>(tensor->gradientsPtr());
-
-  std::copy(grads.begin(), grads.end(), grad_ptr);
+  ASSERT_EQ(tensor->gradients().size(), grads.size());
+  std::copy(grads.begin(), grads.end(), tensor->gradients().begin());
 }
 
 using EigenMatrix =
@@ -187,219 +186,177 @@ makeOp(float sparsity) {
   return {input, op, output};
 }
 
-void checkDenseOutput(const EigenMatrix& eigen_output,
-                      const tensor::TensorPtr& bolt_output) {
-  for (uint32_t i = 0; i < N_VECS * OUTPUT_DIM; i++) {
-    ASSERT_FLOAT_EQ(eigen_output.data()[i], bolt_output->activationsPtr()[i]);
+void checkDenseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
+                      bool check_grads) {
+  ASSERT_EQ(eigen.cols(), bolt->dims().back());
+  ASSERT_EQ(eigen.rows(), N_VECS);
+  ASSERT_FALSE(bolt->sparse());
+  ASSERT_TRUE(bolt->nonzeros().has_value());
+  ASSERT_EQ(bolt->nonzeros().value(), bolt->dims().back());
+
+  std::vector<float> bolt_arr = bolt->activations();
+  if (check_grads) {
+    bolt_arr = bolt->gradients();
+  }
+
+  ASSERT_EQ(bolt_arr.size(), N_VECS * bolt->dims().back());
+
+  for (uint32_t i = 0; i < N_VECS * bolt->dims().back(); i++) {
+    ASSERT_FLOAT_EQ(eigen.data()[i], bolt_arr.at(i));
+  }
+}
+
+void checkSparseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
+                       bool check_grads) {
+  ASSERT_EQ(eigen.cols(), bolt->dims().back());
+  ASSERT_EQ(eigen.rows(), N_VECS);
+  ASSERT_TRUE(bolt->sparse());
+  ASSERT_TRUE(bolt->nonzeros().has_value());
+
+  uint32_t nonzeros = bolt->nonzeros().value();
+
+  std::vector<float> bolt_arr = bolt->activations();
+  if (check_grads) {
+    bolt_arr = bolt->gradients();
+  }
+
+  ASSERT_EQ(bolt_arr.size(), N_VECS * nonzeros);
+
+  for (uint32_t i = 0; i < N_VECS; i++) {
+    for (uint32_t j = 0; j < nonzeros; j++) {
+      uint32_t index = bolt->activeNeurons().at(i * nonzeros + j);
+
+      ASSERT_FLOAT_EQ(eigen(i, index), bolt_arr.at(i * nonzeros + j));
+    }
   }
 }
 
 void checkWeightGrads(const EigenMatrix& eigen_weight_grads,
                       const ops::FullyConnectedPtr& op) {
+  ASSERT_EQ(eigen_weight_grads.rows(), op->dim());
+  ASSERT_EQ(eigen_weight_grads.cols(), op->inputDim());
+
   const float* weight_grads = op->gradients().at(0)->data();
   for (uint32_t i = 0; i < op->inputDim() * op->dim(); i++) {
     ASSERT_FLOAT_EQ(eigen_weight_grads.data()[i], weight_grads[i]);
   }
 }
 
-TEST(FullyConnectedOpTests, DenseDense) {
-  auto [input, op, output] = makeOp(1.0);
-
-  auto input_data = randomValues(N_VECS, INPUT_DIM);
-
-  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, input_data));
-
-  runForward(output, BATCH_SIZE);
-
-  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, input_data);
+void runTest(const EigenMatrix& eigen_input,
+             const tensor::TensorPtr& bolt_input,
+             const EigenMatrix& eigen_output_grad,
+             const tensor::TensorPtr& bolt_output_grad) {
+  auto [input, op, output] = makeOp(bolt_output_grad->sparse() ? 0.5 : 1.0);
 
   auto eigen_weights = weightsToEigen(op);
 
+  input->setTensor(bolt_input);
+
+  if (bolt_output_grad->sparse()) {
+    auto labels = ops::Input::make({INNER_DIM_1, INNER_DIM_2, OUTPUT_DIM});
+
+    output->addInput(labels);
+
+    labels->setTensor(bolt_output_grad);
+  }
+
+  runForward(output, BATCH_SIZE);
+
   auto eigen_output =
-      eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
+      eigenForward(eigen_input, eigen_weights, biasesToEigen(op));
 
-  checkDenseOutput(eigen_output, output->tensor());
+  if (bolt_output_grad->sparse()) {
+    checkSparseTensor(eigen_output, output->tensor(), /* check_grads= */ false);
+  } else {
+    checkDenseTensor(eigen_output, output->tensor(), /* check_grads= */ false);
+  }
 
-  auto output_grads = randomValues(N_VECS, OUTPUT_DIM);
-  setGradients(output->tensor(), output_grads);
+  setGradients(output->tensor(), bolt_output_grad->activations());
 
   runBackpropagate(output, BATCH_SIZE);
 
-  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, output_grads);
+  auto eigen_input_grad =
+      eigenBackpropagateInputGrads(eigen_output_grad, eigen_weights);
 
-  auto eigen_input_grads =
-      eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
-
-  for (uint32_t i = 0; i < N_VECS * INPUT_DIM; i++) {
-    ASSERT_FLOAT_EQ(eigen_input_grads.data()[i],
-                    input->tensor()->gradientsPtr()[i]);
+  if (bolt_input->sparse()) {
+    checkSparseTensor(eigen_input_grad, input->tensor(),
+                      /* check_grads= */ true);
+  } else {
+    checkDenseTensor(eigen_input_grad, input->tensor(),
+                     /* check_grads= */ true);
   }
 
   auto eigen_weight_grads =
-      eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
+      eigenBackpropagateWeightGrads(eigen_input, eigen_output_grad);
 
   checkWeightGrads(eigen_weight_grads, op);
+}
+
+std::pair<EigenMatrix, tensor::TensorPtr> denseData(uint32_t dim) {
+  auto values = randomValues(N_VECS, dim);
+
+  auto eigen = dataToEigen(N_VECS, dim, values);
+  auto bolt = dataToTensor({BATCH_SIZE, INNER_DIM_1, INNER_DIM_2, dim}, values);
+
+  return {eigen, bolt};
+}
+
+std::pair<EigenMatrix, tensor::TensorPtr> sparseData(uint32_t dim,
+                                                     uint32_t nonzeros) {
+  auto indices = randomIndices(N_VECS, dim, nonzeros);
+  auto values = randomValues(N_VECS, nonzeros);
+
+  auto eigen = dataToEigen(N_VECS, dim, nonzeros, indices, values);
+  auto bolt = dataToTensor({BATCH_SIZE, INNER_DIM_1, INNER_DIM_2, dim},
+                           nonzeros, indices, values);
+
+  return {eigen, bolt};
+}
+
+TEST(FullyConnectedOpTests, DenseDense) {
+  auto [eigen_input, bolt_input] = denseData(INPUT_DIM);
+
+  auto [eigen_output_grad, bolt_output_grad] = denseData(OUTPUT_DIM);
+
+  ASSERT_FALSE(bolt_input->sparse());
+  ASSERT_FALSE(bolt_output_grad->sparse());
+
+  runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
 
 TEST(FullyConnectedOpTests, SparseDense) {
-  auto [input, op, output] = makeOp(1.0);
+  auto [eigen_input, bolt_input] = sparseData(INPUT_DIM, INPUT_NONZEROS);
 
-  auto input_indices = randomIndices(N_VECS, INPUT_DIM, INPUT_NONZEROS);
-  auto input_values = randomValues(N_VECS, INPUT_NONZEROS);
+  auto [eigen_output_grad, bolt_output_grad] = denseData(OUTPUT_DIM);
 
-  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, INPUT_NONZEROS,
-                                input_indices, input_values));
+  ASSERT_TRUE(bolt_input->sparse());
+  ASSERT_FALSE(bolt_output_grad->sparse());
 
-  runForward(output, BATCH_SIZE);
-
-  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, INPUT_NONZEROS,
-                                  input_indices, input_values);
-
-  auto eigen_weights = weightsToEigen(op);
-
-  auto eigen_output =
-      eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
-
-  checkDenseOutput(eigen_output, output->tensor());
-
-  auto output_grads = randomValues(N_VECS, OUTPUT_DIM);
-  setGradients(output->tensor(), output_grads);
-
-  runBackpropagate(output, BATCH_SIZE);
-
-  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, output_grads);
-
-  auto eigen_input_grads =
-      eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
-
-  for (uint32_t i = 0; i < N_VECS * INPUT_NONZEROS; i++) {
-    uint32_t index = (i / INPUT_NONZEROS * INPUT_DIM) + input_indices.at(i);
-    ASSERT_FLOAT_EQ(eigen_input_grads.data()[index],
-                    input->tensor()->gradientsPtr()[i]);
-  }
-
-  auto eigen_weight_grads =
-      eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
-
-  checkWeightGrads(eigen_weight_grads, op);
+  runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
 
 TEST(FullyConnectedOpTests, DenseSparse) {
-  auto [input, op, output] = makeOp(0.5);
+  auto [eigen_input, bolt_input] = denseData(INPUT_DIM);
 
-  auto labels = ops::Input::make({INNER_DIM_1, INNER_DIM_2, OUTPUT_DIM});
+  auto [eigen_output_grad, bolt_output_grad] =
+      sparseData(OUTPUT_DIM, OUTPUT_NONZEROS);
 
-  output->addInput(labels);
+  ASSERT_FALSE(bolt_input->sparse());
+  ASSERT_TRUE(bolt_output_grad->sparse());
 
-  auto input_data = randomValues(N_VECS, INPUT_DIM);
-
-  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, input_data));
-
-  auto output_indices = randomIndices(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS);
-  auto output_label_vals = std::vector<float>(N_VECS * OUTPUT_NONZEROS, 1.0);
-
-  labels->setTensor(dataToTensor(OUTPUT_TENSOR_DIMS, OUTPUT_NONZEROS,
-                                 output_indices, output_label_vals));
-
-  runForward(output, BATCH_SIZE);
-
-  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, input_data);
-
-  auto eigen_weights = weightsToEigen(op);
-
-  auto eigen_output =
-      eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
-
-  for (uint32_t i = 0; i < N_VECS; i++) {
-    for (uint32_t j = 0; j < OUTPUT_NONZEROS; j++) {
-      ASSERT_FLOAT_EQ(
-          eigen_output.data()[i * OUTPUT_DIM +
-                              output_indices.at(i * OUTPUT_NONZEROS + j)],
-          output->tensor()->activationsPtr()[i * OUTPUT_NONZEROS + j]);
-    }
-  }
-
-  auto output_grads = randomValues(N_VECS, OUTPUT_NONZEROS);
-  setGradients(output->tensor(), output_grads);
-
-  runBackpropagate(output, BATCH_SIZE);
-
-  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS,
-                                        output_indices, output_grads);
-
-  auto eigen_input_grads =
-      eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
-
-  for (uint32_t i = 0; i < N_VECS * INPUT_DIM; i++) {
-    ASSERT_FLOAT_EQ(eigen_input_grads.data()[i],
-                    input->tensor()->gradientsPtr()[i]);
-  }
-
-  auto eigen_weight_grads =
-      eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
-
-  checkWeightGrads(eigen_weight_grads, op);
+  runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
 
 TEST(FullyConnectedOpTests, SparseSparse) {
-  auto [input, op, output] = makeOp(0.5);
+  auto [eigen_input, bolt_input] = sparseData(INPUT_DIM, INPUT_NONZEROS);
 
-  auto labels = ops::Input::make({INNER_DIM_1, INNER_DIM_2, OUTPUT_DIM});
+  auto [eigen_output_grad, bolt_output_grad] =
+      sparseData(OUTPUT_DIM, OUTPUT_NONZEROS);
 
-  output->addInput(labels);
+  ASSERT_TRUE(bolt_input->sparse());
+  ASSERT_TRUE(bolt_output_grad->sparse());
 
-  auto input_indices = randomIndices(N_VECS, INPUT_DIM, INPUT_NONZEROS);
-  auto input_values = randomValues(N_VECS, INPUT_NONZEROS);
-
-  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, INPUT_NONZEROS,
-                                input_indices, input_values));
-
-  auto output_indices = randomIndices(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS);
-  auto output_label_vals = std::vector<float>(N_VECS * OUTPUT_NONZEROS, 1.0);
-
-  labels->setTensor(dataToTensor(OUTPUT_TENSOR_DIMS, OUTPUT_NONZEROS,
-                                 output_indices, output_label_vals));
-
-  runForward(output, BATCH_SIZE);
-
-  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, INPUT_NONZEROS,
-                                  input_indices, input_values);
-
-  auto eigen_weights = weightsToEigen(op);
-
-  auto eigen_output =
-      eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
-
-  for (uint32_t i = 0; i < N_VECS; i++) {
-    for (uint32_t j = 0; j < OUTPUT_NONZEROS; j++) {
-      ASSERT_FLOAT_EQ(
-          eigen_output.data()[i * OUTPUT_DIM +
-                              output_indices.at(i * OUTPUT_NONZEROS + j)],
-          output->tensor()->activationsPtr()[i * OUTPUT_NONZEROS + j]);
-    }
-  }
-
-  auto output_grads = randomValues(N_VECS, OUTPUT_NONZEROS);
-  setGradients(output->tensor(), output_grads);
-
-  runBackpropagate(output, BATCH_SIZE);
-
-  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS,
-                                        output_indices, output_grads);
-
-  auto eigen_input_grads =
-      eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
-
-  for (uint32_t i = 0; i < N_VECS * INPUT_NONZEROS; i++) {
-    uint32_t index = (i / INPUT_NONZEROS * INPUT_DIM) + input_indices.at(i);
-    ASSERT_FLOAT_EQ(eigen_input_grads.data()[index],
-                    input->tensor()->gradientsPtr()[i]);
-  }
-
-  auto eigen_weight_grads =
-      eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
-
-  checkWeightGrads(eigen_weight_grads, op);
+  runTest(eigen_input, bolt_input, eigen_output_grad, bolt_output_grad);
 }
 
 }  // namespace thirdai::bolt::nn::tests
