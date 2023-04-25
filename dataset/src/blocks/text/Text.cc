@@ -5,8 +5,13 @@ namespace thirdai::dataset {
 Explanation TextBlock::explainIndex(uint32_t index_within_block,
                                     ColumnarInputSample& input) {
   std::string_view string = input.column(_col);
+
+  // assign outside the if statement so string view below wont point to an out
+  // of scope string variable
+  std::string lowercase_string;
   if (_lowercase) {
-    string = text::lower(string);
+    lowercase_string = text::lower(string);
+    string = lowercase_string;
   }
   std::vector<std::string_view> tokens = _tokenizer->apply(string);
   std::string keyword =
@@ -18,10 +23,13 @@ Explanation TextBlock::explainIndex(uint32_t index_within_block,
 void TextBlock::buildSegment(ColumnarInputSample& input,
                              SegmentedFeatureVector& vec) {
   std::string_view string = input.column(_col);
-  std::string tmp;
+
+  // assign outside the if statement so string view below wont point to an out
+  // of scope string variable
+  std::string lowercase_string;
   if (_lowercase) {
-    tmp = text::lower(string);
-    string = tmp;
+    lowercase_string = text::lower(string);
+    string = lowercase_string;
   }
 
   std::vector<std::string_view> tokens = _tokenizer->apply(string);
