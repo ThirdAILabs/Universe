@@ -457,6 +457,9 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   std::string class_name = "UDT_MACH_CLASSIFIER";
   versions::checkVersion(version, versions::UDT_MACH_CLASSIFIER_VERSION,
                          thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
+  // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
 }
