@@ -8,6 +8,8 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/mach/MachDecode.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
+#include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
 
@@ -443,8 +445,18 @@ TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
                                   activation_func, distance_cutoff);
 }
 
+template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
+                                           const uint32_t version);
+template void UDTMachClassifier::serialize(cereal::BinaryOutputArchive&,
+                                           const uint32_t version);
+
 template <class Archive>
-void UDTMachClassifier::serialize(Archive& archive) {
+void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+  std::string class_name = "UDT_MACH_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_MACH_CLASSIFIER_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
 }
@@ -452,3 +464,5 @@ void UDTMachClassifier::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTMachClassifier,
+                     thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)

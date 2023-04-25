@@ -153,7 +153,7 @@ class UDTMachClassifier final : public UDTBackend {
   friend cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 
   std::shared_ptr<utils::Classifier> _classifier;
 
