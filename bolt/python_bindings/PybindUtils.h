@@ -99,7 +99,7 @@ struct UselessWindowsType {};
 using OutputRedirect = py::call_guard<UselessWindowsType>;
 
 #else
-struct UselessWindowsType {};
+
 using OutputRedirect =
     py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>;
 
