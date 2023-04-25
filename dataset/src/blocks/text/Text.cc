@@ -17,7 +17,7 @@ Explanation TextBlock::explainIndex(uint32_t index_within_block,
 
 void TextBlock::buildSegment(ColumnarInputSample& input,
                              SegmentedFeatureVector& vec) {
-  std::string_view string;
+  std::string_view string = input.column(_col);
   std::string tmp;
   if (_lowercase) {
     tmp = text::lower(string);
