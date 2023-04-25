@@ -26,7 +26,7 @@ class DistributedTrainingWrapper {
 
   void updateParameters();
 
-  std::unordered_map<std::string, float> validationAndSaveBest();
+  std::unordered_map<std::string, float> validationAndSave();
 
   nn::model::ModelPtr getModel() { return _model; }
 
@@ -91,6 +91,9 @@ class DistributedTrainingWrapper {
 
   std::optional<LabeledDataset> _train_data;
   std::optional<LabeledDataset> _validation_data;
+
+  uint32_t _steps_since_save;
+  std::optional<SaveContext> _save_context;
 };
 
 using DistributedTrainingWrapperPtr =

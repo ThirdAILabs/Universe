@@ -14,7 +14,9 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
       _learning_rate(train_config.learningRate()),
       _train_metrics(metrics::fromMetricNames(model, train_config.metrics())),
       _logging_interval(train_config.logLossFrequency()),
-      _use_sparsity_in_validation(false) {
+      _use_sparsity_in_validation(false),
+      _steps_since_save(0),
+      _save_context(train_config.saveContext()) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
         "Distributed training is currently only supported for models with a "
@@ -31,13 +33,6 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
     _validation_metrics = validation->config().getMetricNames();
     _use_sparsity_in_validation =
         validation->config().shouldReturnActivations();
-  }
-
-  // TODO(Nicholas): add saving and best metric tracking.
-  if (train_config.saveContext()) {
-    throw exceptions::NotImplemented(
-        "Training with a save context is not yet supported for bolt v2 "
-        "distributed.");
   }
 }
 
@@ -66,10 +61,19 @@ void DistributedTrainingWrapper::updateParameters() {
     logging::info("train | train_steps {} | {}", _model->trainSteps(),
                   _train_metrics.summarizeLastStep());
   }
+
+  ++_steps_since_save;
 }
 
 std::unordered_map<std::string, float>
-DistributedTrainingWrapper::validationAndSaveBest() {
+DistributedTrainingWrapper::validationAndSave() {
+  if (_save_context && (_steps_since_save % _save_context->frequency()) == 0) {
+    std::string save_path =
+        _save_context->prefix() + "_" + std::to_string(_steps_since_save);
+
+    _model->checkpoint(save_path);
+  }
+
   if (!_validation_data) {
     return {};
   }
