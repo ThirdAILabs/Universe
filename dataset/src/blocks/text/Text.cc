@@ -20,7 +20,7 @@ void TextBlock::buildSegment(ColumnarInputSample& input,
   std::string_view string = input.column(_col);
 
   if (_lowercase) {
-    string = text::lower(string);
+    string = text::lower(input.column(_col));
   }
 
   std::vector<std::string_view> tokens = _tokenizer->apply(string);
