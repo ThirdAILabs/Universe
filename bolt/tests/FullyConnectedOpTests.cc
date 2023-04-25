@@ -3,12 +3,9 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <Eigen/src/Core/Matrix.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <Eigen/src/Core/util/Constants.h>
-#include <Eigen/unsupported/Eigen/CXX11/Tensor>
-#include <unsupported/Eigen/CXX11/src/Tensor/Tensor.h>
 #include <algorithm>
-#include <cstddef>
 #include <random>
 #include <unordered_set>
 
@@ -162,58 +159,78 @@ void runBackpropagate(autograd::ComputationPtr& comp, uint32_t batch_size) {
   }
 }
 
-uint32_t dim1 = 2, dim2 = 1, dim3 = 1, dim4 = 10;
-// uint32_t dim1 = 4, dim2 = 6, dim3 = 8, dim4 = 10;
+uint32_t BATCH_SIZE = 4, INNER_DIM_1 = 6, INNER_DIM_2 = 8, INPUT_DIM = 10,
+         OUTPUT_DIM = 20, INPUT_NONZEROS = 5, OUTPUT_NONZEROS = 10;
 
-uint32_t n_vecs = dim1 * dim2 * dim3;
+uint32_t N_VECS = BATCH_SIZE * INNER_DIM_1 * INNER_DIM_2;
 
-std::vector<uint32_t> dims = {dim1, dim2, dim3, dim4};
-std::vector<uint32_t> input_dims = {dim2, dim3, dim4};
+std::vector<uint32_t> INPUT_TENSOR_DIMS = {BATCH_SIZE, INNER_DIM_1, INNER_DIM_2,
+                                           INPUT_DIM};
 
-uint32_t batch_size = dim1, input_dim = dim4, output_dim = 20,
-         input_nonzeros = dim4 / 2, output_nonzeros = output_dim / 2;
+std::vector<uint32_t> OUTPUT_TENSOR_DIMS = {BATCH_SIZE, INNER_DIM_1,
+                                            INNER_DIM_2, OUTPUT_DIM};
 
-TEST(FullyConnectedOpTests, DenseDense) {
-  auto input = ops::Input::make(input_dims);
+std::tuple<autograd::ComputationPtr, ops::FullyConnectedPtr,
+           autograd::ComputationPtr>
+makeOp(float sparsity) {
+  auto input = ops::Input::make({INNER_DIM_1, INNER_DIM_2, INPUT_DIM});
 
-  auto op = ops::FullyConnected::make(/* dim= */ output_dim,
-                                      /* input_dim= */ input_dim,
-                                      /* sparsity= */ 1.0,
+  auto op = ops::FullyConnected::make(/* dim= */ OUTPUT_DIM,
+                                      /* input_dim= */ INPUT_DIM,
+                                      /* sparsity= */ sparsity,
                                       /* activation= */ "linear");
   setWeightsAndBiases(op);
 
   auto output = op->apply(input);
-  output->allocate(batch_size, /* use_sparsity= */ true);
+  output->allocate(BATCH_SIZE, /* use_sparsity= */ true);
 
-  auto input_data = randomValues(n_vecs, input_dim);
+  return {input, op, output};
+}
 
-  input->setTensor(dataToTensor(dims, input_data));
+void checkDenseOutput(const EigenMatrix& eigen_output,
+                      const tensor::TensorPtr& bolt_output) {
+  for (uint32_t i = 0; i < N_VECS * OUTPUT_DIM; i++) {
+    ASSERT_FLOAT_EQ(eigen_output.data()[i], bolt_output->activationsPtr()[i]);
+  }
+}
 
-  runForward(output, batch_size);
+void checkWeightGrads(const EigenMatrix& eigen_weight_grads,
+                      const ops::FullyConnectedPtr& op) {
+  const float* weight_grads = op->gradients().at(0)->data();
+  for (uint32_t i = 0; i < op->inputDim() * op->dim(); i++) {
+    ASSERT_FLOAT_EQ(eigen_weight_grads.data()[i], weight_grads[i]);
+  }
+}
 
-  auto eigen_inputs = dataToEigen(n_vecs, input_dim, input_data);
+TEST(FullyConnectedOpTests, DenseDense) {
+  auto [input, op, output] = makeOp(1.0);
+
+  auto input_data = randomValues(N_VECS, INPUT_DIM);
+
+  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, input_data));
+
+  runForward(output, BATCH_SIZE);
+
+  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, input_data);
 
   auto eigen_weights = weightsToEigen(op);
 
   auto eigen_output =
       eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
 
-  for (uint32_t i = 0; i < n_vecs * output_dim; i++) {
-    ASSERT_FLOAT_EQ(eigen_output.data()[i],
-                    output->tensor()->activationsPtr()[i]);
-  }
+  checkDenseOutput(eigen_output, output->tensor());
 
-  auto output_grads = randomValues(n_vecs, output_dim);
+  auto output_grads = randomValues(N_VECS, OUTPUT_DIM);
   setGradients(output->tensor(), output_grads);
 
-  runBackpropagate(output, batch_size);
+  runBackpropagate(output, BATCH_SIZE);
 
-  auto eigen_output_grads = dataToEigen(n_vecs, output_dim, output_grads);
+  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, output_grads);
 
   auto eigen_input_grads =
       eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
 
-  for (uint32_t i = 0; i < n_vecs * input_dim; i++) {
+  for (uint32_t i = 0; i < N_VECS * INPUT_DIM; i++) {
     ASSERT_FLOAT_EQ(eigen_input_grads.data()[i],
                     input->tensor()->gradientsPtr()[i]);
   }
@@ -221,33 +238,21 @@ TEST(FullyConnectedOpTests, DenseDense) {
   auto eigen_weight_grads =
       eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
 
-  const float* weight_grads = op->gradients().at(0)->data();
-  for (uint32_t i = 0; i < op->inputDim() * op->dim(); i++) {
-    ASSERT_FLOAT_EQ(eigen_weight_grads.data()[i], weight_grads[i]);
-  }
+  checkWeightGrads(eigen_weight_grads, op);
 }
 
 TEST(FullyConnectedOpTests, SparseDense) {
-  auto input = ops::Input::make(input_dims);
+  auto [input, op, output] = makeOp(1.0);
 
-  auto op = ops::FullyConnected::make(/* dim= */ output_dim,
-                                      /* input_dim= */ input_dim,
-                                      /* sparsity= */ 1.0,
-                                      /* activation= */ "linear");
-  setWeightsAndBiases(op);
+  auto input_indices = randomIndices(N_VECS, INPUT_DIM, INPUT_NONZEROS);
+  auto input_values = randomValues(N_VECS, INPUT_NONZEROS);
 
-  auto output = op->apply(input);
-  output->allocate(batch_size, /* use_sparsity= */ true);
+  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, INPUT_NONZEROS,
+                                input_indices, input_values));
 
-  auto input_indices = randomIndices(n_vecs, input_dim, input_nonzeros);
-  auto input_values = randomValues(n_vecs, input_nonzeros);
+  runForward(output, BATCH_SIZE);
 
-  input->setTensor(
-      dataToTensor(dims, input_nonzeros, input_indices, input_values));
-
-  runForward(output, batch_size);
-
-  auto eigen_inputs = dataToEigen(n_vecs, input_dim, input_nonzeros,
+  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, INPUT_NONZEROS,
                                   input_indices, input_values);
 
   auto eigen_weights = weightsToEigen(op);
@@ -255,23 +260,20 @@ TEST(FullyConnectedOpTests, SparseDense) {
   auto eigen_output =
       eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
 
-  for (uint32_t i = 0; i < n_vecs * output_dim; i++) {
-    ASSERT_FLOAT_EQ(eigen_output.data()[i],
-                    output->tensor()->activationsPtr()[i]);
-  }
+  checkDenseOutput(eigen_output, output->tensor());
 
-  auto output_grads = randomValues(n_vecs, output_dim);
+  auto output_grads = randomValues(N_VECS, OUTPUT_DIM);
   setGradients(output->tensor(), output_grads);
 
-  runBackpropagate(output, batch_size);
+  runBackpropagate(output, BATCH_SIZE);
 
-  auto eigen_output_grads = dataToEigen(n_vecs, output_dim, output_grads);
+  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, output_grads);
 
   auto eigen_input_grads =
       eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
 
-  for (uint32_t i = 0; i < n_vecs * input_nonzeros; i++) {
-    uint32_t index = (i / input_nonzeros * input_dim) + input_indices.at(i);
+  for (uint32_t i = 0; i < N_VECS * INPUT_NONZEROS; i++) {
+    uint32_t index = (i / INPUT_NONZEROS * INPUT_DIM) + input_indices.at(i);
     ASSERT_FLOAT_EQ(eigen_input_grads.data()[index],
                     input->tensor()->gradientsPtr()[i]);
   }
@@ -279,69 +281,56 @@ TEST(FullyConnectedOpTests, SparseDense) {
   auto eigen_weight_grads =
       eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
 
-  const float* weight_grads = op->gradients().at(0)->data();
-  for (uint32_t i = 0; i < op->inputDim() * op->dim(); i++) {
-    ASSERT_FLOAT_EQ(eigen_weight_grads.data()[i], weight_grads[i]);
-  }
+  checkWeightGrads(eigen_weight_grads, op);
 }
 
 TEST(FullyConnectedOpTests, DenseSparse) {
-  auto input = ops::Input::make(input_dims);
-  auto labels = ops::Input::make({dim2, dim3, output_dim});
+  auto [input, op, output] = makeOp(0.5);
 
-  auto op = ops::FullyConnected::make(/* dim= */ output_dim,
-                                      /* input_dim= */ input_dim,
-                                      /* sparsity= */ 0.5,
-                                      /* activation= */ "linear");
+  auto labels = ops::Input::make({INNER_DIM_1, INNER_DIM_2, OUTPUT_DIM});
 
-  setWeightsAndBiases(op);
-
-  auto output = op->apply(input);
   output->addInput(labels);
 
-  output->allocate(batch_size, /* use_sparsity= */ true);
+  auto input_data = randomValues(N_VECS, INPUT_DIM);
 
-  auto input_data = randomValues(n_vecs, input_dim);
+  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, input_data));
 
-  input->setTensor(dataToTensor(dims, input_data));
+  auto output_indices = randomIndices(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS);
+  auto output_label_vals = std::vector<float>(N_VECS * OUTPUT_NONZEROS, 1.0);
 
-  auto output_indices = randomIndices(n_vecs, output_dim, output_nonzeros);
-  auto output_label_vals = std::vector<float>(n_vecs * output_nonzeros, 1.0);
+  labels->setTensor(dataToTensor(OUTPUT_TENSOR_DIMS, OUTPUT_NONZEROS,
+                                 output_indices, output_label_vals));
 
-  labels->setTensor(dataToTensor({dim1, dim2, dim3, output_dim},
-                                 output_nonzeros, output_indices,
-                                 output_label_vals));
+  runForward(output, BATCH_SIZE);
 
-  runForward(output, batch_size);
-
-  auto eigen_inputs = dataToEigen(n_vecs, input_dim, input_data);
+  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, input_data);
 
   auto eigen_weights = weightsToEigen(op);
 
   auto eigen_output =
       eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
 
-  for (uint32_t i = 0; i < n_vecs; i++) {
-    for (uint32_t j = 0; j < output_nonzeros; j++) {
+  for (uint32_t i = 0; i < N_VECS; i++) {
+    for (uint32_t j = 0; j < OUTPUT_NONZEROS; j++) {
       ASSERT_FLOAT_EQ(
-          eigen_output.data()[i * output_dim +
-                              output_indices.at(i * output_nonzeros + j)],
-          output->tensor()->activationsPtr()[i * output_nonzeros + j]);
+          eigen_output.data()[i * OUTPUT_DIM +
+                              output_indices.at(i * OUTPUT_NONZEROS + j)],
+          output->tensor()->activationsPtr()[i * OUTPUT_NONZEROS + j]);
     }
   }
 
-  auto output_grads = randomValues(n_vecs, output_nonzeros);
+  auto output_grads = randomValues(N_VECS, OUTPUT_NONZEROS);
   setGradients(output->tensor(), output_grads);
 
-  runBackpropagate(output, batch_size);
+  runBackpropagate(output, BATCH_SIZE);
 
-  auto eigen_output_grads = dataToEigen(n_vecs, output_dim, output_nonzeros,
+  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS,
                                         output_indices, output_grads);
 
   auto eigen_input_grads =
       eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
 
-  for (uint32_t i = 0; i < n_vecs * input_dim; i++) {
+  for (uint32_t i = 0; i < N_VECS * INPUT_DIM; i++) {
     ASSERT_FLOAT_EQ(eigen_input_grads.data()[i],
                     input->tensor()->gradientsPtr()[i]);
   }
@@ -349,44 +338,31 @@ TEST(FullyConnectedOpTests, DenseSparse) {
   auto eigen_weight_grads =
       eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
 
-  const float* weight_grads = op->gradients().at(0)->data();
-  for (uint32_t i = 0; i < op->inputDim() * op->dim(); i++) {
-    ASSERT_FLOAT_EQ(eigen_weight_grads.data()[i], weight_grads[i]);
-  }
+  checkWeightGrads(eigen_weight_grads, op);
 }
 
 TEST(FullyConnectedOpTests, SparseSparse) {
-  auto input = ops::Input::make(input_dims);
-  auto labels = ops::Input::make({dim2, dim3, output_dim});
+  auto [input, op, output] = makeOp(0.5);
 
-  auto op = ops::FullyConnected::make(/* dim= */ output_dim,
-                                      /* input_dim= */ input_dim,
-                                      /* sparsity= */ 0.5,
-                                      /* activation= */ "linear");
+  auto labels = ops::Input::make({INNER_DIM_1, INNER_DIM_2, OUTPUT_DIM});
 
-  setWeightsAndBiases(op);
-
-  auto output = op->apply(input);
   output->addInput(labels);
 
-  output->allocate(batch_size, /* use_sparsity= */ true);
+  auto input_indices = randomIndices(N_VECS, INPUT_DIM, INPUT_NONZEROS);
+  auto input_values = randomValues(N_VECS, INPUT_NONZEROS);
 
-  auto input_indices = randomIndices(n_vecs, input_dim, input_nonzeros);
-  auto input_values = randomValues(n_vecs, input_nonzeros);
+  input->setTensor(dataToTensor(INPUT_TENSOR_DIMS, INPUT_NONZEROS,
+                                input_indices, input_values));
 
-  input->setTensor(
-      dataToTensor(dims, input_nonzeros, input_indices, input_values));
+  auto output_indices = randomIndices(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS);
+  auto output_label_vals = std::vector<float>(N_VECS * OUTPUT_NONZEROS, 1.0);
 
-  auto output_indices = randomIndices(n_vecs, output_dim, output_nonzeros);
-  auto output_label_vals = std::vector<float>(n_vecs * output_nonzeros, 1.0);
+  labels->setTensor(dataToTensor(OUTPUT_TENSOR_DIMS, OUTPUT_NONZEROS,
+                                 output_indices, output_label_vals));
 
-  labels->setTensor(dataToTensor({dim1, dim2, dim3, output_dim},
-                                 output_nonzeros, output_indices,
-                                 output_label_vals));
+  runForward(output, BATCH_SIZE);
 
-  runForward(output, batch_size);
-
-  auto eigen_inputs = dataToEigen(n_vecs, input_dim, input_nonzeros,
+  auto eigen_inputs = dataToEigen(N_VECS, INPUT_DIM, INPUT_NONZEROS,
                                   input_indices, input_values);
 
   auto eigen_weights = weightsToEigen(op);
@@ -394,28 +370,28 @@ TEST(FullyConnectedOpTests, SparseSparse) {
   auto eigen_output =
       eigenForward(eigen_inputs, eigen_weights, biasesToEigen(op));
 
-  for (uint32_t i = 0; i < n_vecs; i++) {
-    for (uint32_t j = 0; j < output_nonzeros; j++) {
+  for (uint32_t i = 0; i < N_VECS; i++) {
+    for (uint32_t j = 0; j < OUTPUT_NONZEROS; j++) {
       ASSERT_FLOAT_EQ(
-          eigen_output.data()[i * output_dim +
-                              output_indices.at(i * output_nonzeros + j)],
-          output->tensor()->activationsPtr()[i * output_nonzeros + j]);
+          eigen_output.data()[i * OUTPUT_DIM +
+                              output_indices.at(i * OUTPUT_NONZEROS + j)],
+          output->tensor()->activationsPtr()[i * OUTPUT_NONZEROS + j]);
     }
   }
 
-  auto output_grads = randomValues(n_vecs, output_nonzeros);
+  auto output_grads = randomValues(N_VECS, OUTPUT_NONZEROS);
   setGradients(output->tensor(), output_grads);
 
-  runBackpropagate(output, batch_size);
+  runBackpropagate(output, BATCH_SIZE);
 
-  auto eigen_output_grads = dataToEigen(n_vecs, output_dim, output_nonzeros,
+  auto eigen_output_grads = dataToEigen(N_VECS, OUTPUT_DIM, OUTPUT_NONZEROS,
                                         output_indices, output_grads);
 
   auto eigen_input_grads =
       eigenBackpropagateInputGrads(eigen_output_grads, eigen_weights);
 
-  for (uint32_t i = 0; i < n_vecs * input_nonzeros; i++) {
-    uint32_t index = (i / input_nonzeros * input_dim) + input_indices.at(i);
+  for (uint32_t i = 0; i < N_VECS * INPUT_NONZEROS; i++) {
+    uint32_t index = (i / INPUT_NONZEROS * INPUT_DIM) + input_indices.at(i);
     ASSERT_FLOAT_EQ(eigen_input_grads.data()[index],
                     input->tensor()->gradientsPtr()[i]);
   }
@@ -423,10 +399,7 @@ TEST(FullyConnectedOpTests, SparseSparse) {
   auto eigen_weight_grads =
       eigenBackpropagateWeightGrads(eigen_inputs, eigen_output_grads);
 
-  const float* weight_grads = op->gradients().at(0)->data();
-  for (uint32_t i = 0; i < op->inputDim() * op->dim(); i++) {
-    ASSERT_FLOAT_EQ(eigen_weight_grads.data()[i], weight_grads[i]);
-  }
+  checkWeightGrads(eigen_weight_grads, op);
 }
 
 }  // namespace thirdai::bolt::nn::tests
