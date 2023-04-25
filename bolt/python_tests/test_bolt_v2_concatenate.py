@@ -13,7 +13,7 @@ def concat_active_neurons(computations):
             batch_size = comp.tensor().activations.shape[0]
             arr = np.tile(
                 np.arange(
-                    start=total_dim, stop=total_dim + comp.dim(), dtype=np.uint32
+                    start=total_dim, stop=total_dim + comp.dims()[-1], dtype=np.uint32
                 ),
                 (batch_size, 1),
             )
@@ -21,7 +21,7 @@ def concat_active_neurons(computations):
         else:
             arrays.append(comp.tensor().active_neurons + total_dim)
 
-        total_dim += comp.dim()
+        total_dim += comp.dims()[-1]
 
     return np.concatenate(arrays, axis=1, dtype=np.uint32)
 

@@ -11,7 +11,7 @@ def build_model():
 
     hidden_layer = bolt.nn.FullyConnected(
         dim=200,
-        input_dim=input_layer.dim(),
+        input_dim=input_layer.dims()[-1],
         sparsity=0.4,
         activation="relu",
     )(input_layer)
@@ -20,7 +20,7 @@ def build_model():
 
     output_layer = bolt.nn.FullyConnected(
         dim=N_CLASSES,
-        input_dim=norm_layer.dim(),
+        input_dim=norm_layer.dims()[-1],
         activation="softmax",
     )(norm_layer)
 
