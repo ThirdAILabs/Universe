@@ -17,12 +17,13 @@ namespace thirdai::dataset {
 class TextBlock : public Block {
  public:
   explicit TextBlock(ColumnIdentifier col, TextTokenizerPtr tokenizer,
-                     TextEncoderPtr encoder,
+                     TextEncoderPtr encoder, bool lowercase = false,
                      uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
-      : _dim(dim),
-        _col(std::move(col)),
+      : _col(std::move(col)),
+        _lowercase(lowercase),
         _tokenizer(std::move(tokenizer)),
-        _encoder(std::move(encoder)) {}
+        _encoder(std::move(encoder)),
+        _dim(dim) {}
 
   static auto make(ColumnIdentifier col, TextTokenizerPtr tokenizer,
                    TextEncoderPtr encoder,
@@ -54,8 +55,11 @@ class TextBlock : public Block {
 
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final {
-    std::string_view text = input.column(_col);
-    std::vector<std::string_view> tokens = _tokenizer->apply(text);
+    std::string_view string = input.column(_col);
+    if (_lowercase) {
+      string = text::lower(string);
+    }
+    std::vector<std::string_view> tokens = _tokenizer->apply(string);
     std::string keyword =
         _encoder->getResponsibleWord(tokens, index_within_block, _dim);
 
@@ -65,9 +69,13 @@ class TextBlock : public Block {
  protected:
   void buildSegment(ColumnarInputSample& input,
                     SegmentedFeatureVector& vec) final {
-    std::string_view text = input.column(_col);
+    std::string_view string = input.column(_col);
 
-    std::vector<std::string_view> tokens = _tokenizer->apply(text);
+    if (_lowercase) {
+      string = text::lower(string);
+    }
+
+    std::vector<std::string_view> tokens = _tokenizer->apply(string);
     std::vector<uint32_t> indices = _encoder->apply(tokens);
     token_encoding::mod(indices, _dim);
 
@@ -84,15 +92,17 @@ class TextBlock : public Block {
   // Constructor for cereal.
   TextBlock() {}
 
-  uint32_t _dim;
   ColumnIdentifier _col;
+  bool _lowercase;
   TextTokenizerPtr _tokenizer;
   TextEncoderPtr _encoder;
+  uint32_t _dim;
 
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _dim, _col, _tokenizer, _encoder);
+    archive(cereal::base_class<Block>(this), _col, _lowercase, _tokenizer,
+            _encoder, _dim);
   }
 };
 
