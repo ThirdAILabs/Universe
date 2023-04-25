@@ -70,7 +70,7 @@ ModelRestrictions::ModelRestrictions(
         throw exceptions::LicenseCheckException(
             "Invalid format of entitlement " + entitlement);
       }
-      max_train_samples = std::stoul(std::string(split_entitlement.at(1)));
+      max_train_samples = std::stoull(std::string(split_entitlement.at(1)));
       num_fields_parsed++;
     }
     if (text::startsWith(entitlement, MAX_OUTPUT_DIM_ENTITLEMENT_START)) {
@@ -78,7 +78,7 @@ ModelRestrictions::ModelRestrictions(
         throw exceptions::LicenseCheckException(
             "Invalid format of entitlement " + entitlement);
       }
-      max_output_dim = std::stoul(std::string(split_entitlement.at(1)));
+      max_output_dim = std::stoull(std::string(split_entitlement.at(1)));
       num_fields_parsed++;
     }
   }

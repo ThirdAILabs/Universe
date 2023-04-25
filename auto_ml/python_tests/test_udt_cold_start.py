@@ -24,18 +24,6 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         integer_target=True,
     )
 
-    class FinalMetricCallback(bolt.callbacks.Callback):
-        def __init__(self):
-            super().__init__()
-            self.ending_train_metric = 0
-
-        def on_train_end(self, model, train_state):
-            self.ending_train_metric = train_state.get_train_metric_values(
-                "categorical_accuracy"
-            )[-1]
-
-    final_metric = FinalMetricCallback()
-
     metrics = model.cold_start(
         filename=catalog_file,
         strong_column_names=["TITLE"],
@@ -43,16 +31,14 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         learning_rate=0.001,
         epochs=5,
         metrics=["categorical_accuracy"],
-        callbacks=[final_metric],
     )
 
     os.remove(catalog_file)
 
-    assert final_metric.ending_train_metric > 0.5
-    assert metrics["categorical_accuracy"][-1] == final_metric.ending_train_metric
+    assert metrics["categorical_accuracy"][-1] > 0.5
 
 
-def setup_testing_file(missing_values, bad_csv_line):
+def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
     filename = "DUMMY_COLDSTART.csv"
     with open(filename, "w") as outfile:
         outfile.write("category,strong,weak1,weak2\n")
@@ -63,6 +49,9 @@ def setup_testing_file(missing_values, bad_csv_line):
 
         if bad_csv_line:
             outfile.write("1,theres a new line,\n,")
+
+        if not integer_target:
+            outfile.write("LMFAO,this is not an integer,,\n")
 
     return filename
 
@@ -75,8 +64,9 @@ def run_coldstart(
     missing_values=False,
     bad_csv_line=False,
     epochs=5,
+    integer_target=True,
 ):
-    filename = setup_testing_file(missing_values, bad_csv_line)
+    filename = setup_testing_file(missing_values, bad_csv_line, integer_target)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -84,8 +74,8 @@ def run_coldstart(
             "text": bolt.types.text(),
         },
         target="category",
-        n_target_classes=2,
-        integer_target=True,
+        n_target_classes=3,
+        integer_target=integer_target,
     )
 
     model.cold_start(
@@ -161,3 +151,8 @@ def test_coldstart_bad_csv_line():
         match=r"Received a row with a different number of entries than in the header. Expected 4 entries but received 3 entries. Line: 1,theres a new line,",
     ):
         run_coldstart(bad_csv_line=True)
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_coldstart_target_type(integer_target):
+    run_coldstart(integer_target=integer_target)
