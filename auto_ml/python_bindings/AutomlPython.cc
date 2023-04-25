@@ -305,6 +305,7 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<automl::data::TextDataType, automl::data::DataType,
              automl::data::TextDataTypePtr>(udt_types_submodule, "text")
+      // TODO(any): run benchmarks to improve the defaults
       .def(py::init<std::string, std::string, bool>(),
            py::arg("tokenizer") = "words",
            py::arg("contextual_encoding") = "none",
