@@ -230,7 +230,7 @@ void defineDistributedTrainer(py::module_& train) {
            &DistributedTrainingWrapper::getTrainingMetrics,
            bolt::python::OutputRedirect())
       .def("validate_and_save_if_best",
-           &DistributedTrainingWrapper::validationAndSaveBest,
+           &DistributedTrainingWrapper::validationAndSave,
            bolt::python::OutputRedirect())
       .def("should_save_optimizer",
            &DistributedTrainingWrapper::setSerializeOptimizer,
