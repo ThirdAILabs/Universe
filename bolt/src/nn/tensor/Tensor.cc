@@ -128,7 +128,8 @@ std::shared_ptr<Tensor> Tensor::dense(Dims dims) {
 }
 
 std::shared_ptr<Tensor> Tensor::sparse(Dims dims, uint32_t nonzeros) {
-  return std::make_shared<Tensor>(/* dims= */ dims, /* nonzeros= */ nonzeros,
+  return std::make_shared<Tensor>(/* dims= */ std::move(dims),
+                                  /* nonzeros= */ nonzeros,
                                   /* with_grad= */ true);
 }
 
