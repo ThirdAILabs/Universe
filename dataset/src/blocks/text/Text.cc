@@ -18,10 +18,10 @@ Explanation TextBlock::explainIndex(uint32_t index_within_block,
 void TextBlock::buildSegment(ColumnarInputSample& input,
                              SegmentedFeatureVector& vec) {
   std::string_view string;
+  std::string tmp;
   if (_lowercase) {
-    string = text::lower(input.column(_col));
-  } else {
-    string = input.column(_col);
+    tmp = text::lower(string);
+    string = tmp;
   }
 
   std::vector<std::string_view> tokens = _tokenizer->apply(string);
