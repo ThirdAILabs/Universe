@@ -53,10 +53,12 @@ def test_license_print(capfd):
 
     thirdai.licensing.set_path(str(max_train_samples_100_license_path), verbose=True)
     out, err = capfd.readouterr()
+    print(out)
     assert (
-        out.strip() == "1711083134694|FULL_DATASET_ACCESS:FULL_DATASET_ACCESS,"
-        "LOAD_SAVE:LOAD_SAVE,MAX_OUTPUT_DIM:MAX_OUTPUT_DIM 18446744073709551615"
-        ",MAX_TRAIN_SAMPLES:MAX_TRAIN_SAMPLES 100,"
+        out.strip()
+        == "This is a license with an expiry time of 1711083134694 epoch ms. "
+        "Entitlements are as follows: FULL_DATASET_ACCESS, LOAD_SAVE, "
+        "MAX_OUTPUT_DIM 18446744073709551615, MAX_TRAIN_SAMPLES 100,"
     )
     assert err == ""
 
