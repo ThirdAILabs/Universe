@@ -112,7 +112,7 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     if (auto text_meta = asText(data_type)) {
       blocks.push_back(dataset::TextBlock::make(
           col_name, text_meta->tokenizer, text_meta->encoder,
-          text_meta->lowercase,
+          /* lowercase = */ text_meta->lowercase,
           /* dim = */ std::numeric_limits<uint32_t>::max()));
     }
 
