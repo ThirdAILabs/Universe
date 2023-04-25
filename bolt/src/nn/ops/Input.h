@@ -13,6 +13,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
   // TODO(Nicholas) add nonzeros as option.
   static autograd::ComputationPtr make(uint32_t dim);
 
+  static autograd::ComputationPtr make(tensor::Dims dims);
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -35,9 +37,9 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
                const autograd::Computation* output) const final;
 
  private:
-  Input(std::vector<uint32_t> dims, std::optional<uint32_t> nonzeros);
+  Input(tensor::Dims dims, std::optional<uint32_t> nonzeros);
 
-  std::vector<uint32_t> _dims;
+  tensor::Dims _dims;
   std::optional<uint32_t> _nonzeros;
 
   Input() {}

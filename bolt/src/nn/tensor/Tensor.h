@@ -24,6 +24,11 @@ class Tensor {
 
   static std::shared_ptr<Tensor> sparse(Dims dims, uint32_t nonzeros);
 
+  static std::shared_ptr<Tensor> fromArray(const uint32_t* indices,
+                                           const float* values,
+                                           tensor::Dims dims, uint32_t nonzeros,
+                                           bool with_grad);
+
   static std::shared_ptr<Tensor> convert(const BoltBatch& batch, uint32_t dim);
 
   static std::shared_ptr<Tensor> convert(const BoltVector& vector,

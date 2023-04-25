@@ -25,6 +25,13 @@ autograd::ComputationPtr Input::make(uint32_t dim) {
       {});
 }
 
+autograd::ComputationPtr Input::make(tensor::Dims dims) {
+  return autograd::Computation::make(
+      std::shared_ptr<Input>(
+          new Input(std::move(dims), /* nonzeros= */ std::nullopt)),
+      {});
+}
+
 void Input::forward(const autograd::ComputationList& inputs,
                     tensor::TensorPtr& output, uint32_t index_in_batch,
                     bool training) {

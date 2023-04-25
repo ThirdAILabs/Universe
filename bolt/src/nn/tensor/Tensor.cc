@@ -59,7 +59,10 @@ Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
         "dimension.");
   }
 
-  std::copy(indices, indices + _active_neurons.size(), _active_neurons.begin());
+  if (sparse()) {
+    std::copy(indices, indices + _active_neurons.size(),
+              _active_neurons.begin());
+  }
   std::copy(values, values + _activations.size(), _activations.begin());
 }
 
@@ -123,6 +126,14 @@ std::shared_ptr<Tensor> Tensor::dense(Dims dims) {
 std::shared_ptr<Tensor> Tensor::sparse(Dims dims, uint32_t nonzeros) {
   return std::make_shared<Tensor>(/* dims= */ dims, /* nonzeros= */ nonzeros,
                                   /* with_grad= */ true);
+}
+
+std::shared_ptr<Tensor> Tensor::fromArray(const uint32_t* indices,
+                                          const float* values,
+                                          tensor::Dims dims, uint32_t nonzeros,
+                                          bool with_grad) {
+  return std::make_shared<Tensor>(indices, values, std::move(dims), nonzeros,
+                                  with_grad);
 }
 
 std::shared_ptr<Tensor> Tensor::convert(const BoltBatch& batch, uint32_t dim) {
