@@ -298,9 +298,9 @@ TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
 }
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
-                                           uint32_t version);
+                                           const uint32_t version);
 template void UDTMachClassifier::serialize(cereal::BinaryOutputArchive&,
-                                           uint32_t version);
+                                           const uint32_t version);
 
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {

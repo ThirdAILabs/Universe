@@ -202,9 +202,9 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 }
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
-                                                uint32_t version);
+                                                const uint32_t version);
 template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&,
-                                                uint32_t version);
+                                                const uint32_t version);
 
 template <class Archive>
 void UDTRecurrentClassifier::serialize(Archive& archive,

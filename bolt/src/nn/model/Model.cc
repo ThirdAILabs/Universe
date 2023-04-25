@@ -387,8 +387,10 @@ void Model::verifyAllowedOutputDim() const {
   licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
 }
 
-template void Model::serialize(cereal::BinaryInputArchive&, uint32_t version);
-template void Model::serialize(cereal::BinaryOutputArchive&, uint32_t version);
+template void Model::serialize(cereal::BinaryInputArchive&,
+                               const uint32_t version);
+template void Model::serialize(cereal::BinaryOutputArchive&,
+                               const uint32_t version);
 
 template <class Archive>
 void Model::serialize(Archive& archive, const uint32_t version) {

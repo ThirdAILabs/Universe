@@ -145,9 +145,9 @@ float UDTRegression::unbinActivations(const BoltVector& output) const {
 }
 
 template void UDTRegression::serialize(cereal::BinaryInputArchive&,
-                                       uint32_t version);
+                                       const uint32_t version);
 template void UDTRegression::serialize(cereal::BinaryOutputArchive&,
-                                       uint32_t version);
+                                       const uint32_t version);
 
 template <class Archive>
 void UDTRegression::serialize(Archive& archive, const uint32_t version) {

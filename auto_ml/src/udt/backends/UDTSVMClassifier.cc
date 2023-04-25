@@ -78,9 +78,9 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
 }
 
 template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,
-                                          uint32_t version);
+                                          const uint32_t version);
 template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&,
-                                          uint32_t version);
+                                          const uint32_t version);
 
 template <class Archive>
 void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {

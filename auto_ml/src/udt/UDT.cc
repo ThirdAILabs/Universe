@@ -258,8 +258,10 @@ bool UDT::hasGraphInputs(const data::ColumnDataTypes& data_types) {
       std::to_string(node_id_col_count) + " node id data types.");
 }
 
-template void UDT::serialize(cereal::BinaryInputArchive&, uint32_t version);
-template void UDT::serialize(cereal::BinaryOutputArchive&, uint32_t version);
+template void UDT::serialize(cereal::BinaryInputArchive&,
+                             const uint32_t version);
+template void UDT::serialize(cereal::BinaryOutputArchive&,
+                             const uint32_t version);
 
 template <class Archive>
 void UDT::serialize(Archive& archive, const uint32_t version) {

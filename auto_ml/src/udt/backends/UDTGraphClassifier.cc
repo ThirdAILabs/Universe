@@ -70,9 +70,9 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
 }
 
 template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,
-                                            uint32_t version);
+                                            const uint32_t version);
 template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,
-                                            uint32_t version);
+                                            const uint32_t version);
 
 template <class Archive>
 void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {

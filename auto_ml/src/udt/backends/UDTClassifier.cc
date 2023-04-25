@@ -243,9 +243,9 @@ uint32_t UDTClassifier::labelToNeuronId(
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
-                                       uint32_t version);
+                                       const uint32_t version);
 template void UDTClassifier::serialize(cereal::BinaryOutputArchive&,
-                                       uint32_t version);
+                                       const uint32_t version);
 
 template <class Archive>
 void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
