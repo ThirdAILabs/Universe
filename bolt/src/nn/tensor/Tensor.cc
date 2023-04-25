@@ -59,6 +59,10 @@ Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
         "dimension.");
   }
 
+  if (!sparse() && indices) {
+    throw std::invalid_argument("Cannot specify indices for a dense tensor.");
+  }
+
   if (sparse()) {
     std::copy(indices, indices + _active_neurons.size(),
               _active_neurons.begin());

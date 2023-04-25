@@ -28,9 +28,12 @@ namespace py = pybind11;
 namespace thirdai::bolt::nn::python {
 
 template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
+template <typename T>
 py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
   if (data) {
-    py::array_t<T, py::array::c_style | py::array::forcecast> arr(shape, data);
+    NumpyArray<T> arr(shape, data);
     return py::object(std::move(arr));
   }
   return py::none();
@@ -56,6 +59,38 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   // if tensor.active_neurons:
   //      do something
   return py::none();
+}
+
+tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
+                                  const NumpyArray<float>& values) {
+  if (indices.ndim() != values.ndim()) {
+    throw std::invalid_argument(
+        "Expected indices and values to have the same number of dimensions.");
+  }
+
+  tensor::Dims dims;
+  for (uint32_t i = 0; i < indices.ndim(); i++) {
+    if (indices.shape(i) != values.shape(i)) {
+      throw std::invalid_argument("Dimension mismatch in indices and values.");
+    }
+    dims.push_back(indices.shape(i));
+  }
+
+  uint32_t nonzeros = indices.shape(indices.ndim() - 1);
+
+  return tensor::Tensor::fromArray(indices.data(), values.data(), dims,
+                                   nonzeros, /* with_grad= */ false);
+}
+
+tensor::TensorPtr fromNumpyDense(const NumpyArray<float>& values) {
+  tensor::Dims dims;
+  for (uint32_t i = 0; i < values.ndim(); i++) {
+    dims.push_back(values.shape(i));
+  }
+
+  return tensor::Tensor::fromArray(nullptr, values.data(), dims,
+                                   /* nonzeros= */ dims.back(),
+                                   /* with_grad= */ false);
 }
 
 void defineTensor(py::module_& nn);
@@ -113,6 +148,8 @@ void defineTensor(py::module_& nn) {
       .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
                tensor::Tensor::convert)),
            py::arg("vector"), py::arg("dim"))
+      .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"))
+      .def(py::init(&fromNumpyDense), py::arg("values"))
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
@@ -177,7 +214,11 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::LayerNorm::make))
       .def("__call__", &ops::LayerNorm::apply);
 
-  nn.def("Input", &ops::Input::make, py::arg("dim"));
+  nn.def("Input", py::overload_cast<uint32_t>(&ops::Input::make),
+         py::arg("dim"));
+
+  nn.def("Input", py::overload_cast<std::vector<uint32_t>>(&ops::Input::make),
+         py::arg("dims"));
 }
 
 void defineLosses(py::module_& nn) {
