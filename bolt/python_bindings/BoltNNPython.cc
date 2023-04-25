@@ -332,8 +332,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "Arguments:\n"
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
-           " * output (Node) - The output node of the graph.",
-           bolt::python::OutputRedirect())
+           " * output (Node) - The output node of the graph.")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -344,14 +343,12 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[TokenInput]) - The token input nodes to the graph. "
            "Note that "
            "token inputs are mapped to token input layers by their index.\n"
-           " * output (Node) - The output node of the graph.",
-           bolt::python::OutputRedirect())
+           " * output (Node) - The output node of the graph.")
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
-           "checks are preformed to ensure the model architecture is correct.",
-           bolt::python::OutputRedirect())
+           "checks are preformed to ensure the model architecture is correct.")
       // Helper method that covers the common case of training based off of a
       // single BoltBatch dataset
       .def(
@@ -362,7 +359,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return model.train({data}, labels, train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
-          py::arg("train_config"), bolt::python::OutputRedirect())
+          py::arg("train_config"))
       .def(
           "train",
           [](BoltGraph& model, const dataset::BoltDatasetList& data,
@@ -418,8 +415,7 @@ Examples:
 
 That's all for now, folks! More docs coming soon :)
 
-)pbdoc",
-          bolt::python::OutputRedirect())
+)pbdoc")
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
@@ -512,8 +508,7 @@ That's all for now, folks! More docs coming soon :)
              const EvalConfig& eval_config) {
             return dagEvaluatePythonWrapper(model, {data}, labels, eval_config);
           },
-          py::arg("test_data"), py::arg("test_labels"), py::arg("eval_config"),
-          bolt::python::OutputRedirect())
+          py::arg("test_data"), py::arg("test_labels"), py::arg("eval_config"))
       .def(
           "evaluate", &dagEvaluatePythonWrapper, py::arg("test_data"),
           py::arg("test_labels"), py::arg("eval_config"),
@@ -532,8 +527,7 @@ That's all for now, folks! More docs coming soon :)
           "names to their values. The second element, the output activation "
           "matrix, is only present if dont_return_activations was not called. "
           "The third element, the active neuron matrix, is only present if "
-          "we are returning activations AND the ouptut is sparse.",
-          bolt::python::OutputRedirect())
+          "we are returning activations AND the ouptut is sparse.")
       .def(
           "save",
           [](BoltGraph& model, const std::string& filename) {
@@ -629,11 +623,9 @@ That's all for now, folks! More docs coming soon :)
           py::return_value_policy::reference_internal,
           "Returns gradient reference for Distributed Training Wrapper")
       .def("get_updated_metrics",
-           &thirdai::bolt::DistributedTrainingWrapper::getUpdatedMetrics,
-           bolt::python::OutputRedirect())
+           &thirdai::bolt::DistributedTrainingWrapper::getUpdatedMetrics)
       .def("validate_and_save_if_best",
-           &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
-           bolt::python::OutputRedirect())
+           &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest)
       .def("should_save_optimizer",
            &thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer,
            py::arg("should_save_optimizer"))

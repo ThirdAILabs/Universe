@@ -102,8 +102,7 @@ void defineTrainer(py::module_& train) {
            py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
-           py::arg("logging_interval") = std::nullopt,
-           bolt::python::OutputRedirect())
+           py::arg("logging_interval") = std::nullopt)
       .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = std::vector<std::string>(),
@@ -114,17 +113,14 @@ void defineTrainer(py::module_& train) {
            py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
-           py::arg("logging_interval") = std::nullopt,
-           bolt::python::OutputRedirect())
+           py::arg("logging_interval") = std::nullopt)
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),
-           py::arg("use_sparsity") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect())
+           py::arg("use_sparsity") = false, py::arg("verbose") = true)
       .def("validate", &Trainer::validate_with_metric_names,
            py::arg("validation_data"),
            py::arg("validation_metrics") = std::vector<std::string>(),
-           py::arg("use_sparsity") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect());
+           py::arg("use_sparsity") = false, py::arg("verbose") = true);
 }
 
 void defineMetrics(py::module_& train) {
@@ -227,11 +223,9 @@ void defineDistributedTrainer(py::module_& train) {
           },
           py::return_value_policy::reference_internal)
       .def("get_updated_metrics",
-           &DistributedTrainingWrapper::getTrainingMetrics,
-           bolt::python::OutputRedirect())
+           &DistributedTrainingWrapper::getTrainingMetrics)
       .def("validate_and_save_if_best",
-           &DistributedTrainingWrapper::validationAndSaveBest,
-           bolt::python::OutputRedirect())
+           &DistributedTrainingWrapper::validationAndSaveBest)
       .def("should_save_optimizer",
            &DistributedTrainingWrapper::setSerializeOptimizer,
            py::arg("should_save_optimizer"))

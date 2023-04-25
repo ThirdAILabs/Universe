@@ -72,8 +72,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict(), docs::UDT_INIT,
-           bolt::python::OutputRedirect())
+           py::arg("options") = py::dict(), docs::UDT_INIT)
       .def("__new__", &UDTFactory::createUDTSpecifiedFileFormat,
            py::arg("file_format"), py::arg("n_target_classes"),
            py::arg("input_dim"), py::arg("model_config") = std::nullopt,
@@ -100,17 +99,15 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
            py::arg("verbose") = true,
-           py::arg("logging_interval") = std::nullopt,
-           bolt::python::OutputRedirect())
+           py::arg("logging_interval") = std::nullopt)
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
-           py::arg("metrics") = std::vector<std::string>{},
-           bolt::python::OutputRedirect())
+           py::arg("metrics") = std::vector<std::string>{})
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false, bolt::python::OutputRedirect())
+           py::arg("return_metrics") = false)
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
@@ -121,8 +118,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
            py::arg("validation"), py::arg("callbacks"),
-           py::arg("max_in_memory_batches") = std::nullopt, py::arg("verbose"),
-           bolt::python::OutputRedirect())
+           py::arg("max_in_memory_batches") = std::nullopt, py::arg("verbose"))
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
@@ -170,8 +166,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("supervised_train", &udt::TextEmbeddingModel::supervisedTrain,
            py::arg("data_source"), py::arg("input_col_1"),
            py::arg("input_col_2"), py::arg("label_col"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           bolt::python::OutputRedirect())
+           py::arg("learning_rate"), py::arg("epochs"))
       .def("encode", &udt::TextEmbeddingModel::encode, py::arg("string"))
       .def("encode_batch", &udt::TextEmbeddingModel::encodeBatch,
            py::arg("strings"))
