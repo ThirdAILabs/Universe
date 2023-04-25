@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
 #include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
@@ -150,8 +151,11 @@ template void UDTRegression::serialize(cereal::BinaryOutputArchive&,
 
 template <class Archive>
 void UDTRegression::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
   std::string class_name = "UDT_REGRESSION";
-  versions::checkVersion(version, versions::UDT_REGRESSION_VERSION, class_name);
+  versions::checkVersion(version, versions::UDT_REGRESSION_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _model, _dataset_factory,
           _binning, _freeze_hash_tables);
 }

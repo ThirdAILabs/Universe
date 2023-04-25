@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <stdexcept>
 
@@ -83,9 +84,11 @@ template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&,
 
 template <class Archive>
 void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
   std::string class_name = "UDT_SVM_CLASSIFIER";
   versions::checkVersion(version, versions::UDT_SVM_CLASSIFIER_VERSION,
-                         class_name);
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _classifier);
 }
 

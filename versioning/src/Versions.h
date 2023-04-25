@@ -2,11 +2,12 @@
 
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 
 namespace thirdai::versions {
 
-void checkVersion(uint32_t input_version, uint32_t expected_version,
+void checkVersion(uint32_t loaded_version, uint32_t current_version,
+                  const std::string& loaded_thirdai_version,
+                  const std::string& current_thirdai_version,
                   const std::string& class_name);
 
 // All versions should be >= 1

@@ -12,6 +12,7 @@
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <cstddef>
 #include <memory>
@@ -262,8 +263,11 @@ template void UDT::serialize(cereal::BinaryOutputArchive&, uint32_t version);
 
 template <class Archive>
 void UDT::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
   std::string class_name = "UDT_BASE";
-  versions::checkVersion(version, versions::UDT_BASE_VERSION, class_name);
+  versions::checkVersion(version, versions::UDT_BASE_VERSION, thirdai_version,
+                         thirdai::version(), class_name);
   archive(_backend);
 }
 

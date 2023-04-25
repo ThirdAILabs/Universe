@@ -15,6 +15,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
@@ -248,8 +249,11 @@ template void UDTClassifier::serialize(cereal::BinaryOutputArchive&,
 
 template <class Archive>
 void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
   std::string class_name = "UDT_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_CLASSIFIER_VERSION, class_name);
+  versions::checkVersion(version, versions::UDT_CLASSIFIER_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _class_name_to_neuron,
           _label_block, _classifier, _dataset_factory);
 }

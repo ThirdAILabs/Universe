@@ -4,6 +4,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <utils/Version.h>
 #include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
@@ -75,9 +76,11 @@ template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,
 
 template <class Archive>
 void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
   std::string class_name = "UDT_GRAPH_CLASSIFIER";
   versions::checkVersion(version, versions::UDT_GRAPH_CLASSIFIER_VERSION,
-                         class_name);
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _classifier, _dataset_manager);
 }
 

@@ -8,6 +8,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/mach/MachDecode.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
 #include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
@@ -303,9 +304,11 @@ template void UDTMachClassifier::serialize(cereal::BinaryOutputArchive&,
 
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
   std::string class_name = "UDT_MACH_CLASSIFIER";
   versions::checkVersion(version, versions::UDT_MACH_CLASSIFIER_VERSION,
-                         class_name);
+                         thirdai_version, thirdai::version(), class_name);
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
 }
