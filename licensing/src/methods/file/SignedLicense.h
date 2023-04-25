@@ -33,10 +33,14 @@ class SignedLicense {
    * Otherwise we return the entitlements found in the license file.
    */
   static Entitlements entitlementsFromLicenseFile(
-      const std::string& license_path) {
+      const std::string& license_path, bool verbose) {
     SignedLicense license = getLicenseFromFile(license_path);
 
     verifyAndCheckLicense(license, license_path);
+
+    if (verbose) {
+      std::cout << license.getLicense().toString() << std::endl;
+    }
 
     return license.getLicense().entitlements();
   }

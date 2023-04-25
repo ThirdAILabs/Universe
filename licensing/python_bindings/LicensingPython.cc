@@ -10,6 +10,7 @@ void createLicensingSubmodule(py::module_& module) {
 
   licensing_submodule.def(
       "set_path", &thirdai::licensing::setLicensePath, py::arg("license_path"),
+      py::arg("verbose") = false,
       "Set a license filepath for any future calls to ThirdAI functions. "
       "License file verification will be treated as a fallback if activate "
       "has not been called.");

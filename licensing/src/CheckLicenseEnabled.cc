@@ -18,8 +18,10 @@
 
 namespace thirdai::licensing {
 
-// TODO(Any): Decide if we want to refactor these into a single
-// std::unique_ptr<LicensingMethod> with a getEntitlements call
+// TODO(Kartik): Decide if we want to refactor these into a single
+// std::unique_ptr<LicensingMethod> with a getEntitlements call. We would then
+// set this in each call that starts licensing, and check the license there
+// immediately upon the time it is set.
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
 LicenseState _license_state;
 
@@ -45,12 +47,12 @@ void checkLicense() {
 
   if (_license_state.license_path_state.has_value()) {
     _entitlements = SignedLicense::entitlementsFromLicenseFile(
-        _license_state.license_path_state.value());
+        _license_state.license_path_state.value(), /* verbose = */ false);
     return;
   }
 
   throw exceptions::LicenseCheckException(
-      "Please first call either licensing.set_license_path, "
+      "Please first call either licensing.set_path, "
       "licensing.start_heartbeat, or licensing.activate.");
 }
 
@@ -83,8 +85,13 @@ void endHeartbeat() {
   _license_state.heartbeat_state = std::nullopt;
 }
 
-void setLicensePath(const std::string& license_path) {
+void setLicensePath(const std::string& license_path, bool verbose) {
   _license_state.license_path_state = license_path;
+  // This verifies the license file so failures are visible here, and also so
+  // that we print the value of the license. This also is the pattern we want
+  // to move licensing to: see the above TODO for more details.
+  SignedLicense::entitlementsFromLicenseFile(
+      _license_state.license_path_state.value(), verbose);
 }
 
 LicenseState getLicenseState() { return _license_state; }
