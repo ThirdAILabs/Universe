@@ -16,26 +16,15 @@ void FMeasure::record(uint32_t index_in_batch) {
   const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
   const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
 
-  std::cerr << "OUTPUT: " << output << std::endl;
-  std::cerr << "LABELS: " << labels << std::endl;
-
   auto predictions = output.getThresholdedNeurons(
       /* activation_threshold = */ _threshold,
       /* return_at_least_one = */ true,
       /* max_count_to_return = */ std::numeric_limits<uint32_t>::max());
 
-  std::cerr << "PREDICTIONS:";
-  for (uint32_t p : predictions) {
-    std::cerr << " " << p;
-  }
-  std::cerr << std::endl;
-
   for (uint32_t pred : predictions) {
     if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
-      std::cerr << "TRUE POSITIVE: " << pred << std::endl;
       _true_positives++;
     } else {
-      std::cerr << "FALSE POSITIVE: " << pred << std::endl;
       _false_positives++;
     }
   }
@@ -46,7 +35,6 @@ void FMeasure::record(uint32_t index_in_batch) {
     if (labels.activations[pos] > 0) {
       if (std::find(predictions.begin(), predictions.end(),
                     label_active_neuron) == predictions.end()) {
-        std::cerr << "FALSE NEGATIVE: " << label_active_neuron << std::endl;
         _false_negatives++;
       }
     }
@@ -65,8 +53,6 @@ float FMeasure::value() const {
   float recall = static_cast<float>(_true_positives) /
                  (_true_positives + _false_negatives);
 
-  std::cerr << "PRECISION: " << prec << std::endl;
-  std::cerr << "RECALL: " << recall << std::endl;
   /*
     P = Precision
     R = Recall
