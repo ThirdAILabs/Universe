@@ -21,14 +21,14 @@ def get_mnist_model():
     input_layer = bolt.nn.Input(dim=784)
 
     hidden_layer = bolt.nn.FullyConnected(
-        dim=256, input_dim=input_layer.dim(), sparsity=0.5, activation="Relu"
+        dim=256, input_dim=input_layer.dims()[-1], sparsity=0.5, activation="Relu"
     )(input_layer)
 
     output_layer = bolt.nn.FullyConnected(
-        dim=10, input_dim=hidden_layer.dim(), activation="softmax"
+        dim=10, input_dim=hidden_layer.dims()[-1], activation="softmax"
     )(hidden_layer)
 
-    labels = bolt.nn.Input(dim=output_layer.dim())
+    labels = bolt.nn.Input(dim=output_layer.dims()[-1])
 
     loss = bolt.nn.losses.CategoricalCrossEntropy(
         activations=output_layer, labels=labels

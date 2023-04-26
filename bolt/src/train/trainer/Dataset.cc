@@ -47,9 +47,11 @@ Dataset convertDatasetsForModelDims(
     const std::vector<nn::tensor::Dims>& dims) {
   std::vector<uint32_t> single_dims;
   for (const auto& dim : dims) {
-    if (dims.size() != 2) {
+    if (dims.size() != 1) {
       throw std::invalid_argument(
-          "Can only convert bolt batches to 2D tensors.");
+          "Can only convert bolt batches to 2D tensors but received tensor "
+          "with dimensions " +
+          nn::tensor::toString(dim) + ".");
     }
     single_dims.push_back(dim.back());
   }
