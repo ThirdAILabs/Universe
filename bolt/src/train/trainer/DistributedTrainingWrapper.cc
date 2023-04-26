@@ -68,10 +68,12 @@ void DistributedTrainingWrapper::updateParameters() {
 std::unordered_map<std::string, float>
 DistributedTrainingWrapper::validationAndSave() {
   if (_save_context && (_steps_since_save % _save_context->frequency()) == 0) {
+    std::string checkpoint_path =
+        _save_context->prefix() + "_" + std::to_string(_steps_since_save) + ".checkpoint.bolt";
     std::string save_path =
-        _save_context->prefix() + "_" + std::to_string(_steps_since_save);
-
-    _model->checkpoint(save_path);
+        _save_context->prefix() + "_" + std::to_string(_steps_since_save) + ".save.bolt";
+    _model->checkpoint(checkpoint_path);
+    _model->save(save_path);
   }
 
   if (!_validation_data) {
