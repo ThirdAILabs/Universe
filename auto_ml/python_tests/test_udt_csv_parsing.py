@@ -29,6 +29,7 @@ def write_data():
     os.remove(filename)
 
 
+@pytest.mark.unit
 def test_udt_classifier_csv_parsing(write_data):
     filename, n_lines = write_data
 
