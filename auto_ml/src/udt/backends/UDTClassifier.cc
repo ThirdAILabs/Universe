@@ -254,6 +254,9 @@ void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
   std::string class_name = "UDT_CLASSIFIER";
   versions::checkVersion(version, versions::UDT_CLASSIFIER_VERSION,
                          thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_CLASSIFIER_VERSION after serialization
+  // changes
   archive(cereal::base_class<UDTBackend>(this), _class_name_to_neuron,
           _label_block, _classifier, _dataset_factory);
 }

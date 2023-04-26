@@ -270,6 +270,8 @@ void UDT::serialize(Archive& archive, const uint32_t version) {
   std::string class_name = "UDT_BASE";
   versions::checkVersion(version, versions::UDT_BASE_VERSION, thirdai_version,
                          thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
   archive(_backend);
 }
 

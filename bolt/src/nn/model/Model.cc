@@ -403,6 +403,7 @@ void Model::serialize(Archive& archive, const uint32_t version) {
   versions::checkVersion(version, versions::BOLT_MODEL_VERSION, thirdai_version,
                          thirdai::version(), class_name);
 
+  // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
           _allocation_manager, _train_steps, _model_uuid,
           _total_training_samples);
