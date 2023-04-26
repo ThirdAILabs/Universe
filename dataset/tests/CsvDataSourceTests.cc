@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/DataSource.h>
+#include <cstdio>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -9,17 +10,20 @@ namespace thirdai::dataset::tests {
 
 void testCsvDataSource(const std::string& input_string, char delimiter,
                        const std::vector<std::string>& expected_lines) {
-  std::ofstream out("temp.csv");
+  const char* filename = "temp.csv";
+  std::ofstream out(filename);
   out << input_string;
   out.close();
 
-  auto file_data_source = FileDataSource::make("temp.csv");
+  auto file_data_source = FileDataSource::make(filename);
 
   auto csv_data_source = CsvDataSource::make(file_data_source, delimiter);
   for (const auto& line : expected_lines) {
     ASSERT_EQ(csv_data_source->nextLine().value(), line);
   }
   ASSERT_EQ(csv_data_source->nextLine(), std::nullopt);
+
+  std::remove(filename);
 }
 
 TEST(CsvDataSourceTests, HandlesQuotedNewline) {
