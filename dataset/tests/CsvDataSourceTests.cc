@@ -75,9 +75,12 @@ TEST(CsvDataSourceTests, EndsWithNewline) {
 TEST(CsvDataSourceTests, MalformedQuotes) {
   std::string input_string = "\"the first column\nhas a newline";
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      testCsvDataSource(input_string, /* delimiter= */ ',',
-                        {"\"the first column", "has a newline"}),
+      testCsvDataSource(input_string, /* delimiter= */ ',', {}),
       std::invalid_argument);
+
+  input_string = "\"the first\" column\nhas a newline";
+  testCsvDataSource(input_string, /* delimiter= */ ',',
+                    {"\"the first\" column", "has a newline"});
 }
 
 TEST(CsvDataSourceTests, NewlineNextToQuotes) {

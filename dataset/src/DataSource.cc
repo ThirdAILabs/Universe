@@ -27,6 +27,8 @@ std::optional<std::string> CsvDataSource::nextLine() {
       }
     } else {
       switch (state_machine.state()) {
+        // This is consistent with Pandas read_csv behavior when given a CSV
+        // file with malformed quotes.
         case parsers::CSV::ParserState::DelimiterInQuotes:
         case parsers::CSV::ParserState::EscapeInQuotes:
         case parsers::CSV::ParserState::RegularInQuotes:
