@@ -4,28 +4,17 @@ namespace thirdai::bolt::train::metrics {
 
 RecallAtK::RecallAtK(nn::autograd::ComputationPtr outputs,
                      nn::autograd::ComputationPtr labels, uint32_t k)
-    : _outputs(std::move(outputs)),
-      _labels(std::move(labels)),
+    : ComparativeMetric(std::move(outputs), std::move(labels)),
       _num_correct_predicted(0),
       _num_ground_truth(0),
       _k(k) {}
 
-void RecallAtK::record(uint32_t index_in_batch) {
-  const auto& output = _outputs->tensor();
-  const auto& labels = _labels->tensor();
+void RecallAtK::record(const BoltVector& output, const BoltVector& label) {
+  _num_correct_predicted += truePositivesInTopK(output, label, _k);
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
-
-  for (uint32_t i = start; i < end; i++) {
-    const auto& label_vec = labels->getVector(i);
-    _num_correct_predicted +=
-        truePositivesInTopK(output->getVector(i), label_vec, _k);
-
-    for (uint32_t i = 0; i < label_vec.len; i++) {
-      if (label_vec.activations[i] > 0) {
-        _num_ground_truth++;
-      }
+  for (uint32_t i = 0; i < label.len; i++) {
+    if (label.activations[i] > 0) {
+      _num_ground_truth++;
     }
   }
 }

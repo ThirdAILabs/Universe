@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/train/metrics/ComparativeMetric.h>
 #include <bolt/src/train/metrics/Metric.h>
 
 namespace thirdai::bolt::train::metrics {
@@ -12,12 +13,12 @@ namespace thirdai::bolt::train::metrics {
  * divided by the total number of true samples
  * https://en.wikipedia.org/wiki/Precision_and_recall#Recall
  */
-class RecallAtK final : public Metric {
+class RecallAtK final : public ComparativeMetric {
  public:
   RecallAtK(nn::autograd::ComputationPtr outputs,
             nn::autograd::ComputationPtr labels, uint32_t k);
 
-  void record(uint32_t index_in_batch) final;
+  void record(const BoltVector& output, const BoltVector& label) final;
 
   void reset() final;
 

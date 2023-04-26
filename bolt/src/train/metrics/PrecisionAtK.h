@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/metrics/ComparativeMetric.h>
 
 namespace thirdai::bolt::train::metrics {
 
@@ -12,12 +13,12 @@ namespace thirdai::bolt::train::metrics {
  * divided by k
  * https://en.wikipedia.org/wiki/Precision_and_recall#Precision
  */
-class PrecisionAtK final : public Metric {
+class PrecisionAtK final : public ComparativeMetric {
  public:
   PrecisionAtK(nn::autograd::ComputationPtr outputs,
                nn::autograd::ComputationPtr labels, uint32_t k);
 
-  void record(uint32_t index_in_batch) final;
+  void record(const BoltVector& output, const BoltVector& label) final;
 
   void reset() final;
 

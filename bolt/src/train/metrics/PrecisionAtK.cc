@@ -4,24 +4,14 @@ namespace thirdai::bolt::train::metrics {
 
 PrecisionAtK::PrecisionAtK(nn::autograd::ComputationPtr outputs,
                            nn::autograd::ComputationPtr labels, uint32_t k)
-    : _outputs(std::move(outputs)),
-      _labels(std::move(labels)),
+    : ComparativeMetric(std::move(outputs), std::move(labels)),
       _num_correct_predicted(0),
       _num_predicted(0),
       _k(k) {}
 
-void PrecisionAtK::record(uint32_t index_in_batch) {
-  const auto& output = _outputs->tensor();
-  const auto& labels = _labels->tensor();
-
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
-
-  for (uint32_t i = start; i < end; i++) {
-    _num_correct_predicted +=
-        truePositivesInTopK(output->getVector(i), labels->getVector(i), _k);
-    _num_predicted += _k;
-  }
+void PrecisionAtK::record(const BoltVector& output, const BoltVector& label) {
+  _num_correct_predicted += truePositivesInTopK(output, label, _k);
+  _num_predicted += _k;
 }
 
 void PrecisionAtK::reset() {

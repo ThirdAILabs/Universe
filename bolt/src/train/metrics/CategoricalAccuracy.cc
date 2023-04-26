@@ -6,27 +6,18 @@ namespace thirdai::bolt::train::metrics {
 
 CategoricalAccuracy::CategoricalAccuracy(nn::autograd::ComputationPtr outputs,
                                          nn::autograd::ComputationPtr labels)
-    : _outputs(std::move(outputs)),
-      _labels(std::move(labels)),
+    : ComparativeMetric(std::move(outputs), std::move(labels)),
       _correct(0),
       _num_samples(0) {}
 
-void CategoricalAccuracy::record(uint32_t index_in_batch) {
-  const auto& output = _outputs->tensor();
-  const auto& labels = _labels->tensor();
+void CategoricalAccuracy::record(const BoltVector& output,
+                                 const BoltVector& label) {
+  uint32_t prediction = output.getHighestActivationId();
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
-
-  for (uint32_t i = start; i < end; i++) {
-    uint32_t prediction = output->getVector(i).getHighestActivationId();
-
-    if (labels->getVector(i).findActiveNeuronNoTemplate(prediction).activation >
-        0) {
-      _correct++;
-    }
-    _num_samples++;
+  if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
+    _correct++;
   }
+  _num_samples++;
 }
 
 void CategoricalAccuracy::reset() {

@@ -6,32 +6,28 @@ namespace thirdai::bolt::train::metrics {
 FMeasure::FMeasure(nn::autograd::ComputationPtr outputs,
                    nn::autograd::ComputationPtr labels, float threshold,
                    float beta)
-    : _outputs(std::move(outputs)),
-      _labels(std::move(labels)),
+    : ComparativeMetric(std::move(outputs), std::move(labels)),
       _threshold(threshold),
       _beta_squared(beta * beta) {}
 
-void FMeasure::record(uint32_t index_in_batch) {
-  const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
-  const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
-
+void FMeasure::record(const BoltVector& output, const BoltVector& label) {
   auto predictions = output.getThresholdedNeurons(
       /* activation_threshold = */ _threshold,
       /* return_at_least_one = */ true,
       /* max_count_to_return = */ std::numeric_limits<uint32_t>::max());
 
   for (uint32_t pred : predictions) {
-    if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
+    if (label.findActiveNeuronNoTemplate(pred).activation > 0) {
       _true_positives++;
     } else {
       _false_positives++;
     }
   }
 
-  for (uint32_t pos = 0; pos < labels.len; pos++) {
+  for (uint32_t pos = 0; pos < label.len; pos++) {
     uint32_t label_active_neuron =
-        labels.isDense() ? pos : labels.active_neurons[pos];
-    if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation > 0) {
+        label.isDense() ? pos : label.active_neurons[pos];
+    if (label.findActiveNeuronNoTemplate(label_active_neuron).activation > 0) {
       if (std::find(predictions.begin(), predictions.end(),
                     label_active_neuron) == predictions.end()) {
         _false_negatives++;

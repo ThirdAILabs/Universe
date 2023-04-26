@@ -1,17 +1,18 @@
 #pragma once
 
+#include <bolt/src/train/metrics/ComparativeMetric.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <atomic>
 
 namespace thirdai::bolt::train::metrics {
 
-class FMeasure final : public Metric {
+class FMeasure final : public ComparativeMetric {
  public:
   explicit FMeasure(nn::autograd::ComputationPtr outputs,
                     nn::autograd::ComputationPtr labels, float threshold,
                     float beta = 1);
 
-  void record(uint32_t index_in_batch) final;
+  void record(const BoltVector& output, const BoltVector& label) final;
 
   void reset() final;
 
