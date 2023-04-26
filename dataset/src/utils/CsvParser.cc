@@ -257,6 +257,13 @@ std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
                  /* start_index= */ column_start,
                  /* end_index= */ line.size()));
 
+  std::cout << "CSV Parser:" << std::endl;
+  std::cout << "Parsed " << parsed_columns.size() << " columns." << std::endl;
+  for (const auto& col : parsed_columns) {
+    std::cout << "Column: '" << col << "'" << std::endl;
+    std::cout << "Column size: " << col.size() << std::endl;
+  }
+
   return parsed_columns;
 }
 

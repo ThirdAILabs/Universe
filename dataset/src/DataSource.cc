@@ -21,7 +21,11 @@ std::optional<std::string> CsvDataSource::nextLine() {
   if (buffer.empty()) {
     return std::nullopt;
   }
-  return text::join(buffer, "\n");
+  auto line = text::join(buffer, "\n");
+  std::cout << "CSVDataSource: returning line '" << line << "'" << std::endl;
+  std::cout << "Line size: " << line.size() << std::endl;
+
+  return line;
 }
 
 std::optional<std::vector<std::string>> CsvDataSource::nextBatch(
