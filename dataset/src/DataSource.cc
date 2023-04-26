@@ -1,6 +1,8 @@
 #include "DataSource.h"
+#include <dataset/src/utils/CsvParser.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -24,6 +26,15 @@ std::optional<std::string> CsvDataSource::nextLine() {
         }
       }
     } else {
+      switch (state_machine.state()) {
+        case parsers::CSV::ParserState::DelimiterInQuotes:
+        case parsers::CSV::ParserState::EscapeInQuotes:
+        case parsers::CSV::ParserState::RegularInQuotes:
+          throw std::invalid_argument(
+              "Reached EOF without closing quoted column.");
+        default:
+          break;
+      }
       break;
     }
   }
