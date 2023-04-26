@@ -31,7 +31,7 @@ void FMeasure::record(uint32_t index_in_batch) {
   for (uint32_t pos = 0; pos < labels.len; pos++) {
     uint32_t label_active_neuron =
         labels.isDense() ? pos : labels.active_neurons[pos];
-    if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation > 0) {
+    if (labels.activations[pos] > 0) {
       if (std::find(predictions.begin(), predictions.end(),
                     label_active_neuron) == predictions.end()) {
         _false_negatives++;
