@@ -67,6 +67,14 @@ class Tensor {
     return (index_in_batch + 1) * innerDim3d();
   }
 
+  float* activationsAtIndex3d(uint32_t index_in_batch) {
+    return _activations.data() + index_in_batch * innerDim3d();
+  }
+
+  float* gradientsAtIndex3d(uint32_t index_in_batch) {
+    return _activations.data() + index_in_batch * innerDim3d();
+  }
+
   /**
    * Returns the number of vectors in the tensor.
    */

@@ -326,6 +326,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/ops/Tanh.cc
     bolt/src/nn/ops/Sum.cc
+    bolt/src/nn/ops/WeightedSum.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc

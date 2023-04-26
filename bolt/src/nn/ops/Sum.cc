@@ -32,11 +32,10 @@ void Sum::forward(const autograd::ComputationList& inputs,
   }
 
   uint32_t len = lhs->innerDim3d() * lhs->dims().back();
-  uint32_t offset = index_in_batch * lhs->innerDim3d();
 
-  EigenArray lhs_eigen(lhs->activations().data() + offset, len);
-  EigenArray rhs_eigen(rhs->activations().data() + offset, len);
-  EigenArray output_eigen(output->activations().data() + offset, len);
+  EigenArray lhs_eigen(lhs->activationsAtIndex3d(index_in_batch), len);
+  EigenArray rhs_eigen(rhs->activationsAtIndex3d(index_in_batch), len);
+  EigenArray output_eigen(output->activationsAtIndex3d(index_in_batch), len);
 
   output_eigen = lhs_eigen + rhs_eigen;
 }
@@ -54,11 +53,10 @@ void Sum::backpropagate(autograd::ComputationList& inputs,
   }
 
   uint32_t len = lhs->innerDim3d() * lhs->dims().back();
-  uint32_t offset = index_in_batch * lhs->innerDim3d();
 
-  EigenArray lhs_grad_eigen(lhs->gradients().data() + offset, len);
-  EigenArray rhs_grad_eigen(rhs->gradients().data() + offset, len);
-  EigenArray output_grad_eigen(output->gradients().data() + offset, len);
+  EigenArray lhs_grad_eigen(lhs->gradientsAtIndex3d(index_in_batch), len);
+  EigenArray rhs_grad_eigen(rhs->gradientsAtIndex3d(index_in_batch), len);
+  EigenArray output_grad_eigen(output->gradientsAtIndex3d(index_in_batch), len);
 
   lhs_grad_eigen += output_grad_eigen;
   rhs_grad_eigen += output_grad_eigen;
@@ -72,9 +70,9 @@ tensor::Dims Sum::dims(const autograd::ComputationList& inputs) const {
 
 std::optional<uint32_t> Sum::nonzeros(const autograd::ComputationList& inputs,
                                       bool use_sparsity) const {
-  assert(inputs.size() == 2);
+  (void)use_sparsity;
 
-  return inputs.at(0)->nonzeros(use_sparsity);
+  return dims(inputs).back();
 }
 
 void Sum::summary(std::ostream& summary,
