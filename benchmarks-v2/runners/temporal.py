@@ -19,11 +19,6 @@ class TemporalRunner(Runner):
             if config.train_file is not None
             else None
         )
-        cold_start_train_file = (
-            os.path.join(path_prefix, config.cold_start_train_file)
-            if config.cold_start_train_file is not None
-            else None
-        )
         test_file = os.path.join(path_prefix, config.test_file)
 
         model = TemporalRunner.create_model(config, path_prefix)
@@ -39,6 +34,7 @@ class TemporalRunner(Runner):
                 train_file,
                 epochs=1,
                 learning_rate=config.learning_rate,
+                max_in_memory_batches=config.max_in_memory_batches,
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
 
