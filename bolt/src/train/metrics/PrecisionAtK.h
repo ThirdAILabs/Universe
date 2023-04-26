@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/metrics/ComparativeMetric.h>
+#include <bolt/src/train/metrics/Metric.h>
 
 namespace thirdai::bolt::train::metrics {
 
