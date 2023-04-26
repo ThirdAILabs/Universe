@@ -9,36 +9,14 @@ namespace thirdai::dataset {
 std::optional<std::string> CsvDataSource::nextLine() {
   parsers::CSV::StateMachine state_machine(_delimiter);
   std::vector<std::string> buffer;
-  std::optional<uint32_t> newline_position;
-  while (!newline_position) {
-    if (auto line = nextRawLine()) {
-      newline_position = findNewline(state_machine, *line);
-      if (!newline_position) {
-        buffer.push_back(*line);
-      } else {
-        if (*newline_position == line->size()) {
-          buffer.push_back(*line);
-        } else if (*newline_position == line->size() - 1) {
-          buffer.push_back(line->substr(0, *newline_position));
-        } else {
-          buffer.push_back(line->substr(0, *newline_position));
-          _remains = line->substr(*newline_position);
-        }
-      }
-    } else {
-      switch (state_machine.state()) {
-        // This is consistent with Pandas read_csv behavior when given a CSV
-        // file with malformed quotes.
-        case parsers::CSV::ParserState::DelimiterInQuotes:
-        case parsers::CSV::ParserState::EscapeInQuotes:
-        case parsers::CSV::ParserState::RegularInQuotes:
-          throw std::invalid_argument(
-              "Reached EOF without closing quoted column.");
-        default:
-          break;
-      }
+  while (auto line = _source->nextLine()) {
+    buffer.push_back(*line);
+    if (!inQuotesAtEndOfLine(state_machine, *line)) {
       break;
     }
+  }
+  if (inQuotes(state_machine.state())) {
+    throw std::invalid_argument("Reached EOF without closing quoted column.");
   }
   if (buffer.empty()) {
     return std::nullopt;
@@ -63,26 +41,12 @@ std::optional<std::vector<std::string>> CsvDataSource::nextBatch(
 
   return std::make_optional(std::move(lines));
 }
-std::optional<uint32_t> CsvDataSource::findNewline(
+
+bool CsvDataSource::inQuotesAtEndOfLine(
     parsers::CSV::StateMachine& state_machine, const std::string& line) {
-  for (uint32_t position = 0; position < line.size(); position++) {
-    state_machine.transition(line[position]);
-    if (state_machine.state() == parsers::CSV::ParserState::NewLine) {
-      return position;
-    }
+  for (char c : line) {
+    state_machine.transition(c);
   }
-  state_machine.transition('\n');
-  if (state_machine.state() == parsers::CSV::ParserState::NewLine) {
-    return line.size();
-  }
-  return std::nullopt;
-}
-std::optional<std::string> CsvDataSource::nextRawLine() {
-  if (_remains) {
-    auto line = std::move(_remains);
-    _remains = {};
-    return line;
-  }
-  return _source->nextLine();
+  return inQuotes(state_machine.state());
 }
 }  // namespace thirdai::dataset

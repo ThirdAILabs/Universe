@@ -83,6 +83,19 @@ class FileDataSource final : public DataSource {
   std::string _filename;
 };
 
+/**
+ * In the current data loading framework, the DataSource object produces lines
+ * which are then parsed and featurized by the Featurizer object. In a CSV file,
+ * a quoted column may contain newline characters. Thus, naively splitting the
+ * file into lines by newline characters alone will result in CSV parsing
+ * errors.
+ *
+ * This DataSource class wraps an upstream DataSource object and produces
+ * complete CSV rows. Roughly, the nextLine() method repeatedly calls the
+ * upstream object's nextLine() method and stores the returned values in a
+ * buffer until it sees an unquoted newline character. It then returns the
+ * concatenation of the contents of this buffer.
+ */
 class CsvDataSource final : public DataSource {
  public:
   CsvDataSource(DataSourcePtr source, char delimiter)
@@ -105,10 +118,19 @@ class CsvDataSource final : public DataSource {
   }
 
  private:
-  static std::optional<uint32_t> findNewline(
-      parsers::CSV::StateMachine& state_machine, const std::string& line);
+  static bool inQuotes(parsers::CSV::ParserState state) {
+    switch (state) {
+      case parsers::CSV::ParserState::DelimiterInQuotes:
+      case parsers::CSV::ParserState::EscapeInQuotes:
+      case parsers::CSV::ParserState::RegularInQuotes:
+        return true;
+      default:
+        return false;
+    }
+  }
 
-  std::optional<std::string> nextRawLine();
+  static bool inQuotesAtEndOfLine(parsers::CSV::StateMachine& state_machine,
+                                  const std::string& line);
 
   DataSourcePtr _source;
   char _delimiter;
