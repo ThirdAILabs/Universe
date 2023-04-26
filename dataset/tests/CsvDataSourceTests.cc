@@ -70,4 +70,24 @@ TEST(CsvDataSourceTests, EndsWithNewline) {
                     {"\"line 1\ncolumn 1\"\t\"line 1\ncolumn 2\"",
                      "\"line 2\ncolumn 1\"\t\"line 2\ncolumn 2\""});
 }
+
+TEST(CsvDataSourceTests, MalformedQuotes) {
+  std::string input_string = "\"the first column\nhas a newline";
+  testCsvDataSource(input_string, /* delimiter= */ ',',
+                    {"\"the first column", "has a newline"});
+}
+
+TEST(CsvDataSourceTests, NewlineNextToQuotes) {
+  std::string input_string = "\"the first column\n\"";
+  testCsvDataSource(input_string, /* delimiter= */ ',',
+                    {"\"the first column\n\""});
+
+  input_string = "\"\nhas a newline\"";
+  testCsvDataSource(input_string, /* delimiter= */ ',',
+                    {"\"\nhas a newline\""});
+
+  input_string = "\"\n\"";
+  testCsvDataSource(input_string, /* delimiter= */ ',', {"\"\n\""});
+}
+
 }  // namespace thirdai::dataset::tests
