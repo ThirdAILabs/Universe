@@ -2,6 +2,7 @@
 #include <dataset/src/DataSource.h>
 #include <cstdio>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -24,7 +25,10 @@ void testCsvDataSource(const std::string& input_string, char delimiter,
   }
   ASSERT_EQ(csv_data_source->nextLine(), std::nullopt);
 
-  std::remove(filename);
+  int result = std::remove(filename);
+  if (result != 0) {
+    std::cerr << "Failed to remove " << filename << std::endl;
+  }
 }
 
 TEST(CsvDataSourceTests, HandlesQuotedNewline) {
