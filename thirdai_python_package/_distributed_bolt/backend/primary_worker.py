@@ -63,7 +63,7 @@ class PrimaryWorker(Worker):
         if validation_context.sparse_inference:
             validation_eval_config.enable_sparse_inference()
 
-        validation_data, validation_label = load
+        validation_data, validation_label = load[:-1], load[-1]
         train_config.with_validation(
             validation_data=[validation_data],
             validation_labels=validation_label,

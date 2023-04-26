@@ -50,7 +50,6 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         data_source_factory,
         max_in_memory_batches=None,
         featurizer=None,
-        shuffle=True,
         with_prompt=True,
         batches_to_skip=0,
         min_vecs_in_buffer=64000,
@@ -60,7 +59,6 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.featurizer = featurizer
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
-        self.shuffle = shuffle
         self.data_source_factory = data_source_factory
         self.with_prompt = with_prompt
         self.batches_to_skip = batches_to_skip
@@ -69,12 +67,12 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.kwargs = kwargs
         self.dataset_finished = False
 
-    def load(self):
+    def load(self, shuffle=True):
         data_source = self.data_source_factory(*self.args, **self.kwargs)
         self.generator = dataset.DatasetLoader(
             data_source=data_source,
             featurizer=self.featurizer,
-            shuffle=self.shuffle,
+            shuffle=shuffle,
             shuffle_config=dataset.ShuffleConfig(
                 min_vecs_in_buffer=self.min_vecs_in_buffer
             ),

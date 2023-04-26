@@ -67,7 +67,7 @@ void DistributedTrainingWrapper::updateParameters() {
 
 std::unordered_map<std::string, float>
 DistributedTrainingWrapper::validationAndSave() {
-  if (_save_context && (_steps_since_save % _save_context->frequency()) == 0) {
+  if (_save_context) {
     std::string checkpoint_path =
         _save_context->prefix() + "_" + std::to_string(_steps_since_save) + ".checkpoint.bolt";
     std::string save_path =
@@ -79,17 +79,17 @@ DistributedTrainingWrapper::validationAndSave() {
   if (!_validation_data) {
     return {};
   }
+    Trainer trainer(_model);
+    auto history = trainer.validate_with_metric_names(
+        *_validation_data, _validation_metrics, _use_sparsity_in_validation);
 
-  Trainer trainer(_model);
-  auto history = trainer.validate_with_metric_names(
-      *_validation_data, _validation_metrics, _use_sparsity_in_validation);
+    std::unordered_map<std::string, float> last_metrics;
+    for (const auto& [metric_name, metric_vals] : history) {
+      last_metrics[metric_name] = metric_vals.back();
+    }
 
-  std::unordered_map<std::string, float> last_metrics;
-  for (const auto& [metric_name, metric_vals] : history) {
-    last_metrics[metric_name] = metric_vals.back();
-  }
-
-  return last_metrics;
+    return last_metrics;
+  
 }
 
 uint64_t DistributedTrainingWrapper::numBatches() {
