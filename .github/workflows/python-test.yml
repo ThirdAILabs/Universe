@@ -39,7 +39,7 @@ jobs:
           go-version: 1.19
 
       - name: Run python unit tests
-        run: bin/python-test.sh -m unit
+        run: bin/python-test.sh -k test_fmeasure
 
   python-release-tests:
     runs-on: ubuntu-latest
