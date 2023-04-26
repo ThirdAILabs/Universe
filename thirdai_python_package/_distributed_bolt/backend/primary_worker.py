@@ -65,7 +65,7 @@ class PrimaryWorker(Worker):
 
         validation_data, validation_label = load[:-1], load[-1]
         train_config.with_validation(
-            validation_data=[validation_data],
+            validation_data=validation_data,
             validation_labels=validation_label,
             eval_config=validation_eval_config,
             validation_frequency=validation_context.validation_frequency,
