@@ -27,7 +27,7 @@ void FMeasure::record(const BoltVector& output, const BoltVector& label) {
   for (uint32_t pos = 0; pos < label.len; pos++) {
     uint32_t label_active_neuron =
         label.isDense() ? pos : label.active_neurons[pos];
-    if (label.findActiveNeuronNoTemplate(label_active_neuron).activation > 0) {
+    if (label.activations[pos] > 0) {
       if (std::find(predictions.begin(), predictions.end(),
                     label_active_neuron) == predictions.end()) {
         _false_negatives++;

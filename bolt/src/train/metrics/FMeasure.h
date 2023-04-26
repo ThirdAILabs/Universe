@@ -26,9 +26,9 @@ class FMeasure final : public ComparativeMetric {
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;
 
-  std::atomic_uint64_t _true_positives;
-  std::atomic_uint64_t _false_positives;
-  std::atomic_uint64_t _false_negatives;
+  std::atomic_uint64_t _true_positives = 0;
+  std::atomic_uint64_t _false_positives = 0;
+  std::atomic_uint64_t _false_negatives = 0;
 
   float _threshold;
   float _beta_squared;

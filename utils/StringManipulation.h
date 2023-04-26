@@ -23,6 +23,8 @@ std::vector<std::string_view> split(std::string_view string, char delimiter);
  */
 std::vector<std::string_view> tokenizeSentence(std::string_view sentence);
 
+std::vector<std::string_view> charKGrams(std::string_view text, uint32_t k);
+
 /**
  * Joins a vector of strings into a single delimited string.
  */
