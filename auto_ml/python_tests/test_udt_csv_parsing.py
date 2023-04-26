@@ -1,6 +1,8 @@
+import os
+
 import pytest
 from thirdai import bolt
-import os
+
 
 class CountCallback(bolt.callbacks.Callback):
     def __init__(self):
@@ -44,16 +46,6 @@ def test_udt_classifier_csv_parsing(write_data):
 
     batch_counter = CountCallback()
 
-    model.train(
-        filename, 
-        epochs=1, 
-        batch_size=1, 
-        callbacks=[batch_counter]
-    )
+    model.train(filename, epochs=1, batch_size=1, callbacks=[batch_counter])
 
     assert batch_counter.num_batches() == n_lines
-
-
-
-
-    
