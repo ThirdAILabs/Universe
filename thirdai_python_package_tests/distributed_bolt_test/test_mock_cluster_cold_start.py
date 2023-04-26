@@ -120,27 +120,27 @@ def test_distributed_mach_cold_start(
 
     model = get_udt_scifact_mach_model(n_target_classes)
 
-    # metrics = model.cold_start_distributed(
-    #     cluster_config=ray_two_node_cluster_config("linear"),
-    #     filenames=[
-    #         f"{os.getcwd()}/scifact/unsupervised_part1",
-    #         f"{os.getcwd()}/scifact/unsupervised_part2",
-    #     ],
-    #     strong_column_names=["TITLE"],
-    #     weak_column_names=["TEXT"],
-    #     learning_rate=0.001,
-    #     epochs=5,
-    #     metrics=[
-    #         "precision@1",
-    #         "recall@10",
-    #     ],
-    #     min_vecs_in_buffer=5000,
-    # )
+    metrics = model.cold_start_distributed(
+        cluster_config=ray_two_node_cluster_config("linear"),
+        filenames=[
+            f"{os.getcwd()}/scifact/unsupervised_part1",
+            f"{os.getcwd()}/scifact/unsupervised_part2",
+        ],
+        strong_column_names=["TITLE"],
+        weak_column_names=["TEXT"],
+        learning_rate=0.001,
+        epochs=5,
+        metrics=[
+            "precision@1",
+            "recall@10",
+        ],
+        min_vecs_in_buffer=5000,
+    )
 
-    # overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
+    overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 
-    # # metrics_aggregation_from_workers just returns metrics for last update
-    # assert overall_metrics["precision@1"] > 0.90
+    # metrics_aggregation_from_workers just returns metrics for last update
+    assert overall_metrics["precision@1"] > 0.90
 
     validation = bolt.Validation(
         supervised_tst,
