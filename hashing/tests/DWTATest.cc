@@ -12,6 +12,8 @@
 
 namespace thirdai::hashing {
 
+const bool DEBUG_MODE = false;
+
 struct HashParams {
   uint32_t num_tables;
   uint32_t permutations;
@@ -55,7 +57,6 @@ std::vector<float> makeDenseVec(uint32_t size, int range, float div,
   std::vector<float> vec(size, 0);
 
   std::uniform_int_distribution<int> dist(-range, range);
-  // #pragma omp parallel for default(none) shared(vec, size, dist, rng, div)
   for (uint32_t i = 0; i < size; i++) {
     vec[i] = static_cast<float>(dist(rng) / div);
   }
@@ -77,8 +78,9 @@ TEST(DWTATest, TestSparseDenseOverlap) {
   DWTAHashFunction hash(
       /* input_dim= */ size, /* _hashes_per_table= */ hashes_per_table,
       /* _num_tables= */ num_tables, /* range_pow= */ 3 * hashes_per_table,
+      /*binsize=*/8,
       /*permutes=*/8,
-      /* seed= */ 59302);
+      /* seed=*/59302);
 
   std::vector<uint32_t> dense_output_hashes(num_tables),
       sparse_output_hashes(num_tables);
@@ -115,8 +117,8 @@ void print_pair_vec(const std::vector<std::pair<S, T>>& vec) {
     std::cout << x.first << " " << x.second << std::endl;
   }
 }
-
-void print_mat(const Matrix& mat) {
+template <class T>
+void print_mat(const std::vector<std::vector<T>>& mat) {
   for (const auto& x : mat) {
     print_vecs(x);
   }
@@ -161,10 +163,28 @@ Matrix convert_dense_matrix_to_sparse(const Matrix& mat, float sparsity_level,
     for (int i = 0; i < sparse_vec.first.size(); i++) {
       if (one_hot) {
         temp[sparse_vec.second[i]] = 1;
+        /** If we one-hot our vectors, then we convert the set of non-zeros into
+         * a partially ordered set. Which basically means that DWTA will become
+         * min-hash. To actually see the effect of this partial ordering,
+         * uncomment the line :
+         * temp[sparse_vec.second[i]] = 1 + sparse_vec.first[i] / 10000;
+         * You will notice that one-hot and sparse modes become exactly the
+         * same. Hence, it is the ordering which is important and not the
+         * magnitudes. To play around with it, you can add ordering randomly to
+         * a proportion of elements by uncommenting :
+         *
+         *  if (rand() % 3 != 0) {
+         *    continue;
+         *  }
+         * The retrieval improves. If you make 3 -> 2, the retrieval will again
+         * improve.
+         */
+
         // if (rand() % 3 != 0) {
         //   continue;
         // }
         // temp[sparse_vec.second[i]] = 1 + sparse_vec.first[i] / 10000;
+
       } else {
         temp[sparse_vec.second[i]] = sparse_vec.first[i];
       }
@@ -240,7 +260,9 @@ void normalize(std::vector<float>& vec) {
 }
 
 void normalize(Matrix& mat) {
-  for (auto& x : mat) {
+#pragma omp parallel for default(none) shared(mat)
+  for (int i = 0; i < mat.size(); ++i) {  // NOLINT
+    auto& x = mat[i];
     normalize(x);
   }
 }
@@ -278,8 +300,6 @@ Matrix sample_vectors(uint32_t number_samples, const Matrix& matrix) {
 // Sparse hashing a single vector
 void hash_sparse_vec(std::vector<uint32_t>& hashes,
                      const std::vector<float>& vec, DWTAHashFunction& hash) {
-  assert(sparse_size > 0);
-
   std::vector<uint32_t> indices;
   std::vector<float> values;
 
@@ -372,6 +392,7 @@ float calculate_topk_overlap(const Matrix& mat, const HashMatrix& hash_matrix,
   // Get top-k collisions and inner products
   std::unordered_set<uint32_t> top_collisions, top_prods, intersection;
   float overlap = 0;
+  topk = std::min(topk, static_cast<uint32_t>(sorted_collisions.size()));
   for (int i = 0; i < topk; i++) {
     top_collisions.insert(sorted_collisions[i].second);
     top_prods.insert(sorted_products[i].second);
@@ -395,7 +416,7 @@ float calculate_topk_overlap(const Matrix& weights, const Matrix& vectors,
                              DWTAHashFunction& hash, uint32_t topk,
                              bool sparse_vec) {
   float overlap = 0;
-  HashMatrix hash_matrix = calculate_hashes(weights, hash, sparse_vec);
+  HashMatrix hash_matrix = calculate_hashes(weights, hash, false);
   for (const auto& x : vectors) {
     overlap +=
         calculate_topk_overlap(weights, hash_matrix, x, hash, topk, sparse_vec);
@@ -404,135 +425,303 @@ float calculate_topk_overlap(const Matrix& weights, const Matrix& vectors,
 }
 
 void run_experiment(
-    uint32_t dim, float topk, uint32_t num_vectors, float noise_level,
-    bool use_sparse_vectors, bool one_hot, float sparsity_level,
-    HashParams params,
+    uint32_t dim, uint32_t topk_multiplier, uint32_t num_vectors,
+    float noise_level, bool use_sparse_vectors, bool one_hot,
+    float sparsity_level, HashParams params,
     std::optional<uint32_t> number_query_vectors = std::nullopt) {
   float div = 32;
   float range = 128;
 
+  uint32_t number_elements_per_bucket;
+
+  /** We want to adjust the range of the hash tables such that the expected
+   * number of elements per bucket in the hash table is a reasonable number. The
+   * meaning of the word reasonable is somewhat vague. Hence, putting numbers
+   * that seem right to me.
+   * Note: If we assume that the range of the hash tables is inf, and our query
+   * vector (q) w and target vector (t) are w (both are same), then with a high
+   * probability, the only element q collides with will be t. What we actually
+   * want to test is the
+   *
+   */
+  if (num_vectors <= 1000) {
+    number_elements_per_bucket = 5;
+  } else if (num_vectors <= 5'000) {
+    number_elements_per_bucket = 10;
+  } else if (num_vectors <= 50'000) {
+    number_elements_per_bucket = 15;
+  } else if (num_vectors < 500'000) {
+    number_elements_per_bucket = 30;
+  } else {
+    number_elements_per_bucket = 50;
+  }
+
+  uint32_t range_pow = static_cast<uint32_t>(std::max(
+      std::floor(std::log2(num_vectors / number_elements_per_bucket)), 1.0));
+  uint32_t binsize = static_cast<uint32_t>(std::floor(
+      std::pow(2, static_cast<float>(range_pow) / params.hashes_per_table)));
+  if (DEBUG_MODE) {
+    std::cout << "| META | {range_pow:" << range_pow
+              << ", elements_per_bucket:" << number_elements_per_bucket
+              << ", binsize:" << binsize << "}" << std::endl;
+  }
+  assert(range_pow >= params.hashes_per_table * log2(binsize));
   uint32_t num_tables = params.num_tables,
            hashes_per_table = params.hashes_per_table;
   DWTAHashFunction hash(
-      /* input_dim= */ dim, /* _hashes_per_table= */ hashes_per_table,
-      /* _num_tables= */ num_tables, /* range_pow= */ 3 * hashes_per_table,
-      /*permutes=*/params.permutations,
-      /* seed= */ 59302);
+      /* input_dim= */ dim,
+      /* hashes_per_table= */ hashes_per_table,
+      /* num_tables= */ num_tables, /* range_pow= */ range_pow,
+      /* binsize=*/binsize, /* permutes=*/params.permutations,
+      /* seed=*/10002);
 
   auto weights = generate_weight_matrix(num_vectors, dim, range, div);
   auto vectors = generate_vectors_for_matrix(weights, range, div, noise_level);
 
-  print_mat(weights);
-  print_mat(vectors);
+  if (DEBUG_MODE) {
+    std::cout << "Initial values for:" << std::endl;
+    std::cout << "Weights:" << std::endl;
+    print_mat(weights);
+    std::cout << "Vectors:" << std::endl;
+    print_mat(vectors);
+  }
+
   if (number_query_vectors != std::nullopt) {
     vectors = sample_vectors(number_query_vectors.value(), vectors);
+    if (DEBUG_MODE) {
+      std::cout << "vectors after sampling" << std::endl;
+      print_mat(vectors);
+    }
   }
-  print_mat(vectors);
-
-  uint32_t sparse_size = static_cast<uint32_t>(sparsity_level * dim);
 
   normalize(weights);
 
   if (use_sparse_vectors && sparsity_level < 1) {
     vectors = convert_dense_matrix_to_sparse(vectors, sparsity_level, one_hot);
+
+    if (DEBUG_MODE) {
+      std::cout << "Sparse vectors" << std::endl;
+      print_mat(vectors);
+    }
   }
+
   normalize(vectors);
 
-  print_mat(weights);
-  print_mat(vectors);
+  if (DEBUG_MODE) {
+    std::cout << "Normalized values for:" << std::endl;
+    std::cout << "Weights:" << std::endl;
+    print_mat(weights);
+    std::cout << "Vectors:" << std::endl;
+    print_mat(vectors);
+  }
+
+  if (DEBUG_MODE) {
+    HashMatrix hash_weights = calculate_hashes(weights, hash, false);
+    HashMatrix hash_vectors =
+        calculate_hashes(vectors, hash, use_sparse_vectors);
+    std::cout << "Printing the hashes for weights: " << std::endl;
+    print_mat(hash_weights);
+    std::cout << "Vectors" << std::endl;
+    print_mat(hash_vectors);
+  }
 
   // print_mat(innerproduct(weights, vectors));
 
   // print_vecs(get_collisions(weights, vectors[0], hash));
   // print_vecs(innerproduct(weights, vectors[0]));
   // print_pair_vec(sort_vec(get_collisions(weights, vectors[0], hash)));
-  std::cout << "overlap: "
-            << calculate_topk_overlap(
-                   weights, vectors, hash, topk,
-                   (use_sparse_vectors && sparsity_level < 1))
+
+  float overlap_score = calculate_topk_overlap(
+      weights, vectors, hash, topk_multiplier * number_elements_per_bucket,
+      (use_sparse_vectors && sparsity_level < 1));
+  std::string mode;
+  if (sparsity_level < 1 && use_sparse_vectors) {
+    if (one_hot) {
+      mode = "one-hot";
+    } else {
+      mode = "sparse";
+    }
+  } else {
+    mode = "dense";
+  }
+
+  uint32_t num_queries = number_query_vectors == std::nullopt
+                             ? num_vectors
+                             : number_query_vectors.value();
+
+  std::cout << "| PARAMS |"
+            << "{sparsity:" << sparsity_level << ", mode: '" << mode << "'"
+            << ", input_dim: " << dim << ", hidden_dim: " << num_vectors
+            << ", number_query_vectors:" << num_queries
+            << ", topk_multiplier: " << topk_multiplier
+            << ", noise_level: " << noise_level
+            << ", num_tables: " << params.num_tables
+            << ", permutations: " << params.permutations
+            << ", hashes_per_table: " << params.hashes_per_table
+            << ", range_pow:" << range_pow
+            << ", elements_per_bucket: " << number_elements_per_bucket
+            << ", binsize: " << binsize << ", score: " << overlap_score << "}"
             << std::endl;
 }
 
-TEST(DWTATest, trial) {
-  uint32_t dim = 10;
-  uint32_t topk = 10;
-  uint32_t num_vectors = 5;
-  float noise_level = 0.1;
-  float sparsity_level = 0.1;
+struct SearchParams {
+  HashParams hashparams;
+  uint32_t input_dim;
+  uint32_t hidden_dim;
+  float sparsity_level;
+  uint32_t topk_multiplier;
+  uint32_t number_query_vectors;
+  float noise_level;
+};
 
-  HashParams param = HashParams({10, 1, 1});
-  run_experiment(
-      /*dim=*/dim,
-      /*topk=*/topk,
-      /*num_vectors=*/num_vectors,
-      /*noise_level=*/noise_level,
-      /*use_sparse_vectors=*/false,
-      /*one_hot=*/false,
-      /*sparsity_level=*/sparsity_level,
-      /*params=*/param);
-}
+std::vector<SearchParams> generate_search_params() {
+  std::vector<uint32_t> input_dims({1'000, 8'000, 20'000, 100'000});
+  std::vector<uint32_t> hidden_dims({500, 8'000, 50'000, 200'000});
+  std::vector<float> sparsity_levels({0.001, 0.01, 0.1, 1});
 
-TEST(DWTATest, runner) {
-  uint32_t dim = 100'00;
-  uint32_t topk = 10;
-  uint32_t num_vectors = 100;
-  float noise_level = 0.1;
+  std::vector<HashParams> params;
+  std::vector<uint32_t> num_tables({51, 151, 301});
+  std::vector<uint32_t> permutations({1, 2, 4, 8});
+  std::vector<uint32_t> hashes_per_table({1, 2, 4, 8});
 
-  std::vector<float> sparsity_levels({0.01, 0.1, 0.5, 1});
+  for (auto a : num_tables) {
+    for (auto b : permutations) {
+      for (auto c : hashes_per_table) {
+        params.emplace_back(HashParams({a, b, c}));
+      }
+    }
+  }
 
-  auto start_time = std::chrono::high_resolution_clock::now();
-  for (auto x : sparsity_levels) {
-    std::vector<HashParams> params;
-    std::vector<uint32_t> num_tables({51, 121, 171, 251});
-    std::vector<uint32_t> permutations({1, 2, 4, 8});
-    std::vector<uint32_t> hashes_per_table({1, 2, 4, 8});
+  std::vector<SearchParams> search_params;
 
-    for (auto a : num_tables) {
-      for (auto b : permutations) {
-        for (auto c : hashes_per_table) {
-          params.emplace_back(HashParams({a, b, c}));
+  for (auto input_dim : input_dims) {
+    for (auto hidden_dim : hidden_dims) {
+      for (auto sparsity_level : sparsity_levels) {
+        for (auto param : params) {
+          if (sparsity_level * input_dim < 50) {
+            continue;
+          }
+          SearchParams temp;
+          temp.hashparams = param;
+          temp.sparsity_level = sparsity_level;
+          temp.hidden_dim = hidden_dim;
+          temp.input_dim = input_dim;
+
+          if (temp.hidden_dim <= 5'000) {
+            temp.topk_multiplier = 3;
+          } else if (temp.hidden_dim <= 50'000) {
+            temp.topk_multiplier = 5;
+          } else {
+            temp.topk_multiplier = 8;
+          }
+
+          temp.number_query_vectors =
+              std::min(temp.hidden_dim, static_cast<uint32_t>(200));
+          temp.noise_level = 0.2;
+          search_params.emplace_back(temp);
         }
       }
     }
-    int i = 0;
-    for (auto param : params) {
-      std::cout << "Params: "
-                << "sparsity: " << x << " num_tables: " << param.num_tables
-                << " permutations: " << param.permutations
-                << " hashes_per_table: " << param.hashes_per_table << "\n ";
-      std::cout << "Dense" << std::endl;
-      run_experiment(
-          /*dim=*/dim,
-          /*topk=*/topk,
-          /*num_vectors=*/num_vectors,
-          /*noise_level=*/noise_level,
-          /*use_sparse_vectors=*/false,
-          /*one_hot=*/false,
-          /*sparsity_level=*/x, param);
-      std::cout << "Sparse" << std::endl;
-      run_experiment(
-          /*dim=*/dim,
-          /*topk=*/topk,
-          /*num_vectors=*/num_vectors,
-          /*noise_level=*/noise_level,
-          /*use_sparse_vectors=*/true,
-          /*one_hot=*/false,
-          /*sparsity_level=*/x, param);
-      std::cout << "Sparse One-hot" << std::endl;
-      run_experiment(
-          /*dim=*/dim,
-          /*topk=*/topk,
-          /*num_vectors=*/num_vectors,
-          /*noise_level=*/noise_level,
-          /*use_sparse_vectors=*/true,
-          /*one_hot=*/true,
-          /*sparsity_level=*/x, param);
-    }
   }
-  auto end_time = std::chrono::high_resolution_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time)
-          .count();
-  std::cout << "Execution time: " << duration << " seconds" << std::endl;
+
+  return search_params;
+}  // namespace thirdai::hashing
+
+TEST(DWTATest, trial) {
+  uint32_t dim = 10'000;
+  uint32_t topk_multiplier = 5;
+  uint32_t num_vectors = 10000;
+  float noise_level = 0.1;
+  float sparsity_level = 0.6;
+
+  // HashParams param = HashParams({50, 4, 4});
+  // run_experiment(
+  //     /*dim=*/dim,
+  //     /*topk_multiplier=*/topk_multiplier,
+  //     /*num_vectors=*/num_vectors,
+  //     /*noise_level=*/noise_level,
+  //     /*use_sparse_vectors=*/true,
+  //     /*one_hot=*/false,
+  //     /*sparsity_level=*/sparsity_level,
+  //     /*params=*/param,
+  //     /*number_query_vectors=*/100);
+
+  auto params = generate_search_params();
+
+  for (auto& param : params) {
+    std::cout << "input_dim: " << param.input_dim
+              << ", hidden_dim: " << param.hidden_dim
+              << ", sparsity_level: " << param.sparsity_level
+              << ", topk_multiplier: " << param.topk_multiplier
+              << ", number_query_vectors: " << param.number_query_vectors
+              << ", num_tables: " << param.hashparams.num_tables
+              << ", permutation: " << param.hashparams.permutations
+              << ", hashes_per_table: " << param.hashparams.hashes_per_table
+              << std::endl;
+  }
+}
+
+TEST(DWTATest, runner) {
+  auto params = generate_search_params();
+
+  std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+  std::chrono::time_point<std::chrono::high_resolution_clock> end_time;
+  std::chrono::seconds::rep duration;
+
+  for (auto& param : params) {
+    // running dense retrieval
+    start_time = std::chrono::high_resolution_clock::now();
+    run_experiment(
+        /*dim=*/param.input_dim,
+        /*topk_multiplier=*/param.topk_multiplier,
+        /*num_vectors=*/param.hidden_dim,
+        /*noise_level=*/param.noise_level,
+        /*use_sparse_vectors=*/false,
+        /*one_hot=*/false,
+        /*sparsity_level=*/param.sparsity_level,
+        /*params=*/param.hashparams,
+        /*number_query_vectors=*/param.number_query_vectors);
+    end_time = std::chrono::high_resolution_clock::now();
+    duration =
+        std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time)
+            .count();
+    std::cout << "| TIME | {time: " << duration << "s}" << std::endl;
+
+    // running sparse retrieval
+    start_time = std::chrono::high_resolution_clock::now();
+    run_experiment(
+        /*dim=*/param.input_dim,
+        /*topk_multiplier=*/param.topk_multiplier,
+        /*num_vectors=*/param.hidden_dim,
+        /*noise_level=*/param.noise_level,
+        /*use_sparse_vectors=*/true,
+        /*one_hot=*/false,
+        /*sparsity_level=*/param.sparsity_level,
+        /*params=*/param.hashparams,
+        /*number_query_vectors=*/param.number_query_vectors);
+    end_time = std::chrono::high_resolution_clock::now();
+    duration =
+        std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time)
+            .count();
+    std::cout << "| TIME | {time: " << duration << "s}" << std::endl;
+
+    // running one-hot retrieval
+    start_time = std::chrono::high_resolution_clock::now();
+    run_experiment(
+        /*dim=*/param.input_dim,
+        /*topk_multiplier=*/param.topk_multiplier,
+        /*num_vectors=*/param.hidden_dim,
+        /*noise_level=*/param.noise_level,
+        /*use_sparse_vectors=*/true,
+        /*one_hot=*/true,
+        /*sparsity_level=*/param.sparsity_level,
+        /*params=*/param.hashparams,
+        /*number_query_vectors=*/param.number_query_vectors);
+    end_time = std::chrono::high_resolution_clock::now();
+    duration =
+        std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time)
+            .count();
+    std::cout << "| TIME | {time: " << duration << "s}" << std::endl;
+  }
 }
 }  // namespace thirdai::hashing
