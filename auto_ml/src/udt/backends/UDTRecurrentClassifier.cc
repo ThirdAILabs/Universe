@@ -8,6 +8,8 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <utils/Version.h>
+#include <versioning/src/Versions.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -199,11 +201,22 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   return std::move(output);
 }
 
-template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&);
-template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&);
+template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
+                                                const uint32_t version);
+template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&,
+                                                const uint32_t version);
 
 template <class Archive>
-void UDTRecurrentClassifier::serialize(Archive& archive) {
+void UDTRecurrentClassifier::serialize(Archive& archive,
+                                       const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+  std::string class_name = "UDT_RECURRENT_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_RECURRENT_CLASSIFIER_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
+  // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _target, _model,
           _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
 }
@@ -211,3 +224,5 @@ void UDTRecurrentClassifier::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRecurrentClassifier,
+                     thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION)
