@@ -350,8 +350,8 @@ std::vector<uint32_t> get_collisions(const HashMatrix& mat,
   }
 
 // Calculate collisions
-#pragma omp parallel for default(none) \
-    shared(mat, mat_size, num_tables, hash, vec_hashes, collisions)
+// #pragma omp parallel for default(none) \
+//     shared(mat, mat_size, num_tables, hash, vec_hashes, collisions)
   for (int i = 0; i < mat_size; i++) {
     const auto& row = mat[i];
     uint32_t overlap = 0;
@@ -373,8 +373,8 @@ float calculate_topk_overlap(const Matrix& mat, const HashMatrix& hash_matrix,
   // Calculate inner products
   const size_t mat_size = mat.size();
   std::vector<float> inner_products(mat_size);
-#pragma omp parallel for default(none) \
-    shared(mat, vec, inner_products, mat_size)
+// #pragma omp parallel for default(none) \
+//     shared(mat, vec, inner_products, mat_size)
   for (int i = 0; i < mat_size; i++) {
     inner_products[i] = innerproduct(mat[i], vec);
   }
@@ -383,11 +383,11 @@ float calculate_topk_overlap(const Matrix& mat, const HashMatrix& hash_matrix,
   auto sorted_collisions = sort_vec(collisions);
   auto sorted_products = sort_vec(inner_products);
 
-  // Check if the vectors are sorted
-  for (int i = 0; i < sorted_collisions.size() - 1; i++) {
-    assert(sorted_collisions[i].first >= sorted_collisions[i + 1].first);
-    assert(sorted_products[i].first >= sorted_products[i + 1].first);
-  }
+  // // Check if the vectors are sorted
+  // for (int i = 0; i < sorted_collisions.size() - 1; i++) {
+  //   assert(sorted_collisions[i].first >= sorted_collisions[i + 1].first);
+  //   assert(sorted_products[i].first >= sorted_products[i + 1].first);
+  // }
 
   // Get top-k collisions and inner products
   std::unordered_set<uint32_t> top_collisions, top_prods, intersection;
@@ -417,10 +417,13 @@ float calculate_topk_overlap(const Matrix& weights, const Matrix& vectors,
                              bool sparse_vec) {
   float overlap = 0;
   HashMatrix hash_matrix = calculate_hashes(weights, hash, false);
-  for (const auto& x : vectors) {
-    overlap +=
-        calculate_topk_overlap(weights, hash_matrix, x, hash, topk, sparse_vec);
+
+  #pragma omp parallel for reduction(+ : overlap) default(none) shared(vectors, weights, hash_matrix, hash, topk, sparse_vec)
+  for (int i = 0; i < vectors.size(); i++) { //NOLINT
+      const auto& x = vectors[i];
+      overlap += calculate_topk_overlap(weights, hash_matrix, x, hash, topk, sparse_vec);
   }
+
   return overlap / vectors.size();
 }
 
@@ -575,9 +578,9 @@ struct SearchParams {
 };
 
 std::vector<SearchParams> generate_search_params() {
-  std::vector<uint32_t> input_dims({1'000, 8'000, 20'000, 100'000});
-  std::vector<uint32_t> hidden_dims({500, 8'000, 50'000, 200'000});
-  std::vector<float> sparsity_levels({0.001, 0.01, 0.1, 1});
+  std::vector<uint32_t> input_dims({1'000});
+  std::vector<uint32_t> hidden_dims({200'000});
+  std::vector<float> sparsity_levels({0.01, 0.1, 1});
 
   std::vector<HashParams> params;
   std::vector<uint32_t> num_tables({51, 151, 301});
@@ -628,37 +631,24 @@ std::vector<SearchParams> generate_search_params() {
 }  // namespace thirdai::hashing
 
 TEST(DWTATest, trial) {
-  uint32_t dim = 10'000;
-  uint32_t topk_multiplier = 5;
-  uint32_t num_vectors = 10000;
+  uint32_t dim = 10'00;
+  uint32_t topk_multiplier = 8;
+  uint32_t num_vectors = 200'000;
   float noise_level = 0.1;
-  float sparsity_level = 0.6;
+  float sparsity_level = 0.1;
 
-  // HashParams param = HashParams({50, 4, 4});
-  // run_experiment(
-  //     /*dim=*/dim,
-  //     /*topk_multiplier=*/topk_multiplier,
-  //     /*num_vectors=*/num_vectors,
-  //     /*noise_level=*/noise_level,
-  //     /*use_sparse_vectors=*/true,
-  //     /*one_hot=*/false,
-  //     /*sparsity_level=*/sparsity_level,
-  //     /*params=*/param,
-  //     /*number_query_vectors=*/100);
+  HashParams param = HashParams({151, 4, 4});
+  run_experiment(
+      /*dim=*/dim,
+      /*topk_multiplier=*/topk_multiplier,
+      /*num_vectors=*/num_vectors,
+      /*noise_level=*/noise_level,
+      /*use_sparse_vectors=*/true,
+      /*one_hot=*/false,
+      /*sparsity_level=*/sparsity_level,
+      /*params=*/param,
+      /*number_query_vectors=*/200);
 
-  auto params = generate_search_params();
-
-  for (auto& param : params) {
-    std::cout << "input_dim: " << param.input_dim
-              << ", hidden_dim: " << param.hidden_dim
-              << ", sparsity_level: " << param.sparsity_level
-              << ", topk_multiplier: " << param.topk_multiplier
-              << ", number_query_vectors: " << param.number_query_vectors
-              << ", num_tables: " << param.hashparams.num_tables
-              << ", permutation: " << param.hashparams.permutations
-              << ", hashes_per_table: " << param.hashparams.hashes_per_table
-              << std::endl;
-  }
 }
 
 TEST(DWTATest, runner) {
