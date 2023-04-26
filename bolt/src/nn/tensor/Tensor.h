@@ -53,9 +53,19 @@ class Tensor {
    */
   BoltVector& getVector(uint32_t index);
 
-  uint32_t rangeStart(uint32_t index_in_batch) const;
+  constexpr uint32_t innerDim3d() const { return _inner_dim_3d; }
 
-  uint32_t rangeEnd(uint32_t index_in_batch) const;
+  constexpr uint32_t rangeStart(uint32_t index_in_batch) const {
+    assert(index_in_batch < batchSize());
+
+    return index_in_batch * innerDim3d();
+  }
+
+  constexpr uint32_t rangeEnd(uint32_t index_in_batch) const {
+    assert(index_in_batch < batchSize());
+
+    return (index_in_batch + 1) * innerDim3d();
+  }
 
   /**
    * Returns the number of vectors in the tensor.
@@ -83,7 +93,7 @@ class Tensor {
  private:
   Dims _dims;
   std::optional<uint32_t> _nonzeros;
-  uint32_t _vectors_per_batch_element;
+  uint32_t _inner_dim_3d;
 
   std::vector<BoltVector> _vectors;
 

@@ -12,7 +12,7 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
   uint32_t num_vectors =
       std::reduce(_dims.begin(), _dims.end() - 1, 1, std::multiplies<>());
 
-  _vectors_per_batch_element =
+  _inner_dim_3d =
       std::reduce(_dims.begin() + 1, _dims.end() - 1, 1, std::multiplies<>());
 
   bool sparse = nonzeros < _dims.back();
@@ -73,7 +73,7 @@ Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
     : _dims({batch.getBatchSize(), dim}),
       _nonzeros(std::nullopt),
-      _vectors_per_batch_element(1) {
+      _inner_dim_3d(1) {
   if (batch.getBatchSize() == 0) {
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
@@ -160,14 +160,6 @@ bool Tensor::isSparse() const { return !_active_neurons.empty(); }
 BoltVector& Tensor::getVector(uint32_t index) {
   assert(index < _vectors.size());
   return _vectors[index];
-}
-
-uint32_t Tensor::rangeStart(uint32_t index_in_batch) const {
-  return index_in_batch * _vectors_per_batch_element;
-}
-
-uint32_t Tensor::rangeEnd(uint32_t index_in_batch) const {
-  return (index_in_batch + 1) * _vectors_per_batch_element;
 }
 
 uint32_t Tensor::batchSize() const { return _dims.front(); }
