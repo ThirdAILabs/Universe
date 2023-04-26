@@ -110,7 +110,7 @@ void FullyConnected::updateParameters(float learning_rate,
 
 tensor::Dims FullyConnected::dims(
     const autograd::ComputationList& inputs) const {
-  assert(inputs.size() == 1);
+  assert(inputs.size() == 1 || inputs.size() == 2);
 
   auto dims = inputs.at(0)->dims();
   dims.back() = _kernel->getDim();

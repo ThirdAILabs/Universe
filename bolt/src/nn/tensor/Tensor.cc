@@ -158,7 +158,7 @@ std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
 bool Tensor::isSparse() const { return !_active_neurons.empty(); }
 
 BoltVector& Tensor::getVector(uint32_t index) {
-  assert(index < batchSize());
+  assert(index < _vectors.size());
   return _vectors[index];
 }
 
