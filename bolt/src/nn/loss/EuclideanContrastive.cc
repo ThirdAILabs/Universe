@@ -29,14 +29,25 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
   if (_labels->dims().back() != 1) {
     throw std::invalid_argument(
         "The dimension of the labels for contrastive loss must equal 1, but "
-        "found labels with dimension " +
+        "received labels with dimension " +
         std::to_string(_labels->dims().back()));
   }
-  if (_output_1->dims() != _output_2->dims()) {
+  if (!tensor::areDimsEq(_output_1->dims(), _output_2->dims())) {
     throw std::invalid_argument(
         "The dimension of the both outputs for contrastive loss must be the "
         "same, but found output 1 with dimension " +
-        std::string("___") + " and output 2 with dimension " + "___");
+        tensor::toString(_output_1->dims()) + " and output 2 with dimension " +
+        tensor::toString(_output_2->dims()) + ".");
+  }
+
+  if (!tensor::areDimsEq(_output_1->dims(), _labels->dims(),
+                         /* include_last_dim= */ false)) {
+    throw std::invalid_argument(
+        "The dimension of the both outputs for contrastive loss must match the "
+        "dimension of the labels until the final dimension but received "
+        "outputs with dimension " +
+        tensor::toString(_output_1->dims()) + " and labels with dimension " +
+        tensor::toString(_labels->dims()) + ".");
   }
 }
 

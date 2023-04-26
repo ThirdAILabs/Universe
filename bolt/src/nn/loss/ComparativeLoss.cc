@@ -18,13 +18,10 @@ ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output,
                                  autograd::ComputationPtr labels)
     : _output(std::move(output)), _labels(std::move(labels)) {
   if (_output->dims() != _labels->dims()) {
-    std::stringstream error;
-    error << "Cannot have comparative loss between output of dimension "
-          << "___"
-          << " and labels of dimension "
-          << "___"
-          << ".";
-    throw std::invalid_argument(error.str());
+    throw std::invalid_argument(
+        "Cannot compute a comparative loss between output of dimension " +
+        tensor::toString(_output->dims()) + " and labels of dimension " +
+        tensor::toString(_labels->dims()) + ".");
   }
 }
 
