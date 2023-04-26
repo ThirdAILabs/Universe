@@ -156,6 +156,9 @@ void UDTRegression::serialize(Archive& archive, const uint32_t version) {
   std::string class_name = "UDT_REGRESSION";
   versions::checkVersion(version, versions::UDT_REGRESSION_VERSION,
                          thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_REGRESSION_VERSION after serialization
+  // changes
   archive(cereal::base_class<UDTBackend>(this), _model, _dataset_factory,
           _binning, _freeze_hash_tables);
 }
