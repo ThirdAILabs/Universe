@@ -94,7 +94,7 @@ struct TextDataType final : public DataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), tokenizer, encoder);
+    archive(cereal::base_class<DataType>(this), tokenizer, encoder, lowercase);
   }
 };
 
