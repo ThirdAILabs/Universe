@@ -7,6 +7,8 @@ namespace thirdai::bolt::nn::ops {
 
 class Sum final : public Op, public std::enable_shared_from_this<Sum> {
  public:
+  static std::shared_ptr<Sum> make();
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -33,6 +35,9 @@ class Sum final : public Op, public std::enable_shared_from_this<Sum> {
 
   autograd::ComputationPtr apply(const autograd::ComputationPtr& lhs,
                                  const autograd::ComputationPtr& rhs);
+
+ private:
+  Sum();
 };
 
 }  // namespace thirdai::bolt::nn::ops

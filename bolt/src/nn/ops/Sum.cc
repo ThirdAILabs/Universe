@@ -1,9 +1,19 @@
 #include "Sum.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::ops {
+
+std::string nextSumOpName() {
+  static uint32_t constructed = 0;
+  return "sum_" + std::to_string(++constructed);
+}
+
+Sum::Sum() : Op(nextSumOpName()) {}
+
+std::shared_ptr<Sum> Sum::make() { return std::shared_ptr<Sum>(new Sum()); }
 
 using EigenArray = Eigen::Map<Eigen::ArrayXf>;
 
