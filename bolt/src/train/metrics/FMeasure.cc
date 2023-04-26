@@ -1,6 +1,5 @@
 #include "FMeasure.h"
 #include <bolt/src/train/metrics/Metric.h>
-#include <iostream>
 
 namespace thirdai::bolt::train::metrics {
 
