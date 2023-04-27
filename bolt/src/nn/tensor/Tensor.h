@@ -57,13 +57,11 @@ class Tensor {
 
   constexpr uint32_t rangeStart(uint32_t index_in_batch) const {
     assert(index_in_batch < batchSize());
-
     return index_in_batch * innerDim3d();
   }
 
   constexpr uint32_t rangeEnd(uint32_t index_in_batch) const {
     assert(index_in_batch < batchSize());
-
     return (index_in_batch + 1) * innerDim3d();
   }
 

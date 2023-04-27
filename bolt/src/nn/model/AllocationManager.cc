@@ -24,7 +24,14 @@ void AllocationManager::reallocateIfNeeded(uint32_t batch_size,
 
 void AllocationManager::resetOutputGradients(uint32_t index_in_batch) {
   for (auto& comp : _computations) {
-    comp->tensor()->getVector(index_in_batch).zeroOutGradients();
+    auto& tensor = comp->tensor();
+
+    uint32_t start = tensor->rangeStart(index_in_batch);
+    uint32_t end = tensor->rangeEnd(index_in_batch);
+
+    for (uint32_t i = start; i < end; i++) {
+      tensor->getVector(i).zeroOutGradients();
+    }
   }
 }
 
