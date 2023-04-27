@@ -56,13 +56,22 @@ class Tensor {
   constexpr uint32_t innerDim3d() const { return _inner_dim_3d; }
 
   constexpr uint32_t rangeStart(uint32_t index_in_batch) const {
+    assert(index_in_batch < batchSize());
     return index_in_batch * innerDim3d();
   }
 
   constexpr uint32_t rangeEnd(uint32_t index_in_batch) const {
+    assert(index_in_batch < batchSize());
     return (index_in_batch + 1) * innerDim3d();
   }
 
+  float* activationsAtIndex3d(uint32_t index_in_batch) {
+    return _activations.data() + index_in_batch * innerDim3d() * _dims.back();
+  }
+
+  float* gradientsAtIndex3d(uint32_t index_in_batch) {
+    return _gradients.data() + index_in_batch * innerDim3d() * _dims.back();
+  }
   /**
    * Returns the number of vectors in the tensor.
    */
