@@ -151,7 +151,7 @@ class MlflowCallbackV2(bolt_v2.train.callbacks.Callback):
     def on_epoch_end(self):
         import mlflow  # import inside class to not force another package dependency
 
-        for name, values in self.history:
+        for name, values in self.history.items():
             mlflow.log_metric(self._clean(name), values[-1])
 
         mlflow.log_metric("learning_rate", self.train_state.learning_rate)
