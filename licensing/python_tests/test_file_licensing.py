@@ -48,6 +48,21 @@ def test_with_valid_license():
     this_should_require_a_license_query_reformulation()
 
 
+def test_license_print(capfd):
+    import thirdai
+
+    thirdai.licensing.set_path(str(max_train_samples_100_license_path), verbose=True)
+    out, err = capfd.readouterr()
+    print(out)
+    assert (
+        out.strip()
+        == "This is a license with an expiry time of 1711083134694 epoch ms. "
+        "Entitlements are as follows: FULL_DATASET_ACCESS, LOAD_SAVE, "
+        "MAX_OUTPUT_DIM 18446744073709551615, MAX_TRAIN_SAMPLES 100,"
+    )
+    assert err == ""
+
+
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="TSK-568: Expired license currently does an access violation on Windows",
@@ -55,12 +70,13 @@ def test_with_valid_license():
 def test_with_expired_license():
     import thirdai
 
-    thirdai.licensing.set_path(str(expired_license_path))
-    with pytest.raises(Exception, match=r".*license file is expired.*"):
+    with pytest.raises(Exception, match=r"license file is expired"):
+        thirdai.licensing.set_path(str(expired_license_path))
+    with pytest.raises(Exception, match=r"license file is expired"):
         this_should_require_a_license_search()
-    with pytest.raises(Exception, match=r".*license file is expired.*"):
+    with pytest.raises(Exception, match=r"license file is expired"):
         run_udt_training_routine()
-    with pytest.raises(Exception, match=r".*license file is expired.*"):
+    with pytest.raises(Exception, match=r"license file is expired"):
         this_should_require_a_license_query_reformulation()
 
 
@@ -72,12 +88,13 @@ def test_with_invalid_license():
     import thirdai
 
     for invalid_license_path in invalid_license_1_path, invalid_license_2_path:
-        thirdai.licensing.set_path(str(invalid_license_path))
-        with pytest.raises(Exception, match=r".*license verification failure.*"):
+        with pytest.raises(Exception, match=r"license verification failure"):
+            thirdai.licensing.set_path(str(invalid_license_path))
+        with pytest.raises(Exception, match=r"license verification failure"):
             this_should_require_a_license_search()
-        with pytest.raises(Exception, match=r".*license verification failure.*"):
+        with pytest.raises(Exception, match=r"license verification failure"):
             run_udt_training_routine()
-        with pytest.raises(Exception, match=r".*license verification failure.*"):
+        with pytest.raises(Exception, match=r"license verification failure"):
             this_should_require_a_license_query_reformulation()
 
 

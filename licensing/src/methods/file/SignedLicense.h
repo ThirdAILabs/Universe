@@ -33,10 +33,14 @@ class SignedLicense {
    * Otherwise we return the entitlements found in the license file.
    */
   static Entitlements entitlementsFromLicenseFile(
-      const std::string& license_path) {
+      const std::string& license_path, bool verbose) {
     SignedLicense license = getLicenseFromFile(license_path);
 
     verifyAndCheckLicense(license, license_path);
+
+    if (verbose) {
+      std::cout << license.getLicense().toHumanString() << std::endl;
+    }
 
     return license.getLicense().entitlements();
   }
@@ -49,7 +53,7 @@ class SignedLicense {
       : _license(std::move(license)) {
     // See https://cryptopp.com/wiki/RSA_Cryptography for more details
 
-    std::string license_state_to_sign = _license.toString();
+    std::string license_state_to_sign = _license.toVerifiableString();
 
     // This is automatically seeded with the OS's randomness source
     CryptoPP::AutoSeededRandomPool rng;
@@ -80,7 +84,7 @@ class SignedLicense {
   bool verify(const CryptoPP::RSA::PublicKey& public_key) const {
     // See https://cryptopp.com/wiki/RSA_Cryptography for more details
 
-    std::string license_state_to_sign = _license.toString();
+    std::string license_state_to_sign = _license.toVerifiableString();
 
     // These lines try to verify the License with the signature field
     // and the passed in public key. Similar to in the constructor above, the
