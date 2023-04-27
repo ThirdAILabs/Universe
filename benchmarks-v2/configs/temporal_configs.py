@@ -71,8 +71,10 @@ class NetflixUDTBenchmark(TemporalBenchmarkConfig):
     config_name = "netflix_temporal"
     dataset_name = "netflix_10M"
 
-    train_file = "netflix/netflix_train_10M.csv"
-    test_file = "netflix/netflix_test.csv"
+    # the following subsets are created by taking 1/5 of the users from the
+    # original netflix 100M dataset. This results in ~10M samples in train set
+    train_file = "netflix/netflix_one_fifth_user_subset_train.csv"
+    test_file = "netflix/netflix_one_fifth_user_subset_test.csv"
 
     target = "movie"
     n_target_classes = 17770
@@ -85,6 +87,7 @@ class NetflixUDTBenchmark(TemporalBenchmarkConfig):
 
     learning_rate = 0.0001
     num_epochs = 5
+    max_in_memory_batches = 512
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod

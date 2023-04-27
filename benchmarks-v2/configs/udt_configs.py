@@ -31,6 +31,7 @@ class UDTBenchmarkConfig(ABC):
     integer_target = False
     callbacks = []
     metrics = ["categorical_accuracy"]
+    max_in_memory_batches = None
 
     # Cold Start configs
     cold_start_learning_rate = None
