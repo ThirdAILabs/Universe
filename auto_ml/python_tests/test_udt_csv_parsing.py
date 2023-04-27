@@ -16,7 +16,7 @@ class CountCallback(bolt.callbacks.Callback):
         return self.batch_end_count
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def write_data():
     filename = "csv_parsing_temp.csv"
     n_lines = 10
