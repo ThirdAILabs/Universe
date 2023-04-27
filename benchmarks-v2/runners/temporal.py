@@ -7,7 +7,7 @@ import pandas as pd
 from ..configs.temporal_configs import *
 from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
-from ..configs.utils import AdditionalMetricCallback
+
 
 class TemporalRunner(Runner):
     config_type = TemporalBenchmarkConfig

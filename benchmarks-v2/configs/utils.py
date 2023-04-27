@@ -1,10 +1,10 @@
+import csv
 import time
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from thirdai import bolt_v2 as bolt
-import csv
 
 
 # This class allows a metric function to be invoked as a callback after every epoch
