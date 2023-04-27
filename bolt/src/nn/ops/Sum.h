@@ -40,4 +40,6 @@ class Sum final : public Op, public std::enable_shared_from_this<Sum> {
   Sum();
 };
 
+using SumPtr = std::shared_ptr<Sum>;
+
 }  // namespace thirdai::bolt::nn::ops

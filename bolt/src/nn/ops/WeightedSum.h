@@ -6,7 +6,7 @@
 namespace thirdai::bolt::nn::ops {
 
 class WeightedSum final : public Op,
-                         public std::enable_shared_from_this<WeightedSum> {
+                          public std::enable_shared_from_this<WeightedSum> {
  public:
   static std::shared_ptr<WeightedSum> make();
 
@@ -40,5 +40,7 @@ class WeightedSum final : public Op,
  private:
   WeightedSum();
 };
+
+using WeightedSumPtr = std::shared_ptr<WeightedSum>;
 
 }  // namespace thirdai::bolt::nn::ops

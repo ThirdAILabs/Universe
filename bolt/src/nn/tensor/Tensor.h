@@ -68,11 +68,11 @@ class Tensor {
   }
 
   float* activationsAtIndex3d(uint32_t index_in_batch) {
-    return _activations.data() + index_in_batch * innerDim3d();
+    return _activations.data() + index_in_batch * innerDim3d() * _dims.back();
   }
 
   float* gradientsAtIndex3d(uint32_t index_in_batch) {
-    return _activations.data() + index_in_batch * innerDim3d();
+    return _gradients.data() + index_in_batch * innerDim3d() * _dims.back();
   }
 
   /**

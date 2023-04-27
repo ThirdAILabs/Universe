@@ -10,9 +10,12 @@
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/L1Normalization.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Sum.h>
 #include <bolt/src/nn/ops/Tanh.h>
+#include <bolt/src/nn/ops/WeightedSum.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -64,7 +67,7 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
 
 tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
                                   const NumpyArray<float>& values,
-                                  uint32_t last_dim) {
+                                  uint32_t last_dim, bool with_grad) {
   if (indices.ndim() != values.ndim()) {
     throw std::invalid_argument(
         "Expected indices and values to have the same number of dimensions.");
@@ -81,18 +84,18 @@ tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
   dims.back() = last_dim;
 
   return tensor::Tensor::fromArray(indices.data(), values.data(), dims,
-                                   nonzeros, /* with_grad= */ false);
+                                   nonzeros, with_grad);
 }
 
-tensor::TensorPtr fromNumpyDense(const NumpyArray<float>& values) {
+tensor::TensorPtr fromNumpyDense(const NumpyArray<float>& values,
+                                 bool with_grad) {
   tensor::Dims dims;
   for (uint32_t i = 0; i < values.ndim(); i++) {
     dims.push_back(values.shape(i));
   }
 
   return tensor::Tensor::fromArray(nullptr, values.data(), dims,
-                                   /* nonzeros= */ dims.back(),
-                                   /* with_grad= */ false);
+                                   /* nonzeros= */ dims.back(), with_grad);
 }
 
 void defineTensor(py::module_& nn);
@@ -151,8 +154,9 @@ void defineTensor(py::module_& nn) {
                tensor::Tensor::convert)),
            py::arg("vector"), py::arg("dim"))
       .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
-           py::arg("dense_dim"))
-      .def(py::init(&fromNumpyDense), py::arg("values"))
+           py::arg("dense_dim"), py::arg("with_grad") = false)
+      .def(py::init(&fromNumpyDense), py::arg("values"),
+           py::arg("with_grad") = false)
       .def("dims", &tensor::Tensor::dims)
       .def("sparse", &tensor::Tensor::isSparse)
       .def_property_readonly(
@@ -222,6 +226,19 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::Sum, ops::SumPtr, ops::Op>(nn, "Sum")
+      .def(py::init(&ops::Sum::make))
+      .def("__call__", &ops::Sum::apply);
+
+  py::class_<ops::WeightedSum, ops::WeightedSumPtr, ops::Op>(nn, "WeightedSum")
+      .def(py::init(&ops::WeightedSum::make))
+      .def("__call__", &ops::WeightedSum::apply);
+
+  py::class_<ops::L1Normalization, ops::L1NormalizationPtr, ops::Op>(
+      nn, "L1Normalization")
+      .def(py::init(&ops::L1Normalization::make))
+      .def("__call__", &ops::L1Normalization::apply);
 
   nn.def("Input", py::overload_cast<uint32_t>(&ops::Input::make),
          py::arg("dim"));

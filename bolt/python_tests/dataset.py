@@ -4,7 +4,9 @@ import numpy as np
 from thirdai import bolt_v2 as bolt
 
 
-def create_dataset(shape: Tuple[int], n_batches: int, noise_std=0.1):
+def create_dataset(
+    shape: Tuple[int], n_batches: int, noise_std: float = 0.1, with_grad: bool = False
+):
     n_classes = shape[-1]
 
     possible_one_hot_encodings = np.eye(n_classes)
@@ -24,7 +26,7 @@ def create_dataset(shape: Tuple[int], n_batches: int, noise_std=0.1):
     data_batches = []
     label_batches = []
     for i in range(len(examples)):
-        data = bolt.nn.Tensor(examples[i])
+        data = bolt.nn.Tensor(examples[i], with_grad=True)
         label = bolt.nn.Tensor(
             labels[i], np.ones_like(labels[i], dtype=np.float32), dense_dim=n_classes
         )
