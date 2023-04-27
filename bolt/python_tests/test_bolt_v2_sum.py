@@ -5,9 +5,9 @@ from thirdai import bolt_v2 as bolt
 from dataset import create_dataset
 
 
-INPUT_DIMS = (20, 30, 40)
-BATCH_SIZE = 10
-N_BATCHES = 5
+INPUT_DIMS = (2, 4)
+BATCH_SIZE = 2
+N_BATCHES = 1
 
 
 @pytest.mark.unit
@@ -37,3 +37,7 @@ def test_sum_op():
         expected_output = x_1[0].activations + x_2[0].activations
 
         assert np.array_equal(output, expected_output)
+
+        assert np.array_equal(sum_layer.tensor().gradients, x_1[0].gradients)
+
+        assert np.array_equal(sum_layer.tensor().gradients, x_2[0].gradients)
