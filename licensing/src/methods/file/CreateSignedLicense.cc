@@ -29,7 +29,7 @@ int main(int32_t argc, const char** argv) {
     for (uint32_t i = 5; i < num_args; i += 2) {
       std::string key(argv[i]);
       std::string val(argv[i + 1]);
-      metadata.at(key) = val;
+      metadata[key] = val;
     }
 
     // Read keys from file

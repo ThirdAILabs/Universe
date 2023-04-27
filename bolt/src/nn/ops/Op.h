@@ -32,9 +32,9 @@ class Op {
  public:
   explicit Op(std::string name) : _name(std::move(name)) {}
 
-  virtual void freeze() = 0;
+  virtual void freeze(){}
 
-  virtual void unfreeze() = 0;
+  virtual void unfreeze(){}
 
   virtual std::shared_ptr<Op> fromScratch() {
     throw std::invalid_argument(

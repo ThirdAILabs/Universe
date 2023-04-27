@@ -29,7 +29,7 @@ if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
     is_public_release = "THIRDAI_EXPOSE_ALL" not in feature_flags
 else:
-    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
+    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE THIRDAI_EXPOSE_ALL"
     is_public_release = True
 
 
