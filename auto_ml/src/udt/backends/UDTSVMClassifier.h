@@ -52,7 +52,7 @@ class UDTSVMClassifier final : public UDTBackend {
   friend cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 
   utils::ClassifierPtr _classifier;
 };

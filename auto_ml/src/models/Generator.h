@@ -12,7 +12,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
@@ -486,9 +486,10 @@ class QueryCandidateGenerator {
     input_blocks.reserve(n_grams.size());
 
     for (auto n_gram : n_grams) {
-      input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
+      input_blocks.emplace_back(dataset::TextBlock::make(
           /* col = */ column_index,
-          /* k = */ n_gram,
+          /* tokenizer = */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
+          /* lowercase = */ true,
           /* dim = */ _query_generator_config->defaultTextEncodingDim()));
     }
 

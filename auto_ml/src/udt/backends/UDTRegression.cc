@@ -9,6 +9,8 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
+#include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
 
@@ -126,11 +128,21 @@ float UDTRegression::unbinActivations(const BoltVector& output) const {
   return _binning.unbin(predicted_bin_index);
 }
 
-template void UDTRegression::serialize(cereal::BinaryInputArchive&);
-template void UDTRegression::serialize(cereal::BinaryOutputArchive&);
+template void UDTRegression::serialize(cereal::BinaryInputArchive&,
+                                       const uint32_t version);
+template void UDTRegression::serialize(cereal::BinaryOutputArchive&,
+                                       const uint32_t version);
 
 template <class Archive>
-void UDTRegression::serialize(Archive& archive) {
+void UDTRegression::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+  std::string class_name = "UDT_REGRESSION";
+  versions::checkVersion(version, versions::UDT_REGRESSION_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_REGRESSION_VERSION after serialization
+  // changes
   archive(cereal::base_class<UDTBackend>(this), _model, _dataset_factory,
           _binning, _freeze_hash_tables);
 }
@@ -138,3 +150,5 @@ void UDTRegression::serialize(Archive& archive) {
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRegression)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRegression,
+                     thirdai::versions::UDT_REGRESSION_VERSION)

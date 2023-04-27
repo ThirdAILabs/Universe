@@ -125,7 +125,7 @@ class UDTClassifier final : public UDTBackend {
   friend cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;

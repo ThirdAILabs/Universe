@@ -324,6 +324,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
+    bolt/src/nn/ops/Tanh.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -374,6 +375,7 @@ set(THIRDAI_SOURCES
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
     dataset/src/Vocabulary.cc
+    dataset/src/DataSource.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
@@ -392,6 +394,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/text/Text.cc
     dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
@@ -417,7 +420,8 @@ set(THIRDAI_SOURCES
     utils/StringManipulation.cc
     utils/UUID.cc
     licensing/src/entitlements/RestrictionTree.cc
-    licensing/src/entitlements/Entitlements.cc)
+    licensing/src/entitlements/Entitlements.cc
+    versioning/src/Versions.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set

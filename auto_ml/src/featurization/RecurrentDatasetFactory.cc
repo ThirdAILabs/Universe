@@ -3,6 +3,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -90,7 +91,8 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
 
 dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
-  return std::make_unique<dataset::DatasetLoader>(data_source,
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
+  return std::make_unique<dataset::DatasetLoader>(csv_data_source,
                                                   _labeled_featurizer,
                                                   /* shuffle= */ shuffle);
 }

@@ -189,7 +189,7 @@ class UDT {
   friend class cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
 };

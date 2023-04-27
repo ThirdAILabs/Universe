@@ -6,6 +6,8 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <utils/Version.h>
+#include <versioning/src/Versions.h>
 
 namespace thirdai::automl::udt {
 
@@ -66,11 +68,21 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                verbose);
 }
 
-template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&);
-template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&);
+template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,
+                                            const uint32_t version);
+template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,
+                                            const uint32_t version);
 
 template <class Archive>
-void UDTGraphClassifier::serialize(Archive& archive) {
+void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+  std::string class_name = "UDT_GRAPH_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_GRAPH_CLASSIFIER_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION after
+  // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _dataset_manager);
 }
 
@@ -122,3 +134,5 @@ ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTGraphClassifier)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTGraphClassifier,
+                     thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION)

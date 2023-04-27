@@ -111,12 +111,30 @@ def test_target_not_in_data_types():
         )
 
 
+def test_invalid_text_tokenizers():
+    invalid_tokenizer = "INVALID"
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Created text column with invalid tokenizer 'INVALID', please choose one of 'words', 'words-punct', or 'char-k' (k is a number, e.g. 'char-5')."
+        ),
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(tokenizer=invalid_tokenizer),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )
+
+
 def test_contextual_text_encodings():
     invalid_encoding = "INVALID"
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. 'char-5'), or 'global'."
+            f"Created text column with invalid contextual_encoding '{invalid_encoding}', please choose one of 'none', 'local', or 'global'."
         ),
     ):
         bolt.UniversalDeepTransformer(
@@ -130,18 +148,18 @@ def test_contextual_text_encodings():
 
 
 @pytest.mark.parametrize(
-    "invalid_encoding", ["char-3p", "char-0", "char-10-0", "char0"]
+    "invalid_tokenizer", ["char-3p", "char-0", "char-10-0", "char0"]
 )
-def test_invalid_char_k_contextual_text_encoding(invalid_encoding):
+def test_invalid_char_k_tokenizer(invalid_tokenizer):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. 'char-5'), or 'global'."
+            f"Created text column with invalid tokenizer '{invalid_tokenizer}', please choose one of 'words', 'words-punct', or 'char-k' (k is a number, e.g. 'char-5')."
         ),
     ):
         bolt.UniversalDeepTransformer(
             data_types={
-                "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
+                "text_col": bolt.types.text(tokenizer=invalid_tokenizer),
                 "some_random_name": bolt.types.categorical(),
             },
             target="target",

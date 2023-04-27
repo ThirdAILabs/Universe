@@ -55,7 +55,7 @@ class UDTRegression final : public UDTBackend {
   friend cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 
   ModelPtr _model;
   data::TabularDatasetFactoryPtr _dataset_factory;
