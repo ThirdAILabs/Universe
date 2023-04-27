@@ -244,7 +244,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
             },
         ],
         "output": "output",
-        "loss": "BinaryCrossEntropyLoss",
+        "loss": "BinaryCrossEntropy",
     }
 
     @staticmethod
