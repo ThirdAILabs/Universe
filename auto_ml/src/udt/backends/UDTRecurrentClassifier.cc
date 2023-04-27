@@ -214,6 +214,9 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
   std::string class_name = "UDT_RECURRENT_CLASSIFIER";
   versions::checkVersion(version, versions::UDT_RECURRENT_CLASSIFIER_VERSION,
                          thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
+  // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _target, _model,
           _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
 }

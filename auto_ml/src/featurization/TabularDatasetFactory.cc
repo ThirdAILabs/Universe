@@ -53,8 +53,11 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
   if (!shuffle_config.has_value()) {
     shuffle_config = dataset::DatasetShuffleConfig();
   }
+
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, delimiter());
+
   return std::make_unique<dataset::DatasetLoader>(
-      data_source, _labeled_featurizer,
+      csv_data_source, _labeled_featurizer,
       /* shuffle= */ shuffle, shuffle_config.value());
 }
 

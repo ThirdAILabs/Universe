@@ -3,6 +3,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/DataSource.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
@@ -58,8 +59,11 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;
 
+  auto csv_data_source =
+      dataset::CsvDataSource::make(data, dataset_factory->delimiter());
+
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
-      data, dataset_factory->delimiter());
+      csv_data_source, dataset_factory->delimiter());
 
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,

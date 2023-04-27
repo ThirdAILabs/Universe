@@ -375,6 +375,7 @@ set(THIRDAI_SOURCES
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
     dataset/src/Vocabulary.cc
+    dataset/src/DataSource.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
@@ -393,6 +394,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/text/Text.cc
     dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc

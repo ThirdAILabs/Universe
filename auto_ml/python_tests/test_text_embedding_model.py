@@ -15,7 +15,7 @@ def get_distance(embedding_model, string_1, string_2):
 def test_basic_text_embedding_model():
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "strong": bolt.types.text(contextual_encoding="char-3"),
+            "strong": bolt.types.text(tokenizer="char-3"),
             "index": bolt.types.categorical(),
         },
         target="index",
