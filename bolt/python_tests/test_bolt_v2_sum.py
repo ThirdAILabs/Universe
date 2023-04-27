@@ -5,9 +5,9 @@ from thirdai import bolt_v2 as bolt
 from dataset import create_dataset
 
 
-INPUT_DIMS = (2, 4)
-BATCH_SIZE = 2
-N_BATCHES = 1
+INPUT_DIMS = (20, 30, 40)
+BATCH_SIZE = 10
+N_BATCHES = 10
 
 
 @pytest.mark.unit
