@@ -18,7 +18,7 @@ class CountCallback(bolt.callbacks.Callback):
 
 @pytest.fixture(scope="session")
 def write_data():
-    filename = "temp.csv"
+    filename = "csv_parsing_temp.csv"
     n_lines = 10
 
     with open(filename, "w") as out:
