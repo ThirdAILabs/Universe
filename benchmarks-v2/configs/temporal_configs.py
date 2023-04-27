@@ -87,7 +87,7 @@ class NetflixUDTBenchmark(TemporalBenchmarkConfig):
 
     learning_rate = 0.0001
     num_epochs = 5
-    max_in_memory_batches = 64
+    max_in_memory_batches = 512
     metrics = ["recall@10", "precision@10"]
 
     @staticmethod
