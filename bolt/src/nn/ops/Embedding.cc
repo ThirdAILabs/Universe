@@ -108,7 +108,7 @@ template <class Archive>
 void Embedding::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
 
-  _kernel->initOptimizer();
+  // _kernel->initOptimizer();
 }
 
 std::shared_ptr<Embedding> Embedding::duplicateWithNewReduction(

@@ -171,7 +171,7 @@ void FullyConnected::load(Archive& archive) {
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
 
-  _kernel->initOptimizer();
+  // _kernel->initOptimizer();
 }
 
 }  // namespace thirdai::bolt::nn::ops
