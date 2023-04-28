@@ -52,4 +52,18 @@ inline uint32_t toInteger(const char* start) {
 
 bool startsWith(const std::string& to_search_in, const std::string& prefix);
 
+/* HELPER METHODS FOR UNICODE STRINGS */
+
+std::wstring toUnicode(const std::string& text);
+std::string fromUnicode(const std::wstring& wText);
+
+std::wstring lower(const std::wstring& s);
+
+
+const std::wstring DEFAULT_UNICODE_STRIP_CHARACTERS = L" \t\n\r\v\f";
+
+std::wstring strip(
+    const std::wstring& text,
+    const std::wstring& strip_characters = DEFAULT_UNICODE_STRIP_CHARACTERS);
+
 }  // namespace thirdai::text

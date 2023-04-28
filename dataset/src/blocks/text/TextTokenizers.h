@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <dataset/src/Vocabulary.h>
 #include <utils/StringManipulation.h>
 #include <string>
 
@@ -86,6 +87,31 @@ class CharKGramTokenizer : public TextTokenizer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<TextTokenizer>(this), _k);
+  }
+};
+
+class WordpieceTokenizer : public TextTokenizer {
+ public:
+  explicit WordpieceTokenizer(std::shared_ptr<WordpieceVocab> vocab)
+      : _vocab(std::move(vocab)) {}
+
+  static auto make(uint32_t k) {
+    return std::make_shared<CharKGramTokenizer>(k);
+  }
+
+  std::vector<std::string_view> apply(const std::string_view& input) final {
+    return _vocab->tokenize(input);
+  }
+
+ private:
+  std::shared_ptr<WordpieceVocab> _vocab;
+
+  WordpieceTokenizer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextTokenizer>(this), _vocab);
   }
 };
 

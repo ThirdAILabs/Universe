@@ -1,4 +1,5 @@
 #include "Vocabulary.h"
+#include <utils/StringManipulation.h>
 #include <iostream>
 
 namespace thirdai::dataset {
@@ -130,6 +131,75 @@ uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   _token_to_id.emplace(token, token_id);
   _id_to_token.emplace(token_id, token);
   return token_id;
+}
+
+WordpieceVocab::WordpieceVocab(const std::string& vocab_fpath, bool to_lower)
+    : _token_to_id(load(vocab_fpath)), _to_lower(to_lower) {
+  for (const auto& [token, id] : _token_to_id) {
+    _id_to_token[id] = token;
+  }
+}
+
+WordpieceVocab::TokenToId WordpieceVocab::load(const std::string& vocab_fpath) {
+  WordpieceVocab::TokenToId vocab;
+  size_t token_id = 0;
+  std::ifstream vocab_stream = SafeFileIO::ifstream(vocab_fpath);
+  std::string line;
+  while (getline(vocab_stream, line)) {
+    std::wstring token = text::toUnicode(line);
+    if (token.empty()) {
+      break;
+    }
+    token = text::strip(token);
+    vocab[token] = token_id;
+    token_id++;
+  }
+  return vocab;
+}
+
+std::vector<uint32_t> WordpieceVocab::encode(
+    const std::string_view& sentence) const {
+  std::string buffer(sentence.data(), sentence.size());
+  std::vector<std::wstring> tokens = tokenize(buffer);
+  std::vector<uint32_t> encoded(tokens.size());
+  for (uint32_t i = 0; i < tokens.size(); i++) {
+    auto query = _word_to_id.find(tokens[i]);
+    assert(query != _word_to_id.end());
+    encoded[i] = query->second;
+  }
+  return encoded;
+}
+
+std::string WordpieceVocab::decode(
+    const std::vector<uint32_t>& token_ids) const {
+  std::string result;
+  for (size_t i = 0; i < token_ids.size(); i++) {
+    uint32_t token_id = token_ids[i];
+    if (!_id_to_token.count(token_id)) {
+      throw std::invalid_argument("Attempting to decode invalid token: " +
+                                  std::to_string(token_id) + ".");
+    }
+
+    std::string token = text::fromUnicode(_id_to_token.at(token_id));
+    bool is_subword_suffix = token.size() >= 2 && token.substr(0, 2) == "##";
+
+    if (i != 0 and !is_subword_suffix) {
+      result += " ";
+    }
+
+    result += is_subword_suffix ? token.substr(2) : token;
+  }
+  return result;
+}
+
+uint32_t WordpieceVocab::id(const std::string_view& token_view) const {
+  std::string token(token_view.data(), token_view.size());
+  std::wstring wtoken = text::toUnicode(token);  // TODO(david) normalize here?
+  auto query = _token_to_id.find(wtoken);
+  if (query != _token_to_id.end()) {
+    return query->second;
+  }
+  return unkId();
 }
 
 }  // namespace thirdai::dataset

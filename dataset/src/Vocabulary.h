@@ -113,4 +113,36 @@ class FixedVocabulary : public Vocabulary {
   uint32_t add(const std::string_view& token_view);
 };
 
+class WordpieceVocab : public Vocabulary {
+ public:
+  explicit WordpieceVocab(const std::string& vocab_fpath, bool to_lower = true);
+
+  std::vector<uint32_t> encode(const std::string_view& sentence) const final;
+
+  std::vector<std::wstring> tokenize(const std::string_view& sentence) const;
+
+  std::string decode(const std::vector<uint32_t>& token_ids) const final;
+
+  uint32_t id(const std::string_view& token_view) const final;
+
+  uint32_t size() const final { return _token_to_id.size(); }
+
+  uint32_t unkId() const final { return _token_to_id.at(L"[UNK]"); }
+
+  uint32_t maskId() const final { return _token_to_id.at(L"[MASK]"); };
+
+ private:
+  using TokenToId = std::unordered_map<std::wstring, size_t>;
+  using IdToToken = std::unordered_map<size_t, std::wstring>;
+
+  // Helper method to load vocabulary from path at construction. Assumes the
+  // file to be a newline separated list of tokens
+  static TokenToId load(const std::string& vocab_fpath);
+
+  TokenToId _token_to_id;
+  IdToToken _id_to_token;
+
+  bool _to_lower;
+};
+
 }  // namespace thirdai::dataset

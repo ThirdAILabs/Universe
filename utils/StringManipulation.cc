@@ -107,4 +107,65 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
+/* HELPER METHODS FOR UNICODE STRINGS */
+
+std::wstring toUnicode(const std::string& text) {
+  size_t i = 0;
+  std::wstring ret;
+  while (i < text.size()) {
+    wchar_t codepoint;
+    utf8proc_ssize_t forward = utf8proc_iterate(
+        reinterpret_cast<const utf8proc_uint8_t*>(&text[i]), text.size() - i,
+        reinterpret_cast<utf8proc_int32_t*>(&codepoint));
+    if (forward < 0) {
+      return L"";
+    }
+    ret += codepoint;
+    i += forward;
+  }
+  return ret;
+}
+
+std::string fromUnicode(const std::wstring& wText) {
+  char dst[64];
+  std::string ret;
+  for (auto c : wText) {
+    utf8proc_ssize_t num =
+        utf8proc_encode_char(c, reinterpret_cast<utf8proc_uint8_t*>(dst));
+    if (num <= 0) {
+      return "";
+    }
+    ret += std::string(dst, dst + num);
+  }
+  return ret;
+}
+
+std::wstring strip(const std::wstring& text,
+                   const std::wstring& strip_characters) {
+  // Empty string, return empty-string, no iterations involved - fast path.
+  if (text.empty()) {
+    return text;
+  }
+
+  // Convenience lambda to use across left and right stripping ahead.
+  auto is_strip_char = [&strip_characters](const wchar_t& c) {
+    return strip_characters.find(c) != std::wstring::npos;
+  };
+
+  // Remove stripchars from front.
+  size_t left = 0;
+  while (left < text.size() && is_strip_char(text[left])) {
+    ++left;
+  }
+
+  // Strip from right.
+  size_t right = text.size();
+  while (right > left && is_strip_char(text[right - 1])) {
+    --right;
+  }
+
+  // [left, right) now represents stripped substring.
+  return text.substr(left, right - left);
+}
+
 }  // namespace thirdai::text
