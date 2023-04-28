@@ -82,23 +82,40 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
+  std::exception_ptr exception = nullptr;
+
+#pragma omp parallel for default(none) \
+    shared(label_column, columns, augmented_data, augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
-    std::string labels = (*label_column)[row_id];
+    try {
+      std::string labels = (*label_column)[row_id];
 
-    std::string weak_text = concatenateStringColumnEntries(
-        columns, row_id, _weak_column_names, /* delimiter= */ ". ");
+      std::string weak_text = concatenateStringColumnEntries(
+          columns, row_id, _weak_column_names, /* delimiter= */ ". ");
 
-    std::string strong_text = concatenateStringColumnEntries(
-        columns, row_id, _strong_column_names, /* delimiter= */ " ");
+      std::string strong_text = concatenateStringColumnEntries(
+          columns, row_id, _strong_column_names, /* delimiter= */ " ");
 
-    std::vector<std::string> augmented_samples =
-        augmentSingleRow(strong_text, weak_text);
+      std::vector<std::string> augmented_samples =
+          augmentSingleRow(strong_text, weak_text);
 
-    for (const auto& sample : augmented_samples) {
-      augmented_data.push_back(sample);
-      augmented_labels.push_back(labels);
+#pragma omp critical
+      {
+        for (const auto& sample : augmented_samples) {
+          augmented_data.push_back(sample);
+          augmented_labels.push_back(labels);
+        }
+      }
+    } catch (std::exception& e) {
+#pragma omp critical
+      exception = std::current_exception();
     }
   }
+
+  if (exception) {
+    std::rethrow_exception(exception);
+  }
+
   // Shuffle the augmented data and augmented labels (in the same order).
   // We have to use std::shuffle and two RNGs from <random> with the same state
   //  for reasons described here: https://stackoverflow.com/a/16969267
