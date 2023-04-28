@@ -124,7 +124,7 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
   return augmented_column_map;
-}  // namespace thirdai::data
+}
 
 std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
     std::string& strong_text, std::string& weak_text) {
