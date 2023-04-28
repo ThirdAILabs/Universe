@@ -64,10 +64,12 @@ class Tensor {
   }
 
   float* activationsAtIndex3d(uint32_t index_in_batch) {
+    assert(index_in_batch < batchSize());
     return _activations.data() + index_in_batch * innerDim3d() * _dims.back();
   }
 
   float* gradientsAtIndex3d(uint32_t index_in_batch) {
+    assert(index_in_batch < batchSize());
     return _gradients.data() + index_in_batch * innerDim3d() * _dims.back();
   }
   /**
