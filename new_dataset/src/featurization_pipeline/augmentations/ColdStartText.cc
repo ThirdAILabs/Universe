@@ -82,6 +82,8 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
+#pragma omp parallel for default(none) \
+    shared(label_column, columns, augmented_data, augmented_labels)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string labels = (*label_column)[row_id];
 
@@ -94,9 +96,12 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
     std::vector<std::string> augmented_samples =
         augmentSingleRow(strong_text, weak_text);
 
-    for (const auto& sample : augmented_samples) {
-      augmented_data.push_back(sample);
-      augmented_labels.push_back(labels);
+#pragma omp critical
+    {
+      for (const auto& sample : augmented_samples) {
+        augmented_data.push_back(sample);
+        augmented_labels.push_back(labels);
+      }
     }
   }
   // Shuffle the augmented data and augmented labels (in the same order).
@@ -119,7 +124,7 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
   return augmented_column_map;
-}
+}  // namespace thirdai::data
 
 std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
     std::string& strong_text, std::string& weak_text) {
