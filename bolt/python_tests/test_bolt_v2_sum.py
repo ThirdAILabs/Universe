@@ -4,7 +4,6 @@ from thirdai import bolt_v2 as bolt
 
 from dataset import create_dataset
 
-
 INPUT_DIMS = (20, 30, 40)
 BATCH_SIZE = 10
 N_BATCHES = 10
