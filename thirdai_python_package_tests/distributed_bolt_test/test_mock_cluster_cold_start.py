@@ -138,7 +138,7 @@ def test_distributed_mach_cold_start(
     )
 
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
-
+    print(overall_metrics)
     # metrics_aggregation_from_workers just returns metrics for last update
     assert overall_metrics["precision@1"] > 0.80
 
@@ -164,6 +164,8 @@ def test_distributed_mach_cold_start(
     )
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 
+    print(overall_metrics)
+    print(metrics)
     # metrics_aggregation_from_workers just returns metrics for last update
     assert overall_metrics["precision@1"] > 0.30
 
@@ -195,4 +197,5 @@ def test_distributed_cold_start(
     )
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 
+    print(overall_metrics)
     assert overall_metrics["categorical_accuracy"] > 0.7
