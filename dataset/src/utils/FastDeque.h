@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -21,14 +22,8 @@ class DequeChunk {
 
   void popFront() {
     verifySizeGreaterThan(0);
-    delete _chunk[_start];
+    _chunk[_start] = T{};
     _start++;
-    _size--;
-  }
-
-  void popBack() {
-    verifySizeGreaterThan(0);
-    delete _chunk[_start + _size - 1];
     _size--;
   }
 
@@ -57,11 +52,18 @@ class DequeChunk {
   std::vector<T> _chunk;
 };
 
+static constexpr const uint32_t DEFAULT_CHUNK_SIZE = 10000;
+static constexpr const uint32_t DEFAULT_CHUNKS_PER_CLEANUP = 1000;
+
 template <typename T>
 class FastDeque {
  public:
-  explicit FastDeque(uint32_t chunk_size)
-      : _chunk_size(chunk_size), _size(0), _n_popped(0), _first_chunk_idx(0) {}
+  explicit FastDeque(uint32_t chunk_size = DEFAULT_CHUNK_SIZE,
+                     uint32_t chunks_per_cleanup = DEFAULT_CHUNKS_PER_CLEANUP)
+      : _chunk_size(chunk_size),
+        _chunks_per_cleanup(chunks_per_cleanup),
+        _size(0),
+        _first_chunk_idx(0) {}
 
   size_t size() const { return _size; }
 
@@ -69,7 +71,7 @@ class FastDeque {
     if (numChunks() == 0 || _chunks.back().full()) {
       _chunks.push_back(DequeChunk<T>(_chunk_size));
     }
-    _chunks.back().push_back(std::move(value));
+    _chunks.back().pushBack(std::move(value));
     _size += 1;
   }
 
@@ -79,11 +81,16 @@ class FastDeque {
     }
     _chunks[_first_chunk_idx].popFront();
     if (_chunks[_first_chunk_idx].empty()) {
-      delete _chunks[_first_chunk_idx];
+      // Removes old chunk.
+      _chunks[_first_chunk_idx] = DequeChunk<T>(/* capacity= */ 0);
       _first_chunk_idx++;
     }
     _size--;
-    _n_popped++;
+
+    if (_first_chunk_idx == _chunks_per_cleanup) {
+      _chunks.erase(_chunks.begin(), _chunks.begin() + _first_chunk_idx);
+      _first_chunk_idx = 0;
+    }
   }
 
   T& at(size_t index) {
@@ -113,9 +120,9 @@ class FastDeque {
   size_t numChunks() const { return _chunks.size() - _first_chunk_idx; }
 
   const uint32_t _chunk_size;
+  const uint32_t _chunks_per_cleanup;
   uint32_t _size;
   uint32_t _first_chunk_idx;
-  uint32_t _n_popped;
   std::vector<DequeChunk<T>> _chunks;
 };
 
