@@ -42,6 +42,16 @@ Tensor::Tensor(const std::vector<BoltVector>& batch, uint32_t dim)
 
   bool is_dense = batch.begin()->isDense();
 
+  uint64_t total_mem = 0;
+  for (const auto& vec : batch) {
+    total_mem += vec.len;
+  }
+
+  if (is_dense) {
+    _active_neurons.reserve(total_mem);
+  }
+  _activations.reserve(total_mem);
+
   for (const auto& vec : batch) {
     if (vec.len == 0) {
       throw std::invalid_argument("Cannot convert empty vector to tensor.");
@@ -73,9 +83,6 @@ Tensor::Tensor(const std::vector<BoltVector>& batch, uint32_t dim)
       _activations.push_back(vec.activations[i]);
     }
   }
-
-  _active_neurons.shrink_to_fit();
-  _activations.shrink_to_fit();
 
   uint32_t offset = 0;
   for (const auto& vec : batch) {

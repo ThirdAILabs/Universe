@@ -135,7 +135,7 @@ bolt::train::LabeledDataset DatasetLoader::loadAllTensors(size_t batch_size,
     throw std::invalid_argument(
         "Did not find any data to load from the data source.");
   }
-  return datasets.value();
+  return std::move(datasets.value());
 }
 
 std::optional<bolt::train::LabeledDataset> DatasetLoader::loadSomeTensors(
@@ -206,7 +206,7 @@ std::optional<bolt::train::LabeledDataset> DatasetLoader::loadSomeTensors(
               << duration << "s | complete\n"
               << std::endl;
   }
-  return dataset;
+  return std::move(dataset);
 }
 
 void DatasetLoader::restart() {
