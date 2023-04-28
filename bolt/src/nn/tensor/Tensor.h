@@ -13,7 +13,7 @@ class Tensor {
  public:
   Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
 
-  Tensor(const BoltBatch& batch, uint32_t dim);
+  Tensor(const std::vector<BoltVector>& batch, uint32_t dim);
 
   static std::shared_ptr<Tensor> dense(uint32_t batch_size, uint32_t dim);
 

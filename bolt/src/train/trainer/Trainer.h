@@ -121,13 +121,6 @@ class Trainer {
    */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
-  LabeledDataset loadAllWrapper(const dataset::DatasetLoaderPtr& dataset_loader,
-                                uint32_t batch_size);
-
-  std::optional<LabeledDataset> loadSomeWrapper(
-      const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
-      uint32_t max_batches);
-
   nn::model::ModelPtr _model;
 
   std::shared_ptr<metrics::History> _history;

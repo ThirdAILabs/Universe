@@ -34,9 +34,9 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
   }
 }
 
-Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
+Tensor::Tensor(const std::vector<BoltVector>& batch, uint32_t dim)
     : _dim(dim), _nonzeros(std::nullopt) {
-  if (batch.getBatchSize() == 0) {
+  if (batch.empty()) {
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
 
@@ -98,7 +98,7 @@ std::shared_ptr<Tensor> Tensor::sparse(uint32_t batch_size, uint32_t dim,
 }
 
 std::shared_ptr<Tensor> Tensor::convert(const BoltBatch& batch, uint32_t dim) {
-  return std::make_shared<Tensor>(batch, dim);
+  return std::make_shared<Tensor>(batch.vectors(), dim);
 }
 
 std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
