@@ -11,7 +11,28 @@ if TYPE_CHECKING:
 
 
 class BoltTrainer(DataParallelTrainer):
-    """A trainer for data parallel Bolt Model Training"""
+    """A trainer for data parallel Bolt Model Training
+
+    Ex:
+        def train_loop_per_worker():
+            model = bolt.nn.Model()
+            model.distribute()
+
+            for _ in range(epochs):
+                for batch in range(batches):
+                    model.forward()
+                    model.communicate()
+                    model.update_parameters()
+
+        trainer = BoltTrainer(
+                    train_loop_per_worker=train_loop_per_worker
+                    scaling_config=ScalingConfig(num_workers=3, use_gpu=use_gpu),
+                    datasets={"train": train_dataset},
+                    train_loop_config={"num_epochs": 2},
+                )
+        result = trainer.fit()
+
+    """
 
     def __init__(
         self,
