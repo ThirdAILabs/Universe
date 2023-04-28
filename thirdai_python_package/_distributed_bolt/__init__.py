@@ -13,4 +13,7 @@ from .distributed import (
 )
 from .utils import PandasColumnMapGenerator, get_num_cpus
 
+from .distributed_v2 import _modify_bolt_v2_model
+
 add_distributed_to_udt()
+_modify_bolt_v2_model()
