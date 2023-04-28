@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -32,7 +33,7 @@ class DequeChunk {
       throw std::runtime_error("Cannot push back to DequeChunk.");
     }
     _chunk[_start + _size] = std::move(value);
-    _size--;
+    _size++;
   }
 
   T& at(size_t index) {
@@ -42,8 +43,11 @@ class DequeChunk {
 
  private:
   void verifySizeGreaterThan(uint32_t lower_bound) {
-    if (_size > lower_bound) {
-      throw std::runtime_error("DequeChunk is empty.");
+    if (_size <= lower_bound) {
+      throw std::runtime_error("Needed more than " +
+                               std::to_string(lower_bound) +
+                               " elements but DequeChunk only has " +
+                               std::to_string(_size) + " elements.");
     }
   }
 
@@ -72,7 +76,7 @@ class FastDeque {
       _chunks.push_back(DequeChunk<T>(_chunk_size));
     }
     _chunks.back().pushBack(std::move(value));
-    _size += 1;
+    _size++;
   }
 
   void popFront() {
