@@ -206,7 +206,7 @@ std::optional<bolt::train::LabeledDataset> DatasetLoader::loadSomeTensors(
               << duration << "s | complete\n"
               << std::endl;
   }
-  return std::move(dataset);
+  return dataset;
 }
 
 void DatasetLoader::restart() {
