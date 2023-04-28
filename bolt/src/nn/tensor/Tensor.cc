@@ -74,6 +74,9 @@ Tensor::Tensor(const std::vector<BoltVector>& batch, uint32_t dim)
     }
   }
 
+  _active_neurons.shrink_to_fit();
+  _activations.shrink_to_fit();
+
   uint32_t offset = 0;
   for (const auto& vec : batch) {
     uint32_t* active_neurons =
