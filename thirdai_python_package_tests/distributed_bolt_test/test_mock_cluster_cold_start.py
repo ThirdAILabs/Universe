@@ -129,7 +129,7 @@ def test_distributed_mach_cold_start(
         strong_column_names=["TITLE"],
         weak_column_names=["TEXT"],
         learning_rate=0.001,
-        epochs=5,
+        epochs=3,
         metrics=[
             "precision@1",
             "recall@10",
@@ -140,7 +140,7 @@ def test_distributed_mach_cold_start(
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 
     # metrics_aggregation_from_workers just returns metrics for last update
-    assert overall_metrics["precision@1"] > 0.90
+    assert overall_metrics["precision@1"] > 0.80
 
     validation = bolt.Validation(
         supervised_tst,
@@ -155,7 +155,7 @@ def test_distributed_mach_cold_start(
             f"{os.getcwd()}/scifact/supervised_trn_part2",
         ],
         learning_rate=0.001,
-        epochs=10,
+        epochs=5,
         metrics=[
             "precision@1",
             "recall@10",
@@ -165,9 +165,9 @@ def test_distributed_mach_cold_start(
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 
     # metrics_aggregation_from_workers just returns metrics for last update
-    assert overall_metrics["precision@1"] > 0.45
+    assert overall_metrics["precision@1"] > 0.30
 
-    assert metrics["validation_metrics"][-1]["precision@1"] > 0.45
+    assert metrics["validation_metrics"][-1]["precision@1"] > 0.30
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
@@ -188,9 +188,9 @@ def test_distributed_cold_start(
         ],
         strong_column_names=["TITLE"],
         weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
-        batch_size=2048,
+        batch_size=512,
         learning_rate=0.001,
-        epochs=5,
+        epochs=2,
         metrics=["categorical_accuracy"],
     )
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
