@@ -2,6 +2,7 @@
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -101,8 +102,8 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
 
 #pragma omp critical
       {
-        for (const auto& sample : augmented_samples) {
-          augmented_data.push_back(sample);
+        for (auto& sample : augmented_samples) {
+          augmented_data.emplace_back(std::move(sample));
           augmented_labels.push_back(labels);
         }
       }
