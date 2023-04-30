@@ -12,6 +12,8 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const std::optional<std::string>& model_config,
                     bool use_sigmoid_bce = false);
 
+float autotuneSparsity(uint32_t dim);
+
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce = false);
 

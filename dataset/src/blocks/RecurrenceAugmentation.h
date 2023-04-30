@@ -23,7 +23,8 @@ class RecurrenceAugmentation final : public Augmentation {
                                   char delimiter, uint32_t max_recurrence,
                                   uint32_t vocab_size,
                                   uint32_t input_vector_index,
-                                  uint32_t label_vector_index);
+                                  uint32_t label_vector_index,
+                                  uint32_t position_vector_index);
 
   std::vector<std::vector<BoltVector>> augment(
       std::vector<SegmentedFeatureVectorPtr>&& builders,
@@ -43,11 +44,17 @@ class RecurrenceAugmentation final : public Augmentation {
   BlockPtr labelBlock() {
     return std::make_shared<PlaceholderBlock>(
         /* name= */ "RecurrenceLabel",
-        /* dim= */ _vocab.maxSize().value() * _max_recurrence,
+        /* dim= */ _vocab.maxSize().value(),
         /* dense= */ false, /* column_identifiers= */ _sequence_column);
   }
 
-  uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
+  BlockPtr positionBlock() {
+    return std::make_shared<PlaceholderBlock>(
+        /* name= */ "RecurrencePosition", /* dim= */ _max_recurrence,
+        /* dense= */ false, /* column_identifier= */ _sequence_column);
+  }
+
+  uint32_t encodePosition(uint32_t element_id, uint32_t position);
 
   std::string elementString(uint32_t element_id);
 
@@ -55,10 +62,11 @@ class RecurrenceAugmentation final : public Augmentation {
 
   static auto make(ColumnIdentifier sequence_column, char delimiter,
                    uint32_t max_recurrence, uint32_t vocab_size,
-                   uint32_t input_vector_index, uint32_t label_vector_index) {
+                   uint32_t input_vector_index, uint32_t label_vector_index,
+                   uint32_t position_vector_index) {
     return std::make_shared<RecurrenceAugmentation>(
         std::move(sequence_column), delimiter, max_recurrence, vocab_size,
-        input_vector_index, label_vector_index);
+        input_vector_index, label_vector_index, position_vector_index);
   }
 
  private:
@@ -68,8 +76,8 @@ class RecurrenceAugmentation final : public Augmentation {
   std::vector<uint32_t> elementIds(
       const std::vector<std::string_view>& sequence);
 
-  static std::vector<BoltVector> augmentInputVectors(
-      SegmentedFeatureVector& builder, std::vector<uint32_t> elements);
+  std::vector<BoltVector> augmentInputVectors(SegmentedFeatureVector& builder,
+                                              std::vector<uint32_t> elements);
 
   static std::vector<BoltVector> augmentLabelVectors(
       SegmentedFeatureVector& builder, std::vector<uint32_t> elements);
@@ -77,11 +85,20 @@ class RecurrenceAugmentation final : public Augmentation {
   static std::vector<BoltVector> replicateOtherVectors(
       SegmentedFeatureVector& builder, uint32_t size);
 
+  static std::vector<BoltVector> positions(uint32_t size) {
+    std::vector<BoltVector> vectors(size);
+    for (uint32_t pos = 0; pos < size; pos++) {
+      vectors[pos] = BoltVector::singleElementSparseVector(pos);
+    }
+    return vectors;
+  }
+
   ColumnIdentifier _sequence_column;
   char _delimiter;
   uint32_t _max_recurrence;
   uint32_t _input_vector_index;
   uint32_t _label_vector_index;
+  uint32_t _position_vector_index;
   ThreadSafeVocabulary _vocab;
 
   // Private default constructor for cereal.

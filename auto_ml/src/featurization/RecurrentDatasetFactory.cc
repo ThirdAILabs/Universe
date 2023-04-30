@@ -6,7 +6,9 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Count.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
 #include <utils/StringManipulation.h>
@@ -55,8 +57,8 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
       /* sequence_column= */ target_name,
       /* delimiter= */ _target->delimiter,
       /* max_recurrence= */ _target->max_length.value(),
-      /* vocab_size= */ n_target_classes, /* input_vector_index= */ 0,
-      /* label_vector_index= */ 1);
+      /* vocab_size= */ n_target_classes, /* input_vector_index= */ 1,
+      /* label_vector_index= */ 2, /* position_vector_index= */ 0);
 
   labeled_featurizer_input_blocks.push_back(_augmentation->inputBlock());
 
@@ -71,6 +73,7 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
   _labeled_featurizer = dataset::TabularFeaturizer::make(
       /* block_lists= */
       {
+          dataset::BlockList({_augmentation->positionBlock()}),
           dataset::BlockList(
               std::move(labeled_featurizer_input_blocks),
               /* hash_range= */ tabular_options.feature_hash_range),
@@ -82,6 +85,8 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
   _inference_featurizer = dataset::TabularFeaturizer::make(
       /* block_lists= */
       {
+          dataset::BlockList({dataset::CountBlock::make(
+              /* column= */ target_name, /* delimiter= */ _target->delimiter)}),
           dataset::BlockList(
               std::move(inference_featurizer_input_blocks),
               /* hash_range= */ tabular_options.feature_hash_range),
@@ -117,11 +122,6 @@ TensorList RecurrentDatasetFactory::featurizeInputBatch(
                                    _inference_featurizer->getDimensions());
 }
 
-uint32_t RecurrentDatasetFactory::elementIdAtStep(const BoltVector& output,
-                                                  uint32_t step) {
-  return _augmentation->elementIdAtStep(output, step);
-}
-
 std::string RecurrentDatasetFactory::elementString(uint32_t element_id) {
   return _augmentation->elementString(element_id);
 }
@@ -131,12 +131,14 @@ bool RecurrentDatasetFactory::isEOS(uint32_t element_id) {
 }
 
 void RecurrentDatasetFactory::addPredictionToSample(MapInput& sample,
-                                                    uint32_t prediction) {
+                                                    uint32_t prediction,
+                                                    uint32_t position) {
   auto& intermediate_column = sample[_target_name];
   if (!intermediate_column.empty()) {
     intermediate_column += _target->delimiter;
   }
-  intermediate_column += std::to_string(prediction);
+  intermediate_column +=
+      std::to_string(_augmentation->encodePosition(prediction, position));
 }
 
 template void RecurrentDatasetFactory::serialize(cereal::BinaryInputArchive&);

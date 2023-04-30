@@ -85,8 +85,6 @@ py::object UDTRecurrentClassifier::train(
 py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
     bool sparse_inference, bool verbose) {
-  throwIfSparseInference(sparse_inference);
-
   bolt::train::Trainer trainer(_model);
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
@@ -100,7 +98,6 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
-  throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   auto mutable_sample = sample;
@@ -113,13 +110,13 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
             ->forward(_dataset_factory->featurizeInput(mutable_sample),
                       sparse_inference)
             .at(0);
-    auto predicted_id =
-        _dataset_factory->elementIdAtStep(output->getVector(0), step);
+    uint32_t predicted_id = output->getVector(0).getHighestActivationId();
     if (_dataset_factory->isEOS(predicted_id)) {
       break;
     }
 
-    _dataset_factory->addPredictionToSample(mutable_sample, predicted_id);
+    _dataset_factory->addPredictionToSample(mutable_sample, predicted_id,
+                                            predictions.size());
     predictions.push_back(_dataset_factory->elementString(predicted_id));
   }
 
@@ -150,7 +147,6 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class) {
-  throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   PredictBatchProgress progress(samples.size());
@@ -168,15 +164,16 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     for (uint32_t i = 0; i < batch_activations->batchSize(); i++) {
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
-        auto predicted_id = _dataset_factory->elementIdAtStep(
-            batch_activations->getVector(i), step);
+        uint32_t predicted_id =
+            batch_activations->getVector(i).getHighestActivationId();
         if (_dataset_factory->isEOS(predicted_id)) {
           progress.markSampleDone(i);
           continue;
         }
 
-        _dataset_factory->addPredictionToSample(mutable_samples[i],
-                                                predicted_id);
+        _dataset_factory->addPredictionToSample(
+            mutable_samples[i], predicted_id,
+            /* position= */ all_predictions.at(i).size());
         all_predictions[i].push_back(
             _dataset_factory->elementString(predicted_id));
       }

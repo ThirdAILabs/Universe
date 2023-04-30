@@ -58,17 +58,8 @@ class UDTRecurrentClassifier final : public UDTBackend {
  private:
   UDTRecurrentClassifier() {}
 
-  static void throwIfSparseInference(bool sparse_inference) {
-    if (sparse_inference) {
-      // TODO(Geordie): We can actually use a special case of sparse inference
-      // where the active neurons set = the range of activations that
-      // corresponds with the current step. May be quite involved on the BOLT
-      // side of things.
-      throw std::invalid_argument(
-          "UDT cannot use sparse inference when doing recurrent "
-          "classification.");
-    }
-  }
+  static ModelPtr buildModel(uint32_t input_dim, uint32_t hidden_dim,
+                      uint32_t output_dim, bool use_sigmoid_bcea);
 
   friend cereal::access;
 

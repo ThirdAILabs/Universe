@@ -7,17 +7,16 @@
 
 namespace thirdai::dataset {
 
-RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
-                                               char delimiter,
-                                               uint32_t max_recurrence,
-                                               uint32_t vocab_size,
-                                               uint32_t input_vector_index,
-                                               uint32_t label_vector_index)
+RecurrenceAugmentation::RecurrenceAugmentation(
+    ColumnIdentifier sequence_column, char delimiter, uint32_t max_recurrence,
+    uint32_t vocab_size, uint32_t input_vector_index,
+    uint32_t label_vector_index, uint32_t position_vector_index)
     : _sequence_column(std::move(sequence_column)),
       _delimiter(delimiter),
       _max_recurrence(max_recurrence),
       _input_vector_index(input_vector_index),
       _label_vector_index(label_vector_index),
+      _position_vector_index(position_vector_index),
       _vocab(vocab_size + 1) {
   /*
     We will fix the vocabulary for better parallelism when the vocabulary is
@@ -34,6 +33,7 @@ std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
   auto target_sequence = sequence(input_sample);
   auto element_ids = elementIds(target_sequence);
 
+  // +1 for positions.
   std::vector<std::vector<BoltVector>> vectors(builders.size());
 
   for (uint32_t vector_id = 0; vector_id < builders.size(); vector_id++) {
@@ -45,6 +45,8 @@ std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
       vectors.at(vector_id) = augmentLabelVectors(
           /* builder= */ *builders.at(vector_id),
           /* elements= */ element_ids);
+    } else if (vector_id == _position_vector_index) {
+      vectors.at(vector_id) = positions(/* size= */ element_ids.size());
     } else {
       vectors.at(vector_id) = replicateOtherVectors(
           /* builder= */ *builders.at(vector_id),
@@ -59,10 +61,11 @@ std::vector<BoltVector> RecurrenceAugmentation::augmentInputVectors(
     SegmentedFeatureVector& builder, std::vector<uint32_t> elements) {
   std::vector<BoltVector> vectors(elements.size());
   vectors[0] = builder.toBoltVector();
-  for (uint32_t i = 0; i < elements.size() - 1; i++) {
-    builder.addSparseFeatureToSegment(/* index= */ elements[i],
-                                      /* value= */ 1.0);
-    vectors[i + 1] = builder.toBoltVector();
+  for (uint32_t pos = 0; pos < elements.size() - 1; pos++) {
+    builder.addSparseFeatureToSegment(
+        /* index= */ encodePosition(elements[pos], pos),
+        /* value= */ 1.0);
+    vectors[pos + 1] = builder.toBoltVector();
   }
   return vectors;
 }
@@ -92,30 +95,14 @@ std::vector<BoltVector> RecurrenceAugmentation::replicateOtherVectors(
   return vectors;
 }
 
-uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,
-                                                 uint32_t step) {
-  if (!output.isDense()) {
-    throw std::invalid_argument(
-        "Cannot get sequence element name from dense output");
-  }
-  auto begin = step * _vocab.maxSize().value();
-  auto end = begin + _vocab.maxSize().value();
-
-  uint32_t arg_max = 0;
-  float max_act = -std::numeric_limits<float>::max();
-  for (uint32_t neuron = begin; neuron < end; neuron++) {
-    if (output.activations[neuron] > max_act) {
-      arg_max = neuron;
-      max_act = output.activations[neuron];
-    }
-  }
-
-  return arg_max;
+uint32_t RecurrenceAugmentation::encodePosition(uint32_t element_id,
+                                                uint32_t position) {
+  uint32_t offset = position * _vocab.maxSize().value();
+  return offset + element_id;
 }
 
 std::string RecurrenceAugmentation::elementString(uint32_t element_id) {
-  uint32_t element_id_without_position = element_id % _vocab.maxSize().value();
-  return _vocab.getString(element_id_without_position);
+  return _vocab.getString(element_id);
 }
 
 bool RecurrenceAugmentation::isEOS(uint32_t element_id) {
@@ -140,8 +127,7 @@ std::vector<uint32_t> RecurrenceAugmentation::elementIds(
     const std::vector<std::string_view>& sequence) {
   std::vector<uint32_t> element_ids(sequence.size());
   for (uint32_t i = 0; i < element_ids.size(); i++) {
-    uint32_t offset = i * _vocab.maxSize().value();
-    element_ids[i] = offset + _vocab.getUid(std::string(sequence[i]));
+    element_ids[i] = _vocab.getUid(std::string(sequence[i]));
   }
   return element_ids;
 }

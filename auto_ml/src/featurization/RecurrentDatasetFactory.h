@@ -35,13 +35,12 @@ class RecurrentDatasetFactory {
 
   TensorList featurizeInputBatch(const MapInputBatch& samples);
 
-  uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
-
   std::string elementString(uint32_t element_id);
 
   bool isEOS(uint32_t element_id);
 
-  void addPredictionToSample(MapInput& sample, uint32_t prediction);
+  void addPredictionToSample(MapInput& sample, uint32_t prediction,
+                             uint32_t position);
 
  private:
   RecurrentDatasetFactory() {}
