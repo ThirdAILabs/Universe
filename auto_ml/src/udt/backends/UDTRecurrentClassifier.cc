@@ -1,4 +1,8 @@
 #include "UDTRecurrentClassifier.h"
+#include <bolt/src/nn/loss/BinaryCrossEntropy.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -12,6 +16,7 @@
 #include <utils/StringManipulation.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <limits>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -207,6 +212,38 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _target, _model,
           _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
+}
+
+ModelPtr buildModel(uint32_t n_layers, uint32_t input_dim, uint32_t hidden_dim,
+                    uint32_t output_dim, bool use_sigmoid_bce) {
+  auto output_index =
+      bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max());
+  auto input = bolt::nn::ops::Input::make(input_dim);
+
+  auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
+                                                    /* sparsity= */ 1.0,
+                                                    /* activation= */ "relu")
+                    ->apply(input);
+
+  auto sparsity = utils::autotuneSparsity(output_dim);
+  const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
+  auto output = bolt::nn::ops::Switch::make(n_layers, output_dim, hidden->dim(),
+                                            sparsity, activation)
+                    ->apply(output_index, hidden);
+
+  auto labels = bolt::nn::ops::Input::make(output_dim);
+
+  bolt::nn::loss::LossPtr loss;
+  if (use_sigmoid_bce) {
+    loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
+  } else {
+    loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+  }
+
+  auto model =
+      bolt::nn::model::Model::make({output_index, input}, {output}, {loss});
+
+  return model;
 }
 
 }  // namespace thirdai::automl::udt

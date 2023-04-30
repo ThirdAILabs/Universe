@@ -65,55 +65,54 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   auto model = bolt::nn::model::Model::make({input}, {output}, {loss});
 
   return model;
+}
 
-  ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
-                     uint32_t output_dim, const std::string& config_path) {
-    config::ArgumentMap parameters;
-    parameters.insert("output_dim", output_dim);
+ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+                   const std::string& config_path) {
+  config::ArgumentMap parameters;
+  parameters.insert("output_dim", output_dim);
 
-    auto json_config = json::parse(config::loadConfig(config_path));
+  auto json_config = json::parse(config::loadConfig(config_path));
 
-    return config::buildModel(json_config, parameters, input_dims);
-  }
+  return config::buildModel(json_config, parameters, input_dims);
+}
 
-  void verifyCanSetModel(const ModelPtr& curr_model,
-                         const ModelPtr& new_model) {
-    auto vec_eq = [](const auto& a, const auto& b) -> bool {
-      if (a.size() != b.size()) {
+void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
+  auto vec_eq = [](const auto& a, const auto& b) -> bool {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (uint32_t i = 0; i < a.size(); i++) {
+      if (a[i] != b[i]) {
         return false;
       }
-      for (uint32_t i = 0; i < a.size(); i++) {
-        if (a[i] != b[i]) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    if (!vec_eq(curr_model->inputDims(), new_model->inputDims())) {
-      throw std::invalid_argument("Input dim mismatch in set_model.");
     }
+    return true;
+  };
 
-    if (new_model->outputs().size() != 1 ||
-        new_model->outputs().at(0)->dim() !=
-            curr_model->outputs().at(0)->dim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
-
-    if (!vec_eq(curr_model->labelDims(), new_model->labelDims())) {
-      throw std::invalid_argument("Label dim mismatch in set_model.");
-    }
+  if (!vec_eq(curr_model->inputDims(), new_model->inputDims())) {
+    throw std::invalid_argument("Input dim mismatch in set_model.");
   }
 
-  bool hasSoftmaxOutput(const ModelPtr& model) {
-    auto outputs = model->outputs();
-    if (outputs.size() > 1) {
-      return false;  // TODO(Nicholas): Should this throw?
-    }
-
-    auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
-    return fc && (fc->kernel()->getActivationFunction() ==
-                  bolt::ActivationFunction::Softmax);
+  if (new_model->outputs().size() != 1 ||
+      new_model->outputs().at(0)->dim() != curr_model->outputs().at(0)->dim()) {
+    throw std::invalid_argument("Output dim mismatch in set_model.");
   }
+
+  if (!vec_eq(curr_model->labelDims(), new_model->labelDims())) {
+    throw std::invalid_argument("Label dim mismatch in set_model.");
+  }
+}
+
+bool hasSoftmaxOutput(const ModelPtr& model) {
+  auto outputs = model->outputs();
+  if (outputs.size() > 1) {
+    return false;  // TODO(Nicholas): Should this throw?
+  }
+
+  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  return fc && (fc->kernel()->getActivationFunction() ==
+                bolt::ActivationFunction::Softmax);
+}
 
 }  // namespace thirdai::automl::udt::utils

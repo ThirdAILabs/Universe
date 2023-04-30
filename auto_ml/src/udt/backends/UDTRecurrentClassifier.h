@@ -58,8 +58,9 @@ class UDTRecurrentClassifier final : public UDTBackend {
  private:
   UDTRecurrentClassifier() {}
 
-  static ModelPtr buildModel(uint32_t input_dim, uint32_t hidden_dim,
-                      uint32_t output_dim, bool use_sigmoid_bcea);
+  static ModelPtr buildModel(uint32_t n_layers, uint32_t input_dim,
+                             uint32_t hidden_dim, uint32_t output_dim,
+                             bool use_sigmoid_bce);
 
   friend cereal::access;
 
