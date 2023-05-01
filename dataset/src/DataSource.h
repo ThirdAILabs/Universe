@@ -3,11 +3,11 @@
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <iostream>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -35,7 +35,9 @@ using DataSourcePtr = std::shared_ptr<DataSource>;
 class FileDataSource final : public DataSource {
  public:
   explicit FileDataSource(const std::string& filename)
-      : _file(SafeFileIO::ifstream(filename)), _filename(filename) {}
+      : _file(SafeFileIO::ifstream(filename,
+                                   std::ios_base::in | std::ios_base::binary)),
+        _filename(filename) {}
 
   static std::shared_ptr<FileDataSource> make(const std::string& filename) {
     return std::make_shared<FileDataSource>(filename);
