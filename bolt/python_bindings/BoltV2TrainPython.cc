@@ -124,7 +124,9 @@ void defineTrainer(py::module_& train) {
            py::arg("validation_data"),
            py::arg("validation_metrics") = std::vector<std::string>(),
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect());
+           bolt::python::OutputRedirect())
+      .def_property_readonly("model", &Trainer::getModel,
+                             py::return_value_policy::reference_internal);
 }
 
 void defineMetrics(py::module_& train) {

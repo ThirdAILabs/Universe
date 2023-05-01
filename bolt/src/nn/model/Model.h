@@ -142,6 +142,11 @@ class Model {
    */
   std::vector<std::vector<float>*> gradients() const;
 
+
+  std::pair<const float*, uint64_t> getGradients() const;
+
+  void setGradients(const float* new_grad, uint64_t flattened_dim) const;
+
   /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted

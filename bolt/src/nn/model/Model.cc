@@ -215,6 +215,51 @@ std::vector<std::vector<float>*> Model::gradients() const {
   return grads;
 }
 
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& grads) {
+  uint64_t total_dim = 0;
+  for (const auto* grad : grads) {
+    total_dim += grad->size();
+  }
+  return total_dim;
+}
+
+std::pair<const float*, uint64_t> Model::getGradients() const {
+  auto grads = gradients();
+
+  uint64_t total_dim = sumFlattenedDims(grads);
+
+  float* combined_grads = new float[total_dim];
+  uint64_t offset = 0;
+  for (const auto* grad : grads) {
+    std::copy(grad->data(), grad->data() + grad->size(),
+              combined_grads + offset);
+    offset += grad->size();
+  }
+
+  return {combined_grads, total_dim};
+}
+
+void Model::setGradients(const float* new_grad, uint64_t flattened_dim) const {
+  auto grads = gradients();
+
+  uint64_t total_dim = sumFlattenedDims(grads);
+
+  if (total_dim != flattened_dim) {
+    std::stringstream error;
+    error << "Expected " << total_dim
+          << " parameters in setGradients, but received " << flattened_dim
+          << " parameters.";
+    throw std::invalid_argument(error.str());
+  }
+
+  uint64_t offset = 0;
+  for (auto* grad : grads) {
+    std::copy(new_grad + offset, new_grad + offset + grad->size(),
+              grad->data());
+    offset += grad->size();
+  }
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
