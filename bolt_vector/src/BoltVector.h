@@ -110,6 +110,8 @@ struct BoltVector {
 
   bool hasGradients() const;
 
+  bool ownsMemory() const { return _owns_data; }
+
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& vec);
 
   std::string toString() const;

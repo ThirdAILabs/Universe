@@ -1,15 +1,15 @@
 import os
 
 import pytest
-from thirdai import bolt
+from thirdai import bolt, bolt_v2
 
 
-class CountCallback(bolt.callbacks.Callback):
+class CountCallback(bolt_v2.train.callbacks.Callback):
     def __init__(self):
         super().__init__()
         self.batch_end_count = 0
 
-    def on_batch_end(self, model, train_state):
+    def on_batch_end(self):
         self.batch_end_count += 1
 
     def num_batches(self):

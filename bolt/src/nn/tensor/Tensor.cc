@@ -44,7 +44,12 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
 
   bool is_dense = _vectors.front().isDense();
 
-  for (const auto& vec : _vectors) {
+  for (auto& vec : _vectors) {
+    if (!vec.ownsMemory()) {
+      BoltVector copy = vec;
+      vec = std::move(copy);
+    }
+
     if (vec.len == 0) {
       throw std::invalid_argument("Cannot convert empty vector to tensor.");
     }
