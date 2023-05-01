@@ -118,7 +118,7 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   EXPECT_EQ(tensor->dim(), 8);
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
-  EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
   EXPECT_EQ(tensor->activationsPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
