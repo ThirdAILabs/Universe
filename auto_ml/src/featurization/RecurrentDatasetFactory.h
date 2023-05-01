@@ -42,6 +42,8 @@ class RecurrentDatasetFactory {
   void addPredictionToSample(MapInput& sample, uint32_t prediction,
                              uint32_t position);
 
+  uint32_t outputSequenceLength() const { return _target->max_length.value(); }
+
  private:
   RecurrentDatasetFactory() {}
 

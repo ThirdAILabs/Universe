@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <memory>
 #include <optional>
@@ -153,34 +154,14 @@ autograd::ComputationList Switch::fcInputs(
   return {inputs.begin() + 1, inputs.end()};
 }
 
-template void Switch::save(cereal::BinaryOutputArchive&) const;
+template void Switch::serialize(cereal::BinaryOutputArchive&);
+template void Switch::serialize(cereal::BinaryInputArchive&);
 
 template <class Archive>
-void Switch::save(Archive& archive) const {
-  archive(cereal::base_class<Op>(this), _fc_ops);
-}
-
-template void Switch::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void Switch::load(Archive& archive) {
+void Switch::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _fc_ops);
 }
 
 }  // namespace thirdai::bolt::nn::ops
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::Switch,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Switch)

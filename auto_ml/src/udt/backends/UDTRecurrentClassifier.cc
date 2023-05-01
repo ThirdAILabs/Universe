@@ -47,8 +47,13 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 output_dim);
+    bool use_sigmoid_bce = user_args.get<bool>("use_sigmoid_bcs", "bool",
+                                               /* default_val= */ false);
+    _model =
+        buildModel(/* n_layers= */ _dataset_factory->outputSequenceLength(),
+                   /* input_dim= */ tabular_options.feature_hash_range,
+                   /* hidden_dim= */ hidden_dim, /* output_dim= */ output_dim,
+                   /* use_sigmoid_bce= */ use_sigmoid_bce);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",

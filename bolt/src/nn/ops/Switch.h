@@ -112,14 +112,8 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
   Switch() {}
 
   friend class cereal::access;
-
-  // We use save/load instead of serialize so we can ensure the optimizer is
-  // initialized when the model is loaded.
   template <class Archive>
-  void save(Archive& archive) const;
-
-  template <class Archive>
-  void load(Archive& archive);
+  void serialize(Archive& archive);
 };
 
 using SwitchPtr = std::shared_ptr<Switch>;
