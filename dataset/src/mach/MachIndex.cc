@@ -1,4 +1,5 @@
 #include "MachIndex.h"
+#include <stdexcept>
 
 namespace thirdai::dataset::mach {
 
@@ -87,6 +88,7 @@ StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
 
 std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
     const std::string& string) {
+  std::vector<uint32_t> hashes;
 #pragma omp critical(string_mach_index_update)
   {
     if (!_entity_to_hashes.count(string)) {
@@ -98,9 +100,10 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
         _hash_to_entities[hash].push_back(string);
       }
     }
+    hashes = _entity_to_hashes.at(string);
   }
 
-  return _entity_to_hashes[string];
+  return hashes;
 }
 
 std::vector<std::string> StringCategoricalMachIndex::entitiesByHash(
