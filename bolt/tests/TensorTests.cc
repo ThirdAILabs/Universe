@@ -87,14 +87,14 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(batch, 4);
+  auto tensor = tensor::Tensor::convert(std::move(batch), 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 4);
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
   EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->activationsPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
@@ -112,14 +112,14 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(batch, 8);
+  auto tensor = tensor::Tensor::convert(std::move(batch), 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 8);
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
   EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->activationsPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   for (uint32_t i = 0; i < vectors.size(); i++) {

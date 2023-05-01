@@ -113,7 +113,7 @@ TensorList RecurrentDatasetFactory::featurizeInputBatch(
   // deleted for BoltBatch.
   std::vector<BoltBatch> batch_list;
   batch_list.emplace_back(std::move(batches.at(0)));
-  return bolt::train::convertBatch(batch_list,
+  return bolt::train::convertBatch(std::move(batch_list),
                                    _inference_featurizer->getDimensions());
 }
 

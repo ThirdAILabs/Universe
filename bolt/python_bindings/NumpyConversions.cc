@@ -2,6 +2,7 @@
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
+#include <stdexcept>
 
 namespace thirdai::bolt::nn::python {
 
@@ -34,6 +35,10 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
     throw std::runtime_error(
         "Cannot convert tensor to numpy if the number of nonzeros is not "
         "fixed.");
+  }
+
+  if (!tensor->activationsPtr()) {
+    throw std::runtime_error("Cannot convert ragged tensor to numpy.");
   }
 
   auto activations =

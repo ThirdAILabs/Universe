@@ -40,7 +40,8 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
          dataset_idx++) {
       try {
         batches.at(batch_idx).push_back(nn::tensor::Tensor::convert(
-            datasets[dataset_idx]->at(batch_idx), dims.at(dataset_idx)));
+            std::move(datasets[dataset_idx]->at(batch_idx)),
+            dims.at(dataset_idx)));
       } catch (...) {
 #pragma omp critical
         err = std::current_exception();
@@ -60,7 +61,7 @@ Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
   return convertDatasets({std::move(datasets)}, {dim});
 }
 
-nn::tensor::TensorList convertBatch(const std::vector<BoltBatch>& batches,
+nn::tensor::TensorList convertBatch(std::vector<BoltBatch>&& batches,
                                     const std::vector<uint32_t>& dims) {
   if (dims.size() != batches.size()) {
     throw std::invalid_argument(
@@ -69,13 +70,14 @@ nn::tensor::TensorList convertBatch(const std::vector<BoltBatch>& batches,
 
   nn::tensor::TensorList tensors;
   for (uint32_t i = 0; i < batches.size(); i++) {
-    tensors.push_back(nn::tensor::Tensor::convert(batches[i], dims[i]));
+    tensors.push_back(
+        nn::tensor::Tensor::convert(std::move(batches[i]), dims[i]));
   }
 
   return tensors;
 }
 
-nn::tensor::TensorList convertVectors(const std::vector<BoltVector>& vectors,
+nn::tensor::TensorList convertVectors(std::vector<BoltVector>&& vectors,
                                       const std::vector<uint32_t>& dims) {
   if (dims.size() != vectors.size()) {
     throw std::invalid_argument(
@@ -84,7 +86,8 @@ nn::tensor::TensorList convertVectors(const std::vector<BoltVector>& vectors,
 
   nn::tensor::TensorList tensors;
   for (uint32_t i = 0; i < vectors.size(); i++) {
-    tensors.push_back(nn::tensor::Tensor::convert(vectors[i], dims[i]));
+    tensors.push_back(
+        nn::tensor::Tensor::convert(std::move(vectors[i]), dims[i]));
   }
 
   return tensors;
