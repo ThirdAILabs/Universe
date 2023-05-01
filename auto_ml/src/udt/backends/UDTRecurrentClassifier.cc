@@ -68,7 +68,12 @@ py::object UDTRecurrentClassifier::train(
     val_args = validation->second;
   }
 
-  bolt::train::Trainer trainer(_model);
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch);
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);

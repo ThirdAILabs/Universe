@@ -15,8 +15,11 @@ namespace thirdai::bolt::train {
 
 constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
-Trainer::Trainer(nn::model::ModelPtr model)
-    : _model(std::move(model)), _epoch(0) {
+Trainer::Trainer(nn::model::ModelPtr model,
+                 std::optional<uint32_t> freeze_hash_tables_epoch)
+    : _model(std::move(model)),
+      _epoch(0),
+      _freeze_hash_tables_epoch(freeze_hash_tables_epoch) {
   _history = std::make_shared<metrics::History>();
 }
 
@@ -53,6 +56,10 @@ metrics::History Trainer::train(
 
   uint32_t num_epochs = _epoch + epochs;
   for (; _epoch < num_epochs; _epoch++) {
+    if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+    }
+
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();

@@ -21,7 +21,9 @@ namespace thirdai::bolt::train {
  */
 class Trainer {
  public:
-  explicit Trainer(nn::model::ModelPtr model);
+  explicit Trainer(
+      nn::model::ModelPtr model,
+      std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt);
 
   /**
    * Training loop function. Takes in data, metrics, callbacks, validation data,
@@ -136,6 +138,7 @@ class Trainer {
   std::shared_ptr<metrics::History> _history;
 
   uint32_t _epoch;
+  std::optional<uint32_t> _freeze_hash_tables_epoch;
 };
 
 }  // namespace thirdai::bolt::train
