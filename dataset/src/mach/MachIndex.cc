@@ -1,5 +1,4 @@
 #include "MachIndex.h"
-#include <stdexcept>
 
 namespace thirdai::dataset::mach {
 
