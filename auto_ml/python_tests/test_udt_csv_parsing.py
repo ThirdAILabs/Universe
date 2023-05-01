@@ -4,18 +4,6 @@ import pytest
 from thirdai import bolt, bolt_v2
 
 
-class CountCallback(bolt_v2.train.callbacks.Callback):
-    def __init__(self):
-        super().__init__()
-        self.batch_end_count = 0
-
-    def on_batch_end(self):
-        self.batch_end_count += 1
-
-    def num_batches(self):
-        return self.batch_end_count
-
-
 @pytest.fixture
 def write_data():
     filename = "csv_parsing_temp.csv"
@@ -33,6 +21,17 @@ def write_data():
 
 @pytest.mark.unit
 def test_udt_classifier_csv_parsing(write_data):
+    class CountCallback(bolt_v2.train.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.batch_end_count = 0
+
+        def on_batch_end(self):
+            self.batch_end_count += 1
+
+        def num_batches(self):
+            return self.batch_end_count
+
     filename, n_lines = write_data
 
     model = bolt.UniversalDeepTransformer(

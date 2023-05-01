@@ -46,8 +46,7 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
 
   for (auto& vec : _vectors) {
     if (!vec.ownsMemory()) {
-      BoltVector copy = vec;
-      vec = std::move(copy);
+      vec = vec.copy();
     }
 
     if (vec.len == 0) {
