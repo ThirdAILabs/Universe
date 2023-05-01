@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bolt/src/nn/tensor/Tensor.h>
-#include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -36,12 +34,6 @@ class DatasetLoader final {
                                                       size_t num_batches,
                                                       bool verbose = true);
 
-  bolt::train::LabeledDataset loadAllTensors(size_t batch_size,
-                                             bool verbose = true);
-
-  std::optional<bolt::train::LabeledDataset> loadSomeTensors(
-      size_t batch_size, size_t num_batches, bool verbose = true);
-
   void restart();
 
   uint32_t getInputDim() {
@@ -62,9 +54,6 @@ class DatasetLoader final {
   // DatasetSlice will have the same number of batches and the same batch sizes.
   std::vector<DatasetSlice> popFromBuffer(size_t target_num_batches,
                                           size_t target_batch_size);
-
-  bolt::train::LabeledDataset popTensorsFromBuffer(size_t target_num_batches,
-                                                   size_t target_batch_size);
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;

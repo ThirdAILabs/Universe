@@ -1,5 +1,4 @@
 #include "DatasetLoader.h"
-#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
@@ -125,90 +124,6 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   return data;
 }
 
-bolt::train::LabeledDataset DatasetLoader::loadAllTensors(size_t batch_size,
-                                                          bool verbose) {
-  auto datasets =
-      loadSomeTensors(/* batch_size = */ batch_size,
-                      /* num_batches = */ std::numeric_limits<size_t>::max(),
-                      /* verbose = */ verbose);
-  if (!datasets) {
-    throw std::invalid_argument(
-        "Did not find any data to load from the data source.");
-  }
-  return std::move(datasets.value());
-}
-
-std::optional<bolt::train::LabeledDataset> DatasetLoader::loadSomeTensors(
-    size_t batch_size, size_t num_batches, bool verbose) {
-  if (_header) {
-    /**
-      We call _featurizer->processHeader here in case we want to use the same
-      featurizer for two different data loaders. This guarantees that the
-      featurizer uses the correct column number map for each data loader.
-
-      If a second dataset loader is created using the same featurizer as the
-      first dataset loader, but the data its featurizing has a different
-      ordering of columns, then the column number map will be updated to reflect
-      the second dataset. This will cause an issue when the first dataset loader
-      attempts to load more data. Always updating the featurizer with the
-      current dataset before loading solves this issue.
-    */
-    _featurizer->processHeader(*_header);
-  }
-#if THIRDAI_EXPOSE_ALL
-  if (verbose) {
-    // This is useful internally but we don't want to expose it to keep the
-    // output clear and simple.
-    std::cout << "loading data | source '" << _data_source->resourceName()
-              << "'" << std::endl;
-  }
-#endif
-
-  auto start = std::chrono::high_resolution_clock::now();
-
-  // We fill the buffer with num_batches * batch_size + _buffer_size vectors
-  // so that after exporting num_batches from the buffer we still have
-  // _buffer_size vectors left for future shuffling.
-  // We also must check if anything in this multiplication and sum overflows and
-  // use std::numeric_limits<size_t>::max() in that case, since sometimes (when
-  // we want to load everything) we pass in std::numeric_limits<size_t>::max()
-  // as num_batches, which would make the expression overflow
-  bool will_overflow =
-      (std::numeric_limits<size_t>::max() / num_batches <= batch_size) ||
-      (std::numeric_limits<size_t>::max() - _buffer_size <=
-       num_batches * batch_size);
-  size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
-                                   : num_batches * batch_size + _buffer_size;
-  fillVectorBuffer(fill_size);
-
-  auto dataset = popTensorsFromBuffer(/* target_num_batches = */ num_batches,
-                                      /* target_batch_size = */ batch_size);
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-
-  if (dataset.first.empty()) {
-#if THIRDAI_EXPOSE_ALL
-    if (verbose) {
-      // This is to ensure that it always prints complete if it prints that it
-      // has started loading above.
-      std::cout << "loading data | source '" << _data_source->resourceName()
-                << "' | batches 0 | time " << duration << "s | complete\n"
-                << std::endl;
-    }
-#endif
-    return std::nullopt;
-  }
-
-  if (verbose) {
-    std::cout << "loaded data | source '" << _data_source->resourceName()
-              << "' | batches " << dataset.first.size() << " | time "
-              << duration << "s | complete\n"
-              << std::endl;
-  }
-  return dataset;
-}
-
 void DatasetLoader::restart() {
   _data_source->restart();
 
@@ -270,46 +185,4 @@ std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
 
   return batches;
 }
-
-bolt::train::LabeledDataset DatasetLoader::popTensorsFromBuffer(
-    size_t target_num_batches, size_t target_batch_size) {
-  size_t num_datasets = _featurizer->getNumDatasets();
-  std::vector<bolt::nn::tensor::TensorList> inputs;
-  std::vector<bolt::nn::tensor::TensorList> labels;
-
-  auto dims = _featurizer->getDimensions();
-
-  for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
-    // The ith element in this list contains BoltVectors corresponding to the
-    // ith Dataset this DatasetLoader is loading
-    std::vector<std::vector<BoltVector>> batch(num_datasets);
-    for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
-      if (auto next_vectors = _buffer.pop()) {
-        assert(next_vectors->size() == num_datasets);
-        for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++) {
-          batch.at(dataset_id)
-              .emplace_back(std::move(next_vectors->at(dataset_id)));
-        }
-      }
-    }
-
-    if (batch.at(0).empty()) {
-      break;
-    }
-
-    bolt::nn::tensor::TensorList tensor_batch;
-    for (uint32_t i = 0; i < batch.size() - 1; i++) {
-      tensor_batch.push_back(
-          std::make_shared<bolt::nn::tensor::Tensor>(batch[i], dims[i]));
-    }
-
-    inputs.emplace_back(std::move(tensor_batch));
-
-    labels.push_back({std::make_shared<bolt::nn::tensor::Tensor>(batch.back(),
-                                                                 dims.back())});
-  }
-
-  return std::make_pair(std::move(inputs), std::move(labels));
-}
-
 }  // namespace thirdai::dataset
