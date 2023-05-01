@@ -3,6 +3,7 @@
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -63,6 +64,11 @@ class FileDataSource final : public DataSource {
   std::optional<std::string> nextLine() final {
     std::string line;
     if (std::getline(_file, line)) {
+      std::cout << "Line: " << line << std::endl;
+      for (uint32_t i = 0; i < line.size(); i++) {
+        uint8_t* int_line = reinterpret_cast<uint8_t*>(line.data());
+        std::cout << i << ": " << unsigned(int_line[i]) << ", ";
+      }
       return line;
     }
     return std::nullopt;
