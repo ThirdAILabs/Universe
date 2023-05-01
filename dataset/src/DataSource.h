@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <iostream>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -62,6 +63,7 @@ class FileDataSource final : public DataSource {
   }
 
   std::optional<std::string> nextLine() final {
+    std::cout << "Called FileDataSource nextLine" << std::endl;
     std::string line;
     if (std::getline(_file, line)) {
       std::cout << "Line: " << line << std::endl;
@@ -71,6 +73,7 @@ class FileDataSource final : public DataSource {
       }
       return line;
     }
+    std::cout << "FileDataSource returns nullopt" << std::endl;
     return std::nullopt;
   }
 

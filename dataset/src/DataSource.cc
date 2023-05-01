@@ -7,14 +7,18 @@
 namespace thirdai::dataset {
 
 std::optional<std::string> CsvDataSource::nextLine() {
+  std::cout << "Called nextLine" << std::endl;
   parsers::CSV::StateMachine state_machine(_delimiter);
   std::vector<std::string> buffer;
   while (auto line = _source->nextLine()) {
+    std::cout << "raw line '" << *line << "'" << std::endl;
     buffer.push_back(*line);
     if (!inQuotesAtEndOfLine(state_machine, *line)) {
+      std::cout << "break because not in quotes at end of line" << std::endl;
       break;
     }
   }
+  std::cout << "out of while loop" << std::endl;
   if (inQuotes(state_machine.state())) {
     throw std::invalid_argument("Reached EOF without closing quoted column.");
   }

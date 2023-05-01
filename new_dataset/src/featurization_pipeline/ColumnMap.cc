@@ -226,24 +226,25 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
 
   std::vector<std::vector<std::string>> columns(header.size());
   while (auto line_str = source->nextLine()) {
+    std::cout << "LINE_STR '" << *line_str << "'" << std::endl;
     auto line = dataset::parsers::CSV::parseLine(*line_str, delimiter);
-    if (line.size() != header.size()) {
-      std::stringstream s;
-      for (const auto& substr : line) {
-        if (substr != line[0]) {
-          s << delimiter;
-        }
-        s << substr;
-      }
-      throw std::invalid_argument(
-          "Received a row with a different number of entries than in the "
-          "header. Expected " +
-          std::to_string(header.size()) + " entries but received " +
-          std::to_string(line.size()) + " entries. Line: " + s.str());
-    }
-    for (size_t i = 0; i < columns.size(); i++) {
-      columns.at(i).emplace_back(line.at(i));
-    }
+    // if (line.size() != header.size()) {
+    //   std::stringstream s;
+    //   for (const auto& substr : line) {
+    //     if (substr != line[0]) {
+    //       s << delimiter;
+    //     }
+    //     s << substr;
+    //   }
+    //   throw std::invalid_argument(
+    //       "Received a row with a different number of entries than in the "
+    //       "header. Expected " +
+    //       std::to_string(header.size()) + " entries but received " +
+    //       std::to_string(line.size()) + " entries. Line: " + s.str());
+    // }
+    // for (size_t i = 0; i < line.size(); i++) {
+    //   columns.at(i).emplace_back(line.at(i));
+    // }
   }
 
   std::unordered_map<std::string, columns::ColumnPtr> column_map;
