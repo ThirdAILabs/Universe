@@ -91,7 +91,11 @@ if __name__ == "__main__":
                     path_prefix=args.path_prefix,
                     mlflow_logger=mlflow_logger,
                 )
-            except:
+            except Exception as error:
+                print(
+                    f"An error occurred running the {config.config_name} benchmark:",
+                    error,
+                )
                 payload = f"{config.config_name} benchmark failed!"
                 requests.post(args.slack_webhook, json.dumps({"text": payload}))
 
