@@ -43,7 +43,7 @@ jobs:
           UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.UDT_BENCHMARK_SLACK_WEBHOOK}}
         run: >- 
           bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
-          python3 -m Universe.benchmarks-v2.main --runner udt query_reformulation temporal --run_name udt_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK &&
+          python3 -m Universe.benchmarks-v2.main --config '^(?!fraud_detection_udt|internet_ads_udt|criteo_udt|amazon_polarity_udt|yelp_polarity_udt$).*' --runner udt query_reformulation temporal --run_name udt_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK &&
           python3 -m Universe.benchmarks-v2.slack_benchmark_results --runner udt query_reformulation temporal --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK"
       - name: Delete Container
         run: sudo docker system prune -a -f
