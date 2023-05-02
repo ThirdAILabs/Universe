@@ -201,6 +201,24 @@ float* FullyConnectedNode::getBiasGradientsPtr() {
   return _layer->getBiasGradientsPtr();
 }
 
+std::pair<HashFn, HashTable> FullyConnectedNode::getHashTable() const {
+  if (getState() != NodeState::PreparedForBatchProcessing &&
+      getState() != NodeState::Compiled) {
+    throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state to call getHashTable.");
+  }
+  return _layer->getHashTable();
+}
+
+void FullyConnectedNode::setHashTable(HashFn hash_fn, HashTable hash_table) {
+  if (getState() != NodeState::PreparedForBatchProcessing &&
+      getState() != NodeState::Compiled) {
+    throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state to call setHashTable.");
+  }
+  _layer->setHashTable(std::move(hash_fn), std::move(hash_table));
+}
+
 void FullyConnectedNode::disableSparseParameterUpdates() {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {

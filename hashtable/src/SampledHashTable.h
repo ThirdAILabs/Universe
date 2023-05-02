@@ -125,6 +125,8 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   inline uint64_t tableRange() const override { return _range; };
 
+  LABEL_T maxElement() const;
+
   void summarize(std::ostream& summary) {
     summary << "num_tables=" << _num_tables << ", range=" << _range
             << ", reservoir_size=" << _reservoir_size;

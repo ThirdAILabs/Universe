@@ -72,6 +72,11 @@ class FullyConnectedNode final
   float* getWeightGradientsPtr();
 
   float* getBiasGradientsPtr();
+
+  std::pair<HashFn, HashTable> getHashTable() const;
+
+  void setHashTable(HashFn hash_fn, HashTable hash_table);
+
   void disableSparseParameterUpdates() final;
 
   void saveWithOptimizer(bool should_save_optimizer) final;

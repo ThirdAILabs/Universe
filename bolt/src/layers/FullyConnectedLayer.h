@@ -7,6 +7,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
+#include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
 #include <optional>
@@ -24,6 +25,9 @@ enum class BoltSamplingMode {
   FreezeHashTablesWithInsertions,
   RandomSampling
 };
+
+using HashFn = std::shared_ptr<hashing::HashFunction>;
+using HashTable = std::shared_ptr<hashtable::SampledHashTable<uint32_t>>;
 
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
@@ -134,6 +138,10 @@ class FullyConnectedLayer final {
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
+  std::pair<HashFn, HashTable> getHashTable();
+
+  void setHashTable(HashFn hash_fn, HashTable hash_table);
+
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
   void buildSamplingSummary(std::ostream& summary) const;
@@ -154,8 +162,8 @@ class FullyConnectedLayer final {
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
-  std::unique_ptr<hashing::HashFunction> _hasher;
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  HashFn _hasher;
+  HashTable _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
   template <bool DENSE>

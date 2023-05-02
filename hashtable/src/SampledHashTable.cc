@@ -3,7 +3,9 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <cassert>
+#include <limits>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::hashtable {
 
@@ -176,6 +178,25 @@ void SampledHashTable<LABEL_T>::clearTables() {
       _counters[CounterIdx(table, row)] = 0;
     }
   }
+}
+
+template <typename LABEL_T>
+LABEL_T SampledHashTable<LABEL_T>::maxElement() const {
+  LABEL_T max_elem = 0;
+
+  for (uint64_t bucket = 0; bucket < _num_tables * _range; bucket++) {
+    uint64_t bucket_size =
+        std::min<uint64_t>(_counters.at(bucket), _reservoir_size);
+
+    for (uint32_t i = 0; i < bucket_size; i++) {
+      uint32_t elem = _data.at(bucket * _reservoir_size + i);
+      if (elem > max_elem) {
+        max_elem = elem;
+      }
+    }
+  }
+
+  return max_elem;
 }
 
 template class SampledHashTable<uint8_t>;
