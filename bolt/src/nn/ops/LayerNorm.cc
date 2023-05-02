@@ -148,6 +148,10 @@ std::vector<std::vector<float>*> LayerNorm::gradients() {
   return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
 }
 
+std::vector<std::vector<float>*> LayerNorm::parameters(){
+  return {&_gamma, &_beta};
+}
+
 void LayerNorm::summary(std::ostream& summary,
                         const autograd::ComputationList& inputs,
                         const autograd::Computation* output) const {

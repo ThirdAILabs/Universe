@@ -215,34 +215,47 @@ std::vector<std::vector<float>*> Model::gradients() const {
   return grads;
 }
 
-uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& grads) {
+std::vector<std::vector<float>*> Model::parameters() const {
+  std::vector<std::vector<float>*> params;
+
+  for (const auto& op : _ops) {
+    auto op_params = op->parameters();
+    params.insert(params.end(), op_params.begin(), op_params.end());
+  }
+
+  return params;
+}
+
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
   uint64_t total_dim = 0;
-  for (const auto* grad : grads) {
-    total_dim += grad->size();
+  for (const auto* value : values) {
+    total_dim += value->size();
   }
   return total_dim;
 }
 
-std::pair<const float*, uint64_t> Model::getGradients() const {
-  auto grads = gradients();
+std::pair<const float*, uint64_t> Model::getValues(uint32_t type) const {
 
-  uint64_t total_dim = sumFlattenedDims(grads);
+  auto values = (type == 0) ? gradients() : parameters();
 
-  float* combined_grads = new float[total_dim];
+
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  float* combined_values = new float[total_dim];
   uint64_t offset = 0;
-  for (const auto* grad : grads) {
+  for (const auto* grad : values) {
     std::copy(grad->data(), grad->data() + grad->size(),
-              combined_grads + offset);
+              combined_values + offset);
     offset += grad->size();
   }
 
-  return {combined_grads, total_dim};
+  return {combined_values, total_dim};
 }
 
-void Model::setGradients(const float* new_grad, uint64_t flattened_dim) const {
-  auto grads = gradients();
+void Model::setValues(const float* new_value, uint64_t flattened_dim, uint32_t type) const {
+  auto values = (type == 0) ? gradients() : parameters();
 
-  uint64_t total_dim = sumFlattenedDims(grads);
+  uint64_t total_dim = sumFlattenedDims(values);
 
   if (total_dim != flattened_dim) {
     std::stringstream error;
@@ -253,10 +266,10 @@ void Model::setGradients(const float* new_grad, uint64_t flattened_dim) const {
   }
 
   uint64_t offset = 0;
-  for (auto* grad : grads) {
-    std::copy(new_grad + offset, new_grad + offset + grad->size(),
-              grad->data());
-    offset += grad->size();
+  for (auto* value : values) {
+    std::copy(new_value + offset, new_value + offset + value->size(),
+              value->data());
+    offset += value->size();
   }
 }
 

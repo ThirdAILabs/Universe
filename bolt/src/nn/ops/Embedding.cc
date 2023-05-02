@@ -83,6 +83,10 @@ std::vector<std::vector<float>*> Embedding::gradients() {
   return {&_kernel->getRawEmbeddingBlockGradient()};
 }
 
+std::vector<std::vector<float>*> Embedding::parameters() {
+  return {&_kernel->getRawEmbeddingBlock()};
+}
+
 void Embedding::summary(std::ostream& summary,
                         const autograd::ComputationList& inputs,
                         const autograd::Computation* output) const {

@@ -95,12 +95,12 @@ uint64_t DistributedTrainingWrapper::numBatches() {
 
 std::pair<const float*, uint64_t> DistributedTrainingWrapper::getGradients()
     const {
-  return _model->getGradients();
+  return _model->getValues(0);
 }
 
 void DistributedTrainingWrapper::setGradients(const float* new_grad,
                                               uint64_t flattened_dim) {
-  _model->setGradients(new_grad, flattened_dim);
+  _model->setValues(new_grad, flattened_dim, 0);
 }
 
 std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(

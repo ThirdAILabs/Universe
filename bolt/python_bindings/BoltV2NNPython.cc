@@ -91,23 +91,23 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
-      .def("get_gradients",
-           [](const nn::model::ModelPtr& _model) {
-             auto [grads, flattened_dim] = _model->getGradients();
+      .def("get_values",
+           [](const nn::model::ModelPtr& _model, uint32_t type) {
+             auto [grads, flattened_dim] = _model->getValues(type);
 
              py::capsule free_when_done(
                  grads, [](void* ptr) { delete static_cast<float*>(ptr); });
 
              return NumpyArray(flattened_dim, grads, free_when_done);
            })
-      .def("set_gradients",
-           [](const nn::model::ModelPtr& _model, NumpyArray& new_grads) {
-             if (new_grads.ndim() != 1) {
+      .def("set_values",
+           [](const nn::model::ModelPtr& _model, NumpyArray& new_values, uint32_t type) {
+             if (new_values.ndim() != 1) {
                throw std::invalid_argument("Expected grads to be flattened.");
              }
 
-             uint64_t flattened_dim = new_grads.shape(0);
-             _model->setGradients(new_grads.data(), flattened_dim);
+             uint64_t flattened_dim = new_values.shape(0);
+             _model->setValues(new_values.data(), flattened_dim, type);
            })
 #endif
       .def("save", &model::Model::save, py::arg("filename"),
