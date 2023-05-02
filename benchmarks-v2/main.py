@@ -96,8 +96,9 @@ if __name__ == "__main__":
                     f"An error occurred running the {config.config_name} benchmark:",
                     error,
                 )
-                payload = f"{config.config_name} benchmark failed!"
-                requests.post(args.slack_webhook, json.dumps({"text": payload}))
+                if args.slack_webhook:
+                    payload = f"{config.config_name} benchmark failed!"
+                    requests.post(args.slack_webhook, json.dumps({"text": payload}))
 
             if mlflow_logger:
                 mlflow_logger.end_run()
