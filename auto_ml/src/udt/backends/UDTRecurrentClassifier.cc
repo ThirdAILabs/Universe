@@ -17,7 +17,9 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <limits>
+#include <optional>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::automl::udt {
 
@@ -47,13 +49,27 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    bool use_sigmoid_bce = user_args.get<bool>("use_sigmoid_bcs", "bool",
+    bool use_sigmoid_bce = user_args.get<bool>("use_sigmoid_bce", "bool",
                                                /* default_val= */ false);
-    _model =
-        buildModel(/* n_layers= */ _dataset_factory->outputSequenceLength(),
-                   /* input_dim= */ tabular_options.feature_hash_range,
-                   /* hidden_dim= */ hidden_dim, /* output_dim= */ output_dim,
-                   /* use_sigmoid_bce= */ use_sigmoid_bce);
+    std::string hidden_act =
+        user_args.get<std::string>("embedding_activation", "string",
+                                   /* default_val= */ "relu");
+
+    float hidden_sparsity = user_args.get<float>("embedding_sparsity", "float",
+                                                 /* default_val= */ 1.0);
+
+    float output_sparsity = user_args.get<float>(
+        "output_sparsity", "float",
+        /* default_val= */ utils::autotuneSparsity(output_dim));
+
+    _model = buildModel(
+        /* n_layers= */ _dataset_factory->outputSequenceLength(),
+        /* input_dim= */ tabular_options.feature_hash_range,
+        /* hidden_dim= */ hidden_dim, /* output_dim= */ output_dim,
+        /* hidden_act= */ hidden_act,
+        /* hidden_sparsity= */ hidden_sparsity,
+        /* output_sparsity= */ output_sparsity,
+        /* use_sigmoid_bce= */ use_sigmoid_bce);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
@@ -224,23 +240,22 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
           _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
 }
 
-ModelPtr UDTRecurrentClassifier::buildModel(uint32_t n_layers,
-                                            uint32_t input_dim,
-                                            uint32_t hidden_dim,
-                                            uint32_t output_dim,
-                                            bool use_sigmoid_bce) {
+ModelPtr UDTRecurrentClassifier::buildModel(
+    uint32_t n_layers, uint32_t input_dim, uint32_t hidden_dim,
+    uint32_t output_dim, const std::string& hidden_act,
+    uint32_t hidden_sparsity, uint32_t output_sparsity, bool use_sigmoid_bce) {
   auto output_index = bolt::nn::ops::Input::make(n_layers);
   auto input = bolt::nn::ops::Input::make(input_dim);
 
-  auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
-                                                    /* sparsity= */ 1.0,
-                                                    /* activation= */ "relu")
-                    ->apply(input);
+  auto hidden =
+      bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
+                                          /* sparsity= */ hidden_sparsity,
+                                          /* activation= */ hidden_act)
+          ->apply(input);
 
-  auto sparsity = utils::autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::nn::ops::Switch::make(n_layers, output_dim, hidden->dim(),
-                                            sparsity, activation)
+                                            output_sparsity, activation)
                     ->apply(output_index, hidden);
 
   auto labels = bolt::nn::ops::Input::make(output_dim);
