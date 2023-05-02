@@ -4,6 +4,7 @@ import thirdai.distributed_bolt as dist
 import os
 from thirdai.demos import download_mnist_dataset
 from ray.air import ScalingConfig
+from thirdai import dataset
 
 
 ray.init()
@@ -34,23 +35,41 @@ def get_mnist_model():
 def train_loop_per_worker():
     mnist_model = get_mnist_model()
     trainer = bolt.train.Trainer(mnist_model)
-    train_file, _ = download_mnist_dataset()
-    train_sources = dist.DistributedSvmDatasetLoader(
-        f"/share/pratik/mnist_a",
-        batch_size=256,
+
+    # synchronizes model between each machines
+    trainer.distribute(2)
+
+    # download train and test data
+    # train_file, test_file = download_mnist_dataset()
+
+    train_x, train_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist", 250)
+    train_x = bolt.train.convert_dataset(train_x, dim=784)
+    train_y = bolt.train.convert_dataset(train_y, dim=10)
+
+    test_x, test_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist.t", 250)
+    test_x = bolt.train.convert_dataset(test_x, dim=784)
+    test_y = bolt.train.convert_dataset(test_y, dim=10)
+
+    history = trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=True,
     )
 
-    epochs = 10
+    print(history)
+    epochs = 1
     print("Training")
     for _ in range(epochs):
-        load = train_sources.next()
-        train_data, train_label = load[:-1], load[-1]
-        train_x, train_y = bolt.train.convert_datasets(
-            train_data, [784]
-        ), bolt.train.convert_datasets([train_label], [10])
-        print(len(train_x), len(train_y))
         for x, y in zip(train_x, train_y):
             trainer.step(x, y, 2)
+
+    history = trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=True,
+    )
+
+    print(history)
 
 
 scaling_config = ScalingConfig(
@@ -59,7 +78,7 @@ scaling_config = ScalingConfig(
     # Turn on/off GPU.
     use_gpu=False,
     # Specify resources used for trainer.
-    trainer_resources={"CPU": 1},
+    trainer_resources={"CPU": 24},
     # Try to schedule workers on different nodes.
     placement_strategy="SPREAD",
 )

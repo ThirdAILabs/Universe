@@ -29,10 +29,10 @@ def _modify_bolt_v2_model():
         col.allreduce(
             tensor=params,
             group_name="default",
-            ReduceOp=ReduceOp.SUM,
+            op=ReduceOp.SUM,
         )
         params /= num_workers
-        self.model.set_params(params, 1)
+        self.model.set_values(params, 1)
 
-    setattr(bolt.nn.Model, "distribute", _distribute)
+    setattr(bolt.train.Trainer, "distribute", _distribute)
     setattr(bolt.train.Trainer, "step", _step)
