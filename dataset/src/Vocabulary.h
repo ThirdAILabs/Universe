@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <iostream>
 #include <memory>
@@ -50,6 +53,12 @@ class Vocabulary {
 
   // To satisfy clang
   virtual ~Vocabulary() = default;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 class FixedVocabulary : public Vocabulary {
@@ -97,6 +106,17 @@ class FixedVocabulary : public Vocabulary {
   // constructors (from filepath and from stream).
   void loadFromStream(std::istream& vocab_stream);
 
+  // Does not check if token already exist, directly adds. This saves some
+  // compute when we know there cannot be duplicates by construction.
+  uint32_t add(const std::string& token_view);
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Vocabulary>(this), _token_to_id, _id_to_token,
+            _unk_id, _mask_id);
+  }
+
   // Stores the forward map from string-token to uint32_t ids.
   std::unordered_map<std::string, uint32_t> _token_to_id;
 
@@ -106,10 +126,6 @@ class FixedVocabulary : public Vocabulary {
 
   // Basic special token ids - for unknown and mask, stored explicitly.
   uint32_t _unk_id, _mask_id;
-
-  // Does not check if token already exist, directly adds. This saves some
-  // compute when we know there cannot be duplicates by construction.
-  uint32_t add(const std::string& token_view);
 };
 
 class WordpieceVocab : public Vocabulary {
@@ -157,6 +173,13 @@ class WordpieceVocab : public Vocabulary {
   // Helper method to load vocabulary from path at construction. Assumes the
   // file to be a newline separated list of tokens
   static TokenToId load(const std::string& vocab_fpath);
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Vocabulary>(this), _token_to_id, _id_to_token,
+            _to_lower);
+  }
 
   TokenToId _token_to_id;
   IdToToken _id_to_token;

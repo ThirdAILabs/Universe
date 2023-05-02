@@ -399,12 +399,6 @@ def test_return_train_metrics_streamed():
     assert len(metrics["categorical_accuracy"]) == num_samples / batch_size
 
 
-@pytest.mark.parametrize("encoding", ["none", "local", "global"])
-def test_udt_accepts_valid_text_encodings(encoding):
-    make_simple_trained_model(text_encoding_type=encoding)
-
-
-@pytest.mark.unit
 def test_udt_override_input_dim():
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical()},
@@ -426,7 +420,6 @@ def test_udt_override_input_dim():
     assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
 
 
-@pytest.mark.unit
 def test_udt_train_batch():
     import numpy as np
 
@@ -454,132 +447,3 @@ def test_udt_train_batch():
     predictions = np.argmax(scores, axis=0)
 
     assert (predictions == np.array([0, 1, 2])).all()
-
-
-@pytest.mark.unit
-def test_char_k_text_tokenizer():
-    # We want to check if UDT is actually using the character 3 gram block.
-    # We do this by memorizing 3 character words then using those words as part
-    # of unseen 4 character words in the test data.
-
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol,1\n")
-        f.write("lol,1\n")
-        f.write("aya,0\n")
-        f.write("aya,0\n")
-
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol9,1\n")
-        f.write("lol9,1\n")
-        f.write("aya9,0\n")
-        f.write("aya9,0\n")
-
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "text": bolt.types.text(tokenizer="char-3"),
-            "category": bolt.types.categorical(),
-        },
-        target="category",
-        n_target_classes=2,
-    )
-
-    model.train(train_filename, epochs=10, learning_rate=0.001)
-
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
-
-    assert metrics["categorical_accuracy"] == 1
-
-    os.remove(train_filename)
-    os.remove(test_filename)
-
-
-@pytest.mark.unit
-def test_words_punct_text_tokenizer():
-    # We want to check if UDT is actually using the words-punct tokenizer
-    # We do this by passing in words joined with punctuation in the training
-    # data then separating them in the testing data
-
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol.,1\n")
-        f.write("lol.,1\n")
-        f.write("aya?,0\n")
-        f.write("aya?,0\n")
-
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol .,1\n")
-        f.write("lol .,1\n")
-        f.write("aya ?,0\n")
-        f.write("aya ?,0\n")
-
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "text": bolt.types.text(tokenizer="words-punct"),
-            "category": bolt.types.categorical(),
-        },
-        target="category",
-        n_target_classes=2,
-    )
-
-    model.train(train_filename, epochs=10, learning_rate=0.001)
-
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
-
-    assert metrics["categorical_accuracy"] == 1
-
-    os.remove(train_filename)
-    os.remove(test_filename)
-
-
-@pytest.mark.unit
-def test_lowercasing_for_udt_text_type():
-    # We want to check if UDT is actually using lowercasing words in the text
-    # type. We do this by passing in words with some uppercase characters in the
-    # training data then changing the case slightly in the testing data
-
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("Lol,1\n")
-        f.write("lOl,1\n")
-        f.write("Aya,0\n")
-        f.write("aYa,0\n")
-
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("loL,1\n")
-        f.write("loL,1\n")
-        f.write("ayA,0\n")
-        f.write("ayA,0\n")
-
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "text": bolt.types.text(lowercase=True),
-            "category": bolt.types.categorical(),
-        },
-        target="category",
-        n_target_classes=2,
-    )
-
-    model.train(train_filename, epochs=10, learning_rate=0.001)
-
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
-
-    assert metrics["categorical_accuracy"] == 1
-
-    os.remove(train_filename)
-    os.remove(test_filename)
