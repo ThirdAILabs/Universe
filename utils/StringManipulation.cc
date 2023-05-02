@@ -1,4 +1,5 @@
 #include "StringManipulation.h"
+#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <optional>
@@ -6,11 +7,12 @@
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <utf8proc.h>
 #include <vector>
 
 namespace thirdai::text {
 
-std::vector<std::string_view> split(std::string_view string, char delimiter) {
+std::vector<std::string_view> split(std::string string, char delimiter) {
   std::vector<std::string_view> words;
 
   bool prev_is_delim = true;
@@ -140,6 +142,31 @@ std::string fromUnicode(const std::wstring& wText) {
   return ret;
 }
 
+std::string normalize(const std::string& s) {
+  std::string ret;
+
+  // The utf8proc API takes in a const char *, and returns a new char * pointing
+  // to the NFD normalized string. It is the responsibility of the client to
+  // deallocate this if not needed further.
+  //
+  char* result = reinterpret_cast<char*>(
+      utf8proc_NFD(reinterpret_cast<const unsigned char*>(s.c_str())));
+  if (result) {
+    // Pack into an RAII managed object (this is a copy).
+    ret = std::string(result);
+
+    // We are responsible for de-allocating the `malloc`d memory for the
+    // normalized string, now that we have copied it for our purposes. If we
+    // don't do the free below, it will be a leak.
+    //
+    // Linter appears to think something else, so:
+    // NOLINTNEXTLINE
+    free(result);
+    result = NULL;
+  }
+  return ret;
+}
+
 std::wstring strip(const std::wstring& text,
                    const std::wstring& strip_characters) {
   // Empty string, return empty-string, no iterations involved - fast path.
@@ -166,6 +193,128 @@ std::wstring strip(const std::wstring& text,
 
   // [left, right) now represents stripped substring.
   return text.substr(left, right - left);
+}
+
+std::wstring normalizeSpaces(const std::wstring& text) {
+  std::wstring output;
+  for (const wchar_t& cp : text) {
+    if (cp == 0 || cp == 0xfffd || isControl(cp)) {
+      continue;
+    }
+    if (isWhitespace(cp)) {
+      output += L" ";
+    } else {
+      output += cp;
+    }
+  }
+  return output;
+}
+
+std::wstring stripAccents(const std::wstring& text) {
+  // Strips accents from a piece of text.
+  std::wstring nText;
+  try {
+    nText = toUnicode(normalize(fromUnicode(text)));
+  } catch (std::bad_cast& e) {
+    std::cerr << "bad_cast" << std::endl;
+    return L"";
+  }
+
+  std::wstring output;
+  for (auto& c : nText) {
+    auto category = utf8proc_category(c);
+    if (category == UTF8PROC_CATEGORY_MN) {
+      continue;
+    }
+    output += c;
+  }
+  return output;
+}
+
+bool isControl(const wchar_t& c) {
+  if (c == L'\t' || c == L'\n' || c == L'\r') {
+    return false;
+  }
+  auto category = utf8proc_category(c);
+  if (category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF) {
+    // NOLINTNEXTLINE
+    return true;
+  }
+  return false;
+}
+
+bool isWhitespace(const wchar_t& c) {
+  if (c == L' ' || c == L'\t' || c == L'\n' || c == L'\r') {
+    return true;
+  }
+  auto category = utf8proc_category(c);
+  if (category == UTF8PROC_CATEGORY_ZS) {
+    // NOLINTNEXTLINE
+    return true;
+  }
+  return false;
+}
+
+bool isPunctuation(const wchar_t& c) {
+  if ((c >= 33 && c <= 47) || (c >= 58 && c <= 64) || (c >= 91 && c <= 96) ||
+      (c >= 123 && c <= 126)) {
+    return true;
+  }
+  auto category = utf8proc_category(c);
+  if (category == UTF8PROC_CATEGORY_PD || category == UTF8PROC_CATEGORY_PS ||
+      category == UTF8PROC_CATEGORY_PE || category == UTF8PROC_CATEGORY_PC ||
+      category == UTF8PROC_CATEGORY_PO  // sometimes ¶ belong SO
+      || category == UTF8PROC_CATEGORY_PI || category == UTF8PROC_CATEGORY_PF) {
+    // NOLINTNEXTLINE
+    return true;
+  }
+  return false;
+}
+
+bool isChineseChar(const wchar_t& c) {
+  if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF) ||
+      (c >= 0x20000 && c <= 0x2A6DF) || (c >= 0x2A700 && c <= 0x2B73F) ||
+      (c >= 0x2B740 && c <= 0x2B81F) || (c >= 0x2B820 && c <= 0x2CEAF) ||
+      (c >= 0xF900 && c <= 0xFAFF) || (c >= 0x2F800 && c <= 0x2FA1F)) {
+    // NOLINTNEXTLINE
+    return true;
+  }
+  return false;
+}
+
+std::vector<std::wstring> splitOnWhitespace(const std::wstring& text) {
+  std::wstring rtext = strip(text);
+  if (rtext.empty()) {
+    return std::vector<std::wstring>();
+  }
+  return split(text);
+}
+
+std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
+  std::wstring buffer;
+  std::vector<std::wstring> output;
+  for (wchar_t c : text) {
+    if (isPunctuation(c)) {
+      if (!buffer.empty()) {
+        // Push the current string, move makes string empty again.
+        output.push_back(std::move(buffer));
+        buffer = L"";
+      }
+
+      // Push punctuation as a separate token.
+      output.push_back(std::wstring(&c, 1));
+    } else {
+      // Not a punctuation. Append to buffer.
+      buffer += c;
+    }
+  }
+
+  // Overhang, if not empty. Push it in as a token.
+  if (!buffer.empty()) {
+    output.push_back(std::move(buffer));
+  }
+
+  return output;
 }
 
 }  // namespace thirdai::text

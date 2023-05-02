@@ -119,7 +119,7 @@ class WordpieceVocab : public Vocabulary {
 
   std::vector<uint32_t> encode(const std::string_view& sentence) const final;
 
-  std::vector<std::wstring> tokenize(const std::string_view& sentence) const;
+  std::vector<std::wstring> tokenize(const std::string& sentence) const;
 
   std::string decode(const std::vector<uint32_t>& token_ids) const final;
 
@@ -132,6 +132,21 @@ class WordpieceVocab : public Vocabulary {
   uint32_t maskId() const final { return _token_to_id.at(L"[MASK]"); };
 
  private:
+  /**
+   * This function handles a lot of the preprocessing that is needed before we
+   * can tokenize via subwords (calling wordpieceTokenize). Mainly this
+   * include splitting by white space/punctuations, converting to unicode,
+   * normalizing spaces, separating out chinese special characters, etc.
+   */
+  static std::vector<std::wstring> basicTokenize(const std::string& text,
+                                                 bool to_lower);
+
+  std::vector<std::wstring> wordpieceTokenize(
+      const std::wstring& text, const std::wstring& unk = L"[UNK]",
+      size_t max_chars_per_wordpiece = 200) const;
+
+  static std::wstring tokenizeChineseChars(const std::wstring& text);
+
   using TokenToId = std::unordered_map<std::wstring, size_t>;
   using IdToToken = std::unordered_map<size_t, std::wstring>;
 

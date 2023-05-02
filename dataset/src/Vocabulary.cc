@@ -163,8 +163,8 @@ std::vector<uint32_t> WordpieceVocab::encode(
   std::vector<std::wstring> tokens = tokenize(buffer);
   std::vector<uint32_t> encoded(tokens.size());
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    auto query = _word_to_id.find(tokens[i]);
-    assert(query != _word_to_id.end());
+    auto query = _token_to_id.find(tokens[i]);
+    assert(query != _token_to_id.end());
     encoded[i] = query->second;
   }
   return encoded;
@@ -194,12 +194,128 @@ std::string WordpieceVocab::decode(
 
 uint32_t WordpieceVocab::id(const std::string_view& token_view) const {
   std::string token(token_view.data(), token_view.size());
-  std::wstring wtoken = text::toUnicode(token);  // TODO(david) normalize here?
+  std::wstring wtoken = text::toUnicode(text::normalize(token));
   auto query = _token_to_id.find(wtoken);
   if (query != _token_to_id.end()) {
     return query->second;
   }
   return unkId();
+}
+
+std::vector<std::wstring> WordpieceVocab::tokenize(
+    const std::string& sentence) const {
+  std::vector<std::wstring> subwords;
+
+  std::vector<std::wstring> tokens = basicTokenize(sentence, _to_lower);
+  for (const std::wstring& token : tokens) {
+    std::vector<std::wstring> wordpieces = wordpieceTokenize(token);
+    subwords.insert(subwords.end(), wordpieces.begin(), wordpieces.end());
+  }
+
+  return subwords;
+}
+
+std::vector<std::wstring> WordpieceVocab::basicTokenize(const std::string& text,
+                                                        bool to_lower) {
+  std::wstring u_text = text::toUnicode(text);
+  u_text = text::normalizeSpaces(u_text);
+  u_text = tokenizeChineseChars(u_text);
+
+  std::vector<std::wstring> tokens;
+
+  // Split at (normalized) whitespaces to begin with.
+  std::vector<std::wstring> space_tokens = text::splitOnWhitespace(u_text);
+  for (std::wstring space_token : space_tokens) {
+    if (to_lower) {
+      space_token = text::lower(space_token);
+      space_token = text::stripAccents(space_token);
+    }
+
+    // Tokenize by punctuations. This means punctuations appear in text as
+    // tokens.
+    std::vector<std::wstring> punct_tokens =
+        text::tokenizeByPunctuations(space_token);
+
+    tokens.insert(tokens.end(), punct_tokens.begin(), punct_tokens.end());
+  }
+
+  return tokens;
+}
+
+std::wstring WordpieceVocab::tokenizeChineseChars(const std::wstring& text) {
+  std::wstring output;
+  for (const wchar_t c : text) {
+    if (text::isChineseChar(c)) {
+      output += L' ';
+      output += c;
+      output += L' ';
+    } else {
+      output += c;
+    }
+  }
+  return output;
+}
+
+std::vector<std::wstring> WordpieceVocab::wordpieceTokenize(
+    const std::wstring& text, const std::wstring& unk /*= L"[UNK]"*/,
+    size_t max_chars_per_wordpiece /*= 200*/) const {
+  // This is mostly from
+  // https://github.com/huggingface/transformers/blob/447808c85f0e6d6b0aeeb07214942bf1e578f9d2/src/transformers/models/bert/tokenization_bert.py#L512-L558
+  std::vector<std::wstring> wordpieces;
+
+  // TODO(jerin-thirdai): The following block looks like it can be simplified.
+  // It is currently riddled with jump statements and can be more structured.
+  std::vector<std::wstring> words = text::splitOnWhitespace(text);
+  for (const std::wstring& token : words) {
+    if (token.size() > max_chars_per_wordpiece) {
+      wordpieces.push_back(unk);
+      continue;
+    }
+
+    std::vector<std::wstring> subwords;
+
+    bool is_bad = false;
+    size_t start = 0;
+
+    while (start < token.size()) {
+      size_t end = token.size();
+      std::wstring candidate;
+      bool candidate_valid = false;
+      while (start < end) {
+        std::wstring buffer;
+
+        // Add ## prefix if we're in the middle of a word.
+        if (start > 0) {
+          buffer += L"##";
+        }
+
+        buffer += token.substr(start, end - start);
+
+        if (_token_to_id.find(buffer) != _token_to_id.end()) {
+          candidate = buffer;
+          candidate_valid = true;
+          break;
+        }
+
+        end--;
+      }
+
+      if (!candidate_valid) {
+        is_bad = true;
+        break;
+      }
+
+      subwords.push_back(candidate);
+      start = end;
+    }
+
+    if (is_bad) {
+      wordpieces.push_back(unk);
+    } else {
+      wordpieces.insert(wordpieces.end(), subwords.begin(), subwords.end());
+    }
+  }
+  return wordpieces;
 }
 
 }  // namespace thirdai::dataset
