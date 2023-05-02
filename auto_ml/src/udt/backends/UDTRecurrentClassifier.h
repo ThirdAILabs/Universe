@@ -61,7 +61,7 @@ class UDTRecurrentClassifier final : public UDTBackend {
   static ModelPtr buildModel(uint32_t n_layers, uint32_t input_dim,
                              uint32_t hidden_dim, uint32_t output_dim,
                              const std::string& hidden_act,
-                             uint32_t hidden_sparsity, uint32_t output_sparsity,
+                             float hidden_sparsity, float output_sparsity,
                              bool use_sigmoid_bce);
 
   friend cereal::access;

@@ -243,7 +243,7 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
 ModelPtr UDTRecurrentClassifier::buildModel(
     uint32_t n_layers, uint32_t input_dim, uint32_t hidden_dim,
     uint32_t output_dim, const std::string& hidden_act,
-    uint32_t hidden_sparsity, uint32_t output_sparsity, bool use_sigmoid_bce) {
+    float hidden_sparsity, float output_sparsity, bool use_sigmoid_bce) {
   auto output_index = bolt::nn::ops::Input::make(n_layers);
   auto input = bolt::nn::ops::Input::make(input_dim);
 
