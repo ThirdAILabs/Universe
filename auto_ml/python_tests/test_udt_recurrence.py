@@ -142,5 +142,3 @@ def test_udt_recurrence_zero_max_length_throws():
             target="output",
             n_target_classes=4,
         )
-
-test_udt_recurrence_short_output_does_not_break()
