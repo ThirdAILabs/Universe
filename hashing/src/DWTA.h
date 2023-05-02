@@ -42,6 +42,10 @@ class DWTAHashFunction final : public HashFunction {
   }
 
   std::string getName() const final { return "DWTA"; }
+
+  void save(const std::string& filename);
+
+  static std::shared_ptr<HashFunction> load(const std::string& filename);
 };
 
 }  // namespace thirdai::hashing

@@ -7,7 +7,7 @@
 
 namespace thirdai::bolt {
 
-std::unique_ptr<hashing::HashFunction> DWTASamplingConfig::getHashFunction(
+hashing::HashFunctionPtr DWTASamplingConfig::getHashFunction(
     uint32_t input_dim) const {
   return std::make_unique<hashing::DWTAHashFunction>(
       /* input_dim= */ input_dim,
@@ -16,9 +16,8 @@ std::unique_ptr<hashing::HashFunction> DWTASamplingConfig::getHashFunction(
       /* range_pow= */ 3 * _num_tables);
 }
 
-std::unique_ptr<hashtable::SampledHashTable<uint32_t>>
-DWTASamplingConfig::getHashTable() const {
-  return std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+hashtable::SampledHashTablePtr DWTASamplingConfig::getHashTable() const {
+  return std::make_unique<hashtable::SampledHashTable>(
       /* num_tables= */ _num_tables,
       /* reservoir_size= */ _reservoir_size,
       /* range= */ 1 << (3 * _hashes_per_table));
@@ -84,16 +83,15 @@ SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
       /* reservoir_size= */ reservoir_size);
 }
 
-std::unique_ptr<hashing::HashFunction> FastSRPSamplingConfig::getHashFunction(
+hashing::HashFunctionPtr FastSRPSamplingConfig::getHashFunction(
     uint32_t input_dim) const {
   return std::make_unique<hashing::FastSRP>(
       /* input_dim= */ input_dim, /* hashes_per_table= */ _hashes_per_table,
       /* num_tables= */ _num_tables);
 }
 
-std::unique_ptr<hashtable::SampledHashTable<uint32_t>>
-FastSRPSamplingConfig::getHashTable() const {
-  return std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+hashtable::SampledHashTablePtr FastSRPSamplingConfig::getHashTable() const {
+  return std::make_unique<hashtable::SampledHashTable>(
       /* num_tables= */ _num_tables,
       /* reservoir_size= */ _reservoir_size,
       /* range= */ 1 << _hashes_per_table);
