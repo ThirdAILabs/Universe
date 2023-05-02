@@ -10,12 +10,10 @@ namespace thirdai::dataset {
 
 class CountBlock final : public Block {
  public:
-  CountBlock(ColumnIdentifier column, char delimiter)
-      : _column(std::move(column)), _delimiter(delimiter) {}
+  CountBlock(ColumnIdentifier column, char delimiter, uint32_t dim)
+      : _column(std::move(column)), _delimiter(delimiter), _dim(dim) {}
 
-  uint32_t featureDim() const final {
-    return std::numeric_limits<uint32_t>::max();
-  }
+  uint32_t featureDim() const final { return _dim; }
 
   bool isDense() const final { return false; }
 
@@ -37,13 +35,14 @@ class CountBlock final : public Block {
     return {&_column};
   }
 
-  static auto make(ColumnIdentifier column, char delimiter) {
-    return std::make_shared<CountBlock>(std::move(column), delimiter);
+  static auto make(ColumnIdentifier column, char delimiter, uint32_t dim) {
+    return std::make_shared<CountBlock>(std::move(column), delimiter, dim);
   }
 
  private:
   ColumnIdentifier _column;
   char _delimiter;
+  uint32_t _dim;
 };
 
 }  // namespace thirdai::dataset

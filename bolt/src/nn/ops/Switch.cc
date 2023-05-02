@@ -80,10 +80,12 @@ std::vector<std::vector<float>*> Switch::gradients() {
 void Switch::summary(std::ostream& summary,
                      const autograd::ComputationList& inputs,
                      const autograd::Computation* output) const {
-  summary << "Switch(" << name() << "):" << std::endl;
+  summary << "Switch(" << name() << "): switch on " << inputs.front()->name()
+          << std::endl;
   for (const auto& op : _fc_ops) {
     summary << "\t";
-    op->summary(summary, inputs, output);
+    op->summary(summary, fcInputs(inputs), output);
+    summary << std::endl;
   }
 }
 
@@ -95,6 +97,12 @@ void Switch::setSerializeOptimizer(bool should_serialize_optimizer) {
 
 autograd::ComputationPtr Switch::apply(autograd::ComputationPtr index,
                                        autograd::ComputationPtr input) {
+  if (index->dim() != _fc_ops.size()) {
+    std::stringstream error;
+    error << "Cannot apply Switch op with n_layers = " << _fc_ops.size()
+          << " to input tensor with dim " << index->dim() << ".";
+    throw std::invalid_argument(error.str());
+  }
   if (input->dim() != inputDim()) {
     std::stringstream error;
     error << "Cannot apply Switch op with weight matrix of shape (" << dim()
@@ -159,7 +167,7 @@ template void Switch::serialize(cereal::BinaryInputArchive&);
 
 template <class Archive>
 void Switch::serialize(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _fc_ops);
+  archive(cereal::base_class<Op>(this));
 }
 
 }  // namespace thirdai::bolt::nn::ops

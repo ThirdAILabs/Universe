@@ -219,10 +219,12 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
           _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
 }
 
-ModelPtr buildModel(uint32_t n_layers, uint32_t input_dim, uint32_t hidden_dim,
-                    uint32_t output_dim, bool use_sigmoid_bce) {
-  auto output_index =
-      bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max());
+ModelPtr UDTRecurrentClassifier::buildModel(uint32_t n_layers,
+                                            uint32_t input_dim,
+                                            uint32_t hidden_dim,
+                                            uint32_t output_dim,
+                                            bool use_sigmoid_bce) {
+  auto output_index = bolt::nn::ops::Input::make(n_layers);
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
