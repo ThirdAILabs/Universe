@@ -7,7 +7,6 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <cmath>
-#include <string_view>
 
 namespace thirdai::dataset {
 
@@ -177,17 +176,17 @@ TEST(UserCountHistoryBlockTest,
       {key + "," + val + "," + timestamp},
   };
 
-  auto count_before = count_history->getHistory(
-      key, TimeObject(std::string_view(timestamp.data())).secondsSinceEpoch());
+  auto count_before =
+      count_history->getHistory(key, TimeObject(timestamp).secondsSinceEpoch());
 
   processBatch(block, input_rows);
 
-  std::vector<std::string_view> input_row_view(3);
-  input_row_view[0] = std::string_view(key.data(), /* len= */ 4);
-  input_row_view[1] = std::string_view(val.data(), /* len= */ 1);
-  input_row_view[2] = std::string_view(timestamp.data(), /* len= */ 10);
+  std::vector<std::string> input_row(3);
+  input_row[0] = std::string(key.data(), /* len= */ 4);
+  input_row[1] = std::string(val.data(), /* len= */ 1);
+  input_row[2] = std::string(timestamp.data(), /* len= */ 10);
 
-  RowSampleRef input_row_view_ref(input_row_view);
+  RowSampleRef input_row_view_ref(input_row);
   block->explainIndex(/* index_within_block= */ 0, input_row_view_ref);
 
   auto count_after =

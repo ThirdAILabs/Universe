@@ -122,12 +122,12 @@ bool RecurrenceAugmentation::isEOS(uint32_t element_id) {
   return elementString(element_id) == EOS;
 }
 
-std::vector<std::string_view> RecurrenceAugmentation::sequence(
+std::vector<std::string> RecurrenceAugmentation::sequence(
     ColumnarInputSample& input_sample) const {
   auto sequence =
       text::split(input_sample.column(_sequence_column), _delimiter);
   if (sequence.size() < _max_recurrence) {
-    sequence.push_back(EOS);
+    sequence.push_back(std::string(EOS));
   }
 
   if (sequence.size() > _max_recurrence) {
@@ -137,7 +137,7 @@ std::vector<std::string_view> RecurrenceAugmentation::sequence(
 }
 
 std::vector<uint32_t> RecurrenceAugmentation::elementIds(
-    const std::vector<std::string_view>& sequence) {
+    const std::vector<std::string>& sequence) {
   std::vector<uint32_t> element_ids(sequence.size());
   for (uint32_t i = 0; i < element_ids.size(); i++) {
     uint32_t offset = i * _vocab.maxSize().value();

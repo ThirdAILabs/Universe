@@ -4,7 +4,6 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <functional>
-#include <string_view>
 #include <type_traits>
 
 namespace thirdai::dataset::token_encoding {
@@ -29,7 +28,7 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
   return tokens;
 }
 
-std::vector<uint32_t> hashTokens(const std::vector<std::string_view>& strings) {
+std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings) {
   std::vector<uint32_t> hashes;
   hashes.reserve(strings.size());
 
@@ -79,7 +78,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 }
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    std::vector<std::string_view> words, uint32_t output_range) {
+    const std::vector<std::string>& words, uint32_t output_range) {
   auto tokens = hashTokens(words);
 
   assert(words.size() == tokens.size());

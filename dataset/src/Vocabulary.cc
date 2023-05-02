@@ -19,8 +19,8 @@ void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
   // clang-tidy complains members should be initialized in initializer list,
   // unfortunately not possible without cruft (add is a non-static
   // member and expects the unordered map to be initialized).
-  _unk_id = add(special_tokens::UNK);    // NOLINT
-  _mask_id = add(special_tokens::MASK);  // NOLINT
+  _unk_id = add(std::string(special_tokens::UNK));    // NOLINT
+  _mask_id = add(std::string(special_tokens::MASK));  // NOLINT
 
   // Proceed to read from file to add the remaining vocabulary tokens. We
   // expect supplied files to be one token per-line.
@@ -33,7 +33,7 @@ void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
 uint32_t FixedVocabulary::size() const { return _token_to_id.size(); }
 
 std::vector<uint32_t> FixedVocabulary::encode(
-    const std::string_view& sentence) const {
+    const std::string& sentence) const {
   std::vector<uint32_t> token_ids;
 
   // The following describes a simple whitespace tokenization algorithm.
@@ -55,7 +55,7 @@ std::vector<uint32_t> FixedVocabulary::encode(
     if (isspace(*marker)) {
       // A word terminated by a space.
       size_t token_length = marker - base;
-      std::string_view token(base, token_length);
+      std::string token(base, token_length);
       uint32_t token_id = id(token);
       token_ids.push_back(token_id);
 
@@ -76,7 +76,7 @@ std::vector<uint32_t> FixedVocabulary::encode(
   // token length > 0.
   size_t token_length = marker - base;
   if (token_length) {
-    std::string_view token(base, token_length);
+    std::string token(base, token_length);
     uint32_t token_id = id(token);
     token_ids.push_back(token_id);
   }
@@ -105,7 +105,7 @@ std::string FixedVocabulary::decode(
   return stream.str();
 }
 
-uint32_t FixedVocabulary::id(const std::string_view& token_view) const {
+uint32_t FixedVocabulary::id(const std::string& token_view) const {
   std::string token(token_view.data(), token_view.size());
   auto query = _token_to_id.find(token);
   if (query == _token_to_id.end()) {
@@ -119,7 +119,7 @@ uint32_t FixedVocabulary::id(const std::string_view& token_view) const {
 uint32_t FixedVocabulary::unkId() const { return _unk_id; }
 uint32_t FixedVocabulary::maskId() const { return _mask_id; }
 
-uint32_t FixedVocabulary::add(const std::string_view& token_view) {
+uint32_t FixedVocabulary::add(const std::string& token_view) {
   std::string token(token_view.data(), token_view.size());
   auto query = _token_to_id.find(token);
   if (query != _token_to_id.end()) {

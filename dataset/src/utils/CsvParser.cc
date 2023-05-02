@@ -149,9 +149,9 @@ ParserState StateMachine::fromPotentialEndQuote(char current_char) const {
 }
 
 // Extracts the last column seen so far from `line`.
-static std::string_view columnView(std::string_view line,
-                                   ParserState column_end_state,
-                                   uint32_t start_index, uint32_t end_index) {
+static std::string columnView(const std::string& line,
+                              ParserState column_end_state,
+                              uint32_t start_index, uint32_t end_index) {
   if (column_end_state == ParserState::PotentialEndQuote) {
     // If the column end state is PotentialEndQuote, then the previous column
     // must be quoted. Thus, we trim the quotes by incrementing start and
@@ -177,7 +177,7 @@ static bool quotesAreMalformed(StateMachine& state_machine, bool is_last_char) {
   return (is_last_char && still_in_quotes) || regular_char_after_end_quote;
 }
 
-static std::string_view trimNewlineAtEndOfLine(const std::string& line) {
+static std::string trimNewlineAtEndOfLine(const std::string& line) {
   if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n") {
     return {line.data(), line.size() - 2};
   }
@@ -207,9 +207,9 @@ static void resetOptional(std::optional<uint32_t>& optional) {
   optional = opt;
 }
 
-std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
-                                        char delimiter) {
-  std::vector<std::string_view> parsed_columns;
+std::vector<std::string> parseLine(const std::string& untrimmed_line,
+                                   char delimiter) {
+  std::vector<std::string> parsed_columns;
 
   auto line = trimNewlineAtEndOfLine(untrimmed_line);
 
