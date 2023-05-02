@@ -39,7 +39,10 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
           utils::buildModel(
               /* input_dim= */ tabular_options.feature_hash_range,
               /* output_dim= */ n_target_classes,
-              /* args= */ user_args, /* model_config= */ model_config),
+              /* args= */ user_args, /* model_config= */ model_config,
+              /* use_sigmoid_bce = */
+              user_args.get<bool>("sigmoid_bce", "boolean",
+                                  defaults::USE_SIGMOID_BCE)),
           user_args.get<bool>("freeze_hash_tables", "boolean",
                               defaults::FREEZE_HASH_TABLES))) {
   bool normalize_target_categories = utils::hasSoftmaxOutput(model());

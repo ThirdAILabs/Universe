@@ -7,7 +7,7 @@
 namespace thirdai::bolt::train {
 
 Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
-                        std::vector<uint32_t> dims) {
+                        std::vector<uint32_t> dims, bool copy) {
   if (datasets.empty()) {
     return {};
   }
@@ -34,13 +34,19 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
   std::exception_ptr err;
 
 #pragma omp parallel for default(none) \
-    shared(num_batches, datasets, batches, dims, err)
+    shared(num_batches, datasets, batches, dims, copy, err)
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     for (uint32_t dataset_idx = 0; dataset_idx < datasets.size();
          dataset_idx++) {
       try {
-        batches.at(batch_idx).push_back(nn::tensor::Tensor::convert(
-            datasets[dataset_idx]->at(batch_idx), dims.at(dataset_idx)));
+        if (copy) {
+          batches.at(batch_idx).push_back(nn::tensor::Tensor::copy(
+              datasets[dataset_idx]->at(batch_idx), dims.at(dataset_idx)));
+        } else {
+          batches.at(batch_idx).push_back(nn::tensor::Tensor::convert(
+              std::move(datasets[dataset_idx]->at(batch_idx)),
+              dims.at(dataset_idx)));
+        }
       } catch (...) {
 #pragma omp critical
         err = std::current_exception();
@@ -55,12 +61,13 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
   return batches;
 }
 
-Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
+Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim,
+                       bool copy) {
   std::vector<dataset::BoltDatasetPtr> datasets = {dataset};
-  return convertDatasets({std::move(datasets)}, {dim});
+  return convertDatasets({std::move(datasets)}, {dim}, copy);
 }
 
-nn::tensor::TensorList convertBatch(const std::vector<BoltBatch>& batches,
+nn::tensor::TensorList convertBatch(std::vector<BoltBatch>&& batches,
                                     const std::vector<uint32_t>& dims) {
   if (dims.size() != batches.size()) {
     throw std::invalid_argument(
@@ -69,13 +76,14 @@ nn::tensor::TensorList convertBatch(const std::vector<BoltBatch>& batches,
 
   nn::tensor::TensorList tensors;
   for (uint32_t i = 0; i < batches.size(); i++) {
-    tensors.push_back(nn::tensor::Tensor::convert(batches[i], dims[i]));
+    tensors.push_back(
+        nn::tensor::Tensor::convert(std::move(batches[i]), dims[i]));
   }
 
   return tensors;
 }
 
-nn::tensor::TensorList convertVectors(const std::vector<BoltVector>& vectors,
+nn::tensor::TensorList convertVectors(std::vector<BoltVector>&& vectors,
                                       const std::vector<uint32_t>& dims) {
   if (dims.size() != vectors.size()) {
     throw std::invalid_argument(
@@ -84,7 +92,8 @@ nn::tensor::TensorList convertVectors(const std::vector<BoltVector>& vectors,
 
   nn::tensor::TensorList tensors;
   for (uint32_t i = 0; i < vectors.size(); i++) {
-    tensors.push_back(nn::tensor::Tensor::convert(vectors[i], dims[i]));
+    tensors.push_back(
+        nn::tensor::Tensor::convert(std::move(vectors[i]), dims[i]));
   }
 
   return tensors;

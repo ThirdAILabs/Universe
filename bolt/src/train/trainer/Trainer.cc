@@ -15,8 +15,11 @@ namespace thirdai::bolt::train {
 
 constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
-Trainer::Trainer(nn::model::ModelPtr model)
-    : _model(std::move(model)), _epoch(0) {
+Trainer::Trainer(nn::model::ModelPtr model,
+                 std::optional<uint32_t> freeze_hash_tables_epoch)
+    : _model(std::move(model)),
+      _epoch(0),
+      _freeze_hash_tables_epoch(freeze_hash_tables_epoch) {
   _history = std::make_shared<metrics::History>();
 }
 
@@ -53,6 +56,10 @@ metrics::History Trainer::train(
 
   uint32_t num_epochs = _epoch + epochs;
   for (; _epoch < num_epochs; _epoch++) {
+    if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+    }
+
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();
@@ -167,12 +174,12 @@ metrics::History Trainer::train_with_dataset_loader(
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval) {
   if (!max_in_memory_batches) {
-    auto train_data = train_data_loader->loadAllTensors(batch_size, verbose);
+    auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 
     std::optional<LabeledDataset> validation_data = std::nullopt;
     if (validation_data_loader) {
       validation_data =
-          validation_data_loader->loadAllTensors(batch_size, verbose);
+          loadAllWrapper(validation_data_loader, batch_size, verbose);
     }
 
     return train_with_metric_names(
@@ -189,12 +196,13 @@ metrics::History Trainer::train_with_dataset_loader(
   std::optional<LabeledDataset> validation_data = std::nullopt;
   if (validation_data_loader) {
     validation_data =
-        validation_data_loader->loadAllTensors(batch_size, verbose);
+        loadAllWrapper(validation_data_loader, batch_size, verbose);
   }
 
   for (uint32_t e = 0; e < epochs; e++) {
-    while (auto train_chunk = train_data_loader->loadSomeTensors(
-               batch_size, *max_in_memory_batches, verbose)) {
+    while (auto train_chunk =
+               loadSomeWrapper(train_data_loader, batch_size,
+                               *max_in_memory_batches, verbose)) {
       train_with_metric_names(
           train_chunk.value(), learning_rate, epochs, train_metrics,
           validation_data, validation_metrics, steps_per_validation,
@@ -262,8 +270,8 @@ metrics::History Trainer::validate_with_dataset_loader(
     const dataset::DatasetLoaderPtr& data,
     const std::vector<std::string>& metrics, bool use_sparsity, bool verbose) {
   return validate_with_metric_names(
-      /* data= */ data->loadAllTensors(/* batch_size= */ DEFAULT_BATCH_SIZE,
-                                       verbose),
+      /* data= */ loadAllWrapper(data, /* batch_size= */ DEFAULT_BATCH_SIZE,
+                                 verbose),
       /* metrics= */ metrics, /* use_sparsity= */ use_sparsity,
       /* verbose= */ verbose);
 }
@@ -309,6 +317,47 @@ void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
                                 /* batch_size= */ batch_size);
     }
   }
+}
+
+LabeledDataset Trainer::loadAllWrapper(
+    const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+    bool verbose) {
+  auto data = loadSomeWrapper(dataset_loader, batch_size,
+                              std::numeric_limits<uint32_t>::max(), verbose);
+  if (!data) {
+    throw std::runtime_error("Unable to load data from data source.");
+  }
+  return std::move(data.value());
+}
+
+std::optional<LabeledDataset> Trainer::loadSomeWrapper(
+    const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+    uint32_t max_batches, bool verbose) {
+  auto datasets = dataset_loader->loadSome(batch_size, max_batches, verbose);
+  if (!datasets) {
+    return std::nullopt;
+  }
+
+  auto input_dims = _model->inputDims();
+  auto label_dims = _model->labelDims();
+
+  if (datasets->size() != (input_dims.size() + label_dims.size())) {
+    std::stringstream error;
+    error << "DatasetLoader generated " << datasets->size()
+          << " but the model was expecting " << input_dims.size()
+          << " inputs and " << label_dims.size() << " labels.";
+    throw std::invalid_argument(error.str());
+  }
+
+  std::vector<dataset::BoltDatasetPtr> input_datasets(
+      datasets->begin(), datasets->begin() + input_dims.size());
+
+  std::vector<dataset::BoltDatasetPtr> label_datasets(
+      datasets->begin() + input_dims.size(), datasets->end());
+
+  return std::make_optional<LabeledDataset>(
+      convertDatasets(input_datasets, input_dims, /* copy= */ false),
+      convertDatasets(label_datasets, label_dims, /* copy= */ false));
 }
 
 }  // namespace thirdai::bolt::train

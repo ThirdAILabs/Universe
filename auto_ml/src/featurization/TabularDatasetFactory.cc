@@ -72,7 +72,7 @@ TensorList TabularDatasetFactory::featurizeInputBatch(
   result.emplace_back(
       std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
 
-  return bolt::train::convertBatch(result,
+  return bolt::train::convertBatch(std::move(result),
                                    _inference_featurizer->getDimensions());
 }
 

@@ -157,7 +157,7 @@ TensorList GraphDatasetManager::featurizeInputBatch(
     result.emplace_back(std::move(batch));
   }
 
-  return bolt::train::convertBatch(result,
+  return bolt::train::convertBatch(std::move(result),
                                    _inference_featurizer->getDimensions());
 }
 

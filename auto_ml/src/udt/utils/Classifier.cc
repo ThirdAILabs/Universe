@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
+#include <optional>
 
 namespace thirdai::automl::udt::utils {
 
@@ -36,34 +37,20 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     bool verbose, std::optional<uint32_t> logging_interval) {
   uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  bolt::train::Trainer trainer(_model);
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch);
 
   const auto& [val_data, val_args] = validation;
 
-  bolt::train::metrics::History history;
-  if (_freeze_hash_tables) {
-    history = trainer.train_with_dataset_loader(
-        dataset, learning_rate, /* epochs= */ 1, batch_size,
-        max_in_memory_batches, metrics, val_data, val_args.metrics(),
-        val_args.stepsPerValidation(), val_args.sparseInference(), callbacks,
-        /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
-
-    _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
-
-    dataset->restart();
-    if (val_data) {
-      val_data->restart();
-    }
-    epochs--;
-  }
-
-  if (epochs > 0) {
-    history = trainer.train_with_dataset_loader(
-        dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
-        metrics, val_data, val_args.metrics(), val_args.stepsPerValidation(),
-        val_args.sparseInference(), callbacks,
-        /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
-  }
+  auto history = trainer.train_with_dataset_loader(
+      dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
+      metrics, val_data, val_args.metrics(), val_args.stepsPerValidation(),
+      val_args.sparseInference(), callbacks,
+      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
 
   /**
    * For binary classification we tune the prediction threshold to optimize

@@ -472,11 +472,9 @@ def test_char_k_text_tokenizer():
 
     model.train(train_filename, epochs=10, learning_rate=0.001)
 
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
+    metrics = model.evaluate(test_filename, metrics=["categorical_accuracy"])
 
-    assert metrics["categorical_accuracy"] == 1
+    assert metrics["val_categorical_accuracy"][-1] == 1
 
     os.remove(train_filename)
     os.remove(test_filename)
@@ -515,11 +513,9 @@ def test_words_punct_text_tokenizer():
 
     model.train(train_filename, epochs=10, learning_rate=0.001)
 
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
+    metrics = model.evaluate(test_filename, metrics=["categorical_accuracy"])
 
-    assert metrics["categorical_accuracy"] == 1
+    assert metrics["val_categorical_accuracy"][-1] == 1
 
     os.remove(train_filename)
     os.remove(test_filename)
