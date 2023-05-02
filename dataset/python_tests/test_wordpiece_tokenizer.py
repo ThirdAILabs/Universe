@@ -1,9 +1,7 @@
 import os
 
 import pytest
-from thirdai.dataset import FixedVocabulary, Wordpiece
-
-pytestmark = [pytest.mark.unit]
+from thirdai.dataset import Wordpiece
 
 BERT_TAG = "bert-base-uncased"
 BERT_VOCAB_PATH = f"{BERT_TAG}.vocab"
@@ -36,91 +34,35 @@ BERT_RAW_SAMPLES = [
 ]
 
 
-# These list failures on wikipedia dataset from /share1. These are not strictly
-# failures - as the tokenization works, but behaves differently from
-# HuggingFace tokenizer. These are 37 failures out of 40M samples - so should
-# not affect out general training as much.
-WIKIPEDIA_CORNER_CASES = [
-    "The Unicode symbols for a Quran verse, including U+06DD (۝), and U+08E2 (࣢  ).",
-    "1925: Tönnies’s major writings collected in Soziologische Studien und Kritiken (  vols.).",
-    "Industry in Skorupy appeared already in the 1860s together with the construction of a textile plant by Albrecht Adolfai Scharlotta Zoi from Riedlów Reich from the Polish Kingdom.",
-    "1,186,060,307,891,929,990 takes 261 iterations to reach the 119-digit palindrome 44562665878976437622437848976653870388884783662598425855963436955852489526638748888307835667984873422673467987856626544, which was a former world record for the Most Delayed Palindromic Number.",
-    'Publishing Triangle named Bastard Out of Carolina one of "The Triangle’s 100 Best " novels of the 1990s.',
-    "In his comedy Assemblywomen (c. 392 BC), Aristophanes coined the 175-letter word  (lopado­temacho­selacho­galeo­kranio­leipsano­drim­hypo­trimmato­silphio­karabo­melito­katakechy­meno­kichl­epi­kossypho­phatto­perister­alektryon­opte­kephallio­kigklo­peleio­lagoio­siraio­baphe­tragano­                            pterygon), a fictional food dish consisting of a combination of fish and other meat.",
-    "1994 – [SEP] Sephardic Songs in the Hispano-Arabic tradition of medieval Spain. Ballads of the Sephardic Jews).",
-    "1, 105263157894736842, 1034482758620689655172413793, 102564, 102040816326530612244897959183673469387755, 1016949152542372881355932203389830508474576271186440677966, 1014492753623188405797, 1012658227848, 10112359550561797752808988764044943820224719, 10, 100917431192660550458715596330275229357798165137614678899082568807339449541284403669724770642201834862385321, 100840336134453781512605042016806722689075630252, ...",
-    "He is also the  Chairman of the Narotam Sekhsaria Foundation, the philanthropic arm of his family office, which funds and supports individuals and organisations working in health, education, livelihoods, governance, art and culture.",
-    " TA/DA during Inter University Tournaments.",
-    " Free Sports Kit and Track Suits to the players participating in Inter University Tournaments.",
-    " Affordable Fee for the students.",
-    " Bilingual programmes in Hindi and English with study material in English except otherwise intimated.",
-    " Distance Education by using technology in selected subjects.",
-    " Standard study material.",
-    " The University Centre for Distance Learning holds Personal Contact Programmes (PCP).",
-    " To provide the syllabus and study material after admission of the students.",
-    " Punctuality in the conduct of examinations and declaration of results.",
-    " No Migration Certificate is required for taking admission in Open and Distance Learning programme of CDLU, Sirsa and no Migration Certificate will be issued by the University after the completion of the course.",
-    " The UCDL has appointed well qualified teachers and they remains available in UCDL Library for student‘s related queries/doubts on all working days.",
-    " The University College Library has a total number of collection of 393 books.",
-    " Water coolers with RO system installed.",
-    " All rooms are well furnished with furniture, lecture stand, white board, tube lights and ceiling fans.",
-    " Secure and Safe environment.",
-    " Lush green campus.",
-    " Fully Wi-Fi Campus.",
-    "Sovereign rulers (both Emperors and Kings) in general are referred to in Vietnamese as Vua (君, 𢁨, 𢂜, 𢃊, 𤤰, 𪻟, 𪼀, 󰅫, 󰅻). classical Chinese).",
-    'Publishing Triangle named Aquamarine one of "The Triangle’s 100 Best " gay and lesbian novels of the 1990s.',
-    "       General Orthopedic Rehab (Total Joint, Post-Shoulder Surgery, Post-Spine Surgery, etc.)",
-    "All five vowels found in the Mixtepec Mixtec language have nasalized differentiating counterparts however, the mid vowels /õ/ and /ε􏰀/ are rare.",
-    " The work of the early nationalists had exposed the economic exploitation of India by the British.",
-    "In particular, each element in  can be written uniquely as 􏰐, where , and the product of any two secondaries is uniquely given by , where .",
-    "Honda Y, Rogers L, Nakata K, Zhao B, Pine R, Nakai Y, Kurosu K, Rom WN, Weiden M.  Type I interferon induces inhibitory 16 kD CCAAT/Enhancer Binding Protein (C/EBP), repressing the HIV-1 long terminal repeat in macrophages: pulmonary tuberculosis alters C/EBP expression, enhancing HIV-1 replication.",
-    " The winners must agree to take part in publicity generated by the IYC.",
-    "   Used in the subcontinent, this indicates a difference of opinion on the pause.",
-    "Lu demonstrated that growth factor receptor activation induces translocation of PKM2 into the nucleus, where it binds to and activates tyrosine-phosphorylated -catenin and c-Myc, resulting in expression of glycolytic genes and enhanced glucose uptake and lactate production.",
-    "Hala Feb Festival  Tuesday Feb 9th 2016.",
-]
+def setup_module():
+    if not os.path.exists(BERT_VOCAB_PATH):
+        import urllib.request
+
+        response = urllib.request.urlopen(BERT_VOCAB_URL)
+        with open(BERT_VOCAB_PATH, "wb+") as bert_vocab_file:
+            bert_vocab_file.write(response.read())
 
 
-# def setup_module():
-#     # if not os.path.exists(BERT_VOCAB_PATH):
-#     #     import urllib.request
-
-#     #     response = urllib.request.urlopen(BERT_VOCAB_URL)
-#     #     with open(BERT_VOCAB_PATH, "wb+") as bert_vocab_file:
-#     #         bert_vocab_file.write(response.read())
-#     pass
-
-
+@pytest.mark.unit
 def test_wordpiece_vocab():
-    print(BERT_VOCAB_PATH)
-    # vocab = Wordpiece.make(BERT_VOCAB_PATH)
+    vocab = Wordpiece.make(BERT_VOCAB_PATH)
 
-    # with open(BERT_VOCAB_PATH) as vocab_file:
-    #     lines = vocab_file.read().splitlines()
-    #     assert len(lines) == vocab.size()
+    with open(BERT_VOCAB_PATH) as vocab_file:
+        lines = vocab_file.read().splitlines()
+        assert len(lines) == vocab.size()
 
-    # for raw, tokenized in zip(BERT_RAW_SAMPLES, BERT_TOKENIZED_SAMPLES):
-    #     # sample = sample.replace(" ##", "")
-    #     pieces = vocab.encode(raw)
+    for raw, tokenized in zip(BERT_RAW_SAMPLES, BERT_TOKENIZED_SAMPLES):
+        token_ids = vocab.encode(raw)
 
-    #     # Nothing maps to unknown, as the above is taken from BERT (thirdai)
-    #     assert vocab.unk_id() not in pieces
-    #     tokens = tokenized.split()
+        assert vocab.unk_id() not in token_ids
 
-    #     # Assert piece level reconstruction.
-    #     for piece, token in zip(pieces, tokens):
-    #         # Assert reconstruction works
-    #         if "THIRDAI_TEST_DEBUG" in os.environ:
-    #             print("{}: {}".format(token, piece), end=" ")
+        tokens = tokenized.split()
+        assert len(token_ids) == len(tokens)
 
-    #         # Assert the piece matches the token from huggingface.
-    #         assert vocab.id(token) == piece
+        # Assert piece level reconstruction.
+        for token_id, token in zip(token_ids, tokens):
+            assert vocab.id(token) == token_id
 
-    #     # Assert sentence-level reconstruction
-    #     decoded = vocab.decode(pieces)
-    #     assert decoded == tokenized.replace(" ##", "")
-
-    #     if "THIRDAI_TEST_DEBUG" in os.environ:
-    #         print()
-
-    #     # assert len(pieces) == len(tokens)
+        # Assert sentence-level reconstruction
+        decoded = vocab.decode(token_ids)
+        assert decoded == tokenized.replace(" ##", "")
