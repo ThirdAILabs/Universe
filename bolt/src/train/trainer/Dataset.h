@@ -11,9 +11,10 @@ using Dataset = std::vector<nn::tensor::TensorList>;
 using LabeledDataset = std::pair<Dataset, Dataset>;
 
 Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
-                        std::vector<uint32_t> dims);
+                        std::vector<uint32_t> dims, bool copy = true);
 
-Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim);
+Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim,
+                       bool copy = true);
 
 nn::tensor::TensorList convertBatch(std::vector<BoltBatch>&& batches,
                                     const std::vector<uint32_t>& dims);

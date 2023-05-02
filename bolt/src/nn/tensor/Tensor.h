@@ -15,10 +15,14 @@ class Tensor {
 
   Tensor(BoltBatch&& batch, uint32_t dim);
 
+  Tensor(const BoltBatch& batch, uint32_t dim);
+
   static std::shared_ptr<Tensor> dense(uint32_t batch_size, uint32_t dim);
 
   static std::shared_ptr<Tensor> sparse(uint32_t batch_size, uint32_t dim,
                                         uint32_t nonzeros);
+
+  static std::shared_ptr<Tensor> copy(const BoltBatch& batch, uint32_t dim);
 
   static std::shared_ptr<Tensor> convert(BoltBatch&& batch, uint32_t dim);
 
@@ -53,6 +57,8 @@ class Tensor {
   const float* gradientsPtr() const;
 
  private:
+  static void checkBatchContents(const BoltBatch& batch, uint32_t dim);
+
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
   uint32_t _dim;
   std::optional<uint32_t> _nonzeros;
