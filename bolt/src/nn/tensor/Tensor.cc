@@ -77,6 +77,7 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
     : _dim(dim), _nonzeros(std::nullopt) {
   checkBatchContents(batch, _dim);
 
+  // NOLINTNEXTLINE clang tidy wants this in the intitializer list.
   _vectors = std::move(batch.vectors());
 
   for (auto& vec : _vectors) {
