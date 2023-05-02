@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <algorithm>
 #include <limits>
 #include <random>
@@ -124,6 +125,23 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     }
     final_hashes[i] = index;
   }
+}
+
+void DWTAHashFunction::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<HashFunction> DWTAHashFunction::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<HashFunction> deserialize_into(new DWTAHashFunction());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
 }
 
 template <class Archive>

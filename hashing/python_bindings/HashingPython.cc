@@ -43,6 +43,8 @@ void createHashingSubmodule(py::module_& module) {
            py::arg("num_tables"), py::arg("range") = UINT32_MAX);
 
   py::class_<DWTAHashFunction, std::shared_ptr<DWTAHashFunction>, HashFunction>(
-      hashing_submodule, "DWTA");
+      hashing_submodule, "DWTA")
+      .def("save", &DWTAHashFunction::save, py::arg("filename"))
+      .def_static("load", &DWTAHashFunction::load, py::arg("filename"));
 }
 }  // namespace thirdai::hashing::python

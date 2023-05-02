@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <cassert>
 #include <limits>
 #include <random>
@@ -199,10 +200,27 @@ LABEL_T SampledHashTable<LABEL_T>::maxElement() const {
   return max_elem;
 }
 
-template class SampledHashTable<uint8_t>;
-template class SampledHashTable<uint16_t>;
 template class SampledHashTable<uint32_t>;
-template class SampledHashTable<uint64_t>;
+
+template <typename LABEL_T>
+void SampledHashTable<LABEL_T>::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+template <typename LABEL_T>
+std::shared_ptr<SampledHashTable<LABEL_T>> SampledHashTable<LABEL_T>::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<SampledHashTable<LABEL_T>> deserialize_into(
+      new SampledHashTable<LABEL_T>());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
 
 template <class LABEL_T>
 template <class Archive>
@@ -211,18 +229,9 @@ void SampledHashTable<LABEL_T>::serialize(Archive& archive) {
           _reservoir_size, _range, _max_rand, _data, _counters, _gen_rand);
 }
 
-template void SampledHashTable<uint8_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
-template void SampledHashTable<uint16_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
 template void SampledHashTable<uint32_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
-template void SampledHashTable<uint64_t>::serialize(
     cereal::BinaryOutputArchive& archive);
 
 }  // namespace thirdai::hashtable
 
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint8_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
 CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)

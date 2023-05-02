@@ -131,6 +131,11 @@ class SampledHashTable final : public HashTable<LABEL_T> {
     summary << "num_tables=" << _num_tables << ", range=" << _range
             << ", reservoir_size=" << _reservoir_size;
   }
+
+  void save(const std::string& filename);
+
+  static std::shared_ptr<SampledHashTable<LABEL_T>> load(
+      const std::string& filename);
 };
 
 }  // namespace thirdai::hashtable
