@@ -1,8 +1,14 @@
 import ray
 from ray.train.backend import BackendConfig, Backend
 from ray.train._internal.worker_group import WorkerGroup
+from dataclasses import dataclass
 
-from thirdai.distributed_bolt import DDP
+
+@dataclass
+class BoltBackendConfig(BackendConfig):
+    @property
+    def backend_cls(self):
+        return _BoltBackend
 
 
 def _init_gloo_group(rank, world_size, group_name):
@@ -23,22 +29,21 @@ def _destroy_gloo_group(group_name: str = "default"):
     col.destroy_collective_group(group_name)
 
 
-class BoltBackend(Backend):
+class _BoltBackend(Backend):
     def on_start(self, worker_group: WorkerGroup, backend_config: BackendConfig):
         # Only gloo backend is available now
         # we wont be supporting linear and circular here
-        if backend_config.backend is not "gloo":
-            raise ValueError("Only Gloo backend is supported for V2")
-
         # initlialize a gloo group
         setup_futures = []
         for i in range(len(worker_group)):
-            setup_futures.execute_single_async(
-                i,
-                _init_gloo_group,
-                rank=i,
-                world_size=len(worker_group),
-                group_name="default",
+            setup_futures.append(
+                worker_group.execute_single_async(
+                    i,
+                    _init_gloo_group,
+                    rank=i,
+                    world_size=len(worker_group),
+                    group_name="default",
+                )
             )
         ray.get(setup_futures)
 

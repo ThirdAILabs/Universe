@@ -5,6 +5,7 @@ from ray.train.data_parallel_trainer import DataParallelTrainer
 from ray.train.trainer import GenDataset
 from ray.air.checkpoint import Checkpoint
 from ray.air.config import DatasetConfig, RunConfig, ScalingConfig
+from .config import BoltBackendConfig
 
 if TYPE_CHECKING:
     from ray.data.preprocessor import Preprocessor
@@ -38,6 +39,7 @@ class BoltTrainer(DataParallelTrainer):
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
         *,
+        bolt_config: Optional[BoltBackendConfig] = None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
         dataset_config: Optional[Dict[str, DatasetConfig]] = None,
@@ -49,6 +51,7 @@ class BoltTrainer(DataParallelTrainer):
         super(BoltTrainer, self).__init__(
             train_loop_per_worker=train_loop_per_worker,
             train_loop_config=train_loop_config,
+            backend_config=bolt_config,
             scaling_config=scaling_config,
             dataset_config=dataset_config,
             run_config=run_config,

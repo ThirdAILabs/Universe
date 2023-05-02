@@ -1,6 +1,10 @@
 from thirdai import bolt_v2 as bolt
 import ray
 import thirdai.distributed_bolt as dist
+import os
+from thirdai.demos import download_mnist_dataset
+from ray.air import ScalingConfig
+
 
 ray.init()
 
@@ -29,21 +33,40 @@ def get_mnist_model():
 
 def train_loop_per_worker():
     mnist_model = get_mnist_model()
-    mnist_model.distribute()
+    trainer = bolt.train.Trainer(mnist_model)
+    train_file, _ = download_mnist_dataset()
+    train_sources = dist.DistributedSvmDatasetLoader(
+        f"/share/pratik/mnist_a",
+        batch_size=256,
+    )
 
     epochs = 10
+    print("Training")
     for _ in range(epochs):
-        for X, y in zip(train_data, train_labels):
-            mnist_model.forward(X, y)
-            mnist_model.backward()
-            mnist_model.communicate()
-            mnist_model.update_parameters()
+        load = train_sources.next()
+        train_data, train_label = load[:-1], load[-1]
+        train_x, train_y = bolt.train.convert_datasets(
+            train_data, [784]
+        ), bolt.train.convert_datasets([train_label], [10])
+        print(len(train_x), len(train_y))
+        for x, y in zip(train_x, train_y):
+            trainer.step(x, y, 2)
 
+
+scaling_config = ScalingConfig(
+    # Number of distributed workers.
+    num_workers=2,
+    # Turn on/off GPU.
+    use_gpu=False,
+    # Specify resources used for trainer.
+    trainer_resources={"CPU": 1},
+    # Try to schedule workers on different nodes.
+    placement_strategy="SPREAD",
+)
 
 trainer = dist.BoltTrainer(
     train_loop_per_worker=train_loop_per_worker,
-    scaling_config=ScalingConfig(num_workers=3),
-    datasets={"train": train_dataset},
-    train_loop_config={"num_epochs": 2},
+    scaling_config=scaling_config,
+    bolt_config=dist.BoltBackendConfig(),
 )
 result = trainer.fit()
