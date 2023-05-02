@@ -31,8 +31,7 @@ uint64_t parseFloat(const ColumnIdentifier& identifier,
 
 std::vector<uint64_t> parseUint64Array(const std::string& array_string,
                                        char delimiter) {
-  std::vector<std::string_view> parsed_array =
-      text::split(array_string, delimiter);
+  std::vector<std::string> parsed_array = text::split(array_string, delimiter);
   std::vector<uint64_t> uint64_array;
   uint64_array.reserve(parsed_array.size());
   for (const auto& uint64_str : parsed_array) {

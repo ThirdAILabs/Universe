@@ -62,11 +62,9 @@ class RecurrenceAugmentation final : public Augmentation {
   }
 
  private:
-  std::vector<std::string_view> sequence(
-      ColumnarInputSample& input_sample) const;
+  std::vector<std::string> sequence(ColumnarInputSample& input_sample) const;
 
-  std::vector<uint32_t> elementIds(
-      const std::vector<std::string_view>& sequence);
+  std::vector<uint32_t> elementIds(const std::vector<std::string>& sequence);
 
   static std::vector<BoltVector> augmentInputVectors(
       SegmentedFeatureVector& builder, std::vector<uint32_t> elements);

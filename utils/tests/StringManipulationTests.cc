@@ -4,7 +4,7 @@
 
 namespace thirdai::text {
 
-void assertSplitSentence(std::vector<std::string_view>& words) {
+void assertSplitSentence(std::vector<std::string>& words) {
   ASSERT_EQ(words.size(), 7);
   ASSERT_EQ(words[0], "This");
   ASSERT_EQ(words[1], "is");
@@ -16,7 +16,7 @@ void assertSplitSentence(std::vector<std::string_view>& words) {
 }
 
 TEST(StringManipulationTest, TestSplitWithDelimiter) {
-  std::string_view sentence = "This is a sentence with many words.";
+  std::string sentence = "This is a sentence with many words.";
   auto words = split(sentence, /* delimiter= */ ' ');
   assertSplitSentence(words);
 
@@ -26,7 +26,7 @@ TEST(StringManipulationTest, TestSplitWithDelimiter) {
 }
 
 TEST(StringManipulationTest, TestSplitStartAndEndWithDelimiter) {
-  std::string_view sentence = " It's funky time. ";
+  std::string sentence = " It's funky time. ";
   auto words = split(sentence, /* delimiter= */ ' ');
   ASSERT_EQ(words[0], "It's");
   ASSERT_EQ(words[1], "funky");
@@ -34,14 +34,14 @@ TEST(StringManipulationTest, TestSplitStartAndEndWithDelimiter) {
 }
 
 TEST(StringManipulationTest, TestSplitConsecutiveDelimiter) {
-  std::string_view sentence = "It's funky  time.";
+  std::string sentence = "It's funky  time.";
   auto words = split(sentence, /* delimiter= */ ' ');
   ASSERT_EQ(words[0], "It's");
   ASSERT_EQ(words[1], "funky");
   ASSERT_EQ(words[2], "time.");
 }
 
-void assertEqualTokens(const std::vector<std::string_view>& parsed,
+void assertEqualTokens(const std::vector<std::string>& parsed,
                        const std::vector<std::string>& expected) {
   ASSERT_EQ(parsed.size(), expected.size());
   for (uint32_t i = 0; i < parsed.size(); i++) {
@@ -50,51 +50,51 @@ void assertEqualTokens(const std::vector<std::string_view>& parsed,
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceTest) {
-  std::string_view sentence = "abcde";
+  std::string sentence = "abcde";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"abcde"});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceNoPunctuation) {
-  std::string_view sentence = "no punctuation no cry";
+  std::string sentence = "no punctuation no cry";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"no", "punctuation", "no", "cry"});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentencePunctuationAfterWord) {
-  std::string_view sentence = "no punctuation? no way";
+  std::string sentence = "no punctuation? no way";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"no", "punctuation", "?", "no", "way"});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentencePunctuationBetweenWords) {
-  std::string_view sentence = "some:fake:coordinates";
+  std::string sentence = "some:fake:coordinates";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"some", ":", "fake", ":", "coordinates"});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceConsecutivePunctuations) {
-  std::string_view sentence = "These are all punctuations: ?+(_)";
+  std::string sentence = "These are all punctuations: ?+(_)";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"These", "are", "all", "punctuations", ":", "?",
                             "+", "(", "_", ")"});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceSurroundedByPunctuations) {
-  std::string_view sentence = "\"Surrounded by quotes\"";
+  std::string sentence = "\"Surrounded by quotes\"";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"\"", "Surrounded", "by", "quotes", "\""});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceHorribleFormatting) {
-  std::string_view sentence = "  ?  \"?!Surrounded  by::spaces  too?!\"  !  ";
+  std::string sentence = "  ?  \"?!Surrounded  by::spaces  too?!\"  !  ";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"?", "\"", "?", "!", "Surrounded", "by", ":", ":",
                             "spaces", "too", "?", "!", "\"", "!"});
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceNewLine) {
-  std::string_view sentence = "Newline in the \n middle.";
+  std::string sentence = "Newline in the \n middle.";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"Newline", "in", "the", "middle", "."});
 
@@ -109,7 +109,7 @@ TEST(StringManipulationTest, TestTokenizeSentenceNewLine) {
 }
 
 TEST(StringManipulationTest, TestTokenizeSentenceAccentedCharacters) {
-  std::string_view sentence = "Soufflé";
+  std::string sentence = "Soufflé";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"Soufflé"});
 }

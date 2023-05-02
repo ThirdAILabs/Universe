@@ -4,7 +4,6 @@
 #include <hashing/src/MurmurHash.h>
 #include <utils/StringManipulation.h>
 #include <functional>
-#include <string_view>
 #include <type_traits>
 #include <unordered_map>
 
@@ -24,7 +23,7 @@ inline uint32_t seededMurmurHash(const char* key, uint32_t len) {
 /**
  * Hash each input word and return a list of tokens. Commonly called unigrams.
  */
-std::vector<uint32_t> hashTokens(const std::vector<std::string_view>& strings);
+std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings);
 
 /**
  * Takes in a list of hashed tokens and uses our combineHashes function to add
@@ -33,7 +32,7 @@ std::vector<uint32_t> hashTokens(const std::vector<std::string_view>& strings);
  */
 std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n);
 
-inline std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
+inline std::vector<uint32_t> ngrams(const std::string& sentence, uint32_t n,
                                     char delimiter = ' ') {
   return ngrams(hashTokens(text::split(sentence, delimiter)), /* n= */ n);
 }
@@ -70,7 +69,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim);
  * explainability.
  */
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    std::vector<std::string_view> words, uint32_t output_range);
+    const std::vector<std::string>& words, uint32_t output_range);
 
 /**
  * Given a vector of indices, sums repeated indices by multiplying the number of
