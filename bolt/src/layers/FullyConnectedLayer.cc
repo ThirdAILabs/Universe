@@ -789,11 +789,14 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   }
 }
 
-std::pair<HashFn, HashTable> FullyConnectedLayer::getHashTable() {
+std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+FullyConnectedLayer::getHashTable() {
   return {_hasher, _hash_table};
 }
 
-void FullyConnectedLayer::setHashTable(HashFn hash_fn, HashTable hash_table) {
+void FullyConnectedLayer::setHashTable(
+    hashing::HashFunctionPtr hash_fn,
+    hashtable::SampledHashTablePtr hash_table) {
   if (hash_fn->numTables() != hash_table->numTables()) {
     throw std::invalid_argument(
         "Hash function returning " + std::to_string(hash_fn->numTables()) +

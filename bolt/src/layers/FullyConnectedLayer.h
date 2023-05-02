@@ -26,9 +26,6 @@ enum class BoltSamplingMode {
   RandomSampling
 };
 
-using HashFn = std::shared_ptr<hashing::HashFunction>;
-using HashTable = std::shared_ptr<hashtable::SampledHashTable<uint32_t>>;
-
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
@@ -138,9 +135,11 @@ class FullyConnectedLayer final {
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
-  std::pair<HashFn, HashTable> getHashTable();
+  std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+  getHashTable();
 
-  void setHashTable(HashFn hash_fn, HashTable hash_table);
+  void setHashTable(hashing::HashFunctionPtr hash_fn,
+                    hashtable::SampledHashTablePtr hash_table);
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
@@ -162,8 +161,8 @@ class FullyConnectedLayer final {
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
-  HashFn _hasher;
-  HashTable _hash_table;
+  hashing::HashFunctionPtr _hasher;
+  hashtable::SampledHashTablePtr _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
   template <bool DENSE>

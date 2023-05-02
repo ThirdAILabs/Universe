@@ -130,12 +130,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
 
-  py::class_<hashtable::SampledHashTable<uint32_t>,  // NOLINT
-             std::shared_ptr<hashtable::SampledHashTable<uint32_t>>>(
+  py::class_<hashtable::SampledHashTable, hashtable::SampledHashTablePtr>(
       nn_submodule, "HashTable")
-      .def("save", &hashtable::SampledHashTable<uint32_t>::save,
-           py::arg("filename"))
-      .def_static("load", &hashtable::SampledHashTable<uint32_t>::load,
+      .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
+      .def_static("load", &hashtable::SampledHashTable::load,
                   py::arg("filename"));
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,

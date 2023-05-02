@@ -2,6 +2,7 @@
 
 #include "HashTable.h"
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <unordered_set>
 #include <vector>
@@ -15,12 +16,11 @@ namespace thirdai::hashtable {
  * This allows for reservoirs to be preallocated and makes insertion and
  * querying fast.
  */
-template <typename LABEL_T>
-class SampledHashTable final : public HashTable<LABEL_T> {
+class SampledHashTable final : public HashTable<uint32_t> {
  private:
   uint64_t _num_tables, _reservoir_size, _range, _max_rand;
 
-  std::vector<LABEL_T> _data;
+  std::vector<uint32_t> _data;
   std::vector<uint32_t> _counters;
   std::vector<uint32_t> _gen_rand;
 
@@ -34,14 +34,14 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   }
 
   /** Helper method that inserts a given label into the hash tables */
-  void insertIntoTables(LABEL_T label, const uint32_t* hashes);
+  void insertIntoTables(uint32_t label, const uint32_t* hashes);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  SampledHashTable<LABEL_T>(){};
+  SampledHashTable() {}
 
   uint32_t atomic_fetch_and_add(uint32_t table, uint32_t row) {
     uint32_t counter;
@@ -69,7 +69,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    */
   SampledHashTable(uint64_t num_tables, uint64_t reservoir_size, uint64_t range,
                    uint32_t seed = time(nullptr),
-                   uint64_t max_rand = HashTable<LABEL_T>::DEFAULT_MAX_RAND);
+                   uint64_t max_rand = HashTable<uint32_t>::DEFAULT_MAX_RAND);
 
   SampledHashTable(const SampledHashTable& other) = delete;
 
@@ -78,13 +78,13 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   /**
    * Inserts n elements with the specified labels.
    */
-  void insert(uint64_t n, const LABEL_T* labels,
+  void insert(uint64_t n, const uint32_t* labels,
               const uint32_t* hashes) override;
 
   /**
    * Inserts n elements with consecutive labels starting at start.
    */
-  void insertSequential(uint64_t n, LABEL_T start,
+  void insertSequential(uint64_t n, uint32_t start,
                         const uint32_t* hashes) override;
 
   /**
@@ -92,7 +92,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    * specified by the hashes.
    */
   void queryBySet(uint32_t const* hashes,
-                  std::unordered_set<LABEL_T>& store) const override;
+                  std::unordered_set<uint32_t>& store) const override;
 
   /**
    *
@@ -102,7 +102,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    */
 
   void queryAndInsertForInference(uint32_t const* hashes,
-                                  std::unordered_set<LABEL_T>& store,
+                                  std::unordered_set<uint32_t>& store,
                                   uint32_t outputsize);
 
   /**
@@ -117,7 +117,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    * reservoirs specified by the hashes.
    */
   void queryByVector(uint32_t const* hashes,
-                     std::vector<LABEL_T>& results) const override;
+                     std::vector<uint32_t>& results) const override;
 
   void clearTables() override;
 
@@ -125,17 +125,18 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   inline uint64_t tableRange() const override { return _range; };
 
-  LABEL_T maxElement() const;
+  uint32_t maxElement() const;
 
-  void summarize(std::ostream& summary) {
+  void summarize(std::ostream& summary) const {
     summary << "num_tables=" << _num_tables << ", range=" << _range
             << ", reservoir_size=" << _reservoir_size;
   }
 
   void save(const std::string& filename);
 
-  static std::shared_ptr<SampledHashTable<LABEL_T>> load(
-      const std::string& filename);
+  static std::shared_ptr<SampledHashTable> load(const std::string& filename);
 };
+
+using SampledHashTablePtr = std::shared_ptr<SampledHashTable>;
 
 }  // namespace thirdai::hashtable

@@ -73,9 +73,11 @@ class FullyConnectedNode final
 
   float* getBiasGradientsPtr();
 
-  std::pair<HashFn, HashTable> getHashTable() const;
+  std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+  getHashTable() const;
 
-  void setHashTable(HashFn hash_fn, HashTable hash_table);
+  void setHashTable(hashing::HashFunctionPtr hash_fn,
+                    hashtable::SampledHashTablePtr hash_table);
 
   void disableSparseParameterUpdates() final;
 

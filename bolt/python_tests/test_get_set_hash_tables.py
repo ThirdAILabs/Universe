@@ -1,5 +1,5 @@
 import pytest
-from thirdai import bolt
+from thirdai import bolt, hashing
 
 from utils import gen_numpy_training_data
 
@@ -23,6 +23,8 @@ def build_model():
 
 @pytest.mark.unit
 def test_get_set_hash_tables():
+    # This test checks that copying only the weights doesn't preserve accuracy
+    # when using sparse inference.
     model = build_model()
 
     train_data, train_labels = gen_numpy_training_data(
@@ -61,7 +63,17 @@ def test_get_set_hash_tables():
     # Check that the accuracy is bad before copying the hash tables too
     assert new_metrics["categorical_accuracy"] <= 0.4
 
+    hash_fn_save_file = "./temp_saved_hash_fn"
+    hash_table_save_file = "./temp_saved_hash_table"
+
     hash_fn, hash_table = model.get_layer("fc_2").get_hash_table()
+
+    hash_fn.save(hash_fn_save_file)
+    hash_fn = hashing.DWTA.load(hash_fn_save_file)
+
+    hash_table.save(hash_table_save_file)
+    hash_table = bolt.nn.HashTable.load(hash_table_save_file)
+
     new_model.get_layer("fc_2").set_hash_table(hash_fn, hash_table)
 
     (new_metrics,) = new_model.evaluate(test_data, test_labels, eval_cfg)

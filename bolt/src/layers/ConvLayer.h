@@ -103,8 +103,8 @@ class ConvLayer final {
 
   std::vector<bool> _is_active;
 
-  std::unique_ptr<hashing::HashFunction> _hasher;
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  hashing::HashFunctionPtr _hasher;
+  hashtable::SampledHashTablePtr _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
   uint32_t _num_filters;         // number of convolutional filters
