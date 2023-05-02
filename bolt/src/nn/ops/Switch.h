@@ -81,7 +81,7 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
-  void setWeightsAndBiases(const float* weights_to_set,
+  void setWeightsAndBiases(uint32_t layer_id, const float* weights_to_set,
                            const float* biases_to_set);
 
   /**

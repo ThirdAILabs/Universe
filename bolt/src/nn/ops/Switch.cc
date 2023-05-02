@@ -1,13 +1,14 @@
 #include "Switch.h"
 #include <cereal/archives/binary.hpp>
-#include <cereal/specialize.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt::nn::ops {
@@ -123,11 +124,15 @@ void Switch::freezeHashTables(bool insert_labels_if_not_found) {
   }
 }
 
-void Switch::setWeightsAndBiases(const float* weights_to_set,
+void Switch::setWeightsAndBiases(uint32_t layer_id, const float* weights_to_set,
                                  const float* biases_to_set) {
-  for (auto& op : _fc_ops) {
-    op->setWeightsAndBiases(weights_to_set, biases_to_set);
+  if (layer_id >= _fc_ops.size()) {
+    std::stringstream error;
+    error << "Tried to set weights and biases of layer_id=" << layer_id
+          << " in Switch op with n_layers=" << _fc_ops.size() << ".";
+    throw std::invalid_argument(error.str());
   }
+  _fc_ops[layer_id]->setWeightsAndBiases(weights_to_set, biases_to_set);
 }
 
 void Switch::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
@@ -167,7 +172,8 @@ template void Switch::serialize(cereal::BinaryInputArchive&);
 
 template <class Archive>
 void Switch::serialize(Archive& archive) {
-  archive(cereal::base_class<Op>(this));
+  // archive(cereal::base_class<Op>(this));
+  archive(cereal::base_class<Op>(this), _fc_ops);
 }
 
 }  // namespace thirdai::bolt::nn::ops
