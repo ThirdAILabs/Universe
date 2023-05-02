@@ -90,30 +90,30 @@ class CharKGramTokenizer : public TextTokenizer {
   }
 };
 
-class WordpieceTokenizer : public TextTokenizer {
- public:
-  explicit WordpieceTokenizer(std::shared_ptr<WordpieceVocab> vocab)
-      : _vocab(std::move(vocab)) {}
+// class WordpieceTokenizer : public TextTokenizer {
+//  public:
+//   explicit WordpieceTokenizer(std::shared_ptr<WordpieceVocab> vocab)
+//       : _vocab(std::move(vocab)) {}
 
-  static auto make(uint32_t k) {
-    return std::make_shared<CharKGramTokenizer>(k);
-  }
+//   static auto make(uint32_t k) {
+//     return std::make_shared<CharKGramTokenizer>(k);
+//   }
 
-  std::vector<std::string_view> apply(const std::string_view& input) final {
-    return _vocab->tokenize(input);
-  }
+//   std::vector<std::string_view> apply(const std::string_view& input) final {
+//     return _vocab->tokenize(input);
+//   }
 
- private:
-  std::shared_ptr<WordpieceVocab> _vocab;
+//  private:
+//   std::shared_ptr<WordpieceVocab> _vocab;
 
-  WordpieceTokenizer() {}
+//   WordpieceTokenizer() {}
 
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<TextTokenizer>(this), _vocab);
-  }
-};
+//   friend class cereal::access;
+//   template <class Archive>
+//   void serialize(Archive& archive) {
+//     archive(cereal::base_class<TextTokenizer>(this), _vocab);
+//   }
+// };
 
 }  // namespace thirdai::dataset
 

@@ -117,6 +117,11 @@ class WordpieceVocab : public Vocabulary {
  public:
   explicit WordpieceVocab(const std::string& vocab_fpath, bool to_lower = true);
 
+  static std::shared_ptr<Vocabulary> make(const std::string& vocab_file,
+                                          bool lowercase = true) {
+    return std::make_shared<WordpieceVocab>(vocab_file, lowercase);
+  }
+
   std::vector<uint32_t> encode(const std::string_view& sentence) const final;
 
   std::vector<std::wstring> tokenize(const std::string& sentence) const;

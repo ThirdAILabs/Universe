@@ -67,6 +67,14 @@ std::wstring strip(
     const std::wstring& text,
     const std::wstring& strip_characters = DEFAULT_UNICODE_STRIP_CHARACTERS);
 
+std::vector<std::wstring> split(
+    const std::wstring& text,
+    const std::wstring& split_characters = DEFAULT_UNICODE_STRIP_CHARACTERS);
+
+template <class Predicate>
+std::vector<std::wstring> splitIf(const std::wstring& text,
+                                  Predicate predicate);
+
 std::wstring normalizeSpaces(const std::wstring& text);
 std::wstring stripAccents(const std::wstring& text);
 

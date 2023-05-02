@@ -12,7 +12,7 @@
 
 namespace thirdai::text {
 
-std::vector<std::string_view> split(std::string string, char delimiter) {
+std::vector<std::string_view> split(std::string_view string, char delimiter) {
   std::vector<std::string_view> words;
 
   bool prev_is_delim = true;
@@ -167,6 +167,14 @@ std::string normalize(const std::string& s) {
   return ret;
 }
 
+std::wstring lower(const std::wstring& s) {
+  std::wstring lowered(s.size(), L' ');
+  for (size_t i = 0; i < s.size(); i++) {
+    lowered[i] = utf8proc_tolower(s[i]);
+  }
+  return lowered;
+}
+
 std::wstring strip(const std::wstring& text,
                    const std::wstring& strip_characters) {
   // Empty string, return empty-string, no iterations involved - fast path.
@@ -193,6 +201,40 @@ std::wstring strip(const std::wstring& text,
 
   // [left, right) now represents stripped substring.
   return text.substr(left, right - left);
+}
+
+std::vector<std::wstring> split(
+    const std::wstring& text,
+    const std::wstring& split_characters /*=DEFAULT_STRIP_CHARACTERS*/) {
+  // Lambda as predicate, checks if delimiter or not.
+  auto is_delimiter = [&split_characters](wchar_t c) {
+    return std::any_of(split_characters.begin(), split_characters.end(),
+                       [c](wchar_t delimiter) { return c == delimiter; });
+  };
+
+  return splitIf(text, is_delimiter);
+}
+
+template <class Predicate>
+std::vector<std::wstring> splitIf(const std::wstring& text,
+                                  Predicate predicate) {
+  std::vector<std::wstring> result;
+  size_t current = 0;
+  size_t start = 0;
+  while (current < text.size()) {
+    if (predicate(text[current])) {
+      std::wstring atom = text.substr(start, current - start);
+      result.push_back(std::move(atom));
+      start = current + 1;
+    }
+    ++current;
+  }
+
+  if (current - start > 0) {
+    std::wstring atom = text.substr(start, current - start);
+    result.push_back(std::move(atom));
+  }
+  return result;
 }
 
 std::wstring normalizeSpaces(const std::wstring& text) {
