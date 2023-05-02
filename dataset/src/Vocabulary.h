@@ -28,8 +28,7 @@ class Vocabulary {
  public:
   // Encode given sentence (sequence of tokens) into numerical ids assigned by
   // the vocabulary.
-  virtual std::vector<uint32_t> encode(
-      const std::string_view& sentence) const = 0;
+  virtual std::vector<uint32_t> encode(const std::string& sentence) const = 0;
 
   // Decodes given token_ids into a string. Throws out of bounds exception if
   // piece outside what's known to the vocabulary.
@@ -38,7 +37,7 @@ class Vocabulary {
   // Returns the id of a given token, if it exists in the vocabulary.
   // If token not present, returns unkId, indicating the token is unknown to the
   // vocabulary.
-  virtual uint32_t id(const std::string_view& token_view) const = 0;
+  virtual uint32_t id(const std::string& token_view) const = 0;
 
   // Returns the total size of the vocabulary.
   virtual uint32_t size() const = 0;
@@ -70,7 +69,7 @@ class FixedVocabulary : public Vocabulary {
   // Encode a sentence into vector of integral vocab-ids inferred from tokens.
   // Whitespace tokenization under the hood, stripping leading, trailing
   // spaces. See decode(...) for inverse operation.
-  std::vector<uint32_t> encode(const std::string_view& sentence) const final;
+  std::vector<uint32_t> encode(const std::string& sentence) const final;
 
   // Decode a sequence of integral vocab-ids into equivalent string
   // representation. If vocab-id not known (i.e >= size()), out of range
@@ -79,7 +78,7 @@ class FixedVocabulary : public Vocabulary {
 
   // Get id of a token if in vocabulary. Returns unkId() is token not known to
   // vocabulary.
-  uint32_t id(const std::string_view& token_view) const final;
+  uint32_t id(const std::string& token_view) const final;
 
   // Get id corresponding to the unknown special token.
   uint32_t unkId() const final;
@@ -110,7 +109,7 @@ class FixedVocabulary : public Vocabulary {
 
   // Does not check if token already exist, directly adds. This saves some
   // compute when we know there cannot be duplicates by construction.
-  uint32_t add(const std::string_view& token_view);
+  uint32_t add(const std::string& token_view);
 };
 
 }  // namespace thirdai::dataset

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <utils/StringManipulation.h>
-#include <string_view>
 
 namespace thirdai::text {
 
