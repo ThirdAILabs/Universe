@@ -60,7 +60,7 @@ def get_config(have_user_specified_parameters: bool = False):
             },
         ],
         "output": "fc_4",
-        "loss": "CategoricalCrossEntropy",
+        "loss": "CategoricalCrossEntropyLoss",
     }
 
     return config
@@ -147,7 +147,7 @@ def test_embedding_layer_config():
             },
         ],
         "output": "fc",
-        "loss": "CategoricalCrossEntropy",
+        "loss": "CategoricalCrossEntropyLoss",
     }
 
     expected_summary = """
