@@ -17,13 +17,14 @@ namespace thirdai::dataset::tests {
 
 static constexpr uint32_t MAX_RECURRENCE = 5;
 static constexpr uint32_t VOCAB_SIZE = 4;
-static constexpr uint32_t INPUT_VECTOR_IDX = 0;
-static constexpr uint32_t LABEL_VECTOR_IDX = 1;
+static constexpr uint32_t POSITION_VECTOR_IDX = 0;
+static constexpr uint32_t INPUT_VECTOR_IDX = 1;
+static constexpr uint32_t LABEL_VECTOR_IDX = 2;
 
 RecurrenceAugmentation recurrenceAugmentation() {
   return RecurrenceAugmentation(
       /* sequence_column= */ {"sequence"}, /* delimiter= */ ' ', MAX_RECURRENCE,
-      VOCAB_SIZE, INPUT_VECTOR_IDX, LABEL_VECTOR_IDX);
+      VOCAB_SIZE, INPUT_VECTOR_IDX, LABEL_VECTOR_IDX, POSITION_VECTOR_IDX);
 }
 
 auto segmentedSparseFeatureVector(uint32_t existing_dim, uint32_t augmented_dim,
@@ -46,10 +47,18 @@ auto buildersFromInitialFeatures(
   for (uint32_t builder_id = 0; builder_id < initial_dims.size();
        builder_id++) {
     uint32_t augmented_dim = 0;
-    if (builder_id == INPUT_VECTOR_IDX) {
-      augmented_dim = augmentation.inputBlock()->featureDim();
-    } else if (builder_id == LABEL_VECTOR_IDX) {
-      augmented_dim = augmentation.labelBlock()->featureDim();
+    switch (builder_id) {
+      case POSITION_VECTOR_IDX:
+        augmented_dim = augmentation.positionBlock()->featureDim();
+        break;
+      case INPUT_VECTOR_IDX:
+        augmented_dim = augmentation.inputBlock()->featureDim();
+        break;
+      case LABEL_VECTOR_IDX:
+        augmented_dim = augmentation.labelBlock()->featureDim();
+        break;
+      default:
+        break;
     }
     builders[builder_id] = segmentedSparseFeatureVector(
         /* existing_dim= */ initial_dims[builder_id],
@@ -92,6 +101,7 @@ void assertCorrectAugmentations(
     offset each ID by position * (vocab_size + 1); +1 is for EOS. For example,
     d_3 corresponds to a feature with index 3 * (4 + 1) + 4 = 19 and value 1.0.
   */
+  std::vector<uint32_t> original_feats = {1, 2, 3, 4, 0};
   std::vector<uint32_t> expected_augmentation_feats = {
       1,   // a_0 = 0 * (4 + 1) + 1 = 1
       7,   // b_1 = 1 * (4 + 1) + 2 = 7
@@ -122,6 +132,12 @@ void assertCorrectAugmentations(
       uint32_t initial_dim = initial_dims[builder_id];
 
       switch (builder_id) {
+        case POSITION_VECTOR_IDX:
+          ASSERT_EQ(vector.len, 1);
+          ASSERT_EQ(vector.active_neurons[0], aug_id);
+          ASSERT_EQ(vector.activations[0], 1.0);
+          break;
+
         case INPUT_VECTOR_IDX:
           // Expect input vector to have the 0-th through aug_pos - 1-th
           // elements of expected_augmentation_feats.
@@ -137,8 +153,7 @@ void assertCorrectAugmentations(
           // Expect label vector to have aug_pos-th element of
           // expected_augmentation_feats.
           ASSERT_EQ(vector.len, 1);
-          ASSERT_EQ(vector.active_neurons[0],
-                    expected_augmentation_feats[aug_id]);
+          ASSERT_EQ(vector.active_neurons[0], original_feats[aug_id]);
           ASSERT_EQ(vector.activations[0], 1.0);
           break;
 
@@ -158,14 +173,17 @@ TEST(RecurrenceAugmentationTests, IsDense) {
 
 TEST(RecurrenceAugmentationTests, FeatureDim) {
   auto augmentation = recurrenceAugmentation();
-  ASSERT_EQ(augmentation.inputBlock()->featureDim(), 25);
-  ASSERT_EQ(augmentation.labelBlock()->featureDim(), 25);
+  // +1 for EOS
+  ASSERT_EQ(augmentation.labelBlock()->featureDim(), VOCAB_SIZE + 1);
+  ASSERT_EQ(augmentation.inputBlock()->featureDim(),
+            (VOCAB_SIZE + 1) * MAX_RECURRENCE);
+  ASSERT_EQ(augmentation.positionBlock()->featureDim(), MAX_RECURRENCE);
 }
 
 TEST(RecurrenceAugmentationTests, AugmentingEmptyVectors) {
   auto augmentation = recurrenceAugmentation();
-  assertCorrectAugmentations(/* initial_features= */ {{}, {}},
-                             /* initial_dims= */ {0, 0}, augmentation);
+  assertCorrectAugmentations(/* initial_features= */ {{}, {}, {}},
+                             /* initial_dims= */ {0, 0, 0}, augmentation);
 }
 
 /**
@@ -176,10 +194,11 @@ TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
 
   uint32_t initial_dim = 10;
   assertCorrectAugmentations(
+      // Empty features at index 0 since it's for the position vector.
       // Empty features at index 1 since it's for the label vector.
-      /* initial_features= */ {{1, 2}, {}, {3, 4}},
+      /* initial_features= */ {{}, {1, 2}, {}, {3, 4}},
       // Initial dim = 0 at index 1 since it's for the label vector.
-      /* initial_dims= */ {10, 0, 10}, augmentation);
+      /* initial_dims= */ {0, 10, 0, 10}, augmentation);
 }
 
 }  // namespace thirdai::dataset::tests
