@@ -172,7 +172,6 @@ template void Switch::serialize(cereal::BinaryInputArchive&);
 
 template <class Archive>
 void Switch::serialize(Archive& archive) {
-  // archive(cereal::base_class<Op>(this));
   archive(cereal::base_class<Op>(this), _fc_ops);
 }
 

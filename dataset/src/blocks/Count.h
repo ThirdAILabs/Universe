@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <utils/StringManipulation.h>
@@ -7,6 +8,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+
 namespace thirdai::dataset {
 
 class CountBlock final : public Block {
@@ -49,6 +51,14 @@ class CountBlock final : public Block {
   ColumnIdentifier _column;
   char _delimiter;
   uint32_t _ceiling;
+
+  CountBlock() {}
+
+  friend cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::CountBlock)
