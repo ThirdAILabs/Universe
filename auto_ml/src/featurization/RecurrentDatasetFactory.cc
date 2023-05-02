@@ -87,7 +87,7 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
       {
           dataset::BlockList({dataset::CountBlock::make(
               /* column= */ target_name, /* delimiter= */ _target->delimiter,
-              /* dim= */ _target->max_length.value())}),
+              /* ceiling= */ _target->max_length.value())}),
           dataset::BlockList(
               std::move(inference_featurizer_input_blocks),
               /* hash_range= */ tabular_options.feature_hash_range),

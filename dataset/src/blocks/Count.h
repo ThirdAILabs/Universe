@@ -6,14 +6,15 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 namespace thirdai::dataset {
 
 class CountBlock final : public Block {
  public:
-  CountBlock(ColumnIdentifier column, char delimiter, uint32_t dim)
-      : _column(std::move(column)), _delimiter(delimiter), _dim(dim) {}
+  CountBlock(ColumnIdentifier column, char delimiter, uint32_t ceiling)
+      : _column(std::move(column)), _delimiter(delimiter), _ceiling(ceiling) {}
 
-  uint32_t featureDim() const final { return _dim; }
+  uint32_t featureDim() const final { return _ceiling; }
 
   bool isDense() const final { return false; }
 
@@ -27,8 +28,13 @@ class CountBlock final : public Block {
 
   void buildSegment(ColumnarInputSample& input_row,
                     SegmentedFeatureVector& vec) final {
-    uint32_t index = text::split(input_row.column(_column), _delimiter).size();
-    vec.addSparseFeatureToSegment(index, /* value= */ 1.0);
+    uint32_t count = text::split(input_row.column(_column), _delimiter).size();
+    if (count >= _ceiling) {
+      throw std::invalid_argument(
+          "Count with ceiling=" + std::to_string(_ceiling) +
+          " received a sequence with length=" + std::to_string(count) + ".");
+    }
+    vec.addSparseFeatureToSegment(/* index= */ count, /* value= */ 1.0);
   }
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
@@ -42,7 +48,7 @@ class CountBlock final : public Block {
  private:
   ColumnIdentifier _column;
   char _delimiter;
-  uint32_t _dim;
+  uint32_t _ceiling;
 };
 
 }  // namespace thirdai::dataset

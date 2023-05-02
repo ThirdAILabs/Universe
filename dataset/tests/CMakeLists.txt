@@ -21,7 +21,8 @@ set(DATASET_TESTS
     DatasetLoaderTests
     TokenEncodingTests
     TextGenerationFeaturizerTest
-    RecurrenceAugmentationTests)
+    RecurrenceAugmentationTests
+    CountBlockTests)
 
 include(GoogleTest)
 
