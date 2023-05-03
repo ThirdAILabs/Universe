@@ -3,10 +3,6 @@ import os
 import pytest
 from thirdai.dataset import Wordpiece
 
-BERT_TAG = "bert-base-uncased"
-BERT_VOCAB_PATH = f"{BERT_TAG}.vocab"
-BERT_VOCAB_URL = f"https://huggingface.co/{BERT_TAG}/resolve/main/vocab.txt"
-
 BERT_TOKENIZED_SAMPLES = [
     "popularity of thread ##ing has increased around 2003 , as the growth of the cpu frequency was replaced with the growth of number of cores , in turn requiring concurrency to utilize multiple cores .",
     "arkansas highway 59 business is a business route in gentry .",
@@ -34,18 +30,30 @@ BERT_RAW_SAMPLES = [
 ]
 
 
-def setup_module():
+def download_bert_tokenizer_wrapped():
+    BERT_TAG = "bert-base-uncased"
+    BERT_VOCAB_PATH = f"{BERT_TAG}.vocab"
+    BERT_VOCAB_URL = f"https://huggingface.co/{BERT_TAG}/resolve/main/vocab.txt"
+
     if not os.path.exists(BERT_VOCAB_PATH):
         import urllib.request
 
         response = urllib.request.urlopen(BERT_VOCAB_URL)
         with open(BERT_VOCAB_PATH, "wb+") as bert_vocab_file:
             bert_vocab_file.write(response.read())
+    
+    return BERT_VOCAB_PATH
+
+
+@pytest.fixture(scope="session")
+def download_bert_tokenizer():
+    return download_bert_tokenizer_wrapped()
 
 
 @pytest.mark.unit
-def test_wordpiece_vocab():
-    vocab = Wordpiece.make(BERT_VOCAB_PATH)
+def test_wordpiece_vocab(download_bert_tokenizer):
+    BERT_VOCAB_PATH = download_bert_tokenizer
+    vocab = Wordpiece(BERT_VOCAB_PATH)
 
     with open(BERT_VOCAB_PATH) as vocab_file:
         lines = vocab_file.read().splitlines()

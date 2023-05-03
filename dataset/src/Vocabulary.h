@@ -137,13 +137,13 @@ class WordpieceVocab : public Vocabulary {
     return std::make_shared<WordpieceVocab>(vocab_file, lowercase);
   }
 
-  std::vector<uint32_t> encode(const std::string_view& sentence) const final;
+  std::vector<uint32_t> encode(const std::string& sentence) const final;
 
   std::vector<std::wstring> tokenize(const std::string& sentence) const;
 
   std::string decode(const std::vector<uint32_t>& token_ids) const final;
 
-  uint32_t id(const std::string_view& token_view) const final;
+  uint32_t id(const std::string& token_view) const final;
 
   uint32_t size() const final { return _token_to_id.size(); }
 
@@ -186,5 +186,7 @@ class WordpieceVocab : public Vocabulary {
 
   bool _to_lower;
 };
+
+using WordpieceVocabPtr = std::shared_ptr<WordpieceVocab>;
 
 }  // namespace thirdai::dataset

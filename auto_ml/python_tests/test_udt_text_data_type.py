@@ -2,9 +2,34 @@ import os
 
 import pytest
 from test_udt_simple import make_simple_trained_model
-from thirdai import bolt
+from dataset.python_tests.test_wordpiece_tokenizer import download_bert_tokenizer
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
+
+
+def eval_accuracy_and_cleanup(model, train_filename, test_filename):
+    model.train(train_filename, epochs=10, learning_rate=0.001)
+
+    metrics = model.evaluate(
+        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
+    )
+
+    assert metrics["categorical_accuracy"] == 1
+
+    save_loc = "temp_save.bolt"
+    model.save(save_loc)
+    model = bolt.UniversalDeepTransformer.load(save_loc)
+
+    metrics = model.evaluate(
+        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
+    )
+
+    assert metrics["categorical_accuracy"] == 1
+
+    os.remove(train_filename)
+    os.remove(test_filename)
+    os.remove(save_loc)
 
 
 @pytest.mark.parametrize("encoding", ["none", "local", "global"])
@@ -42,16 +67,7 @@ def test_char_k_text_tokenizer():
         n_target_classes=2,
     )
 
-    model.train(train_filename, epochs=10, learning_rate=0.001)
-
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
-
-    assert metrics["categorical_accuracy"] == 1
-
-    os.remove(train_filename)
-    os.remove(test_filename)
+    eval_accuracy_and_cleanup(model, train_filename, test_filename)
 
 
 def test_words_punct_text_tokenizer():
@@ -84,16 +100,7 @@ def test_words_punct_text_tokenizer():
         n_target_classes=2,
     )
 
-    model.train(train_filename, epochs=10, learning_rate=0.001)
-
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
-    )
-
-    assert metrics["categorical_accuracy"] == 1
-
-    os.remove(train_filename)
-    os.remove(test_filename)
+    eval_accuracy_and_cleanup(model, train_filename, test_filename)
 
 
 def test_lowercasing_for_udt_text_type():
@@ -126,22 +133,40 @@ def test_lowercasing_for_udt_text_type():
         n_target_classes=2,
     )
 
-    model.train(train_filename, epochs=10, learning_rate=0.001)
+    eval_accuracy_and_cleanup(model, train_filename, test_filename)
 
-    metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
+
+def test_tokenizer_from_vocabulary(download_bert_tokenizer):
+    # We want to check if UDT is actually using lowercasing words in the text
+    # type. We do this by passing in words with some uppercase characters in the
+    # training data then changing the case slightly in the testing data
+
+    train_filename = "train.csv"
+    with open(train_filename, "w") as f:
+        f.write("text,category\n")
+        f.write("threading,1\n")
+        f.write("threading,1\n")
+        f.write("foresting,0\n")
+        f.write("foresting,0\n")
+
+    test_filename = "test.csv"
+    with open(test_filename, "w") as f:
+        f.write("text,category\n")
+        f.write("thread ##ing,1\n")
+        f.write("thread ##ing,1\n")
+        f.write("forest ##ing,0\n")
+        f.write("forest ##ing,0\n")
+
+    BERT_VOCAB_PATH = download_bert_tokenizer
+    vocab = dataset.Wordpiece(BERT_VOCAB_PATH)
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(tokenizer=vocab),
+            "category": bolt.types.categorical(),
+        },
+        target="category",
+        n_target_classes=2,
     )
 
-    assert metrics["categorical_accuracy"] == 1
-
-    os.remove(train_filename)
-    os.remove(test_filename)
-
-
-def test_tokenizer_from_vocabulary():
-    pass
-
-
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_save_load_across_text_data_type_options():
-    pass
+    eval_accuracy_and_cleanup(model, train_filename, test_filename)

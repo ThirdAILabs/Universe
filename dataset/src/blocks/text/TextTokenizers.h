@@ -91,11 +91,11 @@ class CharKGramTokenizer : public TextTokenizer {
 
 class WordpieceTokenizer : public TextTokenizer {
  public:
-  explicit WordpieceTokenizer(std::shared_ptr<WordpieceVocab> vocab)
+  explicit WordpieceTokenizer(WordpieceVocabPtr vocab)
       : _vocab(std::move(vocab)) {}
 
-  static auto make(uint32_t k) {
-    return std::make_shared<CharKGramTokenizer>(k);
+  static auto make(WordpieceVocabPtr vocab) {
+    return std::make_shared<WordpieceTokenizer>(vocab);
   }
 
   std::vector<std::string> apply(const std::string& input) final {

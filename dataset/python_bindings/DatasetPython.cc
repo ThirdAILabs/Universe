@@ -476,10 +476,10 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule, "FixedVocabulary")
       .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
 
-  py::class_<WordpieceVocab, Vocabulary, std::shared_ptr<WordpieceVocab>>(
-      dataset_submodule, "Wordpiece")
-      .def_static("make", &WordpieceVocab::make, py::arg("vocab_file_path"),
-                  py::arg("lower_case") = true);
+  py::class_<WordpieceVocab, Vocabulary, WordpieceVocabPtr>(dataset_submodule,
+                                                            "Wordpiece")
+      .def(py::init<std::string, bool>(), py::arg("vocab_file_path"),
+           py::arg("lower_case") = true);
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(
