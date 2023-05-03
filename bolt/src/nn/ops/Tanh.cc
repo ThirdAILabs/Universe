@@ -41,8 +41,8 @@ void Tanh::forward(const autograd::ComputationList& inputs,
                 output_vec.active_neurons);
     }
 
-    for (uint32_t i = 0; i < input_vec.len; i++) {
-      output_vec.activations[i] = std::tanh(input_vec.activations[i]);
+    for (uint32_t j = 0; j < input_vec.len; j++) {
+      output_vec.activations[j] = std::tanh(input_vec.activations[j]);
     }
   }
 }
@@ -60,9 +60,9 @@ void Tanh::backpropagate(autograd::ComputationList& inputs,
     BoltVector& input_vec = input->getVector(i);
     const BoltVector& output_vec = output->getVector(i);
 
-    for (uint32_t i = 0; i < input_vec.len; i++) {
-      float tanh = output_vec.activations[i];
-      input_vec.gradients[i] += (1 - tanh * tanh) * output_vec.gradients[i];
+    for (uint32_t j = 0; j < input_vec.len; j++) {
+      float tanh = output_vec.activations[j];
+      input_vec.gradients[j] += (1 - tanh * tanh) * output_vec.gradients[j];
     }
   }
 }
