@@ -587,7 +587,8 @@ class QueryCandidateGenerator {
   }
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
-    dataset::RowSampleRef input_vector_ref({query});
+    std::vector<std::string> input_vector{query};
+    dataset::RowSampleRef input_vector_ref(input_vector);
     return _inference_featurizer->featurize(input_vector_ref).at(0);
   }
 
