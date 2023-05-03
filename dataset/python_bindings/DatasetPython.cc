@@ -1,6 +1,7 @@
 #include "DatasetPython.h"
 #include "PyDataSource.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
@@ -49,8 +50,8 @@ namespace thirdai::dataset::python {
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-NumpyArray<uint32_t> pairgrams(const NumpyArray<uint32_t>& unigrams,
-                               uint32_t vocab_size);
+bolt::nn::tensor::TensorPtr pairgrams(const NumpyArray<uint32_t>& unigrams,
+                                      uint32_t vocab_size);
 
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
@@ -559,24 +560,31 @@ bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
   return true;
 }
 
-NumpyArray<uint32_t> pairgrams(const NumpyArray<uint32_t>& unigrams,
-                               uint32_t vocab_size) {
+bolt::nn::tensor::TensorPtr pairgrams(const NumpyArray<uint32_t>& unigrams,
+                                      uint32_t vocab_size) {
   if (unigrams.ndim() != 2) {
     throw std::invalid_argument("Expected unigrams to be 2D.");
   }
 
-  uint64_t n_samples = unigrams.shape(0);
-  uint64_t seq_len = unigrams.shape(1);
+  uint32_t n_samples = unigrams.shape(0);
+  uint32_t seq_len = unigrams.shape(1);
 
-  NumpyArray<uint32_t> output({n_samples, seq_len, seq_len});
+  std::vector<uint32_t> dims = {n_samples, seq_len, vocab_size * vocab_size};
+  auto output =
+      std::make_shared<bolt::nn::tensor::Tensor>(dims, seq_len,
+                                                 /* with_grad= */ false);
 
 #pragma omp parallel for default(none) \
     shared(n_samples, seq_len, vocab_size, unigrams, output)
   for (uint64_t i = 0; i < n_samples; i++) {
     for (uint32_t a = 0; a < seq_len; a++) {
+      BoltVector& row = output->getVector(i * seq_len + a);
+
       for (uint32_t b = 0; b < seq_len; b++) {
         uint32_t pairgram = unigrams.at(i, a) * vocab_size + unigrams.at(i, b);
-        output.mutable_at(i, a, b) = pairgram;
+
+        row.active_neurons[b] = pairgram;
+        row.activations[b] = 1.0;
       }
     }
   }

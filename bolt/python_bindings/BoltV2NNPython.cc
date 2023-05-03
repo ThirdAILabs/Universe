@@ -17,6 +17,7 @@
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/ops/WeightedSum.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/utils/Timer.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -24,6 +25,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <cstddef>
 #include <optional>
 #include <stdexcept>
 
@@ -65,17 +67,18 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
-tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
-                                  const NumpyArray<float>& values,
-                                  uint32_t last_dim, bool with_grad) {
-  if (indices.ndim() != values.ndim()) {
+tensor::TensorPtr fromNumpySparse(
+    const NumpyArray<uint32_t>& indices,
+    const std::optional<NumpyArray<float>>& values, uint32_t last_dim,
+    bool with_grad) {
+  if (values && indices.ndim() != values->ndim()) {
     throw std::invalid_argument(
         "Expected indices and values to have the same number of dimensions.");
   }
 
   tensor::Dims dims;
   for (uint32_t i = 0; i < indices.ndim(); i++) {
-    if (indices.shape(i) != values.shape(i)) {
+    if (values && indices.shape(i) != values->shape(i)) {
       throw std::invalid_argument("Dimension mismatch in indices and values.");
     }
     dims.push_back(indices.shape(i));
@@ -83,8 +86,13 @@ tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
   uint32_t nonzeros = dims.back();
   dims.back() = last_dim;
 
-  return tensor::Tensor::fromArray(indices.data(), values.data(), dims,
-                                   nonzeros, with_grad);
+  const float* values_ptr = nullptr;
+  if (values) {
+    values_ptr = values->data();
+  }
+
+  return tensor::Tensor::fromArray(indices.data(), values_ptr, dims, nonzeros,
+                                   with_grad);
 }
 
 tensor::TensorPtr fromNumpyDense(const NumpyArray<float>& values,

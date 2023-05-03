@@ -30,3 +30,17 @@ def test_sparse_tensor_to_numpy():
     assert np.array_equal(values, tensor.activations)
 
     assert tensor.gradients == None
+
+
+@pytest.mark.unit
+def test_sparse_tensor_to_numpy_no_values():
+    dense_dim = 10000
+    indices = np.random.randint(0, dense_dim, size=(5, 4, 3, 2), dtype=np.uint32)
+
+    tensor = bolt.nn.Tensor(indices, values=None, dense_dim=dense_dim)
+
+    assert np.array_equal(indices, tensor.active_neurons)
+
+    assert np.array_equal(np.ones((5, 4, 3, 2), dtype=np.float32), tensor.activations)
+
+    assert tensor.gradients == None

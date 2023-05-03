@@ -67,7 +67,12 @@ Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
     std::copy(indices, indices + _active_neurons.size(),
               _active_neurons.begin());
   }
-  std::copy(values, values + _activations.size(), _activations.begin());
+
+  if (values) {
+    std::copy(values, values + _activations.size(), _activations.begin());
+  } else {
+    std::fill(_activations.begin(), _activations.end(), 1.0);
+  }
 }
 
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
