@@ -58,6 +58,11 @@ class UDTRecurrentClassifier final : public UDTBackend {
  private:
   UDTRecurrentClassifier() {}
 
+  static ModelPtr buildModel(uint32_t input_dim, uint32_t hidden_dim,
+                             uint32_t output_dim, const std::string& hidden_act,
+                             float hidden_sparsity, float output_sparsity,
+                             bool use_sigmoid_bce);
+
   static void throwIfSparseInference(bool sparse_inference) {
     if (sparse_inference) {
       // TODO(Geordie): We can actually use a special case of sparse inference

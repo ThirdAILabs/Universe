@@ -1,4 +1,7 @@
 #include "UDTRecurrentClassifier.h"
+#include <bolt/src/nn/loss/BinaryCrossEntropy.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -42,8 +45,26 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 output_dim);
+    bool use_sigmoid_bce = user_args.get<bool>("use_sigmoid_bce", "bool",
+                                               /* default_val= */ false);
+    std::string hidden_act =
+        user_args.get<std::string>("embedding_activation", "string",
+                                   /* default_val= */ "relu");
+
+    float hidden_sparsity = user_args.get<float>("embedding_sparsity", "float",
+                                                 /* default_val= */ 1.0);
+
+    float output_sparsity = user_args.get<float>(
+        "output_sparsity", "float",
+        /* default_val= */ utils::autotuneSparsity(output_dim));
+
+    _model = buildModel(
+        /* input_dim= */ tabular_options.feature_hash_range,
+        /* hidden_dim= */ hidden_dim, /* output_dim= */ output_dim,
+        /* hidden_act= */ hidden_act,
+        /* hidden_sparsity= */ hidden_sparsity,
+        /* output_sparsity= */ output_sparsity,
+        /* use_sigmoid_bce= */ use_sigmoid_bce);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
@@ -90,7 +111,7 @@ py::object UDTRecurrentClassifier::train(
 py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
     bool sparse_inference, bool verbose) {
-  throwIfSparseInference(sparse_inference);
+  // throwIfSparseInference(sparse_inference);
 
   bolt::train::Trainer trainer(_model);
 
@@ -105,7 +126,7 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
-  throwIfSparseInference(sparse_inference);
+  // throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   auto mutable_sample = sample;
@@ -155,7 +176,7 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class) {
-  throwIfSparseInference(sparse_inference);
+  // throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   PredictBatchProgress progress(samples.size());
@@ -195,6 +216,37 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return std::move(output);
+}
+
+ModelPtr UDTRecurrentClassifier::buildModel(
+    uint32_t input_dim, uint32_t hidden_dim, uint32_t output_dim,
+    const std::string& hidden_act, float hidden_sparsity, float output_sparsity,
+    bool use_sigmoid_bce) {
+  auto input = bolt::nn::ops::Input::make(input_dim);
+
+  auto hidden =
+      bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
+                                          /* sparsity= */ hidden_sparsity,
+                                          /* activation= */ hidden_act)
+          ->apply(input);
+
+  const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
+  auto output = bolt::nn::ops::FullyConnected::make(output_dim, hidden->dim(),
+                                                    output_sparsity, activation)
+                    ->apply(hidden);
+
+  auto labels = bolt::nn::ops::Input::make(output_dim);
+
+  bolt::nn::loss::LossPtr loss;
+  if (use_sigmoid_bce) {
+    loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
+  } else {
+    loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+  }
+
+  auto model = bolt::nn::model::Model::make({input}, {output}, {loss});
+
+  return model;
 }
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,

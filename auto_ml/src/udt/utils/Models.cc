@@ -25,8 +25,6 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                              use_sigmoid_bce);
 }
 
-namespace {
-
 float autotuneSparsity(uint32_t dim) {
   std::vector<std::pair<uint32_t, float>> sparsity_values = {
       {450, 1.0},    {900, 0.2},    {1800, 0.1},     {4000, 0.05},
@@ -39,8 +37,6 @@ float autotuneSparsity(uint32_t dim) {
   }
   return sparsity_values.back().second;
 }
-
-}  // namespace
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce) {

@@ -94,19 +94,25 @@ std::vector<BoltVector> RecurrenceAugmentation::replicateOtherVectors(
 
 uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,
                                                  uint32_t step) {
-  if (!output.isDense()) {
-    throw std::invalid_argument(
-        "Cannot get sequence element name from dense output");
-  }
   auto begin = step * _vocab.maxSize().value();
   auto end = begin + _vocab.maxSize().value();
 
-  uint32_t arg_max = 0;
+  uint32_t arg_max = begin + 1;  // Default to first non-EOS class.
   float max_act = -std::numeric_limits<float>::max();
-  for (uint32_t neuron = begin; neuron < end; neuron++) {
-    if (output.activations[neuron] > max_act) {
-      arg_max = neuron;
-      max_act = output.activations[neuron];
+
+  if (output.isDense()) {
+    for (uint32_t neuron = begin; neuron < end; neuron++) {
+      if (output.activations[neuron] > max_act) {
+        arg_max = neuron;
+        max_act = output.activations[neuron];
+      }
+    }
+  } else {
+    for (uint32_t pos = 0; pos < output.len; pos++) {
+      if (output.activations[pos] > max_act) {
+        arg_max = output.active_neurons[pos];
+        max_act = output.activations[pos];
+      }
     }
   }
 
