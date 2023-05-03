@@ -34,6 +34,7 @@
 #include <chrono>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 
@@ -47,6 +48,9 @@ namespace thirdai::dataset::python {
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
+NumpyArray<uint32_t> pairgrams(const NumpyArray<uint32_t>& unigrams,
+                               uint32_t vocab_size);
 
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
@@ -475,6 +479,9 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
       dataset_submodule, "FixedVocabulary")
       .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
+
+  dataset_submodule.def("pairgrams", &pairgrams, py::arg("unigrams"),
+                        py::arg("vocab_size"));
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(
@@ -550,6 +557,31 @@ bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
   }
 
   return true;
+}
+
+NumpyArray<uint32_t> pairgrams(const NumpyArray<uint32_t>& unigrams,
+                               uint32_t vocab_size) {
+  if (unigrams.ndim() != 2) {
+    throw std::invalid_argument("Expected unigrams to be 2D.");
+  }
+
+  uint64_t n_samples = unigrams.shape(0);
+  uint64_t seq_len = unigrams.shape(1);
+
+  NumpyArray<uint32_t> output({n_samples, seq_len, seq_len});
+
+#pragma omp parallel for default(none) \
+    shared(n_samples, seq_len, vocab_size, unigrams, output)
+  for (uint64_t i = 0; i < n_samples; i++) {
+    for (uint32_t a = 0; a < seq_len; a++) {
+      for (uint32_t b = 0; b < seq_len; b++) {
+        uint32_t pairgram = unigrams.at(i, a) * vocab_size + unigrams.at(i, b);
+        output.mutable_at(i, a, b) = pairgram;
+      }
+    }
+  }
+
+  return output;
 }
 
 }  // namespace thirdai::dataset::python
