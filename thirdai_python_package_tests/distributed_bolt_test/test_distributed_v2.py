@@ -5,6 +5,7 @@ import os
 from thirdai.demos import download_mnist_dataset
 from ray.air import ScalingConfig
 from thirdai import dataset
+from ray.air import session
 
 
 ray.init(runtime_env={"env_vars": {"OMP_NUM_THREADS": "24"}})
@@ -50,26 +51,43 @@ def train_loop_per_worker():
     test_x = bolt.train.convert_dataset(test_x, dim=784)
     test_y = bolt.train.convert_dataset(test_y, dim=10)
 
+    # history = trainer.validate(
+    #     validation_data=(test_x, test_y),
+    #     validation_metrics=["loss", "categorical_accuracy"],
+    #     use_sparsity=False,
+    # )
+
+    # print(history)
+    # epochs = 1
+    # print("Training")
+    # for _ in range(epochs):
+    #     for x, y in zip(train_x, train_y):
+    #         trainer.step(x, y, 2)
+
     history = trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
         use_sparsity=False,
     )
 
-    print(history)
-    epochs = 1
-    print("Training")
-    for _ in range(epochs):
-        for x, y in zip(train_x, train_y):
-            trainer.step(x, y, 2)
+    session.report(
+        history,
+        checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
+    )
+    print("Old:", history)
 
-    history = trainer.validate(
+    ckpt = session.get_checkpoint()
+    print(ckpt)
+    model = ckpt.get_model()
+    new_trainer = bolt.train.Trainer(model)
+
+    history = new_trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
         use_sparsity=False,
     )
 
-    print(history)
+    print("New:", history)
 
 
 scaling_config = ScalingConfig(
@@ -89,3 +107,5 @@ trainer = dist.BoltTrainer(
     bolt_config=dist.BoltBackendConfig(),
 )
 result = trainer.fit()
+
+print(result)
