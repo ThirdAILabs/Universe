@@ -40,7 +40,7 @@ def test_wordpiece_vocab(download_bert_tokenizer):
         assert len(lines) == vocab.size()
 
     for raw, tokenized in zip(BERT_RAW_SAMPLES, BERT_TOKENIZED_SAMPLES):
-        token_ids = vocab.encode(raw)
+        token_ids = vocab.tokenize(raw)
 
         assert vocab.unk_id() not in token_ids
 

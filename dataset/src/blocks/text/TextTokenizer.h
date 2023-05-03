@@ -3,7 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <dataset/src/Vocabulary.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <string>
 
@@ -11,7 +11,10 @@ namespace thirdai::dataset {
 
 class TextTokenizer {
  public:
-  virtual std::vector<std::string> apply(const std::string& input) = 0;
+  virtual std::vector<uint32_t> tokenize(const std::string& input) = 0;
+
+  virtual std::string getResponsibleWord(const std::string& input,
+                                         uint32_t source_token) = 0;
 
   virtual ~TextTokenizer() = default;
 
@@ -33,8 +36,15 @@ class NaiveSplitTokenizer : public TextTokenizer {
     return std::make_shared<NaiveSplitTokenizer>(delimiter);
   }
 
-  std::vector<std::string> apply(const std::string& input) final {
-    return text::split(input, _delimiter);
+  std::vector<uint32_t> tokenize(const std::string& input) final {
+    return token_encoding::hashTokens(text::split(input, _delimiter));
+  }
+
+  std::string getResponsibleWord(const std::string& input,
+                                 uint32_t source_token) final {
+    return token_encoding::buildUnigramHashToWordMap(
+               text::split(input, _delimiter))
+        .at(source_token);
   }
 
  private:
@@ -53,8 +63,15 @@ class WordPunctTokenizer : public TextTokenizer {
 
   static auto make() { return std::make_shared<WordPunctTokenizer>(); }
 
-  std::vector<std::string> apply(const std::string& input) final {
-    return text::tokenizeSentence(input);
+  std::vector<uint32_t> tokenize(const std::string& input) final {
+    return token_encoding::hashTokens(text::tokenizeSentence(input));
+  }
+
+  std::string getResponsibleWord(const std::string& input,
+                                 uint32_t source_token) final {
+    return token_encoding::buildUnigramHashToWordMap(
+               text::tokenizeSentence(input))
+        .at(source_token);
   }
 
  private:
@@ -73,8 +90,15 @@ class CharKGramTokenizer : public TextTokenizer {
     return std::make_shared<CharKGramTokenizer>(k);
   }
 
-  std::vector<std::string> apply(const std::string& input) final {
-    return text::charKGrams(input, _k);
+  std::vector<uint32_t> tokenize(const std::string& input) final {
+    return token_encoding::hashTokens(text::charKGrams(input, _k));
+  }
+
+  std::string getResponsibleWord(const std::string& input,
+                                 uint32_t source_token) final {
+    return token_encoding::buildUnigramHashToWordMap(
+               text::charKGrams(input, _k))
+        .at(source_token);
   }
 
  private:
@@ -89,39 +113,8 @@ class CharKGramTokenizer : public TextTokenizer {
   }
 };
 
-class WordpieceTokenizer : public TextTokenizer {
- public:
-  explicit WordpieceTokenizer(WordpieceVocabPtr vocab)
-      : _vocab(std::move(vocab)) {}
-
-  static auto make(WordpieceVocabPtr vocab) {
-    return std::make_shared<WordpieceTokenizer>(vocab);
-  }
-
-  std::vector<std::string> apply(const std::string& input) final {
-    auto unicode_tokens = _vocab->tokenize(input);
-    std::vector<std::string> outputs(unicode_tokens.size());
-    for (uint32_t i = 0; i < unicode_tokens.size(); i++) {
-      outputs[i] = text::fromUnicode(unicode_tokens[i]);
-    }
-    return outputs;
-  }
-
- private:
-  std::shared_ptr<WordpieceVocab> _vocab;
-
-  WordpieceTokenizer() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<TextTokenizer>(this), _vocab);
-  }
-};
-
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::NaiveSplitTokenizer)
 CEREAL_REGISTER_TYPE(thirdai::dataset::WordPunctTokenizer)
 CEREAL_REGISTER_TYPE(thirdai::dataset::CharKGramTokenizer)
-CEREAL_REGISTER_TYPE(thirdai::dataset::WordpieceTokenizer)

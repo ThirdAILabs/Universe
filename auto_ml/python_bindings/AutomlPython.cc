@@ -310,8 +310,7 @@ void createUDTTypesSubmodule(py::module_& module) {
            py::arg("tokenizer") = "words",
            py::arg("contextual_encoding") = "none",
            py::arg("lowercase") = false, docs::UDT_TEXT_TYPE)
-      .def(py::init<std::shared_ptr<dataset::WordpieceVocab>, std::string,
-                    bool>(),
+      .def(py::init<dataset::WordpieceTokenizerPtr, std::string, bool>(),
            py::arg("tokenizer"), py::arg("contextual_encoding") = "none",
            py::arg("lowercase") = false, docs::UDT_TEXT_TYPE);
 
