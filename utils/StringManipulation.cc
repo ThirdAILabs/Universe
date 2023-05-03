@@ -114,14 +114,14 @@ std::wstring toUnicode(const std::string& text) {
   size_t i = 0;
   std::wstring ret;
   while (i < text.size()) {
-    wchar_t codepoint;
+    wchar_t unicode_char;
     utf8proc_ssize_t forward = utf8proc_iterate(
         reinterpret_cast<const utf8proc_uint8_t*>(&text[i]), text.size() - i,
-        reinterpret_cast<utf8proc_int32_t*>(&codepoint));
+        reinterpret_cast<utf8proc_int32_t*>(&unicode_char));
     if (forward < 0) {
       return L"";
     }
-    ret += codepoint;
+    ret += unicode_char;
     i += forward;
   }
   return ret;
