@@ -2,9 +2,9 @@
 #include <dataset/src/DataSource.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/entitlements/Entitlements.h>
+#include <licensing/src/methods/LicenseMethod.h>
 #include <optional>
 #include <string>
-#include <licensing/src/methods/LicenseMethod.h>
 
 namespace thirdai::licensing {
 

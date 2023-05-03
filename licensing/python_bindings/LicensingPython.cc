@@ -34,8 +34,7 @@ void createLicensingSubmodule(py::module_& module) {
       // https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
       .def(py::pickle(
           [](const LicenseState& s) {  // __getstate__
-            return py::make_tuple(s.key_state, s.server_state,
-                                  s.file_state);
+            return py::make_tuple(s.key_state, s.server_state, s.file_state);
           },
           [](const py::tuple& t) {  // __setstate__
             if (t.size() != 3) {
