@@ -7,7 +7,7 @@ from ray.air import ScalingConfig
 from thirdai import dataset
 
 
-ray.init()
+ray.init(runtime_env={"env_vars": {"OMP_NUM_THREADS": "24"}})
 
 
 def get_mnist_model():
@@ -38,7 +38,7 @@ def train_loop_per_worker():
 
     # synchronizes model between each machines
     trainer.distribute(2)
-
+    # print(trainer.model.get_values(1))
     # download train and test data
     # train_file, test_file = download_mnist_dataset()
 
@@ -53,7 +53,7 @@ def train_loop_per_worker():
     history = trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=True,
+        use_sparsity=False,
     )
 
     print(history)
@@ -66,7 +66,7 @@ def train_loop_per_worker():
     history = trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=True,
+        use_sparsity=False,
     )
 
     print(history)
