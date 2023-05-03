@@ -85,7 +85,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("inputs"), py::arg("use_sparsity"))
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
-      .def("ops", &model::Model::ops)
+      .def("ops", &model::Model::opExecutionOrder)
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
@@ -109,8 +109,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
 
 void defineTensor(py::module_& nn) {
   py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
-      .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
-               tensor::Tensor::convert)),
+      .def(py::init([](BoltVector vector, uint32_t dim) {
+             return tensor::Tensor::convert(std::move(vector), dim);
+           }),
            py::arg("vector"), py::arg("dim"))
       .def_property_readonly(
           "active_neurons",

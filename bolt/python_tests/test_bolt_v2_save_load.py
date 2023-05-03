@@ -111,13 +111,10 @@ def test_bolt_save_load():
 
     # We use the labels as tokens to be embedded by the embedding table so they
     # are included as part of the inputs.
-    train_data = bolt.train.convert_datasets(
-        [train_data, train_labels], dims=[N_CLASSES, N_CLASSES]
-    )
-    train_labels = bolt.train.convert_datasets(
-        [train_labels, train_labels, train_labels],
-        dims=[N_CLASSES, N_CLASSES, N_CLASSES],
-    )
+    train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
+    train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
+    train_data = [x + y for x, y in zip(train_data, train_labels)]
+    train_labels = [x * 3 for x in train_labels]
 
     test_data_np, test_labels_np = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False

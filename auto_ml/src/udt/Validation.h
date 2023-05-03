@@ -13,7 +13,7 @@ namespace thirdai::automl::udt {
 class ValidationArgs {
  public:
   explicit ValidationArgs(
-      std::vector<std::string> metrics,
+      std::vector<std::string> metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool sparse_inference = false)
       : _metrics(std::move(metrics)),

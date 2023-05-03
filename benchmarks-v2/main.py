@@ -4,9 +4,11 @@ from datetime import date
 
 import requests
 import thirdai
-from thirdai.experimental import MlflowCallback
+from thirdai.experimental import MlflowCallback, MlflowCallbackV2
 
 from .runners.runner_map import runner_map
+from .runners.temporal import TemporalRunner
+from .runners.udt import UDTRunner
 from .utils import get_configs
 
 
@@ -71,7 +73,11 @@ if __name__ == "__main__":
 
         for config in configs:
             if args.mlflow_uri and args.run_name:
-                mlflow_logger = MlflowCallback(
+                mlflow_callback = MlflowCallback
+                if runner == UDTRunner or runner == TemporalRunner:
+                    mlflow_callback = MlflowCallbackV2
+
+                mlflow_logger = mlflow_callback(
                     tracking_uri=args.mlflow_uri,
                     experiment_name=experiment_name(
                         config.config_name, args.official_benchmark

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ArgumentMap.h"
-#include <bolt/src/graph/Graph.h>
+#include <bolt/src/nn/model/Model.h>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
@@ -39,8 +39,9 @@ namespace thirdai::automl::config {
  * The predecessors of a given node must be specified in the nodes list before
  * the the node that uses them as inputs.
  */
-bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
-                              const std::vector<uint32_t>& input_dims);
+bolt::nn::model::ModelPtr buildModel(const json& config,
+                                     const ArgumentMap& args,
+                                     const std::vector<uint32_t>& input_dims);
 
 /**
  * Takes in a config as a json string and encrypts it using a per byte cipher
