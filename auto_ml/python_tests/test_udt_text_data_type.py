@@ -155,11 +155,11 @@ def test_tokenizer_from_vocabulary(download_bert_tokenizer):
         f.write("forest ##ing,0\n")
 
     BERT_VOCAB_PATH = download_bert_tokenizer
-    vocab = dataset.Wordpiece(BERT_VOCAB_PATH)
+    tokenizer = dataset.Wordpiece(BERT_VOCAB_PATH)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "text": bolt.types.text(tokenizer=vocab),
+            "text": bolt.types.text(tokenizer=tokenizer),
             "category": bolt.types.categorical(),
         },
         target="category",

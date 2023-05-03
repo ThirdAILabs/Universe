@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import thirdai
 
-from thirdai_python_package.demos import bert_base_uncased as bert_base_uncased_wrapped
+from thirdai_python_package.demos import bert_base_uncased
 
 universe_dir = Path(__file__).parent
 
@@ -32,5 +32,5 @@ def enable_full_access_licensing(request):
 
 
 @pytest.fixture(scope="session")
-def download_bert_tokenizer():
-    return bert_base_uncased_wrapped()
+def download_bert_base_uncased():
+    return bert_base_uncased()
