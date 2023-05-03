@@ -277,11 +277,7 @@ bool isControl(const wchar_t& c) {
     return false;
   }
   auto category = utf8proc_category(c);
-  if (category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF) {
-    // NOLINTNEXTLINE
-    return true;
-  }
-  return false;
+return category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF;
 }
 
 bool isWhitespace(const wchar_t& c) {
