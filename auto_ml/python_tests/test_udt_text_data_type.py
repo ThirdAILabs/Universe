@@ -4,16 +4,29 @@ import pytest
 from test_udt_simple import make_simple_trained_model
 from thirdai import bolt, dataset
 
-from conftest import download_bert_tokenizer
+from conftest import download_bert_base_uncased
 
 pytestmark = [pytest.mark.unit]
 
 
-def eval_accuracy_and_cleanup(model, train_filename, test_filename):
-    model.train(train_filename, epochs=10, learning_rate=0.001)
+TRAIN_FILENAME = "train.csv"
+TEST_FILENAME = "test.csv"
+
+
+def create_data_file(positive_sample, negative_sample, filename):
+    with open(filename, "w") as f:
+        f.write("text,category\n")
+        f.write(f"{positive_sample},1\n")
+        f.write(f"{positive_sample},1\n")
+        f.write(f"{negative_sample},0\n")
+        f.write(f"{negative_sample},0\n")
+
+
+def eval_accuracy_and_cleanup(model):
+    model.train(TRAIN_FILENAME, epochs=10, learning_rate=0.001)
 
     metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
+        TEST_FILENAME, return_metrics=True, metrics=["categorical_accuracy"]
     )
 
     assert metrics["categorical_accuracy"] == 1
@@ -23,13 +36,13 @@ def eval_accuracy_and_cleanup(model, train_filename, test_filename):
     model = bolt.UniversalDeepTransformer.load(save_loc)
 
     metrics = model.evaluate(
-        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
+        TEST_FILENAME, return_metrics=True, metrics=["categorical_accuracy"]
     )
 
     assert metrics["categorical_accuracy"] == 1
 
-    os.remove(train_filename)
-    os.remove(test_filename)
+    os.remove(TRAIN_FILENAME)
+    os.remove(TEST_FILENAME)
     os.remove(save_loc)
 
 
@@ -43,21 +56,8 @@ def test_char_k_text_tokenizer():
     # We do this by memorizing 3 character words then using those words as part
     # of unseen 4 character words in the test data.
 
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol,1\n")
-        f.write("lol,1\n")
-        f.write("aya,0\n")
-        f.write("aya,0\n")
-
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol9,1\n")
-        f.write("lol9,1\n")
-        f.write("aya9,0\n")
-        f.write("aya9,0\n")
+    create_data_file("lol", "aya", TRAIN_FILENAME)
+    create_data_file("lol9", "aya9", TEST_FILENAME)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -68,7 +68,7 @@ def test_char_k_text_tokenizer():
         n_target_classes=2,
     )
 
-    eval_accuracy_and_cleanup(model, train_filename, test_filename)
+    eval_accuracy_and_cleanup(model)
 
 
 def test_words_punct_text_tokenizer():
@@ -76,21 +76,8 @@ def test_words_punct_text_tokenizer():
     # We do this by passing in words joined with punctuation in the training
     # data then separating them in the testing data
 
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol.,1\n")
-        f.write("lol.,1\n")
-        f.write("aya?,0\n")
-        f.write("aya?,0\n")
-
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("lol .,1\n")
-        f.write("lol .,1\n")
-        f.write("aya ?,0\n")
-        f.write("aya ?,0\n")
+    create_data_file("lol.", "aya?", TRAIN_FILENAME)
+    create_data_file("lol .", "aya ?", TEST_FILENAME)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -101,7 +88,7 @@ def test_words_punct_text_tokenizer():
         n_target_classes=2,
     )
 
-    eval_accuracy_and_cleanup(model, train_filename, test_filename)
+    eval_accuracy_and_cleanup(model)
 
 
 def test_lowercasing_for_udt_text_type():
@@ -109,21 +96,8 @@ def test_lowercasing_for_udt_text_type():
     # type. We do this by passing in words with some uppercase characters in the
     # training data then changing the case slightly in the testing data
 
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("Lol,1\n")
-        f.write("lOl,1\n")
-        f.write("Aya,0\n")
-        f.write("aYa,0\n")
-
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("loL,1\n")
-        f.write("loL,1\n")
-        f.write("ayA,0\n")
-        f.write("ayA,0\n")
+    create_data_file("Lol", "aYa", TRAIN_FILENAME)
+    create_data_file("loL", "ayA", TEST_FILENAME)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -134,28 +108,15 @@ def test_lowercasing_for_udt_text_type():
         n_target_classes=2,
     )
 
-    eval_accuracy_and_cleanup(model, train_filename, test_filename)
+    eval_accuracy_and_cleanup(model)
 
 
-def test_tokenizer_from_vocabulary(download_bert_tokenizer):
-    train_filename = "train.csv"
-    with open(train_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("threading,1\n")
-        f.write("threading,1\n")
-        f.write("foresting,0\n")
-        f.write("foresting,0\n")
+def test_tokenizer_from_vocabulary(download_bert_base_uncased):
+    create_data_file("threading", "foresting", TRAIN_FILENAME)
+    create_data_file("thread ##ing", "forest ##ing", TEST_FILENAME)
 
-    test_filename = "test.csv"
-    with open(test_filename, "w") as f:
-        f.write("text,category\n")
-        f.write("thread ##ing,1\n")
-        f.write("thread ##ing,1\n")
-        f.write("forest ##ing,0\n")
-        f.write("forest ##ing,0\n")
-
-    BERT_VOCAB_PATH = download_bert_tokenizer
-    tokenizer = dataset.Wordpiece(BERT_VOCAB_PATH)
+    BERT_VOCAB_PATH = download_bert_base_uncased
+    tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -166,4 +127,4 @@ def test_tokenizer_from_vocabulary(download_bert_tokenizer):
         n_target_classes=2,
     )
 
-    eval_accuracy_and_cleanup(model, train_filename, test_filename)
+    eval_accuracy_and_cleanup(model)

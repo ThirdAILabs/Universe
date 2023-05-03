@@ -1,7 +1,7 @@
 import pytest
-from thirdai.dataset import Wordpiece
+from thirdai.dataset import WordpieceTokenizer
 
-from conftest import download_bert_tokenizer
+from conftest import download_bert_base_uncased
 
 BERT_TOKENIZED_SAMPLES = [
     "popularity of thread ##ing has increased around 2003 , as the growth of the cpu frequency was replaced with the growth of number of cores , in turn requiring concurrency to utilize multiple cores .",
@@ -31,9 +31,9 @@ BERT_RAW_SAMPLES = [
 
 
 @pytest.mark.unit
-def test_wordpiece_vocab(download_bert_tokenizer):
-    BERT_VOCAB_PATH = download_bert_tokenizer
-    vocab = Wordpiece(BERT_VOCAB_PATH)
+def test_wordpiece_vocab(download_bert_base_uncased):
+    BERT_VOCAB_PATH = download_bert_base_uncased
+    vocab = WordpieceTokenizer(BERT_VOCAB_PATH)
 
     with open(BERT_VOCAB_PATH) as vocab_file:
         lines = vocab_file.read().splitlines()
