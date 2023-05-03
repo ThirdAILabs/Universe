@@ -11,9 +11,7 @@ void createLicensingSubmodule(py::module_& module) {
   licensing_submodule.def(
       "set_path", &thirdai::licensing::setLicensePath, py::arg("license_path"),
       py::arg("verbose") = false,
-      "Set a license filepath for any future calls to ThirdAI functions. "
-      "License file verification will be treated as a fallback if activate "
-      "has not been called.");
+      "Set a license filepath for any future calls to ThirdAI functions.");
 
   licensing_submodule.def(
       "activate", &thirdai::licensing::activate, py::arg("api_key"),
@@ -36,8 +34,8 @@ void createLicensingSubmodule(py::module_& module) {
       // https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
       .def(py::pickle(
           [](const LicenseState& s) {  // __getstate__
-            return py::make_tuple(s.api_key_state, s.heartbeat_state,
-                                  s.license_path_state);
+            return py::make_tuple(s.key_state, s.server_state,
+                                  s.file_state);
           },
           [](const py::tuple& t) {  // __setstate__
             if (t.size() != 3) {
@@ -45,17 +43,14 @@ void createLicensingSubmodule(py::module_& module) {
             }
 
             LicenseState s;
-            s.api_key_state = t[0].cast<std::optional<std::string>>();
-            s.heartbeat_state = t[1].cast<std::optional<
+            s.key_state = t[0].cast<std::optional<std::string>>();
+            s.server_state = t[1].cast<std::optional<
                 std::pair<std::string, std::optional<uint32_t>>>>();
-            s.license_path_state = t[2].cast<std::optional<std::string>>();
+            s.file_state = t[2].cast<std::optional<std::string>>();
 
             return s;
 
           }));
-
-  licensing_submodule.def("end_heartbeat", &thirdai::licensing::endHeartbeat,
-                          "Ends the current ThirdAI heartbeat.");
 
   licensing_submodule.def(
       "_get_license_state", &thirdai::licensing::getLicenseState,

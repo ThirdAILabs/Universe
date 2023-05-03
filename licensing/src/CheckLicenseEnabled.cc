@@ -5,13 +5,19 @@
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/Utils.h>
 #include <licensing/src/entitlements/Entitlements.h>
+#include <licensing/src/methods/LicenseMethod.h>
 #include <licensing/src/methods/file/SignedLicense.h>
 #include <licensing/src/methods/heartbeat/Heartbeat.h>
+#include <licensing/src/methods/keygen/KeyMethod.h>
+#include <licensing/src/methods/heartbeat/ServerMethod.h>
+#include <licensing/src/methods/file/FileMethod.h>
 #include <licensing/src/methods/keygen/KeygenCommunication.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 // This file is only linked when the feature flag THIRDAI_CHECK_LICENSE is True
@@ -22,33 +28,16 @@ namespace thirdai::licensing {
 // std::unique_ptr<LicensingMethod> with a getEntitlements call. We would then
 // set this in each call that starts licensing, and check the license there
 // immediately upon the time it is set.
-std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
-LicenseState _license_state;
 
-std::optional<Entitlements> _entitlements;
+std::unique_ptr<LicenseMethod> _licensing_method = nullptr;
+
+// std::optional<Entitlements> _entitlements;
 
 void checkLicense() {
-#pragma message( \
-    "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
+#pragma message("THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
-  if (_license_state.api_key_state.has_value()) {
-    _entitlements =
-        keygen::entitlementsFromKeygen(*_license_state.api_key_state);
-    return;
-  }
-
-  if (_heartbeat_thread != nullptr) {
-    _heartbeat_thread->verify();
-    // For now heartbeat licenses are always full access because adding
-    // entitlement support to our on prem license server is complicated.
-    _entitlements = Entitlements({FULL_ACCESS_ENTITLEMENT});
-    return;
-  }
-
-  if (_license_state.license_path_state.has_value()) {
-    _entitlements = SignedLicense::entitlementsFromLicenseFile(
-        _license_state.license_path_state.value(), /* verbose = */ false);
-    return;
+  if (_licensing_method != nullptr) {
+    _licensing_method->checkLicense();
   }
 
   throw exceptions::LicenseCheckException(
@@ -57,43 +46,38 @@ void checkLicense() {
 }
 
 Entitlements entitlements() {
-  if (!_entitlements.has_value()) {
-    throw std::runtime_error(
-        "Cannot get entitlements if we have not yet found a license.");
+  return _licensing_method->getEntitlements();
+}
+
+void activate(std::string api_key) {
+  keygen::KeyMethod _licensing_method(std::move(api_key));
+}
+
+void startHeartbeat(std::string heartbeat_url,
+                    std::optional<uint32_t> heartbeat_timeout) {
+  heartbeat::ServerMethod _licensing_method(std::move(heartbeat_url), heartbeat_timeout);
+}
+
+void setLicensePath(std::string license_path, bool verbose) {
+  file::FileMethod _licensing_method(std::move(license_path), verbose);
+}
+
+void deactivate() { _licensing_method = nullptr; }
+
+
+LicenseState getLicenseState() { return _licensing_method->getLicenseState(); }
+
+void setLicenseState(const LicenseState& state) {
+  if (state.key_state) {
+    activate(state.key_state.value());
   }
-  return _entitlements.value();
+  if (state.server_state) {
+    auto server_state_value = state.server_state.value();
+    startHeartbeat(server_state_value.first, server_state_value.second);
+  }
+  if (state.file_state) {
+    setLicensePath(state.file_state.value());
+  }
 }
-
-void activate(const std::string& api_key) {
-  _license_state.api_key_state = api_key;
-}
-
-void deactivate() {
-  _license_state.api_key_state = std::nullopt;
-  _entitlements = std::nullopt;
-}
-
-void startHeartbeat(const std::string& heartbeat_url,
-                    const std::optional<uint32_t>& heartbeat_timeout) {
-  _heartbeat_thread =
-      std::make_unique<HeartbeatThread>(heartbeat_url, heartbeat_timeout);
-  _license_state.heartbeat_state = {heartbeat_url, heartbeat_timeout};
-}
-
-void endHeartbeat() {
-  _heartbeat_thread = nullptr;
-  _license_state.heartbeat_state = std::nullopt;
-}
-
-void setLicensePath(const std::string& license_path, bool verbose) {
-  _license_state.license_path_state = license_path;
-  // This verifies the license file so failures are visible here, and also so
-  // that we print the value of the license. This also is the pattern we want
-  // to move licensing to: see the above TODO for more details.
-  SignedLicense::entitlementsFromLicenseFile(
-      _license_state.license_path_state.value(), verbose);
-}
-
-LicenseState getLicenseState() { return _license_state; }
 
 }  // namespace thirdai::licensing
