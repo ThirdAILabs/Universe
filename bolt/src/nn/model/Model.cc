@@ -6,6 +6,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -353,8 +354,9 @@ uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
     auto fully_connected = ops::FullyConnected::cast(output->op());
+    auto switch_op = ops::Switch::cast(output->op());
 
-    if (fully_connected) {
+    if (fully_connected || switch_op) {
       output->addInput(label);
     }
   }
