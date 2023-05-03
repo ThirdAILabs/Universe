@@ -289,11 +289,7 @@ bool isWhitespace(const wchar_t& c) {
     return true;
   }
   auto category = utf8proc_category(c);
-  if (category == UTF8PROC_CATEGORY_ZS) {
-    // NOLINTNEXTLINE
-    return true;
-  }
-  return false;
+return category == UTF8PROC_CATEGORY_ZS;
 }
 
 bool isPunctuation(const wchar_t& c) {
