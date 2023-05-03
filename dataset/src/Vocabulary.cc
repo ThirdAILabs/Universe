@@ -158,7 +158,7 @@ WordpieceVocab::TokenToId WordpieceVocab::load(const std::string& vocab_fpath) {
 }
 
 std::vector<uint32_t> WordpieceVocab::encode(
-    const std::string_view& sentence) const {
+    const std::string& sentence) const {
   std::string buffer(sentence.data(), sentence.size());
   std::vector<std::wstring> tokens = tokenize(buffer);
   std::vector<uint32_t> encoded(tokens.size());
@@ -192,7 +192,7 @@ std::string WordpieceVocab::decode(
   return result;
 }
 
-uint32_t WordpieceVocab::id(const std::string_view& token_view) const {
+uint32_t WordpieceVocab::id(const std::string& token_view) const {
   std::string token(token_view.data(), token_view.size());
   std::wstring wtoken = text::toUnicode(text::normalize(token));
   auto query = _token_to_id.find(wtoken);

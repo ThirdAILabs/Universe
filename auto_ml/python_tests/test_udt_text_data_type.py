@@ -2,8 +2,9 @@ import os
 
 import pytest
 from test_udt_simple import make_simple_trained_model
-from dataset.python_tests.test_wordpiece_tokenizer import download_bert_tokenizer
 from thirdai import bolt, dataset
+
+from conftest import download_bert_tokenizer
 
 pytestmark = [pytest.mark.unit]
 
@@ -137,10 +138,6 @@ def test_lowercasing_for_udt_text_type():
 
 
 def test_tokenizer_from_vocabulary(download_bert_tokenizer):
-    # We want to check if UDT is actually using lowercasing words in the text
-    # type. We do this by passing in words with some uppercase characters in the
-    # training data then changing the case slightly in the testing data
-
     train_filename = "train.csv"
     with open(train_filename, "w") as f:
         f.write("text,category\n")

@@ -124,3 +124,4 @@ class WordpieceTokenizer : public TextTokenizer {
 CEREAL_REGISTER_TYPE(thirdai::dataset::NaiveSplitTokenizer)
 CEREAL_REGISTER_TYPE(thirdai::dataset::WordPunctTokenizer)
 CEREAL_REGISTER_TYPE(thirdai::dataset::CharKGramTokenizer)
+CEREAL_REGISTER_TYPE(thirdai::dataset::WordpieceTokenizer)

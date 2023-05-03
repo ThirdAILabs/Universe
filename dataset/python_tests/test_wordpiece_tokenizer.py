@@ -1,7 +1,7 @@
-import os
-
 import pytest
 from thirdai.dataset import Wordpiece
+
+from conftest import download_bert_tokenizer
 
 BERT_TOKENIZED_SAMPLES = [
     "popularity of thread ##ing has increased around 2003 , as the growth of the cpu frequency was replaced with the growth of number of cores , in turn requiring concurrency to utilize multiple cores .",
@@ -28,26 +28,6 @@ BERT_RAW_SAMPLES = [
     "october 27 – martin mullen, 63, right fielder in one game for the 1872 cleveland forest citys of the national association.",
     "morata de tajuna is a municipality of the community of madrid, spain.",
 ]
-
-
-def download_bert_tokenizer_wrapped():
-    BERT_TAG = "bert-base-uncased"
-    BERT_VOCAB_PATH = f"{BERT_TAG}.vocab"
-    BERT_VOCAB_URL = f"https://huggingface.co/{BERT_TAG}/resolve/main/vocab.txt"
-
-    if not os.path.exists(BERT_VOCAB_PATH):
-        import urllib.request
-
-        response = urllib.request.urlopen(BERT_VOCAB_URL)
-        with open(BERT_VOCAB_PATH, "wb+") as bert_vocab_file:
-            bert_vocab_file.write(response.read())
-    
-    return BERT_VOCAB_PATH
-
-
-@pytest.fixture(scope="session")
-def download_bert_tokenizer():
-    return download_bert_tokenizer_wrapped()
 
 
 @pytest.mark.unit

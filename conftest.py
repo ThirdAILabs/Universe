@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 import thirdai
 
+from thirdai_python_package.demos import bert_base_uncased as bert_base_uncased_wrapped
+
 universe_dir = Path(__file__).parent
 
 
@@ -27,3 +29,8 @@ def enable_full_access_licensing(request):
     except AttributeError as e:
         # Ignore this, since it just means our package was not built with licensing
         pass
+
+
+@pytest.fixture(scope="session")
+def download_bert_tokenizer():
+    return bert_base_uncased_wrapped()

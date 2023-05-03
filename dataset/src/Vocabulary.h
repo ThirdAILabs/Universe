@@ -110,6 +110,9 @@ class FixedVocabulary : public Vocabulary {
   // compute when we know there cannot be duplicates by construction.
   uint32_t add(const std::string& token_view);
 
+  // private constructor for cereal
+  FixedVocabulary() {}
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -174,6 +177,9 @@ class WordpieceVocab : public Vocabulary {
   // file to be a newline separated list of tokens
   static TokenToId load(const std::string& vocab_fpath);
 
+  // private constructor for cereal
+  WordpieceVocab() {}
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -190,3 +196,6 @@ class WordpieceVocab : public Vocabulary {
 using WordpieceVocabPtr = std::shared_ptr<WordpieceVocab>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::WordpieceVocab)
+CEREAL_REGISTER_TYPE(thirdai::dataset::FixedVocabulary)
