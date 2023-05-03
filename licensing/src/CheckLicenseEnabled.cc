@@ -31,11 +31,8 @@ namespace thirdai::licensing {
 
 std::unique_ptr<LicenseMethod> _licensing_method = nullptr;
 
-// std::optional<Entitlements> _entitlements;
-
 void checkLicense() {
-#pragma message( \
-        "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
+#pragma message("THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
   if (_licensing_method != nullptr) {
     _licensing_method->checkLicense();
