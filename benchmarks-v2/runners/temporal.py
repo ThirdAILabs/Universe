@@ -19,11 +19,6 @@ class TemporalRunner(Runner):
             if config.train_file is not None
             else None
         )
-        cold_start_train_file = (
-            os.path.join(path_prefix, config.cold_start_train_file)
-            if config.cold_start_train_file is not None
-            else None
-        )
         test_file = os.path.join(path_prefix, config.test_file)
 
         model = TemporalRunner.create_model(config, path_prefix)
@@ -39,6 +34,7 @@ class TemporalRunner(Runner):
                 train_file,
                 epochs=1,
                 learning_rate=config.learning_rate,
+                max_in_memory_batches=config.max_in_memory_batches,
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
 
@@ -49,7 +45,9 @@ class TemporalRunner(Runner):
 
                 if mlflow_logger:
                     for k, v in metrics.items():
-                        mlflow_logger.log_additional_metric(key=k, value=v, step=epoch)
+                        mlflow_logger.log_additional_metric(
+                            key=f"val_{k}", value=v, step=epoch
+                        )
 
             model.reset_temporal_trackers()
 
@@ -64,7 +62,7 @@ class TemporalRunner(Runner):
         del train_data
 
         average_predict_time_ms = TemporalRunner.get_average_predict_time(
-            model, test_file, config, path_prefix, num_samples=10000
+            model, test_file, config, path_prefix, num_samples=1000
         )
 
         print(f"average_predict_time_ms = {average_predict_time_ms}ms")
@@ -75,7 +73,7 @@ class TemporalRunner(Runner):
 
     @staticmethod
     def get_average_predict_time(
-        model, test_file, config, path_prefix, num_samples=10000
+        model, test_file, config, path_prefix, num_samples=1000
     ):
         test_data = pd.read_csv(test_file, low_memory=False, delimiter=config.delimiter)
         sorted_idxs = np.sort(np.random.randint(0, len(test_data), size=num_samples))
@@ -87,6 +85,7 @@ class TemporalRunner(Runner):
             test_data_samples.append(sample)
 
         test_data_sample = test_data.iloc[sorted_idxs]
+        del test_data
         inference_samples = []
         sample_col_names = config.get_data_types(path_prefix).keys()
         for i, (_, row) in enumerate(test_data_sample.iterrows()):
@@ -106,7 +105,7 @@ class TemporalRunner(Runner):
                 prev_idx = test_data_idx
             model.predict(sample)
         end_time = time.time()
-        average_predict_time_ms = int(
-            np.around(1000 * (end_time - start_time) / num_samples)
+        average_predict_time_ms = float(
+            np.around(1000 * (end_time - start_time) / num_samples, decimals=3)
         )
         return average_predict_time_ms

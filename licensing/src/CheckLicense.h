@@ -30,7 +30,7 @@ void startHeartbeat(const std::string& heartbeat_url,
 void endHeartbeat();
 
 // License verification method 3: license file
-void setLicensePath(const std::string& license_path);
+void setLicensePath(const std::string& license_path, bool verbose = false);
 
 struct LicenseState {
   std::optional<std::string> api_key_state;

@@ -3,6 +3,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/DataSource.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
@@ -36,7 +37,7 @@ ColdStartMetaDataPtr ColdStartMetaData::load_stream(
 
 template <class Archive>
 void ColdStartMetaData::serialize(Archive& archive) {
-  archive(_label_delimiter, _label_column_name, _integer_target);
+  archive(_label_delimiter, _label_column_name);
 }
 
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
@@ -45,11 +46,6 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& weak_column_names,
     data::TabularDatasetFactoryPtr& dataset_factory,
     ColdStartMetaDataPtr& metadata) {
-  if (!metadata->integerTarget()) {
-    throw std::invalid_argument(
-        "Cold start pretraining currently only supports integer labels.");
-  }
-
   if (dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
@@ -63,8 +59,11 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;
 
+  auto csv_data_source =
+      dataset::CsvDataSource::make(data, dataset_factory->delimiter());
+
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
-      data, dataset_factory->delimiter());
+      csv_data_source, dataset_factory->delimiter());
 
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,

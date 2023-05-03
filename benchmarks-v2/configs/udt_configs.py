@@ -24,7 +24,6 @@ class UDTBenchmarkConfig(ABC):
     temporal_relationships = {}
     delimiter = ","
     model_config = None
-    model_config_path = None
     options = {}
 
     learning_rate = None
@@ -32,6 +31,7 @@ class UDTBenchmarkConfig(ABC):
     integer_target = False
     callbacks = []
     metrics = ["categorical_accuracy"]
+    max_in_memory_batches = None
 
     # Cold Start configs
     cold_start_learning_rate = None

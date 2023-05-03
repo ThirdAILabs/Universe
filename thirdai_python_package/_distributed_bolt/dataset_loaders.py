@@ -51,6 +51,9 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
+        with_prompt=True,
+        batches_to_skip=0,
+        min_vecs_in_buffer=64000,
         *args,
         **kwargs,
     ):
@@ -59,6 +62,9 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.shuffle = shuffle
         self.data_source_factory = data_source_factory
+        self.with_prompt = with_prompt
+        self.batches_to_skip = batches_to_skip
+        self.min_vecs_in_buffer = min_vecs_in_buffer
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
@@ -69,7 +75,18 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
             data_source=data_source,
             featurizer=self.featurizer,
             shuffle=self.shuffle,
+            shuffle_config=dataset.ShuffleConfig(
+                min_vecs_in_buffer=self.min_vecs_in_buffer
+            ),
         )
+        # Note(pratik): This would still be approximate. Since, seed for buffer
+        # shuffling would be different for each run.
+        while self.batches_to_skip > 0:
+            num_batches_to_load = min(self.batches_to_skip, self.max_in_memory_batches)
+            self.generator.load_some(
+                num_batches=num_batches_to_load, batch_size=self.batch_size
+            )
+            self.batches_to_skip -= num_batches_to_load
 
     def next(self):
         if self.dataset_finished:
@@ -82,8 +99,10 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
             load = self.generator.load_some(
                 num_batches=self.max_in_memory_batches, batch_size=self.batch_size
             )
+        if self.with_prompt:
+            return load
 
-        return load
+        return load[1:]
 
     def restart(self):
         self.generator.restart()
