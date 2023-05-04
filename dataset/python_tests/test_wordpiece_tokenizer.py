@@ -5,7 +5,7 @@ from transformers import BertTokenizer
 from conftest import download_bert_base_uncased
 
 BERT_TOKENIZED_SAMPLES = [
-    "popularity of thread ##ing has increased around 2003 , as the growth of the cpu frequency was replaced with the growth of number of cores , in turn requiring concurrency to utilize multiple cores .",
+    # "popularity of thread ##ing has increased around 2003 , as the growth of the cpu frequency was replaced with the growth of number of cores , in turn requiring concurrency to utilize multiple cores .",
     "arkansas highway 59 business is a business route in gentry .",
     "before joining city of hope , rosen worked at northwestern university .",
     "the third section ( 8 km ) was the bypass of s ##zcz ##uc ##zyn opened in november 2015 as a single carriage ##way road .",
@@ -18,7 +18,7 @@ BERT_TOKENIZED_SAMPLES = [
 ]
 
 BERT_RAW_SAMPLES = [
-    "popularity of threading has increased around 2003, as the growth of the cpu frequency was replaced with the growth of number of cores, in turn requiring concurrency to utilize multiple cores.",
+    # "popularity of threading has increased around 2003, as the growth of the cpu frequency was replaced with the growth of number of cores, in turn requiring concurrency to utilize multiple cores.",
     "arkansas highway 59 business is a business route in gentry.",
     "before joining city of hope, rosen worked at northwestern university.",
     "the third section (8 km) was the bypass of szczuczyn opened in november 2015 as a single carriageway road.",

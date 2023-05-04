@@ -6,23 +6,7 @@ namespace thirdai::dataset {
 
 WordpieceTokenizer::WordpieceTokenizer(const std::string& vocab_fpath,
                                        bool to_lower)
-    : _token_to_id(load(vocab_fpath)), _to_lower(to_lower) {
-  if (!_token_to_id.count(std::wstring(special_tokens::UNK))) {
-    _token_to_id[std::wstring(special_tokens::UNK)] = _token_to_id.size();
-  }
-
-  if (!_token_to_id.count(std::wstring(special_tokens::MASK))) {
-    _token_to_id[std::wstring(special_tokens::MASK)] = _token_to_id.size();
-  }
-
-  for (const auto& [token, _] : _token_to_id) {
-    _id_to_token.push_back(token);
-  }
-}
-
-WordpieceTokenizer::TokenToId WordpieceTokenizer::load(
-    const std::string& vocab_fpath) {
-  WordpieceTokenizer::TokenToId vocab;
+    : _to_lower(to_lower) {
   size_t token_id = 0;
   std::ifstream vocab_stream = SafeFileIO::ifstream(vocab_fpath);
   std::string line;
@@ -32,10 +16,20 @@ WordpieceTokenizer::TokenToId WordpieceTokenizer::load(
       break;
     }
     token = text::strip(token);
-    vocab[token] = token_id;
+    _token_to_id[token] = token_id;
+    _id_to_token.push_back(token);
     token_id++;
   }
-  return vocab;
+
+  if (!_token_to_id.count(std::wstring(special_tokens::UNK))) {
+    _token_to_id[std::wstring(special_tokens::UNK)] = _token_to_id.size();
+    _id_to_token.push_back(std::wstring(special_tokens::UNK));
+  }
+
+  if (!_token_to_id.count(std::wstring(special_tokens::MASK))) {
+    _token_to_id[std::wstring(special_tokens::MASK)] = _token_to_id.size();
+    _id_to_token.push_back(std::wstring(special_tokens::MASK));
+  }
 }
 
 std::vector<uint32_t> WordpieceTokenizer::tokenize(
