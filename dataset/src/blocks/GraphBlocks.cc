@@ -139,8 +139,8 @@ void GraphBuilderBlock::buildSegment(ColumnarInputSample& input,
   }
 
   // TODO(Any): Make this delimiter configurable
-  std::vector<uint64_t> neighbors = parseUint64Array(
-      std::string(input.column(_neighbor_col)), /* delimiter = */ ' ');
+  std::vector<uint64_t> neighbors =
+      parseUint64Array(input.column(_neighbor_col), /* delimiter = */ ' ');
 
   _graph_ptr->insertNode(node_id, dense_feature_vector, neighbors);
 }
