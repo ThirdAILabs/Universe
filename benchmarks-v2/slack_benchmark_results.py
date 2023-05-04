@@ -1,10 +1,11 @@
 import argparse
 import json
+import re
 
 import mlflow
+import pandas as pd
 import requests
 from mlflow.tracking import MlflowClient
-import pandas as pd
 
 from .runners.runner_map import runner_map
 from .utils import get_configs
@@ -32,11 +33,6 @@ def parse_arguments():
         help="MLflow URI to read metrics from.",
     )
     parser.add_argument(
-        "--official_benchmark",
-        action="store_true",
-        help="Controls if the experiments retrieved are '_benchmark' experiments or regular experiments. This should be used to retrieve experiments run by the github actions benchmark runner.",
-    )
-    parser.add_argument(
         "--num_official_runs",
         type=int,
         default=5,
@@ -52,20 +48,40 @@ def parse_arguments():
         "--run_name",
         type=str,
         default="",
-        help="Regular expression indicating which runs to retrieve for the branch benchmarks, only active when num_branch_runs > 0",
+        help="String of mlflow run name you want to compare to official runs",
     )
+
+    # Do not set the following args when running this script manually, these are only for github actions
     parser.add_argument(
-        "--slack_webhook",
+        "--official_slack_webhook",
         type=str,
         default="",
-        help="Slack channel endpoint for posting messages to. If this is empty, print to console",
+        help="Slack channel endpoint for official benchmarks",
+    )
+    parser.add_argument(
+        "--branch_slack_webhook",
+        type=str,
+        default="",
+        help="Slack channel endpoint for branch benchmarks",
+    )
+    parser.add_argument(
+        "--branch_name",
+        type=str,
+        default="",
+        help="Name of branch that benchmarks are being run on",
     )
     return parser.parse_args()
 
 
-def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name_regex=""):
-    if run_name_regex:
-        mlflow_runs = mlflow_runs[run_name_regex.match(mlflow_runs["tags.mlflow.runName"])]
+def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
+    if run_name:
+        # The regex finds a match for mlflow run name that starts with the given run_name arg
+        # and has enough space at the end for the date (10 chars) because our mlflow callback
+        # appends the date to run names.
+        run_name_re = f"^{run_name}_.{{10}}"
+        mlflow_runs = mlflow_runs[
+            mlflow_runs["tags.mlflow.runName"].str.match(run_name_re)
+        ]
     mlflow_runs = mlflow_runs[mlflow_runs["status"] == "FINISHED"]
     mlflow_runs = mlflow_runs[:num_runs]
 
@@ -106,13 +122,13 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name_regex=""):
     return df
 
 
-def extract_mlflow_data(experiment_name, num_runs, run_name_regex=""):
+def extract_mlflow_data(experiment_name, num_runs, run_name=""):
     mlflow.set_tracking_uri(args.mlflow_uri)
     client = MlflowClient()
     exp_id = client.get_experiment_by_name(experiment_name).experiment_id
 
     mlflow_runs = mlflow.search_runs(exp_id)
-    df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name_regex)
+    df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name)
 
     return df
 
@@ -120,4 +136,64 @@ def extract_mlflow_data(experiment_name, num_runs, run_name_regex=""):
 if __name__ == "__main__":
     args = parse_arguments()
 
-    print(args.slack_webhook)
+    # We set different arguments when we run on the main github branch, a different branch, or manually
+    # If running benchmarks on main, set preset arguments
+    if args.branch_name == "main":
+        slack_webhook = args.official_slack_webhook
+        args.num_official_runs = 5
+        args.num_branch_runs = 0
+    else:
+        # If running benchmarks on a branch other than main, set preset arguments
+        if args.branch_name:
+            args.run_name = args.branch_name
+            args.num_official_runs = 3
+            args.num_branch_runs = 2
+
+        slack_webhook = args.branch_slack_webhook
+
+    for runner_name in args.runner:
+        runner = runner_map[runner_name.lower()]
+
+        configs = get_configs(runner=runner, config_regex=args.config)
+
+        slack_payload_list = [""]
+        slack_payload_idx = 0
+        for config in configs:
+            print(config.config_name)
+            official_exp_name = f"{config.config_name}_benchmark"
+            branch_exp_name = config.config_name
+
+            official_runs = extract_mlflow_data(
+                official_exp_name, args.num_official_runs
+            )
+            official_runs.insert(0, "exp_name", "official")
+            runs = [official_runs]
+
+            if args.num_branch_runs:
+                branch_runs = extract_mlflow_data(
+                    branch_exp_name, args.num_branch_runs, args.run_name
+                )
+                branch_runs.insert(0, "exp_name", args.run_name)
+                runs.insert(0, branch_runs)
+
+            df_md = pd.concat(runs).to_markdown(index=False)
+
+            slack_payload_text = f"*{official_exp_name}* ```{df_md}``` \n"
+            line_length = len(slack_payload_text.split("\n")[0].split("```")[1])
+
+            # We limit each message to under 4000 characters
+            if (
+                len(slack_payload_list[slack_payload_idx]) + len(slack_payload_text)
+                >= 4000 - line_length
+            ):
+                slack_payload_list.append(slack_payload_text)
+                slack_payload_idx += 1
+            else:
+                slack_payload_list[slack_payload_idx] += slack_payload_text
+
+        if slack_payload_list[0] != "":
+            for payload in slack_payload_list:
+                if slack_webhook:
+                    requests.post(slack_webhook, json.dumps({"text": payload}))
+                else:
+                    print(payload)
