@@ -31,7 +31,8 @@ void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
 
 uint32_t FixedVocabulary::size() const { return _token_to_id.size(); }
 
-std::vector<uint32_t> FixedVocabulary::encode(std::string_view sentence) const {
+std::vector<uint32_t> FixedVocabulary::encode(
+    const std::string_view& sentence) const {
   std::vector<uint32_t> token_ids;
 
   // The following describes a simple whitespace tokenization algorithm.
@@ -103,7 +104,7 @@ std::string FixedVocabulary::decode(
   return stream.str();
 }
 
-uint32_t FixedVocabulary::id(const std::string& token_view) const {
+uint32_t FixedVocabulary::id(const std::string_view& token_view) const {
   std::string token(token_view.data(), token_view.size());
   auto query = _token_to_id.find(token);
   if (query == _token_to_id.end()) {
@@ -117,7 +118,7 @@ uint32_t FixedVocabulary::id(const std::string& token_view) const {
 uint32_t FixedVocabulary::unkId() const { return _unk_id; }
 uint32_t FixedVocabulary::maskId() const { return _mask_id; }
 
-uint32_t FixedVocabulary::add(const std::string& token_view) {
+uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   std::string token(token_view.data(), token_view.size());
   auto query = _token_to_id.find(token);
   if (query != _token_to_id.end()) {
