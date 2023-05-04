@@ -77,7 +77,7 @@ std::vector<std::string> charKGrams(const std::string& text, uint32_t k) {
   size_t n_kgrams = text.size() >= k ? text.size() - (k - 1) : 1;
   size_t len = std::min(text.size(), static_cast<size_t>(k));
   for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-    char_k_grams.push_back(std::string(text.data() + offset, len));
+    char_k_grams.push_back(text.substr(offset, len));
   }
 
   return char_k_grams;
