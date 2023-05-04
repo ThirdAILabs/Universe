@@ -1,5 +1,6 @@
 import pytest
 from thirdai.dataset import WordpieceTokenizer
+from transformers import BertTokenizer
 
 from conftest import download_bert_base_uncased
 
@@ -32,6 +33,8 @@ BERT_RAW_SAMPLES = [
 
 @pytest.mark.unit
 def test_wordpiece_vocab(download_bert_base_uncased):
+    huggingface_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
     BERT_VOCAB_PATH = download_bert_base_uncased
     vocab = WordpieceTokenizer(BERT_VOCAB_PATH)
 
@@ -42,7 +45,10 @@ def test_wordpiece_vocab(download_bert_base_uncased):
     for raw, tokenized in zip(BERT_RAW_SAMPLES, BERT_TOKENIZED_SAMPLES):
         token_ids = vocab.tokenize(raw)
 
-        assert vocab.unk_id() not in token_ids
+        hf_token_ids = huggingface_tokenizer.encode(raw)[1:-1]
+        assert len(hf_token_ids) == len(token_ids)
+        for hf_token_id, token_id in zip(hf_token_ids, token_ids):
+            assert hf_token_id == token_id
 
         tokens = tokenized.split()
         assert len(token_ids) == len(tokens)
