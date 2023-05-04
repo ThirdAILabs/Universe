@@ -14,12 +14,9 @@ struct LicenseState {
 
 class LicenseMethod {
  public:
-
   Entitlements getEntitlements() { return _entitlements; }
 
-  LicenseMethodType getLicenseMethodType() {
-  return _license_method_type;
-}
+  LicenseMethodType getLicenseMethodType() { return _license_method_type; }
 
   virtual void checkLicense();
 
@@ -29,8 +26,9 @@ class LicenseMethod {
 
  protected:
   LicenseMethod(Entitlements entitlements,
-                LicenseMethodType license_method_type) : _entitlements(std::move(entitlements)),
-      _license_method_type(license_method_type) {}
+                LicenseMethodType license_method_type)
+      : _entitlements(std::move(entitlements)),
+        _license_method_type(license_method_type) {}
 
   Entitlements _entitlements;
   LicenseMethodType _license_method_type;

@@ -14,11 +14,11 @@ void checkLicense() {}
 
 Entitlements entitlements() { return Entitlements({FULL_ACCESS_ENTITLEMENT}); }
 
-void activate(std::string api_key) { (void)api_key; } // NOLINT
+void activate(std::string api_key) { (void)api_key; }  // NOLINT
 
 void deactivate() {}
 
-void startHeartbeat(std::string heartbeat_url, // NOLINT
+void startHeartbeat(std::string heartbeat_url,  // NOLINT
                     const std::optional<uint32_t>& heartbeat_timeout) {
   (void)heartbeat_url;
   (void)heartbeat_timeout;
@@ -27,7 +27,7 @@ void startHeartbeat(std::string heartbeat_url, // NOLINT
 void endHeartbeat() {}
 
 // TODO(Kartik): Add explanation for why we have this nolint
-void setLicensePath(std::string license_path, bool verbose) { // NOLINT
+void setLicensePath(std::string license_path, bool verbose) {  // NOLINT
   (void)license_path;
   (void)verbose;
 }

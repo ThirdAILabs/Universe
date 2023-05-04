@@ -27,7 +27,6 @@ namespace thirdai::licensing {
 std::unique_ptr<LicenseMethod> _licensing_method = nullptr;
 
 void checkLicense() {
-
   if (_licensing_method != nullptr) {
     _licensing_method->checkLicense();
     return;
@@ -46,12 +45,13 @@ void activate(std::string api_key) {
 
 void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout) {
-  _licensing_method = std::make_unique<heartbeat::ServerMethod>(std::move(heartbeat_url),
-                                            heartbeat_timeout);
+  _licensing_method = std::make_unique<heartbeat::ServerMethod>(
+      std::move(heartbeat_url), heartbeat_timeout);
 }
 
 void setLicensePath(std::string license_path, bool verbose) {
-  _licensing_method = std::make_unique<file::FileMethod>(std::move(license_path), verbose);
+  _licensing_method =
+      std::make_unique<file::FileMethod>(std::move(license_path), verbose);
 }
 
 void deactivate() { _licensing_method = nullptr; }
