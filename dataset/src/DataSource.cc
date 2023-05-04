@@ -12,7 +12,12 @@ std::optional<std::string> CsvDataSource::nextLine() {
   while (auto line = _source->nextLine()) {
     buffer.push_back(*line);
     if (!inQuotesAtEndOfLine(state_machine, *line)) {
-      break;
+      bool empty_line = buffer.size() == 1 && buffer.front().empty();
+      if (empty_line) {
+        buffer.clear();
+      } else {
+        break;
+      }
     }
   }
   if (inQuotes(state_machine.state())) {
