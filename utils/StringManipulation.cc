@@ -61,8 +61,7 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
 
   while (iter != end) {
     std::smatch match = *iter;
-    tokens.push_back(
-        std::string(sentence.data() + match.position(), match.length()));
+    tokens.push_back(sentence.substr(match.position(), match.length()));
     ++iter;
   }
 

@@ -182,9 +182,9 @@ TEST(UserCountHistoryBlockTest,
   processBatch(block, input_rows);
 
   std::vector<std::string> input_row(3);
-  input_row[0] = std::string(key.data(), /* len= */ 4);
-  input_row[1] = std::string(val.data(), /* len= */ 1);
-  input_row[2] = std::string(timestamp.data(), /* len= */ 10);
+  input_row[0] = key;
+  input_row[1] = val;
+  input_row[2] = timestamp;
 
   RowSampleRef input_row_view_ref(input_row);
   block->explainIndex(/* index_within_block= */ 0, input_row_view_ref);
