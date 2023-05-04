@@ -24,18 +24,13 @@
 
 namespace thirdai::licensing {
 
-// TODO(Kartik): Decide if we want to refactor these into a single
-// std::unique_ptr<LicensingMethod> with a getEntitlements call. We would then
-// set this in each call that starts licensing, and check the license there
-// immediately upon the time it is set.
-
 std::unique_ptr<LicenseMethod> _licensing_method = nullptr;
 
 void checkLicense() {
-#pragma message("THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
   if (_licensing_method != nullptr) {
     _licensing_method->checkLicense();
+    return;
   }
 
   throw exceptions::LicenseCheckException(
@@ -46,17 +41,17 @@ void checkLicense() {
 Entitlements entitlements() { return _licensing_method->getEntitlements(); }
 
 void activate(std::string api_key) {
-  keygen::KeyMethod _licensing_method(std::move(api_key));
+  _licensing_method = std::make_unique<keygen::KeyMethod>(std::move(api_key));
 }
 
 void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout) {
-  heartbeat::ServerMethod _licensing_method(std::move(heartbeat_url),
+  _licensing_method = std::make_unique<heartbeat::ServerMethod>(std::move(heartbeat_url),
                                             heartbeat_timeout);
 }
 
 void setLicensePath(std::string license_path, bool verbose) {
-  file::FileMethod _licensing_method(std::move(license_path), verbose);
+  _licensing_method = std::make_unique<file::FileMethod>(std::move(license_path), verbose);
 }
 
 void deactivate() { _licensing_method = nullptr; }

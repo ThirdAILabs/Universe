@@ -14,15 +14,24 @@ struct LicenseState {
 
 class LicenseMethod {
  public:
-  virtual ~LicenseMethod() = default;
-  Entitlements getEntitlements();
-  LicenseMethodType getLicenseMethodType();
+
+  Entitlements getEntitlements() { return _entitlements; }
+
+  LicenseMethodType getLicenseMethodType() {
+  return _license_method_type;
+}
+
   virtual void checkLicense();
+
   virtual LicenseState getLicenseState();
+
+  virtual ~LicenseMethod() = default;
 
  protected:
   LicenseMethod(Entitlements entitlements,
-                LicenseMethodType license_method_type);
+                LicenseMethodType license_method_type) : _entitlements(std::move(entitlements)),
+      _license_method_type(license_method_type) {}
+
   Entitlements _entitlements;
   LicenseMethodType _license_method_type;
 };

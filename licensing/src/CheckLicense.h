@@ -30,7 +30,7 @@ void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout);
 
 // License verification method 3: license file
-void setLicensePath(const std::string& license_path, bool verbose = false);
+void setLicensePath(std::string license_path, bool verbose = false);
 
 LicenseState getLicenseState();
 
