@@ -15,8 +15,8 @@
 namespace thirdai::dataset {
 
 namespace special_tokens {
-constexpr std::string_view UNK = "[UNK]";
-constexpr std::string_view MASK = "[MASK]";
+constexpr std::wstring_view UNK = L"[UNK]";
+constexpr std::wstring_view MASK = L"[MASK]";
 }  // namespace special_tokens
 
 class WordpieceTokenizer : public TextTokenizer {
@@ -36,7 +36,7 @@ class WordpieceTokenizer : public TextTokenizer {
 
   std::string decode(const std::vector<uint32_t>& token_ids) const;
 
-  uint32_t id(const std::string& token_view) const;
+  uint32_t id(const std::string& token) const;
 
   uint32_t size() const { return _token_to_id.size(); }
 
@@ -67,7 +67,6 @@ class WordpieceTokenizer : public TextTokenizer {
   static std::wstring tokenizeChineseChars(const std::wstring& text);
 
   using TokenToId = std::unordered_map<std::wstring, size_t>;
-  using IdToToken = std::unordered_map<size_t, std::wstring>;
 
   // Helper method to load vocabulary from path at construction. Assumes the
   // file to be a newline separated list of tokens
@@ -84,7 +83,7 @@ class WordpieceTokenizer : public TextTokenizer {
   }
 
   TokenToId _token_to_id;
-  IdToToken _id_to_token;
+  std::vector<std::wstring> _id_to_token;
 
   bool _to_lower;
 };

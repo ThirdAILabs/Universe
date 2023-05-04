@@ -7,8 +7,16 @@ namespace thirdai::dataset {
 WordpieceTokenizer::WordpieceTokenizer(const std::string& vocab_fpath,
                                        bool to_lower)
     : _token_to_id(load(vocab_fpath)), _to_lower(to_lower) {
-  for (const auto& [token, id] : _token_to_id) {
-    _id_to_token[id] = token;
+  if (!_token_to_id.count(std::wstring(special_tokens::UNK))) {
+    _token_to_id[std::wstring(special_tokens::UNK)] = _token_to_id.size();
+  }
+
+  if (!_token_to_id.count(std::wstring(special_tokens::MASK))) {
+    _token_to_id[std::wstring(special_tokens::MASK)] = _token_to_id.size();
+  }
+
+  for (const auto& [token, _] : _token_to_id) {
+    _id_to_token.push_back(token);
   }
 }
 
@@ -48,7 +56,7 @@ std::string WordpieceTokenizer::decode(
   std::string result;
   for (size_t i = 0; i < token_ids.size(); i++) {
     uint32_t token_id = token_ids[i];
-    if (!_id_to_token.count(token_id)) {
+    if (token_id >= _id_to_token.size()) {
       throw std::invalid_argument("Attempting to decode invalid token: " +
                                   std::to_string(token_id) + ".");
     }
@@ -65,8 +73,7 @@ std::string WordpieceTokenizer::decode(
   return result;
 }
 
-uint32_t WordpieceTokenizer::id(const std::string& token_view) const {
-  std::string token(token_view.data(), token_view.size());
+uint32_t WordpieceTokenizer::id(const std::string& token) const {
   std::wstring wtoken = text::toUnicode(text::normalize(token));
   auto query = _token_to_id.find(wtoken);
   if (query != _token_to_id.end()) {
