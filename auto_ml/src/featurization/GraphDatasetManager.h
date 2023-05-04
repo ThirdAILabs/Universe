@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
@@ -7,6 +9,8 @@
 #include <dataset/src/utils/GraphInfo.h>
 
 namespace thirdai::automl::data {
+
+using bolt::nn::tensor::TensorList;
 
 class GraphDatasetManager {
  public:
@@ -18,10 +22,9 @@ class GraphDatasetManager {
 
   void index(const dataset::DataSourcePtr& data_source);
 
-  std::vector<BoltVector> featurizeInput(const dataset::MapInput& input);
+  TensorList featurizeInput(const dataset::MapInput& input);
 
-  std::vector<BoltBatch> featurizeInputBatch(
-      const dataset::MapInputBatch& inputs);
+  TensorList featurizeInputBatch(const dataset::MapInputBatch& inputs);
 
   void clearGraph() { _graph_info->clear(); }
 

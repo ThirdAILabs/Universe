@@ -98,7 +98,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            py::arg("metrics") = std::vector<std::string>{},
-           py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
+           py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
@@ -108,9 +108,8 @@ void defineAutomlInModule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
-           py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false, bolt::python::OutputRedirect())
+           py::arg("sparse_inference") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
@@ -157,7 +156,6 @@ void defineAutomlInModule(py::module_& module) {
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_text_embedding_model", &udt::UDT::getTextEmbeddingModel,
-           py::arg("activation_func") = "linear",
            py::arg("distance_cutoff") = 1)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
@@ -469,7 +467,7 @@ std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
 
 void UDTFactory::save_udt(const udt::UDT& classifier,
                           const std::string& filename) {
-  classifier.model()->saveWithOptimizer(false);
+  classifier.model()->setSerializeOptimizer(false);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
@@ -478,7 +476,7 @@ void UDTFactory::save_udt(const udt::UDT& classifier,
 
 void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
                                 const std::string& filename) {
-  classifier.model()->saveWithOptimizer(true);
+  classifier.model()->setSerializeOptimizer(true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);

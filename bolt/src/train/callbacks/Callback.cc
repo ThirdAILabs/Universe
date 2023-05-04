@@ -15,9 +15,6 @@ void Callback::setTrainState(TrainStatePtr train_state) {
 }
 
 void Callback::setHistory(metrics::HistoryPtr history) {
-  if (this->history && this->history != history) {
-    throw std::runtime_error("Cannot bind callback to new history object.");
-  }
   this->history = std::move(history);
 }
 

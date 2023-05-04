@@ -39,20 +39,10 @@ def train_udt_regression(download_brazilian_houses_dataset):
     return model
 
 
-def _compute_regression_evaluate_accuracy(model, test_filename, inference_samples):
-    activations = model.evaluate(test_filename)
+def _compute_regression_mae(model, inference_samples):
+    activations = model.predict_batch([x[0] for x in inference_samples])
 
     return _compute_mae(activations, inference_samples)
-
-
-def test_udt_regression_accuracy(
-    train_udt_regression, download_brazilian_houses_dataset
-):
-    model = train_udt_regression
-    _, test_filename, inference_samples = download_brazilian_houses_dataset
-
-    acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
-    assert acc <= MAE_THRESHOLD
 
 
 def test_udt_regression_save_load(
@@ -66,14 +56,12 @@ def test_udt_regression_save_load(
     model.save(SAVE_FILE)
     loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
 
-    acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
+    acc = _compute_regression_mae(model, inference_samples)
     assert acc <= MAE_THRESHOLD
 
     loaded_model.train(train_filename, epochs=1, learning_rate=0.001)
 
-    acc = _compute_regression_evaluate_accuracy(
-        loaded_model, test_filename, inference_samples
-    )
+    acc = _compute_regression_mae(loaded_model, inference_samples)
 
     os.remove(SAVE_FILE)
 

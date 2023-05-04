@@ -1,6 +1,7 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
@@ -13,9 +14,11 @@
 #include <optional>
 #include <stdexcept>
 
-namespace py = pybind11;
-
 namespace thirdai::automl::udt {
+
+using bolt::train::callbacks::CallbackPtr;
+
+using bolt::nn::model::ModelPtr;
 
 /**
  * This is an interface for the backends that are used in a UDT model. To
@@ -37,8 +40,8 @@ class UDTBackend {
       std::optional<size_t> batch_size,
       std::optional<size_t> max_in_memory_batches,
       const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) = 0;
+      const std::vector<CallbackPtr>& callbacks, bool verbose,
+      std::optional<uint32_t> logging_interval) = 0;
 
   /**
    * Trains the model on a batch of samples.
@@ -60,9 +63,7 @@ class UDTBackend {
    */
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,
-                              bool sparse_inference,
-                              bool return_predicted_class, bool verbose,
-                              bool return_metrics) = 0;
+                              bool sparse_inference, bool verbose) = 0;
 
   /**
    * Performs inference on a single sample and returns the resulting
@@ -85,7 +86,7 @@ class UDTBackend {
   /**
    * Returns the model used.
    */
-  virtual bolt::BoltGraphPtr model() const {
+  virtual ModelPtr model() const {
     throw notSupported("accessing underlying model");
   }
 
@@ -93,7 +94,7 @@ class UDTBackend {
    * Sets a new model. This is used during distributed training to update the
    * backend with the trained model.
    */
-  virtual void setModel(const bolt::BoltGraphPtr& model) {
+  virtual void setModel(const ModelPtr& model) {
     (void)model;
     throw notSupported("modifying underlying model");
   }
@@ -128,7 +129,7 @@ class UDTBackend {
       const std::vector<std::string>& weak_column_names, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       const std::optional<ValidationDataSource>& validation,
-      const std::vector<bolt::CallbackPtr>& callbacks,
+      const std::vector<CallbackPtr>& callbacks,
       std::optional<size_t> max_in_memory_batches, bool verbose) {
     (void)data;
     (void)strong_column_names;
@@ -261,8 +262,7 @@ class UDTBackend {
    * Returns a model that embeds text using the hidden layer of the UDT model.
    */
   virtual TextEmbeddingModelPtr getTextEmbeddingModel(
-      const std::string& activation_func, float distance_cutoff) const {
-    (void)activation_func;
+      float distance_cutoff) const {
     (void)distance_cutoff;
     throw notSupported("get_text_embedding_model");
   }
