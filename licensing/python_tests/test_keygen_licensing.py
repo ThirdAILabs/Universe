@@ -34,30 +34,27 @@ def test_keygen_good_key():
 
 
 def test_expired_key():
-    thirdai.licensing.activate(EXPIRED_KEY)
     with pytest.raises(
         RuntimeError,
         match=r".*returned the following message: is expired",
     ):
-        run_udt_training_routine()
+        thirdai.licensing.activate(EXPIRED_KEY)
 
 
 def test_suspended_key():
-    thirdai.licensing.activate(SUSPENDED_KEY)
     with pytest.raises(
         RuntimeError,
         match=r".*returned the following message: is suspended",
     ):
-        run_udt_training_routine()
+        thirdai.licensing.activate(SUSPENDED_KEY)
 
 
 def test_nonexistent_key():
-    thirdai.licensing.activate(NONEXISTENT_KEY)
     with pytest.raises(
         RuntimeError,
         match=r".*returned the following message: does not exist",
     ):
-        run_udt_training_routine()
+        thirdai.licensing.activate(NONEXISTENT_KEY)
 
 
 def test_no_save_load_key():
