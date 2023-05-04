@@ -25,7 +25,7 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
     where we cannot fix the vocabulary because EOS is not found in the dataset,
     e.g. if all target sequences are max_recurrence elements long.
   */
-  _vocab.getUid(std::string(EOS));
+  _vocab.getUid(EOS);
 }
 
 std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
@@ -127,7 +127,7 @@ std::vector<std::string> RecurrenceAugmentation::sequence(
   auto sequence =
       text::split(input_sample.column(_sequence_column), _delimiter);
   if (sequence.size() < _max_recurrence) {
-    sequence.push_back(std::string(EOS));
+    sequence.push_back(EOS);
   }
 
   if (sequence.size() > _max_recurrence) {

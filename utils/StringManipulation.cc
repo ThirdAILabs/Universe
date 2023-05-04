@@ -63,8 +63,7 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
 
   while (iter != end) {
     std::smatch match = *iter;
-    tokens.push_back(
-        std::string(sentence.data() + match.position(), match.length()));
+    tokens.push_back(sentence.substr(match.position(), match.length()));
     ++iter;
   }
 
@@ -80,7 +79,7 @@ std::vector<std::string> charKGrams(const std::string& text, uint32_t k) {
   size_t n_kgrams = text.size() >= k ? text.size() - (k - 1) : 1;
   size_t len = std::min(text.size(), static_cast<size_t>(k));
   for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-    char_k_grams.push_back(std::string(text.data() + offset, len));
+    char_k_grams.push_back(text.substr(offset, len));
   }
 
   return char_k_grams;
@@ -105,7 +104,7 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
     return false;
   }
 
-  return std::string(to_search_in.data(), prefix.size()) == prefix;
+  return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
 /* HELPER METHODS FOR UNICODE STRINGS */
