@@ -16,30 +16,56 @@ class BoltTrainer(DataParallelTrainer):
 
     Ex:
         def train_loop_per_worker():
-            model = bolt.nn.Model()
-            model.distribute()
+            mnist_model = get_mnist_model()
+            trainer = bolt.train.Trainer(mnist_model)
 
+            trainer.distribute(2)
+
+            train_y, train_y, test_x, test_y = data
+
+            epochs = 1
             for _ in range(epochs):
-                for batch in range(batches):
-                    model.forward()
-                    model.communicate()
-                    model.update_parameters()
+                for x, y in zip(train_x, train_y):
+                    trainer.step(x, y, 2)
 
-        trainer = BoltTrainer(
-                    train_loop_per_worker=train_loop_per_worker
-                    scaling_config=ScalingConfig(num_workers=3, use_gpu=use_gpu),
-                    datasets={"train": train_dataset},
-                    train_loop_config={"num_epochs": 2},
-                )
-        result = trainer.fit()
+            history = new_trainer.validate(
+                validation_data=(test_x, test_y),
+                validation_metrics=["loss", "categorical_accuracy"],
+                use_sparsity=False,
+            )
 
+            session.report(
+                history,
+                checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
+            )
+
+    Args:
+
+        train_loop_per_worker: The training function to execute.
+            This can either take in no arguments or a ``config`` dict.
+        train_loop_config: Configurations to pass into
+            ``train_loop_per_worker`` if it accepts an argument.
+        bolt_config: Configuration for setting up the Bolt backend. If set to
+            None, use the default configuration. This replaces the ``backend_config``
+            arg of ``DataParallelTrainer``.
+        scaling_config: Configuration for how to scale data parallel training.
+        dataset_config: Configuration for dataset ingest.
+        run_config: Configuration for the execution of the training run.
+        datasets: Any Datastreams to use for training. Use
+            the key "train" to denote which dataset is the training
+            dataset. If a ``preprocessor`` is provided and has not already been fit,
+            it will be fit on the training dataset. All datasets will be transformed
+            by the ``preprocessor`` if one is provided.
+        preprocessor: A ``ray.data.Preprocessor`` to preprocess the
+            provided datasets.
+        resume_from_checkpoint: A checkpoint to resume training from.
     """
 
     def __init__(
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
         *,
-        bolt_config: Optional[BoltBackendConfig] = None,
+        bolt_config: BoltBackendConfig,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
         dataset_config: Optional[Dict[str, DatasetConfig]] = None,

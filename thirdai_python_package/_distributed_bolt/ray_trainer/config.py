@@ -6,6 +6,10 @@ from dataclasses import dataclass
 
 @dataclass
 class BoltBackendConfig(BackendConfig):
+    """
+    Configuration for Bolt Backend Config
+    """
+
     @property
     def backend_cls(self):
         return _BoltBackend
