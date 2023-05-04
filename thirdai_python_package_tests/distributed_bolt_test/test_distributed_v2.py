@@ -51,18 +51,18 @@ def train_loop_per_worker():
     test_x = bolt.train.convert_dataset(test_x, dim=784)
     test_y = bolt.train.convert_dataset(test_y, dim=10)
 
-    # history = trainer.validate(
-    #     validation_data=(test_x, test_y),
-    #     validation_metrics=["loss", "categorical_accuracy"],
-    #     use_sparsity=False,
-    # )
+    history = trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=False,
+    )
 
-    # print(history)
-    # epochs = 1
-    # print("Training")
-    # for _ in range(epochs):
-    #     for x, y in zip(train_x, train_y):
-    #         trainer.step(x, y, 2)
+    print(history)
+    epochs = 1
+    print("Training")
+    for _ in range(epochs):
+        for x, y in zip(train_x, train_y):
+            trainer.step(x, y, 2)
 
     history = trainer.validate(
         validation_data=(test_x, test_y),
