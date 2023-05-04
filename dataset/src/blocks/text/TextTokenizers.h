@@ -10,7 +10,7 @@ namespace thirdai::dataset {
 
 class TextTokenizer {
  public:
-  virtual std::vector<std::string> apply(const std::string& input) = 0;
+  virtual std::vector<std::string> apply(const std::string_view& input) = 0;
 
   virtual ~TextTokenizer() = default;
 
@@ -32,7 +32,7 @@ class NaiveSplitTokenizer : public TextTokenizer {
     return std::make_shared<NaiveSplitTokenizer>(delimiter);
   }
 
-  std::vector<std::string> apply(const std::string& input) final {
+  std::vector<std::string> apply(const std::string_view& input) final {
     return text::split(input, _delimiter);
   }
 
@@ -52,7 +52,7 @@ class WordPunctTokenizer : public TextTokenizer {
 
   static auto make() { return std::make_shared<WordPunctTokenizer>(); }
 
-  std::vector<std::string> apply(const std::string& input) final {
+  std::vector<std::string> apply(const std::string_view& input) final {
     return text::tokenizeSentence(input);
   }
 
@@ -72,7 +72,7 @@ class CharKGramTokenizer : public TextTokenizer {
     return std::make_shared<CharKGramTokenizer>(k);
   }
 
-  std::vector<std::string> apply(const std::string& input) final {
+  std::vector<std::string> apply(const std::string_view& input) final {
     return text::charKGrams(input, _k);
   }
 

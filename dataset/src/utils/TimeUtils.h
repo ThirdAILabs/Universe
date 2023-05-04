@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -19,7 +20,7 @@ class TimeObject {
 
   TimeObject() : _time_object() {}
 
-  explicit TimeObject(const std::string& time_string) : _time_object() {
+  explicit TimeObject(const std::string_view& time_string) : _time_object() {
     std::stringstream time_ss;
     time_ss << time_string;
 

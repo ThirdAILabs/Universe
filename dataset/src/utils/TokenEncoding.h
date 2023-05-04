@@ -32,8 +32,8 @@ std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings);
  */
 std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n);
 
-inline std::vector<uint32_t> ngrams(const std::string& sentence, uint32_t n,
-                                    char delimiter = ' ') {
+inline std::vector<uint32_t> ngrams(const std::string_view& sentence,
+                                    uint32_t n, char delimiter = ' ') {
   return ngrams(hashTokens(text::split(sentence, delimiter)), /* n= */ n);
 }
 
