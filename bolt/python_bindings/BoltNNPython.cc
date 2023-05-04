@@ -130,6 +130,12 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
 
+  py::class_<hashtable::SampledHashTable, hashtable::SampledHashTablePtr>(
+      nn_submodule, "HashTable")
+      .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
+      .def_static("load", &hashtable::SampledHashTable::load,
+                  py::arg("filename"));
+
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
       .def(py::init(&FullyConnectedNode::makeDense), py::arg("dim"),
@@ -213,7 +219,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("get_hash_table", &FullyConnectedNode::getHashTable)
+      .def("set_hash_table", &FullyConnectedNode::setHashTable,
+           py::arg("hash_fn"), py::arg("hash_table"));
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       nn_submodule, "LayerNormalization")

@@ -79,8 +79,6 @@ def modify_udt():
         filename: str,
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
-        return_predicted_class: bool = False,
-        return_metrics: bool = False,
         verbose: bool = True,
     ):
         data_source = _create_data_source(filename)
@@ -90,9 +88,7 @@ def modify_udt():
             data=data_source,
             metrics=metrics,
             sparse_inference=use_sparse_inference,
-            return_predicted_class=return_predicted_class,
             verbose=verbose,
-            return_metrics=return_metrics,
         )
 
     def wrapped_cold_start(

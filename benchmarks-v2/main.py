@@ -1,10 +1,14 @@
 import argparse
+import json
 from datetime import date
 
+import requests
 import thirdai
-from thirdai.experimental import MlflowCallback
+from thirdai.experimental import MlflowCallback, MlflowCallbackV2
 
 from .runners.runner_map import runner_map
+from .runners.temporal import TemporalRunner
+from .runners.udt import UDTRunner
 from .utils import get_configs
 
 
@@ -44,6 +48,12 @@ def parse_arguments():
         action="store_true",
         help="Controls if the experiment is logged to the '_benchmark' experiment or the regular experiment. This should only be used for the github actions benchmark runner.",
     )
+    parser.add_argument(
+        "--slack_webhook",
+        type=str,
+        default="",
+        help="Slack channel endpoint for posting messages to",
+    )
     return parser.parse_args()
 
 
@@ -63,7 +73,11 @@ if __name__ == "__main__":
 
         for config in configs:
             if args.mlflow_uri and args.run_name:
-                mlflow_logger = MlflowCallback(
+                mlflow_callback = MlflowCallback
+                if runner == UDTRunner or runner == TemporalRunner:
+                    mlflow_callback = MlflowCallbackV2
+
+                mlflow_logger = mlflow_callback(
                     tracking_uri=args.mlflow_uri,
                     experiment_name=experiment_name(
                         config.config_name, args.official_benchmark
@@ -77,9 +91,20 @@ if __name__ == "__main__":
             else:
                 mlflow_logger = None
 
-            runner.run_benchmark(
-                config=config, path_prefix=args.path_prefix, mlflow_logger=mlflow_logger
-            )
+            try:
+                runner.run_benchmark(
+                    config=config,
+                    path_prefix=args.path_prefix,
+                    mlflow_logger=mlflow_logger,
+                )
+            except Exception as error:
+                print(
+                    f"An error occurred running the {config.config_name} benchmark:",
+                    error,
+                )
+                if args.slack_webhook:
+                    payload = f"{config.config_name} benchmark failed!"
+                    requests.post(args.slack_webhook, json.dumps({"text": payload}))
 
             if mlflow_logger:
                 mlflow_logger.end_run()

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
@@ -16,6 +18,8 @@
 #include <optional>
 
 namespace thirdai::automl::data {
+
+using bolt::nn::tensor::TensorList;
 
 class TabularDatasetFactory {
  public:
@@ -42,7 +46,7 @@ class TabularDatasetFactory {
       std::optional<dataset::DatasetShuffleConfig> shuffle_config =
           std::nullopt);
 
-  std::vector<BoltVector> featurizeInput(const MapInput& input) {
+  TensorList featurizeInput(const MapInput& input) {
     for (const auto& [column_name, _] : input) {
       if (!_data_types.count(column_name)) {
         throw std::invalid_argument("Input column name '" + column_name +
@@ -50,12 +54,14 @@ class TabularDatasetFactory {
       }
     }
     dataset::MapSampleRef input_ref(input);
-    return _inference_featurizer->featurize(input_ref);
+    return bolt::train::convertVectors(
+        _inference_featurizer->featurize(input_ref),
+        _inference_featurizer->getDimensions());
   }
 
-  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs);
+  TensorList featurizeInputBatch(const MapInputBatch& inputs);
 
-  std::pair<std::vector<BoltBatch>, BoltBatch> featurizeTrainingBatch(
+  std::pair<TensorList, TensorList> featurizeTrainingBatch(
       const MapInputBatch& batch);
 
   void updateTemporalTrackers(const MapInput& input) {

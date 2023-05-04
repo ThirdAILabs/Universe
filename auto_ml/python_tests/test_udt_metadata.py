@@ -159,11 +159,9 @@ def get_ground_truths(trained_model, original_test_df):
 
 
 def get_accuracy_on_test_data(trained_model, original_test_df):
-    results = trained_model.evaluate(TEST_FILE, verbose=False)
-    result_ids = np.argmax(results, axis=1)
-    ground_truth = get_ground_truths(trained_model, original_test_df)
+    metrics = trained_model.evaluate(TEST_FILE, metrics=["categorical_accuracy"])
 
-    return sum(result_ids == ground_truth) / len(result_ids)
+    return metrics["val_categorical_accuracy"][-1]
 
 
 def index_test_metadata(
