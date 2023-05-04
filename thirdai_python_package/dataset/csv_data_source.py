@@ -80,8 +80,8 @@ class CSVDataSource(DataSource):
             dtype="object",
             header=None,
         ):
-            for _, row in chunk.iterrows():
-                yield ",".join(row.astype(str).values.flatten())
+            for i in range(len(chunk)):
+                yield chunk.iloc[i : i + 1].to_csv(header=None, index=None).strip("\n")
 
     def next_batch(self, target_batch_size) -> Optional[List[str]]:
         lines = []

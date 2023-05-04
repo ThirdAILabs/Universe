@@ -78,6 +78,7 @@ class UDTRunner(Runner):
                 epochs=config.num_epochs,
                 learning_rate=config.learning_rate,
                 validation=validation,
+                max_in_memory_batches=config.max_in_memory_batches,
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
 

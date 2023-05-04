@@ -32,6 +32,6 @@ constexpr uint32_t UDT_SVM_CLASSIFIER_VERSION = 1;
 
 // BOLT VERSIONS
 
-constexpr uint32_t BOLT_MODEL_VERSION = 1;
+constexpr uint32_t BOLT_MODEL_VERSION = 2;
 
 }  // namespace thirdai::versions

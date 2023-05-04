@@ -47,7 +47,7 @@ def get_data(n_classes):
 
 
 @pytest.mark.unit
-def test_op_sharing():
+def test_layer_norm():
     model, metric = build_model()
 
     train_data = get_data(N_CLASSES)

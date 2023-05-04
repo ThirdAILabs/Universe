@@ -1,8 +1,6 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
-#include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
@@ -33,19 +31,18 @@ class UDTMachClassifier final : public UDTBackend {
                     const std::optional<std::string>& model_config,
                     const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size_opt,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size_opt,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool sparse_inference, bool verbose) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final;
@@ -53,15 +50,9 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class) final;
 
-  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
+  ModelPtr model() const final { return _classifier->model(); }
 
-  void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
-    curr_model = model;
-  }
+  void setModel(const ModelPtr& model) final;
 
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
@@ -69,7 +60,7 @@ class UDTMachClassifier final : public UDTBackend {
                        float learning_rate, uint32_t epochs,
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
-                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
                        bool verbose) final;
 
@@ -109,7 +100,7 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   TextEmbeddingModelPtr getTextEmbeddingModel(
-      const std::string& activation_func, float distance_cutoff) const final;
+      float distance_cutoff) const final;
 
  private:
   bool integerTarget() const {

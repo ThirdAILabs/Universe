@@ -53,35 +53,20 @@ def test_udt_binary_classification_accuracy(
     download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
-    _, test_filename, inference_samples = download_internet_ads_dataset
+    _, test_filename, _ = download_internet_ads_dataset
 
     acc_without_threshold = compute_evaluate_accuracy(
-        model=model,
-        test_filename=test_filename,
-        inference_samples=inference_samples,
-        use_class_name=True,
-        use_activations=True,
+        model=model, test_filename=test_filename
     )
 
-    acc_with_threshold = compute_evaluate_accuracy(
-        model=model,
-        test_filename=test_filename,
-        inference_samples=inference_samples,
-        use_class_name=True,
-        use_activations=False,
-    )
-
-    _verify_accuracy(
-        acc_without_threshold=acc_without_threshold,
-        acc_with_threshold=acc_with_threshold,
-    )
+    assert acc_without_threshold > ACCURACY_WITHOUT_THRESHOLD
 
 
 def test_udt_binary_classification_predict_accuracy(
     download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
-    _, test_filename, inference_samples = download_internet_ads_dataset
+    _, _, inference_samples = download_internet_ads_dataset
 
     acc_without_threshold = compute_predict_accuracy(
         model=model,
@@ -133,33 +118,25 @@ def test_udt_binary_classification_save_load(
     download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
-    train_filename, test_filename, inference_samples = download_internet_ads_dataset
+    train_filename, test_filename, _ = download_internet_ads_dataset
 
     SAVE_PATH = "./saved_binary_classifier.bolt"
     model.save(SAVE_PATH)
 
     loaded_model = bolt.UniversalDeepTransformer.load(SAVE_PATH)
 
-    acc_with_threshold = compute_evaluate_accuracy(
-        model=loaded_model,
-        test_filename=test_filename,
-        inference_samples=inference_samples,
-        use_class_name=True,
-        use_activations=False,
+    acc_without_threshold = compute_evaluate_accuracy(
+        model=loaded_model, test_filename=test_filename
     )
 
-    assert acc_with_threshold >= ACCURACY_WITH_THRESHOLD
+    assert acc_without_threshold >= ACCURACY_WITHOUT_THRESHOLD
 
     loaded_model.train(
         train_filename, learning_rate=0.001, epochs=1, metrics=["categorical_accuracy"]
     )
 
-    acc_with_threshold = compute_evaluate_accuracy(
-        model=loaded_model,
-        test_filename=test_filename,
-        inference_samples=inference_samples,
-        use_class_name=True,
-        use_activations=False,
+    acc_without_threshold = compute_evaluate_accuracy(
+        model=loaded_model, test_filename=test_filename
     )
 
-    assert acc_with_threshold >= ACCURACY_WITH_THRESHOLD
+    assert acc_without_threshold >= ACCURACY_WITHOUT_THRESHOLD

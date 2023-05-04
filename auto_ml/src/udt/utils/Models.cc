@@ -1,17 +1,21 @@
 #include "Models.h"
-#include <bolt/src/graph/DatasetContext.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/nn/loss/BinaryCrossEntropy.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
 
-bolt::BoltGraphPtr buildModel(uint32_t input_dim, uint32_t output_dim,
-                              const config::ArgumentMap& args,
-                              const std::optional<std::string>& model_config,
-                              bool use_sigmoid_bce) {
+ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
+                    const config::ArgumentMap& args,
+                    const std::optional<std::string>& model_config,
+                    bool use_sigmoid_bce) {
   if (model_config) {
     return utils::loadModel({input_dim}, output_dim, *model_config);
   }
@@ -38,35 +42,37 @@ float autotuneSparsity(uint32_t dim) {
 
 }  // namespace
 
-bolt::BoltGraphPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                                uint32_t output_dim, bool use_sigmoid_bce) {
-  bolt::InputPtr input_node = bolt::Input::make(input_dim);
+ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
+                      uint32_t output_dim, bool use_sigmoid_bce) {
+  auto input = bolt::nn::ops::Input::make(input_dim);
 
-  auto hidden = bolt::FullyConnectedNode::makeDense(hidden_dim,
-                                                    /* activation= */ "relu");
-  hidden->addPredecessor(input_node);
+  auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
+                                                    /* sparsity= */ 1.0,
+                                                    /* activation= */ "relu")
+                    ->apply(input);
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
-  auto output =
-      bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity, activation);
-  output->addPredecessor(hidden);
+  auto output = bolt::nn::ops::FullyConnected::make(output_dim, hidden->dim(),
+                                                    sparsity, activation)
+                    ->apply(hidden);
 
-  auto graph = std::make_shared<bolt::BoltGraph>(
-      /* inputs= */ std::vector<bolt::InputPtr>{input_node}, output);
+  auto labels = bolt::nn::ops::Input::make(output_dim);
 
-  use_sigmoid_bce
-      ? graph->compile(
-            bolt::BinaryCrossEntropyLoss::makeBinaryCrossEntropyLoss())
-      : graph->compile(bolt::CategoricalCrossEntropyLoss::
-                           makeCategoricalCrossEntropyLoss());
+  bolt::nn::loss::LossPtr loss;
+  if (use_sigmoid_bce) {
+    loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
+  } else {
+    loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+  }
 
-  return graph;
+  auto model = bolt::nn::model::Model::make({input}, {output}, {loss});
+
+  return model;
 }
 
-bolt::BoltGraphPtr loadModel(const std::vector<uint32_t>& input_dims,
-                             uint32_t output_dim,
-                             const std::string& config_path) {
+ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+                   const std::string& config_path) {
   config::ArgumentMap parameters;
   parameters.insert("output_dim", output_dim);
 
@@ -75,11 +81,42 @@ bolt::BoltGraphPtr loadModel(const std::vector<uint32_t>& input_dims,
   return config::buildModel(json_config, parameters, input_dims);
 }
 
-bool hasSoftmaxOutput(const bolt::BoltGraphPtr& model) {
-  auto fc_output =
-      std::dynamic_pointer_cast<bolt::FullyConnectedNode>(model->output());
-  return fc_output && (fc_output->getActivationFunction() ==
-                       bolt::ActivationFunction::Softmax);
+void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
+  auto vec_eq = [](const auto& a, const auto& b) -> bool {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (uint32_t i = 0; i < a.size(); i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  if (!vec_eq(curr_model->inputDims(), new_model->inputDims())) {
+    throw std::invalid_argument("Input dim mismatch in set_model.");
+  }
+
+  if (new_model->outputs().size() != 1 ||
+      new_model->outputs().at(0)->dim() != curr_model->outputs().at(0)->dim()) {
+    throw std::invalid_argument("Output dim mismatch in set_model.");
+  }
+
+  if (!vec_eq(curr_model->labelDims(), new_model->labelDims())) {
+    throw std::invalid_argument("Label dim mismatch in set_model.");
+  }
+}
+
+bool hasSoftmaxOutput(const ModelPtr& model) {
+  auto outputs = model->outputs();
+  if (outputs.size() > 1) {
+    return false;  // TODO(Nicholas): Should this throw?
+  }
+
+  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  return fc && (fc->kernel()->getActivationFunction() ==
+                bolt::ActivationFunction::Softmax);
 }
 
 }  // namespace thirdai::automl::udt::utils
