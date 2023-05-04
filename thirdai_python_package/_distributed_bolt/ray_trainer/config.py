@@ -1,7 +1,8 @@
-import ray
-from ray.train.backend import BackendConfig, Backend
-from ray.train._internal.worker_group import WorkerGroup
 from dataclasses import dataclass
+
+import ray
+from ray.train._internal.worker_group import WorkerGroup
+from ray.train.backend import Backend, BackendConfig
 
 
 @dataclass

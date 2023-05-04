@@ -148,7 +148,7 @@ std::vector<std::vector<float>*> LayerNorm::gradients() {
   return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
 }
 
-std::vector<std::vector<float>*> LayerNorm::parameters(){
+std::vector<std::vector<float>*> LayerNorm::parameters() {
   return {&_gamma, &_beta};
 }
 

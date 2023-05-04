@@ -1,5 +1,5 @@
-from thirdai._thirdai import bolt_v2 as bolt
 import numpy as np
+from thirdai._thirdai import bolt_v2 as bolt
 
 
 def _modify_bolt_v2_model():

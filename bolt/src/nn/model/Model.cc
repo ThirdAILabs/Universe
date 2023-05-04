@@ -235,9 +235,7 @@ uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
 }
 
 std::pair<const float*, uint64_t> Model::getValues(uint32_t type) const {
-
   auto values = (type == 0) ? gradients() : parameters();
-
 
   uint64_t total_dim = sumFlattenedDims(values);
 
@@ -252,7 +250,8 @@ std::pair<const float*, uint64_t> Model::getValues(uint32_t type) const {
   return {combined_values, total_dim};
 }
 
-void Model::setValues(const float* new_value, uint64_t flattened_dim, uint32_t type) const {
+void Model::setValues(const float* new_value, uint64_t flattened_dim,
+                      uint32_t type) const {
   auto values = (type == 0) ? gradients() : parameters();
 
   uint64_t total_dim = sumFlattenedDims(values);

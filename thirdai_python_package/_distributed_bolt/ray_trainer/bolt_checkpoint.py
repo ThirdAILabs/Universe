@@ -1,9 +1,9 @@
-from ray.air.checkpoint import Checkpoint
 import os
 import tempfile
-from thirdai._thirdai import bolt_v2 as bolt
 
+from ray.air.checkpoint import Checkpoint
 from ray.air.constants import MODEL_KEY
+from thirdai._thirdai import bolt_v2 as bolt
 
 
 class BoltCheckPoint(Checkpoint):

@@ -144,10 +144,10 @@ class Model {
 
   std::vector<std::vector<float>*> parameters() const;
 
-
   std::pair<const float*, uint64_t> getValues(uint32_t type) const;
 
-  void setValues(const float* new_value, uint64_t flattened_dim, uint32_t type) const;
+  void setValues(const float* new_value, uint64_t flattened_dim,
+                 uint32_t type) const;
 
   /**
    * Freezes all hash tables in the model. The parameter

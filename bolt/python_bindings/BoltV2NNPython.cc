@@ -101,7 +101,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
              return NumpyArray(flattened_dim, grads, free_when_done);
            })
       .def("set_values",
-           [](const nn::model::ModelPtr& _model, NumpyArray& new_values, uint32_t type) {
+           [](const nn::model::ModelPtr& _model, NumpyArray& new_values,
+              uint32_t type) {
              if (new_values.ndim() != 1) {
                throw std::invalid_argument("Expected grads to be flattened.");
              }

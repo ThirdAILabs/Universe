@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
-
-from ray.train.data_parallel_trainer import DataParallelTrainer
-from ray.train.trainer import GenDataset
 from ray.air.checkpoint import Checkpoint
 from ray.air.config import DatasetConfig, RunConfig, ScalingConfig
+from ray.train.data_parallel_trainer import DataParallelTrainer
+from ray.train.trainer import GenDataset
+
 from .config import BoltBackendConfig
 
 if TYPE_CHECKING:

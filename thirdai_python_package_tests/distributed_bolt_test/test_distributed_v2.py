@@ -1,12 +1,11 @@
-from thirdai import bolt_v2 as bolt
+import os
+
 import ray
 import thirdai.distributed_bolt as dist
-import os
-from thirdai.demos import download_mnist_dataset
-from ray.air import ScalingConfig
+from ray.air import ScalingConfig, session
+from thirdai import bolt_v2 as bolt
 from thirdai import dataset
-from ray.air import session
-
+from thirdai.demos import download_mnist_dataset
 
 ray.init(runtime_env={"env_vars": {"OMP_NUM_THREADS": "24"}})
 
