@@ -31,8 +31,7 @@ void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
 
 uint32_t FixedVocabulary::size() const { return _token_to_id.size(); }
 
-std::vector<uint32_t> FixedVocabulary::encode(
-    const std::string& sentence) const {
+std::vector<uint32_t> FixedVocabulary::encode(std::string_view sentence) const {
   std::vector<uint32_t> token_ids;
 
   // The following describes a simple whitespace tokenization algorithm.
@@ -54,7 +53,7 @@ std::vector<uint32_t> FixedVocabulary::encode(
     if (isspace(*marker)) {
       // A word terminated by a space.
       size_t token_length = marker - base;
-      std::string token(base, token_length);
+      std::string_view token(base, token_length);
       uint32_t token_id = id(token);
       token_ids.push_back(token_id);
 

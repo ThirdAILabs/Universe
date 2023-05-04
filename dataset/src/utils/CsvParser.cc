@@ -149,7 +149,7 @@ ParserState StateMachine::fromPotentialEndQuote(char current_char) const {
 }
 
 // Extracts the last column seen so far from `line`.
-static std::string columnView(const std::string& line,
+static std::string columnView(std::string_view line,
                               ParserState column_end_state,
                               uint32_t start_index, uint32_t end_index) {
   if (column_end_state == ParserState::PotentialEndQuote) {
