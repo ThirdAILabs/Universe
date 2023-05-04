@@ -102,7 +102,7 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
     return false;
   }
 
-  return std::string(to_search_in.data(), prefix.size()) == prefix;
+  return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
 }  // namespace thirdai::text
