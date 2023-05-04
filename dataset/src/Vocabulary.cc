@@ -18,8 +18,8 @@ void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
   // clang-tidy complains members should be initialized in initializer list,
   // unfortunately not possible without cruft (add is a non-static
   // member and expects the unordered map to be initialized).
-  _unk_id = add(std::string(special_tokens::UNK));    // NOLINT
-  _mask_id = add(std::string(special_tokens::MASK));  // NOLINT
+  _unk_id = add(special_tokens::UNK);    // NOLINT
+  _mask_id = add(special_tokens::MASK);  // NOLINT
 
   // Proceed to read from file to add the remaining vocabulary tokens. We
   // expect supplied files to be one token per-line.
