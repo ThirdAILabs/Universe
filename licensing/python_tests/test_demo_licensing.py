@@ -56,12 +56,6 @@ def test_census_demo_key_fails_on_generator(udt_query_reformulation_fixture):
         train_udt_query_reformulation_model(udt_query_reformulation_file)
 
 
-# This fixture removes the stored access key after each test finishes, ensuring
-# that other tests that run in this pytest environment will get a clean
-# licensing slate
 @pytest.fixture(autouse=True)
 def set_license_back_to_valid():
-    # The yield means that pytest will wait until the test finishes to run
-    # the code below it
-    yield
     thirdai.licensing.deactivate()

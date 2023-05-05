@@ -34,22 +34,33 @@ void checkLicense() {
 
   throw exceptions::LicenseCheckException(
       "Please first call either licensing.set_path, "
-      "licensing.start_heartbeat, or licensing.activate.");
+      "licensing.start_heartbeat, or licensing.activate with a valid license.");
 }
 
 Entitlements entitlements() { return _licensing_method->getEntitlements(); }
 
+void checkExistingLicense() {
+  if (_licensing_method != nullptr) {
+    throw exceptions::LicenseCheckException(
+      "An active license was found. Please call licensing.deactivate "
+      "before setting a new license."); 
+  }
+}
+
 void activate(std::string api_key) {
+  checkExistingLicense();
   _licensing_method = std::make_unique<keygen::KeyMethod>(std::move(api_key));
 }
 
 void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout) {
+  checkExistingLicense();
   _licensing_method = std::make_unique<heartbeat::ServerMethod>(
       std::move(heartbeat_url), heartbeat_timeout);
 }
 
 void setLicensePath(std::string license_path, bool verbose) {
+  checkExistingLicense();
   _licensing_method =
       std::make_unique<file::FileMethod>(std::move(license_path), verbose);
 }

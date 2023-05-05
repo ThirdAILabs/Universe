@@ -9,6 +9,7 @@ universe_dir = Path(__file__).parent
 
 
 def set_working_license():
+    thirdai.licensing.deactivate()
     thirdai.licensing.set_path(
         str(
             (

@@ -18,9 +18,9 @@ class LicenseMethod {
 
   LicenseMethodType getLicenseMethodType() { return _license_method_type; };
 
-  virtual void checkLicense(){};
+  virtual void checkLicense() = 0;
 
-  virtual LicenseState getLicenseState() { return LicenseState(); };
+  virtual LicenseState getLicenseState() = 0;
 
   virtual ~LicenseMethod() = default;
 

@@ -72,11 +72,11 @@ def test_with_expired_license():
 
     with pytest.raises(Exception, match=r"license file is expired"):
         thirdai.licensing.set_path(str(expired_license_path))
-    with pytest.raises(Exception, match=r"license file is expired"):
+    with pytest.raises(Exception, match=r"with a valid license"):
         this_should_require_a_license_search()
-    with pytest.raises(Exception, match=r"license file is expired"):
+    with pytest.raises(Exception, match=r"with a valid license"):
         run_udt_training_routine()
-    with pytest.raises(Exception, match=r"license file is expired"):
+    with pytest.raises(Exception, match=r"with a valid license"):
         this_should_require_a_license_query_reformulation()
 
 
@@ -90,11 +90,11 @@ def test_with_invalid_license():
     for invalid_license_path in invalid_license_1_path, invalid_license_2_path:
         with pytest.raises(Exception, match=r"license verification failure"):
             thirdai.licensing.set_path(str(invalid_license_path))
-        with pytest.raises(Exception, match=r"license verification failure"):
+        with pytest.raises(Exception, match=r"with a valid license"):
             this_should_require_a_license_search()
-        with pytest.raises(Exception, match=r"license verification failure"):
+        with pytest.raises(Exception, match=r"with a valid license"):
             run_udt_training_routine()
-        with pytest.raises(Exception, match=r"license verification failure"):
+        with pytest.raises(Exception, match=r"with a valid license"):
             this_should_require_a_license_query_reformulation()
 
 
@@ -137,12 +137,8 @@ def test_max_train_samples_license():
         run_udt_training_routine(num_data_points=102)
 
 
-# See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed
-# This sets the license back to a valid value after each tests run
 @pytest.fixture(autouse=True)
 def set_license_back_to_valid():
     import thirdai
+    thirdai.licensing.deactivate()
 
-    # The yield means that it will run AFTER each test, not before.
-    yield
-    thirdai.licensing.set_path(str(valid_license_path))
