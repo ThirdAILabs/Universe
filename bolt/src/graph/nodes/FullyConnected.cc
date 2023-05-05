@@ -5,6 +5,8 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
+#include <cmath>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -28,13 +30,13 @@ std::shared_ptr<FullyConnectedNode> FullyConnectedNode::make(
 }
 
 std::shared_ptr<FullyConnectedNode>
-FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
-                                               const std::string& activation,
-                                               uint32_t num_tables,
-                                               uint32_t hashes_per_table,
-                                               uint32_t reservoir_size) {
+FullyConnectedNode::makeExplicitSamplingConfig(
+    uint32_t dim, float sparsity, const std::string& activation,
+    uint32_t num_tables, uint32_t hashes_per_table, uint32_t range_pow,
+    uint32_t binsize, uint32_t reservoir_size, uint32_t permutes) {
   auto sampling_config = std::make_shared<DWTASamplingConfig>(
-      num_tables, hashes_per_table, reservoir_size);
+      num_tables, hashes_per_table, range_pow, binsize, reservoir_size,
+      permutes);
   return make(dim, sparsity, activation, sampling_config);
 }
 
@@ -150,14 +152,14 @@ float FullyConnectedNode::getSparsity() {
 }
 
 std::shared_ptr<FullyConnectedNode> FullyConnectedNode::setSparsity(
-    float sparsity) {
+    float sparsity, bool rebuild_tables, bool experimental_autotune) {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
         "FullyConnectedNode must be in a compiled state to call "
         "setSparsity");
   }
-  _layer->setSparsity(sparsity);
+  _layer->setSparsity(sparsity, rebuild_tables, experimental_autotune);
   return shared_from_this();
 }
 

@@ -25,7 +25,9 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
     auto hidden = ops::FullyConnected::make(
         /* dim= */ dim, /* input_dim= */ n_classes, /* sparsity= */ sparsity,
         /* activation*/ "relu",
-        /* sampling= */ DWTASamplingConfig::autotune(dim, sparsity),
+        /* sampling= */
+        DWTASamplingConfig::autotune(dim, sparsity,
+                                     /* DWTASamplingConfig::autotune=*/false),
         /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20);
 
     input_dim_to_last_layer = dim;
@@ -192,7 +194,9 @@ TEST(FullyConnectedModelTests, SparseOutput) {
           /* dim= */ N_CLASSES, /* input_dim= */ HIDDEN_DIM,
           /* sparsity= */ 0.2,
           /* activation*/ "softmax",
-          /* sampling= */ DWTASamplingConfig::autotune(N_CLASSES, 0.1),
+          /* sampling= */
+          DWTASamplingConfig::autotune(N_CLASSES, 0.1,
+                                       /* DWTASamplingConfig::autotune=*/false),
           /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20)
           ->apply(hidden);
 

@@ -773,19 +773,39 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
   return embedding;
 }
 
-void FullyConnectedLayer::setSparsity(float sparsity) {
-  deinitSamplingDatastructures();
-  _sparsity = sparsity;
+void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_tables,
+                                      bool experimental_autotune) {
+  // deinitSamplingDatastructures();
 
-  _sparse_dim = _sparsity * _dim;
-
-  // TODO(Nick): Right now we always switch to DWTA after setting sparsity
-  // instead of autotuning for whatever the existing hash function was. We
-  // should instead autotune the original hash function.
-  if (_sparsity < 1.0) {
-    auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+  if (_sparsity >= 1 && sparsity < 1) {
+    _sparsity = sparsity;
+    _sparse_dim = _sparsity * _dim;
+    auto sampling_config =
+        DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
     std::random_device rd;
     initSamplingDatastructures(sampling_config, rd);
+    return;
+  }
+
+  if (_sparsity < 1 && sparsity >= 1) {
+    _sparsity = 1;
+    _sparse_dim = _sparsity * _dim;
+    deinitSamplingDatastructures();
+    return;
+  }
+
+  if (_sparsity < 1 && sparsity < 1) {
+    _sparsity = sparsity;
+    _sparse_dim = _sparsity * _dim;
+
+    if (rebuild_tables) {
+      deinitSamplingDatastructures();
+      auto sampling_config =
+          DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
+      std::random_device rd;
+      initSamplingDatastructures(sampling_config, rd);
+    }
+    return;
   }
 }
 
@@ -855,9 +875,14 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
       summary << "random";
     } else {
       summary << "hash_function=" << _hasher->getName() << ", ";
+
+      if (_hasher->getName() == "DWTA") {
+        summary << "permutations= " << _hasher->getPermutes() << ", "
+                << "binsize= " << _hasher->getBinsize() << ", "
+                << "hashes_per_table= " << _hasher->getHashesPerTable() << ", ";
+      }
       _hash_table->summarize(summary);
     }
   }
 }
-
 }  // namespace thirdai::bolt

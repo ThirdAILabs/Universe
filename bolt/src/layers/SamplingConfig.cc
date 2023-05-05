@@ -13,22 +13,58 @@ hashing::HashFunctionPtr DWTASamplingConfig::getHashFunction(
       /* input_dim= */ input_dim,
       /* hashes_per_table= */ _hashes_per_table,
       /* num_tables= */ _num_tables,
-      /* range_pow= */ 3 * _num_tables);
+      /* range_pow= */ _range_pow,
+      /* binsize=*/_binsize,
+      /* permutations=*/_permutes);
 }
 
 hashtable::SampledHashTablePtr DWTASamplingConfig::getHashTable() const {
   return std::make_unique<hashtable::SampledHashTable>(
       /* num_tables= */ _num_tables,
       /* reservoir_size= */ _reservoir_size,
-      /* range= */ 1 << (3 * _hashes_per_table));
+      /* range= */ 1 << _range_pow);
+}
+
+SamplingConfigPtr DWTASamplingConfig::newAutotune(uint32_t layer_dim,
+                                                  float sparsity) {
+  uint32_t hashes_per_table = 1;
+  uint32_t sparse_dim = (layer_dim * sparsity);
+
+  uint32_t expected_num_elements_per_bucket;
+
+  expected_num_elements_per_bucket = static_cast<uint32_t>(std::max(
+      std::log(layer_dim) * 2 * (layer_dim / (layer_dim + 5000.0)), 1.0));
+
+  uint32_t range_pow = static_cast<uint32_t>(std::max(
+      std::floor(std::log2(layer_dim / expected_num_elements_per_bucket)),
+      1.0));
+
+  uint32_t binsize = static_cast<uint32_t>(std::floor(
+      std::pow(2, static_cast<float>(range_pow) / hashes_per_table)));
+
+  uint32_t num_tables = static_cast<uint32_t>(static_cast<float>(sparse_dim) /
+                                              expected_num_elements_per_bucket);
+
+  return std::make_shared<DWTASamplingConfig>(
+      /* num_tables= */ num_tables,
+      /* hashes_per_table= */ hashes_per_table,
+      /* range_pow=*/range_pow,
+      /* binsize=*/binsize,
+      /* reservoir_size= */ 4 * expected_num_elements_per_bucket,
+      /* permutations=*/2);
 }
 
 SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
-                                               float sparsity) {
+                                               float sparsity,
+                                               bool experimental_autotune) {
   if (sparsity == 1.0) {
     // If the layer is dense then we don't need to create a sampling config
     // for it.
     return nullptr;
+  }
+
+  if (experimental_autotune) {  // NOLINT
+    return newAutotune(layer_dim, sparsity);
   }
 
   // The number of items in the table is equal to the number of neurons in
@@ -80,7 +116,10 @@ SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
   return std::make_shared<DWTASamplingConfig>(
       /* num_tables= */ num_tables,
       /* hashes_per_table= */ hashes_per_table,
-      /* reservoir_size= */ reservoir_size);
+      /* range_pow=*/range_pow,
+      /* binsize=*/8,
+      /* reservoir_size= */ reservoir_size,
+      /* permutations=*/8);
 }
 
 hashing::HashFunctionPtr FastSRPSamplingConfig::getHashFunction(
@@ -105,7 +144,7 @@ void SamplingConfig::serialize(Archive& archive) {
 template <class Archive>
 void DWTASamplingConfig::serialize(Archive& archive) {
   archive(cereal::base_class<SamplingConfig>(this), _num_tables,
-          _hashes_per_table, _reservoir_size);
+          _hashes_per_table, _range_pow, _binsize, _reservoir_size, _permutes);
 }
 
 template <class Archive>

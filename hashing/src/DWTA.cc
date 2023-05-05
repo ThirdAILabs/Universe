@@ -9,36 +9,32 @@
 
 namespace thirdai::hashing {
 
-constexpr uint32_t DEFAULT_BINSIZE = 8;
-
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
+                                   uint32_t binsize, uint32_t permutations,
                                    uint32_t seed)
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE),
+      _binsize(binsize),
       _log_binsize(floor(log2(_binsize))),
-      _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
+      _permute(permutations) {
   std::mt19937 gen(seed);
-  uint32_t* n_array = new uint32_t[_dim];
+  std::uniform_int_distribution<uint32_t> bin_mapper(
+      0, _num_hashes * _binsize - 1);
+
   _bin_map = std::vector<uint32_t>(_dim * _permute);
   _positions = std::vector<uint32_t>(_dim * _permute);
 
-  for (uint32_t i = 0; i < _dim; i++) {
-    n_array[i] = i;
-  }
   for (uint32_t p = 0; p < _permute; p++) {
-    std::shuffle(n_array, n_array + _dim, gen);
     for (uint32_t j = 0; j < _dim; j++) {
-      _bin_map[p * _dim + n_array[j]] = (p * _dim + j) / _binsize;
-      _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;
+      uint32_t index = bin_mapper(gen);
+      _bin_map[p * _dim + j] = index / _binsize;
+      _positions[p * _dim + j] = index % _binsize;
     }
   }
-
-  delete[] n_array;
 
   std::uniform_int_distribution<uint32_t> dis(
       1, std::numeric_limits<uint32_t>::max() - 1);
