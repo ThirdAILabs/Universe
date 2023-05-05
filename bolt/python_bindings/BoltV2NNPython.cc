@@ -28,6 +28,9 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::nn::python {
 
+using NumpyArray =
+    py::array_t<float, py::array::c_style | py::array::forcecast>;
+
 template <typename T>
 py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
   if (data) {
@@ -57,6 +60,25 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
+NumpyArray getValues(const nn::model::ModelPtr& _model, uint32_t type) {
+  auto [grads, flattened_dim] = _model->getValues(type);
+
+  py::capsule free_when_done(
+      grads, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  return NumpyArray(flattened_dim, grads, free_when_done);
+}
+
+void setValues(const nn::model::ModelPtr& _model, NumpyArray& new_values,
+               uint32_t type) {
+  if (new_values.ndim() != 1) {
+    throw std::invalid_argument("Expected grads to be flattened.");
+  }
+
+  uint64_t flattened_dim = new_values.shape(0);
+  _model->setValues(new_values.data(), flattened_dim, type);
+}
+
 void defineTensor(py::module_& nn);
 
 void defineOps(py::module_& nn);
@@ -65,8 +87,6 @@ void defineLosses(py::module_& nn);
 
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
-  using NumpyArray =
-      py::array_t<float, py::array::c_style | py::array::forcecast>;
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**
@@ -91,25 +111,19 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
-      .def("get_values",
-           [](const nn::model::ModelPtr& _model, uint32_t type) {
-             auto [grads, flattened_dim] = _model->getValues(type);
-
-             py::capsule free_when_done(
-                 grads, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-             return NumpyArray(flattened_dim, grads, free_when_done);
+      .def("get_gradients",
+           [](const nn::model::ModelPtr& model) { return getValues(model, 0); })
+      .def("set_gradients",
+           [](const nn::model::ModelPtr& model, NumpyArray& new_values) {
+             setValues(model, new_values, 0);
            })
-      .def("set_values",
-           [](const nn::model::ModelPtr& _model, NumpyArray& new_values,
-              uint32_t type) {
-             if (new_values.ndim() != 1) {
-               throw std::invalid_argument("Expected grads to be flattened.");
-             }
-
-             uint64_t flattened_dim = new_values.shape(0);
-             _model->setValues(new_values.data(), flattened_dim, type);
+      .def("get_parameters",
+           [](const nn::model::ModelPtr& model) { return getValues(model, 1); })
+      .def("set_parameters",
+           [](const nn::model::ModelPtr& model, NumpyArray& new_values) {
+             setValues(model, new_values, 1);
            })
+
 #endif
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)

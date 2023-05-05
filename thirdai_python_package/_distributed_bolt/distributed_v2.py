@@ -11,28 +11,28 @@ def _modify_bolt_v2_model():
         # Note(pratik): We havn'e added abarrier here, assuming gloo rendezvous
         # should be able to synchronize all of them.
         self.model.train_on_batch(inputs, labels)
-        gradients = np.array(self.model.get_values(0))
+        gradients = np.array(self.model.get_gradients())
         col.allreduce(
             tensor=gradients,
             group_name="default",
             op=ReduceOp.SUM,
         )
         gradients /= num_workers
-        self.model.set_values(gradients, 0)
+        self.model.set_gradients(gradients)
         self.model.update_parameters(learning_rate=0.001)
 
     def _distribute(self, num_workers):
         import ray.util.collective as col
         from ray.util.collective.types import ReduceOp
 
-        params = np.array(self.model.get_values(1))
+        params = np.array(self.model.get_parameters())
         col.allreduce(
             tensor=params,
             group_name="default",
             op=ReduceOp.SUM,
         )
         params /= num_workers
-        self.model.set_values(params, 1)
+        self.model.set_parameters(params)
 
     setattr(bolt.train.Trainer, "distribute", _distribute)
     setattr(bolt.train.Trainer, "step", _step)
