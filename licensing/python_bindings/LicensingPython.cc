@@ -19,22 +19,23 @@ void createLicensingSubmodule(py::module_& module) {
       "functions.");
 
   licensing_submodule.def(
-      "deactivate", &thirdai::licensing::deactivate,
-      "Remove the currently stored ThirdAI access key. Future calls to "
-      "ThirdAI functions may fail.");
-
-  licensing_submodule.def(
       "start_heartbeat", &thirdai::licensing::startHeartbeat,
       py::arg("license_server_url"),
       py::arg("heartbeat_timeout") = std::nullopt,
       "Starts a ThirdAI heartbeat endpoint to remain authenticated for future "
       "calls to ThirdAI functions.");
 
+  licensing_submodule.def(
+      "deactivate", &thirdai::licensing::deactivate,
+      "Deactivate the currently active license. Future calls to "
+      "ThirdAI functions may fail.");
+
   py::class_<LicenseState>(licensing_submodule, "LicenseState")
       // https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
       .def(py::pickle(
           [](const LicenseState& s) {  // __getstate__
-            return py::make_tuple(s.key_state, s.server_state, s.file_state);
+            return py::make_tuple(s.key_state, s.local_server_state,
+                                  s.file_state);
           },
           [](const py::tuple& t) {  // __setstate__
             if (t.size() != 3) {
@@ -43,7 +44,7 @@ void createLicensingSubmodule(py::module_& module) {
 
             LicenseState s;
             s.key_state = t[0].cast<std::optional<std::string>>();
-            s.server_state = t[1].cast<std::optional<
+            s.local_server_state = t[1].cast<std::optional<
                 std::pair<std::string, std::optional<uint32_t>>>>();
             s.file_state = t[2].cast<std::optional<std::string>>();
 

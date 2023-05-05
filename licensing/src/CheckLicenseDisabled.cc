@@ -14,9 +14,11 @@ void checkLicense() {}
 
 Entitlements entitlements() { return Entitlements({FULL_ACCESS_ENTITLEMENT}); }
 
+// The following functions have NOLINT because their arguments are pass-by-value
+// even though they are not used. The values are used in CheckLicenseEnabled.cc,
+// which requires the method signature to be pass by value for these functions
+// as well
 void activate(std::string api_key) { (void)api_key; }  // NOLINT
-
-void deactivate() {}
 
 void startHeartbeat(std::string heartbeat_url,  // NOLINT
                     const std::optional<uint32_t>& heartbeat_timeout) {
@@ -24,14 +26,15 @@ void startHeartbeat(std::string heartbeat_url,  // NOLINT
   (void)heartbeat_timeout;
 }
 
-void endHeartbeat() {}
-
-// TODO(Kartik): Add explanation for why we have this nolint
 void setLicensePath(std::string license_path, bool verbose) {  // NOLINT
   (void)license_path;
   (void)verbose;
 }
 
+void deactivate() {}
+
 LicenseState getLicenseState() { return {}; }
+
+void setLicenseState(const LicenseState& state) { (void)state; }
 
 }  // namespace thirdai::licensing

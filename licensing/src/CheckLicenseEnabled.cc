@@ -9,7 +9,7 @@
 #include <licensing/src/methods/file/FileMethod.h>
 #include <licensing/src/methods/file/SignedLicense.h>
 #include <licensing/src/methods/heartbeat/Heartbeat.h>
-#include <licensing/src/methods/heartbeat/ServerMethod.h>
+#include <licensing/src/methods/heartbeat/LocalServerMethod.h>
 #include <licensing/src/methods/keygen/KeyMethod.h>
 #include <licensing/src/methods/keygen/KeygenCommunication.h>
 #include <cstddef>
@@ -27,17 +27,23 @@ namespace thirdai::licensing {
 std::unique_ptr<LicenseMethod> _licensing_method = nullptr;
 
 void checkLicense() {
-  if (_licensing_method != nullptr) {
-    _licensing_method->checkLicense();
-    return;
+  if (_licensing_method == nullptr) {
+    throw exceptions::LicenseCheckException(
+        "Please first call either licensing.set_path, "
+        "licensing.start_heartbeat, or licensing.activate with a valid "
+        "license.");
   }
 
-  throw exceptions::LicenseCheckException(
-      "Please first call either licensing.set_path, "
-      "licensing.start_heartbeat, or licensing.activate with a valid license.");
+  _licensing_method->checkLicense();
 }
 
-Entitlements entitlements() { return _licensing_method->getEntitlements(); }
+Entitlements entitlements() {
+  if (_licensing_method == nullptr) {
+    throw exceptions::LicenseCheckException(
+        "Cannot get entitlements if we have not yet found a license.");
+  }
+  return _licensing_method->getEntitlements();
+}
 
 void checkExistingLicense() {
   if (_licensing_method != nullptr) {
@@ -55,7 +61,7 @@ void activate(std::string api_key) {
 void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout) {
   checkExistingLicense();
-  _licensing_method = std::make_unique<heartbeat::ServerMethod>(
+  _licensing_method = std::make_unique<heartbeat::LocalServerMethod>(
       std::move(heartbeat_url), heartbeat_timeout);
 }
 
@@ -67,17 +73,22 @@ void setLicensePath(std::string license_path, bool verbose) {
 
 void deactivate() { _licensing_method = nullptr; }
 
-LicenseState getLicenseState() { return _licensing_method->getLicenseState(); }
+LicenseState getLicenseState() {
+  if (_licensing_method == nullptr) {
+    throw exceptions::LicenseCheckException(
+        "Cannot get license state if we have not yet found a license.");
+  }
+  return _licensing_method->getLicenseState();
+}
 
 void setLicenseState(const LicenseState& state) {
   if (state.key_state) {
     activate(state.key_state.value());
-  }
-  if (state.server_state) {
-    auto server_state_value = state.server_state.value();
-    startHeartbeat(server_state_value.first, server_state_value.second);
-  }
-  if (state.file_state) {
+  } else if (state.local_server_state) {
+    auto local_server_state_value = state.local_server_state.value();
+    startHeartbeat(local_server_state_value.first,
+                   local_server_state_value.second);
+  } else if (state.file_state) {
     setLicensePath(state.file_state.value());
   }
 }

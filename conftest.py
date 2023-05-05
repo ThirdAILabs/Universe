@@ -33,8 +33,8 @@ def enable_full_access_licensing_module(request):
         pass
 
 
-# Automatically sets a working license file before we run a test session
-# We need this because some tests have session scopes that load models,
+# Automatically sets a working license file before we run a test session.
+# We need this because some test fixtures that load models have session scopes,
 # so this needs to be called before those fixtures
 @pytest.fixture(scope="session", autouse=True)
 def enable_full_access_licensing_session(request):

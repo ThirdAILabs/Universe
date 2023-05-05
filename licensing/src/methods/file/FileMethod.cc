@@ -4,12 +4,12 @@ namespace thirdai::licensing::file {
 
 FileMethod::FileMethod(std::string license_path, bool verbose)
     : LicenseMethod(
-          SignedLicense::entitlementsFromLicenseFile(license_path, verbose),
+          SignedLicense::verifyPathAndGetEntitlements(license_path, verbose),
           licensing::LicenseMethodType::FILE),
       _license_path(std::move(license_path)){};
 
 void FileMethod::checkLicense() {
-  Entitlements entitlements = SignedLicense::entitlementsFromLicenseFile(
+  Entitlements entitlements = SignedLicense::verifyPathAndGetEntitlements(
       _license_path, /* verbose = */ false);
   _entitlements = entitlements;
 }

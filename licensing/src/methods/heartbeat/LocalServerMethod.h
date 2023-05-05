@@ -5,14 +5,14 @@
 
 namespace thirdai::licensing::heartbeat {
 
-class ServerMethod final : public LicenseMethod {
+class LocalServerMethod final : public LicenseMethod {
  public:
-  ServerMethod(std::string heartbeat_url,
-               std::optional<uint32_t> heartbeat_timeout);
+  LocalServerMethod(std::string heartbeat_url,
+                    std::optional<uint32_t> heartbeat_timeout);
 
-  void checkLicense() override;
+  void checkLicense() final;
 
-  LicenseState getLicenseState() override;
+  LicenseState getLicenseState() final;
 
  private:
   std::string _heartbeat_url;

@@ -9,9 +9,9 @@ class FileMethod final : public LicenseMethod {
  public:
   FileMethod(std::string license_path, bool verbose);
 
-  void checkLicense() override;
+  void checkLicense() final;
 
-  LicenseState getLicenseState() override;
+  LicenseState getLicenseState() final;
 
  private:
   std::string _license_path;

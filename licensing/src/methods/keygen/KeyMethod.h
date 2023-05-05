@@ -9,9 +9,9 @@ class KeyMethod final : public LicenseMethod {
  public:
   explicit KeyMethod(std::string api_key);
 
-  void checkLicense() override;
+  void checkLicense() final;
 
-  LicenseState getLicenseState() override;
+  LicenseState getLicenseState() final;
 
  private:
   std::string _api_key;

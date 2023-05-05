@@ -1,4 +1,5 @@
 #pragma once
+
 #include <licensing/src/entitlements/Entitlements.h>
 #include <string>
 
@@ -8,7 +9,8 @@ enum class LicenseMethodType { KEY, FILE, SERVER };
 
 struct LicenseState {
   std::optional<std::string> key_state;
-  std::optional<std::pair<std::string, std::optional<uint32_t>>> server_state;
+  std::optional<std::pair<std::string, std::optional<uint32_t>>>
+      local_server_state;
   std::optional<std::string> file_state;
 };
 
