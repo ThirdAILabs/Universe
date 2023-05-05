@@ -5,11 +5,11 @@ from thirdai import bolt_v2 as bolt
 from dataset import create_dataset
 
 
-def concat_active_neurons(computations):
+def concat_indices(computations):
     arrays = []
     total_dim = 0
     for comp in computations:
-        if comp.tensor().active_neurons is None:
+        if comp.tensor().indices is None:
             arr = np.tile(
                 np.arange(
                     start=total_dim, stop=total_dim + comp.dims()[-1], dtype=np.uint32
@@ -18,16 +18,16 @@ def concat_active_neurons(computations):
             )
             arrays.append(arr)
         else:
-            arrays.append(comp.tensor().active_neurons + total_dim)
+            arrays.append(comp.tensor().indices + total_dim)
 
         total_dim += comp.dims()[-1]
 
     return np.concatenate(arrays, axis=-1, dtype=np.uint32)
 
 
-def concat_activations(computations):
+def concat_values(computations):
     return np.concatenate(
-        [comp.tensor().activations for comp in computations], axis=-1, dtype=np.float32
+        [comp.tensor().values for comp in computations], axis=-1, dtype=np.float32
     )
 
 
@@ -74,14 +74,12 @@ def test_concatenation_op(use_sparsity):
 
         if use_sparsity:
             assert np.array_equal(
-                concat_active_neurons(hidden_layers), concat.tensor().active_neurons
+                concat_indices(hidden_layers), concat.tensor().indices
             )
         else:
-            assert concat.tensor().active_neurons == None
+            assert concat.tensor().indices == None
 
-        assert np.array_equal(
-            concat_activations(hidden_layers), concat.tensor().activations
-        )
+        assert np.array_equal(concat_values(hidden_layers), concat.tensor().values)
 
         assert np.array_equal(
             concat_gradients(hidden_layers), concat.tensor().gradients

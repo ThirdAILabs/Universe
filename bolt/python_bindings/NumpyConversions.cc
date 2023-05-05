@@ -35,20 +35,19 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor) {
         "fixed.");
   }
 
-  auto activations =
+  auto values =
       createArrayCopy(/* data= */ tensor->valuesPtr(),
                       /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros);
 
   if (tensor->indicesPtr()) {
-    auto active_neurons = createArrayCopy(
+    auto indices = createArrayCopy(
         /* data= */ tensor->indicesPtr(), /* rows= */ tensor->batchSize(),
         /* cols= */ *nonzeros);
 
-    return std::move(
-        py::make_tuple(std::move(active_neurons), std::move(activations)));
+    return std::move(py::make_tuple(std::move(indices), std::move(values)));
   }
 
-  return std::move(activations);
+  return std::move(values);
 }
 
 }  // namespace thirdai::bolt::nn::python

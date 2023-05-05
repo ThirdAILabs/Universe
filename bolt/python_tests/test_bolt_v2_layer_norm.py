@@ -60,9 +60,9 @@ def test_op_sharing():
 
     for x, y in zip(test_data[0], test_data[1]):
         preds = model.forward(x, use_sparsity=False)[0]
-        preds = np.argmax(preds.activations, axis=-1)
+        preds = np.argmax(preds.values, axis=-1)
 
-        labels = y[0].active_neurons
+        labels = y[0].indices
         labels = labels.reshape(labels.shape[:-1])
 
         acc = np.mean(preds == labels)

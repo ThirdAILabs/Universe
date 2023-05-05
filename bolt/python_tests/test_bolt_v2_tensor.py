@@ -9,9 +9,9 @@ def test_dense_tensor_to_numpy():
 
     tensor = bolt.nn.Tensor(arr)
 
-    assert tensor.active_neurons == None
+    assert tensor.indices == None
 
-    assert np.array_equal(arr, tensor.activations)
+    assert np.array_equal(arr, tensor.values)
 
     assert tensor.gradients == None
 
@@ -25,8 +25,8 @@ def test_sparse_tensor_to_numpy():
 
     tensor = bolt.nn.Tensor(indices, values, dense_dim=dense_dim)
 
-    assert np.array_equal(indices, tensor.active_neurons)
+    assert np.array_equal(indices, tensor.indices)
 
-    assert np.array_equal(values, tensor.activations)
+    assert np.array_equal(values, tensor.values)
 
     assert tensor.gradients == None

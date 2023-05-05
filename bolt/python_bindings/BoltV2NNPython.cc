@@ -156,13 +156,13 @@ void defineTensor(py::module_& nn) {
       .def("dims", &tensor::Tensor::dims)
       .def("sparse", &tensor::Tensor::isSparse)
       .def_property_readonly(
-          "active_neurons",
+          "indices",
           [](const tensor::TensorPtr& tensor) {
             return toNumpy(tensor, tensor->indicesPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
-          "activations",
+          "values",
           [](const tensor::TensorPtr& tensor) {
             return toNumpy(tensor, tensor->valuesPtr());
           },
