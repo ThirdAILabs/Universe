@@ -36,12 +36,12 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor) {
   }
 
   auto activations =
-      createArrayCopy(/* data= */ tensor->activationsPtr(),
+      createArrayCopy(/* data= */ tensor->valuesPtr(),
                       /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros);
 
-  if (tensor->activeNeuronsPtr()) {
+  if (tensor->indicesPtr()) {
     auto active_neurons = createArrayCopy(
-        /* data= */ tensor->activeNeuronsPtr(), /* rows= */ tensor->batchSize(),
+        /* data= */ tensor->indicesPtr(), /* rows= */ tensor->batchSize(),
         /* cols= */ *nonzeros);
 
     return std::move(

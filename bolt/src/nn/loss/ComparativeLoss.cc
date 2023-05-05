@@ -34,13 +34,12 @@ float ComparativeLoss::loss(uint32_t index_in_batch) const {
   const auto& activations = _output->tensor();
   const auto& labels = _labels->tensor();
 
-  uint32_t start = activations->rangeStart(index_in_batch);
-  uint32_t end = activations->rangeEnd(index_in_batch);
+  uint32_t len = activations->dims3d().at(1);
 
   float total_loss = 0;
-  for (uint32_t i = start; i < end; i++) {
-    const BoltVector& act_vec = activations->getVector(i);
-    const BoltVector& label_vec = labels->getVector(i);
+  for (uint32_t i = 0; i < len; i++) {
+    const BoltVector& act_vec = activations->at_3d(index_in_batch, i);
+    const BoltVector& label_vec = labels->at_3d(index_in_batch, i);
     if (act_vec.isDense()) {
       if (label_vec.isDense()) {
         total_loss += loss<DENSE, DENSE>(act_vec, label_vec);
@@ -56,7 +55,7 @@ float ComparativeLoss::loss(uint32_t index_in_batch) const {
     }
   }
 
-  return total_loss / (end - start);
+  return total_loss / len;
 }
 
 void ComparativeLoss::gradients(uint32_t index_in_batch,
@@ -64,12 +63,11 @@ void ComparativeLoss::gradients(uint32_t index_in_batch,
   auto& activations = _output->tensor();
   const auto& labels = _labels->tensor();
 
-  uint32_t start = activations->rangeStart(index_in_batch);
-  uint32_t end = activations->rangeEnd(index_in_batch);
+  uint32_t len = activations->dims3d().at(1);
 
-  for (uint32_t i = start; i < end; i++) {
-    BoltVector& act_vec = activations->getVector(i);
-    const BoltVector& label_vec = labels->getVector(i);
+  for (uint32_t i = 0; i < len; i++) {
+    BoltVector& act_vec = activations->at_3d(index_in_batch, i);
+    const BoltVector& label_vec = labels->at_3d(index_in_batch, i);
     if (act_vec.isDense()) {
       if (label_vec.isDense()) {
         gradients<DENSE, DENSE>(act_vec, label_vec, batch_size);

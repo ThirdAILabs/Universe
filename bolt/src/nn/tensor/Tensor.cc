@@ -12,19 +12,22 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
   uint32_t num_vectors =
       std::reduce(_dims.begin(), _dims.end() - 1, 1, std::multiplies<>());
 
-  _inner_dim_3d =
+  uint32_t inner_dim_3d =
       std::reduce(_dims.begin() + 1, _dims.end() - 1, 1, std::multiplies<>());
+
+  _dims_2d = {num_vectors, _dims.back()};
+  _dims_3d = {_dims.front(), inner_dim_3d, _dims.back()};
 
   bool sparse = nonzeros < _dims.back();
 
   if (sparse) {
-    _active_neurons.assign(num_vectors * nonzeros, 0);
+    _indices.assign(num_vectors * nonzeros, 0);
   } else if (nonzeros > _dims.back()) {
     throw std::invalid_argument(
         "The number of nonzeros cannot be larger than the final dimension.");
   }
 
-  _activations.assign(num_vectors * nonzeros, 0.0);
+  _values.assign(num_vectors * nonzeros, 0.0);
   if (with_grad) {
     _gradients.assign(num_vectors * nonzeros, 0.0);
   }
@@ -35,7 +38,7 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
        offset += nonzeros) {
     uint32_t* active_neurons = nullptr;
     if (sparse) {
-      active_neurons = _active_neurons.data() + offset;
+      active_neurons = _indices.data() + offset;
     }
 
     float* gradients = nullptr;
@@ -45,7 +48,7 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
 
     _vectors.emplace_back(
         /* active_neurons= */ active_neurons,
-        /* activations= */ _activations.data() + offset,
+        /* activations= */ _values.data() + offset,
         /* gradients= */ gradients, /* len= */ nonzeros);
   }
 }
@@ -64,16 +67,16 @@ Tensor::Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
   }
 
   if (isSparse()) {
-    std::copy(indices, indices + _active_neurons.size(),
-              _active_neurons.begin());
+    std::copy(indices, indices + _indices.size(), _indices.begin());
   }
-  std::copy(values, values + _activations.size(), _activations.begin());
+  std::copy(values, values + _values.size(), _values.begin());
 }
 
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
     : _dims({batch.getBatchSize(), dim}),
       _nonzeros(std::nullopt),
-      _inner_dim_3d(1) {
+      _dims_2d({batch.getBatchSize(), dim}),
+      _dims_3d({batch.getBatchSize(), 1, dim}) {
   if (batch.getBatchSize() == 0) {
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
@@ -103,19 +106,18 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
               "Found sparse index " + std::to_string(vec.active_neurons[i]) +
               " that exceeded dimension " + std::to_string(dim) + ".");
         }
-        _active_neurons.push_back(vec.active_neurons[i]);
+        _indices.push_back(vec.active_neurons[i]);
       }
-      _activations.push_back(vec.activations[i]);
+      _values.push_back(vec.activations[i]);
     }
   }
 
   uint32_t offset = 0;
   for (const auto& vec : batch) {
-    uint32_t* active_neurons =
-        is_dense ? nullptr : _active_neurons.data() + offset;
+    uint32_t* active_neurons = is_dense ? nullptr : _indices.data() + offset;
 
     _vectors.emplace_back(/* active_neurons= */ active_neurons,
-                          /* activations= */ _activations.data() + offset,
+                          /* activations= */ _values.data() + offset,
                           /* gradients= */ nullptr, /* len= */ vec.len);
     offset += vec.len;
   }
@@ -155,20 +157,15 @@ const Dims& Tensor::dims() const { return _dims; }
 
 std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
 
-bool Tensor::isSparse() const { return !_active_neurons.empty(); }
-
-BoltVector& Tensor::getVector(uint32_t index) {
-  assert(index < _vectors.size());
-  return _vectors[index];
-}
+bool Tensor::isSparse() const { return !_indices.empty(); }
 
 uint32_t Tensor::batchSize() const { return _dims.front(); }
 
-const uint32_t* Tensor::activeNeuronsPtr() const {
-  return _active_neurons.empty() ? nullptr : _active_neurons.data();
+const uint32_t* Tensor::indicesPtr() const {
+  return _indices.empty() ? nullptr : _indices.data();
 }
 
-const float* Tensor::activationsPtr() const { return _activations.data(); }
+const float* Tensor::valuesPtr() const { return _values.data(); }
 
 const float* Tensor::gradientsPtr() const {
   return _gradients.empty() ? nullptr : _gradients.data();

@@ -158,13 +158,13 @@ void defineTensor(py::module_& nn) {
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
-            return toNumpy(tensor, tensor->activeNeuronsPtr());
+            return toNumpy(tensor, tensor->indicesPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "activations",
           [](const tensor::TensorPtr& tensor) {
-            return toNumpy(tensor, tensor->activationsPtr());
+            return toNumpy(tensor, tensor->valuesPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <array>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt::nn::tensor {
@@ -51,59 +53,77 @@ class Tensor {
   /**
    * Returns the ith vector in the tensor.
    */
-  BoltVector& getVector(uint32_t index);
-
-  constexpr uint32_t innerDim3d() const { return _inner_dim_3d; }
-
-  constexpr uint32_t rangeStart(uint32_t index_in_batch) const {
-    return index_in_batch * innerDim3d();
+  BoltVector& at_2d(uint32_t i) {
+    assert(i < _vectors.size());
+    return _vectors[i];
   }
 
-  constexpr uint32_t rangeEnd(uint32_t index_in_batch) const {
-    return (index_in_batch + 1) * innerDim3d();
+  BoltVector& at_3d(uint32_t i, uint32_t j) {
+    uint32_t index = i * _dims_3d.at(1) + j;
+    assert(index < _vectors.size());
+    return _vectors[index];
   }
 
-  float* activationsAtIndex3d(uint32_t index_in_batch) {
+  const auto& dims2d() const { return _dims_2d; }
+
+  const auto& dims3d() const { return _dims_3d; }
+
+  uint32_t* activeNeuronsAtIndex3d(uint32_t i) {
     assert(index_in_batch < batchSize());
-    return _activations.data() + index_in_batch * innerDim3d() * _dims.back();
+    if (!_nonzeros) {
+      throw std::runtime_error("Cannot access sub array of ragged tensor.");
+    }
+    if (!isSparse()) {
+      throw std::runtime_error("Cannot access indices of dense tensor.");
+    }
+    return _indices.data() + i * _dims_3d.at(1) * (*_nonzeros);
   }
 
-  float* gradientsAtIndex3d(uint32_t index_in_batch) {
+  float* activationsAtIndex3d(uint32_t i) {
     assert(index_in_batch < batchSize());
-    return _gradients.data() + index_in_batch * innerDim3d() * _dims.back();
+    if (!_nonzeros) {
+      throw std::runtime_error("Cannot access sub array of ragged tensor.");
+    }
+    return _values.data() + i * _dims_3d.at(1) * (*_nonzeros);
+  }
+
+  float* gradientsAtIndex3d(uint32_t i) {
+    assert(index_in_batch < batchSize());
+    if (!_nonzeros) {
+      throw std::runtime_error("Cannot access sub array of ragged tensor.");
+    }
+    return _gradients.data() + i * _dims_3d.at(1) * (*_nonzeros);
   }
   /**
    * Returns the number of vectors in the tensor.
    */
   uint32_t batchSize() const;
 
-  const uint32_t* activeNeuronsPtr() const;
-
-  const float* activationsPtr() const;
-
+  const uint32_t* indicesPtr() const;
+  const float* valuesPtr() const;
   const float* gradientsPtr() const;
 
-  const auto& activeNeurons() const { return _active_neurons; }
+  const auto& indices() const { return _indices; }
+  auto& indices() { return _indices; }
 
-  auto& activeNeurons() { return _active_neurons; }
-
-  const auto& activations() const { return _activations; }
-
-  auto& activations() { return _activations; }
+  const auto& values() const { return _values; }
+  auto& values() { return _values; }
 
   const auto& gradients() const { return _gradients; }
-
   auto& gradients() { return _gradients; }
 
  private:
   Dims _dims;
   std::optional<uint32_t> _nonzeros;
-  uint32_t _inner_dim_3d;
+
+  std::array<uint32_t, 2> _dims_2d;
+
+  std::array<uint32_t, 3> _dims_3d;
 
   std::vector<BoltVector> _vectors;
 
-  std::vector<uint32_t> _active_neurons;
-  std::vector<float> _activations;
+  std::vector<uint32_t> _indices;
+  std::vector<float> _values;
   std::vector<float> _gradients;
 };
 

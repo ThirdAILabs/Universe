@@ -68,15 +68,15 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
   auto& output_1 = _output_1->tensor();
   auto& output_2 = _output_2->tensor();
 
-  uint32_t start = labels->rangeStart(index_in_batch);
-  uint32_t end = labels->rangeEnd(index_in_batch);
+  uint32_t len = labels->dims3d().at(1);
 
-  for (uint32_t i = start; i < end; i++) {
-    auto& vec_1 = output_1->getVector(i);
-    auto& vec_2 = output_2->getVector(i);
-    float label = labels->getVector(i).activations[0];
+  for (uint32_t i = 0; i < len; i++) {
+    auto& vec_1 = output_1->at_3d(index_in_batch, i);
+    auto& vec_2 = output_2->at_3d(index_in_batch, i);
+    float label = labels->at_3d(index_in_batch, i).activations[0];
 
-    float euclidean_distance = std::sqrt(euclideanDistanceSquared(i));
+    float euclidean_distance =
+        std::sqrt(euclideanDistanceSquared(index_in_batch, i));
     // If the euclidean distance between points is 0, they were likely the same
     // input, or the network is in a degenerative state. Either way, the
     // gradient will be nan or inf, and we don't want this so we treat it as a
@@ -110,14 +110,14 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
 float EuclideanContrastive::loss(uint32_t index_in_batch) const {
   const auto& labels = _labels->tensor();
 
-  uint32_t start = labels->rangeStart(index_in_batch);
-  uint32_t end = labels->rangeEnd(index_in_batch);
+  uint32_t len = labels->dims3d().at(1);
 
   float total_loss = 0;
-  for (uint32_t i = start; i < end; i++) {
-    float label = labels->getVector(i).activations[0];
+  for (uint32_t i = 0; i < len; i++) {
+    float label = labels->at_3d(index_in_batch, i).activations[0];
 
-    float euclidean_distance_squared = euclideanDistanceSquared(i);
+    float euclidean_distance_squared =
+        euclideanDistanceSquared(index_in_batch, i);
     // If the euclidean distance between points is 0, they were likely the same
     // input, or the network is in a degenerative state. Either way, the
     // gradient will be nan or inf, and we don't want this so we treat it as not
@@ -134,7 +134,7 @@ float EuclideanContrastive::loss(uint32_t index_in_batch) const {
                   (1 - label) * cutoff_distance_squared;
   }
 
-  return total_loss / (end - start);
+  return total_loss / len;
 }
 
 autograd::ComputationList EuclideanContrastive::outputsUsed() const {
@@ -145,10 +145,10 @@ autograd::ComputationList EuclideanContrastive::labels() const {
   return {_labels};
 }
 
-float EuclideanContrastive::euclideanDistanceSquared(
-    uint32_t index_in_batch) const {
-  auto& vec_1 = _output_1->tensor()->getVector(index_in_batch);
-  auto& vec_2 = _output_2->tensor()->getVector(index_in_batch);
+float EuclideanContrastive::euclideanDistanceSquared(uint32_t index_in_batch,
+                                                     uint32_t i) const {
+  auto& vec_1 = _output_1->tensor()->at_3d(index_in_batch, i);
+  auto& vec_2 = _output_2->tensor()->at_3d(index_in_batch, i);
 
   float euclidean_distance_squared = 0;
   bolt_vector::visitPair(

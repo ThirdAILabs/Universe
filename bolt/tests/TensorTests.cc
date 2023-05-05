@@ -12,8 +12,8 @@ namespace thirdai::bolt::nn::tests {
 // with the index of the vector in the tensor and the gradients with 2 * the
 // index of the vector in the tensor.
 void fillTensor(tensor::TensorPtr& tensor) {
-  for (uint32_t i = 0; i < tensor->batchSize(); i++) {
-    auto& vec = tensor->getVector(i);
+  for (uint32_t i = 0; i < tensor->dims2d().front(); i++) {
+    auto& vec = tensor->at_2d(i);
 
     if (!vec.isDense()) {
       std::fill_n(vec.active_neurons, vec.len, i);
@@ -32,14 +32,14 @@ void checkTensorContents(const tensor::TensorPtr& tensor) {
   for (uint32_t i = 0; i < tensor->batchSize(); i++) {
     for (uint32_t j = 0; j < nonzeros; j++) {
       if (nonzeros < tensor->dims().back()) {
-        uint32_t active_neuron = tensor->activeNeuronsPtr()[i * nonzeros + j];
+        uint32_t active_neuron = tensor->indices().at(i * nonzeros + j);
         ASSERT_EQ(active_neuron, i);
       }
 
-      float activation = tensor->activationsPtr()[i * nonzeros + j];
+      float activation = tensor->values().at(i * nonzeros + j);
       ASSERT_EQ(activation, static_cast<float>(i));
 
-      float gradient = tensor->gradientsPtr()[i * nonzeros + j];
+      float gradient = tensor->gradients().at(i * nonzeros + j);
       ASSERT_EQ(gradient, 2 * static_cast<float>(i));
     }
   }
@@ -53,8 +53,8 @@ TEST(TensorTests, DenseTensor) {
   EXPECT_TRUE(tensor->nonzeros().has_value());
   EXPECT_EQ(tensor->nonzeros().value(), 10);
 
-  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->indicesPtr(), nullptr);
+  EXPECT_NE(tensor->valuesPtr(), nullptr);
   EXPECT_NE(tensor->gradientsPtr(), nullptr);
 
   fillTensor(tensor);
@@ -70,8 +70,8 @@ TEST(TensorTests, SparseTensor) {
   EXPECT_TRUE(tensor->nonzeros().has_value());
   EXPECT_EQ(tensor->nonzeros().value(), 5);
 
-  EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_NE(tensor->indicesPtr(), nullptr);
+  EXPECT_NE(tensor->valuesPtr(), nullptr);
   EXPECT_NE(tensor->gradientsPtr(), nullptr);
 
   fillTensor(tensor);
@@ -93,13 +93,13 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
   EXPECT_EQ(tensor->dims(), tensor::Dims({3, 4}));
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
-  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->indicesPtr(), nullptr);
+  EXPECT_NE(tensor->valuesPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        tensor->getVector(i), vectors[i]);
+        tensor->at_2d(i), vectors[i]);
   }
 }
 
@@ -118,13 +118,13 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   EXPECT_EQ(tensor->dims(), tensor::Dims({3, 8}));
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
-  EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_NE(tensor->indicesPtr(), nullptr);
+  EXPECT_NE(tensor->valuesPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        tensor->getVector(i), vectors[i]);
+        tensor->at_2d(i), vectors[i]);
   }
 }
 

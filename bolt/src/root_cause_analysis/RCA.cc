@@ -12,7 +12,7 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
         "RCA is only supported for single inputs and batch size 1.");
   }
 
-  const BoltVector& vector = inputs.at(0)->getVector(0);
+  const BoltVector& vector = inputs.at(0)->at_2d(0);
 
   tensor::TensorPtr tensor;
   if (!vector.isDense()) {
@@ -25,14 +25,14 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
             "Recieved input index " + std::to_string(vector.active_neurons[i]) +
             " for input with dimension " + std::to_string(dim) + ".");
       }
-      tensor->getVector(0).active_neurons[i] = vector.active_neurons[i];
+      tensor->at_2d(0).active_neurons[i] = vector.active_neurons[i];
     }
   } else {
     tensor = tensor::Tensor::dense({/* batch_size= */ 1, /* dim= */ dim});
   }
 
   std::copy(vector.activations, vector.activations + vector.len,
-            tensor->getVector(0).activations);
+            tensor->at_2d(0).activations);
 
   return tensor;
 }
@@ -44,8 +44,8 @@ RCAGradients explainNeuronHelper(model::ModelPtr& model,
       tensor::Tensor::sparse({/* batch_size= */ 1,
                               /* dim= */ model->labelDims().at(0).back()},
                              /* nonzeros= */ 1);
-  label->getVector(0).active_neurons[0] = neuron;
-  label->getVector(0).activations[0] = 1.0;
+  label->at_2d(0).active_neurons[0] = neuron;
+  label->at_2d(0).activations[0] = 1.0;
 
   // This does not update parameters, however it will compute gradients for the
   // parameters. This is an issue with RCA, both with bolt v1 and bolt v2 that
@@ -55,7 +55,7 @@ RCAGradients explainNeuronHelper(model::ModelPtr& model,
 
   RCAGradients gradients;
 
-  const BoltVector& input_vec = input->getVector(0);
+  const BoltVector& input_vec = input->at_2d(0);
   if (!input_vec.isDense()) {
     gradients.indices = std::vector<uint32_t>(
         input_vec.active_neurons, input_vec.active_neurons + input_vec.len);
@@ -78,7 +78,7 @@ RCAGradients explainPrediction(model::ModelPtr& model,
   // TODO(Nicholas): Should we use sparsity?
   auto output = model->forward({input}, /* use_sparsity= */ false).at(0);
 
-  uint32_t prediction = output->getVector(0).getHighestActivationId();
+  uint32_t prediction = output->at_2d(0).getHighestActivationId();
 
   return explainNeuronHelper(model, input, prediction);
 }

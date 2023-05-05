@@ -15,11 +15,11 @@ class ComparativeMetric : public Metric {
     const auto& output = _outputs->tensor();
     const auto& labels = _labels->tensor();
 
-    uint32_t start = output->rangeStart(index_in_batch);
-    uint32_t end = labels->rangeEnd(index_in_batch);
+    uint32_t len = output->dims3d().at(1);
 
-    for (uint32_t i = start; i < end; i++) {
-      record(output->getVector(i), labels->getVector(i));
+    for (uint32_t i = 0; i < len; i++) {
+      record(output->at_3d(index_in_batch, i),
+             labels->at_3d(index_in_batch, i));
     }
   }
 
