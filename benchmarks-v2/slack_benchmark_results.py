@@ -1,6 +1,5 @@
 import argparse
 import json
-import re
 
 import mlflow
 import pandas as pd
@@ -137,19 +136,20 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     # We set different arguments when we run on the main github branch, a different branch, or manually
-    # If running benchmarks on main, set preset arguments
     if args.branch_name == "main":
+        # If running benchmarks on main, set preset arguments
         slack_webhook = args.official_slack_webhook
         args.num_official_runs = 5
         args.num_branch_runs = 0
-    else:
+    elif args.branch_name != "":
         # If running benchmarks on a branch other than main, set preset arguments
-        if args.branch_name:
-            args.run_name = args.branch_name
-            args.num_official_runs = 3
-            args.num_branch_runs = 2
-
         slack_webhook = args.branch_slack_webhook
+        args.run_name = args.branch_name
+        args.num_official_runs = 3
+        args.num_branch_runs = 2
+    else:
+        # If running benchmarks manually, we don't want to post to slack channels
+        slack_webhook = ""
 
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]

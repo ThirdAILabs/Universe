@@ -77,8 +77,10 @@ if __name__ == "__main__":
 
     if args.branch_name == "main":
         slack_webhook = args.official_slack_webhook
-    else:
+    elif args.branch_name != "":
         slack_webhook = args.branch_slack_webhook
+    else:
+        slack_webhook = ""
 
     # If benchmarks are called from github action, run_name = branch_name
     if args.branch_name:
@@ -98,7 +100,8 @@ if __name__ == "__main__":
                 mlflow_logger = mlflow_callback(
                     tracking_uri=args.mlflow_uri,
                     experiment_name=experiment_name(
-                        config.config_name, args.branch_name == "main"
+                        config.config_name,
+                        official_benchmark=args.branch_name == "main",
                     ),
                     run_name=f"{args.run_name}_{str(date.today())}",
                     experiment_args={"dataset": config.dataset_name},
