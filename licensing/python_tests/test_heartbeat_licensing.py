@@ -199,4 +199,5 @@ def test_maintenance_of_valid_heartbeat(normal_license_server):
 @pytest.fixture(autouse=True)
 def set_license_back_to_valid():
     import thirdai
+
     thirdai.licensing.deactivate()

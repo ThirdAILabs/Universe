@@ -140,5 +140,5 @@ def test_max_train_samples_license():
 @pytest.fixture(autouse=True)
 def set_license_back_to_valid():
     import thirdai
-    thirdai.licensing.deactivate()
 
+    thirdai.licensing.deactivate()
