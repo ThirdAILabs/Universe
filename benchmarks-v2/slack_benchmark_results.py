@@ -159,7 +159,6 @@ if __name__ == "__main__":
         slack_payload_list = [""]
         slack_payload_idx = 0
         for config in configs:
-            print(config.config_name)
             official_exp_name = f"{config.config_name}_benchmark"
             branch_exp_name = config.config_name
 
