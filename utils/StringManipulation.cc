@@ -238,6 +238,8 @@ std::vector<std::wstring> splitIf(const std::wstring& text,
 std::wstring normalizeSpaces(const std::wstring& text) {
   std::wstring output;
   for (const wchar_t& cp : text) {
+    // 0 is NULL and fffd is an "unrepresentable character". clean these out
+    // along with control characters
     if (cp == 0 || cp == 0xfffd || isControl(cp)) {
       continue;
     }
@@ -276,7 +278,7 @@ bool isControl(const wchar_t& c) {
     return false;
   }
   auto category = utf8proc_category(c);
-return category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF;
+  return category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF;
 }
 
 bool isWhitespace(const wchar_t& c) {
@@ -284,7 +286,7 @@ bool isWhitespace(const wchar_t& c) {
     return true;
   }
   auto category = utf8proc_category(c);
-return category == UTF8PROC_CATEGORY_ZS;
+  return category == UTF8PROC_CATEGORY_ZS;
 }
 
 bool isPunctuation(const wchar_t& c) {

@@ -55,6 +55,11 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix);
 std::wstring toUnicode(const std::string& text);
 std::string fromUnicode(const std::wstring& wText);
 
+/**
+ * Converts the given input string into a consistent normalized form in case of
+ * unicode text. Read more about normalization here:
+ * https://unicode.org/faq/normalization.html
+ */
 std::string normalize(const std::string& s);
 
 std::wstring lower(const std::wstring& s);
@@ -73,7 +78,16 @@ template <class Predicate>
 std::vector<std::wstring> splitIf(const std::wstring& text,
                                   Predicate predicate);
 
+/**
+ * Replace common whitespace characters with a space. Clean out extraneous
+ * control charcters, null characters, unrepresentable characters.
+ */
 std::wstring normalizeSpaces(const std::wstring& text);
+
+/**
+ * Removes accents from the characters in the given unicode text. Read more:
+ * https://www.hesa.ac.uk/support/user-guides/xml-files/unicode
+ */
 std::wstring stripAccents(const std::wstring& text);
 
 bool isControl(const wchar_t& c);

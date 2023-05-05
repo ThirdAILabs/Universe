@@ -153,35 +153,23 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
     size_t start = 0;
 
     while (start < token.size()) {
-      size_t end = token.size();
-      std::wstring candidate;
+      // Add ## prefix if we're in the middle of a word.
+      std::wstring candidate =
+          start > 0 ? L"##" + token.substr(start) : token.substr(start);
       bool candidate_valid = false;
-      while (start < end) {
-        std::wstring buffer;
-
-        // Add ## prefix if we're in the middle of a word.
-        if (start > 0) {
-          buffer += L"##";
-        }
-
-        buffer += token.substr(start, end - start);
-
-        if (_token_to_id.find(buffer) != _token_to_id.end()) {
-          candidate = buffer;
+      while (!candidate.empty()) {
+        if (_token_to_id.find(candidate) != _token_to_id.end()) {
           candidate_valid = true;
           break;
         }
-
-        end--;
+        candidate.pop_back();
       }
-
       if (!candidate_valid) {
         is_bad = true;
         break;
       }
-
       subwords.push_back(candidate);
-      start = end;
+      start += (start > 0 ? candidate.size() - 2 : candidate.size());
     }
 
     if (is_bad) {
@@ -190,6 +178,7 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
       wordpieces.insert(wordpieces.end(), subwords.begin(), subwords.end());
     }
   }
+
   return wordpieces;
 }
 
