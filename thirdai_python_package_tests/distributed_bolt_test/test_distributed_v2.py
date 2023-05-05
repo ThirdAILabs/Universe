@@ -1,13 +1,18 @@
 import os
 
+import pytest
 import ray
 import thirdai.distributed_bolt as dist
+from bolt.python_tests.utils import gen_numpy_training_data
 from ray.air import ScalingConfig, session
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
 
 ray.init(runtime_env={"env_vars": {"OMP_NUM_THREADS": "24"}})
+
+
+# Note(pratik): Write bunch of unit tests in place of integration test, as we dont have pygloo wheels :(.
 
 
 def get_mnist_model():
@@ -36,11 +41,8 @@ def train_loop_per_worker():
     mnist_model = get_mnist_model()
     trainer = bolt.train.Trainer(mnist_model)
 
-    # synchronizes model between each machines
+    # synchronizes models between each machines
     trainer.distribute(2)
-    # print(trainer.model.get_values(1))
-    # download train and test data
-    # train_file, test_file = download_mnist_dataset()
 
     train_x, train_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist", 250)
     train_x = bolt.train.convert_dataset(train_x, dim=784)
@@ -89,22 +91,99 @@ def train_loop_per_worker():
     print("New:", history)
 
 
-scaling_config = ScalingConfig(
-    # Number of distributed workers.
-    num_workers=2,
-    # Turn on/off GPU.
-    use_gpu=False,
-    # Specify resources used for trainer.
-    trainer_resources={"CPU": 24},
-    # Try to schedule workers on different nodes.
-    placement_strategy="SPREAD",
-)
+reason = """We don't have working pygloo wheels on PyPI. So, we can only run it locally.
+Wheels can be downloaded from: https://github.com/pratkpranav/pygloo/releases/tag/0.2.0"""
 
-trainer = dist.BoltTrainer(
-    train_loop_per_worker=train_loop_per_worker,
-    scaling_config=scaling_config,
-    bolt_config=dist.BoltBackendConfig(),
-)
-result = trainer.fit()
 
-print(result)
+@pytest.mark.skip(reason=reason)
+def test_distributed_v2():
+    scaling_config = ScalingConfig(
+        # Number of distributed workers.
+        num_workers=2,
+        # Turn on/off GPU.
+        use_gpu=False,
+        # Specify resources used for trainer.
+        trainer_resources={"CPU": 24},
+        # Try to schedule workers on different nodes.
+        placement_strategy="SPREAD",
+    )
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=train_loop_per_worker,
+        scaling_config=scaling_config,
+        bolt_config=dist.BoltBackendConfig(),
+    )
+    result = trainer.fit()
+
+    print(result)
+
+
+def initialize_and_checkpoint():
+    n_classes = 10
+    input_layer = bolt.nn.Input(dim=n_classes)
+
+    hidden_layer = bolt.nn.FullyConnected(
+        dim=20000,
+        input_dim=784,
+        sparsity=0.01,
+        activation="relu",
+        rebuild_hash_tables=12,
+        reconstruct_hash_functions=40,
+    )(input_layer)
+    output = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=20000, activation="softmax"
+    )(hidden_layer)
+
+    labels = bolt.nn.Input(dim=n_classes)
+    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+
+    train_x, train_y = gen_numpy_training_data()
+    test_x, test_y = gen_numpy_training_data()
+    for x, y in zip(train_x, train_y):
+        model.train_on_batch(x, y)
+        model.update_parameters(learning_rate=0.05)
+
+    trainer = bolt.train.Trainer(model)
+    history = trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=False,
+    )
+    session.report(
+        history,
+        checkpoint=dist.BoltCheckPoint.from_model(model),
+    )
+
+    model = session.get_checkpoint().get_model()
+    trainer = bolt.train.Trainer(model)
+    new_history = trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=False,
+    )
+    assert (
+        history["validation_categorical_accuracy"][-1]
+        == new_history["validation_categorical_accuracy"][-1]
+    )
+
+
+@pytest.mark.unit
+def test_independent_model():
+    scaling_config = ScalingConfig(
+        # Number of distributed workers.
+        num_workers=2,
+        # Turn on/off GPU.
+        use_gpu=False,
+        # Specify resources used for trainer.
+        trainer_resources={"CPU": 24},
+        # Try to schedule workers on different nodes.
+        placement_strategy="SPREAD",
+    )
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=initialize_and_checkpoint,
+        scaling_config=scaling_config,
+    )
+
+    result = trainer.fit()

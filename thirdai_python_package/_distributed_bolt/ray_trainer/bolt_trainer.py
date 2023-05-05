@@ -61,6 +61,7 @@ class BoltTrainer(DataParallelTrainer):
         resume_from_checkpoint: A checkpoint to resume training from.
     """
 
+    # TODO(pratik): remove function params which we are not using right now.
     def __init__(
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],

@@ -8,6 +8,8 @@ from thirdai import dataset
 
 from utils import gen_numpy_training_data
 
+N_CLASSES = 1000
+
 
 def build_model(n_classes):
     vector_input = bolt.nn.Input(dim=n_classes)
@@ -100,11 +102,12 @@ def evaluate_model(model, test_data, test_labels_np):
     return accs
 
 
-@pytest.mark.unit
-def test_bolt_save_load():
-    N_CLASSES = 100
+def get_model():
     model = build_model(N_CLASSES)
+    return model
 
+
+def get_data():
     train_data, train_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=2000
     )
@@ -130,6 +133,14 @@ def test_bolt_save_load():
         dims=[N_CLASSES, N_CLASSES],
     )
 
+    return train_data, train_labels, test_data, test_labels_np
+
+
+@pytest.mark.unit
+def test_bolt_save_load():
+    model = get_model()
+    train_data, train_labels, test_data, test_labels_np = get_data()
+
     # Initial training/evaluation of the model.
     train_model(model, train_data, train_labels)
     initial_accs = evaluate_model(model, test_data, test_labels_np)
@@ -148,3 +159,55 @@ def test_bolt_save_load():
     # Check that the model can continue to be trained after save/load.
     train_model(model, train_data, train_labels)
     evaluate_model(model, test_data, test_labels_np)
+
+
+def average_values(trainers, get_func, set_func):
+    values = [np.array(get_func(trainer.model)) for trainer in trainers]
+    avg_values = sum(values) / len(values)
+
+    for trainer in trainers:
+        set_func(trainer.model, avg_values)
+
+
+def equal_model_paramters(trainers):
+    params = [np.array(trainer.model.get_params) for trainer in trainers]
+    return np.allclose(params[0], params[1])
+
+
+# We dont have pygloo wheels working in release, So, we can't have a integration tests.
+# TODO(pratik): remove this test, once we have a integration test using pygloo,or we
+# have implemented internal support for gloo.
+@pytest.mark.unit
+def test_multiple_trainers():
+    model_1, model_2 = get_model(), get_model()
+
+    train_data_1, train_labels_1, test_data, test_labels_np = get_data()
+
+    trainers = [bolt.train.Trainer(model_1), bolt.train.Trainer(model_2)]
+
+    # averages model parameters
+    average_values(
+        trainers, lambda model: model.get_parameters, lambda model: model.set_parameters
+    )
+
+    for x, y in zip(
+        train_data_1,
+        train_labels_1,
+    ):
+        for trainer in trainers:
+            trainer.model.train_batch(x, y)
+
+        # averages model gradients
+        average_values(
+            trainers,
+            lambda model: model.get_gradients,
+            lambda model: model.set_gradients,
+        )
+
+        for trainer in trainers:
+            trainer.model.update_parameters(learning_rate=0.001)
+
+    evaluate_model(trainers[0].model, test_data, test_labels_np)
+    evaluate_model(trainers[1].model, test_data, test_labels_np)
+
+    assert equal_model_paramters(), "Trainer models are not the same."
