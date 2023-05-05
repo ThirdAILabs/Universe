@@ -42,8 +42,8 @@ Entitlements entitlements() { return _licensing_method->getEntitlements(); }
 void checkExistingLicense() {
   if (_licensing_method != nullptr) {
     throw exceptions::LicenseCheckException(
-      "An active license was found. Please call licensing.deactivate "
-      "before setting a new license."); 
+        "An active license was found. Please call licensing.deactivate "
+        "before setting a new license.");
   }
 }
 
