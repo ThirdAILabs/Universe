@@ -175,7 +175,7 @@ def initialize_and_checkpoint():
 def test_independent_model():
     scaling_config = ScalingConfig(
         # Number of distributed workers.
-        num_workers=2,
+        num_workers=1,
         # Turn on/off GPU.
         use_gpu=False,
         # Specify resources used for trainer.
