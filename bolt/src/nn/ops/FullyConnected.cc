@@ -158,6 +158,10 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+std::shared_ptr<FullyConnectedLayer> FullyConnected::kernel() const {
+  return _kernel;
+}
+
 void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
   _kernel->freezeHashTables(insert_labels_if_not_found);
 }

@@ -26,12 +26,9 @@ def train_udt_tabular(download_census_income):
 
 def test_utd_tabular_accuracy(train_udt_tabular, download_census_income):
     model = train_udt_tabular
-    _, test_filename, inference_samples = download_census_income
+    _, test_filename, _ = download_census_income
 
-    acc = compute_evaluate_accuracy(
-        model, test_filename, inference_samples, use_class_name=True
-    )
-    assert acc >= ACCURACY_THRESHOLD
+    assert compute_evaluate_accuracy(model, test_filename) >= ACCURACY_THRESHOLD
 
 
 def test_udt_tabular_save_load(train_udt_tabular, download_census_income):
@@ -39,12 +36,7 @@ def test_udt_tabular_save_load(train_udt_tabular, download_census_income):
     train_filename, test_filename, inference_samples = download_census_income
 
     check_saved_and_retrained_accuarcy(
-        model,
-        train_filename,
-        test_filename,
-        inference_samples,
-        use_class_name=True,
-        accuracy=ACCURACY_THRESHOLD,
+        model, train_filename, test_filename, accuracy=ACCURACY_THRESHOLD
     )
 
 
@@ -62,12 +54,3 @@ def test_udt_tabular_predict_batch(train_udt_tabular, download_census_income):
 
     acc = compute_predict_batch_accuracy(model, inference_samples, use_class_name=True)
     assert acc >= ACCURACY_THRESHOLD
-
-
-def test_udt_tabular_return_metrics(train_udt_tabular, download_census_income):
-    model = train_udt_tabular
-    _, test_filename, _ = download_census_income
-    metrics = model.evaluate(
-        test_filename, metrics=["categorical_accuracy"], return_metrics=True
-    )
-    assert metrics["categorical_accuracy"] >= ACCURACY_THRESHOLD

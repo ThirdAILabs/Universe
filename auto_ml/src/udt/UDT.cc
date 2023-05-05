@@ -11,6 +11,7 @@
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -109,14 +110,16 @@ UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
   }
 }
 
-py::object UDT::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
+                      uint32_t epochs,
+                      const std::optional<ValidationDataSource>& validation,
+                      std::optional<size_t> batch_size,
+                      std::optional<size_t> max_in_memory_batches,
+                      const std::vector<std::string>& metrics,
+                      const std::vector<CallbackPtr>& callbacks, bool verbose,
+                      std::optional<uint32_t> logging_interval) {
+  licensing::entitlements().verifyDataSource(data);
+
   bolt::utils::Timer timer;
 
   auto output = _backend->train(data, learning_rate, epochs, validation,
@@ -131,6 +134,8 @@ py::object UDT::train(
 
 py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
                            const std::vector<std::string>& metrics) {
+  licensing::entitlements().verifyFullAccess();
+
   bolt::utils::Timer timer;
 
   auto output = _backend->trainBatch(batch, learning_rate, metrics);
@@ -146,19 +151,10 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
 
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
-                         bool sparse_inference, bool return_predicted_class,
-                         bool verbose, bool return_metrics) {
-  if (return_predicted_class && return_metrics) {
-    throw std::invalid_argument(
-        "At most one of return_predicted_class and return_metrics should be "
-        "true.");
-  }
-
+                         bool sparse_inference, bool verbose) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->evaluate(data, metrics, sparse_inference,
-                         return_predicted_class, verbose, return_metrics);
+  auto result = _backend->evaluate(data, metrics, sparse_inference, verbose);
 
   timer.stop();
   telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
@@ -206,6 +202,22 @@ std::vector<dataset::Explanation> UDT::explain(
       /* explain_time_seconds= */ timer.seconds());
 
   return result;
+}
+
+py::object UDT::coldstart(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          float learning_rate, uint32_t epochs,
+                          const std::vector<std::string>& metrics,
+                          const std::optional<ValidationDataSource>& validation,
+                          const std::vector<CallbackPtr>& callbacks,
+                          std::optional<size_t> max_in_memory_batches,
+                          bool verbose) {
+  licensing::entitlements().verifyDataSource(data);
+
+  return _backend->coldstart(data, strong_column_names, weak_column_names,
+                             learning_rate, epochs, metrics, validation,
+                             callbacks, max_in_memory_batches, verbose);
 }
 
 void UDT::save(const std::string& filename) const {

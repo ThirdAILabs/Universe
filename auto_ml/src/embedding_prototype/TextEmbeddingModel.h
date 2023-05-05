@@ -103,8 +103,8 @@ class TextEmbeddingModel {
 };
 
 TextEmbeddingModelPtr createTextEmbeddingModel(
-    const bolt::BoltGraphPtr& model,
+    const bolt::nn::model::ModelPtr& model,
     const data::TabularDatasetFactoryPtr& dataset_factory,
-    const std::string& activation_func, float distance_cutoff);
+    float distance_cutoff);
 
 }  // namespace thirdai::automl::udt

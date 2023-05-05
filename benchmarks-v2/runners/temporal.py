@@ -39,14 +39,12 @@ class TemporalRunner(Runner):
             )
 
             if len(config.metrics) > 0:
-                metrics = model.evaluate(
-                    test_file, metrics=config.metrics, return_metrics=True
-                )
+                metrics = model.evaluate(test_file, metrics=config.metrics)
 
                 if mlflow_logger:
                     for k, v in metrics.items():
                         mlflow_logger.log_additional_metric(
-                            key=f"val_{k}", value=v, step=epoch
+                            key=k, value=v[-1], step=epoch
                         )
 
             model.reset_temporal_trackers()
