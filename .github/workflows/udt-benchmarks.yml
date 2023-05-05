@@ -45,7 +45,7 @@ jobs:
 
 
       - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
-        if: failure() && github.ref == "refs/heads/main"
+        if: failure() && github.ref == 'refs/heads/main'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
@@ -55,7 +55,7 @@ jobs:
           color: good
 
       - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
-        if: failure() && github.ref == "refs/heads/main"
+        if: failure() && github.ref == 'refs/heads/main'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
