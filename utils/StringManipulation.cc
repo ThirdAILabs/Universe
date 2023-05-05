@@ -110,6 +110,13 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
 /* HELPER METHODS FOR UNICODE STRINGS */
 
 std::wstring toUnicode(const std::string& text) {
+  // We do some casting below from utf8proc_int32_t to wchar_t. wchar_t may be a
+  // different size on windows so we add a check here to not get undefined
+  // behavior. TODO(david) cast to a different type or test on windows.
+  if (sizeof(wchar_t) != sizeof(utf8proc_int32_t)) {
+    throw std::invalid_argument("Unsupported platform for tokenization.");
+  }
+
   size_t i = 0;
   std::wstring ret;
   while (i < text.size()) {
@@ -217,21 +224,35 @@ template <class Predicate>
 std::vector<std::wstring> splitIf(const std::wstring& text,
                                   Predicate predicate) {
   std::vector<std::wstring> result;
-  size_t current = 0;
-  size_t start = 0;
-  while (current < text.size()) {
-    if (predicate(text[current])) {
-      std::wstring atom = text.substr(start, current - start);
-      result.push_back(std::move(atom));
-      start = current + 1;
+
+  bool prev_matches_predicate = true;
+  uint32_t start_of_word_offset = 0;
+  for (uint32_t i = 0; i < text.size(); i++) {
+    if (prev_matches_predicate && !predicate(text[i])) {
+      // If we go from matching to not matching predicate we start a word
+      start_of_word_offset = i;
+      prev_matches_predicate = false;
     }
-    ++current;
+    if (!prev_matches_predicate && predicate(text[i])) {
+      // If we go from not matching to matching the predicate we end the word
+      uint32_t len = i - start_of_word_offset;
+
+      std::wstring word(text.data() + start_of_word_offset, len);
+
+      result.push_back(text);
+      prev_matches_predicate = true;
+    }
   }
 
-  if (current - start > 0) {
-    std::wstring atom = text.substr(start, current - start);
-    result.push_back(std::move(atom));
+  if (!prev_matches_predicate) {
+    // If we don't match at the end of the sentence we clean up the last word
+    uint32_t len = text.size() - start_of_word_offset;
+
+    std::wstring word(text.data() + start_of_word_offset, len);
+
+    result.push_back(word);
   }
+
   return result;
 }
 
