@@ -23,7 +23,7 @@ def set_working_license():
 
 
 # Automatically sets a working license file before we run any tests
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def enable_full_access_licensing(request):
     try:
         set_working_license()
