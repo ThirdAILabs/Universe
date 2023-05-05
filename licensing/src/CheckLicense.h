@@ -23,7 +23,6 @@ Entitlements entitlements();
 
 // License verification method 1: Keygen api key
 void activate(std::string api_key);
-void deactivate();
 
 // License verification method 2: heartbeat
 void startHeartbeat(std::string heartbeat_url,
@@ -31,6 +30,9 @@ void startHeartbeat(std::string heartbeat_url,
 
 // License verification method 3: license file
 void setLicensePath(std::string license_path, bool verbose = false);
+
+// Deactivate any license method
+void deactivate();
 
 LicenseState getLicenseState();
 

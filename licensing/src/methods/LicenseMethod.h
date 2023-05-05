@@ -14,13 +14,13 @@ struct LicenseState {
 
 class LicenseMethod {
  public:
-  Entitlements getEntitlements() { return _entitlements; }
+  Entitlements getEntitlements() { return _entitlements; };
 
-  LicenseMethodType getLicenseMethodType() { return _license_method_type; }
+  LicenseMethodType getLicenseMethodType() { return _license_method_type; };
 
-  virtual void checkLicense();
+  virtual void checkLicense(){};
 
-  virtual LicenseState getLicenseState();
+  virtual LicenseState getLicenseState() { return LicenseState(); };
 
   virtual ~LicenseMethod() = default;
 
