@@ -239,7 +239,7 @@ std::vector<std::wstring> splitIf(const std::wstring& text,
 
       std::wstring word(text.data() + start_of_word_offset, len);
 
-      result.push_back(text);
+      result.push_back(word);
       prev_matches_predicate = true;
     }
   }
