@@ -3,11 +3,12 @@ import os
 import pytest
 import ray
 import thirdai.distributed_bolt as dist
-from bolt.python_tests.utils import gen_numpy_training_data
 from ray.air import ScalingConfig, session
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
+
+from bolt.python_tests.utils import gen_numpy_training_data
 
 ray.init(runtime_env={"env_vars": {"OMP_NUM_THREADS": "24"}})
 
@@ -170,6 +171,7 @@ def initialize_and_checkpoint():
 
 
 @pytest.mark.unit
+@pytest.mark.distributed
 def test_independent_model():
     scaling_config = ScalingConfig(
         # Number of distributed workers.
@@ -177,7 +179,7 @@ def test_independent_model():
         # Turn on/off GPU.
         use_gpu=False,
         # Specify resources used for trainer.
-        trainer_resources={"CPU": 24},
+        trainer_resources={"CPU": 1},
         # Try to schedule workers on different nodes.
         placement_strategy="SPREAD",
     )
