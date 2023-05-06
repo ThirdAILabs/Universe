@@ -163,8 +163,9 @@ def test_bolt_save_load():
 
 def average_values(trainers, get_func, set_func):
     values = [np.array(get_func(trainer.model)) for trainer in trainers]
+    print(values)
     avg_values = sum(values) / len(values)
-
+    print(avg_values)
     for trainer in trainers:
         set_func(trainer.model, avg_values)
 
@@ -187,27 +188,31 @@ def test_multiple_trainers():
 
     # averages model parameters
     average_values(
-        trainers, lambda model: model.get_parameters, lambda model: model.set_parameters
+        trainers,
+        lambda model: model.get_parameters(),
+        lambda model, values: model.set_parameters(values),
     )
 
+    # Training them on same data should still get different
+    # gradients as we are training with sparsity
     for x, y in zip(
         train_data_1,
         train_labels_1,
     ):
         for trainer in trainers:
-            trainer.model.train_batch(x, y)
+            trainer.model.train_on_batch(x, y)
 
         # averages model gradients
-        average_values(
-            trainers,
-            lambda model: model.get_gradients,
-            lambda model: model.set_gradients,
-        )
+        # average_values(
+        #     trainers,
+        #     lambda model: model.get_gradients(),
+        #     lambda model, values: model.set_gradients(values),
+        # )
 
         for trainer in trainers:
-            trainer.model.update_parameters(learning_rate=0.001)
+            trainer.model.update_parameters(learning_rate=0.05)
 
     evaluate_model(trainers[0].model, test_data, test_labels_np)
     evaluate_model(trainers[1].model, test_data, test_labels_np)
 
-    assert equal_model_paramters(), "Trainer models are not the same."
+    assert equal_model_paramters(trainers), "Trainer models are not the same."
