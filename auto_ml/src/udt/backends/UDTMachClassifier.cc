@@ -93,6 +93,22 @@ py::object UDTMachClassifier::train(
                             logging_interval);
 }
 
+py::object UDTMachClassifier::trainBatch(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
                                        bool sparse_inference, bool verbose) {
