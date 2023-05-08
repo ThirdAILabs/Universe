@@ -28,8 +28,6 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::nn::python {
 
-using NumpyArray =
-    py::array_t<float, py::array::c_style | py::array::forcecast>;
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
@@ -62,16 +60,16 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
-NumpyArray getValues(const nn::model::ModelPtr& _model, uint32_t type) {
+NumpyArray<float> getValues(const nn::model::ModelPtr& _model, uint32_t type) {
   auto [grads, flattened_dim] = _model->getValues(type);
 
   py::capsule free_when_done(
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-  return NumpyArray(flattened_dim, grads, free_when_done);
+  return NumpyArray<float>(flattened_dim, grads, free_when_done);
 }
 
-void setValues(const nn::model::ModelPtr& _model, NumpyArray& new_values,
+void setValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values,
                uint32_t type) {
   if (new_values.ndim() != 1) {
     throw std::invalid_argument("Expected grads to be flattened.");
@@ -116,13 +114,13 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("get_gradients",
            [](const nn::model::ModelPtr& model) { return getValues(model, 0); })
       .def("set_gradients",
-           [](const nn::model::ModelPtr& model, NumpyArray& new_values) {
+           [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
              setValues(model, new_values, 0);
            })
       .def("get_parameters",
            [](const nn::model::ModelPtr& model) { return getValues(model, 1); })
       .def("set_parameters",
-           [](const nn::model::ModelPtr& model, NumpyArray& new_values) {
+           [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
              setValues(model, new_values, 1);
            })
 
