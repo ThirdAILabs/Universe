@@ -4,6 +4,7 @@ import warnings
 
 def get_configs(config_regex, runner):
     config_re = re.compile(config_regex)
+
     configs = [
         config
         for config in runner.config_type.__subclasses__()

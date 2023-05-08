@@ -96,6 +96,13 @@ class FullyConnected final
     return std::dynamic_pointer_cast<FullyConnected>(op);
   }
 
+  float getSparsity() { return _kernel->getSparsity(); }
+
+  void setSparsity(float sparsity, bool rebuild_tables,
+                   bool experimental_autotune) {
+    _kernel->setSparsity(sparsity, rebuild_tables, experimental_autotune);
+  }
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,

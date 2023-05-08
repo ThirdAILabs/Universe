@@ -1,6 +1,45 @@
 from thirdai import bolt
 
 
+def add_sparsity_to_first_non_sparse_layer(
+    model, start_layer=1, experimental_autotune=False
+):
+    try:
+        layer = model.__getitem__(f"fc_{start_layer}")
+        if layer.get_sparsity() == 1:
+            autotune_sparsity_for_layer(layer, experimental_autotune)
+            return start_layer
+        else:
+            add_sparsity_to_first_non_sparse_layer(
+                model,
+                start_layer=start_layer + 1,
+                experimental_autotune=experimental_autotune,
+            )
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def autotune_sparsity_for_layer(layer, experimental_autotune):
+
+    dim = layer.dim()
+
+    if dim <= 512:
+        sparsity = 0.2
+    elif dim <= 2048:
+        sparsity = 0.1
+    else:
+        sparsity = 0.05
+
+    add_sparsity_to_layer(layer, experimental_autotune, sparsity)
+
+
+def add_sparsity_to_layer(layer, experimental_autotune, sparsity):
+    layer.set_sparsity(
+        sparsity, rebuild_tables=True, experimental_autotune=experimental_autotune
+    )
+    
+
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
     learning_rate = benchmark_config.learning_rate
     metrics = benchmark_config.metrics

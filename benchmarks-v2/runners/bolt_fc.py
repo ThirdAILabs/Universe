@@ -50,4 +50,11 @@ def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
     )
     model.summary(detailed=True)
 
+    from .utils import add_sparsity_to_first_non_sparse_layer
+    print("Model summary")
+    model.summary()
+    layer = add_sparsity_to_first_non_sparse_layer(model, experimental_autotune=False)
+    print(f"Model summary after changing the sparsity for the layer fc_{layer}")
+    model.summary()
+
     return model

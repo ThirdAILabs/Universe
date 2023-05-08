@@ -56,7 +56,8 @@ class BoltGraph {
     CategoricalCrossEntropy loss is used, then it can verify that the output
     layer has a softmax activation.
   */
-  void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true);
+  void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true,
+               bool experimental_autotune = false);
 
   MetricData train(const std::vector<dataset::BoltDatasetPtr>& train_data,
                    const dataset::BoltDatasetPtr& train_labels,

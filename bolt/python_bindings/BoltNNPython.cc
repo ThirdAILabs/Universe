@@ -361,6 +361,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            bolt::python::OutputRedirect())
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
+           py::arg("experimental_autotune") = false,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.",

@@ -50,6 +50,15 @@ class Runner(ABC):
             options=config.options,
         )
 
+        boltmodel = model._get_model()
+        from .utils import add_sparsity_to_first_non_sparse_layer
+
+        print("Model summary")
+        boltmodel.summary()
+        layer = add_sparsity_to_first_non_sparse_layer(boltmodel, experimental_autotune=False)
+        print(f"Model summary after changing the sparsity for the layer fc_{layer}")
+        boltmodel.summary()
+
         if model_config_path:
             os.remove(model_config_path)
 

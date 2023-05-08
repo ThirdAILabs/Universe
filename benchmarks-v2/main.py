@@ -11,6 +11,11 @@ from .runners.temporal import TemporalRunner
 from .runners.udt import UDTRunner
 from .utils import get_configs
 
+# from runners.runner_map import runner_map
+# from runners.temporal import TemporalRunner
+# from runners.udt import UDTRunner
+# from utils import get_configs
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Benchmark a dataset with Bolt")
@@ -38,6 +43,7 @@ def parse_arguments():
     parser.add_argument(
         "--mlflow_uri",
         type=str,
+        default=None,
         help="MLflow URI to log metrics and artifacts.",
     )
     parser.add_argument(
