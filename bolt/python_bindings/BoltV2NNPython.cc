@@ -7,6 +7,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -181,6 +182,11 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
+      nn, "DlrmAttention")
+      .def(py::init(&ops::DlrmAttention::make))
+      .def("__call__", &ops::DlrmAttention::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 }
