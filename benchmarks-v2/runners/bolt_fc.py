@@ -1,8 +1,8 @@
-from thirdai import bolt
+from thirdai import bolt, bolt_v2
 
 from ..configs.bolt_configs import BoltBenchmarkConfig
 from .runner import Runner
-from .utils import get_train_and_eval_configs
+from .utils import get_eval_config, get_fc_layer, get_train_config
 
 
 class BoltFullyConnectedRunner(Runner):
@@ -14,15 +14,17 @@ class BoltFullyConnectedRunner(Runner):
             path_prefix
         )
 
-        train_config, eval_config = get_train_and_eval_configs(
-            benchmark_config=config, callbacks=config.callbacks
-        )
+        if isinstance(learning_rates, list):
+            assert len(learning_rates) == config.num_epochs
+            learning_rates = config.learning_rate
+        else:
+            learning_rates = [config.learning_rate] * config.num_epochs
 
-        for epoch in range(config.num_epochs):
+        for epoch, learning_rate in enumerate(learning_rates):
             train_metrics = model.train(
                 train_data=train_set,
                 train_labels=train_labels,
-                train_config=train_config,
+                train_config=get_train_config(config, learning_rate),
             )
 
             if mlflow_logger:
@@ -30,12 +32,16 @@ class BoltFullyConnectedRunner(Runner):
                     mlflow_logger.log_additional_metric(key=k, value=v[0], step=epoch)
 
             predict_output = model.evaluate(
-                test_data=test_set, test_labels=test_labels, eval_config=eval_config
+                test_data=test_set,
+                test_labels=test_labels,
+                eval_config=get_eval_config(benchmark_config=config),
             )
 
             if mlflow_logger:
                 for k, v in predict_output[0].items():
-                    mlflow_logger.log_additional_metric(key=k, value=v, step=epoch)
+                    mlflow_logger.log_additional_metric(
+                        key="val_" + k, value=v, step=epoch
+                    )
 
 
 def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
@@ -49,5 +55,78 @@ def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
         print_when_done=False,
     )
     model.summary(detailed=True)
+
+    return model
+
+
+class BoltV2FullyConnectedRunner(Runner):
+    config_type = BoltBenchmarkConfig
+
+    def run_benchmark(config: BoltBenchmarkConfig, path_prefix, mlflow_logger):
+        model = define_fully_connected_bolt_v2_model(config)
+        train_x, train_y, test_x, test_y = config.load_datasets(path_prefix)
+
+        train_data = (
+            bolt_v2.train.convert_dataset(train_x, dim=config.input_dim),
+            bolt_v2.train.convert_dataset(train_y, dim=config.output_node["dim"]),
+        )
+
+        val_data = (
+            bolt_v2.train.convert_dataset(test_x, dim=config.input_dim),
+            bolt_v2.train.convert_dataset(test_y, dim=config.output_node["dim"]),
+        )
+
+        trainer = bolt_v2.train.Trainer(model)
+
+        if isinstance(learning_rates, list):
+            assert len(learning_rates) == config.num_epochs
+            learning_rates = config.learning_rate
+        else:
+            learning_rates = [config.learning_rate] * config.num_epochs
+
+        for epoch, learning_rate in enumerate(learning_rates):
+            metrics = trainer.train(
+                train_data=train_data,
+                learning_rate=learning_rate,
+                epochs=1,
+                validation_data=val_data,
+                validation_metrics=config.metrics,
+            )
+
+            if mlflow_logger:
+                for k, v in metrics.items():
+                    mlflow_logger.log_additional_metric(key=k, value=v[-1], step=epoch)
+
+
+def define_fully_connected_bolt_v2_model(config: BoltBenchmarkConfig):
+    input_layer = bolt_v2.nn.Input(dim=config.input_dim)
+
+    hidden_layer = get_fc_layer(
+        config=config.hidden_node,
+        input_dim=config.input_dim,
+        rebuild_hash_tables=config.rebuild_hash_tables,
+        reconstruct_hash_functions=config.reconstruct_hash_functions,
+        batch_size=config.batch_size,
+    )(input_layer)
+
+    output_layer = get_fc_layer(
+        config=config.output_node,
+        input_dim=config.hidden_node["dim"],
+        rebuild_hash_tables=config.rebuild_hash_tables,
+        reconstruct_hash_functions=config.reconstruct_hash_functions,
+        batch_size=config.batch_size,
+    )(hidden_layer)
+
+    labels = bolt_v2.nn.Input(dim=config.output_node["dim"])
+
+    if config.loss_fn == "CategoricalCrossEntropyLoss":
+        loss = bolt_v2.nn.losses.CategoricalCrossEntropy(output_layer, labels)
+    elif config.loss_fn == "BinaryCrossEntropyLoss":
+        loss = bolt_v2.nn.losses.BinaryCrossEntropy(output_layer, labels)
+    else:
+        raise ValueError("Invalid loss function in config.")
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+    model.summary()
 
     return model
