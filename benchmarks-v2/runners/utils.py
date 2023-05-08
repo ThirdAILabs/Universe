@@ -38,7 +38,7 @@ def add_sparsity_to_layer(layer, experimental_autotune, sparsity):
     layer.set_sparsity(
         sparsity, rebuild_tables=True, experimental_autotune=experimental_autotune
     )
-    
+
 
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
     learning_rate = benchmark_config.learning_rate

@@ -81,6 +81,10 @@ class UDTRunner(Runner):
                 max_in_memory_batches=config.max_in_memory_batches,
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
+        if has_gnn_backend:
+            roc_auc_func = get_gnn_roc_auc_metric_fn("target")
+            roc_auc_score = roc_auc_func(model=model, test_file=test_file)
+            print(f"ROC AUC SCORE: roc_auc_score")
 
         average_predict_time_ms = UDTRunner.get_average_predict_time(
             model, test_file, config, path_prefix, 1000
