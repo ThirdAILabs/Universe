@@ -6,7 +6,7 @@ from thirdai import bolt
 
 from ..configs.dlrm_configs import DLRMConfig
 from .runner import Runner
-from .utils import get_train_and_eval_configs
+from .utils import get_train_config, get_eval_config
 
 
 class DLRMRunner(Runner):
@@ -18,9 +18,8 @@ class DLRMRunner(Runner):
             path_prefix
         )
 
-        train_config, eval_config = get_train_and_eval_configs(
-            benchmark_config=config, callbacks=[]
-        )
+        train_config = get_train_config(config, config.learning_rate)
+        eval_config = get_eval_config(benchmark_config=config)
 
         for epoch in range(config.num_epochs):
             train_metrics = model.train(
