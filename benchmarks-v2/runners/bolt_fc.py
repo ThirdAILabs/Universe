@@ -14,8 +14,8 @@ class BoltFullyConnectedRunner(Runner):
             path_prefix
         )
 
-        if isinstance(learning_rates, list):
-            assert len(learning_rates) == config.num_epochs
+        if isinstance(config.learning_rate, list):
+            assert len(config.learning_rate) == config.num_epochs
             learning_rates = config.learning_rate
         else:
             learning_rates = [config.learning_rate] * config.num_epochs
@@ -78,8 +78,8 @@ class BoltV2FullyConnectedRunner(Runner):
 
         trainer = bolt_v2.train.Trainer(model)
 
-        if isinstance(learning_rates, list):
-            assert len(learning_rates) == config.num_epochs
+        if isinstance(config.learning_rate, list):
+            assert len(config.learning_rate) == config.num_epochs
             learning_rates = config.learning_rate
         else:
             learning_rates = [config.learning_rate] * config.num_epochs
