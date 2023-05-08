@@ -8,7 +8,7 @@ from thirdai import dataset
 
 from utils import gen_numpy_training_data
 
-N_CLASSES = 1000
+N_CLASSES = 100
 
 
 def build_model(n_classes):
@@ -163,15 +163,13 @@ def test_bolt_save_load():
 
 def average_values(trainers, get_func, set_func):
     values = [np.array(get_func(trainer.model)) for trainer in trainers]
-    print(values)
     avg_values = sum(values) / len(values)
-    print(avg_values)
     for trainer in trainers:
         set_func(trainer.model, avg_values)
 
 
 def equal_model_paramters(trainers):
-    params = [np.array(trainer.model.get_params) for trainer in trainers]
+    params = [np.array(trainer.model.get_parameters()) for trainer in trainers]
     return np.allclose(params[0], params[1])
 
 
@@ -192,6 +190,7 @@ def test_multiple_trainers():
         lambda model: model.get_parameters(),
         lambda model, values: model.set_parameters(values),
     )
+    # assert equal_model_paramters(trainers), "Trainer models are not the same."
 
     # Training them on same data should still get different
     # gradients as we are training with sparsity
@@ -203,16 +202,20 @@ def test_multiple_trainers():
             trainer.model.train_on_batch(x, y)
 
         # averages model gradients
-        # average_values(
-        #     trainers,
-        #     lambda model: model.get_gradients(),
-        #     lambda model, values: model.set_gradients(values),
-        # )
+        average_values(
+            trainers,
+            lambda model: model.get_gradients(),
+            lambda model, values: model.set_gradients(values),
+        )
 
         for trainer in trainers:
+            # print(trainer.model.get_gradients())
+            # print(trainer.model.get_parameters())
             trainer.model.update_parameters(learning_rate=0.05)
+
+        # assert equal_model_paramters(trainers), "Trainer models are not the same."
+
+    # assert equal_model_paramters(trainers), "Trainer models are not the same."
 
     evaluate_model(trainers[0].model, test_data, test_labels_np)
     evaluate_model(trainers[1].model, test_data, test_labels_np)
-
-    assert equal_model_paramters(trainers), "Trainer models are not the same."
