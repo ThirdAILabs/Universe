@@ -154,7 +154,7 @@ std::string normalize(const std::string& s) {
   // The utf8proc API takes in a const char *, and returns a new char * pointing
   // to the NFD normalized string. It is the responsibility of the client to
   // deallocate this if not needed further.
-  //
+  
   char* result = reinterpret_cast<char*>(
       utf8proc_NFD(reinterpret_cast<const unsigned char*>(s.c_str())));
   if (result) {
