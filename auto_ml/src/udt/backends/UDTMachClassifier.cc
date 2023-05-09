@@ -70,7 +70,7 @@ UDTMachClassifier::UDTMachClassifier(
   auto hash_processing_block = dataset::NumericalCategoricalBlock::make(
       /* col= */ target_name,
       /* n_classes= */ n_target_classes,
-      /* delimiter= */ '-',
+      /* delimiter= */ ' ',
       /* normalize_categories= */ false);
 
   // We want to be able to train input samples on a specific set of hashes so we
