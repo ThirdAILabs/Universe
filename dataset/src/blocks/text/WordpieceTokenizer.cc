@@ -141,8 +141,6 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
   // https://github.com/huggingface/transformers/blob/447808c85f0e6d6b0aeeb07214942bf1e578f9d2/src/transformers/models/bert/tokenization_bert.py#L512-L558
   std::vector<std::wstring> wordpieces;
 
-  // TODO(jerin-thirdai): The following block looks like it can be simplified.
-  // It is currently riddled with jump statements and can be more structured.
   std::vector<std::wstring> words = text::splitOnWhitespace(text);
   for (const std::wstring& token : words) {
     if (token.size() > max_chars_per_wordpiece) {
