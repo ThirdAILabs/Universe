@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 from thirdai import bolt
 
-from ..configs.cold_start_configs import *
-from ..configs.graph_configs import *
-from ..configs.mach_configs import *
-from ..configs.udt_configs import *
-from ..configs.utils import AdditionalMetricCallback
-from .runner import Runner
+from ...configs.cold_start_configs import *
+from ...configs.graph_configs import *
+from ...configs.mach_configs import *
+from ...configs.udt_configs import *
+from ...configs.utils import AdditionalMetricCallback
+from ..runner import Runner
 
 
 class UDTRunner(Runner):
@@ -18,9 +18,8 @@ class UDTRunner(Runner):
 
     @classmethod
     def run_benchmark(cls, config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
-        train_file, cold_start_train_file, test_file = cls.get_datasets(
-            config, path_prefix
-        )
+
+        train_file, cold_start_train_file, test_file = cls.get_datasets(config, path_prefix)
 
         model = cls.create_model(config, path_prefix)
 
@@ -100,21 +99,6 @@ class UDTRunner(Runner):
         test_file = os.path.join(path_prefix, config.test_file)
         return train_file, cold_start_train_file, test_file
 
-
-    @staticmethod
-    def get_datasets(config, path_prefix):
-        train_file = (
-            os.path.join(path_prefix, config.train_file)
-            if config.train_file is not None
-            else None
-        )
-        cold_start_train_file = (
-            os.path.join(path_prefix, config.cold_start_train_file)
-            if config.cold_start_train_file is not None
-            else None
-        )
-        test_file = os.path.join(path_prefix, config.test_file)
-        return train_file, cold_start_train_file, test_file
 
     @staticmethod
     def get_average_predict_time(
