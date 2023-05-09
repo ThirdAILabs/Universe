@@ -25,9 +25,7 @@ def create_data_file(positive_sample, negative_sample, filename):
 def eval_accuracy_and_cleanup(model):
     model.train(TRAIN_FILENAME, epochs=10, learning_rate=0.001)
 
-    metrics = model.evaluate(
-        TEST_FILENAME, return_metrics=True, metrics=["categorical_accuracy"]
-    )
+    metrics = model.evaluate(TEST_FILENAME, metrics=["categorical_accuracy"])
 
     assert metrics["categorical_accuracy"] == 1
 
@@ -35,9 +33,7 @@ def eval_accuracy_and_cleanup(model):
     model.save(save_loc)
     model = bolt.UniversalDeepTransformer.load(save_loc)
 
-    metrics = model.evaluate(
-        TEST_FILENAME, return_metrics=True, metrics=["categorical_accuracy"]
-    )
+    metrics = model.evaluate(TEST_FILENAME, metrics=["categorical_accuracy"])
 
     assert metrics["categorical_accuracy"] == 1
 
