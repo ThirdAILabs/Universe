@@ -47,8 +47,18 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final;
 
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        const std::vector<std::string>& metrics) final;
+
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class) final;
+
+  py::object trainWithHashes(const MapInputBatch& batch,
+                             const std::vector<uint32_t>& hashes, float learning_rate,
+                             const std::vector<std::string>& metrics) final;
+
+  py::object predictKHashes(const MapInput& sample, bool sparse_inference,
+                            uint32_t k) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 

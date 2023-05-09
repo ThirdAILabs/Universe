@@ -66,6 +66,15 @@ UDTMachClassifier::UDTMachClassifier(
       std::vector<dataset::BlockPtr>{_mach_label_block},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  _pre_hashed_labels_dataset_factory = std::make_shared<
+      data::TabularDatasetFactory>(
+      /* input_data_types = */ input_data_types,
+      /* provided_temporal_relationships = */ temporal_tracking_relationships,
+      /* label_blocks = */
+      std::vector<dataset::BlockPtr>{_mach_label_block},
+      /* label_col_names = */ std::set<std::string>{target_name},
+      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 }
 
 py::object UDTMachClassifier::train(
@@ -128,6 +137,22 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   return py::cast(decoded_output);
 }
 
+py::object UDTMachClassifier::trainBatch(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
@@ -156,6 +181,46 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return py::cast(predicted_entities);
+}
+
+py::object UDTMachClassifier::trainWithHashes(
+    const MapInputBatch& batch, const std::vector<uint32_t>& hashes,
+    float learning_rate, const std::vector<std::string>& metrics) {
+  if (hashes.empty()) {
+    throw std::invalid_argument("Empty hashes.");
+  }
+
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
+py::object UDTMachClassifier::predictKHashes(const MapInput& sample,
+                                             bool sparse_inference,
+                                             uint32_t k) {
+  auto outputs = _classifier->model()->forward(
+      _dataset_factory->featurizeInput(sample), sparse_inference);
+
+  const BoltVector& output = outputs.at(0)->getVector(0);
+
+  auto top_k = output.findKLargestActivations(k);
+
+  std::vector<uint32_t> hashes_to_return;
+  while (hashes_to_return.size() < k && !top_k.empty()) {
+    auto [_, active_neuron] = top_k.top();
+    hashes_to_return.push_back(active_neuron);
+    top_k.pop();
+  }
+
+  return py::cast(hashes_to_return);
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
