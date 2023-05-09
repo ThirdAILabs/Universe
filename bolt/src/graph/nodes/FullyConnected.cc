@@ -5,8 +5,6 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
-#include <cmath>
-#include <stdexcept>
 
 namespace thirdai::bolt {
 
