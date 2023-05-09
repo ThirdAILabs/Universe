@@ -17,7 +17,7 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
 
     metrics = ["precision@1", "recall@5"]
     cold_start_num_epochs = 5
-    cold_start_learning_rate = 0.001
+    cold_start_learning_rate = 0.01
     strong_column_names = ["TITLE"]
     weak_column_names = ["TEXT"]
     options = {"embedding_dimension": 1024}
@@ -69,7 +69,7 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
 
     metrics = ["precision@1", "recall@100"]
     cold_start_num_epochs = 15
-    cold_start_learning_rate = 0.001
+    cold_start_learning_rate = 0.01
     strong_column_names = []
     weak_column_names = ["DESCRIPTION", "BRAND"]
 

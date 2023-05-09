@@ -36,6 +36,7 @@ class UDTRunner(Runner):
             bolt.Validation(
                 test_file,
                 metrics=config.metrics,
+                use_sparse_inference = False
             )
             if config.metrics
             else None

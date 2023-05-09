@@ -67,4 +67,7 @@ constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 
+// Whether to use the experimental autotune for the hash functions
+constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
+
 }  // namespace thirdai::automl::udt::defaults

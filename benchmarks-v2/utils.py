@@ -7,7 +7,7 @@ def check_if_experimental_mode():
     def str_to_bool(s):
         return s.lower() in ["true", "1", "t", "y", "yes"]
 
-    experimental_autotune = os.environ.get("MY_BOOL", "false")
+    experimental_autotune = os.environ.get("experimental_autotune", "false")
     experimental_autotune = str_to_bool(experimental_autotune)
     return experimental_autotune
 

@@ -62,8 +62,8 @@ class Runner(ABC):
 
         boltmodel = model._get_model()
         from .utils import add_sparsity_to_first_non_sparse_layer
-
         print("Model summary")
+
         boltmodel.summary()
         layer = add_sparsity_to_first_non_sparse_layer(
             boltmodel, experimental_autotune=experimental_autotune

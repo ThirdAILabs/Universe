@@ -96,7 +96,7 @@ if __name__ == "__main__":
                     experiment_args={
                         "dataset": config.dataset_name,
                         "mode": "experimental"
-                        if check_if_experimental_mode
+                        if check_if_experimental_mode()
                         else "autotuned",
                     },
                 )

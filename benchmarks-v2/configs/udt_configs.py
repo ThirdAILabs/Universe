@@ -419,7 +419,7 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     delimiter = ","
 
     num_epochs = 5
-    learning_rate = 0.001
+    learning_rate = 0.01
     metrics = ["categorical_accuracy"]
 
     @staticmethod

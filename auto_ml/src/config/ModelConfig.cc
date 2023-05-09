@@ -31,10 +31,18 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
   if (config.contains("sampling_config")) {
     const auto& sampling_json = config["sampling_config"];
 
-    if (sampling_json.is_string() &&
-        sampling_json.get<std::string>() == "random") {
-      return std::make_shared<bolt::RandomSamplingConfig>();
+    if (sampling_json.is_string()) {
+      if (sampling_json.get<std::string>() == "random") {
+        return std::make_shared<bolt::RandomSamplingConfig>();
+      }
+
+      if (sampling_json.get<std::string>() == "experimental_autotune") {
+        uint32_t dim = integerParameter(config, "dim", args);
+        float sparsity = floatParameter(config, "sparsity", args);
+        return bolt::DWTASamplingConfig::newAutotune(dim, sparsity);
+      }
     }
+
     if (sampling_json.is_object()) {
       uint32_t num_tables = integerParameter(sampling_json, "num_tables", args);
       uint32_t hashes_per_table =
