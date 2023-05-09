@@ -33,7 +33,7 @@
 namespace thirdai::bolt {
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
-                        bool print_when_done, bool experimental_autotune) {
+                        bool print_when_done) {
   if (_output == nullptr) {
     throw exceptions::GraphCompilationFailure(
         "Output NodePtr cannot be a nullptr.");
@@ -60,30 +60,11 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
 #if THIRDAI_EXPOSE_ALL
   std::string model_summary =
-      summarize(/* print = */ print_when_done, /* detailed = */ true);
+      summarize(/* print = */ print_when_done, /* detailed = */ false);
   logging::info(model_summary);
 #else
   (void)print_when_done;
 #endif
-
-  if (experimental_autotune) {
-    for (uint32_t node_id = 0;
-         node_id < _internal_fully_connected_layers.size() - 1; node_id++) {
-      auto fully_connected_node = _internal_fully_connected_layers[node_id];
-      fully_connected_node->setSparsity(fully_connected_node->getSparsity(),
-                                        /* rebuild_tables=*/true,
-                                        /* experimental_autotune=*/true);
-    }
-    std::cout << "Modely summary after switching to experimental autotune"
-              << std::endl;
-#if THIRDAI_EXPOSE_ALL
-    model_summary =
-        summarize(/* print = */ print_when_done, /* detailed = */ true);
-    logging::info(model_summary);
-#else
-    (void)print_when_done;
-#endif
-  }
 }
 
 std::optional<InferenceMetricData> BoltGraph::validateAndSaveIfBest(
