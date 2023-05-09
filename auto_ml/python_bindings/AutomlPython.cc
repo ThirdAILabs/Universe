@@ -143,6 +143,11 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"))
       .def("forget", &udt::UDT::forget, py::arg("label"))
+      .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{})
+      .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
+           py::arg("sparse_inference") = false)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))

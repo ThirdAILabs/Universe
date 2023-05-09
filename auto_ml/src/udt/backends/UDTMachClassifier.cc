@@ -69,7 +69,7 @@ UDTMachClassifier::UDTMachClassifier(
 
   auto hash_processing_block = dataset::NumericalCategoricalBlock::make(
       /* col= */ target_name,
-      /* n_classes= */ n_target_classes,
+      /* n_classes= */ output_range,
       /* delimiter= */ ' ',
       /* normalize_categories= */ false);
 

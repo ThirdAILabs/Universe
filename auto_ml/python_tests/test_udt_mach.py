@@ -353,3 +353,19 @@ def test_mach_udt_introduce_documents():
     )
 
     os.remove(new_docs)
+
+
+def test_mach_udt_hash_based_methods():
+    model = train_simple_mach_udt(integer_target=True)
+
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert len(hashes) == 7
+
+    for _ in range(5):
+        model.train_with_hashes(
+            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            learning_rate=0.01,
+        )
+
+    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert set(new_hashes) == set([93, 94, 95, 96, 97, 98, 99])
