@@ -4,8 +4,6 @@ from abc import ABC, abstractmethod
 
 from thirdai import bolt, deployment
 
-from ..utils import check_if_experimental_mode
-
 
 class Runner(ABC):
     @property
@@ -31,14 +29,6 @@ class Runner(ABC):
 
     @staticmethod
     def create_model(config, path_prefix):
-
-        experimental_autotune = check_if_experimental_mode()
-
-        if experimental_autotune:
-            print("In Experimental Autotune Mode")
-        else:
-            print("In Autotuned Sparsity Mode")
-
         if config.model_config is not None:
             model_config_path = config.config_name + "_model.config"
             deployment.dump_config(
@@ -59,18 +49,6 @@ class Runner(ABC):
             model_config=model_config_path,
             options=config.options,
         )
-
-        boltmodel = model._get_model()
-        from .utils import add_sparsity_to_first_non_sparse_layer
-
-        print("Model summary")
-
-        boltmodel.summary()
-        layer = add_sparsity_to_first_non_sparse_layer(
-            boltmodel, experimental_autotune=experimental_autotune
-        )
-        print(f"Model summary after changing the sparsity for the layer fc_{layer}")
-        boltmodel.summary()
 
         if model_config_path:
             os.remove(model_config_path)

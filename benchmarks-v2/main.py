@@ -9,7 +9,7 @@ from thirdai.experimental import MlflowCallback, MlflowCallbackV2
 from .runners.runner_map import runner_map
 from .runners.temporal import TemporalRunner
 from .runners.udt import UDTRunner
-from .utils import check_if_experimental_mode, get_configs
+from .utils import get_configs
 
 
 def parse_arguments():
@@ -38,7 +38,6 @@ def parse_arguments():
     parser.add_argument(
         "--mlflow_uri",
         type=str,
-        default=None,
         help="MLflow URI to log metrics and artifacts.",
     )
     parser.add_argument(
@@ -84,9 +83,7 @@ if __name__ == "__main__":
                         config.config_name, args.official_benchmark
                     ),
                     run_name=f"{args.run_name}_{str(date.today())}",
-                    experiment_args={
-                        "dataset": config.dataset_name,
-                    },
+                    experiment_args={"dataset": config.dataset_name},
                 )
                 mlflow_logger.log_additional_param(
                     "thirdai_version", thirdai.__version__

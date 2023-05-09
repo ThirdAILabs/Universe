@@ -1,7 +1,6 @@
 from thirdai import bolt
 
 from ..configs.bolt_configs import BoltBenchmarkConfig
-from ..utils import check_if_experimental_mode
 from .runner import Runner
 from .utils import get_train_and_eval_configs
 
@@ -50,21 +49,5 @@ def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
         print_when_done=False,
     )
     model.summary(detailed=True)
-
-    from .utils import add_sparsity_to_first_non_sparse_layer
-
-    experimental_autotune = check_if_experimental_mode()
-    if experimental_autotune:
-        print("In Experimental Autotune Mode")
-    else:
-        print("In Autotuned Sparsity Mode")
-
-    print("Model summary")
-    model.summary()
-    layer = add_sparsity_to_first_non_sparse_layer(
-        model, experimental_autotune=experimental_autotune
-    )
-    print(f"Model summary after changing the sparsity for the layer fc_{layer}")
-    model.summary()
 
     return model
