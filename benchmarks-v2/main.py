@@ -20,7 +20,14 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "bolt_v2_fc", "dlrm", "query_reformulation", "temporal"],
+        choices=[
+            "udt",
+            "bolt_fc",
+            "bolt_v2_fc",
+            "dlrm",
+            "query_reformulation",
+            "temporal",
+        ],
         help="Which runners to use to run the benchmark.",
     )
     parser.add_argument(
