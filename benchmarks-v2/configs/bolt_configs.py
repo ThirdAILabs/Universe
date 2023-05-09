@@ -102,7 +102,12 @@ class WayfairConfig(BoltBenchmarkConfig):
         "sparsity": 0.1,
         "activation": "Sigmoid",
         "sampling_config": bolt.nn.DWTASamplingConfig(
-            num_tables=64, hashes_per_table=4, reservoir_size=64
+            num_tables=64,
+            hashes_per_table=4,
+            range_pow=12,
+            binsize=8,
+            reservoir_size=64,
+            permutations=8,
         ),
     }
     loss_fn = "BinaryCrossEntropyLoss"
