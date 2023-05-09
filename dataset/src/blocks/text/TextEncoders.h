@@ -11,11 +11,11 @@ namespace thirdai::dataset {
 class TextEncoder {
  public:
   virtual std::vector<uint32_t> apply(
-      const std::vector<std::string_view>& tokens) = 0;
+      const std::vector<std::string>& tokens) = 0;
 
-  virtual std::string getResponsibleWord(
-      const std::vector<std::string_view>& tokens, uint32_t index_within_block,
-      uint32_t index_range) {
+  virtual std::string getResponsibleWord(const std::vector<std::string>& tokens,
+                                         uint32_t index_within_block,
+                                         uint32_t index_range) {
     (void)tokens;
     (void)index_within_block;
     (void)index_range;
@@ -41,12 +41,11 @@ class NGramEncoder : public TextEncoder {
 
   static auto make(uint32_t n) { return std::make_shared<NGramEncoder>(n); }
 
-  std::vector<uint32_t> apply(
-      const std::vector<std::string_view>& tokens) final {
+  std::vector<uint32_t> apply(const std::vector<std::string>& tokens) final {
     return token_encoding::ngrams(token_encoding::hashTokens(tokens), _n);
   }
 
-  std::string getResponsibleWord(const std::vector<std::string_view>& tokens,
+  std::string getResponsibleWord(const std::vector<std::string>& tokens,
                                  uint32_t index_within_block,
                                  uint32_t index_range) final {
     return token_encoding::buildUnigramHashToWordMap(tokens, index_range)
@@ -71,8 +70,7 @@ class PairGramEncoder : public TextEncoder {
 
   static auto make() { return std::make_shared<PairGramEncoder>(); }
 
-  std::vector<uint32_t> apply(
-      const std::vector<std::string_view>& tokens) final {
+  std::vector<uint32_t> apply(const std::vector<std::string>& tokens) final {
     return token_encoding::pairgrams(token_encoding::hashTokens(tokens));
   }
 
