@@ -15,7 +15,7 @@
 namespace thirdai::dataset {
 
 namespace special_tokens {
-constexpr const std::wstring_view UNK = L"[UNK]";
+constexpr std::wstring_view UNK = L"[UNK]";
 constexpr std::wstring_view MASK = L"[MASK]";
 }  // namespace special_tokens
 
@@ -47,6 +47,7 @@ class WordpieceTokenizer : public TextTokenizer {
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
     (void)input;
+    //TODO(david): should we take the whole word here instead of the subword
     return decode({source_token});
   }
 

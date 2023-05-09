@@ -34,8 +34,7 @@ WordpieceTokenizer::WordpieceTokenizer(const std::string& vocab_fpath,
 
 std::vector<uint32_t> WordpieceTokenizer::tokenize(
     const std::string& sentence) {
-  std::string buffer(sentence.data(), sentence.size());
-  std::vector<std::wstring> tokens = tokenizeToStrings(buffer);
+  std::vector<std::wstring> tokens = tokenizeToStrings(sentence);
   std::vector<uint32_t> encoded(tokens.size());
   for (uint32_t i = 0; i < tokens.size(); i++) {
     auto query = _token_to_id.find(tokens[i]);

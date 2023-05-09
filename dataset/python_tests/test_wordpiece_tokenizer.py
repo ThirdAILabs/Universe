@@ -33,7 +33,7 @@ BERT_RAW_SAMPLES = [
 
 @pytest.mark.unit
 def test_wordpiece_vocab(download_bert_base_uncased):
-    huggingface_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    huggingface_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
     BERT_VOCAB_PATH = download_bert_base_uncased
     vocab = WordpieceTokenizer(BERT_VOCAB_PATH)
@@ -45,7 +45,7 @@ def test_wordpiece_vocab(download_bert_base_uncased):
     for raw, tokenized in zip(BERT_RAW_SAMPLES, BERT_TOKENIZED_SAMPLES):
         token_ids = vocab.tokenize(raw)
 
-        hf_token_ids = huggingface_tokenizer.encode(raw)[1:-1]
+        hf_token_ids = huggingface_tokenizer.encode(raw, add_special_tokens=False)
         assert len(hf_token_ids) == len(token_ids)
         for hf_token_id, token_id in zip(hf_token_ids, token_ids):
             assert hf_token_id == token_id

@@ -87,11 +87,10 @@ struct TextDataType final : public DataType {
 
   explicit TextDataType(
       const dataset::WordpieceTokenizerPtr& wordpiece_tokenizer,
-      const std::string& contextual_encoding = "none",
-      bool use_lowercase = false)
+      const std::string& contextual_encoding = "none")
       : tokenizer(wordpiece_tokenizer),
         encoder(getTextEncoderFromString(contextual_encoding)),
-        lowercase(use_lowercase) {}
+        lowercase(false) {}
 
   dataset::TextTokenizerPtr tokenizer;
   dataset::TextEncoderPtr encoder;

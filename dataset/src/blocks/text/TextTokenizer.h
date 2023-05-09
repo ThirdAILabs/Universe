@@ -42,9 +42,13 @@ class NaiveSplitTokenizer : public TextTokenizer {
 
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
-    return token_encoding::buildUnigramHashToWordMap(
-               text::split(input, _delimiter))
-        .at(source_token);
+    auto map = token_encoding::buildUnigramHashToWordMap(
+        text::split(input, _delimiter));
+        
+    if (!map.count(source_token)) {
+      throw std::invalid_argument("Error in RCA.");
+    }
+    return map.at(source_token);
   }
 
  private:
@@ -69,9 +73,13 @@ class WordPunctTokenizer : public TextTokenizer {
 
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
-    return token_encoding::buildUnigramHashToWordMap(
-               text::tokenizeSentence(input))
-        .at(source_token);
+    auto map = token_encoding::buildUnigramHashToWordMap(
+        text::tokenizeSentence(input));
+
+    if (!map.count(source_token)) {
+      throw std::invalid_argument("Error in RCA.");
+    }
+    return map.at(source_token);
   }
 
  private:
@@ -96,9 +104,13 @@ class CharKGramTokenizer : public TextTokenizer {
 
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
-    return token_encoding::buildUnigramHashToWordMap(
-               text::charKGrams(input, _k))
-        .at(source_token);
+    auto map =
+        token_encoding::buildUnigramHashToWordMap(text::charKGrams(input, _k));
+
+    if (!map.count(source_token)) {
+      throw std::invalid_argument("Error in RCA.");
+    }
+    return map.at(source_token);
   }
 
  private:
