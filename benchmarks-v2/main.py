@@ -25,6 +25,7 @@ def parse_arguments():
             "bolt_fc",
             "bolt_v2_fc",
             "dlrm",
+            "dlrm_v2",
             "query_reformulation",
             "temporal",
         ],

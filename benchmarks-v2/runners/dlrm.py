@@ -20,7 +20,7 @@ class DLRMRunner(Runner):
         )
 
         train_config = get_train_config(config, config.learning_rate)
-        eval_config = get_eval_config(benchmark_config=config)
+        eval_config = get_eval_config(benchmark_config=config).return_activations()
 
         for epoch in range(config.num_epochs):
             train_metrics = model.train(
@@ -44,7 +44,7 @@ class DLRMRunner(Runner):
                     )
 
             compute_roc_auc(
-                predict_output=eval_metrics,
+                activations=eval_metrics[1],
                 test_labels_path=os.path.join(path_prefix, config.test_dataset_path),
                 mlflow_callback=mlflow_logger,
                 step=epoch,
@@ -60,7 +60,7 @@ class DLRMRunner(Runner):
             dim=4294967295, num_tokens_range=(config.cat_features, config.cat_features)
         )
 
-        embedding = bolt.nn.Embedding(*config.embedding_args)(cat_input)
+        embedding = bolt.nn.Embedding(**config.embedding_args)(cat_input)
 
         feature_interaction = bolt.nn.DlrmAttention()(
             fc_layer=hidden1, embedding_layer=embedding
@@ -87,14 +87,10 @@ class DLRMRunner(Runner):
         return model
 
 
-def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None, step=0):
+def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0):
     with open(test_labels_path) as file:
         test_labels = np.array([int(line[0]) for line in file.readlines()])
 
-    if len(predict_output) != 2:
-        raise ValueError("Cannot compute the AUC without dense activations")
-
-    activations = predict_output[1]
     if len(activations) != len(test_labels):
         raise ValueError(f"Length of activations must match the length of test labels")
     # If there are two output neurons then the true scores are activations of the second neuron.
@@ -125,28 +121,28 @@ class DLRMV2Runner(Runner):
         )
 
         train_data = (
-            bolt.train.convert_datasets(
-                train_set, dims=[config.int_features, config.cat_features]
+            bolt_v2.train.convert_datasets(
+                train_set, dims=[config.int_features, 4294967295]
             ),
-            bolt.train.convert_dataset(train_labels, config.n_classes),
+            bolt_v2.train.convert_dataset(train_labels, config.n_classes),
         )
 
         test_data = (
-            bolt.train.convert_datasets(
-                test_set, dims=[config.int_features, config.cat_features]
+            bolt_v2.train.convert_datasets(
+                test_set, dims=[config.int_features, 4294967295]
             ),
-            bolt.train.convert_dataset(test_labels, config.n_classes),
+            bolt_v2.train.convert_dataset(test_labels, config.n_classes),
         )
 
-        trainer = bolt.train.Trainer(model)
+        trainer = bolt_v2.train.Trainer(model)
 
         for epoch in range(config.num_epochs):
             metrics = trainer.train(
                 train_data=train_data,
-                epochs=1,
                 learning_rate=config.learning_rate,
+                epochs=1,
                 validation_data=test_data,
-                valdiation_metrics=config.metrics,
+                validation_metrics=config.metrics,
             )
 
             if mlflow_logger:
@@ -155,14 +151,14 @@ class DLRMV2Runner(Runner):
 
             scores = []
 
-            for x in test_data:
+            for x in test_data[0]:
                 scores.append(
                     np.copy(model.forward(x, use_sparsity=False)[0].activations)
                 )
 
             compute_roc_auc(
-                predict_output=np.concatenate(scores),
-                test_labels_path=config.test_dataset_path,
+                activations=np.concatenate(scores),
+                test_labels_path=os.path.join(path_prefix, config.test_dataset_path),
                 mlflow_callback=mlflow_logger,
                 step=epoch,
             )
@@ -177,7 +173,7 @@ class DLRMV2Runner(Runner):
 
         cat_input = bolt_v2.nn.Input(dim=4294967295)
 
-        embedding = bolt_v2.nn.Embedding(*config.embedding_args)(cat_input)
+        embedding = bolt_v2.nn.Embedding(**config.embedding_args)(cat_input)
 
         feature_interaction = bolt_v2.nn.DlrmAttention()(hidden1, embedding)
 
@@ -198,7 +194,7 @@ class DLRMV2Runner(Runner):
         )(hidden_output)
 
         loss = bolt_v2.nn.losses.CategoricalCrossEntropy(
-            output, labels=bolt.nn.Input(dim=config.n_classes)
+            output, labels=bolt_v2.nn.Input(dim=config.n_classes)
         )
 
         model = bolt_v2.nn.Model(
