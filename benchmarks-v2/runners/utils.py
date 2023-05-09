@@ -33,7 +33,7 @@ def get_fc_layer(
         input_dim=input_dim,
         sparsity=config.get("sparsity", 1.0),
         activation=config["activation"],
-        sampling=config.get("sampling_config"),
+        sampling_config=config.get("sampling_config"),
         rebuild_hash_tables=rebuild_hash_tables // batch_size,
         reconstruct_hash_functions=reconstruct_hash_functions // batch_size,
     )
