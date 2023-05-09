@@ -5,6 +5,8 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <hashing/src/HashFunction.h>
+#include <hashtable/src/SampledHashTable.h>
 #include <limits>
 #include <memory>
 
@@ -83,8 +85,15 @@ class FullyConnected final
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
-  void setWeightsAndBiases(const float* weights_to_set,
-                           const float* biases_to_set);
+  void setWeights(const float* new_weights);
+
+  void setBiases(const float* new_biases);
+
+  std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+  getHashTable() const;
+
+  void setHashTable(hashing::HashFunctionPtr hash_fn,
+                    hashtable::SampledHashTablePtr hash_table);
 
   /**
    * Autotunes how often the hash tables and hash functions are rebuilt using
