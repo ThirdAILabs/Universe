@@ -103,8 +103,10 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
 #pragma omp critical
       {
         for (auto& sample : augmented_samples) {
-          augmented_data.emplace_back(std::move(sample));
-          augmented_labels.push_back(labels);
+          if (!sample.empty()) {
+            augmented_data.emplace_back(std::move(sample));
+            augmented_labels.push_back(labels);
+          }
         }
       }
     } catch (std::exception& e) {
