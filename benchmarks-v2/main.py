@@ -11,11 +11,6 @@ from .runners.temporal import TemporalRunner
 from .runners.udt import UDTRunner
 from .utils import check_if_experimental_mode, get_configs
 
-# from runners.runner_map import runner_map
-# from runners.temporal import TemporalRunner
-# from runners.udt import UDTRunner
-# from utils import get_configs
-
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Benchmark a dataset with Bolt")
@@ -77,10 +72,6 @@ if __name__ == "__main__":
 
         configs = get_configs(runner=runner, config_regex=args.config)
 
-        # for config in configs:
-        #     cmd = f"python3 -m benchmarks-v2.main --mlflow_uri http://127.0.0.1:5001 --run_name autotuned-udt --runner udt --config {config.config_name}"
-        #     print(cmd)
-        # break
         for config in configs:
             if args.mlflow_uri and args.run_name:
                 mlflow_callback = MlflowCallback
@@ -95,9 +86,6 @@ if __name__ == "__main__":
                     run_name=f"{args.run_name}_{str(date.today())}",
                     experiment_args={
                         "dataset": config.dataset_name,
-                        "mode": "experimental"
-                        if check_if_experimental_mode()
-                        else "autotuned",
                     },
                 )
                 mlflow_logger.log_additional_param(
