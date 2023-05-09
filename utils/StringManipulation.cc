@@ -261,12 +261,13 @@ std::vector<std::wstring> splitIf(const std::wstring& text,
   return result;
 }
 
-std::wstring normalizeSpaces(const std::wstring& text) {
+std::wstring cleanText(const std::wstring& text) {
   std::wstring output;
   for (const wchar_t& cp : text) {
     // 0 is NULL and fffd is an "unrepresentable character". clean these out
     // along with control characters
-    if (cp == 0 || cp == 0xfffd || isControl(cp)) {
+    if (cp == 0 || cp == 0xfffd || isControl(cp) ||
+        utf8proc_category(cp) == UTF8PROC_CATEGORY_MN) {
       continue;
     }
     if (isWhitespace(cp)) {
@@ -274,27 +275,6 @@ std::wstring normalizeSpaces(const std::wstring& text) {
     } else {
       output += cp;
     }
-  }
-  return output;
-}
-
-std::wstring stripAccents(const std::wstring& text) {
-  // Strips accents from a piece of text.
-  std::wstring nText;
-  try {
-    nText = toUnicode(normalize(fromUnicode(text)));
-  } catch (std::bad_cast& e) {
-    std::cerr << "bad_cast" << std::endl;
-    return L"";
-  }
-
-  std::wstring output;
-  for (auto& c : nText) {
-    auto category = utf8proc_category(c);
-    if (category == UTF8PROC_CATEGORY_MN) {
-      continue;
-    }
-    output += c;
   }
   return output;
 }

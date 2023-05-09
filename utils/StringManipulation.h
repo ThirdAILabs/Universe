@@ -79,16 +79,11 @@ std::vector<std::wstring> splitIf(const std::wstring& text,
                                   Predicate predicate);
 
 /**
- * Replace common whitespace characters with a space. Clean out extraneous
- * control charcters, null characters, unrepresentable characters.
+ * Cleans the text by doing things like stripping accents, replacing common
+ * whitespace characters with a space, and cleaning out extraneous control
+ * charcters, null characters, and unrepresentable characters.
  */
-std::wstring normalizeSpaces(const std::wstring& text);
-
-/**
- * Removes accents from the characters in the given unicode text. Read more:
- * https://www.hesa.ac.uk/support/user-guides/xml-files/unicode
- */
-std::wstring stripAccents(const std::wstring& text);
+std::wstring cleanText(const std::wstring& text);
 
 bool isControl(const wchar_t& c);
 bool isWhitespace(const wchar_t& c);

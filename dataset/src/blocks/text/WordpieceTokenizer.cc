@@ -91,8 +91,8 @@ std::vector<std::wstring> WordpieceTokenizer::tokenizeToStrings(
 
 std::vector<std::wstring> WordpieceTokenizer::basicTokenize(
     const std::string& text, bool to_lower) {
-  std::wstring u_text = text::toUnicode(text);
-  u_text = text::normalizeSpaces(u_text);
+  std::wstring u_text = text::toUnicode(text::normalize(text));
+  u_text = text::cleanText(u_text);
   u_text = tokenizeChineseChars(u_text);
 
   std::vector<std::wstring> tokens;
@@ -102,8 +102,11 @@ std::vector<std::wstring> WordpieceTokenizer::basicTokenize(
   for (std::wstring space_token : space_tokens) {
     if (to_lower) {
       space_token = text::lower(space_token);
-      space_token = text::stripAccents(space_token);
     }
+
+    // We strip accents by default. TODO(david): Reevaluate an option for this
+    // for other languages. This is done by not removing utf8proc category ==
+    // UTF8PROC_CATEGORY_MN in text::cleanText(..)
 
     // Tokenize by punctuations. This means punctuations appear in text as
     // tokens.
