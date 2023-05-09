@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from thirdai import bolt, deployment
 
-from ..configs.query_reformulation_configs import *
-from .runner import Runner
+from ...configs.query_reformulation_configs import *
+from ..runner import Runner
 
 
 class QueryReformulationRunner(Runner):
@@ -28,10 +28,9 @@ class QueryReformulationRunner(Runner):
             metric_value = metric_fn(model, test_file)
 
             print(f"{metric_name} = {metric_value}")
-            if mlflow_logger:
-                mlflow_logger.log_additional_metric(
-                    key=f"val_{metric_name}", value=metric_value, step=0
-                )
+            mlflow_logger.log_additional_metric(
+                key=f"val_{metric_name}", value=metric_value, step=0
+            )
 
         average_predict_time_ms = cls.get_average_predict_time(
             model, test_file, config, path_prefix, num_samples=1000
@@ -78,7 +77,7 @@ class QueryReformulationRunner(Runner):
             sample = dict(row)
             label = sample[config.target_column]
             sample = sample[config.source_column]
-            inference_samples.append(({"phrase": sample}, label))
+            inference_samples.append((sample, label))
 
         start_time = time.time()
         for sample, label in inference_samples:

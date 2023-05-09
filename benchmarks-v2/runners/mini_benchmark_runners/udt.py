@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 from thirdai import bolt
 
-from ..configs.cold_start_configs import *
-from ..configs.graph_configs import *
-from ..configs.mach_configs import *
-from ..configs.udt_configs import *
-from ..configs.utils import AdditionalMetricCallback
-from .runner import Runner
+from ...configs.cold_start_configs import *
+from ...configs.graph_configs import *
+from ...configs.mach_configs import *
+from ...configs.udt_configs import *
+from ...configs.utils import AdditionalMetricCallback
+from ..runner import Runner
 
 
 class UDTRunner(Runner):

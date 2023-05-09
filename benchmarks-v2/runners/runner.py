@@ -15,9 +15,9 @@ class Runner(ABC):
         """
         raise NotImplementedError
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def run_benchmark(config, path_prefix, mlflow_logger=None):
+    def run_benchmark(cls, config, path_prefix, mlflow_logger=None):
         raise NotImplementedError
 
     @staticmethod

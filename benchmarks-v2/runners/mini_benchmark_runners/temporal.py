@@ -4,9 +4,9 @@ import time
 import numpy as np
 import pandas as pd
 
-from ..configs.temporal_configs import *
-from ..configs.utils import AdditionalMetricCallback
-from .runner import Runner
+from ...configs.temporal_configs import *
+from ...configs.utils import AdditionalMetricCallback
+from ..runner import Runner
 
 
 class TemporalRunner(Runner):
