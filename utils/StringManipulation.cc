@@ -149,17 +149,13 @@ std::string fromUnicode(const std::wstring& wText) {
 }
 
 std::string normalize(const std::string& s) {
-  std::string ret;
-
   // The utf8proc API takes in a const char *, and returns a new char * pointing
   // to the NFD normalized string. It is the responsibility of the client to
   // deallocate this if not needed further.
-  
-  char* result = reinterpret_cast<char*>(
-      utf8proc_NFD(reinterpret_cast<const unsigned char*>(s.c_str())));
-  if (result) {
+  if (char* result = reinterpret_cast<char*>(
+          utf8proc_NFD(reinterpret_cast<const unsigned char*>(s.c_str())))) {
     // Pack into an RAII managed object (this is a copy).
-    ret = std::string(result);
+    std::string ret = std::string(result);
 
     // We are responsible for de-allocating the `malloc`d memory for the
     // normalized string, now that we have copied it for our purposes. If we
@@ -169,8 +165,11 @@ std::string normalize(const std::string& s) {
     // NOLINTNEXTLINE
     free(result);
     result = NULL;
+
+    return ret;
   }
-  return ret;
+
+  return "";
 }
 
 std::wstring lower(const std::wstring& s) {
