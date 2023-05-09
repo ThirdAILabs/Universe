@@ -44,8 +44,9 @@ class NaiveSplitTokenizer : public TextTokenizer {
                                  uint32_t source_token) final {
     auto map = token_encoding::buildUnigramHashToWordMap(
         text::split(input, _delimiter));
-        
+
     if (!map.count(source_token)) {
+      // should never get here since RCA should have only returned a valid token
       throw std::invalid_argument("Error in RCA.");
     }
     return map.at(source_token);
@@ -77,6 +78,7 @@ class WordPunctTokenizer : public TextTokenizer {
         text::tokenizeSentence(input));
 
     if (!map.count(source_token)) {
+      // should never get here since RCA should have only returned a valid token
       throw std::invalid_argument("Error in RCA.");
     }
     return map.at(source_token);
@@ -108,6 +110,7 @@ class CharKGramTokenizer : public TextTokenizer {
         token_encoding::buildUnigramHashToWordMap(text::charKGrams(input, _k));
 
     if (!map.count(source_token)) {
+      // should never get here since RCA should have only returned a valid token
       throw std::invalid_argument("Error in RCA.");
     }
     return map.at(source_token);
