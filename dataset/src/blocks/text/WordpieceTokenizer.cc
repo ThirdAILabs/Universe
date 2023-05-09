@@ -1,5 +1,6 @@
 #include "WordpieceTokenizer.h"
 #include <utils/StringManipulation.h>
+#include <cassert>
 #include <iostream>
 
 namespace thirdai::dataset {
