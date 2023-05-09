@@ -2,18 +2,19 @@ import os
 
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from thirdai import bolt
+from thirdai import bolt, bolt_v2
 
 from ..configs.dlrm_configs import DLRMConfig
 from .runner import Runner
-from .utils import get_train_config, get_eval_config
+from .utils import get_eval_config, get_train_config
 
 
 class DLRMRunner(Runner):
     config_type = DLRMConfig
 
     def run_benchmark(config: DLRMConfig, path_prefix, mlflow_logger):
-        model = config.get_model()
+        model = DLRMRunner.get_model(config)
+
         train_set, train_labels, test_set, test_labels = config.load_datasets(
             path_prefix
         )
@@ -38,7 +39,9 @@ class DLRMRunner(Runner):
 
             if mlflow_logger:
                 for k, v in eval_metrics[0].items():
-                    mlflow_logger.log_additional_metric(key=k, value=v, step=epoch)
+                    mlflow_logger.log_additional_metric(
+                        key="val_" + k, value=v, step=epoch
+                    )
 
             compute_roc_auc(
                 predict_output=eval_metrics,
@@ -46,6 +49,42 @@ class DLRMRunner(Runner):
                 mlflow_callback=mlflow_logger,
                 step=epoch,
             )
+
+    def get_model(config: DLRMConfig):
+        int_input = bolt.nn.Input(dim=config.int_features)
+        hidden1 = bolt.nn.FullyConnected(
+            dim=config.input_hidden_dim, activation="relu"
+        )(int_input)
+
+        cat_input = bolt.nn.TokenInput(
+            dim=4294967295, num_tokens_range=(config.cat_features, config.cat_features)
+        )
+
+        embedding = bolt.nn.Embedding(*config.embedding_args)(cat_input)
+
+        feature_interaction = bolt.nn.DlrmAttention()(
+            fc_layer=hidden1, embedding_layer=embedding
+        )
+
+        concat = bolt.nn.Concatenate()([hidden1, feature_interaction])
+
+        hidden_output = concat
+        for _ in range(3):
+            hidden_output = bolt.nn.FullyConnected(
+                dim=config.output_hidden_dim,
+                sparsity=config.output_hidden_sparsity,
+                activation="relu",
+                sampling_config=bolt.nn.RandomSamplingConfig(),
+            )(hidden_output)
+
+        output = bolt.nn.FullyConnected(dim=config.n_classes, activation="softmax")(
+            hidden_output
+        )
+
+        model = bolt.nn.Model(inputs=[int_input, cat_input], output=output)
+        model.compile(bolt.nn.losses.CategoricalCrossEntropy())
+
+        return model
 
 
 def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None, step=0):
@@ -73,3 +112,98 @@ def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None, step
 
     if mlflow_callback is not None:
         mlflow_callback.log_additional_metric(key="roc_auc", value=auc, step=step)
+
+
+class DLRMV2Runner(Runner):
+    config_type = DLRMConfig
+
+    def run_benchmark(config: DLRMConfig, path_prefix, mlflow_logger):
+        model = DLRMV2Runner.get_model(config)
+
+        train_set, train_labels, test_set, test_labels = config.load_datasets(
+            path_prefix
+        )
+
+        train_data = (
+            bolt.train.convert_datasets(
+                train_set, dims=[config.int_features, config.cat_features]
+            ),
+            bolt.train.convert_dataset(train_labels, config.n_classes),
+        )
+
+        test_data = (
+            bolt.train.convert_datasets(
+                test_set, dims=[config.int_features, config.cat_features]
+            ),
+            bolt.train.convert_dataset(test_labels, config.n_classes),
+        )
+
+        trainer = bolt.train.Trainer(model)
+
+        for epoch in range(config.num_epochs):
+            metrics = trainer.train(
+                train_data=train_data,
+                epochs=1,
+                learning_rate=config.learning_rate,
+                validation_data=test_data,
+                valdiation_metrics=config.metrics,
+            )
+
+            if mlflow_logger:
+                for k, v in metrics.items():
+                    mlflow_logger.log_additional_metric(key=k, value=v[-1], step=epoch)
+
+            scores = []
+
+            for x in test_data:
+                scores.append(
+                    np.copy(model.forward(x, use_sparsity=False)[0].activations)
+                )
+
+            compute_roc_auc(
+                predict_output=np.concatenate(scores),
+                test_labels_path=config.test_dataset_path,
+                mlflow_callback=mlflow_logger,
+                step=epoch,
+            )
+
+    def get_model(config: DLRMConfig):
+        int_input = bolt_v2.nn.Input(dim=config.int_features)
+        hidden1 = bolt_v2.nn.FullyConnected(
+            dim=config.input_hidden_dim,
+            input_dim=config.int_features,
+            activation="relu",
+        )(int_input)
+
+        cat_input = bolt_v2.nn.Input(dim=4294967295)
+
+        embedding = bolt_v2.nn.Embedding(*config.embedding_args)(cat_input)
+
+        feature_interaction = bolt_v2.nn.DlrmAttention()(hidden1, embedding)
+
+        concat = bolt_v2.nn.Concatenate()([hidden1, feature_interaction])
+
+        hidden_output = concat
+        for _ in range(3):
+            hidden_output = bolt_v2.nn.FullyConnected(
+                dim=config.output_hidden_dim,
+                input_dim=hidden_output.dim(),
+                sparsity=config.output_hidden_sparsity,
+                activation="relu",
+                sampling_config=bolt.nn.RandomSamplingConfig(),
+            )(hidden_output)
+
+        output = bolt_v2.nn.FullyConnected(
+            dim=config.n_classes, input_dim=hidden_output.dim(), activation="softmax"
+        )(hidden_output)
+
+        loss = bolt_v2.nn.losses.CategoricalCrossEntropy(
+            output, labels=bolt.nn.Input(dim=config.n_classes)
+        )
+
+        model = bolt_v2.nn.Model(
+            inputs=[int_input, cat_input], outputs=[output], losses=[loss]
+        )
+        model.summary()
+
+        return model
