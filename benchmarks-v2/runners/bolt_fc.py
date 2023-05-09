@@ -126,7 +126,7 @@ def define_fully_connected_bolt_v2_model(config: BoltBenchmarkConfig):
     else:
         raise ValueError("Invalid loss function in config.")
 
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+    model = bolt_v2.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
     model.summary()
 
     return model
