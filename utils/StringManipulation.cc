@@ -5,13 +5,12 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
-#include <string_view>
 #include <vector>
 
 namespace thirdai::text {
 
-std::vector<std::string_view> split(std::string_view string, char delimiter) {
-  std::vector<std::string_view> words;
+std::vector<std::string> split(const std::string_view& string, char delimiter) {
+  std::vector<std::string> words;
 
   bool prev_is_delim = true;
   uint32_t start_of_word_offset = 0;
@@ -27,9 +26,9 @@ std::vector<std::string_view> split(std::string_view string, char delimiter) {
       // of a word.
       uint32_t len = i - start_of_word_offset;
 
-      std::string_view word_view(string.data() + start_of_word_offset, len);
+      std::string word(string.data() + start_of_word_offset, len);
 
-      words.push_back(word_view);
+      words.push_back(word);
       prev_is_delim = true;
     }
   }
@@ -38,15 +37,15 @@ std::vector<std::string_view> split(std::string_view string, char delimiter) {
     // last word we need to hash.
     uint32_t len = string.size() - start_of_word_offset;
 
-    std::string_view word_view(string.data() + start_of_word_offset, len);
+    std::string word(string.data() + start_of_word_offset, len);
 
-    words.push_back(word_view);
+    words.push_back(word);
   }
 
   return words;
 }
 
-std::vector<std::string_view> tokenizeSentence(std::string_view sentence) {
+std::vector<std::string> tokenizeSentence(const std::string_view& sentence) {
   std::string sentence_str(sentence);
 
   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
@@ -58,28 +57,28 @@ std::vector<std::string_view> tokenizeSentence(std::string_view sentence) {
   std::sregex_iterator iter(sentence_str.begin(), sentence_str.end(), regex);
   std::sregex_iterator end;
 
-  std::vector<std::string_view> tokens;
+  std::vector<std::string> tokens;
 
   while (iter != end) {
     std::smatch match = *iter;
-    tokens.push_back(
-        std::string_view(sentence.data() + match.position(), match.length()));
+    tokens.push_back(sentence_str.substr(match.position(), match.length()));
     ++iter;
   }
 
   return tokens;
 }
 
-std::vector<std::string_view> charKGrams(std::string_view text, uint32_t k) {
-  if (text.empty()) {
+std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
+  std::string text_str(text);
+  if (text_str.empty()) {
     return {};
   }
 
-  std::vector<std::string_view> char_k_grams;
-  size_t n_kgrams = text.size() >= k ? text.size() - (k - 1) : 1;
-  size_t len = std::min(text.size(), static_cast<size_t>(k));
+  std::vector<std::string> char_k_grams;
+  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
+  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
   for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-    char_k_grams.push_back(std::string_view(text.data() + offset, len));
+    char_k_grams.push_back(text_str.substr(offset, len));
   }
 
   return char_k_grams;

@@ -77,12 +77,11 @@ Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
   });
 
   if (first_column == second_column) {
-    return {first_column.name(), std::string(input.column(first_column))};
+    return {first_column.name(), input.column(first_column)};
   }
 
   auto column_name = first_column.name() + "," + second_column.name();
-  auto keyword = std::string(input.column(first_column)) + "," +
-                 std::string(input.column(second_column));
+  auto keyword = input.column(first_column) + "," + input.column(second_column);
 
   return {column_name, keyword};
 }

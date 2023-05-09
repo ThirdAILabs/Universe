@@ -1,15 +1,13 @@
 #pragma once
 #include <string>
-#include <string_view>
 #include <vector>
 
-// TODO(any): consolidate string manipulation to this file
 namespace thirdai::text {
 
 /**
  * Splits a string by delimiter.
  */
-std::vector<std::string_view> split(std::string_view string, char delimiter);
+std::vector<std::string> split(const std::string_view& string, char delimiter);
 
 /**
  * Parses a sentence into word and punctuation tokens.
@@ -21,9 +19,9 @@ std::vector<std::string_view> split(std::string_view string, char delimiter);
  * To see more expected behaviors, see tests prefixed with
  * "TestTokenizeSentence" in StringManipulationTests.cc
  */
-std::vector<std::string_view> tokenizeSentence(std::string_view sentence);
+std::vector<std::string> tokenizeSentence(const std::string_view& sentence);
 
-std::vector<std::string_view> charKGrams(std::string_view text, uint32_t k);
+std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
 
 /**
  * Joins a vector of strings into a single delimited string.
@@ -34,7 +32,7 @@ std::string join(const std::vector<std::string>& strings,
 /**
  * Creates a copy of the original stringview where all characters are lowercase.
  */
-inline std::string lower(const std::string_view str) {
+inline std::string lower(const std::string_view& str) {
   std::string lower_name;
   for (char c : str) {
     lower_name.push_back(std::tolower(c));
