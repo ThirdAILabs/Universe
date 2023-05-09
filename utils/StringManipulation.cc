@@ -113,37 +113,42 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
 std::wstring toUnicode(const std::string& text) {
   // We do some casting below from utf8proc_int32_t to wchar_t. wchar_t may be a
   // different size on windows so we add a check here to not get undefined
-  // behavior. TODO(david) cast to a different type or test on windows.
+  // behavior. TODO() test on windows to see if this is actually a problem
   if (sizeof(wchar_t) != sizeof(utf8proc_int32_t)) {
     throw std::invalid_argument("Unsupported platform for tokenization.");
   }
 
-  size_t i = 0;
-  std::wstring ret;
-  while (i < text.size()) {
-    wchar_t unicode_char;
-    utf8proc_ssize_t forward = utf8proc_iterate(
-        reinterpret_cast<const utf8proc_uint8_t*>(&text[i]), text.size() - i,
-        reinterpret_cast<utf8proc_int32_t*>(&unicode_char));
-    if (forward < 0) {
+  size_t curr_index = 0;
+  std::wstring output;
+
+  const utf8proc_uint8_t* text_ptr =
+      reinterpret_cast<const utf8proc_uint8_t*>(text.data());
+
+  while (curr_index < text.size()) {
+    utf8proc_int32_t unicode_char;
+
+    utf8proc_ssize_t num_chars_used = utf8proc_iterate(
+        text_ptr + curr_index, text.size() - curr_index, &unicode_char);
+
+    if (num_chars_used < 0) {
       return L"";
     }
-    ret += unicode_char;
-    i += forward;
+    output += static_cast<wchar_t>(unicode_char);
+    curr_index += num_chars_used;
   }
-  return ret;
+  return output;
 }
 
 std::string fromUnicode(const std::wstring& wText) {
-  char dst[64];
+  char buffer[64];
   std::string ret;
   for (auto c : wText) {
-    utf8proc_ssize_t num =
-        utf8proc_encode_char(c, reinterpret_cast<utf8proc_uint8_t*>(dst));
-    if (num <= 0) {
+    utf8proc_ssize_t num_bytes_written =
+        utf8proc_encode_char(c, reinterpret_cast<utf8proc_uint8_t*>(buffer));
+    if (num_bytes_written <= 0) {
       return "";
     }
-    ret += std::string(dst, dst + num);
+    ret += std::string(buffer, buffer + num_bytes_written);
   }
   return ret;
 }
