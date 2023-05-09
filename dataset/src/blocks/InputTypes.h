@@ -36,7 +36,7 @@ class ColumnarInputSample {
    * Returns the identified column (either by column number or column name)
    * as a string view.
    */
-  virtual const std::string& column(const ColumnIdentifier& column) = 0;
+  virtual std::string column(const ColumnIdentifier& column) = 0;
   /**
    * The size of the columnar sample; the number of columns.
    */
@@ -56,9 +56,9 @@ class MapSampleRef final : public ColumnarInputSample {
  public:
   explicit MapSampleRef(const MapInput& columns) : _columns(columns) {}
 
-  const std::string& column(const ColumnIdentifier& column) final {
+  std::string column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
-      throw std::invalid_argument("Accessing invalid column.");
+      return "";
     }
     return _columns.at(column.name());
   }
@@ -80,7 +80,7 @@ class RowSampleRef final : public ColumnarInputSample {
  public:
   explicit RowSampleRef(const RowInput& columns) : _columns(columns) {}
 
-  const std::string& column(const ColumnIdentifier& column) final {
+  std::string column(const ColumnIdentifier& column) final {
     if (column.number() >= _columns.size()) {
       std::stringstream error;
       error << "Tried to access " << column.number()
@@ -124,7 +124,7 @@ class CsvSampleRef final : public ColumnarInputSample {
     }
   }
 
-  const std::string& column(const ColumnIdentifier& column) final {
+  std::string column(const ColumnIdentifier& column) final {
     return RowSampleRef(_columns).column(column);
   }
 
