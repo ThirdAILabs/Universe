@@ -11,7 +11,7 @@
 
 namespace thirdai::text {
 
-std::vector<std::string> split(const std::string& string, char delimiter) {
+std::vector<std::string> split(const std::string_view& string, char delimiter) {
   std::vector<std::string> words;
 
   bool prev_is_delim = true;
@@ -47,7 +47,7 @@ std::vector<std::string> split(const std::string& string, char delimiter) {
   return words;
 }
 
-std::vector<std::string> tokenizeSentence(const std::string& sentence) {
+std::vector<std::string> tokenizeSentence(const std::string_view& sentence) {
   std::string sentence_str(sentence);
 
   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
@@ -63,23 +63,24 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
 
   while (iter != end) {
     std::smatch match = *iter;
-    tokens.push_back(sentence.substr(match.position(), match.length()));
+    tokens.push_back(sentence_str.substr(match.position(), match.length()));
     ++iter;
   }
 
   return tokens;
 }
 
-std::vector<std::string> charKGrams(const std::string& text, uint32_t k) {
-  if (text.empty()) {
+std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
+  std::string text_str(text);
+  if (text_str.empty()) {
     return {};
   }
 
   std::vector<std::string> char_k_grams;
-  size_t n_kgrams = text.size() >= k ? text.size() - (k - 1) : 1;
-  size_t len = std::min(text.size(), static_cast<size_t>(k));
+  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
+  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
   for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-    char_k_grams.push_back(text.substr(offset, len));
+    char_k_grams.push_back(text_str.substr(offset, len));
   }
 
   return char_k_grams;

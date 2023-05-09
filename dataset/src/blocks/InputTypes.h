@@ -19,6 +19,8 @@ using LineInput = std::string;
 using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 using LineInputBatch = std::vector<std::string>;
 
+static constexpr const char* EMPTY_STRING = "";
+
 /**
  * An interface that allows the data pipeline to operate on arbitrary
  * representations of a columnar input sample.
@@ -56,7 +58,7 @@ class MapSampleRef final : public ColumnarInputSample {
 
   std::string column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
-      return {};
+      return "";
     }
     return _columns.at(column.name());
   }
