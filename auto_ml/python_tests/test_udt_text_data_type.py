@@ -27,7 +27,7 @@ def eval_accuracy_and_cleanup(model):
 
     metrics = model.evaluate(TEST_FILENAME, metrics=["categorical_accuracy"])
 
-    assert metrics["categorical_accuracy"] == 1
+    assert metrics["val_categorical_accuracy"][0] == 1
 
     save_loc = "temp_save.bolt"
     model.save(save_loc)
@@ -35,7 +35,7 @@ def eval_accuracy_and_cleanup(model):
 
     metrics = model.evaluate(TEST_FILENAME, metrics=["categorical_accuracy"])
 
-    assert metrics["categorical_accuracy"] == 1
+    assert metrics["val_categorical_accuracy"][0] == 1
 
     os.remove(TRAIN_FILENAME)
     os.remove(TEST_FILENAME)
