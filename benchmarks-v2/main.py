@@ -80,7 +80,7 @@ def experiment_name(config_name, official_benchmark):
     return config_name
 
 
-if __name__ == "__main__":
+def main():
     args = parse_arguments()
 
     if args.branch_name == "main":
@@ -140,3 +140,7 @@ if __name__ == "__main__":
 
             if mlflow_logger:
                 mlflow_logger.end_run()
+
+
+if __name__ == "__main__":
+    main()
