@@ -21,8 +21,9 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   }
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
-  return utils::defaultModel(input_dim, hidden_dim, output_dim,
-                             use_sigmoid_bce);
+  bool use_tanh = args.get<uint32_t>("use_tanh", "bool", defaults::USE_TANH);
+  return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
+                             use_tanh);
 }
 
 namespace {
@@ -43,13 +44,17 @@ float autotuneSparsity(uint32_t dim) {
 }  // namespace
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                      uint32_t output_dim, bool use_sigmoid_bce) {
+                      uint32_t output_dim, bool use_sigmoid_bce,
+                      bool use_tanh) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
-  auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
-                                                    /* sparsity= */ 1.0,
-                                                    /* activation= */ "tanh")
-                    ->apply(input);
+  const auto* hidden_activation = use_tanh ? "tanh" : "relu";
+
+  auto hidden =
+      bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
+                                          /* sparsity= */ 1.0,
+                                          /* activation= */ hidden_activation)
+          ->apply(input);
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
