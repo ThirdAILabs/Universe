@@ -10,6 +10,7 @@
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -75,6 +76,9 @@ class MachIndex {
 
 using MachIndexPtr = std::shared_ptr<MachIndex>;
 
+using EntityToHash = std::unordered_map<uint32_t, std::vector<uint32_t>>;
+using HashToEntity = std::unordered_map<uint32_t, std::vector<std::string>>;
+
 /**
  * Assumes each input entity can be converted to an integer x where 0 < x <
  * max_elements. Since the inputs are known beforehand this index is built on
@@ -84,6 +88,12 @@ class NumericCategoricalMachIndex : public MachIndex {
  public:
   NumericCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
                               uint32_t num_elements);
+
+  NumericCategoricalMachIndex(
+      const EntityToHash& entity_to_hashes,
+      const std::unordered_map<uint32_t, std::vector<uint32_t>>&
+          _hash_to_entities,
+      uint32_t output_range, uint32_t num_hashes);
 
   static auto make(uint32_t output_range, uint32_t num_hashes,
                    uint32_t num_elements) {
@@ -102,6 +112,11 @@ class NumericCategoricalMachIndex : public MachIndex {
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
+  void save(const std::string& filename);
+
+  static std::shared_ptr<NumericCategoricalMachIndex> load(
+      const std::string& filename);
+
  private:
   NumericCategoricalMachIndex() {}
 
@@ -114,8 +129,8 @@ class NumericCategoricalMachIndex : public MachIndex {
 
   // we don't use a vector here because if we forget elements we won't have
   // contiguous integers as entities
-  std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
+  EntityToHash _entity_to_hashes;
+  HashToEntity _hash_to_entities;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -150,6 +165,11 @@ class StringCategoricalMachIndex : public MachIndex {
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
+  void save(const std::string& filename);
+
+  static std::shared_ptr<StringCategoricalMachIndex> load(
+      const std::string& filename);
+
  private:
   StringCategoricalMachIndex() {}
 
@@ -160,8 +180,8 @@ class StringCategoricalMachIndex : public MachIndex {
             _hash_to_entities);
   }
 
-  std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
+  EntityToHash _entity_to_hashes;
+  HashToEntity _hash_to_entities;
 };
 
 using StringCategoricalMachIndexPtr =

@@ -20,6 +20,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -101,6 +102,23 @@ void createDatasetSubmodule(py::module_& module) {
                     R"pbdoc(
      Identifies the responsible input column.
       )pbdoc");
+
+  py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
+      internal_dataset_submodule, "AbstractMachIndex");
+
+  py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
+             mach::NumericCategoricalMachIndexPtr>(internal_dataset_submodule,
+                                                   "NumericMachIndex")
+      .def(py::init<>())
+      .def("save", &mach::NumericCategoricalMachIndex::save,
+           py::arg("filename"))
+      .def_static("load", &mach::NumericCategoricalMachIndex::load);
+
+  py::class_<mach::StringCategoricalMachIndex, mach::MachIndex,
+             mach::StringCategoricalMachIndexPtr>(internal_dataset_submodule,
+                                                  "NumericMachIndex")
+      .def("save", &mach::StringCategoricalMachIndex::save, py::arg("filename"))
+      .def_static("load", &mach::StringCategoricalMachIndex::load);
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",

@@ -23,6 +23,40 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
   }
 }
 
+NumericCategoricalMachIndex::NumericCategoricalMachIndex(
+    const EntityToHash& entity_to_hashes,
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& hash_to_entities,
+    uint32_t output_range, uint32_t num_hashes)
+    : MachIndex(output_range, num_hashes), _entity_to_hashes(entity_to_hashes) {
+  for (auto [entity, hashes] : entity_to_hashes) {
+    if (hashes.size() != num_hashes) {
+      throw std::invalid_argument("Num hashes for entity " +
+                                  std::to_string(entity) +
+                                  " is not equal to num_hashes.");
+    }
+
+    for (const uint32_t hash : hashes) {
+      if (hash >= output_range) {
+        throw std::invalid_argument("Hashes must be < output_range.");
+      }
+    }
+  }
+
+  for (auto [hash, entities] : hash_to_entities) {
+    if (hash >= output_range) {
+      throw std::invalid_argument("Hashes must be < output_range.");
+    }
+    for (const uint32_t entity : entities) {
+      if (!entity_to_hashes.count(entity)) {
+        throw std::invalid_argument(
+            "Entity " + std::to_string(entity) +
+            " from hash_to_entities not found in entity_to_hashes.");
+      }
+      _hash_to_entities[hash].push_back(std::to_string(entity));
+    }
+  }
+}
+
 std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
     const std::string& string) {
   uint32_t id = std::strtoul(string.data(), nullptr, 10);
@@ -79,6 +113,24 @@ void NumericCategoricalMachIndex::erase(const std::string& string) {
                                    _hash_to_entities[hash].end(), string);
     _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
   }
+}
+
+void NumericCategoricalMachIndex::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<NumericCategoricalMachIndex> NumericCategoricalMachIndex::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<NumericCategoricalMachIndex> deserialize_into(
+      new NumericCategoricalMachIndex());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
 }
 
 StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
@@ -146,6 +198,24 @@ void StringCategoricalMachIndex::erase(const std::string& string) {
                                    _hash_to_entities[hash].end(), string);
     _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
   }
+}
+
+void StringCategoricalMachIndex::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<StringCategoricalMachIndex> StringCategoricalMachIndex::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<StringCategoricalMachIndex> deserialize_into(
+      new StringCategoricalMachIndex());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
 }
 
 }  // namespace thirdai::dataset::mach
