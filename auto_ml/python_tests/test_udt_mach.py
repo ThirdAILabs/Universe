@@ -361,6 +361,9 @@ def test_mach_udt_hash_based_methods():
     hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert len(hashes) == 7
 
+    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    assert hashes != new_hash_set
+
     for _ in range(5):
         model.train_with_hashes(
             [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
@@ -368,4 +371,4 @@ def test_mach_udt_hash_based_methods():
         )
 
     new_hashes = model.predict_hashes({"text": "testing hash based methods"})
-    assert set(new_hashes) == set([93, 94, 95, 96, 97, 98, 99])
+    assert set(new_hashes) == new_hash_set
