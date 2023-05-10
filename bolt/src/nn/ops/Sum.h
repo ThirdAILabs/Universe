@@ -38,6 +38,10 @@ class Sum final : public Op, public std::enable_shared_from_this<Sum> {
 
  private:
   Sum();
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using SumPtr = std::shared_ptr<Sum>;

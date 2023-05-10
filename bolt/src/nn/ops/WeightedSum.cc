@@ -1,5 +1,8 @@
 #include "WeightedSum.h"
 #include <wrappers/src/EigenDenseWrapper.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -137,4 +140,14 @@ autograd::ComputationPtr WeightedSum::apply(
   return autograd::Computation::make(shared_from_this(), {embeddings, weights});
 }
 
+template void WeightedSum::serialize(cereal::BinaryInputArchive&);
+template void WeightedSum::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void WeightedSum::serialize(Archive& archive) {
+  archive(cereal::base_class<Op>(this));
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::WeightedSum)

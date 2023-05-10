@@ -45,6 +45,10 @@ class L1Normalization final
 
   static void l1NormalizationGradient(BoltVector& input,
                                       const BoltVector& output);
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using L1NormalizationPtr = std::shared_ptr<L1Normalization>;

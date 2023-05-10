@@ -1,5 +1,8 @@
 #include "Sum.h"
 #include <wrappers/src/EigenDenseWrapper.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <memory>
 #include <stdexcept>
@@ -95,4 +98,14 @@ autograd::ComputationPtr Sum::apply(const autograd::ComputationPtr& lhs,
   return autograd::Computation::make(shared_from_this(), {lhs, rhs});
 }
 
+template void Sum::serialize(cereal::BinaryInputArchive&);
+template void Sum::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Sum::serialize(Archive& archive) {
+  archive(cereal::base_class<Op>(this));
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Sum)
