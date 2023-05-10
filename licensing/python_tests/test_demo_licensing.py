@@ -1,5 +1,6 @@
 import pytest
 import thirdai
+from licensing_utils import deactivate_license_at_start_of_demo_test
 
 # These lines use a hack where we can import functions from different test files
 # as long as this file is run from bin/python-test.sh. To run just this file,
@@ -11,8 +12,6 @@ from test_udt_generator import prepared_datasets as udt_query_reformulation_fixt
 from test_udt_generator import train_udt_query_reformulation_model
 from test_udt_simple import make_simple_trained_model
 from thirdai import bolt
-
-from .utils import deactivate_license_at_start_of_demo_test
 
 pytestmark = [pytest.mark.release]
 

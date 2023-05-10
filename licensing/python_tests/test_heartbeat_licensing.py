@@ -6,9 +6,11 @@ from pathlib import Path
 import pytest
 import requests
 import thirdai
-from licensing_utils import LOCAL_HEARTBEAT_SERVER, run_udt_training_routine
-
-from .utils import deactivate_license_at_start_of_demo_test
+from licensing_utils import (
+    LOCAL_HEARTBEAT_SERVER,
+    deactivate_license_at_start_of_demo_test,
+    run_udt_training_routine,
+)
 
 pytestmark = [pytest.mark.release]
 

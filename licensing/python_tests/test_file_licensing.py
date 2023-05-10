@@ -3,9 +3,10 @@
 import platform
 
 import pytest
-from licensing_utils import run_udt_training_routine
-
-from .utils import deactivate_license_at_start_of_demo_test
+from licensing_utils import (
+    deactivate_license_at_start_of_demo_test,
+    run_udt_training_routine,
+)
 
 pytestmark = [pytest.mark.release]
 
