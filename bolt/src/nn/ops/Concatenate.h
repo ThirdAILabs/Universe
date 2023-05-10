@@ -40,11 +40,12 @@ class Concatenate final : public Op,
   Concatenate();
 
   void forwardHelper(const autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index) const;
+               tensor::TensorPtr& output, uint32_t index_in_batch,
+               uint32_t index) const;
 
   static void backpropagateHelper(autograd::ComputationList& inputs,
-                                  const tensor::TensorPtr& output,
-                                  uint32_t index);
+                            const tensor::TensorPtr& output,
+                            uint32_t index_in_batch, uint32_t index);
 
   std::vector<uint32_t> _input_dims;
   std::vector<uint32_t> _neuron_offsets;

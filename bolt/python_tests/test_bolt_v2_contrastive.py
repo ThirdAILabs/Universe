@@ -115,7 +115,7 @@ def test_contrastive_number_embeddings():
     )[0]
 
     result = np.array(
-        [r.activations for r in embedding_model.forward(identity, use_sparsity=False)]
+        [r.values for r in embedding_model.forward(identity, use_sparsity=False)]
     )[0]
 
     pairwise_distances = euclidean_distances(result, result)

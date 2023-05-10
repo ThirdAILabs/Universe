@@ -29,15 +29,14 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
   (void)training;
   assert(inputs.size() == 1);
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
   const auto& input = inputs[0]->tensor();
 
-  for (uint32_t i = start; i < end; i++) {
-    const BoltVector& input_vector = input->getVector(i);
+  for (uint32_t i = 0; i < len; i++) {
+    const BoltVector& input_vector = input->at_3d(index_in_batch, i);
 
-    BoltVector& output_vector = output->getVector(i);
+    BoltVector& output_vector = output->at_3d(index_in_batch, i);
 
     if (input_vector.isDense()) {
       forward<true>(input_vector, output_vector);
@@ -73,14 +72,13 @@ void LayerNorm::backpropagate(autograd::ComputationList& inputs,
                               uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
   const auto& input = inputs[0]->tensor();
 
-  for (uint32_t i = start; i < end; i++) {
-    BoltVector& input_vector = input->getVector(i);
-    const BoltVector& output_vector = output->getVector(i);
+  for (uint32_t i = 0; i < len; i++) {
+    BoltVector& input_vector = input->at_3d(index_in_batch, i);
+    const BoltVector& output_vector = output->at_3d(index_in_batch, i);
 
     if (input_vector.isDense()) {
       backpropagate<true>(input_vector, output_vector);

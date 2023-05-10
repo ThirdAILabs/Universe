@@ -33,7 +33,7 @@ class EuclideanContrastive final : public Loss {
   autograd::ComputationList labels() const final;
 
  private:
-  float euclideanDistanceSquared(uint32_t index_in_batch) const;
+  float euclideanDistanceSquared(uint32_t index_in_batch, uint32_t i) const;
 
   friend class cereal::access;
   template <class Archive>

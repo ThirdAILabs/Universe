@@ -48,13 +48,13 @@ void Embedding::forward(const autograd::ComputationList& inputs,
   (void)training;
   assert(inputs.size() == 1);
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
   const tensor::TensorPtr& input = inputs[0]->tensor();
 
-  for (uint32_t i = start; i < end; i++) {
-    _kernel->forward(input->getVector(i), output->getVector(i));
+  for (uint32_t i = 0; i < len; i++) {
+    _kernel->forward(input->at_3d(index_in_batch, i),
+                     output->at_3d(index_in_batch, i));
   }
 }
 
@@ -63,13 +63,13 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
                               uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
   const tensor::TensorPtr& input = inputs[0]->tensor();
 
-  for (uint32_t i = start; i < end; i++) {
-    _kernel->backpropagate(input->getVector(i), output->getVector(i));
+  for (uint32_t i = 0; i < len; i++) {
+    _kernel->backpropagate(input->at_3d(index_in_batch, i),
+                           output->at_3d(index_in_batch, i));
   }
 }
 

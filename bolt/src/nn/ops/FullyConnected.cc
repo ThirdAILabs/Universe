@@ -56,17 +56,17 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
   // in active neuron set.
   bool use_labels = training && inputs.size() == 2;
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
   const auto& input = inputs[0]->tensor();
 
-  for (uint32_t i = start; i < end; i++) {
+  for (uint32_t i = 0; i < len; i++) {
     const BoltVector* labels = nullptr;
     if (use_labels) {
-      labels = &inputs[1]->tensor()->getVector(i);
+      labels = &inputs[1]->tensor()->at_3d(index_in_batch, i);
     }
-    _kernel->forward(input->getVector(i), output->getVector(i), labels);
+    _kernel->forward(input->at_3d(index_in_batch, i),
+                     output->at_3d(index_in_batch, i), labels);
   }
 }
 
@@ -75,18 +75,18 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
                                    uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
   auto& input = inputs[0]->tensor();
 
-  for (uint32_t i = start; i < end; i++) {
-    BoltVector& input_vec = input->getVector(i);
+  for (uint32_t i = 0; i < len; i++) {
+    BoltVector& input_vec = input->at_3d(index_in_batch, i);
 
     if (input_vec.hasGradients()) {
-      _kernel->backpropagate(input_vec, output->getVector(i));
+      _kernel->backpropagate(input_vec, output->at_3d(index_in_batch, i));
     } else {
-      _kernel->backpropagateInputLayer(input_vec, output->getVector(i));
+      _kernel->backpropagateInputLayer(input_vec,
+                                       output->at_3d(index_in_batch, i));
     }
   }
 }

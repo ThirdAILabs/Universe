@@ -194,7 +194,7 @@ void checkDenseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
   ASSERT_TRUE(bolt->nonzeros().has_value());
   ASSERT_EQ(bolt->nonzeros().value(), bolt->dims().back());
 
-  std::vector<float> bolt_arr = bolt->activations();
+  std::vector<float> bolt_arr = bolt->values();
   if (check_grads) {
     bolt_arr = bolt->gradients();
   }
@@ -215,7 +215,7 @@ void checkSparseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
 
   uint32_t nonzeros = bolt->nonzeros().value();
 
-  std::vector<float> bolt_arr = bolt->activations();
+  std::vector<float> bolt_arr = bolt->values();
   if (check_grads) {
     bolt_arr = bolt->gradients();
   }
@@ -224,7 +224,7 @@ void checkSparseTensor(const EigenMatrix& eigen, const tensor::TensorPtr& bolt,
 
   for (uint32_t i = 0; i < N_VECS; i++) {
     for (uint32_t j = 0; j < nonzeros; j++) {
-      uint32_t index = bolt->activeNeurons().at(i * nonzeros + j);
+      uint32_t index = bolt->indices().at(i * nonzeros + j);
 
       ASSERT_FLOAT_EQ(eigen(i, index), bolt_arr.at(i * nonzeros + j));
     }
@@ -271,7 +271,7 @@ void runTest(const EigenMatrix& eigen_input,
     checkDenseTensor(eigen_output, output->tensor(), /* check_grads= */ false);
   }
 
-  setGradients(output->tensor(), bolt_output_grad->activations());
+  setGradients(output->tensor(), bolt_output_grad->values());
 
   runBackpropagate(output, BATCH_SIZE);
 

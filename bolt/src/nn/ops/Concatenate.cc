@@ -29,24 +29,23 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
   (void)training;
   assert(!inputs.empty());
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
-  for (uint32_t i = start; i < end; i++) {
-    forwardHelper(inputs, output, i);
+  for (uint32_t i = 0; i < len; i++) {
+    forwardHelper(inputs, output, index_in_batch, i);
   }
 }
 
 void Concatenate::forwardHelper(const autograd::ComputationList& inputs,
                                 tensor::TensorPtr& output,
-                                uint32_t index) const {
-  BoltVector& output_vector = output->getVector(index);
+                                uint32_t index_in_batch, uint32_t index) const {
+  BoltVector& output_vector = output->at_3d(index_in_batch, index);
 
   uint32_t current_offset_in_output = 0;
 
   for (uint32_t input_idx = 0; input_idx < inputs.size(); input_idx++) {
     const BoltVector& input_vector =
-        inputs[input_idx]->tensor()->getVector(index);
+        inputs[input_idx]->tensor()->at_3d(index_in_batch, index);
 
     std::copy(input_vector.activations,
               input_vector.activations + input_vector.len,
@@ -77,23 +76,22 @@ void Concatenate::backpropagate(autograd::ComputationList& inputs,
                                 uint32_t index_in_batch) {
   assert(!inputs.empty());
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
-  for (uint32_t i = start; i < end; i++) {
-    backpropagateHelper(inputs, output, i);
+  for (uint32_t i = 0; i < len; i++) {
+    backpropagateHelper(inputs, output, index_in_batch, i);
   }
 }
 
 void Concatenate::backpropagateHelper(autograd::ComputationList& inputs,
                                       const tensor::TensorPtr& output,
-                                      uint32_t index) {
-  BoltVector& output_vector = output->getVector(index);
+                                      uint32_t index_in_batch, uint32_t index) {
+  const BoltVector& output_vector = output->at_3d(index_in_batch, index);
 
   uint32_t current_offset_in_output = 0;
 
   for (auto& input : inputs) {
-    BoltVector& input_vector = input->tensor()->getVector(index);
+    BoltVector& input_vector = input->tensor()->at_3d(index_in_batch, index);
 
     if (input_vector.hasGradients()) {
       for (uint32_t i = 0; i < input_vector.len; i++) {

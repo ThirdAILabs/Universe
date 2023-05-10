@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <array>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt::nn::tensor {
@@ -35,76 +37,98 @@ class Tensor {
                                          uint32_t dim);
 
   /**
-   * Returns the dimension of the vectors in the tensor.
+   * Returns the dimensions of the tensor.
    */
-  const Dims& dims() const;
+  const Dims& dims() const { return _dims; }
+
+  /**
+   * Returns the dimensions of the tensor if the tensor is reshaped as 2D while
+   * preserving the last dimension. For example given a tensor with dimensions
+   * (2, 3, 4) this method would return (6, 4)
+   */
+  const auto& dims2d() const { return _dims_2d; }
+
+  /**
+   * Returns the dimensions of the tensor if the tensor is reshaped as 3D while
+   * preserving the first and last dimensions. For example given a tensor with
+   * dimensions (2, 3, 4, 5) this method would return (2, 12, 5)
+   */
+  const auto& dims3d() const { return _dims_3d; }
 
   /**
    * Returns the number of nonzeros in each vector in the tensor. If this is not
    * fixed (e.g. for a sparse input tensor) it will return std::nullopt. If the
    * output is dense then this is equivalent to calling dim().
    */
-  std::optional<uint32_t> nonzeros() const;
-
-  bool isSparse() const;
+  std::optional<uint32_t> nonzeros() const { return _nonzeros; }
 
   /**
-   * Returns the ith vector in the tensor.
+   * Returns if the tensor is sparse.
    */
-  BoltVector& getVector(uint32_t index);
+  bool isSparse() const { return !_vectors.front().isDense(); }
 
-  constexpr uint32_t innerDim3d() const { return _inner_dim_3d; }
+  /**
+   * Accesses the i-th vector of the tensor, treating the tensor as if it is 2d.
+   */
+  BoltVector& at_2d(uint32_t i);
 
-  constexpr uint32_t rangeStart(uint32_t index_in_batch) const {
-    return index_in_batch * innerDim3d();
-  }
+  /**
+   * Accesses the (i,j)-th vector of the tensor, treating the tensor as if it is
+   * 3d.
+   */
+  BoltVector& at_3d(uint32_t i, uint32_t j);
 
-  constexpr uint32_t rangeEnd(uint32_t index_in_batch) const {
-    return (index_in_batch + 1) * innerDim3d();
-  }
+  /**
+   * Treats the tensor as 3d. Performs indexing on the outer dimension and
+   * returns a pointer to the indices. Throws if the tensor is dense or if the
+   * indices are not continuously activated.
+   */
+  uint32_t* indicesAtIndex3d(uint32_t i);
 
-  float* activationsAtIndex3d(uint32_t index_in_batch) {
-    assert(index_in_batch < batchSize());
-    return _activations.data() + index_in_batch * innerDim3d() * _dims.back();
-  }
+  /**
+   * Treats the tensor as 3d. Performs indexing on the outer dimension and
+   * returns a pointer to the indices. Throws if the tensor if the values are
+   * not continuously activated.
+   */
+  float* valuesAtIndex3d(uint32_t i);
 
-  float* gradientsAtIndex3d(uint32_t index_in_batch) {
-    assert(index_in_batch < batchSize());
-    return _gradients.data() + index_in_batch * innerDim3d() * _dims.back();
-  }
+  /**
+   * Treats the tensor as 3d. Performs indexing on the outer dimension and
+   * returns a pointer to the gradients. Throws if the tensor does not have
+   * gradients or if the gradients are not continuously activated.
+   */
+  float* gradientsAtIndex3d(uint32_t i);
 
   /**
    * Returns the number of vectors in the tensor.
    */
-  uint32_t batchSize() const;
+  uint32_t batchSize() const { return _dims.front(); }
 
-  const uint32_t* activeNeuronsPtr() const;
-
-  const float* activationsPtr() const;
-
+  const uint32_t* indicesPtr() const;
+  const float* valuesPtr() const;
   const float* gradientsPtr() const;
 
-  const auto& activeNeurons() const { return _active_neurons; }
+  const auto& indices() const { return _indices; }
+  auto& indices() { return _indices; }
 
-  auto& activeNeurons() { return _active_neurons; }
-
-  const auto& activations() const { return _activations; }
-
-  auto& activations() { return _activations; }
+  const auto& values() const { return _values; }
+  auto& values() { return _values; }
 
   const auto& gradients() const { return _gradients; }
-
   auto& gradients() { return _gradients; }
 
  private:
   Dims _dims;
   std::optional<uint32_t> _nonzeros;
-  uint32_t _inner_dim_3d;
+
+  std::array<uint32_t, 2> _dims_2d;
+
+  std::array<uint32_t, 3> _dims_3d;
 
   std::vector<BoltVector> _vectors;
 
-  std::vector<uint32_t> _active_neurons;
-  std::vector<float> _activations;
+  std::vector<uint32_t> _indices;
+  std::vector<float> _values;
   std::vector<float> _gradients;
 };
 
