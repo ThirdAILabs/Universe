@@ -2,7 +2,7 @@ from thirdai import bolt, bolt_v2
 
 from ..configs.bolt_configs import BoltBenchmarkConfig
 from .runner import Runner
-from .utils import get_eval_config, get_fc_layer, get_train_config
+from .utils import get_train_config
 
 
 class BoltFullyConnectedRunner(Runner):
@@ -34,7 +34,7 @@ class BoltFullyConnectedRunner(Runner):
             predict_output = model.evaluate(
                 test_data=test_set,
                 test_labels=test_labels,
-                eval_config=get_eval_config(benchmark_config=config),
+                eval_config=bolt.EvalConfig().with_metrics(config.metrics),
             )
 
             if mlflow_logger:
@@ -132,3 +132,17 @@ def define_fully_connected_bolt_v2_model(config: BoltBenchmarkConfig):
     model.summary()
 
     return model
+
+
+def get_fc_layer(
+    config, input_dim, rebuild_hash_tables, reconstruct_hash_functions, batch_size
+):
+    return bolt_v2.nn.FullyConnected(
+        dim=config["dim"],
+        input_dim=input_dim,
+        sparsity=config.get("sparsity", 1.0),
+        activation=config["activation"],
+        sampling_config=config.get("sampling_config"),
+        rebuild_hash_tables=rebuild_hash_tables // batch_size,
+        reconstruct_hash_functions=reconstruct_hash_functions // batch_size,
+    )
