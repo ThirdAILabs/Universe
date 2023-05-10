@@ -34,9 +34,9 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
   const auto& input = inputs[0]->tensor();
 
   for (uint32_t i = 0; i < len; i++) {
-    const BoltVector& input_vector = input->at_3d(index_in_batch, i);
+    const BoltVector& input_vector = input->index3d(index_in_batch, i);
 
-    BoltVector& output_vector = output->at_3d(index_in_batch, i);
+    BoltVector& output_vector = output->index3d(index_in_batch, i);
 
     if (input_vector.isDense()) {
       forward<true>(input_vector, output_vector);
@@ -77,8 +77,8 @@ void LayerNorm::backpropagate(autograd::ComputationList& inputs,
   const auto& input = inputs[0]->tensor();
 
   for (uint32_t i = 0; i < len; i++) {
-    BoltVector& input_vector = input->at_3d(index_in_batch, i);
-    const BoltVector& output_vector = output->at_3d(index_in_batch, i);
+    BoltVector& input_vector = input->index3d(index_in_batch, i);
+    const BoltVector& output_vector = output->index3d(index_in_batch, i);
 
     if (input_vector.isDense()) {
       backpropagate<true>(input_vector, output_vector);

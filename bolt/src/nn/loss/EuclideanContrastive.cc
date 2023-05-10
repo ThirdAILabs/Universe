@@ -71,9 +71,9 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
   uint32_t len = labels->dims3d().at(1);
 
   for (uint32_t i = 0; i < len; i++) {
-    auto& vec_1 = output_1->at_3d(index_in_batch, i);
-    auto& vec_2 = output_2->at_3d(index_in_batch, i);
-    float label = labels->at_3d(index_in_batch, i).activations[0];
+    auto& vec_1 = output_1->index3d(index_in_batch, i);
+    auto& vec_2 = output_2->index3d(index_in_batch, i);
+    float label = labels->index3d(index_in_batch, i).activations[0];
 
     float euclidean_distance =
         std::sqrt(euclideanDistanceSquared(index_in_batch, i));
@@ -114,7 +114,7 @@ float EuclideanContrastive::loss(uint32_t index_in_batch) const {
 
   float total_loss = 0;
   for (uint32_t i = 0; i < len; i++) {
-    float label = labels->at_3d(index_in_batch, i).activations[0];
+    float label = labels->index3d(index_in_batch, i).activations[0];
 
     float euclidean_distance_squared =
         euclideanDistanceSquared(index_in_batch, i);
@@ -147,8 +147,8 @@ autograd::ComputationList EuclideanContrastive::labels() const {
 
 float EuclideanContrastive::euclideanDistanceSquared(uint32_t index_in_batch,
                                                      uint32_t i) const {
-  auto& vec_1 = _output_1->tensor()->at_3d(index_in_batch, i);
-  auto& vec_2 = _output_2->tensor()->at_3d(index_in_batch, i);
+  auto& vec_1 = _output_1->tensor()->index3d(index_in_batch, i);
+  auto& vec_2 = _output_2->tensor()->index3d(index_in_batch, i);
 
   float euclidean_distance_squared = 0;
   bolt_vector::visitPair(

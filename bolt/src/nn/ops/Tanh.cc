@@ -31,8 +31,8 @@ void Tanh::forward(const autograd::ComputationList& inputs,
   uint32_t len = output->dims3d().at(1);
 
   for (uint32_t i = 0; i < len; i++) {
-    const BoltVector& input_vec = input->at_3d(index_in_batch, i);
-    BoltVector& output_vec = output->at_3d(index_in_batch, i);
+    const BoltVector& input_vec = input->index3d(index_in_batch, i);
+    BoltVector& output_vec = output->index3d(index_in_batch, i);
 
     if (!input_vec.isDense()) {
       std::copy(input_vec.active_neurons,
@@ -55,8 +55,8 @@ void Tanh::backpropagate(autograd::ComputationList& inputs,
   uint32_t len = output->dims3d().at(1);
 
   for (uint32_t i = 0; i < len; i++) {
-    BoltVector& input_vec = input->at_3d(index_in_batch, i);
-    const BoltVector& output_vec = output->at_3d(index_in_batch, i);
+    BoltVector& input_vec = input->index3d(index_in_batch, i);
+    const BoltVector& output_vec = output->index3d(index_in_batch, i);
 
     for (uint32_t j = 0; j < input_vec.len; j++) {
       float tanh = output_vec.activations[j];

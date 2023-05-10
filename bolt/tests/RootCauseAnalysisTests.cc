@@ -58,7 +58,7 @@ void testRootCauseAnalysis(const train::LabeledDataset& train_data,
     auto grads = rca::explainPrediction(model, test_data.first[i]);
 
     uint32_t label =
-        test_data.second.at(i).at(0)->at_2d(0).getHighestActivationId();
+        test_data.second.at(i).at(0)->index2d(0).getHighestActivationId();
 
     uint32_t largest_grad = largestGrad(grads);
 

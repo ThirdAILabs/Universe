@@ -13,7 +13,7 @@ namespace thirdai::bolt::nn::tests {
 // index of the vector in the tensor.
 void fillTensor(tensor::TensorPtr& tensor) {
   for (uint32_t i = 0; i < tensor->dims2d().front(); i++) {
-    auto& vec = tensor->at_2d(i);
+    auto& vec = tensor->index2d(i);
 
     if (!vec.isDense()) {
       std::fill_n(vec.active_neurons, vec.len, i);
@@ -99,7 +99,7 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        tensor->at_2d(i), vectors[i]);
+        tensor->index2d(i), vectors[i]);
   }
 }
 
@@ -124,7 +124,7 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        tensor->at_2d(i), vectors[i]);
+        tensor->index2d(i), vectors[i]);
   }
 }
 

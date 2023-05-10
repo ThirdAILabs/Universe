@@ -18,8 +18,8 @@ class ComparativeMetric : public Metric {
     uint32_t len = output->dims3d().at(1);
 
     for (uint32_t i = 0; i < len; i++) {
-      record(output->at_3d(index_in_batch, i),
-             labels->at_3d(index_in_batch, i));
+      record(output->index3d(index_in_batch, i),
+             labels->index3d(index_in_batch, i));
     }
   }
 

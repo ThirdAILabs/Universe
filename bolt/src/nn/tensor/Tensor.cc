@@ -153,12 +153,12 @@ std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
   return convert(batch, dim);
 }
 
-BoltVector& Tensor::at_2d(uint32_t i) {
+BoltVector& Tensor::index2d(uint32_t i) {
   assert(i < _dims_2d.at(0));
   return _vectors[i];
 }
 
-BoltVector& Tensor::at_3d(uint32_t i, uint32_t j) {
+BoltVector& Tensor::index3d(uint32_t i, uint32_t j) {
   assert(i < _dims_3d.at(0) && j < _dims_3d.at(1));
   return _vectors[i * _dims_3d.at(1) + j];
 }

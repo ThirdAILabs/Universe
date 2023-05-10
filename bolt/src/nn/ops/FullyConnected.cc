@@ -63,10 +63,10 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
   for (uint32_t i = 0; i < len; i++) {
     const BoltVector* labels = nullptr;
     if (use_labels) {
-      labels = &inputs[1]->tensor()->at_3d(index_in_batch, i);
+      labels = &inputs[1]->tensor()->index3d(index_in_batch, i);
     }
-    _kernel->forward(input->at_3d(index_in_batch, i),
-                     output->at_3d(index_in_batch, i), labels);
+    _kernel->forward(input->index3d(index_in_batch, i),
+                     output->index3d(index_in_batch, i), labels);
   }
 }
 
@@ -80,13 +80,13 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
   auto& input = inputs[0]->tensor();
 
   for (uint32_t i = 0; i < len; i++) {
-    BoltVector& input_vec = input->at_3d(index_in_batch, i);
+    BoltVector& input_vec = input->index3d(index_in_batch, i);
 
     if (input_vec.hasGradients()) {
-      _kernel->backpropagate(input_vec, output->at_3d(index_in_batch, i));
+      _kernel->backpropagate(input_vec, output->index3d(index_in_batch, i));
     } else {
       _kernel->backpropagateInputLayer(input_vec,
-                                       output->at_3d(index_in_batch, i));
+                                       output->index3d(index_in_batch, i));
     }
   }
 }

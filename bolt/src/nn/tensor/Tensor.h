@@ -70,13 +70,13 @@ class Tensor {
   /**
    * Accesses the i-th vector of the tensor, treating the tensor as if it is 2d.
    */
-  BoltVector& at_2d(uint32_t i);
+  BoltVector& index2d(uint32_t i);
 
   /**
    * Accesses the (i,j)-th vector of the tensor, treating the tensor as if it is
    * 3d.
    */
-  BoltVector& at_3d(uint32_t i, uint32_t j);
+  BoltVector& index3d(uint32_t i, uint32_t j);
 
   /**
    * Treats the tensor as 3d. Performs indexing on the outer dimension and

@@ -62,10 +62,10 @@ tensor::TensorPtr sparseOutput() {
   std::vector<uint32_t> indices = {0, 1, 4, 7};
   std::vector<float> values = {0.0, 4.0, 5.0, 6.0};
 
-  uint32_t* active_neurons = output->at_2d(0).active_neurons;
+  uint32_t* active_neurons = output->index2d(0).active_neurons;
   std::copy(indices.begin(), indices.end(), active_neurons);
 
-  float* activations = output->at_2d(0).activations;
+  float* activations = output->index2d(0).activations;
   std::copy(values.begin(), values.end(), activations);
 
   return output;
@@ -76,7 +76,7 @@ tensor::TensorPtr denseOutput() {
 
   std::vector<float> values = {0.0, 4.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0};
 
-  float* activations = output->at_2d(0).activations;
+  float* activations = output->index2d(0).activations;
   std::copy(values.begin(), values.end(), activations);
 
   return output;

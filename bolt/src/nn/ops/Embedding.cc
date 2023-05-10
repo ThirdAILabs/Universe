@@ -53,8 +53,8 @@ void Embedding::forward(const autograd::ComputationList& inputs,
   const tensor::TensorPtr& input = inputs[0]->tensor();
 
   for (uint32_t i = 0; i < len; i++) {
-    _kernel->forward(input->at_3d(index_in_batch, i),
-                     output->at_3d(index_in_batch, i));
+    _kernel->forward(input->index3d(index_in_batch, i),
+                     output->index3d(index_in_batch, i));
   }
 }
 
@@ -68,8 +68,8 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
   const tensor::TensorPtr& input = inputs[0]->tensor();
 
   for (uint32_t i = 0; i < len; i++) {
-    _kernel->backpropagate(input->at_3d(index_in_batch, i),
-                           output->at_3d(index_in_batch, i));
+    _kernel->backpropagate(input->index3d(index_in_batch, i),
+                           output->index3d(index_in_batch, i));
   }
 }
 

@@ -29,7 +29,7 @@ void AllocationManager::resetOutputGradients(uint32_t index_in_batch) {
     uint32_t len = tensor->dims3d().at(1);
 
     for (uint32_t i = 0; i < len; i++) {
-      tensor->at_3d(index_in_batch, i).zeroOutGradients();
+      tensor->index3d(index_in_batch, i).zeroOutGradients();
     }
   }
 }

@@ -91,12 +91,13 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
       for (uint32_t sample_idx = 0;
            sample_idx < data.first.at(batch_idx).at(0)->batchSize();
            sample_idx++) {
-        uint32_t prediction =
-            outputs.at(output_idx)->at_2d(sample_idx).getHighestActivationId();
+        uint32_t prediction = outputs.at(output_idx)
+                                  ->index2d(sample_idx)
+                                  .getHighestActivationId();
 
         uint32_t label = data.second.at(batch_idx)
                              .at(0)
-                             ->at_2d(sample_idx)
+                             ->index2d(sample_idx)
                              .getHighestActivationId();
 
         if (prediction == label) {
