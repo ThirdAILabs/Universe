@@ -78,7 +78,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 }
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    const std::vector<std::string>& words, uint32_t output_range) {
+    const std::vector<std::string>& words) {
   auto tokens = hashTokens(words);
 
   assert(words.size() == tokens.size());
@@ -86,7 +86,7 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
 
   std::unordered_map<uint32_t, std::string> index_to_word;
   for (uint32_t i = 0; i < length; i++) {
-    index_to_word[tokens[i] % output_range] = words[i];
+    index_to_word[tokens[i]] = words[i];
   }
 
   return index_to_word;

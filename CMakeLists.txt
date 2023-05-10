@@ -265,6 +265,8 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
+
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
 set(ENABLE_TESTING OFF)
@@ -374,7 +376,6 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    dataset/src/Vocabulary.cc
     dataset/src/DataSource.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
@@ -385,7 +386,6 @@ set(THIRDAI_SOURCES
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
-    dataset/src/featurizers/MaskedSentenceFeaturizer.cc
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
@@ -395,6 +395,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
+    dataset/src/blocks/text/WordpieceTokenizer.cc
     dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
@@ -436,8 +437,10 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal prometheus-cpp::pull)
+target_link_libraries(
+  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
+                 prometheus-cpp::pull utf8proc)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
                                        OpenSSL::SSL)
