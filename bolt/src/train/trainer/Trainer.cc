@@ -356,8 +356,8 @@ std::optional<LabeledDataset> Trainer::loadSomeWrapper(
       datasets->begin() + input_dims.size(), datasets->end());
 
   return std::make_optional<LabeledDataset>(
-      convertDatasetsForModelDims(input_datasets, input_dims),
-      convertDatasetsForModelDims(label_datasets, label_dims));
+      convertDatasets(input_datasets, bolt::train::expect2dDims(input_dims)),
+      convertDatasets(label_datasets, bolt::train::expect2dDims(label_dims)));
 }
 
 }  // namespace thirdai::bolt::train

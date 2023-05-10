@@ -119,7 +119,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                       sparse_inference)
             .at(0);
     auto predicted_id =
-        _dataset_factory->elementIdAtStep(output->getVector(0), step);
+        _dataset_factory->elementIdAtStep(output->index2dAssert2d(0), step);
     if (_dataset_factory->isEOS(predicted_id)) {
       break;
     }
@@ -174,7 +174,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
         auto predicted_id = _dataset_factory->elementIdAtStep(
-            batch_activations->getVector(i), step);
+            batch_activations->index2dAssert2d(i), step);
         if (_dataset_factory->isEOS(predicted_id)) {
           progress.markSampleDone(i);
           continue;

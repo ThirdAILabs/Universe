@@ -1,10 +1,16 @@
 #include "Tensor.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <functional>
 #include <numeric>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::tensor {
+
+template <typename Iter>
+uint32_t dimProduct(Iter start, Iter end) {
+  return std::reduce(start, end, 1, std::multiplies<>());
+}
 
 Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
     : _dims(std::move(dims)), _nonzeros(nonzeros) {
@@ -12,37 +18,29 @@ Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
     throw std::invalid_argument("Cannot allocate tensor with 0 nonzeros.");
   }
 
-  if (nonzeros < dim) {
-    _active_neurons.assign(batch_size * nonzeros, 0);
-  }
+  _dims_2d = {dimProduct(_dims.begin(), _dims.end() - 1), _dims.back()};
+  _dims_3d = {_dims.front(), dimProduct(_dims.begin() + 1, _dims.end() - 1),
+              _dims.back()};
 
-  uint32_t num_vectors =
-      std::reduce(_dims.begin(), _dims.end() - 1, 1, std::multiplies<>());
-
-  uint32_t inner_dim_3d =
-      std::reduce(_dims.begin() + 1, _dims.end() - 1, 1, std::multiplies<>());
-
-  _dims_2d = {num_vectors, _dims.back()};
-  _dims_3d = {_dims.front(), inner_dim_3d, _dims.back()};
+  uint32_t mem_size = _dims_2d.front() * nonzeros;
 
   bool sparse = nonzeros < _dims.back();
 
   if (sparse) {
-    _indices.assign(num_vectors * nonzeros, 0);
+    _indices.assign(mem_size, 0);
   } else if (nonzeros > _dims.back()) {
     throw std::invalid_argument(
         "The number of nonzeros cannot be larger than the final dimension.");
   }
 
-  _values.assign(num_vectors * nonzeros, 0.0);
+  _values.assign(mem_size, 0.0);
   if (with_grad) {
-    _gradients.assign(num_vectors * nonzeros, 0.0);
+    _gradients.assign(mem_size, 0.0);
   }
 
-  _vectors.reserve(num_vectors);
+  _vectors.reserve(_dims_2d.front());
 
-  for (uint32_t offset = 0; offset < num_vectors * nonzeros;
-       offset += nonzeros) {
+  for (uint32_t offset = 0; offset < mem_size; offset += nonzeros) {
     uint32_t* active_neurons = nullptr;
     if (sparse) {
       active_neurons = _indices.data() + offset;
@@ -88,34 +86,32 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
 
-  checkBatchContents(batch, _dim);
+  checkBatchContents(batch, dim);
 
-  uint64_t total_dim = 0;
+  uint64_t mem_size = 0;
   for (const auto& vec : batch) {
-    total_dim += vec.len;
+    mem_size += vec.len;
   }
 
   bool is_sparse = !batch.begin()->isDense();
 
   if (is_sparse) {
-    _active_neurons.reserve(total_dim);
+    _indices.reserve(mem_size);
   }
-  _activations.reserve(total_dim);
+  _values.reserve(mem_size);
   _vectors.reserve(batch.getBatchSize());
 
   for (const auto& vec : batch) {
     if (is_sparse) {
-      _active_neurons.insert(_active_neurons.end(), vec.active_neurons,
-                             vec.active_neurons + vec.len);
+      _indices.insert(_indices.end(), vec.active_neurons,
+                      vec.active_neurons + vec.len);
     }
-    _activations.insert(_activations.end(), vec.activations,
-                        vec.activations + vec.len);
+    _values.insert(_values.end(), vec.activations, vec.activations + vec.len);
   }
 
   uint32_t offset = 0;
   for (const auto& vec : batch) {
-    uint32_t* active_neurons =
-        is_sparse ? _active_neurons.data() + offset : nullptr;
+    uint32_t* active_neurons = is_sparse ? _indices.data() + offset : nullptr;
 
     _vectors.emplace_back(/* active_neurons= */ active_neurons,
                           /* activations= */ _values.data() + offset,
@@ -125,8 +121,11 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
 }
 
 Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
-    : _dim(dim), _nonzeros(std::nullopt) {
-  checkBatchContents(batch, _dim);
+    : _dims({batch.getBatchSize(), dim}),
+      _nonzeros(std::nullopt),
+      _dims_2d({batch.getBatchSize(), dim}),
+      _dims_3d({batch.getBatchSize(), 1, dim}) {
+  checkBatchContents(batch, dim);
 
   // NOLINTNEXTLINE clang tidy wants this in the intitializer list.
   _vectors = std::move(batch.vectors());
@@ -148,12 +147,6 @@ std::shared_ptr<Tensor> Tensor::sparse(Dims dims, uint32_t nonzeros) {
   return std::make_shared<Tensor>(/* dims= */ std::move(dims),
                                   /* nonzeros= */ nonzeros,
                                   /* with_grad= */ true);
-}
-
-std::shared_ptr<Tensor> Tensor::dense(uint32_t batch_size, uint32_t dim) {
-  return std::make_shared<Tensor>(/* batch_size= */ batch_size,
-                                  /* dim= */ dim,
-                                  /* nonzeros= */ dim);
 }
 
 std::shared_ptr<Tensor> Tensor::fromArray(const uint32_t* indices,
@@ -223,7 +216,7 @@ const uint32_t* Tensor::indicesPtr() const {
 }
 
 const float* Tensor::valuesPtr() const {
-  return _values.empty() ? nullptr : _activations.data();
+  return _values.empty() ? nullptr : _values.data();
 }
 
 const float* Tensor::gradientsPtr() const {

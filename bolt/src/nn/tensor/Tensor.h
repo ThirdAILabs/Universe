@@ -75,6 +75,14 @@ class Tensor {
    */
   BoltVector& index2d(uint32_t i);
 
+  BoltVector& index2dAssert2d(uint32_t i) {
+    if (_dims.size() != 2) {
+      throw std::runtime_error("Expected 2d tensor but received " +
+                               std::to_string(_dims.size()) + "d tensor.");
+    }
+    return index2d(i);
+  }
+
   /**
    * Accesses the (i,j)-th vector of the tensor, treating the tensor as if it is
    * 3d.

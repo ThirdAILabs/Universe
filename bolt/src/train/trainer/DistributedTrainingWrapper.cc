@@ -136,9 +136,10 @@ void DistributedTrainingWrapper::setGradients(const float* new_grad,
 std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
     const dataset::BoltDatasetList& data,
     const dataset::BoltDatasetPtr& labels) {
-  auto data_tensors = convertDatasetsForModelDims(data, _model->inputDims());
+  auto data_tensors =
+      convertDatasets(data, bolt::train::expect2dDims(_model->inputDims()));
   auto label_tensors =
-      convertDatasetForModelDim(labels, _model->outputs().at(0)->dims());
+      convertDatasets({labels}, bolt::train::expect2dDims(_model->labelDims()));
 
   return std::make_optional<LabeledDataset>(std::move(data_tensors),
                                             std::move(label_tensors));

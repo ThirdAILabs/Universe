@@ -61,26 +61,26 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
   return batches;
 }
 
-Dataset convertDatasetsForModelDims(
-    const std::vector<dataset::BoltDatasetPtr>& datasets,
-    const std::vector<nn::tensor::Dims>& input_dims) {
-  std::vector<uint32_t> two_d_dims;
-  for (const auto& dims : input_dims) {
+nn::tensor::Dims expect2dDims(const std::vector<nn::tensor::Dims>& dims_nd) {
+  std::vector<uint32_t> dims_2d;
+  for (const auto& dims : dims_nd) {
+    // Because the batch size is not included in model input dims, having a
+    // single dimension here means it is expecting a 2d input.
     if (dims.size() != 1) {
       throw std::invalid_argument(
           "Can only convert bolt batches to 2D tensors but received tensor "
           "with dimensions " +
           nn::tensor::toString(dims) + ".");
     }
-    two_d_dims.push_back(dims.back());
+    dims_2d.push_back(dims.back());
   }
 
-  return convertDatasets(datasets, two_d_dims);
+  return dims_2d;
 }
 
 Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim,
                        bool copy) {
-  return convertDatasets({std::move(dataset)}, {dim}, copy);
+  return convertDatasets({dataset}, {dim}, copy);
 }
 
 Dataset convertDatasetForModelDim(const dataset::BoltDatasetPtr& dataset,

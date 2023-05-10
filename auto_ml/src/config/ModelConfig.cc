@@ -86,7 +86,7 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
   auto predecessor = getPredecessor(config, created_comps);
 
   auto layer = bolt::nn::ops::FullyConnected::make(
-      dim, predecessor->dim(), sparsity, activation, sampling_config);
+      dim, predecessor->dims().back(), sparsity, activation, sampling_config);
 
   return layer->apply(predecessor);
 }
@@ -180,7 +180,7 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
   }
   auto output = created_comps.at(output_name);
 
-  auto labels = bolt::nn::ops::Input::make(output->dim());
+  auto labels = bolt::nn::ops::Input::make(output->dims());
 
   bolt::nn::loss::LossPtr loss;
   std::string loss_name = getString(config, "loss");

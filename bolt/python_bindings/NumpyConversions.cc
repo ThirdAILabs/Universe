@@ -8,11 +8,9 @@ namespace thirdai::bolt::nn::python {
 
 template <typename T>
 py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
-    const T* data, uint32_t rows, uint32_t cols, bool single_row_to_vector) {
-  uint64_t flattened_dim = rows * cols;
-
-  T* data_copy = new T[flattened_dim];
-  std::copy(data, data + flattened_dim, data_copy);
+    const std::vector<T>& data, tensor::Dims shape, bool single_row_to_vector) {
+  T* data_copy = new T[data.size()];
+  std::copy(data.begin(), data.end(), data_copy);
 
   py::capsule free_when_done(data_copy,
                              [](void* ptr) { delete static_cast<T*>(ptr); });
@@ -20,12 +18,12 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
   // This is so that if we have a tensor with a single row we return a (N,)
   // numpy array instead of a (N,1). This is useful during inference on a single
   // sample.
-  if (rows == 1 && single_row_to_vector) {
+  if (shape.size() == 2 && shape.at(0) == 1 && single_row_to_vector) {
     return py::array_t<T, py::array::c_style | py::array::forcecast>(
-        cols, data_copy, free_when_done);
+        shape.back(), data_copy, free_when_done);
   }
   return py::array_t<T, py::array::c_style | py::array::forcecast>(
-      {rows, cols}, data_copy, free_when_done);
+      shape, data_copy, free_when_done);
 }
 
 py::object tensorToNumpy(const tensor::TensorPtr& tensor,
@@ -37,19 +35,20 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
         "fixed.");
   }
 
-  if (!tensor->activationsPtr()) {
+  if (!tensor->valuesPtr()) {
     throw std::runtime_error("Cannot convert ragged tensor to numpy.");
   }
 
-  auto activations =
-      createArrayCopy(/* data= */ tensor->valuedPtr(),
-                      /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros,
-                      /* single_row_to_vector= */ single_row_to_vector);
+  tensor::Dims shape = tensor->dims();
+  shape.back() = *nonzeros;
+
+  auto values = createArrayCopy(
+      /* data= */ tensor->values(), /* shape= */ shape,
+      /* single_row_to_vector= */ single_row_to_vector);
 
   if (tensor->indicesPtr()) {
-    auto active_neurons = createArrayCopy(
-        /* data= */ tensor->indicesPtr(), /* rows= */ tensor->batchSize(),
-        /* cols= */ *nonzeros,
+    auto indices = createArrayCopy(
+        /* data= */ tensor->indices(), /* shape= */ shape,
         /* single_row_to_vector= */ single_row_to_vector);
 
     return std::move(py::make_tuple(std::move(indices), std::move(values)));

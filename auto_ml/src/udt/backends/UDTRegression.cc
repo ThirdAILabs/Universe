@@ -102,7 +102,7 @@ py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
   auto output = _model->forward(_dataset_factory->featurizeInput(sample),
                                 sparse_inference);
 
-  return py::cast(unbinActivations(output.at(0)->getVector(0)));
+  return py::cast(unbinActivations(output.at(0)->index2dAssert2d(0)));
 }
 
 py::object UDTRegression::predictBatch(const MapInputBatch& samples,
@@ -115,7 +115,8 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
 
   NumpyArray<float> predictions(outputs.at(0)->batchSize());
   for (uint32_t i = 0; i < outputs.at(0)->batchSize(); i++) {
-    predictions.mutable_at(i) = unbinActivations(outputs.at(0)->getVector(i));
+    predictions.mutable_at(i) =
+        unbinActivations(outputs.at(0)->index2dAssert2d(i));
   }
   return py::object(std::move(predictions));
 }

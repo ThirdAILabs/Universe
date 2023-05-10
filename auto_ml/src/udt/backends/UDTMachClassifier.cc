@@ -135,7 +135,7 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
-  const BoltVector& output = outputs.at(0)->getVector(0);
+  const BoltVector& output = outputs.at(0)->index2dAssert2d(0);
 
   auto decoded_output = dataset::mach::topKUnlimitedDecode(
       /* output = */ output,
@@ -180,7 +180,7 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
       outputs->batchSize());
 #pragma omp parallel for default(none) shared(outputs, predicted_entities)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
-    const BoltVector& vector = outputs->getVector(i);
+    const BoltVector& vector = outputs->index2dAssert2d(i);
     auto predictions = dataset::mach::topKUnlimitedDecode(
         /* output = */ vector,
         /* index = */ _mach_label_block->index(),
@@ -214,7 +214,7 @@ py::object UDTMachClassifier::predictHashes(const MapInput& sample,
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
-  const BoltVector& output = outputs.at(0)->getVector(0);
+  const BoltVector& output = outputs.at(0)->index2dAssert2d(0);
 
   uint32_t k = _mach_label_block->index()->numHashes();
   auto heap = output.findKLargestActivations(k);
@@ -404,7 +404,7 @@ void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
   // map from output hash to an aggregated pair of (frequency, score)
   std::unordered_map<uint32_t, std::pair<uint32_t, float>> hash_freq_and_scores;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    auto top_K = output->getVector(i).findKLargestActivations(
+    auto top_K = output->index2dAssert2d(i).findKLargestActivations(
         _mach_label_block->index()->numHashes());
 
     while (!top_K.empty()) {

@@ -94,8 +94,8 @@ py::object TextEmbeddingModel::supervisedTrain(
   auto boltv1_data_x = {boltv1_data_1.at(0), boltv1_data_2.at(0)};
   auto boltv1_data_y = boltv1_data_1.back();
 
-  bolt::train::Dataset tensor_data_x = bolt::train::convertDatasetsForModelDims(
-      boltv1_data_x, _two_tower_model->inputDims());
+  bolt::train::Dataset tensor_data_x = bolt::train::convertDatasets(
+      boltv1_data_x, bolt::train::expect2dDims(_two_tower_model->inputDims()));
   bolt::train::Dataset tensor_data_y =
       bolt::train::convertDataset(boltv1_data_y, 1);
 

@@ -46,15 +46,16 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
-  auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
-                                                    /* sparsity= */ 1.0,
-                                                    /* activation= */ "relu")
-                    ->apply(input);
+  auto hidden =
+      bolt::nn::ops::FullyConnected::make(hidden_dim, input->dims().back(),
+                                          /* sparsity= */ 1.0,
+                                          /* activation= */ "relu")
+          ->apply(input);
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
-  auto output = bolt::nn::ops::FullyConnected::make(output_dim, hidden->dim(),
-                                                    sparsity, activation)
+  auto output = bolt::nn::ops::FullyConnected::make(
+                    output_dim, hidden->dims().back(), sparsity, activation)
                     ->apply(hidden);
 
   auto labels = bolt::nn::ops::Input::make(output_dim);
@@ -99,7 +100,8 @@ void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
   }
 
   if (new_model->outputs().size() != 1 ||
-      new_model->outputs().at(0)->dim() != curr_model->outputs().at(0)->dim()) {
+      new_model->outputs().at(0)->dims() !=
+          curr_model->outputs().at(0)->dims()) {
     throw std::invalid_argument("Output dim mismatch in set_model.");
   }
 

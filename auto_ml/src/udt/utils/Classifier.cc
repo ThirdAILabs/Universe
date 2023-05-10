@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
 
@@ -16,6 +17,12 @@ Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
         "Classifier utility is intended for single output models.");
+  }
+
+  if (_model->outputs().at(0)->dims().size() != 1) {
+    throw std::invalid_argument(
+        "Classifier utility is intented for models with output shape "
+        "(batch_size, n_classes).");
   }
 
   auto computations = _model->computationOrder();
@@ -57,7 +64,7 @@ py::object thirdai::automl::udt::utils::Classifier::train(
    * some metric. This can improve performance particularly on datasets with
    * a class imbalance.
    */
-  if (_model->outputs().at(0)->dim() == 2) {
+  if (_model->outputs().at(0)->dims().back() == 2) {
     if (!val_args.metrics().empty()) {
       val_data->restart();
       _binary_prediction_threshold =
@@ -120,20 +127,20 @@ uint32_t Classifier::predictedClass(const BoltVector& output) {
 py::object Classifier::predictedClasses(
     const bolt::nn::tensor::TensorPtr& output, bool single) {
   if (output->batchSize() == 1 && single) {
-    return py::cast(predictedClass(output->getVector(0)));
+    return py::cast(predictedClass(output->index2dAssert2d(0)));
   }
 
   NumpyArray<uint32_t> predictions(output->batchSize());
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    predictions.mutable_at(i) = predictedClass(output->getVector(i));
+    predictions.mutable_at(i) = predictedClass(output->index2dAssert2d(i));
   }
   return py::object(std::move(predictions));
 }
 
 std::vector<std::vector<float>> Classifier::getBinaryClassificationScores(
     const dataset::BoltDatasetList& dataset) {
-  auto tensor_batches =
-      bolt::train::convertDatasets(dataset, _model->inputDims());
+  auto tensor_batches = bolt::train::convertDatasets(
+      dataset, bolt::train::expect2dDims(_model->inputDims()));
 
   std::vector<std::vector<float>> scores;
   scores.reserve(tensor_batches.size());
@@ -143,7 +150,7 @@ std::vector<std::vector<float>> Classifier::getBinaryClassificationScores(
 
     std::vector<float> batch_scores;
     for (uint32_t i = 0; i < output->batchSize(); i++) {
-      batch_scores.push_back(output->getVector(i).activations[1]);
+      batch_scores.push_back(output->index2dAssert2d(i).activations[1]);
     }
     scores.push_back(std::move(batch_scores));
   }
