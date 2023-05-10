@@ -48,7 +48,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   auto hidden = bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
                                                     /* sparsity= */ 1.0,
-                                                    /* activation= */ "relu")
+                                                    /* activation= */ "tanh")
                     ->apply(input);
 
   auto sparsity = autotuneSparsity(output_dim);
