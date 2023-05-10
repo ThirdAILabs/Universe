@@ -39,7 +39,7 @@ def test_single_weighted_sum():
 
     assert np.allclose(
         np.ones(shape=(batch_size, length), dtype=np.float32),
-        weighted_sum.tensor().activations,
+        weighted_sum.tensor().values,
     )
 
     assert np.allclose(
@@ -82,16 +82,16 @@ def test_nd_weighted_sum():
 
     assert expected_output.shape == labels_shape
 
-    assert np.allclose(expected_output, weighted_sum.tensor().activations)
+    assert np.allclose(expected_output, weighted_sum.tensor().values)
 
     expected_weights_grad = np.einsum(
-        "bijd,bnd -> bijn", weighted_sum.tensor().gradients, emb_batch.activations
+        "bijd,bnd -> bijn", weighted_sum.tensor().gradients, emb_batch.values
     )
 
     assert np.allclose(expected_weights_grad, weights_batch.gradients)
 
     expected_emb_grad = np.einsum(
-        "bijd,bijn -> bnd", weighted_sum.tensor().gradients, weights_batch.activations
+        "bijd,bijn -> bnd", weighted_sum.tensor().gradients, weights_batch.values
     )
 
     assert np.allclose(expected_emb_grad, emb_batch.gradients)

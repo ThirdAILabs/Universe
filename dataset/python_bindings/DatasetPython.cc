@@ -578,7 +578,7 @@ bolt::nn::tensor::TensorPtr pairgrams(const NumpyArray<uint32_t>& unigrams,
     shared(n_samples, seq_len, vocab_size, unigrams, output)
   for (uint64_t i = 0; i < n_samples; i++) {
     for (uint32_t a = 0; a < seq_len; a++) {
-      BoltVector& row = output->getVector(i * seq_len + a);
+      BoltVector& row = output->at_3d(i, a);
 
       for (uint32_t b = 0; b < seq_len; b++) {
         uint32_t pairgram = unigrams.at(i, a) * vocab_size + unigrams.at(i, b);

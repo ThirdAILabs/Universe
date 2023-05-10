@@ -32,8 +32,8 @@ def test_sum_op():
     for x_1, x_2, y in zip(data_x_1, data_x_2, data_y):
         model.train_on_batch(x_1 + x_2, y)
 
-        output = sum_layer.tensor().activations
-        expected_output = x_1[0].activations + x_2[0].activations
+        output = sum_layer.tensor().values
+        expected_output = x_1[0].values + x_2[0].values
 
         assert np.array_equal(output, expected_output)
 

@@ -38,14 +38,14 @@ void WeightedSum::forward(const autograd::ComputationList& inputs,
   uint32_t seq_len = weights->dims().back();
   uint32_t emb_dim = embs->dims().back();
 
-  EigenMatrix eigen_weights(weights->activationsAtIndex3d(index_in_batch),
-                            weights->innerDim3d(), seq_len);
+  EigenMatrix eigen_weights(weights->valuesAtIndex3d(index_in_batch),
+                            weights->dims3d().at(1), seq_len);
 
-  EigenMatrix eigen_embs(embs->activationsAtIndex3d(index_in_batch), seq_len,
+  EigenMatrix eigen_embs(embs->valuesAtIndex3d(index_in_batch), seq_len,
                          emb_dim);
 
-  EigenMatrix eigen_output(output->activationsAtIndex3d(index_in_batch),
-                           weights->innerDim3d(), emb_dim);
+  EigenMatrix eigen_output(output->valuesAtIndex3d(index_in_batch),
+                           weights->dims3d().at(1), emb_dim);
 
   eigen_output = eigen_weights * eigen_embs;
 }
@@ -66,23 +66,23 @@ void WeightedSum::backpropagate(autograd::ComputationList& inputs,
         "WeightedSum op currently does not support sparse tensors.");
   }
 
-  EigenMatrix eigen_weights(weights->activationsAtIndex3d(index_in_batch),
-                            weights->innerDim3d(), seq_len);
+  EigenMatrix eigen_weights(weights->valuesAtIndex3d(index_in_batch),
+                            weights->dims3d().at(1), seq_len);
 
   EigenMatrix eigen_weights_grad(weights->gradientsAtIndex3d(index_in_batch),
-                                 weights->innerDim3d(), seq_len);
+                                 weights->dims3d().at(1), seq_len);
 
-  EigenMatrix eigen_embs(embs->activationsAtIndex3d(index_in_batch), seq_len,
+  EigenMatrix eigen_embs(embs->valuesAtIndex3d(index_in_batch), seq_len,
                          emb_dim);
 
   EigenMatrix eigen_embs_grad(embs->gradientsAtIndex3d(index_in_batch), seq_len,
                               emb_dim);
 
-  EigenMatrix eigen_output(output->activationsAtIndex3d(index_in_batch),
-                           weights->innerDim3d(), emb_dim);
+  EigenMatrix eigen_output(output->valuesAtIndex3d(index_in_batch),
+                           weights->dims3d().at(1), emb_dim);
 
   EigenMatrix eigen_output_grad(output->gradientsAtIndex3d(index_in_batch),
-                                weights->innerDim3d(), emb_dim);
+                                weights->dims3d().at(1), emb_dim);
 
   eigen_embs_grad = eigen_weights.transpose() * eigen_output_grad;
 

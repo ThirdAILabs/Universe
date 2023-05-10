@@ -39,8 +39,8 @@ def test_sparse_tensor_to_numpy_no_values():
 
     tensor = bolt.nn.Tensor(indices, values=None, dense_dim=dense_dim)
 
-    assert np.array_equal(indices, tensor.active_neurons)
+    assert np.array_equal(indices, tensor.indices)
 
-    assert np.array_equal(np.ones((5, 4, 3, 2), dtype=np.float32), tensor.activations)
+    assert np.array_equal(np.ones((5, 4, 3, 2), dtype=np.float32), tensor.values)
 
     assert tensor.gradients == None

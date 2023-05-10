@@ -23,11 +23,11 @@ void L1Normalization::forward(const autograd::ComputationList& inputs,
 
   const tensor::TensorPtr& input = inputs.at(0)->tensor();
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
-  for (uint32_t i = start; i < end; i++) {
-    l1Normalization(input->getVector(i), output->getVector(i));
+  for (uint32_t i = 0; i < len; i++) {
+    l1Normalization(input->at_3d(index_in_batch, i),
+                    output->at_3d(index_in_batch, i));
   }
 }
 
@@ -66,11 +66,11 @@ void L1Normalization::backpropagate(autograd::ComputationList& inputs,
 
   const tensor::TensorPtr& input = inputs.at(0)->tensor();
 
-  uint32_t start = output->rangeStart(index_in_batch);
-  uint32_t end = output->rangeEnd(index_in_batch);
+  uint32_t len = output->dims3d().at(1);
 
-  for (uint32_t i = start; i < end; i++) {
-    l1NormalizationGradient(input->getVector(i), output->getVector(i));
+  for (uint32_t i = 0; i < len; i++) {
+    l1NormalizationGradient(input->at_3d(index_in_batch, i),
+                            output->at_3d(index_in_batch, i));
   }
 }
 

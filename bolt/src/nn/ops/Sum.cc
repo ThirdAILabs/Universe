@@ -31,11 +31,11 @@ void Sum::forward(const autograd::ComputationList& inputs,
         "Sum op currently does not support sparse tensors.");
   }
 
-  uint32_t len = lhs->innerDim3d() * lhs->dims().back();
+  uint32_t len = lhs->dims3d().at(1) * lhs->dims3d().at(2);
 
-  EigenArray lhs_eigen(lhs->activationsAtIndex3d(index_in_batch), len);
-  EigenArray rhs_eigen(rhs->activationsAtIndex3d(index_in_batch), len);
-  EigenArray output_eigen(output->activationsAtIndex3d(index_in_batch), len);
+  EigenArray lhs_eigen(lhs->valuesAtIndex3d(index_in_batch), len);
+  EigenArray rhs_eigen(rhs->valuesAtIndex3d(index_in_batch), len);
+  EigenArray output_eigen(output->valuesAtIndex3d(index_in_batch), len);
 
   output_eigen = lhs_eigen + rhs_eigen;
 }
@@ -52,7 +52,7 @@ void Sum::backpropagate(autograd::ComputationList& inputs,
         "Sum op currently does not support sparse tensors.");
   }
 
-  uint32_t len = lhs->innerDim3d() * lhs->dims().back();
+  uint32_t len = lhs->dims3d().at(1) * lhs->dims3d().at(2);
 
   EigenArray lhs_grad_eigen(lhs->gradientsAtIndex3d(index_in_batch), len);
   EigenArray rhs_grad_eigen(rhs->gradientsAtIndex3d(index_in_batch), len);

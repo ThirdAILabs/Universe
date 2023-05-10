@@ -36,14 +36,14 @@ def test_l1_normalization():
     )
 
     assert np.allclose(
-        np.ones(shape[:-1]), np.sum(l1_norm.tensor().activations, axis=-1)
+        np.ones(shape[:-1]), np.sum(l1_norm.tensor().values, axis=-1)
     )
 
-    l1_norms = np.sum(hidden.tensor().activations, axis=-1)
+    l1_norms = np.sum(hidden.tensor().values, axis=-1)
     l1_norms = np.reshape(l1_norms, newshape=(*l1_norms.shape, 1))
 
     sum_output_grads = np.sum(
-        l1_norm.tensor().gradients * l1_norm.tensor().activations, axis=-1
+        l1_norm.tensor().gradients * l1_norm.tensor().values, axis=-1
     )
     sum_output_grads = np.reshape(
         sum_output_grads, newshape=(*sum_output_grads.shape, 1)
