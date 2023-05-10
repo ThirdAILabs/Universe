@@ -2,6 +2,8 @@ import pytest
 import thirdai
 from licensing_utils import run_udt_training_routine
 
+from .utils import deactivate_license_at_start_of_demo_test
+
 pytestmark = [pytest.mark.release]
 
 # Note that neither of these tests check what happens when we don't activate.
@@ -66,8 +68,3 @@ def test_no_save_load_key():
         match=r"Saving and loading of models is not authorized under this license",
     ):
         run_udt_training_routine()
-
-
-@pytest.fixture(autouse=True)
-def set_license_back_to_valid():
-    thirdai.licensing.deactivate()

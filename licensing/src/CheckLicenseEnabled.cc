@@ -40,7 +40,7 @@ void checkLicense() {
 Entitlements entitlements() {
   if (_licensing_method == nullptr) {
     throw exceptions::LicenseCheckException(
-        "Cannot get entitlements if we have not yet found a license.");
+        "Cannot get entitlements if licensing is not initialized yet.");
   }
   return _licensing_method->getEntitlements();
 }
@@ -76,7 +76,7 @@ void deactivate() { _licensing_method = nullptr; }
 LicenseState getLicenseState() {
   if (_licensing_method == nullptr) {
     throw exceptions::LicenseCheckException(
-        "Cannot get license state if we have not yet found a license.");
+        "Cannot get license state if licensing is not initialized yet.");
   }
   return _licensing_method->getLicenseState();
 }

@@ -9,28 +9,28 @@ universe_dir = Path(__file__).parent
 
 
 def set_working_license():
-    thirdai.licensing.deactivate()
-    thirdai.licensing.set_path(
-        str(
-            (
-                universe_dir
-                / "licensing"
-                / "licenses"
-                / "full_license_expires_mar_2024"
-            ).resolve()
+    try:
+        thirdai.licensing.deactivate()
+        thirdai.licensing.set_path(
+            str(
+                (
+                    universe_dir
+                    / "licensing"
+                    / "licenses"
+                    / "full_license_expires_mar_2024"
+                ).resolve()
+            )
         )
-    )
+    except AttributeError as e:
+        # Ignore this, since it just means our package was not built with licensing
+        pass
 
 
 # Automatically sets a working license file before we run any module.
 # We need this to handle tests that leave the license in an unwanted state for future tests
 @pytest.fixture(scope="module", autouse=True)
 def enable_full_access_licensing_module(request):
-    try:
-        set_working_license()
-    except AttributeError as e:
-        # Ignore this, since it just means our package was not built with licensing
-        pass
+    set_working_license()
 
 
 # Automatically sets a working license file before we run a test session.
@@ -38,11 +38,7 @@ def enable_full_access_licensing_module(request):
 # so this needs to be called before those fixtures
 @pytest.fixture(scope="session", autouse=True)
 def enable_full_access_licensing_session(request):
-    try:
-        set_working_license()
-    except AttributeError as e:
-        # Ignore this, since it just means our package was not built with licensing
-        pass
+    set_working_license()
 
 
 @pytest.fixture(scope="session")

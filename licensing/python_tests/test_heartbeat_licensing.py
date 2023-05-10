@@ -8,6 +8,8 @@ import requests
 import thirdai
 from licensing_utils import LOCAL_HEARTBEAT_SERVER, run_udt_training_routine
 
+from .utils import deactivate_license_at_start_of_demo_test
+
 pytestmark = [pytest.mark.release]
 
 invalid_heartbeat_location = f"http://localhost:97531"
@@ -193,11 +195,4 @@ def test_maintenance_of_valid_heartbeat(normal_license_server):
     thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=0)
     time.sleep(1)
     run_udt_training_routine()
-    thirdai.licensing.deactivate()
-
-
-@pytest.fixture(autouse=True)
-def set_license_back_to_valid():
-    import thirdai
-
     thirdai.licensing.deactivate()

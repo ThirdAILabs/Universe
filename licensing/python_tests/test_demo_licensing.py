@@ -1,6 +1,3 @@
-import os
-
-import numpy as np
 import pytest
 import thirdai
 
@@ -14,6 +11,8 @@ from test_udt_generator import prepared_datasets as udt_query_reformulation_fixt
 from test_udt_generator import train_udt_query_reformulation_model
 from test_udt_simple import make_simple_trained_model
 from thirdai import bolt
+
+from .utils import deactivate_license_at_start_of_demo_test
 
 pytestmark = [pytest.mark.release]
 
@@ -54,8 +53,3 @@ def test_census_demo_key_fails_on_generator(udt_query_reformulation_fixture):
         match="This dataset is not authorized under this license.",
     ):
         train_udt_query_reformulation_model(udt_query_reformulation_file)
-
-
-@pytest.fixture(autouse=True)
-def set_license_back_to_valid():
-    thirdai.licensing.deactivate()

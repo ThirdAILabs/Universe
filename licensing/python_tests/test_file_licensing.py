@@ -5,6 +5,8 @@ import platform
 import pytest
 from licensing_utils import run_udt_training_routine
 
+from .utils import deactivate_license_at_start_of_demo_test
+
 pytestmark = [pytest.mark.release]
 
 
@@ -72,11 +74,20 @@ def test_with_expired_license():
 
     with pytest.raises(Exception, match=r"license file is expired"):
         thirdai.licensing.set_path(str(expired_license_path))
-    with pytest.raises(Exception, match=r"with a valid license"):
+    with pytest.raises(
+        Exception,
+        match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+    ):
         this_should_require_a_license_search()
-    with pytest.raises(Exception, match=r"with a valid license"):
+    with pytest.raises(
+        Exception,
+        match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+    ):
         run_udt_training_routine()
-    with pytest.raises(Exception, match=r"with a valid license"):
+    with pytest.raises(
+        Exception,
+        match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+    ):
         this_should_require_a_license_query_reformulation()
 
 
@@ -90,11 +101,20 @@ def test_with_invalid_license():
     for invalid_license_path in invalid_license_1_path, invalid_license_2_path:
         with pytest.raises(Exception, match=r"license verification failure"):
             thirdai.licensing.set_path(str(invalid_license_path))
-        with pytest.raises(Exception, match=r"with a valid license"):
+        with pytest.raises(
+            Exception,
+            match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):
             this_should_require_a_license_search()
-        with pytest.raises(Exception, match=r"with a valid license"):
+        with pytest.raises(
+            Exception,
+            match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):
             run_udt_training_routine()
-        with pytest.raises(Exception, match=r"with a valid license"):
+        with pytest.raises(
+            Exception,
+            match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):
             this_should_require_a_license_query_reformulation()
 
 
@@ -135,10 +155,3 @@ def test_max_train_samples_license():
         match=r"This model has exceeded the number of training examples allowed for this license",
     ):
         run_udt_training_routine(num_data_points=102)
-
-
-@pytest.fixture(autouse=True)
-def set_license_back_to_valid():
-    import thirdai
-
-    thirdai.licensing.deactivate()
