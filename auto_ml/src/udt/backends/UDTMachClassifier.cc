@@ -66,6 +66,24 @@ UDTMachClassifier::UDTMachClassifier(
       std::vector<dataset::BlockPtr>{_mach_label_block},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  auto hash_processing_block = dataset::NumericalCategoricalBlock::make(
+      /* col= */ target_name,
+      /* n_classes= */ output_range,
+      /* delimiter= */ ' ',
+      /* normalize_categories= */ false);
+
+  // We want to be able to train input samples on a specific set of hashes so we
+  // create a separate dataset factory that does all the same things as the
+  // regular dataset factory except with the label block switched out
+  _pre_hashed_labels_dataset_factory = std::make_shared<
+      data::TabularDatasetFactory>(
+      /* input_data_types = */ input_data_types,
+      /* provided_temporal_relationships = */ temporal_tracking_relationships,
+      /* label_blocks = */
+      std::vector<dataset::BlockPtr>{hash_processing_block},
+      /* label_col_names = */ std::set<std::string>{target_name},
+      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 }
 
 py::object UDTMachClassifier::train(
@@ -128,6 +146,22 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   return py::cast(decoded_output);
 }
 
+py::object UDTMachClassifier::trainBatch(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
@@ -156,6 +190,43 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return py::cast(predicted_entities);
+}
+
+py::object UDTMachClassifier::trainWithHashes(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] =
+      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
+py::object UDTMachClassifier::predictHashes(const MapInput& sample,
+                                            bool sparse_inference) {
+  auto outputs = _classifier->model()->forward(
+      _dataset_factory->featurizeInput(sample), sparse_inference);
+
+  const BoltVector& output = outputs.at(0)->getVector(0);
+
+  uint32_t k = _mach_label_block->index()->numHashes();
+  auto heap = output.findKLargestActivations(k);
+
+  std::vector<uint32_t> hashes_to_return;
+  while (hashes_to_return.size() < k && !heap.empty()) {
+    auto [_, active_neuron] = heap.top();
+    hashes_to_return.push_back(active_neuron);
+    heap.pop();
+  }
+
+  return py::cast(hashes_to_return);
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
@@ -442,7 +513,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
+          _dataset_factory, _pre_hashed_labels_dataset_factory,
+          _min_num_eval_results, _top_k_per_eval_aggregation);
 }
 
 }  // namespace thirdai::automl::udt
