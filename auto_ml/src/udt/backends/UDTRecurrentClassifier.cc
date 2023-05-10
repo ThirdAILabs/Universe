@@ -1,6 +1,7 @@
 #include "UDTRecurrentClassifier.h"
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -42,8 +43,11 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 output_dim);
+    bool use_tanh =
+        user_args.get<uint32_t>("use_tanh", "bool", defaults::USE_TANH);
+    _model =
+        utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
+                            output_dim, /* use_sigmoid_bce= */ false, use_tanh);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",

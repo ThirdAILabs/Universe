@@ -13,7 +13,8 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     bool use_sigmoid_bce = false);
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                      uint32_t output_dim, bool use_sigmoid_bce = false);
+                      uint32_t output_dim, bool use_sigmoid_bce = false,
+                      bool use_tanh = false);
 
 ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
                    const std::string& config_path);
