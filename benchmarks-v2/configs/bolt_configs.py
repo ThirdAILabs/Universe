@@ -12,8 +12,8 @@ class BoltBenchmarkConfig(ABC):
     hidden_node = {}
     output_node = {}
     loss_fn = "CategoricalCrossEntropyLoss"
-    reconstruct_hash_functions = None
     rebuild_hash_tables = None
+    reconstruct_hash_functions = None
 
     learning_rate = None
     num_epochs = None
@@ -40,8 +40,8 @@ class Amazon670kConfig(BoltBenchmarkConfig):
     input_dim = 135909
     hidden_node = {"dim": 256, "activation": "ReLU"}
     output_node = {"dim": 670091, "sparsity": 0.005, "activation": "Softmax"}
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rebuild_hash_tables = 6400
+    reconstruct_hash_functions = 128000
 
     batch_size = 256
     learning_rate = 1e-4
@@ -71,8 +71,8 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
     input_dim = 100000
     hidden_node = {"dim": 10000, "sparsity": 0.005, "activation": "ReLU"}
     output_node = {"dim": 2, "activation": "Softmax"}
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rebuild_hash_tables = 6400
+    reconstruct_hash_functions = 128000
 
     batch_size = 256
     learning_rate = 1e-04
@@ -106,8 +106,8 @@ class WayfairConfig(BoltBenchmarkConfig):
         ),
     }
     loss_fn = "BinaryCrossEntropyLoss"
-    reconstruct_hash_functions = 10000
-    rebuild_hash_tables = 50000
+    rebuild_hash_tables = 10000
+    reconstruct_hash_functions = 50000
 
     batch_size = 2048
     learning_rate = 1e-04

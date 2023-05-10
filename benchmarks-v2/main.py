@@ -117,6 +117,7 @@ if __name__ == "__main__":
                 mlflow_logger.log_additional_param(
                     "thirdai_version", thirdai.__version__
                 )
+                mlflow_logger.log_additional_param("runner", runner_name)
             else:
                 mlflow_logger = None
 
