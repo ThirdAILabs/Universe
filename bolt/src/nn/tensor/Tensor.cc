@@ -153,13 +153,46 @@ std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
   return convert(batch, dim);
 }
 
-const Dims& Tensor::dims() const { return _dims; }
+BoltVector& Tensor::at_2d(uint32_t i) {
+  assert(i < _dims_2d.at(0));
+  return _vectors[i];
+}
 
-std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
+BoltVector& Tensor::at_3d(uint32_t i, uint32_t j) {
+  assert(i < _dims_3d.at(0) && j < _dims_3d.at(1));
+  return _vectors[i * _dims_3d.at(1) + j];
+}
 
-bool Tensor::isSparse() const { return !_indices.empty(); }
+uint32_t* Tensor::indicesAtIndex3d(uint32_t i) {
+  assert(index_in_batch < batchSize());
+  if (!_nonzeros) {
+    throw std::runtime_error("Cannot access sub array of ragged tensor.");
+  }
+  if (_indices.empty()) {
+    throw std::runtime_error("Cannot access indices of dense tensor.");
+  }
+  return _indices.data() + i * _dims_3d.at(1) * (*_nonzeros);
+}
 
-uint32_t Tensor::batchSize() const { return _dims.front(); }
+float* Tensor::valuesAtIndex3d(uint32_t i) {
+  assert(index_in_batch < batchSize());
+  if (!_nonzeros) {
+    throw std::runtime_error("Cannot access sub array of ragged tensor.");
+  }
+  return _values.data() + i * _dims_3d.at(1) * (*_nonzeros);
+}
+
+float* Tensor::gradientsAtIndex3d(uint32_t i) {
+  assert(index_in_batch < batchSize());
+  if (!_nonzeros) {
+    throw std::runtime_error("Cannot access sub array of ragged tensor.");
+  }
+  if (_gradients.empty()) {
+    throw std::runtime_error(
+        "Cannot access gradients of a tensor without grad.");
+  }
+  return _gradients.data() + i * _dims_3d.at(1) * (*_nonzeros);
+}
 
 const uint32_t* Tensor::indicesPtr() const {
   return _indices.empty() ? nullptr : _indices.data();

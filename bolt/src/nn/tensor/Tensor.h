@@ -37,67 +37,72 @@ class Tensor {
                                          uint32_t dim);
 
   /**
-   * Returns the dimension of the vectors in the tensor.
+   * Returns the dimensions of the tensor.
    */
-  const Dims& dims() const;
+  const Dims& dims() const { return _dims; }
+
+  /**
+   * Returns the dimensions of the tensor if the tensor is reshaped as 2D while
+   * preserving the last dimension. For example given a tensor with dimensions
+   * (2, 3, 4) this method would return (6, 4)
+   */
+  const auto& dims2d() const { return _dims_2d; }
+
+  /**
+   * Returns the dimensions of the tensor if the tensor is reshaped as 3D while
+   * preserving the first and last dimensions. For example given a tensor with
+   * dimensions (2, 3, 4, 5) this method would return (2, 12, 5)
+   */
+  const auto& dims3d() const { return _dims_3d; }
 
   /**
    * Returns the number of nonzeros in each vector in the tensor. If this is not
    * fixed (e.g. for a sparse input tensor) it will return std::nullopt. If the
    * output is dense then this is equivalent to calling dim().
    */
-  std::optional<uint32_t> nonzeros() const;
-
-  bool isSparse() const;
+  std::optional<uint32_t> nonzeros() const { return _nonzeros; }
 
   /**
-   * Returns the ith vector in the tensor.
+   * Returns if the tensor is sparse.
    */
-  BoltVector& at_2d(uint32_t i) {
-    assert(i < _vectors.size());
-    return _vectors[i];
-  }
+  bool isSparse() const { return !_vectors.front().isDense(); }
 
-  BoltVector& at_3d(uint32_t i, uint32_t j) {
-    uint32_t index = i * _dims_3d.at(1) + j;
-    assert(index < _vectors.size());
-    return _vectors[index];
-  }
+  /**
+   * Accesses the i-th vector of the tensor, treating the tensor as if it is 2d.
+   */
+  BoltVector& at_2d(uint32_t i);
 
-  const auto& dims2d() const { return _dims_2d; }
+  /**
+   * Accesses the (i,j)-th vector of the tensor, treating the tensor as if it is
+   * 3d.
+   */
+  BoltVector& at_3d(uint32_t i, uint32_t j);
 
-  const auto& dims3d() const { return _dims_3d; }
+  /**
+   * Treats the tensor as 3d. Performs indexing on the outer dimension and
+   * returns a pointer to the indices. Throws if the tensor is dense or if the
+   * indices are not continuously activated.
+   */
+  uint32_t* indicesAtIndex3d(uint32_t i);
 
-  uint32_t* activeNeuronsAtIndex3d(uint32_t i) {
-    assert(index_in_batch < batchSize());
-    if (!_nonzeros) {
-      throw std::runtime_error("Cannot access sub array of ragged tensor.");
-    }
-    if (!isSparse()) {
-      throw std::runtime_error("Cannot access indices of dense tensor.");
-    }
-    return _indices.data() + i * _dims_3d.at(1) * (*_nonzeros);
-  }
+  /**
+   * Treats the tensor as 3d. Performs indexing on the outer dimension and
+   * returns a pointer to the indices. Throws if the tensor if the values are
+   * not continuously activated.
+   */
+  float* valuesAtIndex3d(uint32_t i);
 
-  float* activationsAtIndex3d(uint32_t i) {
-    assert(index_in_batch < batchSize());
-    if (!_nonzeros) {
-      throw std::runtime_error("Cannot access sub array of ragged tensor.");
-    }
-    return _values.data() + i * _dims_3d.at(1) * (*_nonzeros);
-  }
+  /**
+   * Treats the tensor as 3d. Performs indexing on the outer dimension and
+   * returns a pointer to the gradients. Throws if the tensor does not have
+   * gradients or if the gradients are not continuously activated.
+   */
+  float* gradientsAtIndex3d(uint32_t i);
 
-  float* gradientsAtIndex3d(uint32_t i) {
-    assert(index_in_batch < batchSize());
-    if (!_nonzeros) {
-      throw std::runtime_error("Cannot access sub array of ragged tensor.");
-    }
-    return _gradients.data() + i * _dims_3d.at(1) * (*_nonzeros);
-  }
   /**
    * Returns the number of vectors in the tensor.
    */
-  uint32_t batchSize() const;
+  uint32_t batchSize() const { return _dims.front(); }
 
   const uint32_t* indicesPtr() const;
   const float* valuesPtr() const;
