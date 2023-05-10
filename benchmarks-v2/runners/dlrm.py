@@ -122,16 +122,16 @@ class DLRMV2Runner(Runner):
 
         train_data = (
             bolt_v2.train.convert_datasets(
-                train_set, dims=[config.int_features, 4294967295]
+                train_set, dims=[config.int_features, 4294967295], copy=False
             ),
-            bolt_v2.train.convert_dataset(train_labels, config.n_classes),
+            bolt_v2.train.convert_dataset(train_labels, config.n_classes, copy=False),
         )
 
         test_data = (
             bolt_v2.train.convert_datasets(
-                test_set, dims=[config.int_features, 4294967295]
+                test_set, dims=[config.int_features, 4294967295], copy=False
             ),
-            bolt_v2.train.convert_dataset(test_labels, config.n_classes),
+            bolt_v2.train.convert_dataset(test_labels, config.n_classes, copy=False),
         )
 
         trainer = bolt_v2.train.Trainer(model)
