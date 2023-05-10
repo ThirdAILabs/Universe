@@ -183,15 +183,29 @@ def test_invalid_char_k_tokenizer(invalid_tokenizer):
         )
 
 
-@pytest.mark.parametrize(
-    "invalid_ngram", ["ngram-3p", "ngram-0", "ngram-10-0", "ngram0"]
-)
+@pytest.mark.parametrize("invalid_ngram", ["ngram-3p", "ngram0", "ngram-10-0"])
 def test_invalid_ngram_encoder(invalid_ngram):
     with pytest.raises(
         ValueError,
         match=re.escape(
             f"Created text column with invalid contextual_encoding '{invalid_ngram}', please choose one of 'none', 'local', 'ngram-N', or 'global'."
         ),
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(contextual_encoding=invalid_ngram),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )
+
+
+def test_invalid_ngram_encoder_n_equals_0():
+    invalid_ngram = "ngram-0"
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"Specified 'ngram-N' option with N = 0. Please use N > 0."),
     ):
         bolt.UniversalDeepTransformer(
             data_types={

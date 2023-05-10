@@ -25,8 +25,12 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
 }
 
 dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
-  if (std::regex_match(string, std::regex("ngram-[1-9]\\d*"))) {
+  if (std::regex_match(string, std::regex("ngram-(0|[1-9]\\d*)"))) {
     uint32_t n = std::strtol(string.data() + 6, nullptr, 10);
+    if (n == 0) {
+      throw std::invalid_argument(
+          "Specified 'ngram-N' option with N = 0. Please use N > 0.");
+    }
     return dataset::NGramEncoder::make(/* n = */ n);
   }
 
