@@ -25,6 +25,11 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
 }
 
 dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
+  if (std::regex_match(string, std::regex("ngram-[1-9]\\d*"))) {
+    uint32_t n = std::strtol(string.data() + 6, nullptr, 10);
+    return dataset::NGramEncoder::make(/* n = */ n);
+  }
+
   std::unordered_map<std::string, dataset::TextEncoderPtr>
       contextual_encodings = {
           {"none", dataset::NGramEncoder::make(/* n = */ 1)},
@@ -35,7 +40,7 @@ dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
   if (contextual_encodings.count(string) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + string +
-        "', please choose one of 'none', 'local', or 'global'.");
+        "', please choose one of 'none', 'local', 'ngram-N', or 'global'.");
   };
 
   return contextual_encodings[string];
