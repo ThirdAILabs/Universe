@@ -157,6 +157,15 @@ class UDT {
     _backend->forget(label);
   }
 
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
+                             const std::vector<std::string>& metrics) {
+    return _backend->trainWithHashes(batch, learning_rate, metrics);
+  }
+
+  py::object predictHashes(const MapInput& sample, bool sparse_inference) {
+    return _backend->predictHashes(sample, sparse_inference);
+  }
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }
