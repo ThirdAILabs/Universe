@@ -5,6 +5,8 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <hashing/src/HashFunction.h>
+#include <hashtable/src/SampledHashTable.h>
 #include <limits>
 #include <memory>
 
@@ -20,9 +22,8 @@ class FullyConnected final
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
-      uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
-      uint32_t reconstruct_hash_functions =
-          std::numeric_limits<uint32_t>::max());
+      uint32_t rebuild_hash_tables = 4,
+      uint32_t reconstruct_hash_functions = 100);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
@@ -76,6 +77,8 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
+  std::shared_ptr<FullyConnectedLayer> kernel() const;
+
   /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted
@@ -84,8 +87,15 @@ class FullyConnected final
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
-  void setWeightsAndBiases(const float* weights_to_set,
-                           const float* biases_to_set);
+  void setWeights(const float* new_weights);
+
+  void setBiases(const float* new_biases);
+
+  std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+  getHashTable() const;
+
+  void setHashTable(hashing::HashFunctionPtr hash_fn,
+                    hashtable::SampledHashTablePtr hash_table);
 
   /**
    * Autotunes how often the hash tables and hash functions are rebuilt using

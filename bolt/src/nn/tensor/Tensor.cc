@@ -1,6 +1,5 @@
 #include "Tensor.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <functional>
 #include <numeric>
 #include <optional>
 #include <stdexcept>
@@ -9,6 +8,14 @@ namespace thirdai::bolt::nn::tensor {
 
 Tensor::Tensor(Dims dims, uint32_t nonzeros, bool with_grad)
     : _dims(std::move(dims)), _nonzeros(nonzeros) {
+  if (nonzeros == 0) {
+    throw std::invalid_argument("Cannot allocate tensor with 0 nonzeros.");
+  }
+
+  if (nonzeros < dim) {
+    _active_neurons.assign(batch_size * nonzeros, 0);
+  }
+
   uint32_t num_vectors =
       std::reduce(_dims.begin(), _dims.end() - 1, 1, std::multiplies<>());
 
@@ -81,45 +88,53 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
 
-  bool is_dense = batch.begin()->isDense();
+  checkBatchContents(batch, _dim);
+
+  uint64_t total_dim = 0;
+  for (const auto& vec : batch) {
+    total_dim += vec.len;
+  }
+
+  bool is_sparse = !batch.begin()->isDense();
+
+  if (is_sparse) {
+    _active_neurons.reserve(total_dim);
+  }
+  _activations.reserve(total_dim);
+  _vectors.reserve(batch.getBatchSize());
 
   for (const auto& vec : batch) {
-    if (vec.isDense() != is_dense) {
-      throw std::invalid_argument(
-          "All vectors in batch must have same sparsity to convert to tensor.");
+    if (is_sparse) {
+      _active_neurons.insert(_active_neurons.end(), vec.active_neurons,
+                             vec.active_neurons + vec.len);
     }
-    // Since this constructor is intended to be used to convert inputs we don't
-    // need to handle the case where there are gradients.
-    if (vec.hasGradients()) {
-      throw std::invalid_argument(
-          "Cannot convert vector with gradients to tensor.");
-    }
-    if (is_dense && vec.len != dim) {
-      throw std::invalid_argument(
-          "All dense vectors must have the same length to convert to tensor.");
-    }
-
-    for (uint32_t i = 0; i < vec.len; i++) {
-      if (!is_dense) {
-        if (vec.active_neurons[i] >= dim) {
-          throw std::invalid_argument(
-              "Found sparse index " + std::to_string(vec.active_neurons[i]) +
-              " that exceeded dimension " + std::to_string(dim) + ".");
-        }
-        _indices.push_back(vec.active_neurons[i]);
-      }
-      _values.push_back(vec.activations[i]);
-    }
+    _activations.insert(_activations.end(), vec.activations,
+                        vec.activations + vec.len);
   }
 
   uint32_t offset = 0;
   for (const auto& vec : batch) {
-    uint32_t* active_neurons = is_dense ? nullptr : _indices.data() + offset;
+    uint32_t* active_neurons =
+        is_sparse ? _active_neurons.data() + offset : nullptr;
 
     _vectors.emplace_back(/* active_neurons= */ active_neurons,
                           /* activations= */ _values.data() + offset,
                           /* gradients= */ nullptr, /* len= */ vec.len);
     offset += vec.len;
+  }
+}
+
+Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
+    : _dim(dim), _nonzeros(std::nullopt) {
+  checkBatchContents(batch, _dim);
+
+  // NOLINTNEXTLINE clang tidy wants this in the intitializer list.
+  _vectors = std::move(batch.vectors());
+
+  for (auto& vec : _vectors) {
+    if (!vec.ownsMemory()) {
+      vec = vec.copy();
+    }
   }
 }
 
@@ -135,6 +150,12 @@ std::shared_ptr<Tensor> Tensor::sparse(Dims dims, uint32_t nonzeros) {
                                   /* with_grad= */ true);
 }
 
+std::shared_ptr<Tensor> Tensor::dense(uint32_t batch_size, uint32_t dim) {
+  return std::make_shared<Tensor>(/* batch_size= */ batch_size,
+                                  /* dim= */ dim,
+                                  /* nonzeros= */ dim);
+}
+
 std::shared_ptr<Tensor> Tensor::fromArray(const uint32_t* indices,
                                           const float* values,
                                           tensor::Dims dims, uint32_t nonzeros,
@@ -143,14 +164,17 @@ std::shared_ptr<Tensor> Tensor::fromArray(const uint32_t* indices,
                                   with_grad);
 }
 
-std::shared_ptr<Tensor> Tensor::convert(const BoltBatch& batch, uint32_t dim) {
+std::shared_ptr<Tensor> Tensor::copy(const BoltBatch& batch, uint32_t dim) {
   return std::make_shared<Tensor>(batch, dim);
 }
 
-std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
-                                        uint32_t dim) {
-  BoltBatch batch({vector});
-  return convert(batch, dim);
+std::shared_ptr<Tensor> Tensor::convert(BoltBatch&& batch, uint32_t dim) {
+  return std::make_shared<Tensor>(std::move(batch), dim);
+}
+
+std::shared_ptr<Tensor> Tensor::convert(BoltVector&& vector, uint32_t dim) {
+  BoltBatch batch({std::move(vector)});
+  return convert(std::move(batch), dim);
 }
 
 BoltVector& Tensor::index2d(uint32_t i) {
@@ -198,10 +222,52 @@ const uint32_t* Tensor::indicesPtr() const {
   return _indices.empty() ? nullptr : _indices.data();
 }
 
-const float* Tensor::valuesPtr() const { return _values.data(); }
+const float* Tensor::valuesPtr() const {
+  return _values.empty() ? nullptr : _activations.data();
+}
 
 const float* Tensor::gradientsPtr() const {
   return _gradients.empty() ? nullptr : _gradients.data();
+}
+
+void Tensor::checkBatchContents(const BoltBatch& batch, uint32_t dim) {
+  if (batch.getBatchSize() == 0) {
+    throw std::invalid_argument("Cannot convert empty batch to tensor.");
+  }
+
+  bool is_dense = batch.begin()->isDense();
+
+  for (const auto& vec : batch) {
+    if (vec.len == 0) {
+      throw std::invalid_argument("Cannot convert empty vector to tensor.");
+    }
+    if (vec.isDense() != is_dense) {
+      throw std::invalid_argument(
+          "All vectors in batch must have same sparsity to convert to "
+          "tensor.");
+    }
+    // Since this constructor is intended to be used to convert inputs we
+    // don't need to handle the case where there are gradients.
+    if (vec.hasGradients()) {
+      throw std::invalid_argument(
+          "Cannot convert vector with gradients to tensor.");
+    }
+    if (is_dense && vec.len != dim) {
+      throw std::invalid_argument(
+          "All dense vectors must have the same length to convert to "
+          "tensor.");
+    }
+
+    for (uint32_t i = 0; i < vec.len; i++) {
+      if (!is_dense) {
+        if (vec.active_neurons[i] >= dim) {
+          throw std::invalid_argument(
+              "Found sparse index " + std::to_string(vec.active_neurons[i]) +
+              " that exceeded dimension " + std::to_string(dim) + ".");
+        }
+      }
+    }
+  }
 }
 
 }  // namespace thirdai::bolt::nn::tensor

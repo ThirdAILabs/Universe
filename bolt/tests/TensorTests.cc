@@ -78,7 +78,7 @@ TEST(TensorTests, SparseTensor) {
   checkTensorContents(tensor);
 }
 
-TEST(TensorTests, DenseBoltBatchToTensor) {
+TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
       BoltVector::makeDenseVector({5.0, 6.0, 7.0, 8.0}),
@@ -87,7 +87,32 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(batch, 4);
+  auto tensor = tensor::Tensor::convert(std::move(batch), 4);
+
+  EXPECT_EQ(tensor->batchSize(), 3);
+  EXPECT_EQ(tensor->dim(), 4);
+  EXPECT_FALSE(tensor->nonzeros().has_value());
+
+  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_EQ(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->gradientsPtr(), nullptr);
+
+  for (uint32_t i = 0; i < vectors.size(); i++) {
+    thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+        tensor->getVector(i), vectors[i]);
+  }
+}
+
+TEST(TensorTests, CopyDenseBoltBatchToTensor) {
+  std::vector<BoltVector> vectors = {
+      BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
+      BoltVector::makeDenseVector({5.0, 6.0, 7.0, 8.0}),
+      BoltVector::makeDenseVector({9.0, 10.0, 11.0, 12.0})};
+
+  auto vectors_copy = vectors;
+  BoltBatch batch(std::move(vectors_copy));
+
+  auto tensor = tensor::Tensor::copy(batch, 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dims(), tensor::Dims({3, 4}));
@@ -101,9 +126,16 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
         tensor->index2d(i), vectors[i]);
   }
+
+  std::vector<float> expected_values = {1.0, 2.0, 3.0, 4.0,  5.0,  6.0,
+                                        7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
+
+  for (uint32_t i = 0; i < expected_values.size(); i++) {
+    EXPECT_EQ(tensor->activationsPtr()[i], expected_values.at(i));
+  }
 }
 
-TEST(TensorTests, SparseBoltBatchToTensor) {
+TEST(TensorTests, ConvertSparseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeSparseVector({3, 0, 5, 7}, {1.0, 2.0, 3.0, 4.0}),
       BoltVector::makeSparseVector({1, 3, 6, 4, 4}, {5.0, 6.0, 7.0, 8.0, 9.0}),
@@ -112,7 +144,32 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(batch, 8);
+  auto tensor = tensor::Tensor::convert(std::move(batch), 8);
+
+  EXPECT_EQ(tensor->batchSize(), 3);
+  EXPECT_EQ(tensor->dim(), 8);
+  EXPECT_FALSE(tensor->nonzeros().has_value());
+
+  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_EQ(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->gradientsPtr(), nullptr);
+
+  for (uint32_t i = 0; i < vectors.size(); i++) {
+    thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+        tensor->getVector(i), vectors[i]);
+  }
+}
+
+TEST(TensorTests, CopySparseBoltBatchToTensor) {
+  std::vector<BoltVector> vectors = {
+      BoltVector::makeSparseVector({3, 0, 5, 7}, {1.0, 2.0, 3.0, 4.0}),
+      BoltVector::makeSparseVector({1, 3, 6, 4, 4}, {5.0, 6.0, 7.0, 8.0, 9.0}),
+      BoltVector::makeSparseVector({5, 2, 0}, {10.0, 11.0, 12.0})};
+
+  auto vectors_copy = vectors;
+  BoltBatch batch(std::move(vectors_copy));
+
+  auto tensor = tensor::Tensor::copy(batch, 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dims(), tensor::Dims({3, 8}));
@@ -125,6 +182,18 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
         tensor->index2d(i), vectors[i]);
+  }
+
+  std::vector<uint32_t> expected_indices = {3, 0, 5, 7, 1, 3, 6, 4, 4, 5, 2, 0};
+  std::vector<float> expected_values = {1.0, 2.0, 3.0, 4.0,  5.0,  6.0,
+                                        7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
+
+  for (uint32_t i = 0; i < expected_indices.size(); i++) {
+    EXPECT_EQ(tensor->activeNeuronsPtr()[i], expected_indices.at(i));
+  }
+
+  for (uint32_t i = 0; i < expected_values.size(); i++) {
+    EXPECT_EQ(tensor->activationsPtr()[i], expected_values.at(i));
   }
 }
 

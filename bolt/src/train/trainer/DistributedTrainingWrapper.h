@@ -39,10 +39,8 @@ class DistributedTrainingWrapper {
     _train_data = convertLabeldData(train_data, train_labels);
   }
 
-  void freezeHashTables(bool insert_labels_if_not_found) {  // NOLINT
-    (void)insert_labels_if_not_found;
-    throw exceptions::NotImplemented(
-        "Bolt V2 Distributed Trainer: freezeHashTables.");
+  void freezeHashTables(bool insert_labels_if_not_found) {
+    _model->freezeHashTables(insert_labels_if_not_found);
   }
 
   std::unordered_map<std::string, std::vector<float>> getTrainingMetrics() {

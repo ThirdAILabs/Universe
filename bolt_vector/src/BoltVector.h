@@ -110,6 +110,8 @@ struct BoltVector {
 
   bool hasGradients() const;
 
+  bool ownsMemory() const { return _owns_data; }
+
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& vec);
 
   std::string toString() const;
@@ -175,6 +177,8 @@ class BoltBatch {
   auto begin() { return _vectors.begin(); }
 
   auto end() { return _vectors.end(); }
+
+  auto& vectors() { return _vectors; }
 
   uint32_t getBatchSize() const { return _vectors.size(); }
 

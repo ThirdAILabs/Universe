@@ -4,36 +4,32 @@ namespace thirdai::dataset {
 
 Explanation TextBlock::explainIndex(uint32_t index_within_block,
                                     ColumnarInputSample& input) {
-  std::string_view string = input.column(_col);
+  std::string string = input.column(_col);
 
-  // assign outside the if statement so string view below wont point to an out
-  // of scope string variable
-  std::string lowercase_string;
   if (_lowercase) {
-    lowercase_string = text::lower(string);
-    string = lowercase_string;
+    string = text::lower(string);
   }
-  std::vector<std::string_view> tokens = _tokenizer->apply(string);
-  std::string keyword =
-      _encoder->getResponsibleWord(tokens, index_within_block, _dim);
+
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(string);
+
+  uint32_t source_token =
+      _encoder->undoEncoding(tokens, index_within_block, _dim);
+
+  std::string keyword = _tokenizer->getResponsibleWord(string, source_token);
 
   return {_col, keyword};
 }
 
 void TextBlock::buildSegment(ColumnarInputSample& input,
                              SegmentedFeatureVector& vec) {
-  std::string_view string = input.column(_col);
+  std::string string = input.column(_col);
 
-  // assign outside the if statement so string view below wont point to an out
-  // of scope string variable
-  std::string lowercase_string;
   if (_lowercase) {
-    lowercase_string = text::lower(string);
-    string = lowercase_string;
+    string = text::lower(string);
   }
 
-  std::vector<std::string_view> tokens = _tokenizer->apply(string);
-  std::vector<uint32_t> indices = _encoder->apply(tokens);
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(string);
+  std::vector<uint32_t> indices = _encoder->encode(tokens);
   token_encoding::mod(indices, _dim);
 
   for (auto& [index, value] : token_encoding::sumRepeatedIndices(indices)) {

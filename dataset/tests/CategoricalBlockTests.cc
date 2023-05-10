@@ -60,14 +60,8 @@ class CategoricalBlockTest : public testing::Test {
   static void addVectorSegmentWithBlock(
       CategoricalBlock& block, const std::vector<std::string>& input_row,
       SegmentedSparseFeatureVector& vec) {
-    std::vector<std::string_view> input_row_view(input_row.size());
-    for (uint32_t i = 0; i < input_row.size(); i++) {
-      input_row_view[i] =
-          std::string_view(input_row[i].c_str(), input_row[i].size());
-    }
-
-    RowSampleRef input_row_view_ref(input_row_view);
-    block.addVectorSegment(input_row_view_ref, vec);
+    RowSampleRef input_row_ref(input_row);
+    block.addVectorSegment(input_row_ref, vec);
   }
 
   /**

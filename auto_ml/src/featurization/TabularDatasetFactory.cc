@@ -4,6 +4,8 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/set.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -53,12 +55,15 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
   if (!shuffle_config.has_value()) {
     shuffle_config = dataset::DatasetShuffleConfig();
   }
+
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, delimiter());
+
   return std::make_unique<dataset::DatasetLoader>(
-      data_source, _labeled_featurizer,
+      csv_data_source, _labeled_featurizer,
       /* shuffle= */ shuffle, shuffle_config.value());
 }
 
-std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(
+TensorList TabularDatasetFactory::featurizeInputBatch(
     const MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);
 
@@ -67,19 +72,26 @@ std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(
   result.emplace_back(
       std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
 
-  return result;
+  return bolt::train::convertBatch(std::move(result),
+                                   _inference_featurizer->getDimensions());
 }
 
-std::pair<std::vector<BoltBatch>, BoltBatch>
-TabularDatasetFactory::featurizeTrainingBatch(const MapInputBatch& batch) {
+std::pair<TensorList, TensorList> TabularDatasetFactory::featurizeTrainingBatch(
+    const MapInputBatch& batch) {
   dataset::MapBatchRef inputs_ref(batch);
 
   auto featurized = _labeled_featurizer->featurize(inputs_ref);
+  auto dims = _labeled_featurizer->getDimensions();
 
-  BoltBatch labels(std::move(featurized.back()));
+  TensorList data;
 
-  std::vector<BoltBatch> data;
-  data.emplace_back(std::move(featurized.front()));
+  for (uint32_t i = 0; i < dims.size(); i++) {
+    data.push_back(bolt::nn::tensor::Tensor::convert(
+        BoltBatch(std::move(featurized[i])), dims[i]));
+  }
+
+  TensorList labels = {data.back()};
+  data.pop_back();
 
   return {std::move(data), std::move(labels)};
 }

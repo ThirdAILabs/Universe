@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
 from thirdai import bolt
@@ -71,7 +72,10 @@ def get_relevant_documents(supervised_tst_file):
 
 
 def evaluate_model(model, supervised_tst):
-    output = model.evaluate(filename=supervised_tst)
+    test_df = pd.read_csv(supervised_tst)
+    test_samples = [{"QUERY": text} for text in test_df["QUERY"].tolist()]
+
+    output = model.predict_batch(test_samples)
 
     all_recommended_documents = []
     for sample in output:
@@ -115,7 +119,7 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
                 "recall@10",
             ],
         )
-        assert metrics["precision@1"][-1] > 0.90
+        assert metrics["train_precision@1"][-1] > 0.90
 
     validation = bolt.Validation(
         supervised_tst,
@@ -143,7 +147,7 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         coldstart=True,
     )
 
-    assert metrics["precision@1"][-1] > 0.45
+    assert metrics["train_precision@1"][-1] > 0.45
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
@@ -349,3 +353,22 @@ def test_mach_udt_introduce_documents():
     )
 
     os.remove(new_docs)
+
+
+def test_mach_udt_hash_based_methods():
+    model = train_simple_mach_udt(integer_target=True)
+
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert len(hashes) == 7
+
+    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    assert hashes != new_hash_set
+
+    for _ in range(5):
+        model.train_with_hashes(
+            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            learning_rate=0.01,
+        )
+
+    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert set(new_hashes) == new_hash_set

@@ -111,11 +111,9 @@ py::object TextEmbeddingModel::encodeBatch(
   for (const auto& string : strings) {
     map_input.push_back({{"text", string}});
   }
-  auto input_vectors = _embedding_factory->featurizeInputBatch(map_input).at(0);
-  auto input_tensors = bolt::nn::tensor::Tensor::convert(
-      input_vectors, _embedding_model->inputDims().at(0).back());
+  auto input_tensors = _embedding_factory->featurizeInputBatch(map_input);
   auto output =
-      _embedding_model->forward({input_tensors}, /* use_sparsity = */ false);
+      _embedding_model->forward(input_tensors, /* use_sparsity = */ false);
 
   return bolt::nn::python::tensorToNumpy(output.at(0));
 }
@@ -159,9 +157,9 @@ bolt::nn::model::ModelPtr TextEmbeddingModel::createTwoTowerModel(
 }
 
 TextEmbeddingModelPtr createTextEmbeddingModel(
-    const bolt::BoltGraphPtr& model,
+    const bolt::nn::model::ModelPtr& model,
     const data::TabularDatasetFactoryPtr& dataset_factory,
-    const std::string& activation_func, float distance_cutoff) {
+    float distance_cutoff) {
   auto data_types = dataset_factory->inputDataTypes();
   if (data_types.size() != 1) {
     throw std::runtime_error(
@@ -179,18 +177,10 @@ TextEmbeddingModelPtr createTextEmbeddingModel(
         "we did not find a text column.");
   }
 
-  auto fc =
-      model->getNodeByName("fc_1")->getInternalFullyConnectedLayers().at(0);
+  auto fc_op =
+      bolt::nn::ops::FullyConnected::cast(model->opExecutionOrder().at(0));
 
   auto tabular_options = dataset_factory->tabularOptions();
-
-  auto fc_op = bolt::nn::ops::FullyConnected::make(
-      /* dim = */ fc->getDim(),
-      /* input_dim = */ fc->getInputDim(), /* sparsity= */ 1.0,
-      /* activation = */ activation_func,
-      /* sampling = */ nullptr);
-
-  fc_op->setWeightsAndBiases(fc->getWeightsPtr(), fc->getBiasesPtr());
 
   return TextEmbeddingModel::make(fc_op, text_type, tabular_options,
                                   distance_cutoff);

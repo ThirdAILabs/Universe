@@ -14,6 +14,9 @@ constexpr uint32_t BATCH_SIZE = 2048;
 // Whether to freeze hash tables after first epoch of training.
 constexpr bool FREEZE_HASH_TABLES = true;
 
+// Whether to use sigmoid and bce for the output layer in UDT
+constexpr bool USE_SIGMOID_BCE = false;
+
 // Whether to use tabular pairgrams.
 constexpr bool CONTEXTUAL_COLUMNS = false;
 

@@ -20,6 +20,8 @@ class Tensor {
   Tensor(const uint32_t* indices, const float* values, tensor::Dims dims,
          uint32_t nonzeros, bool with_grad);
 
+  Tensor(BoltBatch&& batch, uint32_t dim);
+
   Tensor(const BoltBatch& batch, uint32_t dim);
 
   static std::shared_ptr<Tensor> dense(Dims dims);
@@ -31,10 +33,11 @@ class Tensor {
                                            tensor::Dims dims, uint32_t nonzeros,
                                            bool with_grad);
 
-  static std::shared_ptr<Tensor> convert(const BoltBatch& batch, uint32_t dim);
+  static std::shared_ptr<Tensor> copy(const BoltBatch& batch, uint32_t dim);
 
-  static std::shared_ptr<Tensor> convert(const BoltVector& vector,
-                                         uint32_t dim);
+  static std::shared_ptr<Tensor> convert(BoltBatch&& batch, uint32_t dim);
+
+  static std::shared_ptr<Tensor> convert(BoltVector&& vector, uint32_t dim);
 
   /**
    * Returns the dimensions of the tensor.
@@ -118,6 +121,8 @@ class Tensor {
   auto& gradients() { return _gradients; }
 
  private:
+  static void checkBatchContents(const BoltBatch& batch, uint32_t dim);
+
   Dims _dims;
   std::optional<uint32_t> _nonzeros;
 
