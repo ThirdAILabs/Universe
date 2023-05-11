@@ -19,9 +19,10 @@ namespace thirdai::bolt {
 class Overfitting : public Callback {
  public:
   explicit Overfitting(const std::string& monitored_metric,
-                       float train_metric_threshold = 0.97)
+                       float train_metric_threshold = 0.97, bool freeze_hash_table = true)
       : _metric(makeMetric(monitored_metric)),
-        _threshold(train_metric_threshold) {
+        _threshold(train_metric_threshold),
+        _freeze_hash_table(freeze_hash_table){
     if (!_metric->betterThan(_threshold, _metric->worst())) {
       throw std::invalid_argument("Invalid threshold " +
                                   std::to_string(_threshold) + " for metric " +
@@ -32,7 +33,7 @@ class Overfitting : public Callback {
   void onTrainBegin(BoltGraph& model, TrainState& train_state) final {
     (void)model;
     auto train_metrics = train_state.getTrainMetricAggregator().getMetrics();
-
+    model.freezeHashTables(_freeze_hash_table);
     for (auto& metric : train_metrics) {
       if (_metric->name() == metric->name()) {
         return;
@@ -57,6 +58,7 @@ class Overfitting : public Callback {
  private:
   std::shared_ptr<Metric> _metric;
   float _threshold;
+  bool _freeze_hash_table;
 };
 
 }  // namespace thirdai::bolt
