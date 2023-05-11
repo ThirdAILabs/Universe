@@ -157,9 +157,7 @@ class UDT {
     _backend->forget(label);
   }
 
-  void clearIndex() {
-    _backend->clearIndex();
-  }
+  void clearIndex() { _backend->clearIndex(); }
 
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) {

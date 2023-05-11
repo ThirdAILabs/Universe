@@ -96,9 +96,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final {
-    _mach_label_block->index()->clear();
-  }
+  void clearIndex() final { _mach_label_block->index()->clear(); }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;

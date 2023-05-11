@@ -213,7 +213,7 @@ class UDTBackend {
    * conjunction with coldstart.
    */
   virtual void introduceDocuments(
-    const dataset::DataSourcePtr& data,
+      const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names) {
     (void)data;
@@ -258,9 +258,7 @@ class UDTBackend {
     throw notSupported("forget");
   }
 
-  virtual void clearIndex() {
-    throw notSupported("clear_index");
-  }
+  virtual void clearIndex() { throw notSupported("clear_index"); }
 
   virtual py::object trainWithHashes(const MapInputBatch& batch,
                                      float learning_rate,
