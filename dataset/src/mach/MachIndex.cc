@@ -9,19 +9,23 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
                                                          uint32_t num_hashes,
                                                          uint32_t num_elements)
     : MachIndex(output_range, num_hashes) {
+#pragma omp parallel for default(none) shared(num_elements)
   for (uint32_t element = 0; element < num_elements; element++) {
     std::string element_string = std::to_string(element);
 
     auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
                                                    _output_range);
 
-    _entity_to_hashes[element] = hashes;
+#pragma omp critical
+    {
+      _entity_to_hashes[element] = hashes;
 
-    for (auto& hash : hashes) {
-      _hash_to_entities[hash].push_back(element);
+      for (auto& hash : hashes) {
+        _hash_to_entities[hash].push_back(element);
+      }
     }
   }
-}
+}  // namespace thirdai::dataset::mach
 
 std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
     const std::string& string) {
