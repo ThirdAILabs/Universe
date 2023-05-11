@@ -76,9 +76,6 @@ class MachIndex {
 
 using MachIndexPtr = std::shared_ptr<MachIndex>;
 
-using EntityToHash = std::unordered_map<uint32_t, std::vector<uint32_t>>;
-using HashToEntity = std::unordered_map<uint32_t, std::vector<std::string>>;
-
 /**
  * Assumes each input entity can be converted to an integer x where 0 < x <
  * max_elements. Since the inputs are known beforehand this index is built on
@@ -90,7 +87,8 @@ class NumericCategoricalMachIndex : public MachIndex {
                               uint32_t num_elements);
 
   NumericCategoricalMachIndex(
-      const EntityToHash& entity_to_hashes,
+      const std::unordered_map<uint32_t, std::vector<uint32_t>>&
+          entity_to_hashes,
       const std::unordered_map<uint32_t, std::vector<uint32_t>>&
           _hash_to_entities,
       uint32_t output_range, uint32_t num_hashes);
@@ -129,8 +127,8 @@ class NumericCategoricalMachIndex : public MachIndex {
 
   // we don't use a vector here because if we forget elements we won't have
   // contiguous integers as entities
-  EntityToHash _entity_to_hashes;
-  HashToEntity _hash_to_entities;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -180,8 +178,8 @@ class StringCategoricalMachIndex : public MachIndex {
             _hash_to_entities);
   }
 
-  EntityToHash _entity_to_hashes;
-  HashToEntity _hash_to_entities;
+  std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
 };
 
 using StringCategoricalMachIndexPtr =
