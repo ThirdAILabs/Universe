@@ -11,6 +11,6 @@ namespace thirdai::licensing::keygen {
  * access key is validated to use the ThirdAI python package. Returns the
  * set of entitlements that the access_key has.
  */
-Entitlements entitlementsFromKeygen(const std::string& access_key);
+Entitlements verifyKeyAndGetEntitlements(const std::string& access_key);
 
 }  // namespace thirdai::licensing::keygen
