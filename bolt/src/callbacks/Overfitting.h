@@ -32,6 +32,7 @@ class Overfitting : public Callback {
   void onTrainBegin(BoltGraph& model, TrainState& train_state) final {
     (void)model;
     auto train_metrics = train_state.getTrainMetricAggregator().getMetrics();
+    
     for (auto& metric : train_metrics) {
       if (_metric->name() == metric->name()) {
         return;
