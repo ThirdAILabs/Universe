@@ -258,6 +258,8 @@ class UDTBackend {
     throw notSupported("forget");
   }
 
+  virtual void clearIndex() { throw notSupported("clear_index"); }
+
   virtual py::object trainWithHashes(const MapInputBatch& batch,
                                      float learning_rate,
                                      const std::vector<std::string>& metrics) {

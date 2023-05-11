@@ -44,6 +44,7 @@ std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
   // We only return strings because it makes the code much easier to
   // read/maintain, since we share an interface with the
   // StringCategoricalMachIndex which returns strings.
+  // TODO(david): theres a todo in the interface to change this to return ids
   std::vector<std::string> string_entities;
   for (const uint32_t entity : _hash_to_entities.at(hash_val)) {
     string_entities.push_back(std::to_string(entity));
