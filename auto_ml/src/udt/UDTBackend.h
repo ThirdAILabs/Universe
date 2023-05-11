@@ -260,6 +260,11 @@ class UDTBackend {
   }
 
   /**
+   * Clears the internal index for Mach.
+   */
+  virtual void clearIndex() { throw notSupported("clear_index"); }
+
+  /**
    * Used in UDTMachClassifier, assumes each of the samples in the input batch
    * has the target column mapping to space separated strings representing the
    * actual output metaclasses to predict in mach.

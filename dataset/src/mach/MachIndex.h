@@ -38,6 +38,8 @@ class MachIndex {
 
   /**
    * Retrieves all entities that have hashed to "hash_val" in the index.
+   * TODO(david) change this to return ids and provide a method to decode those
+   * ids (in udt get index and call decode or something).
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
@@ -51,6 +53,11 @@ class MachIndex {
    * Erases the given string from the index.
    */
   virtual void erase(const std::string& string) = 0;
+
+  /**
+   * Totally erases the index.
+   */
+  virtual void clear() = 0;
 
   virtual uint32_t numElements() const = 0;
 
@@ -115,6 +122,11 @@ class NumericCategoricalMachIndex : public MachIndex {
   static std::shared_ptr<NumericCategoricalMachIndex> load(
       const std::string& filename);
 
+  void clear() final {
+    _entity_to_hashes.clear();
+    _hash_to_entities.clear();
+  }
+
  private:
   NumericCategoricalMachIndex() {}
 
@@ -128,7 +140,7 @@ class NumericCategoricalMachIndex : public MachIndex {
   // we don't use a vector here because if we forget elements we won't have
   // contiguous integers as entities
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> _hash_to_entities;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -168,6 +180,11 @@ class StringCategoricalMachIndex : public MachIndex {
   static std::shared_ptr<StringCategoricalMachIndex> load(
       const std::string& filename);
 
+  void clear() final {
+    _entity_to_hashes.clear();
+    _hash_to_entities.clear();
+  }
+
  private:
   StringCategoricalMachIndex() {}
 
@@ -178,6 +195,9 @@ class StringCategoricalMachIndex : public MachIndex {
             _hash_to_entities);
   }
 
+  // TODO(david) implement memory saving for StringCategoricalMachIndex.
+  // The hard part about this is getting an unused id for a new entity while
+  // supporting deletions.
   std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
 };

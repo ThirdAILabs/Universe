@@ -18,7 +18,7 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
     _entity_to_hashes[element] = hashes;
 
     for (auto& hash : hashes) {
-      _hash_to_entities[hash].push_back(element_string);
+      _hash_to_entities[hash].push_back(element);
     }
   }
 }
@@ -74,7 +74,16 @@ std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
   if (!_hash_to_entities.count(hash_val)) {
     return {};
   }
-  return _hash_to_entities.at(hash_val);
+
+  // We only return strings because it makes the code much easier to
+  // read/maintain, since we share an interface with the
+  // StringCategoricalMachIndex which returns strings.
+  // TODO(david): theres a todo in the interface to change this to return ids
+  std::vector<std::string> string_entities;
+  for (const uint32_t entity : _hash_to_entities.at(hash_val)) {
+    string_entities.push_back(std::to_string(entity));
+  }
+  return string_entities;
 }
 
 void NumericCategoricalMachIndex::manualAdd(
@@ -92,7 +101,7 @@ void NumericCategoricalMachIndex::manualAdd(
   }
 
   for (const auto& hash : hashes) {
-    _hash_to_entities[hash].push_back(string);
+    _hash_to_entities[hash].push_back(id);
   }
 
   _entity_to_hashes[id] = hashes;
@@ -110,7 +119,7 @@ void NumericCategoricalMachIndex::erase(const std::string& string) {
 
   for (const auto& hash : hashes) {
     auto new_end_itr = std::remove(_hash_to_entities[hash].begin(),
-                                   _hash_to_entities[hash].end(), string);
+                                   _hash_to_entities[hash].end(), id);
     _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
   }
 }
