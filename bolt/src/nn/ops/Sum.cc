@@ -97,7 +97,7 @@ void Sum::summary(std::ostream& summary,
 }
 
 autograd::ComputationPtr Sum::apply(autograd::ComputationPtr input) {
-  if (input->dims().size() != 3) {
+  if (input->dims().size() != 2) {
     throw std::invalid_argument("Sum op can only be applied to 3d input.");
   }
 
