@@ -12,6 +12,7 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Sum.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -177,6 +178,13 @@ void defineTensor(py::module_& nn) {
           py::return_value_policy::reference_internal);
 }
 
+template <typename OpType>
+auto defineOp(py::module_& module, const char* name) {
+  return py::class_<OpType, std::shared_ptr<OpType>, ops::Op>(module, name)
+      .def(py::init(&OpType::make))
+      .def("__call__", &OpType::apply);
+}
+
 void defineOps(py::module_& nn) {
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
       .def("dims", &autograd::Computation::dims)
@@ -246,9 +254,13 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::LayerNorm::make))
       .def("__call__", &ops::LayerNorm::apply);
 
-  py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
-      .def(py::init(&ops::Tanh::make))
-      .def("__call__", &ops::Tanh::apply);
+  defineOp<ops::Concatenate>(nn, "Concatenate");
+
+  defineOp<ops::LayerNorm>(nn, "LayerNorm");
+
+  defineOp<ops::Tanh>(nn, "Tanh");
+
+  defineOp<ops::Sum>(nn, "Sum");
 
   nn.def("Input", py::overload_cast<uint32_t>(&ops::Input::make),
          py::arg("dim"));
