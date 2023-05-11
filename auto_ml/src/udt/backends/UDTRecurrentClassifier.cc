@@ -43,8 +43,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    bool use_tanh =
-        user_args.get<uint32_t>("use_tanh", "bool", defaults::USE_TANH);
+    bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
     _model =
         utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
                             output_dim, /* use_sigmoid_bce= */ false, use_tanh);

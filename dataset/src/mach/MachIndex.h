@@ -125,7 +125,7 @@ class NumericCategoricalMachIndex : public MachIndex {
   // we don't use a vector here because if we forget elements we won't have
   // contiguous integers as entities
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
-  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> _hash_to_entities;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -175,6 +175,9 @@ class StringCategoricalMachIndex : public MachIndex {
             _hash_to_entities);
   }
 
+  // TODO(david) implement memory saving for StringCategoricalMachIndex.
+  // The hard part about this is getting an unused id for a new entity while
+  // supporting deletions.
   std::unordered_map<std::string, std::vector<uint32_t>> _entity_to_hashes;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities;
 };
