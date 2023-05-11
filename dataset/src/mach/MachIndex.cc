@@ -25,7 +25,7 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
       }
     }
   }
-}  // namespace thirdai::dataset::mach
+}
 
 std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
     const std::string& string) {
