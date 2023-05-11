@@ -52,7 +52,7 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(
             "Entity " + std::to_string(entity) +
             " from hash_to_entities not found in entity_to_hashes.");
       }
-      _hash_to_entities[hash].push_back(std::to_string(entity));
+      _hash_to_entities[hash].push_back(entity);
     }
   }
 }
