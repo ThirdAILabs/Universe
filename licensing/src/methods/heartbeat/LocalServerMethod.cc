@@ -10,7 +10,7 @@ LocalServerMethod::LocalServerMethod(std::string heartbeat_url,
       _heartbeat_timeout(heartbeat_timeout),
       _heartbeat_thread(HeartbeatThread(_heartbeat_url, _heartbeat_timeout)) {
   _heartbeat_thread.verify();
-};
+}
 
 void LocalServerMethod::checkLicense() { _heartbeat_thread.verify(); }
 
