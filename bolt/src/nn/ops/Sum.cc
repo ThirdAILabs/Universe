@@ -39,11 +39,11 @@ void Sum::forward(const autograd::ComputationList& inputs,
     const BoltVector& input_vec = input->index3d(index_in_batch, i);
 
     if (input_vec.isDense()) {
-      for (uint32_t j = 0; j < input_vec.len; i++) {
+      for (uint32_t j = 0; j < input_vec.len; j++) {
         output_vec.activations[j] += input_vec.activations[j];
       }
     } else {
-      for (uint32_t j = 0; j < input_vec.len; i++) {
+      for (uint32_t j = 0; j < input_vec.len; j++) {
         output_vec.activations[input_vec.active_neurons[j]] +=
             input_vec.activations[j];
       }
@@ -65,11 +65,11 @@ void Sum::backpropagate(autograd::ComputationList& inputs,
     BoltVector& input_vec = input->index3d(index_in_batch, i);
 
     if (input_vec.isDense()) {
-      for (uint32_t j = 0; j < input_vec.len; i++) {
+      for (uint32_t j = 0; j < input_vec.len; j++) {
         input_vec.gradients[j] += output_vec.gradients[j];
       }
     } else {
-      for (uint32_t j = 0; j < input_vec.len; i++) {
+      for (uint32_t j = 0; j < input_vec.len; j++) {
         input_vec.gradients[j] +=
             output_vec.gradients[input_vec.active_neurons[j]];
       }
