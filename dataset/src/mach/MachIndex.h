@@ -37,6 +37,8 @@ class MachIndex {
 
   /**
    * Retrieves all entities that have hashed to "hash_val" in the index.
+   * TODO(david) change this to return ids and provide a method to decode those
+   * ids (in udt get index and call decode or something).
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
