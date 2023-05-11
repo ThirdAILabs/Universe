@@ -25,13 +25,7 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
         "The cutoff margin for the distance between dissimilar points must be "
         "greater than 0.");
   }
-  // TODO(Nicholas) check other label dims match other output dims
-  if (_labels->dims().back() != 1) {
-    throw std::invalid_argument(
-        "The dimension of the labels for contrastive loss must equal 1, but "
-        "received labels with dimension " +
-        std::to_string(_labels->dims().back()));
-  }
+
   if (!tensor::areDimsEq(_output_1->dims(), _output_2->dims())) {
     throw std::invalid_argument(
         "The dimension of the both outputs for contrastive loss must be the "
@@ -48,6 +42,12 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
         "outputs with dimension " +
         tensor::toString(_output_1->dims()) + " and labels with dimension " +
         tensor::toString(_labels->dims()) + ".");
+  }
+  if (_labels->dims().back() != 1) {
+    throw std::invalid_argument(
+        "The dimension of the labels for contrastive loss must equal 1, but "
+        "received labels with dimension " +
+        std::to_string(_labels->dims().back()));
   }
 }
 
