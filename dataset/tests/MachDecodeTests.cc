@@ -39,6 +39,8 @@ class MockMachIndex : public mach::MachIndex {
   void erase(const std::string& string) final { (void)string; }
 
   uint32_t numElements() const final { return 4; }
+
+  void clear() final {}
 };
 
 TEST(MachDecodeTest, TestTopKUnlimitedDecode) {
