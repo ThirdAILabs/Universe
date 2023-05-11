@@ -109,7 +109,9 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
              mach::NumericCategoricalMachIndexPtr>(internal_dataset_submodule,
                                                    "NumericMachIndex")
-      .def(py::init<>())
+      .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
+                    std::unordered_map<uint32_t, std::vector<uint32_t>>,
+                    uint32_t, uint32_t>())
       .def("save", &mach::NumericCategoricalMachIndex::save,
            py::arg("filename"))
       .def_static("load", &mach::NumericCategoricalMachIndex::load);

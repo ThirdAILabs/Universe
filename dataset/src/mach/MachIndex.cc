@@ -24,7 +24,7 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
 }
 
 NumericCategoricalMachIndex::NumericCategoricalMachIndex(
-    const EntityToHash& entity_to_hashes,
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
     const std::unordered_map<uint32_t, std::vector<uint32_t>>& hash_to_entities,
     uint32_t output_range, uint32_t num_hashes)
     : MachIndex(output_range, num_hashes), _entity_to_hashes(entity_to_hashes) {
