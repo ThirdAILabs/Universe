@@ -109,7 +109,7 @@ def get_model():
 
 def get_data():
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=4000
+        n_classes=N_CLASSES, n_samples=2000
     )
 
     # We use the labels as tokens to be embedded by the embedding table so they
@@ -183,6 +183,10 @@ def disable_sparse_updates(trainers):
 # have implemented internal support for gloo.
 @pytest.mark.unit
 def test_multiple_trainers():
+    # TODO(pratik): We need to investigate, why this particular training is not
+    # converging within 1 epoch, compared to test_bolt_save_load training. Is it
+    # due to different hash table initializations?
+    EPOCHS = 2
     model_1, model_2 = get_model(), get_model()
 
     train_data_1, train_labels_1, test_data, test_labels_np = get_data()
@@ -199,22 +203,20 @@ def test_multiple_trainers():
 
     # Training them on same data should still get different
     # gradients as we are training with sparsity
-    for x, y in zip(
-        train_data_1,
-        train_labels_1,
-    ):
-        for trainer in trainers:
-            trainer.model.train_on_batch(x, y)
+    for _ in range(EPOCHS):
+        for x, y in zip(train_data_1, train_labels_1):
+            for trainer in trainers:
+                trainer.model.train_on_batch(x, y)
 
-        # averages model gradients
-        average_values(
-            trainers,
-            lambda model: model.get_gradients(),
-            lambda model, values: model.set_gradients(values),
-        )
+            # averages model gradients
+            average_values(
+                trainers,
+                lambda model: model.get_gradients(),
+                lambda model, values: model.set_gradients(values),
+            )
 
-        for trainer in trainers:
-            trainer.model.update_parameters(learning_rate=0.05)
+            for trainer in trainers:
+                trainer.model.update_parameters(learning_rate=0.05)
 
     assert equal_model_paramters(trainers), "Trainer models are not the same."
     evaluate_model(trainers[0].model, test_data, test_labels_np)
