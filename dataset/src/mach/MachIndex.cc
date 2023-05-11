@@ -16,10 +16,10 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
     auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
                                                    _output_range);
 
+    _entity_to_hashes[element] = hashes;
+
 #pragma omp critical
     {
-      _entity_to_hashes[element] = hashes;
-
       for (auto& hash : hashes) {
         _hash_to_entities[hash].push_back(element);
       }
