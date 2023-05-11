@@ -5,7 +5,7 @@ namespace thirdai::licensing::keygen {
 KeyMethod::KeyMethod(std::string api_key)
     : LicenseMethod(keygen::verifyKeyAndGetEntitlements(api_key),
                     licensing::LicenseMethodType::KEY),
-      _api_key(std::move(api_key)){};
+      _api_key(std::move(api_key)) {}
 
 void KeyMethod::checkLicense() {
   Entitlements entitlements = keygen::verifyKeyAndGetEntitlements(_api_key);

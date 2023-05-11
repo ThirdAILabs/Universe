@@ -21,7 +21,7 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   }
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
-  bool use_tanh = args.get<uint32_t>("use_tanh", "bool", defaults::USE_TANH);
+  bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh);
 }
