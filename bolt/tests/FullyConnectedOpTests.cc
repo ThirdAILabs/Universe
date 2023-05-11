@@ -67,7 +67,8 @@ void setWeightsAndBiases(ops::FullyConnectedPtr& op) {
   std::vector<float> weights = randomValues(op->dim(), op->inputDim());
   std::vector<float> biases = randomValues(op->dim(), 1);
 
-  op->setWeightsAndBiases(weights.data(), biases.data());
+  op->setWeights(weights.data());
+  op->setBiases(biases.data());
 }
 
 void setGradients(tensor::TensorPtr& tensor, const std::vector<float>& grads) {
