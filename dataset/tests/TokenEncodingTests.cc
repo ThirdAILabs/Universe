@@ -1,13 +1,12 @@
 #include <gtest/gtest.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
-#include <string_view>
 #include <unordered_set>
 
 namespace thirdai::dataset {
 
 TEST(TokenEncodingTest, VerifyNumberOfNGrams) {
-  std::string_view sentence = "This is a sentence with many words.";
+  std::string sentence = "This is a sentence with many words.";
   uint32_t num_words = 7;
 
   for (uint32_t n = 1; n < 8; n++) {
