@@ -78,6 +78,51 @@ TEST(TensorTests, SparseTensor) {
   checkTensorContents(tensor);
 }
 
+template <typename T>
+void assertPointerDistance(const T* base, const T* ptr,
+                           uint64_t expected_distance) {
+  EXPECT_EQ(std::distance(base, ptr), expected_distance);
+}
+
+TEST(TensorTests, TensorIndexing) {
+  auto tensor = tensor::Tensor::sparse({5, 6, 7, 8}, /* nonzeros= */ 4);
+
+  std::array<uint32_t, 2> expected_dims_2d = {5 * 6 * 7, 8};
+  EXPECT_EQ(tensor->dims2d(), expected_dims_2d);
+
+  std::array<uint32_t, 3> expected_dims_3d = {5, 6 * 7, 8};
+  EXPECT_EQ(tensor->dims3d(), expected_dims_3d);
+
+  for (uint64_t i = 0; i < 5; i++) {
+    uint64_t offset = i * 6 * 7 * 4;
+    assertPointerDistance(tensor->indicesPtr(), tensor->indicesAtIndex3d(i),
+                          offset);
+    assertPointerDistance(tensor->valuesPtr(), tensor->valuesAtIndex3d(i),
+                          offset);
+    assertPointerDistance(tensor->gradientsPtr(), tensor->gradientsAtIndex3d(i),
+                          offset);
+
+    for (uint64_t j = 0; j < 6 * 7; j++) {
+      const BoltVector& vector = tensor->index3d(i, j);
+
+      uint64_t offset = i * 6 * 7 * 4 + j * 4;
+      assertPointerDistance(tensor->indicesPtr(), vector.active_neurons,
+                            offset);
+      assertPointerDistance(tensor->valuesPtr(), vector.activations, offset);
+      assertPointerDistance(tensor->gradientsPtr(), vector.gradients, offset);
+    }
+  }
+
+  for (uint64_t i = 0; i < 5 * 6 * 7; i++) {
+    const BoltVector& vector = tensor->index2d(i);
+
+    uint64_t offset = i * 4;
+    assertPointerDistance(tensor->indicesPtr(), vector.active_neurons, offset);
+    assertPointerDistance(tensor->valuesPtr(), vector.activations, offset);
+    assertPointerDistance(tensor->gradientsPtr(), vector.gradients, offset);
+  }
+}
+
 TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
