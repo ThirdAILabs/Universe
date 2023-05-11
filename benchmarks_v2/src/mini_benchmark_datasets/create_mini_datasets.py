@@ -2,6 +2,7 @@ import argparse
 import os
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import numpy as np
 import pandas as pd
 from thirdai import bolt
@@ -10,6 +11,11 @@ import pandas as pd
 from thirdai import bolt
 import numpy as np
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+import numpy as np
+import pandas as pd
+from thirdai import bolt
+>>>>>>> 566adc78 (formatting)
 
 from ..runners.runner_map import runner_map
 from ..utils import get_configs
@@ -63,6 +69,7 @@ def save_non_graph_subset(file, num_lines=11):
     )
     return parser.parse_args()
 
+
 def save_non_graph_subset(file, num_lines=11):
     if not file:
         raise Exception
@@ -74,27 +81,38 @@ def save_non_graph_subset(file, num_lines=11):
     with open(read_path) as input_file:
         head = [next(input_file) for _ in range(num_lines)]
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
     
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+
+>>>>>>> 566adc78 (formatting)
     write_path = os.path.join(args.write_path_prefix, file)
     if not os.path.exists(os.path.dirname(write_path)):
         os.makedirs(os.path.dirname(write_path))
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     with open(write_path, "w") as output_file:
 =======
     with open(write_path, 'w') as output_file:
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+    with open(write_path, "w") as output_file:
+>>>>>>> 566adc78 (formatting)
         output_file.writelines(head)
 
 
 def save_data_subset(config, num_lines=11):
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+>>>>>>> 566adc78 (formatting)
     try:
         has_gnn_backend = any(
             [
@@ -141,6 +159,7 @@ def save_data_subset(config, num_lines=11):
 
         # Get column name corresponding to node_id type from data_types
 <<<<<<< HEAD
+<<<<<<< HEAD
         node_id_col = [
             k for k, v in data_types.items() if isinstance(v, bolt.types.node_id)
         ][0]
@@ -155,11 +174,30 @@ def save_data_subset(config, num_lines=11):
         # Get column name corresponding to neighbors type from data_types
         neighbors_col = (list(data_types.keys()))[[i for i,(_,v) in enumerate(data_types.items()) if isinstance(v, bolt.types.neighbors)][0]]
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+        node_id_col = (list(data_types.keys()))[
+            [
+                i
+                for i, (_, v) in enumerate(data_types.items())
+                if isinstance(v, bolt.types.node_id)
+            ][0]
+        ]
+
+        # Get column name corresponding to neighbors type from data_types
+        neighbors_col = (list(data_types.keys()))[
+            [
+                i
+                for i, (_, v) in enumerate(data_types.items())
+                if isinstance(v, bolt.types.neighbors)
+            ][0]
+        ]
+>>>>>>> 566adc78 (formatting)
 
         read_test_file_path = os.path.join(args.read_path_prefix, config.test_file)
 
         write_train_file_path = os.path.join(args.write_path_prefix, config.train_file)
         write_test_file_path = os.path.join(args.write_path_prefix, config.test_file)
+<<<<<<< HEAD
 <<<<<<< HEAD
         write_gnn_index_path = os.path.join(
             args.write_path_prefix, os.path.dirname(config.test_file), "gnn_index.csv"
@@ -188,23 +226,36 @@ def save_data_subset(config, num_lines=11):
 
 =======
         write_gnn_index_path = os.path.join(args.write_path_prefix, os.path.dirname(config.test_file), "gnn_index.csv")
+=======
+        write_gnn_index_path = os.path.join(
+            args.write_path_prefix, os.path.dirname(config.test_file), "gnn_index.csv"
+        )
+>>>>>>> 566adc78 (formatting)
         if not os.path.exists(os.path.dirname(write_train_file_path)):
             os.makedirs(os.path.dirname(write_train_file_path))
 
-        test_df = pd.read_csv(read_test_file_path, nrows=num_lines-1)
+        test_df = pd.read_csv(read_test_file_path, nrows=num_lines - 1)
 
-        test_df[config.target] = np.random.randint(config.n_target_classes, size=num_lines-1)
+        test_df[config.target] = np.random.randint(
+            config.n_target_classes, size=num_lines - 1
+        )
 
         # Re-index the nodes in the graph
-        test_df[node_id_col] = list(range(num_lines-1))
+        test_df[node_id_col] = list(range(num_lines - 1))
 
         # Create valid neighbors
-        neighbor_matrix = np.random.randint(0,2,size=(num_lines-1,num_lines-1))
+        neighbor_matrix = np.random.randint(0, 2, size=(num_lines - 1, num_lines - 1))
         neighbor_matrix = np.tril(neighbor_matrix) + np.tril(neighbor_matrix, -1).T
-        neighbors = [' '.join([str(nb) for nb in np.nonzero(nbs)[0]]) for nbs in neighbor_matrix]
+        neighbors = [
+            " ".join([str(nb) for nb in np.nonzero(nbs)[0]]) for nbs in neighbor_matrix
+        ]
         test_df[neighbors_col] = neighbors
+<<<<<<< HEAD
         
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+
+>>>>>>> 566adc78 (formatting)
         test_df.to_csv(write_test_file_path)
 
         train_df = test_df.sample(frac=0.5)
@@ -225,7 +276,11 @@ if __name__ == "__main__":
 
         for config in configs:
 <<<<<<< HEAD
+<<<<<<< HEAD
             save_data_subset(config)
 =======
             save_data_subset(config)
 >>>>>>> 82ce2c99 (mini benchmarks)
+=======
+            save_data_subset(config)
+>>>>>>> 566adc78 (formatting)

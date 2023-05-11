@@ -84,7 +84,6 @@ class UDTRunner(Runner):
                 key="average_predict_time_ms", value=average_predict_time_ms
             )
 
-
     @staticmethod
     def get_datasets(config, path_prefix):
         train_file = (
@@ -99,7 +98,6 @@ class UDTRunner(Runner):
         )
         test_file = os.path.join(path_prefix, config.test_file)
         return train_file, cold_start_train_file, test_file
-
 
     @staticmethod
     def get_datasets(config, path_prefix):
