@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 from thirdai import bolt_v2 as bolt
-from thirdai import dataset
 
 
 def get_sum_model(samples_per_batch, input_dim):
