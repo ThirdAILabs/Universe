@@ -305,6 +305,15 @@ def test_mach_udt_forgetting_everything(integer_target):
 
 
 @pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_forgetting_everything_with_clear_index(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    model.clear_index()
+
+    assert len(model.predict({"text": "something"})) == 0
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
 def test_mach_udt_cant_predict_forgotten(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 

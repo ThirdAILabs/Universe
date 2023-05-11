@@ -51,6 +51,11 @@ class MachIndex {
    */
   virtual void erase(const std::string& string) = 0;
 
+  /**
+   * Totally erases the index.
+   */
+  virtual void clear() = 0;
+
   virtual uint32_t numElements() const = 0;
 
   uint32_t outputRange() const { return _output_range; }
@@ -102,6 +107,11 @@ class NumericCategoricalMachIndex : public MachIndex {
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
+  void clear() final {
+    _entity_to_hashes.clear();
+    _hash_to_entities.clear();
+  }
+
  private:
   NumericCategoricalMachIndex() {}
 
@@ -149,6 +159,11 @@ class StringCategoricalMachIndex : public MachIndex {
   void erase(const std::string& string) final;
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
+
+  void clear() final {
+    _entity_to_hashes.clear();
+    _hash_to_entities.clear();
+  }
 
  private:
   StringCategoricalMachIndex() {}
