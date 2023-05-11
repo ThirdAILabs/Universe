@@ -21,9 +21,7 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
         "single output.");
   }
 
-  for (const auto& op : model->ops()) {
-    op->disableSparseParameterUpdates();
-  }
+  model->disableSparseParameterUpdates();
 
   if (auto validation = train_config.getValidationContext()) {
     _validation_data =

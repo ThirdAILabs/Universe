@@ -28,7 +28,6 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::nn::python {
 
-
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
@@ -123,6 +122,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
              setValues(model, new_values, 1);
            })
+      .def("disable_sparse_parameter_updates",
+           &model::Model::disableSparseParameterUpdates)
 
 #endif
       .def("save", &model::Model::save, py::arg("filename"),

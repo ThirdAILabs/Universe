@@ -109,7 +109,7 @@ def get_model():
 
 def get_data():
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=2000
+        n_classes=N_CLASSES, n_samples=4000
     )
 
     # We use the labels as tokens to be embedded by the embedding table so they
@@ -173,6 +173,11 @@ def equal_model_paramters(trainers):
     return np.allclose(params[0], params[1])
 
 
+def disable_sparse_updates(trainers):
+    for trainer in trainers:
+        trainer.model.disable_sparse_parameter_updates()
+
+
 # We dont have pygloo wheels working in release, So, we can't have a integration tests.
 # TODO(pratik): remove this test, once we have a integration test using pygloo,or we
 # have implemented internal support for gloo.
@@ -190,7 +195,7 @@ def test_multiple_trainers():
         lambda model: model.get_parameters(),
         lambda model, values: model.set_parameters(values),
     )
-    assert equal_model_paramters(trainers), "Trainer models are not the same."
+    disable_sparse_updates(trainers)
 
     # Training them on same data should still get different
     # gradients as we are training with sparsity
@@ -209,12 +214,8 @@ def test_multiple_trainers():
         )
 
         for trainer in trainers:
-            # print(trainer.model.get_gradients())
-            # print(trainer.model.get_parameters())
             trainer.model.update_parameters(learning_rate=0.05)
 
-        # assert equal_model_paramters(trainers), "Trainer models are not the same."
-
+    assert equal_model_paramters(trainers), "Trainer models are not the same."
     evaluate_model(trainers[0].model, test_data, test_labels_np)
     evaluate_model(trainers[1].model, test_data, test_labels_np)
-    assert equal_model_paramters(trainers), "Trainer models are not the same."
