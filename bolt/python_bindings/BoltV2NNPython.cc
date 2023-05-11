@@ -246,14 +246,6 @@ void defineOps(py::module_& nn) {
            &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
 
-  py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
-      .def(py::init(&ops::Concatenate::make))
-      .def("__call__", &ops::Concatenate::apply);
-
-  py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
-      .def(py::init(&ops::LayerNorm::make))
-      .def("__call__", &ops::LayerNorm::apply);
-
   defineOp<ops::Concatenate>(nn, "Concatenate");
 
   defineOp<ops::LayerNorm>(nn, "LayerNorm");
