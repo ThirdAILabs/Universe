@@ -1,7 +1,7 @@
 import argparse
 import json
 from datetime import date
-from types import SimpleNamespace 
+from types import SimpleNamespace
 
 import requests
 import thirdai
@@ -21,7 +21,18 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal", "mini_benchmark_udt", "mini_benchmark_query_reformulation", "mini_benchmark_temporal"],
+        choices=[
+            "udt",
+            "bolt_fc",
+            "bolt_v2_fc",
+            "dlrm",
+            "dlrm_v2",
+            "query_reformulation",
+            "temporal",
+            "mini_benchmark_udt",
+            "mini_benchmark_query_reformulation",
+            "mini_benchmark_temporal",
+        ],
         help="Which runners to use to run the benchmark.",
     )
     parser.add_argument(
@@ -45,7 +56,9 @@ def parse_arguments():
         "--run_name", type=str, default=None, help="The job name to track in MLflow"
     )
     parser.add_argument(
-        "--fail_on_error", action='store_true', help="Throw an exception when any of the benchmarks fails"
+        "--fail_on_error",
+        action="store_true",
+        help="Throw an exception when any of the benchmarks fails",
     )
 
     # Do not set the following args when running this script manually, these are only for github actions
@@ -77,7 +90,6 @@ def experiment_name(config_name, official_benchmark):
 
 
 def main(**kwargs):
-
     if not kwargs:
         args = parse_arguments()
     else:
@@ -117,6 +129,7 @@ def main(**kwargs):
                 mlflow_logger.log_additional_param(
                     "thirdai_version", thirdai.__version__
                 )
+                mlflow_logger.log_additional_param("runner", runner_name)
             else:
                 mlflow_logger = None
 

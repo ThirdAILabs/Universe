@@ -13,7 +13,9 @@ class TemporalRunner(Runner):
     config_type = TemporalBenchmarkConfig
 
     @classmethod
-    def run_benchmark(cls, config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger):
+    def run_benchmark(
+        cls, config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger
+    ):
         train_file = (
             os.path.join(path_prefix, config.train_file)
             if config.train_file is not None

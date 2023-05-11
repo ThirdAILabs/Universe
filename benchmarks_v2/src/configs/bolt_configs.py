@@ -12,8 +12,8 @@ class BoltBenchmarkConfig(ABC):
     hidden_node = {}
     output_node = {}
     loss_fn = "CategoricalCrossEntropyLoss"
-    reconstruct_hash_functions = None
     rebuild_hash_tables = None
+    reconstruct_hash_functions = None
 
     learning_rate = None
     num_epochs = None
@@ -40,9 +40,10 @@ class Amazon670kConfig(BoltBenchmarkConfig):
     input_dim = 135909
     hidden_node = {"dim": 256, "activation": "ReLU"}
     output_node = {"dim": 670091, "sparsity": 0.005, "activation": "Softmax"}
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rebuild_hash_tables = 6400
+    reconstruct_hash_functions = 128000
 
+    batch_size = 256
     learning_rate = 1e-4
     num_epochs = 5
 
@@ -53,13 +54,12 @@ class Amazon670kConfig(BoltBenchmarkConfig):
         test_dataset_path = os.path.join(
             path_prefix, "amazon-670k/test_shuffled_noHeader_sampled.txt"
         )
-        batch_size = 256
 
         train_data, train_labels = load_svm_dataset(
-            filename=train_dataset_path, batch_size=batch_size
+            filename=train_dataset_path, batch_size=Amazon670kConfig.batch_size
         )
         test_data, test_labels = load_svm_dataset(
-            filename=test_dataset_path, batch_size=batch_size
+            filename=test_dataset_path, batch_size=Amazon670kConfig.batch_size
         )
         return train_data, train_labels, test_data, test_labels
 
@@ -71,22 +71,22 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
     input_dim = 100000
     hidden_node = {"dim": 10000, "sparsity": 0.005, "activation": "ReLU"}
     output_node = {"dim": 2, "activation": "Softmax"}
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rebuild_hash_tables = 6400
+    reconstruct_hash_functions = 128000
 
+    batch_size = 256
     learning_rate = 1e-04
     num_epochs = 5
 
     def load_datasets(path_prefix: str):
         train_dataset_path = os.path.join(path_prefix, "amazon_polarity/svm_train.txt")
         test_dataset_path = os.path.join(path_prefix, "amazon_polarity/svm_test.txt")
-        batch_size = 256
 
         train_data, train_labels = load_svm_dataset(
-            filename=train_dataset_path, batch_size=batch_size
+            filename=train_dataset_path, batch_size=AmazonPolarityConfig.batch_size
         )
         test_data, test_labels = load_svm_dataset(
-            filename=test_dataset_path, batch_size=batch_size
+            filename=test_dataset_path, batch_size=AmazonPolarityConfig.batch_size
         )
         return train_data, train_labels, test_data, test_labels
 
@@ -102,13 +102,19 @@ class WayfairConfig(BoltBenchmarkConfig):
         "sparsity": 0.1,
         "activation": "Sigmoid",
         "sampling_config": bolt.nn.DWTASamplingConfig(
-            num_tables=64, hashes_per_table=4, reservoir_size=64
+            num_tables=64,
+            hashes_per_table=4,
+            range_pow=12,
+            binsize=8,
+            reservoir_size=64,
+            permutations=8,
         ),
     }
     loss_fn = "BinaryCrossEntropyLoss"
-    reconstruct_hash_functions = 10000
-    rebuild_hash_tables = 50000
+    rebuild_hash_tables = 10000
+    reconstruct_hash_functions = 50000
 
+    batch_size = 2048
     learning_rate = 1e-04
     num_epochs = 5
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
@@ -147,15 +153,14 @@ class WayfairConfig(BoltBenchmarkConfig):
     def load_datasets(path_prefix: str):
         train_dataset_path = os.path.join(path_prefix, "wayfair/train_raw_queries.txt")
         test_dataset_path = os.path.join(path_prefix, "wayfair/dev_raw_queries.txt")
-        batch_size = 256
         train_data, train_labels = WayfairConfig._load_wayfair_dataset(
             filename=train_dataset_path,
-            batch_size=batch_size,
+            batch_size=WayfairConfig.batch_size,
             output_dim=WayfairConfig.output_node["dim"],
         )
         test_data, test_labels = WayfairConfig._load_wayfair_dataset(
             filename=test_dataset_path,
-            batch_size=batch_size,
+            batch_size=WayfairConfig.batch_size,
             output_dim=WayfairConfig.output_node["dim"],
             shuffle=False,
         )

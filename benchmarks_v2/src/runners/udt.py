@@ -18,8 +18,9 @@ class UDTRunner(Runner):
 
     @classmethod
     def run_benchmark(cls, config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
-
-        train_file, cold_start_train_file, test_file = cls.get_datasets(config, path_prefix)
+        train_file, cold_start_train_file, test_file = cls.get_datasets(
+            config, path_prefix
+        )
 
         model = cls.create_model(config, path_prefix)
 
@@ -83,7 +84,6 @@ class UDTRunner(Runner):
                 key="average_predict_time_ms", value=average_predict_time_ms
             )
 
-
     @staticmethod
     def get_datasets(config, path_prefix):
         train_file = (
@@ -98,7 +98,6 @@ class UDTRunner(Runner):
         )
         test_file = os.path.join(path_prefix, config.test_file)
         return train_file, cold_start_train_file, test_file
-
 
     @staticmethod
     def get_average_predict_time(

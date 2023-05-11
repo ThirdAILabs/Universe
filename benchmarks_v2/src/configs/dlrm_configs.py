@@ -8,11 +8,18 @@ class DLRMConfig(ABC):
     config_name = None
     dataset_name = None
 
+    int_features = None
+    cat_features = None
+    input_hidden_dim = None
+    embedding_args = None
+    output_hidden_dim = None
+    output_hidden_sparsity = None
+    n_classes = None
+
     learning_rate = None
     num_epochs = None
     delimiter = None
     metrics = ["categorical_accuracy"]
-    compute_roc_auc = True
 
     train_dataset_path = None
     test_dataset_path = None
@@ -32,41 +39,19 @@ class CriteoDLRMConfig(DLRMConfig):
     config_name = "bolt_criteo_46m"
     dataset_name = "criteo_46m"
 
-    def get_model():
-        int_input = bolt.nn.Input(dim=13)
-        hidden1 = bolt.nn.FullyConnected(dim=32, activation="relu")(int_input)
-
-        cat_input = bolt.nn.TokenInput(dim=4294967295, num_tokens_range=(26, 26))
-
-        embedding = bolt.nn.Embedding(
-            num_embedding_lookups=4,
-            lookup_size=8,
-            log_embedding_block_size=20,
-            reduction="concat",
-            num_tokens_per_input=26,
-        )(cat_input)
-
-        feature_interaction = bolt.nn.DlrmAttention()(
-            fc_layer=hidden1, embedding_layer=embedding
-        )
-
-        concat = bolt.nn.Concatenate()([hidden1, feature_interaction])
-
-        hidden_output = concat
-        for _ in range(3):
-            hidden_output = bolt.nn.FullyConnected(
-                dim=512,
-                sparsity=0.4,
-                activation="relu",
-                sampling_config=bolt.nn.RandomSamplingConfig(),
-            )(hidden_output)
-
-        output = bolt.nn.FullyConnected(dim=2, activation="softmax")(hidden_output)
-
-        model = bolt.nn.Model(inputs=[int_input, cat_input], output=output)
-        model.compile(bolt.nn.losses.CategoricalCrossEntropy())
-
-        return model
+    int_features = 13
+    cat_features = 26
+    input_hidden_dim = 32
+    embedding_args = {
+        "num_embedding_lookups": 4,
+        "lookup_size": 8,
+        "log_embedding_block_size": 20,
+        "reduction": "concat",
+        "num_tokens_per_input": 26,
+    }
+    output_hidden_dim = 500
+    output_hidden_sparsity = 0.4
+    n_classes = 2
 
     learning_rate = 1e-4
     num_epochs = 1

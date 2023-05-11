@@ -78,7 +78,7 @@ class QueryReformulationRunner(Runner):
             sample = dict(row)
             label = sample[config.target_column]
             sample = sample[config.source_column]
-            inference_samples.append((sample, label))
+            inference_samples.append(({"phrase": sample}, label))
 
         start_time = time.time()
         for sample, label in inference_samples:

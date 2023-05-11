@@ -10,5 +10,5 @@ class MiniBenchmarkQueryReformulationRunner(QueryReformulationRunner):
         cls, config: QueryReformulationBenchmarkConfig, path_prefix: str, mlflow_logger
     ):
         config.dataset_size = "small"
-        
+
         QueryReformulationRunner.run_benchmark(config, path_prefix, mlflow_logger)
