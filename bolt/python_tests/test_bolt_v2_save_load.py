@@ -190,7 +190,7 @@ def test_multiple_trainers():
         lambda model: model.get_parameters(),
         lambda model, values: model.set_parameters(values),
     )
-    # assert equal_model_paramters(trainers), "Trainer models are not the same."
+    assert equal_model_paramters(trainers), "Trainer models are not the same."
 
     # Training them on same data should still get different
     # gradients as we are training with sparsity
@@ -215,7 +215,6 @@ def test_multiple_trainers():
 
         # assert equal_model_paramters(trainers), "Trainer models are not the same."
 
-    # assert equal_model_paramters(trainers), "Trainer models are not the same."
-
     evaluate_model(trainers[0].model, test_data, test_labels_np)
     evaluate_model(trainers[1].model, test_data, test_labels_np)
+    assert equal_model_paramters(trainers), "Trainer models are not the same."
