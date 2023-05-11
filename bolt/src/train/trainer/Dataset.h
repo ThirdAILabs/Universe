@@ -22,6 +22,6 @@ nn::tensor::TensorList convertBatch(std::vector<BoltBatch>&& batches,
 nn::tensor::TensorList convertVectors(std::vector<BoltVector>&& vectors,
                                       const std::vector<uint32_t>& dims);
 
-nn::tensor::Dims expect2dDims(const std::vector<nn::tensor::Dims>& dims_nd) ;
+nn::tensor::Dims expect2dDims(const std::vector<nn::tensor::Dims>& dims_nd);
 
 }  // namespace thirdai::bolt::train

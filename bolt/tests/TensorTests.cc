@@ -78,6 +78,51 @@ TEST(TensorTests, SparseTensor) {
   checkTensorContents(tensor);
 }
 
+template <typename T>
+void assertPointerDistance(const T* base, const T* ptr,
+                           uint64_t expected_distance) {
+  EXPECT_EQ(std::distance(base, ptr), expected_distance);
+}
+
+TEST(TensorTests, TensorIndexing) {
+  auto tensor = tensor::Tensor::sparse({5, 6, 7, 8}, /* nonzeros= */ 4);
+
+  std::array<uint32_t, 2> expected_dims_2d = {5 * 6 * 7, 8};
+  EXPECT_EQ(tensor->dims2d(), expected_dims_2d);
+
+  std::array<uint32_t, 3> expected_dims_3d = {5, 6 * 7, 8};
+  EXPECT_EQ(tensor->dims3d(), expected_dims_3d);
+
+  for (uint64_t i = 0; i < 5; i++) {
+    uint64_t offset = i * 6 * 7 * 4;
+    assertPointerDistance(tensor->indicesPtr(), tensor->indicesAtIndex3d(i),
+                          offset);
+    assertPointerDistance(tensor->valuesPtr(), tensor->valuesAtIndex3d(i),
+                          offset);
+    assertPointerDistance(tensor->gradientsPtr(), tensor->gradientsAtIndex3d(i),
+                          offset);
+
+    for (uint64_t j = 0; j < 6 * 7; j++) {
+      const BoltVector& vector = tensor->index3d(i, j);
+
+      uint64_t offset = i * 6 * 7 * 4 + j * 4;
+      assertPointerDistance(tensor->indicesPtr(), vector.active_neurons,
+                            offset);
+      assertPointerDistance(tensor->valuesPtr(), vector.activations, offset);
+      assertPointerDistance(tensor->gradientsPtr(), vector.gradients, offset);
+    }
+  }
+
+  for (uint64_t i = 0; i < 5 * 6 * 7; i++) {
+    const BoltVector& vector = tensor->index2d(i);
+
+    uint64_t offset = i * 4;
+    assertPointerDistance(tensor->indicesPtr(), vector.active_neurons, offset);
+    assertPointerDistance(tensor->valuesPtr(), vector.activations, offset);
+    assertPointerDistance(tensor->gradientsPtr(), vector.gradients, offset);
+  }
+}
+
 TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
@@ -90,16 +135,16 @@ TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   auto tensor = tensor::Tensor::convert(std::move(batch), 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
-  EXPECT_EQ(tensor->dim(), 4);
+  EXPECT_EQ(tensor->dims(), tensor::Dims({3, 4}));
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
-  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_EQ(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->indicesPtr(), nullptr);
+  EXPECT_EQ(tensor->valuesPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        tensor->getVector(i), vectors[i]);
+        tensor->index2dAssert2d(i), vectors[i]);
   }
 }
 
@@ -131,7 +176,7 @@ TEST(TensorTests, CopyDenseBoltBatchToTensor) {
                                         7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
 
   for (uint32_t i = 0; i < expected_values.size(); i++) {
-    EXPECT_EQ(tensor->activationsPtr()[i], expected_values.at(i));
+    EXPECT_EQ(tensor->valuesPtr()[i], expected_values.at(i));
   }
 }
 
@@ -147,16 +192,16 @@ TEST(TensorTests, ConvertSparseBoltBatchToTensor) {
   auto tensor = tensor::Tensor::convert(std::move(batch), 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
-  EXPECT_EQ(tensor->dim(), 8);
+  EXPECT_EQ(tensor->dims(), tensor::Dims({3, 8}));
   EXPECT_FALSE(tensor->nonzeros().has_value());
 
-  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
-  EXPECT_EQ(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->indicesPtr(), nullptr);
+  EXPECT_EQ(tensor->valuesPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   for (uint32_t i = 0; i < vectors.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        tensor->getVector(i), vectors[i]);
+        tensor->index2dAssert2d(i), vectors[i]);
   }
 }
 
@@ -189,11 +234,11 @@ TEST(TensorTests, CopySparseBoltBatchToTensor) {
                                         7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
 
   for (uint32_t i = 0; i < expected_indices.size(); i++) {
-    EXPECT_EQ(tensor->activeNeuronsPtr()[i], expected_indices.at(i));
+    EXPECT_EQ(tensor->indicesPtr()[i], expected_indices.at(i));
   }
 
   for (uint32_t i = 0; i < expected_values.size(); i++) {
-    EXPECT_EQ(tensor->activationsPtr()[i], expected_values.at(i));
+    EXPECT_EQ(tensor->valuesPtr()[i], expected_values.at(i));
   }
 }
 

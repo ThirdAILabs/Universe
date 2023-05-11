@@ -4,13 +4,12 @@ import numpy as np
 import pytest
 import thirdai
 from thirdai import bolt_v2 as bolt
-from thirdai import dataset
 
-from utils import gen_numpy_training_data
+from dataset import create_dataset
 
 
 def build_model(n_classes):
-    vector_input = bolt.nn.Input(dim=n_classes)
+    vector_input = bolt.nn.Input(dims=(5, 5, n_classes))
 
     hidden = bolt.nn.FullyConnected(
         dim=200, sparsity=0.3, input_dim=n_classes, activation="relu"
@@ -18,7 +17,7 @@ def build_model(n_classes):
 
     hidden = bolt.nn.LayerNorm()(hidden)
 
-    token_input = bolt.nn.Input(dim=n_classes)
+    token_input = bolt.nn.Input(dims=(5, 5, n_classes))
 
     embedding = bolt.nn.Embedding(
         num_embedding_lookups=8,
@@ -44,7 +43,7 @@ def build_model(n_classes):
         embedding
     )
 
-    labels = bolt.nn.Input(dim=n_classes)
+    labels = bolt.nn.Input(dims=(5, 5, n_classes))
 
     loss1 = bolt.nn.losses.CategoricalCrossEntropy(activations=output1, labels=labels)
     loss2 = bolt.nn.losses.BinaryCrossEntropy(activations=output2, labels=labels)
@@ -67,7 +66,7 @@ def check_metadata_file(model, save_filename):
         re.escape("thirdai_version=" + thirdai.__version__),
         "model_uuid=[0-9A-F]+",
         "date_saved=.*",
-        "train_steps_before_save=32",
+        "train_steps_before_save=50",
         "model_summary=",
         *summary,
     ]
@@ -92,8 +91,8 @@ def evaluate_model(model, test_data, test_labels_np):
     # We constructed the test data to only contain 1 batch.
     outputs = model.forward(test_data[0], use_sparsity=False)
     for output in outputs:
-        predictions = np.argmax(output.values, axis=1)
-        acc = np.mean(predictions == test_labels_np)
+        predictions = np.argmax(output.values, axis=-1)
+        acc = np.mean(predictions == test_labels_np[0])
         assert acc >= 0.8
         accs.append(acc)
 
@@ -105,30 +104,19 @@ def test_bolt_save_load():
     N_CLASSES = 100
     model = build_model(N_CLASSES)
 
-    train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=2000
-    )
+    train_data, train_labels = create_dataset(shape=(10, 5, 5, N_CLASSES), n_batches=50)
 
     # We use the labels as tokens to be embedded by the embedding table so they
     # are included as part of the inputs.
-    train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
-    train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
     train_data = [x + y for x, y in zip(train_data, train_labels)]
     train_labels = [x * 3 for x in train_labels]
 
-    test_data_np, test_labels_np = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False
+    test_data, test_labels, test_labels_np = create_dataset(
+        shape=(200, 5, 5, N_CLASSES), n_batches=1, return_np_labels=True
     )
 
-    # We use the labels as tokens to be embedded by the embedding table so they
-    # are included as part of the inputs.
-    test_data = bolt.train.convert_datasets(
-        [
-            dataset.from_numpy(test_data_np, len(test_data_np)),
-            dataset.from_numpy(test_labels_np, len(test_labels_np)),
-        ],
-        dims=[N_CLASSES, N_CLASSES],
-    )
+    test_data = [x + y for x, y in zip(test_data, test_labels)]
+    test_labels = [x * 3 for x in test_labels]
 
     # Initial training/evaluation of the model.
     train_model(model, train_data, train_labels)

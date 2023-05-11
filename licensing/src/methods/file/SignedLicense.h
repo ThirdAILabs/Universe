@@ -32,7 +32,7 @@ class SignedLicense {
    * then checks whether it has expired. If either fails we throw an error.
    * Otherwise we return the entitlements found in the license file.
    */
-  static Entitlements entitlementsFromLicenseFile(
+  static Entitlements verifyPathAndGetEntitlements(
       const std::string& license_path, bool verbose) {
     SignedLicense license = getLicenseFromFile(license_path);
 

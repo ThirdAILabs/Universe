@@ -200,7 +200,7 @@ std::unordered_set<std::string> getKeygenEntitlements(
   return result;
 }
 
-Entitlements entitlementsFromKeygen(const std::string& access_key) {
+Entitlements verifyKeyAndGetEntitlements(const std::string& access_key) {
   httplib::Client client("https://api.keygen.sh");
   // We need this because for some strange reason building a wheel on github
   // actions and then installing locally makes ssl server certificate

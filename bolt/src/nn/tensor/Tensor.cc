@@ -181,7 +181,7 @@ BoltVector& Tensor::index3d(uint32_t i, uint32_t j) {
 }
 
 uint32_t* Tensor::indicesAtIndex3d(uint32_t i) {
-  assert(index_in_batch < batchSize());
+  assert(i < _dims_3d.at(0));
   if (!_nonzeros) {
     throw std::runtime_error("Cannot access sub array of ragged tensor.");
   }
@@ -192,7 +192,7 @@ uint32_t* Tensor::indicesAtIndex3d(uint32_t i) {
 }
 
 float* Tensor::valuesAtIndex3d(uint32_t i) {
-  assert(index_in_batch < batchSize());
+  assert(i < _dims_3d.at(0));
   if (!_nonzeros) {
     throw std::runtime_error("Cannot access sub array of ragged tensor.");
   }
@@ -200,7 +200,7 @@ float* Tensor::valuesAtIndex3d(uint32_t i) {
 }
 
 float* Tensor::gradientsAtIndex3d(uint32_t i) {
-  assert(index_in_batch < batchSize());
+  assert(i < _dims_3d.at(0));
   if (!_nonzeros) {
     throw std::runtime_error("Cannot access sub array of ragged tensor.");
   }

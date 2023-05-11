@@ -11,6 +11,7 @@
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
@@ -176,11 +177,15 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                sparse_inference)
                      .at(0);
 
+  if (outputs->dims().size() != 2) {
+    throw std::runtime_error("Expected output to be 2d.");
+  }
+
   std::vector<std::vector<std::pair<std::string, double>>> predicted_entities(
       outputs->batchSize());
 #pragma omp parallel for default(none) shared(outputs, predicted_entities)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
-    const BoltVector& vector = outputs->index2dAssert2d(i);
+    const BoltVector& vector = outputs->index2d(i);
     auto predictions = dataset::mach::topKUnlimitedDecode(
         /* output = */ vector,
         /* index = */ _mach_label_block->index(),
