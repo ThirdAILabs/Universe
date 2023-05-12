@@ -123,7 +123,7 @@ class CppTokenArrayColumn final : public TokenArrayColumn {
 
       tokens.push_back({});
 
-      std::vector<std::string_view> token_strs;
+      std::vector<std::string> token_strs;
       if (delimiter) {
         token_strs = dataset::parsers::CSV::parseLine(item, *delimiter);
       } else {

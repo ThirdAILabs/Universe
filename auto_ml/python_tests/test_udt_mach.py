@@ -305,6 +305,15 @@ def test_mach_udt_forgetting_everything(integer_target):
 
 
 @pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_forgetting_everything_with_clear_index(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    model.clear_index()
+
+    assert len(model.predict({"text": "something"})) == 0
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
 def test_mach_udt_cant_predict_forgotten(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
@@ -353,3 +362,22 @@ def test_mach_udt_introduce_documents():
     )
 
     os.remove(new_docs)
+
+
+def test_mach_udt_hash_based_methods():
+    model = train_simple_mach_udt(integer_target=True)
+
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert len(hashes) == 7
+
+    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    assert hashes != new_hash_set
+
+    for _ in range(5):
+        model.train_with_hashes(
+            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            learning_rate=0.01,
+        )
+
+    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert set(new_hashes) == new_hash_set

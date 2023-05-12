@@ -16,7 +16,6 @@ set(DATASET_TESTS
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
     TabularFeaturizerTests
-    MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
     TokenEncodingTests

@@ -258,6 +258,24 @@ class UDTBackend {
     throw notSupported("forget");
   }
 
+  virtual void clearIndex() { throw notSupported("clear_index"); }
+
+  virtual py::object trainWithHashes(const MapInputBatch& batch,
+                                     float learning_rate,
+                                     const std::vector<std::string>& metrics) {
+    (void)batch;
+    (void)learning_rate;
+    (void)metrics;
+    throw notSupported("train_with_hashes");
+  }
+
+  virtual py::object predictHashes(const MapInput& sample,
+                                   bool sparse_inference) {
+    (void)sample;
+    (void)sparse_inference;
+    throw notSupported("predict_hashes");
+  }
+
   /*
    * Returns a model that embeds text using the hidden layer of the UDT model.
    */

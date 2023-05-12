@@ -41,21 +41,31 @@ jobs:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
           BOLT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BOLT_BENCHMARK_SLACK_WEBHOOK}}
+          BRANCH_BOLT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_BOLT_BENCHMARK_SLACK_WEBHOOK}}
         run: >- 
           bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD &&
-          python3 -m Universe.benchmarks-v2.main --runner bolt_fc --run_name bolt_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com &&
-          python3 -m Universe.benchmarks-v2.main --runner dlrm --run_name dlrm_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com &&
-          python3 -m Universe.benchmarks-v2.slack_benchmark_results --runner bolt_fc dlrm --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --slack_webhook $BOLT_BENCHMARK_SLACK_WEBHOOK"
+          python3 -m Universe.benchmarks-v2.main --runner bolt_fc dlrm --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --branch_name ${GITHUB_REF##*/} --official_slack_webhook $BOLT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_BOLT_BENCHMARK_SLACK_WEBHOOK &&
+          python3 -m Universe.benchmarks-v2.slack_benchmark_results --runner bolt_fc dlrm --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --branch_name ${GITHUB_REF##*/} --official_slack_webhook $BOLT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_BOLT_BENCHMARK_SLACK_WEBHOOK"
 
       - name: Delete Container
         run: sudo docker system prune -a -f
 
       - name: Notify slack fail
-        if: failure()
+        if: failure() && github.ref == 'refs/heads/main'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
           channel_id: daily_bolt_benchmarks
+          status: FAILED
+          color: danger
+
+      - name: Notify slack fail
+        if: failure() && github.ref != 'refs/heads/main'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: branch_bolt_benchmarks
           status: FAILED
           color: danger
