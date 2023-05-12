@@ -480,7 +480,6 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-
   auto is_numeric_index =
       static_cast<bool>(dataset::mach::asNumericIndex(index));
 
