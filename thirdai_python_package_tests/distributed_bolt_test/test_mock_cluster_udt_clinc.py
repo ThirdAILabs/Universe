@@ -2,7 +2,7 @@ import os
 
 import pytest
 from distributed_utils import ray_two_node_cluster_config, remove_files
-from thirdai import bolt
+from thirdai import bolt, dataset
 from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
@@ -26,33 +26,58 @@ def get_clinc_udt_model(integer_target=False):
         target="category",
         n_target_classes=151,
         integer_target=integer_target,
+        options={"embedding_dimension": 128},
     )
     return udt_model
+
+
+# Tests that we can start a distributed job that trains for 0 epochs.
+@pytest.mark.release
+def test_distributed_start(ray_two_node_cluster_config):
+    udt_model = get_clinc_udt_model(integer_target=True)
+
+    udt_model.train_distributed(
+        cluster_config=ray_two_node_cluster_config("linear"),
+        filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
+        epochs=0,
+    )
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_distributed_udt_clinc(ray_two_node_cluster_config):
     udt_model = get_clinc_udt_model(integer_target=True)
 
-    udt_model.train_distributed(
+    validation = bolt.Validation(
+        filename=f"{os.getcwd()}/{TEST_FILE}",
+        metrics=["categorical_accuracy"],
+        interval=10,
+    )
+
+    training_and_validation_metrics = udt_model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
         batch_size=256,
         epochs=1,
         learning_rate=0.02,
-        metrics=["mean_squared_error"],
         verbose=True,
         max_in_memory_batches=10,
+        validation=validation,
+        min_vecs_in_buffer=5000,
     )
+    validation_metrics = training_and_validation_metrics["validation_metrics"]
 
-    assert (
-        udt_model.evaluate(
-            f"{os.getcwd()}/{TEST_FILE}",
-            metrics=["categorical_accuracy"],
-            return_metrics=True,
-        )["categorical_accuracy"]
-        > 0.7
+    # check whether validation accuracy is increasing each time
+    for metrics_next, metrics_prev in zip(validation_metrics[1:], validation_metrics):
+        assert (
+            metrics_next["val_categorical_accuracy"]
+            > metrics_prev["val_categorical_accuracy"]
+        )
+
+    metrics = udt_model.evaluate(
+        f"{os.getcwd()}/{TEST_FILE}",
+        metrics=["categorical_accuracy"],
     )
+    assert metrics["val_categorical_accuracy"][-1] > 0.7
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster

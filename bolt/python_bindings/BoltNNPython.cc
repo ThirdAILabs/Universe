@@ -124,9 +124,17 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
 
   py::class_<Node, NodePtr>(nn_submodule, "Node")
       .def_property_readonly("name", [](Node& node) { return node.name(); })
+      .def("freeze", &Node::freeze)
+      .def("unfreeze", &Node::unfreeze)
       .def("disable_sparse_parameter_updates",
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
+
+  py::class_<hashtable::SampledHashTable, hashtable::SampledHashTablePtr>(
+      nn_submodule, "HashTable")
+      .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
+      .def_static("load", &hashtable::SampledHashTable::load,
+                  py::arg("filename"));
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
@@ -172,7 +180,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      // TODO(Nick, Josh): sparsity can be def_property
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
@@ -212,7 +219,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("get_hash_table", &FullyConnectedNode::getHashTable)
+      .def("set_hash_table", &FullyConnectedNode::setHashTable,
+           py::arg("hash_fn"), py::arg("hash_table"));
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       nn_submodule, "LayerNormalization")
@@ -533,7 +543,13 @@ That's all for now, folks! More docs coming soon :)
           "The third element, the active neuron matrix, is only present if "
           "we are returning activations AND the ouptut is sparse.",
           bolt::python::OutputRedirect())
-      .def("save", &BoltGraph::save, py::arg("filename"))
+      .def(
+          "save",
+          [](BoltGraph& model, const std::string& filename) {
+            model.saveWithOptimizer(false);
+            model.save(filename);
+          },
+          py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
            [](const BoltGraph& model) {
@@ -560,8 +576,6 @@ That's all for now, folks! More docs coming soon :)
           "* detailed: boolean. Optional, default False. When specified to "
           "\"True\", summary will additionally return/print sampling config "
           "details for each layer in the network.")
-      // TODO(josh/nick): These are temporary until we have a better story
-      // for converting numpy to BoltGraphs
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "
@@ -572,6 +586,13 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
+      .def(
+          "checkpoint",
+          [](BoltGraph& model, const std::string& filename) {
+            model.saveWithOptimizer(true);
+            model.save(filename);
+          },
+          py::arg("filename"))
 #endif
       .def(getPickleFunction<BoltGraph>());
 
@@ -618,7 +639,16 @@ That's all for now, folks! More docs coming soon :)
           "Returns gradient reference for Distributed Training Wrapper")
       .def("get_updated_metrics",
            &thirdai::bolt::DistributedTrainingWrapper::getUpdatedMetrics,
-           bolt::python::OutputRedirect());
+           bolt::python::OutputRedirect())
+      .def("validate_and_save_if_best",
+           &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
+           bolt::python::OutputRedirect())
+      .def("should_save_optimizer",
+           &thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer,
+           py::arg("should_save_optimizer"))
+      .def("update_learning_rate",
+           &thirdai::bolt::DistributedTrainingWrapper::updateLearningRate,
+           py::arg("learning_rate"));
 
   createLossesSubmodule(nn_submodule);
 }

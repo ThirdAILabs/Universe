@@ -201,6 +201,27 @@ float* FullyConnectedNode::getBiasGradientsPtr() {
   return _layer->getBiasGradientsPtr();
 }
 
+std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+FullyConnectedNode::getHashTable() const {
+  if (getState() != NodeState::PreparedForBatchProcessing &&
+      getState() != NodeState::Compiled) {
+    throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state to call getHashTable.");
+  }
+  return _layer->getHashTable();
+}
+
+void FullyConnectedNode::setHashTable(
+    hashing::HashFunctionPtr hash_fn,
+    hashtable::SampledHashTablePtr hash_table) {
+  if (getState() != NodeState::PreparedForBatchProcessing &&
+      getState() != NodeState::Compiled) {
+    throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state to call setHashTable.");
+  }
+  _layer->setHashTable(std::move(hash_fn), std::move(hash_table));
+}
+
 void FullyConnectedNode::disableSparseParameterUpdates() {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {
@@ -209,6 +230,16 @@ void FullyConnectedNode::disableSparseParameterUpdates() {
         "containing the node is compiled.");
   }
   _layer->disableSparseParameterUpdates();
+}
+
+void FullyConnectedNode::saveWithOptimizer(bool should_save_optimizer) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot call saveWithOptimizer until the model "
+        "containing the node is compiled.");
+  }
+  _layer->saveWithOptimizer(should_save_optimizer);
 }
 
 void FullyConnectedNode::compileImpl() {

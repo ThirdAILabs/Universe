@@ -15,11 +15,10 @@ class SamplingConfig {
  public:
   SamplingConfig() {}
 
-  virtual std::unique_ptr<hashing::HashFunction> getHashFunction(
+  virtual hashing::HashFunctionPtr getHashFunction(
       uint32_t input_dim) const = 0;
 
-  virtual std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
-      const = 0;
+  virtual hashtable::SampledHashTablePtr getHashTable() const = 0;
 
   virtual bool isRandomSampling() const { return false; }
 
@@ -43,11 +42,9 @@ class DWTASamplingConfig final : public SamplingConfig {
         _hashes_per_table(hashes_per_table),
         _reservoir_size(reservoir_size) {}
 
-  std::unique_ptr<hashing::HashFunction> getHashFunction(
-      uint32_t input_dim) const final;
+  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const final;
 
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
-      const final;
+  hashtable::SampledHashTablePtr getHashTable() const final;
 
   static SamplingConfigPtr autotune(uint32_t layer_dim, float sparsity);
 
@@ -70,11 +67,9 @@ class FastSRPSamplingConfig final : public SamplingConfig {
         _hashes_per_table(hashes_per_table),
         _reservoir_size(reservoir_size) {}
 
-  std::unique_ptr<hashing::HashFunction> getHashFunction(
-      uint32_t input_dim) const final;
+  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const final;
 
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
-      const final;
+  hashtable::SampledHashTablePtr getHashTable() const final;
 
  private:
   uint32_t _num_tables, _hashes_per_table, _reservoir_size;
@@ -91,16 +86,12 @@ class RandomSamplingConfig final : public SamplingConfig {
  public:
   RandomSamplingConfig() {}
 
-  std::unique_ptr<hashing::HashFunction> getHashFunction(
-      uint32_t input_dim) const final {
+  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const final {
     (void)input_dim;
     return nullptr;
   }
 
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
-      const final {
-    return nullptr;
-  }
+  hashtable::SampledHashTablePtr getHashTable() const final { return nullptr; }
 
   bool isRandomSampling() const final { return true; }
 

@@ -38,6 +38,17 @@ def sparse_bolt_dataset_to_numpy(dataset):
     return sparse_vectors_to_numpy(get_bolt_vectors_from_dataset(dataset))
 
 
+def nonzeros_from_sparse_bolt_dataset(dataset):
+    all_indices = []
+    all_values = []
+    for vec in get_bolt_vectors_from_dataset(dataset):
+        indices, values = vec.to_numpy()
+        for i, v in zip(indices, values):
+            all_indices.append(i)
+            all_values.append(v)
+    return all_indices, all_values
+
+
 def random_word(length=4):
     return "".join(random.choice(string.ascii_lowercase) for _ in range(length))
 
@@ -60,15 +71,13 @@ def get_random_sentence_str_column(col_length, num_words):
 # to make sure the number of pairgrams for each possible pairgram value across the whole dataset
 # is close to the expected number.
 # We use the fact that if there are N unigrams per row, there are N * (N + 1)) / 2 pairgrams per row.
-def verify_pairgrams_distribution(pairgram_dataset, output_range, num_unigrams):
-    indices, values = pairgram_dataset
+def verify_pairgrams_distribution(pairgram_nonzeros, output_range):
+    indices, values = pairgram_nonzeros
     hash_counts = [0 for _ in range(output_range)]
-    for row_indices, row_values in zip(indices, values):
-        for index, value in zip(row_indices, row_values):
-            hash_counts[index] += value
+    for index, value in zip(indices, values):
+        hash_counts[index] += value
 
-    pairgrams_per_row = (num_unigrams * (num_unigrams + 1)) / 2
-    expected_count = (len(indices) / output_range) * pairgrams_per_row
+    expected_count = len(indices) / output_range
     for count in hash_counts:
         assert count / expected_count < 2 and count / expected_count > 0.5
 

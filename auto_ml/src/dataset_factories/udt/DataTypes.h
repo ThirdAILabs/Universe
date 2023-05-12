@@ -11,6 +11,9 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -18,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -69,35 +73,29 @@ struct CategoricalDataType final : public DataType {
 
 using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
 
-enum class TextEncodingType {
-  Unigrams,
-  Bigrams,
-  Pairgrams,
-};
+dataset::TextTokenizerPtr getTextTokenizerFromString(const std::string& string);
 
-inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
-  std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
-      {"none", TextEncodingType::Unigrams},
-      {"local", TextEncodingType::Bigrams},
-      {"global", TextEncodingType::Pairgrams},
-  };
-
-  if (contextual_encodings.count(encoding) == 0) {
-    throw std::invalid_argument(
-        "Created text column with invalid contextual_encoding '" + encoding +
-        "' please choose one of 'none', 'local', or 'global'.");
-  };
-  return contextual_encodings[encoding];
-}
+dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string);
 
 struct TextDataType final : public DataType {
-  explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
-                        const std::string& contextual_encoding = "none")
-      : average_n_words(average_n_words),
-        contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
+  explicit TextDataType(const std::string& tokenizer = "words",
+                        const std::string& contextual_encoding = "none",
+                        bool use_lowercase = false)
+      : tokenizer(getTextTokenizerFromString(tokenizer)),
+        encoder(getTextEncoderFromString(contextual_encoding)),
+        lowercase(use_lowercase) {}
 
-  std::optional<double> average_n_words;
-  TextEncodingType contextual_encoding;
+  explicit TextDataType(
+      const dataset::WordpieceTokenizerPtr& wordpiece_tokenizer,
+      const std::string& contextual_encoding = "none")
+      : tokenizer(wordpiece_tokenizer),
+        encoder(getTextEncoderFromString(contextual_encoding)),
+        // in this case the wordpiece tokenizer handles the lowercasing
+        lowercase(false) {}
+
+  dataset::TextTokenizerPtr tokenizer;
+  dataset::TextEncoderPtr encoder;
+  bool lowercase;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
@@ -105,8 +103,7 @@ struct TextDataType final : public DataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), average_n_words,
-            contextual_encoding);
+    archive(cereal::base_class<DataType>(this), tokenizer, encoder, lowercase);
   }
 };
 
@@ -185,7 +182,7 @@ using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
  *        1 4 5,0,1
  *        ,1,0
  *        9 2,2,0
- * TODO(Josh): Make the delimiter character configurable
+ * TODO(Any): Make the delimiter character configurable
  */
 struct NeighborsDataType : DataType {
   std::string toString() const final { return R"({"type": "neighbors"})"; }

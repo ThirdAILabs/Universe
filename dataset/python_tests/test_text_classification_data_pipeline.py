@@ -67,19 +67,27 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
 def test_text_classification_data_pipeline_with_unigrams():
     from thirdai.dataset import blocks
 
-    helper_for_text_classification_data_pipeline(blocks.TextNGram(col=1, n=1), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextNGram(col=1, n=1), "\t")
+    helper_for_text_classification_data_pipeline(blocks.TextBlock(col=1), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextBlock(col=1), "\t")
 
 
 def test_text_classification_data_pipeline_with_pairgrams():
     from thirdai.dataset import blocks
 
-    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), "\t")
+    helper_for_text_classification_data_pipeline(
+        blocks.TextBlock(col=1, encoder=dataset.PairGramEncoder()), ","
+    )
+    helper_for_text_classification_data_pipeline(
+        blocks.TextBlock(col=1, encoder=dataset.PairGramEncoder()), "\t"
+    )
 
 
 def test_text_classification_data_pipeline_with_chartrigrams():
     from thirdai.dataset import blocks
 
-    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), "\t")
+    helper_for_text_classification_data_pipeline(
+        blocks.TextBlock(col=1, tokenizer=dataset.CharKGramTokenizer(k=3)), ","
+    )
+    helper_for_text_classification_data_pipeline(
+        blocks.TextBlock(col=1, tokenizer=dataset.CharKGramTokenizer(k=3)), "\t"
+    )

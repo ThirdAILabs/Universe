@@ -1,5 +1,7 @@
 #include "CheckLicense.h"
 #include <dataset/src/DataSource.h>
+#include <licensing/src/entitlements/Entitlements.h>
+#include <licensing/src/entitlements/RestrictionTree.h>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
@@ -8,31 +10,31 @@
 
 namespace thirdai::licensing {
 
-TrainPermissionsToken::TrainPermissionsToken(
-    const dataset::DataSourcePtr& training_source) {
-  (void)training_source;
-}
-
-TrainPermissionsToken::TrainPermissionsToken() {}
-
 void checkLicense() {}
 
-void verifyAllowedDataset(const std::optional<std::string>& filename) {
-  (void)filename;
-}
+Entitlements entitlements() { return Entitlements({FULL_ACCESS_ENTITLEMENT}); }
 
-void activate(const std::string& api_key) { (void)api_key; }
+// The following functions have NOLINT because their arguments are pass-by-value
+// even though they are not used. The values are used in CheckLicenseEnabled.cc,
+// which requires the method signature to be pass by value for these functions
+// as well
+void activate(std::string api_key) { (void)api_key; }  // NOLINT
 
-void deactivate() {}
-
-void startHeartbeat(const std::string& heartbeat_url,
-                    const std::optional<uint32_t>& heartbeat_timeout) {
+void startHeartbeat(std::string heartbeat_url,  // NOLINT
+                    const std::optional<uint32_t> heartbeat_timeout) {
   (void)heartbeat_url;
   (void)heartbeat_timeout;
 }
 
-void endHeartbeat() {}
+void setLicensePath(std::string license_path, bool verbose) {  // NOLINT
+  (void)license_path;
+  (void)verbose;
+}
 
-void setLicensePath(const std::string& license_path) { (void)license_path; }
+void deactivate() {}
+
+LicenseState getLicenseState() { return {}; }
+
+void setLicenseState(const LicenseState& state) { (void)state; }
 
 }  // namespace thirdai::licensing

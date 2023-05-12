@@ -1,9 +1,9 @@
 import os
 import platform
 import socket
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, bolt_v2
 
 
 # TODO how can we define this under bolt.callbacks?
@@ -18,10 +18,11 @@ class MlflowCallback(bolt.callbacks.Callback):
             header in Mlflow). Groups together runs with similar intent.
         run_name: Describes the run. Should include any details that don't
             fit in the experiment_args
-        dataset_name: Dataset name.
         experiment_args: Dict[str, Any] Log parameters related to the
             configuration of the experiment. These are logged once at
             initialization. Examples include learning_rate, hidden_layer_dim, etc
+        batch_interval: Optional[int] = None: If specified then the callback will
+            log all batch metrics on this interval.
     """
 
     def __init__(
@@ -29,7 +30,80 @@ class MlflowCallback(bolt.callbacks.Callback):
         tracking_uri: str,
         experiment_name: str,
         run_name: str,
-        dataset_name: str,
+        experiment_args: Dict[str, Any] = {},
+        batch_interval: Optional[int] = None,
+    ):
+        super().__init__()
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.set_tracking_uri(tracking_uri)
+        experiment_id = mlflow.set_experiment(experiment_name)
+        run_id = mlflow.start_run(run_name=run_name).info.run_id
+
+        print(
+            f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{experiment_id}/runs/{run_id}\n"
+        )
+
+        if experiment_args:
+            for k, v in experiment_args.items():
+                mlflow.log_param(k, v)
+
+        _log_machine_info()
+
+        # TODO(david): how to log the commit we are on?
+        # TODO(david): how to log the current file we ran this from?
+        # TODO(david): what about credentials for this?
+        # mlflow.log_artifact(__file__)
+
+        self.batch_interval = batch_interval
+        self.batch_cnt = 0
+
+    def on_batch_end(self, model, train_state):
+        if self.batch_interval == None:
+            return
+
+        self.batch_cnt += 1
+        if self.batch_cnt % self.batch_interval == 0:
+            import mlflow  # import inside class to not force another package dependency
+
+            for name, values in train_state.get_all_train_batch_metrics().items():
+                # -1 pulls the most recent metric value in values
+                mlflow.log_metric(_clean(name), values[-1])
+            mlflow.log_metric("learning_rate", train_state.learning_rate)
+
+    def on_epoch_end(self, model, train_state):
+        import mlflow  # import inside class to not force another package dependency
+
+        # -1 pulls the most recent metric value in values
+        for name, values in train_state.get_all_train_metrics().items():
+            mlflow.log_metric(_clean(name), values[-1])
+        for name, values in train_state.get_all_validation_metrics().items():
+            mlflow.log_metric("val_" + _clean(name), values[-1])
+        mlflow.log_metric("epoch_times", train_state.epoch_times[-1])
+        mlflow.log_metric("learning_rate", train_state.learning_rate)
+
+    def log_additional_metric(self, key, value, step=0):
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.log_metric(_clean(key), value, step=step)
+
+    def log_additional_param(self, key, value):
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.log_param(_clean(key), value)
+
+    def end_run(self):
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.end_run()
+
+
+class MlflowCallbackV2(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        tracking_uri: str,
+        experiment_name: str,
+        run_name: str,
         experiment_args: Dict[str, Any] = {},
     ):
         super().__init__()
@@ -43,57 +117,58 @@ class MlflowCallback(bolt.callbacks.Callback):
             f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{experiment_id}/runs/{run_id}\n"
         )
 
-        mlflow.log_param("dataset", dataset_name)
-
         if experiment_args:
             for k, v in experiment_args.items():
                 mlflow.log_param(k, v)
 
-        self._log_machine_info()
+        _log_machine_info()
 
-        # TODO(david): how to log the commit we are on?
-        # TODO(david): how to log the current file we ran this from?
-        # TODO(david): what about credentials for this?
-        # mlflow.log_artifact(__file__)
-
-    def _log_machine_info(self):
-        import mlflow  # import inside class to not force another package dependency
-        import psutil
-
-        machine_info = {
-            "load_before_experiment": os.getloadavg()[2],
-            "platform": platform.platform(),
-            "platform_version": platform.version(),
-            "platform_release": platform.release(),
-            "architecture": platform.machine(),
-            "processor": platform.processor(),
-            "hostname": socket.gethostname(),
-            "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
-            "num_cores": psutil.cpu_count(logical=True),
-        }
-
-        mlflow.log_params(machine_info)
-
-    def on_epoch_end(self, model, train_state):
+    def on_epoch_end(self):
         import mlflow  # import inside class to not force another package dependency
 
-        for name, values in train_state.get_all_train_metrics().items():
-            mlflow.log_metric(name, values[-1])
-        for name, values in train_state.get_all_validation_metrics().items():
-            mlflow.log_metric("val_" + name, values[-1])
-        mlflow.log_metric("epoch_times", train_state.epoch_times[-1])
+        for name, values in self.history.items():
+            mlflow.log_metric(_clean(name), values[-1])
+
+        mlflow.log_metric("learning_rate", self.train_state.learning_rate)
 
     def log_additional_metric(self, key, value, step=0):
         import mlflow  # import inside class to not force another package dependency
 
-        mlflow.log_metric(key, value, step=step)
+        mlflow.log_metric(_clean(key), value, step=step)
 
     def log_additional_param(self, key, value):
         import mlflow  # import inside class to not force another package dependency
 
-        mlflow.log_param(key, value)
+        mlflow.log_param(_clean(key), value)
 
     def end_run(self):
         import mlflow  # import inside class to not force another package dependency
 
         mlflow.end_run()
+
+
+def _log_machine_info():
+    import mlflow  # import inside class to not force another package dependency
+    import psutil
+
+    machine_info = {
+        "load_before_experiment": os.getloadavg()[2],
+        "platform": platform.platform(),
+        "platform_version": platform.version(),
+        "platform_release": platform.release(),
+        "architecture": platform.machine(),
+        "processor": platform.processor(),
+        "hostname": socket.gethostname(),
+        "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
+        "num_cores": psutil.cpu_count(logical=True),
+    }
+
+    mlflow.log_params(machine_info)
+
+
+def _clean(key):
+    # mlflow doesn't like when metrics have "@", "(", or ")" in them (e.g. "precision@k")
+    key = key.replace("(", "_")
+    key = key.replace(")", "")
+    key = key.replace("@", "_")
+    return key

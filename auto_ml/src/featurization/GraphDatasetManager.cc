@@ -1,4 +1,5 @@
 #include "GraphDatasetManager.h"
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -36,11 +37,18 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       createGraphInfoAndGraphBlocks(_data_types);
 
   std::vector<dataset::BlockPtr> feature_blocks = makeNonTemporalInputBlocks(
-      /* data_types = */ _data_types,
+      /* input_data_types = */ _data_types,
       /* label_col_names = */ {_target_col},
       /* temporal_relationships = */ {},
       /* vectors_map = */ {},
       /* options = */ options);
+
+  if (_data_types.size() == 3) {
+    throw std::invalid_argument(
+        "Must specify a column with features other than neighbors, node ids, "
+        "and target.");
+  }
+
   feature_blocks.push_back(graph_blocks.normalized_neighbors_block);
 
   auto feature_blocklist =
@@ -65,18 +73,20 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
-      /* blocks = */ {dataset::BlockList({graph_blocks.builder_block})},
+      /* block_lists = */ {dataset::BlockList({graph_blocks.builder_block})},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 }
 
 dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetLabeledDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
-  index(data_source);
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  data_source->restart();
+  index(csv_data_source);
 
-  return std::make_unique<dataset::DatasetLoader>(data_source,
+  csv_data_source->restart();
+
+  return std::make_unique<dataset::DatasetLoader>(csv_data_source,
                                                   _labeled_featurizer, shuffle);
 }
 
@@ -93,11 +103,7 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
   std::vector<dataset::ColumnIdentifier> feature_col_names;
   std::string neighbor_col_name, node_id_col_name;
   GraphBlocks graph_blocks;
-  GraphInfoPtr graph_info =
-      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
 
-  // TODO(Josh): Look in to combining non-numeric data from neighbors as well,
-  // e.g. for a string column concatenating each neighbor's text.
   for (const auto& [col_name, data_type] : data_types) {
     if (asNeighbors(data_type)) {
       neighbor_col_name = col_name;
@@ -108,7 +114,10 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
     }
   }
 
-  // TODO(Josh): Do a thorough ablation study (this block seems only marginally
+  GraphInfoPtr graph_info =
+      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
+
+  // TODO(Any): Do a thorough ablation study (this block seems only marginally
   // useful on yelp). This should include looking at binning vs. non binning
   // for both these average features and the normal features.
   graph_blocks.normalized_neighbors_block =
@@ -136,7 +145,7 @@ void GraphDatasetManager::serialize(Archive& archive) {
           _graph_info);
 }
 
-std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
+TensorList GraphDatasetManager::featurizeInputBatch(
     const dataset::MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);
   std::vector<std::vector<BoltVector>> batches =
@@ -148,13 +157,15 @@ std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
     result.emplace_back(std::move(batch));
   }
 
-  return result;
+  return bolt::train::convertBatch(std::move(result),
+                                   _inference_featurizer->getDimensions());
 }
 
-std::vector<BoltVector> GraphDatasetManager::featurizeInput(
-    const dataset::MapInput& input) {
+TensorList GraphDatasetManager::featurizeInput(const dataset::MapInput& input) {
   dataset::MapSampleRef input_ref(input);
-  return _inference_featurizer->featurize(input_ref);
+  return bolt::train::convertVectors(
+      _inference_featurizer->featurize(input_ref),
+      _inference_featurizer->getDimensions());
 }
 
 }  // namespace thirdai::automl::data

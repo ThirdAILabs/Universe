@@ -36,26 +36,15 @@ def recursive_model(
 
 def test_udt_recurrence_save_load():
     model = recursive_model()
-    activations_before_save = model.evaluate(TRAIN_FILE, verbose=False)
+    metrics_before_save = model.evaluate(TRAIN_FILE, verbose=False)
     prediction_before_save = model.predict({"input": "1 2 3 4"})
     model.save("save.bolt")
     saved_model = bolt.UniversalDeepTransformer.load("save.bolt")
-    activations_after_save = saved_model.evaluate(TRAIN_FILE, verbose=False)
+    metrics_after_save = saved_model.evaluate(TRAIN_FILE, verbose=False)
     prediction_after_save = saved_model.predict({"input": "1 2 3 4"})
 
-    assert (activations_before_save == activations_after_save).all()
+    assert metrics_before_save == metrics_after_save
     assert prediction_before_save == prediction_after_save
-
-
-def test_udt_recurrence_evaluate():
-    model = recursive_model()
-    activations = model.evaluate(TRAIN_FILE, verbose=False)
-    # Each sample is expanded to min(output_length + 1, max_length) tokens
-    # Output dimension is (n_target_classes + 1) * max_length
-    # max_length = 4. n_target_classes = 5.
-    # The +1's are for EARLY_STOP token.
-    assert activations.shape == (8, 24)
-    os.remove(TRAIN_FILE)
 
 
 def test_udt_recurrence_predict():
@@ -79,12 +68,10 @@ def test_udt_recurrence_return_metrics():
         TRAIN_FILE, learning_rate=0.01, epochs=10, metrics=["categorical_accuracy"]
     )
 
-    assert metrics["categorical_accuracy"][-1] > 0
+    assert metrics["train_categorical_accuracy"][-1] > 0
 
-    metrics = model.evaluate(
-        TRAIN_FILE, metrics=["categorical_accuracy"], return_metrics=True
-    )
-    assert metrics["categorical_accuracy"] > 0
+    metrics = model.evaluate(TRAIN_FILE, metrics=["categorical_accuracy"])
+    assert metrics["val_categorical_accuracy"][-1] > 0
 
     os.remove(TRAIN_FILE)
 
@@ -96,11 +83,9 @@ def test_udt_recurrence_long_output_does_not_break():
         output_delimiter=" ",
         n_target_classes=9,
     )
-    activations = model.evaluate(TRAIN_FILE, verbose=False)
-    # Each sample is expanded to min(output_length + 1, max_length) tokens
-    # Output dimension is (n_target_classes + 1) * max_length
-    # The +1's are for EARLY_STOP token.
-    assert activations.shape == (8, 40)
+    predictions = model.predict_batch([{"input": "1 2 3 4"}, {"input": "3 4 5"}])
+    assert predictions == ["1 2 3 4", "3 4 5 6"]
+
     os.remove(TRAIN_FILE)
 
 
@@ -112,11 +97,9 @@ def test_udt_recurrence_long_output_ignores_remaining():
         # If not ignored, it will throw since there are 9 unique output classes
         n_target_classes=6,
     )
-    activations = model.evaluate(TRAIN_FILE, verbose=False)
-    # Each sample is expanded to min(output_length + 1, max_length) tokens
-    # Output dimension is (n_target_classes + 1) * max_length
-    # The +1's are for EARLY_STOP token.
-    assert activations.shape == (8, 28)
+    predictions = model.predict_batch([{"input": "1 2 3 4"}, {"input": "3 4 5"}])
+    assert predictions == ["1 2 3 4", "3 4 5 6"]
+
     os.remove(TRAIN_FILE)
 
 
@@ -126,11 +109,9 @@ def test_udt_recurrence_short_output_does_not_break():
         outputs=["1 2", "3 4"],
         output_delimiter=" ",
     )
-    activations = model.evaluate(TRAIN_FILE, verbose=False)
-    # Each sample is expanded to min(output_length + 1, max_length) tokens
-    # Output dimension is (n_target_classes + 1) * max_length
-    # The +1's are for EARLY_STOP token.
-    assert activations.shape == (6, 24)
+    predictions = model.predict_batch([{"input": "1 2 3 4"}, {"input": "3 4 5"}])
+    assert predictions == ["1 2", "3 4"]
+
     os.remove(TRAIN_FILE)
 
 

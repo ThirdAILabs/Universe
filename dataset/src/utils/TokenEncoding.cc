@@ -4,7 +4,6 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <functional>
-#include <string_view>
 #include <type_traits>
 
 namespace thirdai::dataset::token_encoding {
@@ -29,15 +28,15 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
   return tokens;
 }
 
-std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words) {
-  std::vector<uint32_t> n_gram_tokens;
-  n_gram_tokens.reserve(words.size());
+std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings) {
+  std::vector<uint32_t> hashes;
+  hashes.reserve(strings.size());
 
-  for (const auto& word : words) {
-    n_gram_tokens.push_back(seededMurmurHash(word.data(), word.size()));
+  for (const auto& string : strings) {
+    hashes.push_back(seededMurmurHash(string.data(), string.size()));
   }
 
-  return n_gram_tokens;
+  return hashes;
 }
 
 std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len) {
@@ -52,6 +51,26 @@ std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len) {
   return pairgram_tokens;
 }
 
+std::vector<uint32_t> unigramPreservingPairgrams(const uint32_t* tokens,
+                                                 uint32_t len,
+                                                 uint32_t unigram_range) {
+  std::vector<uint32_t> pairgrams(tokens, tokens + len);
+  for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t j = 0; j < i; j++) {
+      uint32_t pairgram = hashing::combineHashes(tokens[j], tokens[i]);
+      // Shift the pairgrams so that the unigrams and pairgrams are in a
+      // disjoint ranges.
+      // In the output unigrams are in the range [0, unigram_range)
+      // and pairgrams are in the range [unigram range, UINT_MAX)
+      pairgram =
+          pairgram % (std::numeric_limits<uint32_t>::max() - unigram_range);
+      pairgrams.push_back(pairgram + unigram_range);
+    }
+  }
+
+  return pairgrams;
+}
+
 void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
   for (uint32_t& token : tokens) {
     token %= dim;
@@ -59,17 +78,15 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 }
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    std::string_view sentence, uint32_t output_range, char delimiter) {
-  auto words = thirdai::text::split(sentence, delimiter);
-
-  auto tokens = tokenize(words);
+    const std::vector<std::string>& words) {
+  auto tokens = hashTokens(words);
 
   assert(words.size() == tokens.size());
   uint32_t length = words.size();
 
   std::unordered_map<uint32_t, std::string> index_to_word;
   for (uint32_t i = 0; i < length; i++) {
-    index_to_word[tokens[i] % output_range] = words[i];
+    index_to_word[tokens[i]] = words[i];
   }
 
   return index_to_word;

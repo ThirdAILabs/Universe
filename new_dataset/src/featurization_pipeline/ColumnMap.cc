@@ -48,7 +48,6 @@ dataset::BoltDatasetPtr ColumnMap::convertToDataset(
     }
   }
 
-  // TODO(Nicholas/Josh): Refactor to use new dataset without batches.
   for (uint64_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     uint64_t curr_batch_size =
         std::min<uint64_t>(batch_size, numRows() - batch_idx * batch_size);

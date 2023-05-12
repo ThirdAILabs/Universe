@@ -2,16 +2,17 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <cassert>
+#include <limits>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::hashtable {
 
-template <typename LABEL_T>
-SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
-                                            uint64_t reservoir_size,
-                                            uint64_t range, uint32_t seed,
-                                            uint64_t max_rand)
+SampledHashTable::SampledHashTable(uint64_t num_tables, uint64_t reservoir_size,
+                                   uint64_t range, uint32_t seed,
+                                   uint64_t max_rand)
     : _num_tables(num_tables),
       _reservoir_size(reservoir_size),
       _range(range),
@@ -26,27 +27,24 @@ SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::insert(uint64_t n, const LABEL_T* labels,
-                                       const uint32_t* hashes) {
+void SampledHashTable::insert(uint64_t n, const uint32_t* labels,
+                              const uint32_t* hashes) {
 #pragma omp parallel for default(none) shared(n, labels, hashes)
   for (uint64_t i = 0; i < n; i++) {
     insertIntoTables(labels[i], hashes + i * _num_tables);
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::insertSequential(uint64_t n, LABEL_T start,
-                                                 const uint32_t* hashes) {
+void SampledHashTable::insertSequential(uint64_t n, uint32_t start,
+                                        const uint32_t* hashes) {
 #pragma omp parallel for default(none) shared(n, start, hashes)
   for (uint64_t i = 0; i < n; i++) {
     insertIntoTables(start + i, hashes + i * _num_tables);
   }
 }
 
-template <typename LABEL_T>
-inline void SampledHashTable<LABEL_T>::insertIntoTables(
-    LABEL_T label, const uint32_t* hashes) {
+inline void SampledHashTable::insertIntoTables(uint32_t label,
+                                               const uint32_t* hashes) {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
@@ -64,9 +62,8 @@ inline void SampledHashTable<LABEL_T>::insertIntoTables(
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryBySet(
-    const uint32_t* hashes, std::unordered_set<LABEL_T>& store) const {
+void SampledHashTable::queryBySet(const uint32_t* hashes,
+                                  std::unordered_set<uint32_t>& store) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
@@ -80,9 +77,8 @@ void SampledHashTable<LABEL_T>::queryBySet(
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryAndInsertForInference(
-    uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+void SampledHashTable::queryAndInsertForInference(
+    uint32_t const* hashes, std::unordered_set<uint32_t>& store,
     uint32_t outputsize) {
   std::unordered_set<uint32_t> temp_store;
 
@@ -137,9 +133,8 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryByCount(
-    uint32_t const* hashes, std::vector<uint32_t>& counts) const {
+void SampledHashTable::queryByCount(uint32_t const* hashes,
+                                    std::vector<uint32_t>& counts) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
@@ -153,9 +148,8 @@ void SampledHashTable<LABEL_T>::queryByCount(
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryByVector(
-    uint32_t const* hashes, std::vector<LABEL_T>& results) const {
+void SampledHashTable::queryByVector(uint32_t const* hashes,
+                                     std::vector<uint32_t>& results) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
@@ -169,8 +163,7 @@ void SampledHashTable<LABEL_T>::queryByVector(
   }
 }
 
-template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::clearTables() {
+void SampledHashTable::clearTables() {
   for (uint64_t table = 0; table < _num_tables; table++) {
     for (uint64_t row = 0; row < _range; row++) {
       _counters[CounterIdx(table, row)] = 0;
@@ -178,30 +171,49 @@ void SampledHashTable<LABEL_T>::clearTables() {
   }
 }
 
-template class SampledHashTable<uint8_t>;
-template class SampledHashTable<uint16_t>;
-template class SampledHashTable<uint32_t>;
-template class SampledHashTable<uint64_t>;
+uint32_t SampledHashTable::maxElement() const {
+  uint32_t max_elem = 0;
 
-template <class LABEL_T>
-template <class Archive>
-void SampledHashTable<LABEL_T>::serialize(Archive& archive) {
-  archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
-          _reservoir_size, _range, _max_rand, _data, _counters, _gen_rand);
+  for (uint64_t bucket = 0; bucket < _num_tables * _range; bucket++) {
+    uint64_t bucket_size =
+        std::min<uint64_t>(_counters.at(bucket), _reservoir_size);
+
+    for (uint32_t i = 0; i < bucket_size; i++) {
+      uint32_t elem = _data.at(bucket * _reservoir_size + i);
+      if (elem > max_elem) {
+        max_elem = elem;
+      }
+    }
+  }
+
+  return max_elem;
 }
 
-template void SampledHashTable<uint8_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
-template void SampledHashTable<uint16_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
-template void SampledHashTable<uint32_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
-template void SampledHashTable<uint64_t>::serialize(
-    cereal::BinaryOutputArchive& archive);
+void SampledHashTable::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<SampledHashTable> SampledHashTable::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<SampledHashTable> deserialize_into(new SampledHashTable());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
+template <class Archive>
+void SampledHashTable::serialize(Archive& archive) {
+  archive(cereal::base_class<HashTable>(this), _num_tables, _reservoir_size,
+          _range, _max_rand, _data, _counters, _gen_rand);
+}
+
+template void SampledHashTable::serialize(cereal::BinaryOutputArchive& archive);
 
 }  // namespace thirdai::hashtable
 
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint8_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable)

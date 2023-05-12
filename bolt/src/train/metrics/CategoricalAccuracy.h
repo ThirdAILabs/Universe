@@ -28,8 +28,8 @@ class CategoricalAccuracy final : public Metric {
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;
 
-  std::atomic_uint32_t _correct;
-  std::atomic_uint32_t _num_samples;
+  std::atomic_uint64_t _correct;
+  std::atomic_uint64_t _num_samples;
 };
 
 }  // namespace thirdai::bolt::train::metrics

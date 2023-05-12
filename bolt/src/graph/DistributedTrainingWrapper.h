@@ -19,7 +19,8 @@ class DistributedTrainingWrapper {
  public:
   DistributedTrainingWrapper(BoltGraphPtr bolt_graph, TrainConfig train_config,
                              uint32_t worker_id)
-      : _bolt_graph(std::move(bolt_graph)),
+      : _learning_rate(train_config.learningRate()),
+        _bolt_graph(std::move(bolt_graph)),
         _train_context(std::nullopt),
         _train_config(std::move(train_config)),
         _metric_aggregator(_train_config.getMetricAggregator()),
@@ -34,10 +35,14 @@ class DistributedTrainingWrapper {
     _bolt_graph->processTrainingBatch(batch_labels, _metric_aggregator);
   }
 
+  void saveWithOptimizer(bool should_save_optimizer) {
+    _bolt_graph->saveWithOptimizer(should_save_optimizer);
+  }
+
   void updateParameters() {
     requireTrainContext();
     _bolt_graph->updateParametersAndSampling(
-        /* learning_rate = */ _train_config.learningRate(),
+        /* learning_rate = */ _learning_rate,
         /* rebuild_hash_tables_batch = */
         _train_config.getRebuildHashTablesBatchInterval(
             _train_context->batchSize(), _train_context->len()),
@@ -45,8 +50,13 @@ class DistributedTrainingWrapper {
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
     if (_worker_id == 0) {
-      _bolt_graph->logValidateAndSave(_train_config, _metric_aggregator);
+      _bolt_graph->logAndSaveIfNeeded(_train_config, _metric_aggregator);
     }
+  }
+
+  std::optional<InferenceMetricData> validationAndSaveBest() {
+    return _bolt_graph->validateAndSaveIfBest(
+        _train_config, _train_config.getValidationContext().value());
   }
 
   BoltGraphPtr getModel() { return _bolt_graph; }
@@ -82,6 +92,9 @@ class DistributedTrainingWrapper {
     _train_context = new_context;
   }
 
+  void updateLearningRate(float learning_rate) {
+    _learning_rate = learning_rate;
+  }
   void freezeHashTables(bool insert_labels_if_not_found) {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);
   }
@@ -101,6 +114,7 @@ class DistributedTrainingWrapper {
     }
   }
 
+  float _learning_rate;
   BoltGraphPtr _bolt_graph;
   std::optional<DatasetContext> _train_context;
   TrainConfig _train_config;

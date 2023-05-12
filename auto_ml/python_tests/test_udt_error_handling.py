@@ -1,4 +1,5 @@
 import os
+import re
 
 import pytest
 from thirdai import bolt
@@ -110,17 +111,18 @@ def test_target_not_in_data_types():
         )
 
 
-def test_contextual_text_encodings():
-    invalid_encoding = "INVALID"
+def test_invalid_column_name_in_udt_predict():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text_col": bolt.types.text(contextual_encoding="local"),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=2,
+    )
+
     with pytest.raises(
         ValueError,
-        match=f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', or 'global'.",
+        match=re.escape(f"Input column name 'HAHAHA' not found in data_types."),
     ):
-        bolt.UniversalDeepTransformer(
-            data_types={
-                "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
-                "some_random_name": bolt.types.categorical(),
-            },
-            target="target",
-            n_target_classes=2,
-        )
+        model.predict({"HAHAHA": "some text"})

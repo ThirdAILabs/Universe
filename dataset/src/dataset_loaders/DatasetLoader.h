@@ -37,16 +37,11 @@ class DatasetLoader final {
   void restart();
 
   uint32_t getInputDim() {
-    // TODO(Josh): This is assuming we have one input and one label
-    // dataset
+    // TODO(Nick/Geordie): Replace this with a getInputDims() call.
     return _featurizer->getDimensions().at(0);
   }
 
-  uint32_t getLabelDim() {
-    // TODO(Josh): Again, this is assuming we have one input and one label
-    // dataset
-    return _featurizer->getDimensions().at(1);
-  }
+  uint32_t getLabelDim() { return _featurizer->getDimensions().at(1); }
 
  private:
   // Adds batches to the buffer until the data source is finished or the buffer
@@ -62,6 +57,7 @@ class DatasetLoader final {
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
+  std::optional<std::string> _header = std::nullopt;
 
   bool _shuffle;
   // We try to ensure at least this many batches are in the buffer and shuffled

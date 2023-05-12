@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
@@ -14,6 +16,8 @@
 
 namespace thirdai::automl::data {
 
+using bolt::nn::tensor::TensorList;
+
 class RecurrentDatasetFactory {
  public:
   RecurrentDatasetFactory(const ColumnDataTypes& data_types,
@@ -27,9 +31,9 @@ class RecurrentDatasetFactory {
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);
 
-  std::vector<BoltVector> featurizeInput(const MapInput& sample);
+  TensorList featurizeInput(const MapInput& sample);
 
-  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& samples);
+  TensorList featurizeInputBatch(const MapInputBatch& samples);
 
   uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
 

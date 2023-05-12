@@ -1,3 +1,4 @@
+import os
 import platform
 import textwrap
 
@@ -177,7 +178,7 @@ def test_save_load():
 
     eval_res = model.evaluate(TEST_FILE)
     saved_eval_res = saved_model.evaluate(TEST_FILE)
-    assert (eval_res == saved_eval_res).all()
+    assert eval_res == saved_eval_res
 
     model.index(single_update())
     saved_model.index(single_update())
@@ -242,7 +243,7 @@ def test_entity_embedding(embedding_dim, integer_label):
     for output_id, output_label in enumerate(output_labels):
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
-        weights = model._get_model().get_layer("fc_2").weights.get()
+        weights = model._get_model().ops()[1].weights
 
         assert (weights[output_id] == embedding).all()
 
@@ -361,20 +362,11 @@ def test_works_without_temporal_relationships():
     # No assertion as we just want to know that there is no error.
 
 
-def test_return_eval_metrics():
-    model = make_simple_trained_model()
-
-    metrics = model.evaluate(
-        TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
-    )
-    assert metrics["categorical_accuracy"] >= 0
-
-
 def test_return_train_metrics():
     model = make_simple_trained_model()
 
     metrics = model.train(TEST_FILE, epochs=1, metrics=["categorical_accuracy"])
-    assert metrics["categorical_accuracy"][-1] >= 0
+    assert metrics["train_categorical_accuracy"][-1] >= 0
 
 
 def test_return_train_metrics_streamed():
@@ -394,16 +386,10 @@ def test_return_train_metrics_streamed():
         batch_size=max_in_memory_batches,
     )
 
-    assert metrics["categorical_accuracy"][-1] >= 0
-    assert len(metrics["categorical_accuracy"]) == num_samples / batch_size
+    assert metrics["train_categorical_accuracy"][-1] >= 0
+    assert len(metrics["train_categorical_accuracy"]) == num_samples / batch_size
 
 
-@pytest.mark.parametrize("encoding", ["none", "local", "global"])
-def test_udt_accepts_valid_text_encodings(encoding):
-    make_simple_trained_model(text_encoding_type=encoding)
-
-
-@pytest.mark.unit
 def test_udt_override_input_dim():
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical()},
@@ -412,14 +398,35 @@ def test_udt_override_input_dim():
         options={"input_dim": 200},
     )
 
-    summary = udt_model._get_model().summary(detailed=True, print=False)
+    input_dim = udt_model._get_model().ops()[0].weights.shape[1]
 
-    expected_summary = """
-    ======================= Bolt Model =======================
-    input_1 (Input): dim=200
-    input_1 -> fc_1 (FullyConnected): dim=512, sparsity=1, act_func=ReLU
-    fc_1 -> fc_2 (FullyConnected): dim=40, sparsity=1, act_func=Softmax
-    ============================================================
-    """
+    assert input_dim == 200
 
-    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+
+def test_udt_train_batch():
+    import numpy as np
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "query": bolt.types.text(),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=3,
+        integer_target=True,
+    )
+
+    samples = [
+        {"query": "this is zero", "target": "0"},
+        {"query": "this is one", "target": "1"},
+        {"query": "this is two", "target": "2"},
+    ] * 1000
+
+    for _ in range(3):
+        model.train_batch(samples, learning_rate=0.1)
+
+    scores = model.predict_batch(samples)
+
+    predictions = np.argmax(scores, axis=0)
+
+    assert (predictions == np.array([0, 1, 2])).all()

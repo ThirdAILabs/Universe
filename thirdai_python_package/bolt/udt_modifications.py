@@ -79,8 +79,6 @@ def modify_udt():
         filename: str,
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
-        return_predicted_class: bool = False,
-        return_metrics: bool = False,
         verbose: bool = True,
         top_k: int = None,
     ):
@@ -91,9 +89,7 @@ def modify_udt():
             data=data_source,
             metrics=metrics,
             sparse_inference=use_sparse_inference,
-            return_predicted_class=return_predicted_class,
             verbose=verbose,
-            return_metrics=return_metrics,
             top_k=top_k,
         )
 
@@ -107,6 +103,7 @@ def modify_udt():
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
+        max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
     ):
         data_source = _create_data_source(filename)
@@ -123,6 +120,7 @@ def modify_udt():
             metrics=metrics,
             validation=validation,
             callbacks=callbacks,
+            max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
         )
 
@@ -135,6 +133,26 @@ def modify_udt():
     bolt.UDT.cold_start = wrapped_cold_start
 
 
+def modify_mach_udt():
+    original_introduce_documents = bolt.UDT.introduce_documents
+
+    def wrapped_introduce_documents(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+    ):
+        data_source = _create_data_source(filename)
+
+        return original_introduce_documents(
+            self, data_source, strong_column_names, weak_column_names
+        )
+
+    delattr(bolt.UDT, "introduce_documents")
+
+    bolt.UDT.introduce_documents = wrapped_introduce_documents
+
+
 def modify_graph_udt():
     original_index_nodes_method = bolt.UDT.index_nodes
 
@@ -142,9 +160,6 @@ def modify_graph_udt():
         data_source = _create_data_source(filename)
 
         original_index_nodes_method(self, data_source)
-
-    # TODO(Josh)
-    # wrapped_index.__doc__ = udt_graph_index_doc
 
     delattr(bolt.UDT, "index_nodes")
 

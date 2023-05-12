@@ -1,8 +1,10 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -12,9 +14,11 @@
 #include <optional>
 #include <stdexcept>
 
-namespace py = pybind11;
-
 namespace thirdai::automl::udt {
+
+using bolt::train::callbacks::CallbackPtr;
+
+using bolt::nn::model::ModelPtr;
 
 /**
  * This is an interface for the backends that are used in a UDT model. To
@@ -36,8 +40,19 @@ class UDTBackend {
       std::optional<size_t> batch_size,
       std::optional<size_t> max_in_memory_batches,
       const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) = 0;
+      const std::vector<CallbackPtr>& callbacks, bool verbose,
+      std::optional<uint32_t> logging_interval) = 0;
+
+  /**
+   * Trains the model on a batch of samples.
+   */
+  virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                                const std::vector<std::string>& metrics) {
+    (void)batch;
+    (void)learning_rate;
+    (void)metrics;
+    throw notSupported("train_batch");
+  }
 
   /**
    * Performs evaluate of the model on the given dataset and returns the
@@ -48,9 +63,7 @@ class UDTBackend {
    */
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,
-                              bool sparse_inference,
-                              bool return_predicted_class, bool verbose,
-                              bool return_metrics,
+                              bool sparse_inference, bool verbose,
                               std::optional<uint32_t> top_k) = 0;
 
   /**
@@ -76,7 +89,7 @@ class UDTBackend {
   /**
    * Returns the model used.
    */
-  virtual bolt::BoltGraphPtr model() const {
+  virtual ModelPtr model() const {
     throw notSupported("accessing underlying model");
   }
 
@@ -84,7 +97,7 @@ class UDTBackend {
    * Sets a new model. This is used during distributed training to update the
    * backend with the trained model.
    */
-  virtual void setModel(const bolt::BoltGraphPtr& model) {
+  virtual void setModel(const ModelPtr& model) {
     (void)model;
     throw notSupported("modifying underlying model");
   }
@@ -119,7 +132,8 @@ class UDTBackend {
       const std::vector<std::string>& weak_column_names, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       const std::optional<ValidationDataSource>& validation,
-      const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
+      const std::vector<CallbackPtr>& callbacks,
+      std::optional<size_t> max_in_memory_batches, bool verbose) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -128,6 +142,7 @@ class UDTBackend {
     (void)metrics;
     (void)validation;
     (void)callbacks;
+    (void)max_in_memory_batches;
     (void)verbose;
     throw notSupported("cold_start");
   }
@@ -176,7 +191,7 @@ class UDTBackend {
    * training.
    */
   virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    throw notSupported("getColdStartMetaData");
+    throw notSupported("get_cold_start_meta_data");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {
@@ -194,6 +209,83 @@ class UDTBackend {
     (void)min_num_eval_results;
     (void)top_k_per_eval_aggregation;
     throw notSupported("set_decode_params");
+  }
+
+  /**
+   * Introduces new documents to the model from a data source. Used in
+   * conjunction with coldstart.
+   */
+  virtual void introduceDocuments(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names) {
+    (void)data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    throw notSupported("introduce_documents");
+  }
+
+  /**
+   * Introduces a single new document to the model from an in memory map input.
+   * Used in conjunction with coldstart.
+   */
+  virtual void introduceDocument(
+      const MapInput& document,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::variant<uint32_t, std::string>& new_label) {
+    (void)document;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)new_label;
+    throw notSupported("introduce_document");
+  }
+
+  /**
+   * Introduces a new label to the model given a batch of representative samples
+   * of that label.
+   */
+  virtual void introduceLabel(
+      const MapInputBatch& sample,
+      const std::variant<uint32_t, std::string>& new_label) {
+    (void)sample;
+    (void)new_label;
+    throw notSupported("introduce_label");
+  }
+
+  /**
+   * Forget a given label such that it is impossible to predict in the future.
+   */
+  virtual void forget(const std::variant<uint32_t, std::string>& label) {
+    (void)label;
+    throw notSupported("forget");
+  }
+
+  virtual void clearIndex() { throw notSupported("clear_index"); }
+
+  virtual py::object trainWithHashes(const MapInputBatch& batch,
+                                     float learning_rate,
+                                     const std::vector<std::string>& metrics) {
+    (void)batch;
+    (void)learning_rate;
+    (void)metrics;
+    throw notSupported("train_with_hashes");
+  }
+
+  virtual py::object predictHashes(const MapInput& sample,
+                                   bool sparse_inference) {
+    (void)sample;
+    (void)sparse_inference;
+    throw notSupported("predict_hashes");
+  }
+
+  /*
+   * Returns a model that embeds text using the hidden layer of the UDT model.
+   */
+  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
+      float distance_cutoff) const {
+    (void)distance_cutoff;
+    throw notSupported("get_text_embedding_model");
   }
 
   virtual ~UDTBackend() = default;

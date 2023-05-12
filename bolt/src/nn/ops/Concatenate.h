@@ -29,6 +29,8 @@ class Concatenate final : public Op,
 
   void disableSparseParameterUpdates() final {}
 
+  std::vector<std::vector<float>*> gradients() final { return {}; };
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
@@ -39,6 +41,10 @@ class Concatenate final : public Op,
 
   std::vector<uint32_t> _input_dims;
   std::vector<uint32_t> _neuron_offsets;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using ConcatenatePtr = std::shared_ptr<Concatenate>;

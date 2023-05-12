@@ -3,9 +3,9 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Sequence.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
-#include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 
 namespace thirdai::automl::data {
@@ -89,10 +89,13 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
         // want is unigrams of the "words" separated by some delimiter
         // 2. text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
-        blocks.push_back(dataset::NGramTextBlock::make(
-            col_name, /* n= */ 1,
-            /* dim= */ std::numeric_limits<uint32_t>::max(),
-            *categorical->delimiter));
+        blocks.push_back(dataset::TextBlock::make(
+            /* col = */ col_name,
+            /* tokenizer = */
+            dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
+            /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
+            /* lowercase = */ false,
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
             /* identifier= */ col_name));
@@ -107,22 +110,10 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     }
 
     if (auto text_meta = asText(data_type)) {
-      if (text_meta->contextual_encoding == TextEncodingType::Pairgrams ||
-          (text_meta->average_n_words &&
-           text_meta->average_n_words <= options.text_pairgrams_word_limit)) {
-        // text hash range of MAXINT is fine since features are later
-        // hashed into a range. In fact it may reduce hash collisions.
-        blocks.push_back(dataset::PairGramTextBlock::make(
-            col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
-      } else if (text_meta->contextual_encoding == TextEncodingType::Bigrams) {
-        blocks.push_back(dataset::NGramTextBlock::make(
-            col_name, /* n= */ 2,
-            /* dim= */ std::numeric_limits<uint32_t>::max()));
-      } else {
-        blocks.push_back(dataset::NGramTextBlock::make(
-            col_name, /* n= */ 1,
-            /* dim= */ std::numeric_limits<uint32_t>::max()));
-      }
+      blocks.push_back(dataset::TextBlock::make(
+          col_name, text_meta->tokenizer, text_meta->encoder,
+          /* lowercase = */ text_meta->lowercase,
+          /* dim = */ std::numeric_limits<uint32_t>::max()));
     }
 
     if (asDate(data_type)) {

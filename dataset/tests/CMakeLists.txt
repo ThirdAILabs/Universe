@@ -2,6 +2,7 @@ enable_testing()
 
 set(DATASET_TESTS
     CsvParserTests
+    CsvDataSourceTests
     SvmDatasetTests
     ClickThroughDatasetTests
     SegmentedFeatureVectorsTests
@@ -9,15 +10,16 @@ set(DATASET_TESTS
     DateBlockTests
     TextBlockTests
     MachBlockTests
+    MachDecodeTests
     QuantityHistoryTrackerTest
     ThreadSafeVocabularyTests
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
     TabularFeaturizerTests
-    MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
     TokenEncodingTests
+    TextGenerationFeaturizerTest
     RecurrenceAugmentationTests)
 
 include(GoogleTest)

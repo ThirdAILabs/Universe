@@ -7,6 +7,8 @@ from typing import Optional
 
 from thirdai._thirdai import telemetry
 
+from .telemetry_daemon import push_telemetry
+
 # This file defines methods start and stop, which get added to the
 # thirdai.telemetry module in __init__.py. They wrap the corresponding start and
 # stop methods in thirdai._thirdai.telemetry, which start serving the prometheus
@@ -33,7 +35,7 @@ background_telemetry_push_process = None
 # If we have to wait longer than this many seconds when trying to gracefully
 # terminate the background process, we give up and send a kill message, possibly
 # losing telemetry data.
-BACKGROUND_THREAD_TIMEOUT_SECONDS = 0.5
+BACKGROUND_THREAD_TIMEOUT_SECONDS = 2
 
 # Wait this many seconds after starting the background thread before checking if
 # it is still running.
@@ -112,6 +114,9 @@ def start(
     if write_dir == None:
         return telemetry_url
 
+    # Run serially once to fix most errors
+    push_telemetry(write_dir, telemetry_url, optional_endpoint_url)
+
     # Could also try using os.fork
     python_executable = sys.executable
     args = [
@@ -123,18 +128,10 @@ def start(
         write_dir,
         "--upload_interval_seconds",
         str(write_period_seconds),
-        "--optional_endpoint_url",
-        str(optional_endpoint_url),
     ]
+    if optional_endpoint_url:
+        args += ["--optional_endpoint_url", optional_endpoint_url]
     background_telemetry_push_process = subprocess.Popen(args)
-
-    # TODO(Josh): This checks that the background process is still running
-    # soon after it starts, but we currently do not have a check that handles
-    # if the background thread fails at some time in the far future.
-    time.sleep(BACKGROUND_THREAD_HEALTH_CHECK_WAIT)
-    poll = background_telemetry_push_process.poll()
-    if poll != None:
-        raise ValueError(f"Telemetry process terminated early with exit code {poll}")
 
     push_location = write_dir + f"/telemetry-" + telemetry.uuid()
     return push_location

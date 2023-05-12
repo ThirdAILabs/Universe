@@ -1,7 +1,12 @@
 #include "ComparativeLoss.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt_vector/src/BoltVectorUtils.h>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -72,51 +77,13 @@ autograd::ComputationList ComparativeLoss::labels() const { return {_labels}; }
 template <bool ACT_DENSE, bool LABEL_DENSE>
 float ComparativeLoss::loss(const BoltVector& activations,
                             const BoltVector& labels) const {
-  assert(ACT_DENSE == activations.isDense());
-  assert(LABEL_DENSE == labels.isDense());
-  if constexpr (ACT_DENSE && LABEL_DENSE) {
-    assert(activations.len == labels.len);
-  }
-
-  if constexpr (ACT_DENSE || LABEL_DENSE) {
-    float total_loss = 0.0;
-
-    // We know that one of the vectors is dense and that both outputs and labels
-    // have the same dimension so this is safe.
-    uint32_t dim = std::max(activations.len, labels.len);
-    for (uint32_t i = 0; i < dim; i++) {
-      float activation = activations.findActiveNeuron<ACT_DENSE>(i).activation;
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      total_loss += singleLoss(activation, label);
-    }
-    return total_loss;
-  }
-
-  /**
-   * If both are sparse then we need to iterate over the nonzeros from both
-   * vectors. To avoid double counting the overlapping neurons we only compute
-   * the loss for overlapping neurons when iterating over the activations.
-   */
-  float total_loss = 0.0;
-  for (uint32_t i = 0; i < activations.len; i++) {
-    float label =
-        labels.findActiveNeuron<LABEL_DENSE>(activations.active_neurons[i])
-            .activation;
-    float activation = activations.activations[i];
-    total_loss += singleLoss(activation, label);
-  }
-
-  for (uint32_t i = 0; i < labels.len; i++) {
-    auto activation_neuron =
-        activations.findActiveNeuron<ACT_DENSE>(labels.active_neurons[i]);
-    // Skip any neurons that were in the activations since the loss was already
-    // computed for them.
-    if (!activation_neuron.pos) {
-      float label = labels.activations[i];
-      // The activation is 0 since this isn't in the output active neurons.
-      total_loss += singleLoss(/* activation= */ 0.0, label);
-    }
-  }
+  float total_loss = 0;
+  bolt_vector::visitPair(activations, labels,
+                         [&total_loss, this](FoundActiveNeuron act_neuron,
+                                             FoundActiveNeuron label_neuron) {
+                           total_loss += singleLoss(act_neuron.activation,
+                                                    label_neuron.activation);
+                         });
   return total_loss;
 }
 
@@ -146,4 +113,14 @@ void ComparativeLoss::gradients(BoltVector& activations,
   }
 }
 
+template void ComparativeLoss::serialize(cereal::BinaryInputArchive&);
+template void ComparativeLoss::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void ComparativeLoss::serialize(Archive& archive) {
+  archive(cereal::base_class<Loss>(this), _output, _labels);
+}
+
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::ComparativeLoss)

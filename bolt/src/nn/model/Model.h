@@ -5,6 +5,9 @@
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <utils/UUID.h>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -39,9 +42,6 @@ class Model {
   tensor::TensorList forward(const tensor::TensorList& inputs,
                              bool use_sparsity);
 
-  tensor::TensorList forward(const tensor::TensorPtr& inputs,
-                             bool use_sparsity);
-
   /**
    * Performs the foward and backward pass through the model for the given
    * training batch. There is no intermediate thread synchronization between ops
@@ -50,9 +50,6 @@ class Model {
    */
   void trainOnBatch(const tensor::TensorList& inputs,
                     const tensor::TensorList& labels);
-
-  void trainOnBatch(const tensor::TensorPtr& inputs,
-                    const tensor::TensorPtr& labels);
 
   /**
    * Performs the forward pass through the model on a given batch. Differs from
@@ -63,10 +60,6 @@ class Model {
    */
   tensor::TensorList forward(const tensor::TensorList& inputs,
                              const tensor::TensorList& labels,
-                             bool use_sparsity);
-
-  tensor::TensorList forward(const tensor::TensorPtr& inputs,
-                             const tensor::TensorPtr& labels,
                              bool use_sparsity);
 
   /**
@@ -97,10 +90,28 @@ class Model {
   const autograd::ComputationList& outputs() const;
 
   /**
+   * Returns the inputs storing the labels of the model.
+   */
+  const autograd::ComputationList& labels() const;
+
+  /**
+   * Returns the loss functions of the model.
+   */
+  const std::vector<loss::LossPtr>& losses() const;
+
+  /**
+   * Returns a list of all ops.
+   */
+  const std::vector<ops::OpPtr>& ops() const;
+
+  /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
 
+  /**
+   * Retrieves a computation in the graph by name. Throws if not found.
+   */
   autograd::ComputationPtr getComputation(const std::string& name) const;
 
   /**
@@ -114,19 +125,65 @@ class Model {
    */
   uint32_t trainSteps() const;
 
+  /**
+   * Returns the dimensions of the inputs the model is expecting, in the order
+   * they are expected.
+   */
+  std::vector<uint32_t> inputDims() const;
+
+  /**
+   * Returns the expected dimensions of the labels the model is expecting, in
+   * the order they are expected.
+   */
+  std::vector<uint32_t> labelDims() const;
+
+  /**
+   * Returns a list of references to gradients of all parameters in the model.
+   */
+  std::vector<std::vector<float>*> gradients() const;
+
+  /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
+
+  /**
+   * Saves the model without optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void save(const std::string& filename, bool save_metadata = true);
+
+  /**
+   * Saves the model with optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void checkpoint(const std::string& filename, bool save_metadata = true);
+
+  /**
+   * Helper function to save the model to a stream.
+   */
+  void save_stream(std::ostream& output_stream) const;
+
+  /**
+   * Controls if the model will save the optimizer along with the parameters.
+   */
+  void setSerializeOptimizer(bool should_save_optimizer);
+
+  /**
+   * Loads the model and automatically initializes the optimizer state.
+   */
+  static std::shared_ptr<Model> load(const std::string& filename);
+
+  static std::shared_ptr<Model> load_stream(std::istream& input_stream);
+
  private:
-  /**
-   * Helper function for forward and forwardSingleInput. Handles all of
-   * the logic after setting the inputs and labels.
-   */
-  tensor::TensorList forward(uint32_t input_batch_size, bool use_sparsity);
-
-  /**
-   * Helper method for trainOnBatch and trainOnSingleInputBatch. Handles all of
-   * the logic after setting the inputs and labels.
-   */
-  void trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size);
-
   /**
    * Computes the forward pass through the model for the given sample in the
    * batch. Assumes that setInputs(...) has already been called.
@@ -145,14 +202,18 @@ class Model {
    */
   uint32_t setInput(const tensor::TensorList& input_batches);
 
-  void setInput(const tensor::TensorPtr& input);
-
   /**
    * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
 
-  void setLabels(const tensor::TensorPtr& labels);
+  /**
+   * Returns a list of pairs of matching outputs and labels. A label and output
+   * match if they are both used in a loss function with no other labels or
+   * outputs.
+   */
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+  outputLabelPairs() const;
 
   /**
    * When a loss is applied to a single output computation coming from a fully
@@ -160,7 +221,16 @@ class Model {
    * the loss function so that the labels can be selected as active neurons when
    * the layer is sparse.
    */
-  void matchOutputFullyConnectedLayersWithLabels();
+  void matchOutputFullyConnectedLayersWithLabels() const;
+
+  /**
+   * Creates a metadata file which gives the thirdai version, model uuid, the
+   * date saved, number of train steps before the save, and the model summary
+   * (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void saveMetadata(const std::string& save_path) const;
+
+  void verifyAllowedOutputDim() const;
 
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;
@@ -173,6 +243,15 @@ class Model {
   AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
+
+  std::string _model_uuid;
+  uint64_t _total_training_samples = 0;
+
+  Model() : _allocation_manager() { licensing::checkLicense(); }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive, uint32_t version);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

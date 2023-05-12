@@ -36,6 +36,7 @@ class TrainStateManager:
         # be different if each worker has multiple datasets streamed in, or if
         # something causes a worker to be restarted in the middle of training.
         self.batch_id_within_epoch = 0
+        self.updates = 0
         if communication_type == "circular":
             for i in range(len(self.workers)):
                 ray.get(
@@ -120,6 +121,7 @@ class TrainStateManager:
         self._update_parameters()
         self._log_post_batch(epoch)
         self.batch_id_within_epoch += 1
+        self.updates += 1
         return all_workers_have_next_batch
 
     def move_to_next_epoch(self):
@@ -182,4 +184,16 @@ class TrainStateManager:
         """
         self.logging.info(
             f"Epoch No: {epoch}, Batch Count: {self.batch_id_within_epoch}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
+        )
+
+    def validate_and_save_if_best(self):
+        return ray.get(self.workers[0].validate_and_save_if_best.remote())
+
+    def update_learning_rate(self, learning_rate):
+        self.logging.info(f"Updating learning_rate to {learning_rate}")
+        ray.get(
+            [
+                worker.update_learning_rate.remote(learning_rate)
+                for worker in self.workers
+            ]
         )

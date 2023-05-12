@@ -2,6 +2,7 @@
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -82,30 +83,42 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
+  std::exception_ptr exception = nullptr;
+
+#pragma omp parallel for default(none) \
+    shared(label_column, columns, augmented_data, augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
-    std::string weak_text = concatenateStringColumnEntries(
-        columns, row_id, _weak_column_names, /* delimiter= */ ". ");
+    try {
+      std::string labels = (*label_column)[row_id];
 
-    std::string strong_text = concatenateStringColumnEntries(
-        columns, row_id, _strong_column_names, /* delimiter= */ " ");
-    // Now that we have both the weak and strong text, pass them into the
-    // phrase generation pipeline to self-supervised (label, phrase) pairs.
-    Phrase strong_phrase = getStrongPhrase(strong_text);
-    PhraseCollection phrases = getWeakPhrases(weak_text);
-    mergeStrongWithWeak(phrases, strong_phrase);
+      std::string weak_text = concatenateStringColumnEntries(
+          columns, row_id, _weak_column_names, /* delimiter= */ ". ");
 
-    std::string labels = (*label_column)[row_id];
-    for (const auto& phrase : phrases) {
-      // Add (label, phrase) to the output data.
-      std::string output_text;
-      for (const auto& word : phrase) {
-        output_text.append(word);
-        output_text.append(" ");
+      std::string strong_text = concatenateStringColumnEntries(
+          columns, row_id, _strong_column_names, /* delimiter= */ " ");
+
+      std::vector<std::string> augmented_samples =
+          augmentSingleRow(strong_text, weak_text);
+
+#pragma omp critical
+      {
+        for (auto& sample : augmented_samples) {
+          if (!sample.empty()) {
+            augmented_data.emplace_back(std::move(sample));
+            augmented_labels.push_back(labels);
+          }
+        }
       }
-      augmented_data.push_back(output_text);
-      augmented_labels.push_back(labels);
+    } catch (std::exception& e) {
+#pragma omp critical
+      exception = std::current_exception();
     }
   }
+
+  if (exception) {
+    std::rethrow_exception(exception);
+  }
+
   // Shuffle the augmented data and augmented labels (in the same order).
   // We have to use std::shuffle and two RNGs from <random> with the same state
   //  for reasons described here: https://stackoverflow.com/a/16969267
@@ -126,6 +139,28 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
   return augmented_column_map;
+}
+
+std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
+    std::string& strong_text, std::string& weak_text) {
+  // Now that we have both the weak and strong text, pass them into the
+  // phrase generation pipeline to self-supervised (label, phrase) pairs.
+  Phrase strong_phrase = getStrongPhrase(strong_text);
+  PhraseCollection phrases = getWeakPhrases(weak_text);
+  mergeStrongWithWeak(phrases, strong_phrase);
+
+  std::vector<std::string> output_samples;
+  for (const auto& phrase : phrases) {
+    // Add (label, phrase) to the output data.
+    std::string output_text;
+    for (const auto& word : phrase) {
+      output_text.append(word);
+      output_text.append(" ");
+    }
+    output_samples.push_back(output_text);
+  }
+
+  return output_samples;
 }
 
 void ColdStartTextAugmentation::replacePunctuationWithSpaces(std::string& s) {
@@ -331,6 +366,30 @@ void ColdStartTextAugmentation::mergeStrongWithWeak(
     std::rotate(weak_phrases[i].begin(),
                 weak_phrases[i].begin() + original_size, weak_phrases[i].end());
   }
+}
+
+std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
+    const dataset::MapInput& document) {
+  std::string strong_text;
+  for (const auto& strong_col : _strong_column_names) {
+    if (!document.count(strong_col)) {
+      throw std::invalid_argument(
+          "Strong column not found in the provided document.");
+    }
+    strong_text.append(document.at(strong_col));
+    strong_text.append(" ");
+  }
+  std::string weak_text;
+  for (const auto& weak_col : _weak_column_names) {
+    if (!document.count(weak_col)) {
+      throw std::invalid_argument(
+          "Weak column not found in the provided document.");
+    }
+    weak_text.append(document.at(weak_col));
+    weak_text.append(". ");
+  }
+
+  return augmentSingleRow(strong_text, weak_text);
 }
 
 }  // namespace thirdai::data

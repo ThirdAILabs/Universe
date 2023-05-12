@@ -11,9 +11,9 @@ class Embedding final : public Op,
  public:
   static std::shared_ptr<Embedding> make(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
-      uint64_t log_embedding_block_size, uint64_t update_chunk_size,
-      const std::string& reduction,
-      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
+      uint64_t log_embedding_block_size, const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt,
+      uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -31,18 +31,41 @@ class Embedding final : public Op,
 
   void disableSparseParameterUpdates() final;
 
+  std::vector<std::vector<float>*> gradients() final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
+  void setSerializeOptimizer(bool should_serialize_optimizer) final;
+
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
+
+  std::shared_ptr<Embedding> duplicateWithNewReduction(
+      const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input);
 
  private:
   Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
-            uint64_t log_embedding_block_size, uint64_t update_chunk_size,
-            const std::string& reduction,
-            std::optional<uint64_t> num_tokens_per_input);
+            uint64_t log_embedding_block_size, const std::string& reduction,
+            std::optional<uint64_t> num_tokens_per_input,
+            uint64_t update_chunk_size);
+
+  Embedding(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
+      : Op(name), _kernel(std::move(kernel)) {}
 
   std::unique_ptr<EmbeddingLayer> _kernel;
+
+  Embedding() {}
+
+  friend class cereal::access;
+
+  // We use save/load instead of serialize so we can ensure the optimizer is
+  // initialized when the model is loaded.
+  template <class Archive>
+  void save(Archive& archive) const;
+
+  template <class Archive>
+  void load(Archive& archive);
 };
 
 using EmbeddingPtr = std::shared_ptr<Embedding>;

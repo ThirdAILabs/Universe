@@ -6,7 +6,6 @@
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
-#include <dataset/src/blocks/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>

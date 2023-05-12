@@ -9,11 +9,20 @@ pytestmark = [pytest.mark.unit]
 N_CLASSES = 10
 
 
+class GetEndingLearningRate(bolt.callbacks.Callback):
+    def __init__(self):
+        super().__init__()
+        self.ending_lr = 0
+
+    def on_train_end(self, model, train_state):
+        self.ending_lr = train_state.learning_rate
+
+
 def train_model_with_scheduler(
-    epochs, base_learning_rate, lr_schedule, lambda_schedule, custom_scheduler=False
+    epochs, base_learning_rate, schedule, batch_level_steps=False
 ):
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=50, noise_std=0.3
+        n_classes=N_CLASSES, n_samples=50, noise_std=0.3, batch_size_for_conversion=10
     )
     model = get_simple_dag_model(
         input_dim=N_CLASSES,
@@ -24,64 +33,57 @@ def train_model_with_scheduler(
         loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
-    if custom_scheduler:
-        learning_rate_scheduler = bolt.callbacks.LearningRateScheduler(
-            schedule=lambda_schedule
-        )
-    else:
-        learning_rate_scheduler = bolt.callbacks.LearningRateScheduler(
-            schedule=lr_schedule
-        )
+    learning_rate_scheduler = bolt.callbacks.LearningRateScheduler(
+        schedule=schedule, batch_level_steps=batch_level_steps
+    )
+
+    ending_lr_callback = GetEndingLearningRate()
+
     train_config = (
         bolt.TrainConfig(learning_rate=base_learning_rate, epochs=epochs)
         .with_metrics(["categorical_accuracy"])
-        .with_callbacks([learning_rate_scheduler])
+        .with_callbacks([learning_rate_scheduler, ending_lr_callback])
     )
 
     model.train(train_data, train_labels, train_config)
 
-    return learning_rate_scheduler
+    return ending_lr_callback.ending_lr
 
 
 @pytest.mark.unit
 def test_multiplicative_lr_scheduler():
     lr_schedule = bolt.callbacks.MultiplicativeLR(gamma=0.5)
-    learning_rate_scheduler = train_model_with_scheduler(
+    ending_lr = train_model_with_scheduler(
         base_learning_rate=0.01,
         epochs=2,
-        lr_schedule=lr_schedule,
-        lambda_schedule=None,
+        schedule=lr_schedule,
     )
 
-    assert math.isclose(learning_rate_scheduler.get_final_lr(), 0.0025, rel_tol=1e-06)
+    assert math.isclose(ending_lr, 0.0025, rel_tol=1e-06)
 
 
 @pytest.mark.unit
 def test_exponential_lr_scheduler():
     lr_schedule = bolt.callbacks.ExponentialLR(gamma=0.5)
-    learning_rate_scheduler = train_model_with_scheduler(
+    ending_lr = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=2,
-        lr_schedule=lr_schedule,
-        lambda_schedule=None,
+        schedule=lr_schedule,
     )
 
-    assert math.isclose(
-        learning_rate_scheduler.get_final_lr(), 0.00036787946, rel_tol=1e-06
-    )
+    assert math.isclose(ending_lr, 0.00036787946, rel_tol=1e-06)
 
 
 @pytest.mark.unit
 def test_multistep_lr_scheduler():
     lr_schedule = bolt.callbacks.MultiStepLR(gamma=0.2, milestones=[1, 3])
-    learning_rate_scheduler = train_model_with_scheduler(
+    ending_lr = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=4,
-        lr_schedule=lr_schedule,
-        lambda_schedule=None,
+        schedule=lr_schedule,
     )
 
-    assert math.isclose(learning_rate_scheduler.get_final_lr(), 4e-05, rel_tol=1e-06)
+    assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)
 
 
 @pytest.mark.unit
@@ -90,12 +92,25 @@ def test_custom_lr_scheduler():
         lambda learning_rate, epoch: learning_rate * 0.1
     )
 
-    learning_rate_scheduler = train_model_with_scheduler(
+    ending_lr = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=5,
-        lr_schedule=None,
-        lambda_schedule=lr_schedule,
-        custom_scheduler=True,
+        schedule=lr_schedule,
     )
 
-    assert math.isclose(learning_rate_scheduler.get_final_lr(), 1e-08, rel_tol=1e-06)
+    assert math.isclose(ending_lr, 1e-08, rel_tol=1e-06)
+
+
+@pytest.mark.unit
+def test_batch_level_steps():
+    lr_schedule = bolt.callbacks.MultiStepLR(gamma=0.2, milestones=[1, 2])
+
+    starting_lr = 0.001
+    ending_lr = train_model_with_scheduler(
+        base_learning_rate=starting_lr,
+        epochs=1,
+        schedule=lr_schedule,
+        batch_level_steps=True,
+    )
+
+    assert math.isclose(ending_lr, starting_lr * 0.2 * 0.2, rel_tol=1e-06)
