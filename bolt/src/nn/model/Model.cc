@@ -256,7 +256,7 @@ void setValues(const std::vector<std::vector<float>*>& values,
   if (total_dim != flattened_dim) {
     std::stringstream error;
     error << "Expected " << total_dim
-          << " parameters in setGradients, but received " << flattened_dim
+          << " parameters in setValues, but received " << flattened_dim
           << " parameters.";
     throw std::invalid_argument(error.str());
   }

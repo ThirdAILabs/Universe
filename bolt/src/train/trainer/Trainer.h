@@ -9,7 +9,6 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
-#include <utility>
 
 namespace thirdai::bolt::train {
 
