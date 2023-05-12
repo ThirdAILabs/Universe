@@ -247,7 +247,7 @@ def build_train_and_predict_single_hidden_layer(
         activation="softmax",
         sparsity=output_sparsity,
         sampling_config=bolt.nn.DWTASamplingConfig(
-            hashes_per_table=3, num_tables=64, reservoir_size=8
+            num_tables=64, hashes_per_table=3, range_pow = 9, binsize = 8, reservoir_size=32, permutations = 8
         ),
     )(input_layer)
 

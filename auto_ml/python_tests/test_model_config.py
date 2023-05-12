@@ -54,7 +54,10 @@ def get_config(have_user_specified_parameters: bool = False):
                 "sampling_config": {
                     "num_tables": 4,
                     "hashes_per_table": 2,
+                    "range_pow" : 6,    
+                    "binsize" : 8,                
                     "reservoir_size": 10,
+                    "permutations": 8,
                 },
                 "predecessor": "fc_3",
             },
