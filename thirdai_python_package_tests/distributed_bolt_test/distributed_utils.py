@@ -2,9 +2,8 @@ import os
 
 import numpy as np
 import pytest
-
-from thirdai.demos import download_mnist_dataset
 from thirdai import dataset
+from thirdai.demos import download_mnist_dataset
 
 
 @pytest.fixture(scope="module")

@@ -3,11 +3,11 @@ import os
 import pytest
 import ray
 import thirdai.distributed_bolt as dist
+from distributed_utils import gen_numpy_training_data
 from ray.air import ScalingConfig, session
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
-from distributed_utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.distributed]
 
