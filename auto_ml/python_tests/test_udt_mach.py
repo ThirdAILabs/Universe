@@ -423,7 +423,7 @@ def test_mach_setting_wrong_index_type(integer_target):
     if integer_target:
         index = dataset.StringMachIndex(output_range=OUTPUT_DIM, num_hashes=7)
     else:
-        index = dataset.NumericMachIndex({}, {}, output_range=OUTPUT_DIM, num_hashes=7)
+        index = dataset.NumericMachIndex({}, output_range=OUTPUT_DIM, num_hashes=7)
 
     with pytest.raises(
         ValueError,
@@ -453,14 +453,8 @@ def test_mach_manual_index_creation():
         2: [14, 15, 16, 17, 18, 19, 20],
     }
 
-    hash_to_entities = defaultdict(list)
-    for entity, hashes in entity_to_hashes.items():
-        for h in hashes:
-            hash_to_entities[h].append(entity)
-
     index = dataset.NumericMachIndex(
         entity_to_hashes=entity_to_hashes,
-        hash_to_entities=hash_to_entities,
         output_range=OUTPUT_DIM,
         num_hashes=7,
     )

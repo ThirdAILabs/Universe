@@ -490,13 +490,7 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
         std::to_string(index->outputRange()) + ".");
   }
 
-  if (cur_index->numHashes() != index->numHashes()) {
-    throw std::invalid_argument(
-        "Num hashes mismatch in new index. Index num hashes should be " +
-        std::to_string(cur_index->numHashes()) +
-        " but provided an index with num hashes = " +
-        std::to_string(index->numHashes()) + ".");
-  }
+  // we allow indexes with different number of hashes
 
   auto is_numeric_index =
       static_cast<bool>(dataset::mach::asNumericIndex(index));
