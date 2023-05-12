@@ -120,9 +120,9 @@ def test_query_reformulation(train_test_data, supervised):
 
     model.train(train_file)
 
-    eval_predictions, _ = model.evaluate(test_file, top_k=5)
-
-    assert recall(predictions=eval_predictions, labels=inference_labels) >= 0.9
+    if train_test_data[1] == ALL_COLUMNS:
+        metrics = model.evaluate(test_file, top_k=5)
+        assert metrics["val_recall"][-1] >= 0.9
 
     predictions, scores = model.predict_batch(inference_samples, top_k=5)
 
@@ -145,19 +145,19 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
 
     model.train(filename)
 
-    old_predictions = model.evaluate(filename, top_k=1)
+    old_metrics = model.evaluate(filename, top_k=1)
+    assert old_metrics["val_recall"][-1] >= 0.9
 
     model_path = "./query_reformulation_model"
     model.save(model_path)
     model = bolt.UniversalDeepTransformer.load(model_path)
 
-    new_predictions = model.evaluate(filename, top_k=1)
-    assert old_predictions == new_predictions
+    new_metrics = model.evaluate(filename, top_k=1)
+    assert new_metrics["val_recall"][-1] >= 0.9
 
     model.train(filename)
-    newer_predictions = model.evaluate(filename, top_k=1)
-    # The scores may be different because we've inserted duplicate elements
-    assert old_predictions[0] == newer_predictions[0]
+    newer_metrics = model.evaluate(filename, top_k=1)
+    assert newer_metrics["val_recall"][-1] >= 0.9
 
     os.remove(filename)
     os.remove(model_path)

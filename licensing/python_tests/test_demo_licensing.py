@@ -1,6 +1,7 @@
+import os
+
 import pytest
 import thirdai
-import os
 
 # These lines use a hack where we can import functions from different test files
 # as long as this file is run from bin/python-test.sh. To run just this file,
