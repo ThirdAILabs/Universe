@@ -108,9 +108,7 @@ SamplingConfigPtr DWTASamplingConfig::oldAutotune(uint32_t layer_dim,
       /* range_pow=*/range_pow,
       /* binsize=*/8,
       /* reservoir_size= */ reservoir_size,
-      /* permutations=*/
-      ceil((static_cast<double>(hashes_per_table) * /* binsize=*/8) /
-           layer_dim));
+      /* permutations=*/8);
 }
 
 SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
