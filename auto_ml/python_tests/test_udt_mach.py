@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 
 import pandas as pd
 import pytest
@@ -429,3 +430,58 @@ def test_mach_setting_wrong_index_type(integer_target):
         match=r"Incorrect index type provided. Index type should be consistent with the integer_target flag.",
     ):
         model.set_index(index)
+
+
+def test_mach_manual_index_creation():
+    model = train_simple_mach_udt(integer_target=True)
+
+    model.set_decode_params(3, OUTPUT_DIM)
+
+    samples = {
+        0: "haha one time",
+        1: "haha two times",
+        2: "haha thrice occurances",
+    }
+
+    old_predicted_hashes = {}
+    for label, sample in samples.items():
+        old_predicted_hashes[label] = model.predict_hashes({"text": sample})
+
+    entity_to_hashes = {
+        0: [0, 1, 2, 3, 4, 5, 6],
+        1: [7, 8, 9, 10, 11, 12, 13],
+        2: [14, 15, 16, 17, 18, 19, 20],
+    }
+
+    hash_to_entities = defaultdict(list)
+    for entity, hashes in entity_to_hashes.items():
+        for h in hashes:
+            hash_to_entities[h].append(entity)
+
+    index = dataset.NumericMachIndex(
+        entity_to_hashes=entity_to_hashes,
+        hash_to_entities=hash_to_entities,
+        output_range=OUTPUT_DIM,
+        num_hashes=7,
+    )
+
+    model.set_index(index)
+
+    map_batch = []
+    for label, sample in samples.items():
+        map_batch.append(
+            {
+                "text": sample,
+                "label": " ".join([str(h) for h in entity_to_hashes[label]]),
+            }
+        )
+
+    for _ in range(10):
+        model.train_with_hashes(
+            map_batch,
+            learning_rate=0.01,
+        )
+
+    for label, sample in samples.items():
+        new_hashes = model.predict_hashes({"text": sample})
+        assert set(new_hashes) == set(entity_to_hashes[label])
