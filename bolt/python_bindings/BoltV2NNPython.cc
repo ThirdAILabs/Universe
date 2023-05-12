@@ -59,8 +59,11 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
-NumpyArray<float> getValues(const nn::model::ModelPtr& _model, uint32_t type) {
-  auto [grads, flattened_dim] = _model->getValues(type);
+NumpyArray<float> getValues(const nn::model::ModelPtr& _model,
+                            std::string type) {
+  auto [grads, flattened_dim] = (type == "gradients")
+                                    ? _model->getFlattenedGradients()
+                                    : _model->getFlattenedParameters();
 
   py::capsule free_when_done(
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -69,13 +72,19 @@ NumpyArray<float> getValues(const nn::model::ModelPtr& _model, uint32_t type) {
 }
 
 void setValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values,
-               uint32_t type) {
+               std::string type) {
   if (new_values.ndim() != 1) {
     throw std::invalid_argument("Expected grads to be flattened.");
   }
 
   uint64_t flattened_dim = new_values.shape(0);
-  _model->setValues(new_values.data(), flattened_dim, type);
+  if (type == "gradients") {
+    _model->setFlattenedGradients(new_values.data(), flattened_dim);
+  } else if (type == "parameters") {
+    _model->setFlattenedParameters(new_values.data(), flattened_dim);
+  } else {
+    throw std::invalid_argument("Expected gradients or parameters");
+  }
 }
 
 void defineTensor(py::module_& nn);
@@ -111,16 +120,20 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
       .def("get_gradients",
-           [](const nn::model::ModelPtr& model) { return getValues(model, 0); })
+           [](const nn::model::ModelPtr& model) {
+             return getValues(model, "gradients");
+           })
       .def("set_gradients",
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
-             setValues(model, new_values, 0);
+             setValues(model, new_values, "gradients");
            })
       .def("get_parameters",
-           [](const nn::model::ModelPtr& model) { return getValues(model, 1); })
+           [](const nn::model::ModelPtr& model) {
+             return getValues(model, "parameters");
+           })
       .def("set_parameters",
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
-             setValues(model, new_values, 1);
+             setValues(model, new_values, "parameters");
            })
       .def("disable_sparse_parameter_updates",
            &model::Model::disableSparseParameterUpdates)

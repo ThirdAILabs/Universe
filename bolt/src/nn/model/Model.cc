@@ -234,26 +234,23 @@ uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
   return total_dim;
 }
 
-std::pair<const float*, uint64_t> Model::getValues(uint32_t type) const {
-  auto values = (type == 0) ? gradients() : parameters();
-
+std::pair<const float*, uint64_t> getValues(
+    const std::vector<std::vector<float>*>& values) {
   uint64_t total_dim = sumFlattenedDims(values);
 
   float* combined_values = new float[total_dim];
   uint64_t offset = 0;
-  for (const auto* grad : values) {
-    std::copy(grad->data(), grad->data() + grad->size(),
+  for (const auto* value : values) {
+    std::copy(value->data(), value->data() + value->size(),
               combined_values + offset);
-    offset += grad->size();
+    offset += value->size();
   }
 
   return {combined_values, total_dim};
 }
 
-void Model::setValues(const float* new_value, uint64_t flattened_dim,
-                      uint32_t type) const {
-  auto values = (type == 0) ? gradients() : parameters();
-
+void setValues(const std::vector<std::vector<float>*>& values,
+               const float* new_value, uint64_t flattened_dim) {
   uint64_t total_dim = sumFlattenedDims(values);
 
   if (total_dim != flattened_dim) {
@@ -270,6 +267,24 @@ void Model::setValues(const float* new_value, uint64_t flattened_dim,
               value->data());
     offset += value->size();
   }
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+  return getValues(gradients());
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
+  return getValues(parameters());
+}
+
+void Model::setFlattenedGradients(const float* new_value,
+                                  uint64_t flattened_dim) const {
+  setValues(gradients(), new_value, flattened_dim);
+}
+
+void Model::setFlattenedParameters(const float* new_value,
+                                   uint64_t flattened_dim) const {
+  setValues(parameters(), new_value, flattened_dim);
 }
 
 void Model::disableSparseParameterUpdates() {
