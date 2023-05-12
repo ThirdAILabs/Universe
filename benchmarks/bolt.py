@@ -181,7 +181,7 @@ def get_sampling_config(layer_config):
         hashes_per_table=config_get_required(layer_config, "hashes_per_table"),
         num_tables=config_get_required(layer_config, "num_tables"),
         range_pow=config_get_required(layer_config, "range_pow"),
-        binsize = config_get_required(layer_config, "binsize"),
+        binsize=config_get_required(layer_config, "binsize"),
         reservoir_size=config_get_required(layer_config, "reservoir_size"),
         hash_function=layer_config.get("hash_function", "DWTA"),
     )

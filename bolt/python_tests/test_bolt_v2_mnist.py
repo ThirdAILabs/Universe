@@ -35,7 +35,12 @@ def test_bolt_on_mnist(load_mnist_bolt_v2):
         sparsity=0.01,
         activation="relu",
         sampling_config=old_bolt.nn.DWTASamplingConfig(
-            num_tables=64, hashes_per_table=3, range_pow = 9, binsize = 8, reservoir_size=32, permutations = 8
+            num_tables=64,
+            hashes_per_table=3,
+            range_pow=9,
+            binsize=8,
+            reservoir_size=32,
+            permutations=8,
         ),
         rebuild_hash_tables=12,
         reconstruct_hash_functions=40,
