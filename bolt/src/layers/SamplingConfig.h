@@ -52,6 +52,8 @@ class DWTASamplingConfig final : public SamplingConfig {
 
   static SamplingConfigPtr newAutotune(uint32_t layer_dim, float sparsity);
 
+  static SamplingConfigPtr oldAutotune(uint32_t layer_dim, float sparsity);
+
   static SamplingConfigPtr autotune(uint32_t layer_dim, float sparsity,
                                     bool experimental_autotune);
 

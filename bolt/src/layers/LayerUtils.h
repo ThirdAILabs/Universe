@@ -80,4 +80,15 @@ constexpr float actFuncDerivative(float activation,
   return 0.0;
 }
 
+static void checkSparsity(float sparsity) {
+  if (sparsity > 1 || sparsity <= 0) {
+    throw std::invalid_argument(
+        "sparsity must be between 0 exclusive and 1 inclusive.");
+  }
+  if (0.2 < sparsity && sparsity < 1.0) {
+    std::cout << "WARNING: Using large sparsity value " << sparsity
+              << " in Layer, consider decreasing sparsity" << std::endl;
+  }
+}
+
 }  // namespace thirdai::bolt

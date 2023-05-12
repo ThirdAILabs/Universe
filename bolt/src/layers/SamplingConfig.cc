@@ -54,19 +54,8 @@ SamplingConfigPtr DWTASamplingConfig::newAutotune(uint32_t layer_dim,
       /* permutations=*/2);
 }
 
-SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
-                                               float sparsity,
-                                               bool experimental_autotune) {
-  if (sparsity == 1.0) {
-    // If the layer is dense then we don't need to create a sampling config
-    // for it.
-    return nullptr;
-  }
-
-  if (experimental_autotune) {  // NOLINT
-    return newAutotune(layer_dim, sparsity);
-  }
-
+SamplingConfigPtr DWTASamplingConfig::oldAutotune(uint32_t layer_dim,
+                                                  float sparsity) {
   // The number of items in the table is equal to the number of neurons in
   // this layer, which is stored in the "dim" variable. By analyzing the
   // hash table, we find that
@@ -120,6 +109,22 @@ SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
       /* binsize=*/8,
       /* reservoir_size= */ reservoir_size,
       /* permutations=*/8);
+}
+
+SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
+                                               float sparsity,
+                                               bool experimental_autotune) {
+  if (sparsity == 1.0) {
+    // If the layer is dense then we don't need to create a sampling config
+    // for it.
+    return nullptr;
+  }
+
+  if (experimental_autotune) {  // NOLINT
+    return newAutotune(layer_dim, sparsity);
+  }
+
+  return oldAutotune(layer_dim, sparsity);
 }
 
 hashing::HashFunctionPtr FastSRPSamplingConfig::getHashFunction(

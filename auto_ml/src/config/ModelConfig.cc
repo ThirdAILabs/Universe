@@ -60,7 +60,9 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
     }
     throw std::invalid_argument(
         "Parameter 'sampling_config' must be a string 'random' indicating "
-        "random sampling is used or an object providing sampling parameters.");
+        "random sampling is used, or a string 'experimental_autotune' "
+        "indicating experimental DWTA autotuner is used, or an object "
+        "providing sampling parameters.");
   }
 
   return nullptr;

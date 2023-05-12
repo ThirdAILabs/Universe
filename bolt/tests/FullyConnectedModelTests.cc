@@ -27,7 +27,7 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
         /* activation*/ "relu",
         /* sampling= */
         DWTASamplingConfig::autotune(dim, sparsity,
-                                     /* DWTASamplingConfig::autotune=*/false),
+                                     /* experimental_autotune=*/false),
         /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20);
 
     input_dim_to_last_layer = dim;
@@ -195,8 +195,9 @@ TEST(FullyConnectedModelTests, SparseOutput) {
           /* sparsity= */ 0.2,
           /* activation*/ "softmax",
           /* sampling= */
-          DWTASamplingConfig::autotune(N_CLASSES, 0.1,
-                                       /* DWTASamplingConfig::autotune=*/false),
+          DWTASamplingConfig::autotune(/* layer_dim=*/N_CLASSES,
+                                       /* sparsity=*/0.1,
+                                       /* experimental_autotune=*/false),
           /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20)
           ->apply(hidden);
 

@@ -38,17 +38,18 @@ class DWTAHashFunction final : public HashFunction {
     return std::make_unique<DWTAHashFunction>(
         /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
         /* num_tables= */ _num_tables,
-        /* range_pow= */ _log_binsize * _hashes_per_table, /*binsize=*/_binsize,
+        /* range_pow= */ _log_binsize * _hashes_per_table,
+        /* binsize=*/_binsize, /* permutations=*/
         _permute);
   }
 
   std::string getName() const final { return "DWTA"; }
 
-  uint32_t getPermutes() const override { return _permute; }
+  uint32_t getNumPermutations() const { return _permute; }
 
-  uint32_t getBinsize() const override { return _binsize; }
+  uint32_t getBinsize() const { return _binsize; }
 
-  uint32_t getHashesPerTable() const override { return _hashes_per_table; }
+  uint32_t getHashesPerTable() const { return _hashes_per_table; }
 
   void save(const std::string& filename);
 

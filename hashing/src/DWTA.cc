@@ -22,7 +22,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _log_binsize(floor(log2(_binsize))),
       _permute(permutations) {
   std::mt19937 gen(seed);
-  std::uniform_int_distribution<uint32_t> bin_mapper(
+  std::uniform_int_distribution<uint32_t> bin_distribution(
       0, _num_hashes * _binsize - 1);
 
   _bin_map = std::vector<uint32_t>(_dim * _permute);
@@ -30,7 +30,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
 
   for (uint32_t p = 0; p < _permute; p++) {
     for (uint32_t j = 0; j < _dim; j++) {
-      uint32_t index = bin_mapper(gen);
+      uint32_t index = bin_distribution(gen);
       _bin_map[p * _dim + j] = index / _binsize;
       _positions[p * _dim + j] = index % _binsize;
     }
