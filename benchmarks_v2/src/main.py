@@ -32,6 +32,7 @@ def parse_arguments():
             "mini_benchmark_udt",
             "mini_benchmark_query_reformulation",
             "mini_benchmark_temporal",
+            "backward_compatibility_udt"
         ],
         help="Which runners to use to run the benchmark.",
     )

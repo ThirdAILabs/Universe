@@ -16,34 +16,16 @@ def versions(package_name):
     return versions
 
 
-class MiniBenchmarkUDTRunner(UDTRunner):
+class BackwardCompatibilityUDTRunner(UDTRunner):
     config_type = UDTBenchmarkConfig
+    old_model_path = ""
 
     @staticmethod
     def create_model(config, path_prefix):
-        if config.model_config is not None:
-            model_config_path = config.config_name + "_model.config"
-            deployment.dump_config(
-                config=json.dumps(config.model_config),
-                filename=model_config_path,
-            )
-        else:
-            model_config_path = None
-
-        data_types = config.get_data_types(path_prefix)
-        model = bolt.UniversalDeepTransformer(
-            data_types=data_types,
-            target=config.target,
-            integer_target=config.integer_target,
-            n_target_classes=config.n_target_classes,
-            temporal_tracking_relationships=config.temporal_relationships,
-            delimiter=config.delimiter,
-            model_config=model_config_path,
-            options=config.options,
-        )
-
-        if model_config_path:
-            os.remove(model_config_path)
+        print('HEREEEEEEEEEEEEEEEEEEEEE')
+        print(BackwardCompatibilityUDTRunner.old_model_path)
+        model = bolt.UniversalDeepTransformer.load(BackwardCompatibilityUDTRunner.old_model_path)
+        print('HEREEEEEEEEEEEEEEEEEEEEE')
 
         return model
 
@@ -55,4 +37,10 @@ class MiniBenchmarkUDTRunner(UDTRunner):
             config.cold_start_num_epochs = 1
 
         test_versions = versions("thirdai")[1:2]
+
+        BackwardCompatibilityUDTRunner.old_model_path = "test_udt.model"
+
+        UDTRunner.run_benchmark.__func__(BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger)
+
+        # getattr(BackwardCompatibilityUDTRunner, UDTRunner.run_benchmark)(config, path_prefix, mlflow_logger)
         

@@ -2,7 +2,7 @@ from ...configs.temporal_configs import *
 from ..temporal import TemporalRunner
 
 
-class MiniBenchmarkTemporalRunner(TemporalRunner):
+class BackwardCompatibilityTemporalRunner(TemporalRunner):
     config_type = TemporalBenchmarkConfig
 
     @classmethod

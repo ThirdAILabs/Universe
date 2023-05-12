@@ -2,7 +2,7 @@ from ...configs.query_reformulation_configs import *
 from ..query_reformulation import QueryReformulationRunner
 
 
-class MiniBenchmarkQueryReformulationRunner(QueryReformulationRunner):
+class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
     config_type = QueryReformulationBenchmarkConfig
 
     @classmethod
