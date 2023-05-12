@@ -85,10 +85,6 @@ void defineAutomlInModule(py::module_& module) {
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
            py::arg("target_column"), py::arg("dataset_size"),
            py::arg("delimiter") = ',', docs::UDT_GENERATOR_INIT)
-      .def("__new__", &UDTFactory::buildTextClassifier,
-           py::arg("input_vocab_size"), py::arg("metadata_dim"),
-           py::arg("n_classes"), py::arg("model_size"),
-           docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 
@@ -143,6 +139,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"))
       .def("forget", &udt::UDT::forget, py::arg("label"))
+      .def("clear_index", &udt::UDT::clearIndex)
       .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{})
@@ -236,18 +233,6 @@ void createModelsSubmodule(py::module_& module) {
           py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &UDTFactory::save_generator, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
-
-  py::class_<TextClassifier, std::shared_ptr<TextClassifier>>(
-      models_submodule, "UDTTextClassifier")
-      .def("train", &TextClassifier::trainOnBatch, py::arg("data"),
-           py::arg("labels"), py::arg("learning_rate"),
-           docs::TEXT_CLASSIFIER_TRAIN)
-      .def("validate", &TextClassifier::validateOnBatch, py::arg("data"),
-           py::arg("labels"), docs::TEXT_CLASSIFIER_VALIDATE)
-      .def("predict", &TextClassifier::predict, py::arg("data"),
-           docs::TEXT_CLASSIFIER_PREDICT)
-      .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
-           docs::TEXT_CLASSIFIER_SAVE);
 }
 
 void createDistributedPreprocessingWrapper(py::module_& module) {
@@ -430,15 +415,6 @@ QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
       /* dataset_size = */ dataset_size, /* delimiter = */ delimiter);
 }
 
-TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
-                                               uint32_t input_vocab_size,
-                                               uint32_t metadata_dim,
-                                               uint32_t n_classes,
-                                               const std::string& model_size) {
-  (void)obj;
-  return TextClassifier(input_vocab_size, metadata_dim, n_classes, model_size);
-}
-
 std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
     py::object& obj, data::ColumnDataTypes data_types,
     const data::UserProvidedTemporalRelationships&
@@ -496,15 +472,6 @@ void UDTFactory::save_generator(const QueryCandidateGenerator& generator,
   generator.save_stream(filestream);
 }
 
-void UDTFactory::saveTextClassifier(const TextClassifier& text_classifier,
-                                    const std::string& filename) {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(
-      reinterpret_cast<const char*>(&UDT_TEXT_CLASSIFIER_IDENTIFIER), 1);
-  text_classifier.save_stream(filestream);
-}
-
 py::object UDTFactory::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -517,10 +484,6 @@ py::object UDTFactory::load(const std::string& filename) {
 
   if (first_byte == UDT_IDENTIFIER) {
     return py::cast(udt::UDT::load_stream(filestream));
-  }
-
-  if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
-    return py::cast(TextClassifier::load_stream(filestream));
   }
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");
