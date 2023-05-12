@@ -14,7 +14,8 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/InputTypes.h>
-#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/text/Text.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/CsvParser.h>
@@ -22,6 +23,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/cast.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
 #include <memory>
@@ -56,7 +58,7 @@ py::object UDTQueryReformulation::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   (void)learning_rate;
   (void)epochs;
@@ -119,35 +121,23 @@ py::object UDTQueryReformulation::train(
 
 py::object UDTQueryReformulation::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool return_predicted_class, bool verbose,
-    bool return_metrics, std::optional<uint32_t> top_k) {
+    bool sparse_inference, bool verbose, std::optional<uint32_t> top_k) {
   (void)metrics;
   (void)sparse_inference;
-  (void)return_predicted_class;
-  (void)return_metrics;
 
   requireTopK(top_k);
 
-  /**
-   * There are 3 possible combinations of columns we could have:
-   *    1. Both correct and incorrect queries are present. In this case we hash
-   *       the incorrect queries, return the results and compute the recall
-   *       against the correct queries.
-   *    2. Only the incorrect queries are present. In this case we hash the
-   *       incorrect queries and return the results. No metrics are computed
-   *       since there are no labels.
-   *    3. Only the correct queries are present. In this case we hash the given
-   *       queries and return the results. No metrics are computed since there
-   *       are no labels.
-   */
-  bool hash_incorrect =
-      _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
-  bool labeled = hash_incorrect && containsColumn(data, _correct_column_name);
+  if (!_incorrect_column_name ||
+      !containsColumn(data, *_incorrect_column_name) ||
+      !containsColumn(data, _correct_column_name)) {
+    throw std::invalid_argument(
+        "Cannot evalate query reformulation without both source and target "
+        "columns.");
+  }
 
   auto [inputs, labels] =
-      loadData(data, /* col_to_hash= */
-               hash_incorrect ? *_incorrect_column_name : _correct_column_name,
-               /* include_labels= */ labeled,
+      loadData(data, /* col_to_hash= */ *_incorrect_column_name,
+               /* include_labels= */ true,
                defaults::QUERY_REFORMULATION_BATCH_SIZE, verbose);
 
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
@@ -160,42 +150,28 @@ py::object UDTQueryReformulation::evaluate(
 
   bolt::utils::Timer timer;
 
-  std::vector<std::vector<std::string>> output_phrases;
-  std::vector<std::vector<float>> output_scores;
-
   for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
     auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
         inputs->at(batch_id), /* top_k= */ top_k.value());
 
     bar->increment();
 
-    if (labeled) {
-      correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
-      total_samples += phrase_ids.size();
-    }
-
-    for (const auto& ids : phrase_ids) {
-      output_phrases.push_back(idsToPhrase(ids));
-    }
-    output_scores.insert(output_scores.end(), phrase_scores.begin(),
-                         phrase_scores.end());
+    correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
+    total_samples += phrase_ids.size();
   }
 
   timer.stop();
 
+  float recall = static_cast<float>(correctly_retrieved) / total_samples;
+
   if (bar) {
-    if (labeled) {
-      bar->close(
-          fmt::format("evaluate | recall={} | time {}s | complete",
-                      static_cast<double>(correctly_retrieved) / total_samples,
-                      timer.seconds()));
-    } else {
-      bar->close(
-          fmt::format("evaluate | time {}s | complete", timer.seconds()));
-    }
+    bar->close(fmt::format("evaluate | recall={} | time {}s | complete", recall,
+                           timer.seconds()));
   }
 
-  return py::make_tuple(py::cast(output_phrases), py::cast(output_scores));
+  py::dict py_metrics;
+  py_metrics["val_recall"] = py::cast(std::vector<float>{recall});
+  return std::move(py_metrics);
 }
 
 py::object UDTQueryReformulation::predict(const MapInput& sample,
@@ -355,9 +331,10 @@ dataset::BlockList UDTQueryReformulation::ngramBlockList(
   input_blocks.reserve(n_grams.size());
 
   for (auto n_gram : n_grams) {
-    input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
+    input_blocks.emplace_back(dataset::TextBlock::make(
         /* col = */ column_name,
-        /* k = */ n_gram,
+        /* tokenizer= */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
+        /* lowercase= */ true,
         /* dim = */ std::numeric_limits<uint32_t>::max()));
   }
 

@@ -240,6 +240,11 @@ void UDT::save(const std::string& filename) const {
   save_stream(filestream);
 }
 
+void UDT::checkpoint(const std::string& filename) const {
+  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ true);
+  save(filename);
+}
+
 void UDT::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);

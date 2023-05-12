@@ -188,6 +188,8 @@ class UDT {
 
   void save(const std::string& filename) const;
 
+  void checkpoint(const std::string& filename) const;
+
   void save_stream(std::ostream& output_stream) const;
 
   static std::shared_ptr<UDT> load(const std::string& filename);
