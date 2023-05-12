@@ -66,7 +66,7 @@ class BoltTrainer(DataParallelTrainer):
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
         *,
-        bolt_config: BoltBackendConfig,
+        bolt_config: BoltBackendConfig = None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
         dataset_config: Optional[Dict[str, DatasetConfig]] = None,

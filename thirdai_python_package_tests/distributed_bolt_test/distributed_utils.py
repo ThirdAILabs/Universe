@@ -2,7 +2,9 @@ import os
 
 import numpy as np
 import pytest
-from download_dataset_fixtures import download_mnist_dataset
+
+from thirdai.demos import download_mnist_dataset
+from thirdai import dataset
 
 
 @pytest.fixture(scope="module")
@@ -123,3 +125,21 @@ def mnist_distributed_split(download_mnist_dataset):
     )
 
     return ("mnist_data/part1", "mnist_data/part2"), test_file
+
+
+def gen_numpy_training_data(
+    n_classes=10,
+    n_samples=1000,
+    noise_std=0.1,
+    convert_to_bolt_dataset=True,
+    batch_size_for_conversion=64,
+):
+    possible_one_hot_encodings = np.eye(n_classes)
+    labels = np.random.choice(n_classes, size=n_samples).astype("uint32")
+    examples = possible_one_hot_encodings[labels]
+    noise = np.random.normal(0, noise_std, examples.shape)
+    examples = (examples + noise).astype("float32")
+    if convert_to_bolt_dataset:
+        examples = dataset.from_numpy(examples, batch_size=batch_size_for_conversion)
+        labels = dataset.from_numpy(labels, batch_size=batch_size_for_conversion)
+    return examples, labels

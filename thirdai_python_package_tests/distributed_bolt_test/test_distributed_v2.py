@@ -7,15 +7,12 @@ from ray.air import ScalingConfig, session
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
+from distributed_utils import gen_numpy_training_data
 
-from bolt.python_tests.utils import gen_numpy_training_data
-
-ray.init(runtime_env={"env_vars": {"OMP_NUM_THREADS": "24"}})
+pytestmark = [pytest.mark.distributed]
 
 
 # Note(pratik): Write bunch of unit tests in place of integration test, as we dont have pygloo wheels :(.
-
-
 def get_mnist_model():
     input_layer = bolt.nn.Input(dim=784)
 
@@ -97,7 +94,7 @@ Wheels can be downloaded from: https://github.com/pratkpranav/pygloo/releases/ta
 
 
 @pytest.mark.skip(reason=reason)
-def test_distributed_v2():
+def test_distributed_v2_skip():
     scaling_config = ScalingConfig(
         # Number of distributed workers.
         num_workers=2,
@@ -125,7 +122,7 @@ def initialize_and_checkpoint():
 
     hidden_layer = bolt.nn.FullyConnected(
         dim=20000,
-        input_dim=784,
+        input_dim=n_classes,
         sparsity=0.01,
         activation="relu",
         rebuild_hash_tables=12,
@@ -140,8 +137,14 @@ def initialize_and_checkpoint():
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
-    train_x, train_y = gen_numpy_training_data()
+    train_x, train_y = gen_numpy_training_data(n_samples=8000, n_classes=10)
+    train_x = bolt.train.convert_dataset(train_x, dim=10)
+    train_y = bolt.train.convert_dataset(train_y, dim=10)
+
     test_x, test_y = gen_numpy_training_data()
+    test_x = bolt.train.convert_dataset(test_x, dim=10)
+    test_y = bolt.train.convert_dataset(test_y, dim=10)
+
     for x, y in zip(train_x, train_y):
         model.train_on_batch(x, y)
         model.update_parameters(learning_rate=0.05)
@@ -165,21 +168,26 @@ def initialize_and_checkpoint():
         use_sparsity=False,
     )
     assert (
-        history["validation_categorical_accuracy"][-1]
-        == new_history["validation_categorical_accuracy"][-1]
+        history["val_categorical_accuracy"][-1]
+        == new_history["val_categorical_accuracy"][-1]
     )
 
 
-@pytest.mark.unit
-@pytest.mark.distributed
 def test_independent_model():
+    num_cpu_per_node = dist.get_num_cpus()
+
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={"working_dir": working_dir, "OMP_NUM_THREADS": num_cpu_per_node}
+    )
     scaling_config = ScalingConfig(
         # Number of distributed workers.
         num_workers=1,
         # Turn on/off GPU.
         use_gpu=False,
         # Specify resources used for trainer.
-        trainer_resources={"CPU": 1},
+        trainer_resources={"CPU": num_cpu_per_node - 1},
         # Try to schedule workers on different nodes.
         placement_strategy="SPREAD",
     )
