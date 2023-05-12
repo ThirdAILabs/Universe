@@ -41,6 +41,8 @@ def test_get_set_hash_tables():
     )
     model.train(train_data, train_labels, train_cfg)
 
+    model.summary(detailed = True)
+
     eval_cfg = (
         bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
