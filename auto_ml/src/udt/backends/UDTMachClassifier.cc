@@ -216,17 +216,27 @@ py::object UDTMachClassifier::predictHashes(const MapInput& sample,
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
-  uint32_t k = _mach_label_block->index()->numHashes();
-  auto heap = output.findKLargestActivations(k);
+  auto hashes = output.findKLargestActiveNeurons(
+      /* k = */ _mach_label_block->index()->numHashes());
 
-  std::vector<uint32_t> hashes_to_return;
-  while (hashes_to_return.size() < k && !heap.empty()) {
-    auto [_, active_neuron] = heap.top();
-    hashes_to_return.push_back(active_neuron);
-    heap.pop();
+  return py::cast(hashes);
+}
+
+py::object UDTMachClassifier::predictHashesBatch(const MapInputBatch& batch,
+                                                 bool sparse_inference) {
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(batch),
+                               sparse_inference)
+                     .at(0);
+
+  std::vector<std::vector<uint32_t>> all_hashes(batch.size());
+#pragma omp parallel for default(none) shared(batch, all_hashes, outputs)
+  for (uint32_t i = 0; i < batch.size(); i++) {
+    all_hashes[i] = outputs->getVector(i).findKLargestActiveNeurons(
+        /* k = */ _mach_label_block->index()->numHashes());
   }
 
-  return py::cast(hashes_to_return);
+  return py::cast(all_hashes);
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {

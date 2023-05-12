@@ -289,6 +289,13 @@ class UDTBackend {
     throw notSupported("predict_hashes");
   }
 
+  virtual py::object predictHashesBatch(const MapInputBatch& batch,
+                                        bool sparse_inference) {
+    (void)batch;
+    (void)sparse_inference;
+    throw notSupported("predict_hashes_batch");
+  }
+
   /**
    * Gets the internal index for UDTMachClassifier.
    */

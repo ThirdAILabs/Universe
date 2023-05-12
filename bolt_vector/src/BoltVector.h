@@ -108,6 +108,8 @@ struct BoltVector {
 
   TopKActivationsQueue findKLargestActivations(uint32_t k) const;
 
+  std::vector<uint32_t> findKLargestActiveNeurons(uint32_t k) const;
+
   bool hasGradients() const;
 
   bool ownsMemory() const { return _owns_data; }

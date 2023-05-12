@@ -168,6 +168,10 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference);
   }
 
+  py::object predictHashesBatch(const MapInputBatch& batch, bool sparse_inference) {
+    return _backend->predictHashesBatch(batch, sparse_inference);
+  }
+
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {

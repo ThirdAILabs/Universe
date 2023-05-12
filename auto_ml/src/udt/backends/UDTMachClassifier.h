@@ -58,6 +58,9 @@ class UDTMachClassifier final : public UDTBackend {
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference) final;
 
+  py::object predictHashesBatch(const MapInputBatch& batch,
+                                bool sparse_inference) final;
+
   ModelPtr model() const final { return _classifier->model(); }
 
   void setModel(const ModelPtr& model) final;

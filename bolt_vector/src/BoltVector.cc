@@ -345,6 +345,18 @@ TopKActivationsQueue BoltVector::findKLargestActivations(uint32_t k) const {
   return top_k;
 }
 
+std::vector<uint32_t> BoltVector::findKLargestActiveNeurons(uint32_t k) const {
+  auto heap = findKLargestActivations(k);
+
+  std::vector<uint32_t> active_neurons;
+  while (active_neurons.size() < k && !heap.empty()) {
+    auto [_, active_neuron] = heap.top();
+    active_neurons.push_back(active_neuron);
+    heap.pop();
+  }
+  return active_neurons;
+}
+
 bool BoltVector::hasGradients() const { return gradients != nullptr; }
 
 std::ostream& operator<<(std::ostream& out, const BoltVector& vec) {
