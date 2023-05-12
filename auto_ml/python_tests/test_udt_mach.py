@@ -467,20 +467,8 @@ def test_mach_manual_index_creation():
 
     model.set_index(index)
 
-    map_batch = []
-    for label, sample in samples.items():
-        map_batch.append(
-            {
-                "text": sample,
-                "label": " ".join([str(h) for h in entity_to_hashes[label]]),
-            }
-        )
-
-    for _ in range(10):
-        model.train_with_hashes(
-            map_batch,
-            learning_rate=0.01,
-        )
+    make_simple_test_file()
+    model.train(SIMPLE_TEST_FILE, learning_rate=0.01, epochs=10)
 
     for label, sample in samples.items():
         new_hashes = model.predict_hashes({"text": sample})
