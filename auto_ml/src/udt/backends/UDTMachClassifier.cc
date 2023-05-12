@@ -479,6 +479,37 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
+void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
+  auto cur_index = _mach_label_block->index();
+
+  if (cur_index->outputRange() != index->outputRange()) {
+    throw std::invalid_argument(
+        "Output range mismatch in new index. Index output range should be " +
+        std::to_string(cur_index->outputRange()) +
+        " but provided an index with range = " +
+        std::to_string(index->outputRange()) + ".");
+  }
+
+  if (cur_index->numHashes() != index->numHashes()) {
+    throw std::invalid_argument(
+        "Num hashes mismatch in new index. Index num hashes should be " +
+        std::to_string(cur_index->numHashes()) +
+        " but provided an index with num hashes = " +
+        std::to_string(index->numHashes()) + ".");
+  }
+
+  auto is_numeric_index =
+      static_cast<bool>(dataset::mach::asNumericIndex(index));
+
+  if (integerTarget() != is_numeric_index) {
+    throw std::invalid_argument(
+        "Incorrect index type provided. Index type should be consistent with "
+        "the integer_target flag.");
+  }
+
+  _mach_label_block->setIndex(index);
+}
+
 std::string UDTMachClassifier::variantToString(const Label& variant) {
   if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
     return std::get<std::string>(variant);

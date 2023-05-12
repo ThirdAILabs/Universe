@@ -104,21 +104,29 @@ void createDatasetSubmodule(py::module_& module) {
       )pbdoc");
 
   py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
-      internal_dataset_submodule, "AbstractMachIndex");
+      dataset_submodule, "AbstractMachIndex");
 
   py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
-             mach::NumericCategoricalMachIndexPtr>(internal_dataset_submodule,
+             mach::NumericCategoricalMachIndexPtr>(dataset_submodule,
                                                    "NumericMachIndex")
       .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
                     std::unordered_map<uint32_t, std::vector<uint32_t>>,
-                    uint32_t, uint32_t>())
+                    uint32_t, uint32_t>(),
+           py::arg("entity_to_hashes"), py::arg("hash_to_entities"),
+           py::arg("output_range"), py::arg("num_hashes"))
+      .def("get_entity_to_hashes",
+           &mach::NumericCategoricalMachIndex::getEntityToHashes)
+      .def("get_hash_to_entities",
+           &mach::NumericCategoricalMachIndex::getHashToEntities)
       .def("save", &mach::NumericCategoricalMachIndex::save,
            py::arg("filename"))
       .def_static("load", &mach::NumericCategoricalMachIndex::load);
 
   py::class_<mach::StringCategoricalMachIndex, mach::MachIndex,
-             mach::StringCategoricalMachIndexPtr>(internal_dataset_submodule,
-                                                  "NumericMachIndex")
+             mach::StringCategoricalMachIndexPtr>(dataset_submodule,
+                                                  "StringMachIndex")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"))
       .def("save", &mach::StringCategoricalMachIndex::save, py::arg("filename"))
       .def_static("load", &mach::StringCategoricalMachIndex::load);
 

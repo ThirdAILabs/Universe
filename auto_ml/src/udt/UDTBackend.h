@@ -292,16 +292,16 @@ class UDTBackend {
   /**
    * Gets the internal index for UDTMachClassifier.
    */
-  virtual dataset::mach::MachIndexPtr getMachIndex() {
-    throw notSupported("get_mach_index");
+  virtual dataset::mach::MachIndexPtr getIndex() {
+    throw notSupported("get_index");
   }
 
   /**
    * Sets the internal index for UDTMachClassifier.
    */
-  virtual void setMachIndex(const dataset::mach::MachIndexPtr& index) {
+  virtual void setIndex(const dataset::mach::MachIndexPtr& index) {
     (void)index;
-    throw notSupported("set_mach_index");
+    throw notSupported("set_index");
   }
 
   /*

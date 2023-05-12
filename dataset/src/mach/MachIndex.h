@@ -97,7 +97,7 @@ class NumericCategoricalMachIndex : public MachIndex {
       const std::unordered_map<uint32_t, std::vector<uint32_t>>&
           entity_to_hashes,
       const std::unordered_map<uint32_t, std::vector<uint32_t>>&
-          _hash_to_entities,
+          hash_to_entities,
       uint32_t output_range, uint32_t num_hashes);
 
   static auto make(uint32_t output_range, uint32_t num_hashes,
@@ -125,6 +125,14 @@ class NumericCategoricalMachIndex : public MachIndex {
   void clear() final {
     _entity_to_hashes.clear();
     _hash_to_entities.clear();
+  }
+
+  std::unordered_map<uint32_t, std::vector<uint32_t>> getEntityToHashes() {
+    return _entity_to_hashes;
+  }
+
+  std::unordered_map<uint32_t, std::vector<uint32_t>> getHashToEntities() {
+    return _hash_to_entities;
   }
 
  private:
