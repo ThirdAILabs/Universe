@@ -24,10 +24,11 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
 }
 
 NumericCategoricalMachIndex::NumericCategoricalMachIndex(
-    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
+    std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes,
     uint32_t output_range, uint32_t num_hashes)
-    : MachIndex(output_range, num_hashes), _entity_to_hashes(entity_to_hashes) {
-  for (auto [entity, hashes] : entity_to_hashes) {
+    : MachIndex(output_range, num_hashes),
+      _entity_to_hashes(std::move(entity_to_hashes)) {
+  for (auto [entity, hashes] : _entity_to_hashes) {
     if (hashes.size() != num_hashes) {
       throw std::invalid_argument("Num hashes for entity " +
                                   std::to_string(entity) +

@@ -404,6 +404,7 @@ def test_mach_save_load_get_set_index(integer_target):
     else:
         index = dataset.StringMachIndex.load(save_loc)
 
+    model.clear_index()
     model.set_index(index)
 
     metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
@@ -442,10 +443,6 @@ def test_mach_manual_index_creation():
         1: "haha two times",
         2: "haha thrice occurances",
     }
-
-    old_predicted_hashes = {}
-    for label, sample in samples.items():
-        old_predicted_hashes[label] = model.predict_hashes({"text": sample})
 
     entity_to_hashes = {
         0: [0, 1, 2, 3, 4, 5, 6],

@@ -104,7 +104,7 @@ void createDatasetSubmodule(py::module_& module) {
       )pbdoc");
 
   py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
-      dataset_submodule, "AbstractMachIndex");
+      dataset_submodule, "MachIndex");
 
   py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
              mach::NumericCategoricalMachIndexPtr>(dataset_submodule,
