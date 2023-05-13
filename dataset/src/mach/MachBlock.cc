@@ -8,6 +8,18 @@ MachBlock::MachBlock(ColumnIdentifier col, MachIndexPtr index,
                        /* dim= */ index->outputRange(), delimiter),
       _index(std::move(index)) {}
 
+void MachBlock::setIndex(const MachIndexPtr& index) {
+  if (_index->outputRange() != index->outputRange()) {
+    throw std::invalid_argument(
+        "Output range mismatch in new index. Index output range should be " +
+        std::to_string(_index->outputRange()) +
+        " but provided an index with range = " +
+        std::to_string(index->outputRange()) + ".");
+  }
+
+  _index = index;
+}
+
 std::string MachBlock::getResponsibleCategory(
     uint32_t index, const std::string_view& category_value) const {
   (void)index;

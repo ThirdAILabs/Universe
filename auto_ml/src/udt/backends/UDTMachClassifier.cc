@@ -490,24 +490,6 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  auto cur_index = _mach_label_block->index();
-
-  if (cur_index->outputRange() != index->outputRange()) {
-    throw std::invalid_argument(
-        "Output range mismatch in new index. Index output range should be " +
-        std::to_string(cur_index->outputRange()) +
-        " but provided an index with range = " +
-        std::to_string(index->outputRange()) + ".");
-  }
-
-  if (cur_index->numHashes() != index->numHashes()) {
-    throw std::invalid_argument(
-        "Num hashes mismatch in new index. Index num hashes should be " +
-        std::to_string(cur_index->numHashes()) +
-        " but provided an index with num hashes = " +
-        std::to_string(index->numHashes()) + ".");
-  }
-
   auto is_numeric_index =
       static_cast<bool>(dataset::mach::asNumericIndex(index));
 
@@ -517,6 +499,7 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
         "the integer_target flag.");
   }
 
+  // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
 }
 

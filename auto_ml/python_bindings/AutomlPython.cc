@@ -145,8 +145,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{})
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
            py::arg("sparse_inference") = false)
-      .def("predict_hashes_batch", &udt::UDT::predictHashesBatch, py::arg("batch"),
-           py::arg("sparse_inference") = false)
+      .def("predict_hashes_batch", &udt::UDT::predictHashesBatch,
+           py::arg("batch"), py::arg("sparse_inference") = false)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)

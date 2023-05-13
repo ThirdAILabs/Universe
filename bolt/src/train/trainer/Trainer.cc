@@ -130,6 +130,11 @@ metrics::History Trainer::train(
     }
 
     callbacks.onEpochEnd();
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return *_history;
+    }
   }
 
   callbacks.onTrainEnd();

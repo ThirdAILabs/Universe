@@ -24,11 +24,11 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
 }
 
 NumericCategoricalMachIndex::NumericCategoricalMachIndex(
-    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
-    const std::unordered_map<uint32_t, std::vector<uint32_t>>& hash_to_entities,
+    std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes,
     uint32_t output_range, uint32_t num_hashes)
-    : MachIndex(output_range, num_hashes), _entity_to_hashes(entity_to_hashes) {
-  for (auto [entity, hashes] : entity_to_hashes) {
+    : MachIndex(output_range, num_hashes),
+      _entity_to_hashes(std::move(entity_to_hashes)) {
+  for (auto [entity, hashes] : _entity_to_hashes) {
     if (hashes.size() != num_hashes) {
       throw std::invalid_argument("Num hashes for entity " +
                                   std::to_string(entity) +
@@ -38,19 +38,6 @@ NumericCategoricalMachIndex::NumericCategoricalMachIndex(
     for (const uint32_t hash : hashes) {
       if (hash >= output_range) {
         throw std::invalid_argument("Hashes must be < output_range.");
-      }
-    }
-  }
-
-  for (auto [hash, entities] : hash_to_entities) {
-    if (hash >= output_range) {
-      throw std::invalid_argument("Hashes must be < output_range.");
-    }
-    for (const uint32_t entity : entities) {
-      if (!entity_to_hashes.count(entity)) {
-        throw std::invalid_argument(
-            "Entity " + std::to_string(entity) +
-            " from hash_to_entities not found in entity_to_hashes.");
       }
       _hash_to_entities[hash].push_back(entity);
     }
