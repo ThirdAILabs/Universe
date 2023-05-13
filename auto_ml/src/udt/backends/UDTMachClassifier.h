@@ -109,6 +109,12 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  dataset::mach::MachIndexPtr getIndex() final {
+    return _mach_label_block->index();
+  }
+
+  void setIndex(const dataset::mach::MachIndexPtr& index) final;
+
   TextEmbeddingModelPtr getTextEmbeddingModel(
       float distance_cutoff) const final;
 

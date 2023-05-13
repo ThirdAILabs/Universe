@@ -20,6 +20,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -101,6 +102,36 @@ void createDatasetSubmodule(py::module_& module) {
                     R"pbdoc(
      Identifies the responsible input column.
       )pbdoc");
+
+  py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
+      dataset_submodule, "MachIndex");
+
+  py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
+             mach::NumericCategoricalMachIndexPtr>(dataset_submodule,
+                                                   "NumericMachIndex")
+      .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
+                    uint32_t, uint32_t>(),
+           py::arg("entity_to_hashes"), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def("get_entity_to_hashes",
+           &mach::NumericCategoricalMachIndex::getEntityToHashes)
+      .def("get_hash_to_entities",
+           &mach::NumericCategoricalMachIndex::getHashToEntities)
+      .def("num_hashes", &mach::NumericCategoricalMachIndex::numHashes)
+      .def("output_range", &mach::NumericCategoricalMachIndex::outputRange)
+      .def("save", &mach::NumericCategoricalMachIndex::save,
+           py::arg("filename"))
+      .def_static("load", &mach::NumericCategoricalMachIndex::load);
+
+  py::class_<mach::StringCategoricalMachIndex, mach::MachIndex,
+             mach::StringCategoricalMachIndexPtr>(dataset_submodule,
+                                                  "StringMachIndex")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def("num_hashes", &mach::StringCategoricalMachIndex::numHashes)
+      .def("output_range", &mach::StringCategoricalMachIndex::outputRange)
+      .def("save", &mach::StringCategoricalMachIndex::save, py::arg("filename"))
+      .def_static("load", &mach::StringCategoricalMachIndex::load);
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",

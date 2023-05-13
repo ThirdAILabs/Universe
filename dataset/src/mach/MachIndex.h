@@ -10,6 +10,7 @@
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -92,6 +93,10 @@ class NumericCategoricalMachIndex : public MachIndex {
   NumericCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
                               uint32_t num_elements);
 
+  NumericCategoricalMachIndex(
+      std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes,
+      uint32_t output_range, uint32_t num_hashes);
+
   static auto make(uint32_t output_range, uint32_t num_hashes,
                    uint32_t num_elements) {
     return std::make_shared<NumericCategoricalMachIndex>(
@@ -109,9 +114,22 @@ class NumericCategoricalMachIndex : public MachIndex {
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
 
+  void save(const std::string& filename);
+
+  static std::shared_ptr<NumericCategoricalMachIndex> load(
+      const std::string& filename);
+
   void clear() final {
     _entity_to_hashes.clear();
     _hash_to_entities.clear();
+  }
+
+  std::unordered_map<uint32_t, std::vector<uint32_t>> getEntityToHashes() {
+    return _entity_to_hashes;
+  }
+
+  std::unordered_map<uint32_t, std::vector<uint32_t>> getHashToEntities() {
+    return _hash_to_entities;
   }
 
  private:
@@ -161,6 +179,11 @@ class StringCategoricalMachIndex : public MachIndex {
   void erase(const std::string& string) final;
 
   uint32_t numElements() const final { return _entity_to_hashes.size(); }
+
+  void save(const std::string& filename);
+
+  static std::shared_ptr<StringCategoricalMachIndex> load(
+      const std::string& filename);
 
   void clear() final {
     _entity_to_hashes.clear();

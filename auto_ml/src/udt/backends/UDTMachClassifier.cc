@@ -479,6 +479,20 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
+void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
+  auto is_numeric_index =
+      static_cast<bool>(dataset::mach::asNumericIndex(index));
+
+  if (integerTarget() != is_numeric_index) {
+    throw std::invalid_argument(
+        "Incorrect index type provided. Index type should be consistent with "
+        "the integer_target flag.");
+  }
+
+  // block allows indexes with different number of hashes but not output ranges
+  _mach_label_block->setIndex(index);
+}
+
 std::string UDTMachClassifier::variantToString(const Label& variant) {
   if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
     return std::get<std::string>(variant);
