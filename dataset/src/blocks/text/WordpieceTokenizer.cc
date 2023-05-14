@@ -157,8 +157,9 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
       // Add ## prefix if we're in the middle of a word.
       std::wstring candidate =
           start > 0 ? L"##" + token.substr(start) : token.substr(start);
+      size_t min_candidate_size = start > 0 ? 2 : 0;
       bool candidate_valid = false;
-      while (!candidate.empty()) {
+      while (candidate.size() > min_candidate_size) {
         if (_token_to_id.find(candidate) != _token_to_id.end()) {
           candidate_valid = true;
           break;
