@@ -63,7 +63,7 @@ def train_loop_per_worker():
         for x, y in zip(train_x, train_y):
             trainer.step(x, y, 2)
 
-    history = trainer.validate(
+    old_history = trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
         use_sparsity=False,
@@ -73,7 +73,6 @@ def train_loop_per_worker():
         history,
         checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
     )
-    print("Old:", history)
 
     ckpt = session.get_checkpoint()
     print(ckpt)
@@ -85,8 +84,10 @@ def train_loop_per_worker():
         validation_metrics=["loss", "categorical_accuracy"],
         use_sparsity=False,
     )
-
-    print("New:", history)
+    assert (
+        history["val_categorical_accuracy"][-1]
+        == old_history["val_categorical_accuracy"][-1]
+    )
 
 
 reason = """We don't have working pygloo wheels on PyPI. So, we can only run it locally.
