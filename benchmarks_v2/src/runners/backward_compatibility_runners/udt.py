@@ -22,10 +22,8 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
 
     @staticmethod
     def create_model(config, path_prefix):
-        print('HEREEEEEEEEEEEEEEEEEEEEE')
         print(BackwardCompatibilityUDTRunner.old_model_path)
         model = bolt.UniversalDeepTransformer.load(BackwardCompatibilityUDTRunner.old_model_path)
-        print('HEREEEEEEEEEEEEEEEEEEEEE')
 
         return model
 
@@ -36,7 +34,6 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
         if config.cold_start_num_epochs:
             config.cold_start_num_epochs = 1
 
-        version = None
         with open("thirdai.version") as version_file:
             full_version = version_file.read().strip()
             minor_version = ".".join(full_version.split(".")[:-1]) + "."
