@@ -773,6 +773,10 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
   return embedding;
 }
 
+void FullyConnectedLayer::forceBuildHashTables() {
+  buildHashTablesImpl(true);
+}
+
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSamplingDatastructures();
   _sparsity = sparsity;

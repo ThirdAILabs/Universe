@@ -285,6 +285,16 @@ void Model::setFlattenedGradients(const float* new_value,
 void Model::setFlattenedParameters(const float* new_value,
                                    uint64_t flattened_dim) const {
   setValues(parameters(), new_value, flattened_dim);
+  /*
+   * Here, we are re-building the hash tables again, as the older weights 
+   * seems to be redundant, when we all-reduce the weights while using distributed.
+   */
+  for (auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      fc->forceBuildHashTables();
+    }
+  }
+
 }
 
 void Model::disableSparseParameterUpdates() {

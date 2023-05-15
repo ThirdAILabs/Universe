@@ -91,6 +91,8 @@ class FullyConnected final
 
   void setBiases(const float* new_biases);
 
+
+  void forceBuildHashTables();
   std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
   getHashTable() const;
 

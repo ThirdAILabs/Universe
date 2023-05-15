@@ -137,6 +137,10 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
+void FullyConnected::forceBuildHashTables(){
+  _kernel->forceBuildHashTables();
+}
+
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
