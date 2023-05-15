@@ -36,11 +36,15 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
         if config.cold_start_num_epochs:
             config.cold_start_num_epochs = 1
 
-        test_versions = versions("thirdai")[1:2]
+        version = None
+        with open("thirdai.version") as version_file:
+            full_version = version_file.read().strip()
+            minor_version = ".".join(full_version.split(".")[:-1]) + "."
+
+        test_versions = [version for version in versions("thirdai") if version[:len(minor_version)] == minor_version]
 
         BackwardCompatibilityUDTRunner.old_model_path = "test_udt.model"
 
         UDTRunner.run_benchmark.__func__(BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger)
 
-        # getattr(BackwardCompatibilityUDTRunner, UDTRunner.run_benchmark)(config, path_prefix, mlflow_logger)
         
