@@ -168,6 +168,12 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference);
   }
 
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
+
+  void setIndex(const dataset::mach::MachIndexPtr& index) {
+    return _backend->setIndex(index);
+  }
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }

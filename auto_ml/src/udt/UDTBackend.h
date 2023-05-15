@@ -10,6 +10,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
@@ -258,8 +259,16 @@ class UDTBackend {
     throw notSupported("forget");
   }
 
+  /**
+   * Clears the internal index for Mach.
+   */
   virtual void clearIndex() { throw notSupported("clear_index"); }
 
+  /**
+   * Used in UDTMachClassifier, assumes each of the samples in the input batch
+   * has the target column mapping to space separated strings representing the
+   * actual output metaclasses to predict in mach.
+   */
   virtual py::object trainWithHashes(const MapInputBatch& batch,
                                      float learning_rate,
                                      const std::vector<std::string>& metrics) {
@@ -269,11 +278,30 @@ class UDTBackend {
     throw notSupported("train_with_hashes");
   }
 
+  /**
+   * Used in UDTMachClassifier, returns the predicted hashes from the input
+   * sample.
+   */
   virtual py::object predictHashes(const MapInput& sample,
                                    bool sparse_inference) {
     (void)sample;
     (void)sparse_inference;
     throw notSupported("predict_hashes");
+  }
+
+  /**
+   * Gets the internal index for UDTMachClassifier.
+   */
+  virtual dataset::mach::MachIndexPtr getIndex() {
+    throw notSupported("get_index");
+  }
+
+  /**
+   * Sets the internal index for UDTMachClassifier.
+   */
+  virtual void setIndex(const dataset::mach::MachIndexPtr& index) {
+    (void)index;
+    throw notSupported("set_index");
   }
 
   /*
