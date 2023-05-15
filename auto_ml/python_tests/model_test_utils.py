@@ -19,43 +19,10 @@ def _get_label_postprocessing_fn(model, use_class_name):
         return lambda pred: pred
 
 
-def compute_evaluate_accuracy(
-    model, test_filename, inference_samples, use_class_name, use_activations=True
-):
-    """
-    This function computes the accuracy of the evaluate function.
+def compute_evaluate_accuracy(model, test_filename):
+    metrics = model.evaluate(test_filename, metrics=["categorical_accuracy"])
 
-    Args:
-        model (Union[bolt.models.Pipeline, bolt.models.UDTClassifier]): model to
-            evaluate.
-        test_filename (str): file containing the test data.
-        inference_samples (List): A list of x,y pairs of inference samples. The input
-            can either be a str or Dict[str,str] and the label can be a integer or
-            string.
-        use_class_name (bool): Indicates if it should use the
-            `model.class_name()` method to map the predicted neurons to string class
-            names to compare to the labels.
-        use_activations (bool). Defaults to True. If True the accuracy is
-            computed by getting the activations and taking the argmax using numpy. Otherwise
-            it uses the return_predicted_class flag to get the predicted class directly
-            from the model.
-
-    Returns:
-        The accuracy of the model on the given classification task.
-    """
-    label_fn = _get_label_postprocessing_fn(model, use_class_name)
-
-    if use_activations:
-        activations = model.evaluate(test_filename, metrics=["categorical_accuracy"])
-        predictions = np.argmax(activations, axis=1)
-    else:
-        predictions = model.evaluate(
-            test_filename, metrics=["categorical_accuracy"], return_predicted_class=True
-        )
-
-    predictions = [label_fn(id) for id in predictions]
-
-    return _compute_accuracy(predictions, inference_samples)
+    return metrics["val_categorical_accuracy"][-1]
 
 
 def compute_predict_accuracy(
@@ -137,8 +104,6 @@ def check_saved_and_retrained_accuarcy(
     model,
     train_filename,
     test_filename,
-    inference_samples,
-    use_class_name,
     accuracy,
     model_type="UDT",
 ):
@@ -154,16 +119,12 @@ def check_saved_and_retrained_accuarcy(
             "Input model type must be one of UDT or Pipeline, but found " + model_type
         )
 
-    acc = compute_evaluate_accuracy(
-        model, test_filename, inference_samples, use_class_name
-    )
+    acc = compute_evaluate_accuracy(model, test_filename)
     assert acc >= accuracy
 
     loaded_model.train(train_filename, epochs=1, learning_rate=0.001)
 
-    acc = compute_evaluate_accuracy(
-        loaded_model, test_filename, inference_samples, use_class_name
-    )
+    acc = compute_evaluate_accuracy(loaded_model, test_filename)
 
     os.remove(SAVE_FILE)
 

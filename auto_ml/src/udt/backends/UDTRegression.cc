@@ -3,10 +3,11 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <auto_ml/src/udt/utils/Conversion.h>
+#include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -54,71 +55,54 @@ py::object UDTRegression::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  std::optional<ValidationDatasetLoader> validation_dataset = std::nullopt;
+  ValidationDatasetLoader validation_dataset;
   if (validation) {
     validation_dataset =
-        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
-                                    validation->first, /* shuffle= */ false),
-                                validation->second);
+        std::make_pair(_dataset_factory->getDatasetLoader(validation->first,
+                                                          /* shuffle= */ false),
+                       validation->second);
   }
-  bolt::TrainConfig train_config =
-      utils::getTrainConfig(epochs, learning_rate, validation_dataset, metrics,
-                            callbacks, verbose, logging_interval);
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  auto output = utils::train(_model, train_dataset, train_config, batch_size,
-                             max_in_memory_batches,
-                             /* freeze_hash_tables= */ _freeze_hash_tables);
+  bolt::train::Trainer trainer(_model);
 
-  return py::cast(output);
+  auto history = trainer.train_with_dataset_loader(
+      train_dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
+      metrics, validation_dataset.first, validation_dataset.second.metrics(),
+      validation->second.stepsPerValidation(),
+      validation->second.sparseInference(), callbacks,
+      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+
+  return py::cast(history);
 }
 
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
-                                   bool sparse_inference,
-                                   bool return_predicted_class, bool verbose,
-                                   bool return_metrics) {
-  (void)return_predicted_class;  // No classes to return in regression;
+                                   bool sparse_inference, bool verbose) {
+  bolt::train::Trainer trainer(_model);
 
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose,
-                           /* return_activations = */ !return_metrics);
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
-                     ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto history = trainer.validate_with_dataset_loader(
+      dataset, metrics, sparse_inference, verbose);
 
-  auto [test_data, test_labels] = utils::splitDataLabels(std::move(dataset));
-
-  auto [output_metrics, output] =
-      _model->evaluate(test_data, test_labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
-
-  utils::NumpyArray<float> output_array(output.numSamples());
-
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector ith_sample = output.getSampleAsNonOwningBoltVector(i);
-    output_array.mutable_at(i) = unbinActivations(ith_sample);
-  }
-
-  return py::object(std::move(output_array));
+  return py::cast(history);
 }
 
 py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class) {
   (void)return_predicted_class;  // No classes to return in regression;
 
-  BoltVector output = _model->predictSingle(
-      _dataset_factory->featurizeInput(sample), sparse_inference);
+  auto output = _model->forward(_dataset_factory->featurizeInput(sample),
+                                sparse_inference);
 
-  return py::cast(unbinActivations(output));
+  return py::cast(unbinActivations(output.at(0)->getVector(0)));
 }
 
 py::object UDTRegression::predictBatch(const MapInputBatch& samples,
@@ -126,12 +110,12 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
                                        bool return_predicted_class) {
   (void)return_predicted_class;  // No classes to return in regression;
 
-  BoltBatch outputs = _model->predictSingleBatch(
-      _dataset_factory->featurizeInputBatch(samples), sparse_inference);
+  auto outputs = _model->forward(_dataset_factory->featurizeInputBatch(samples),
+                                 sparse_inference);
 
-  utils::NumpyArray<float> predictions(outputs.getBatchSize());
-  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-    predictions.mutable_at(i) = unbinActivations(outputs[i]);
+  NumpyArray<float> predictions(outputs.at(0)->batchSize());
+  for (uint32_t i = 0; i < outputs.at(0)->batchSize(); i++) {
+    predictions.mutable_at(i) = unbinActivations(outputs.at(0)->getVector(i));
   }
   return py::object(std::move(predictions));
 }

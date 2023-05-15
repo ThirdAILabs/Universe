@@ -1,16 +1,19 @@
 import os
+from collections import defaultdict
 
+import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
 
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
+OUTPUT_DIM = 100
 
 
-def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_dim=256):
+def make_simple_test_file(invalid_data=False):
     with open(SIMPLE_TEST_FILE, "w") as f:
         f.write("text,label\n")
         f.write("haha one time,0\n")
@@ -18,6 +21,10 @@ def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_di
         f.write("haha thrice occurances,2\n")
         if invalid_data:
             f.write("haha,3\n")
+
+
+def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_dim=256):
+    make_simple_test_file(invalid_data=invalid_data)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -30,7 +37,7 @@ def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_di
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
-            "extreme_output_dim": 100,
+            "extreme_output_dim": OUTPUT_DIM,
         },
     )
 
@@ -71,7 +78,10 @@ def get_relevant_documents(supervised_tst_file):
 
 
 def evaluate_model(model, supervised_tst):
-    output = model.evaluate(filename=supervised_tst)
+    test_df = pd.read_csv(supervised_tst)
+    test_samples = [{"QUERY": text} for text in test_df["QUERY"].tolist()]
+
+    output = model.predict_batch(test_samples)
 
     all_recommended_documents = []
     for sample in output:
@@ -115,7 +125,7 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
                 "recall@10",
             ],
         )
-        assert metrics["precision@1"][-1] > 0.90
+        assert metrics["train_precision@1"][-1] > 0.90
 
     validation = bolt.Validation(
         supervised_tst,
@@ -143,7 +153,7 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         coldstart=True,
     )
 
-    assert metrics["precision@1"][-1] > 0.45
+    assert metrics["train_precision@1"][-1] > 0.45
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
@@ -224,7 +234,7 @@ def test_mach_udt_decode_params():
     ):
         model.set_decode_params(5, 2)
 
-    model.set_decode_params(1, 100)
+    model.set_decode_params(1, OUTPUT_DIM)
 
     assert len(model.predict({"text": "something"})) == 1
 
@@ -301,10 +311,19 @@ def test_mach_udt_forgetting_everything(integer_target):
 
 
 @pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_udt_forgetting_everything_with_clear_index(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    model.clear_index()
+
+    assert len(model.predict({"text": "something"})) == 0
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
 def test_mach_udt_cant_predict_forgotten(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
-    model.set_decode_params(3, 100)
+    model.set_decode_params(3, OUTPUT_DIM)
     assert "0" in [class_name for class_name, _ in model.predict({"text": "something"})]
     model.forget(0 if integer_target else "0")
     assert "0" not in [
@@ -316,7 +335,7 @@ def test_mach_udt_cant_predict_forgotten(integer_target):
 def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
     model = train_simple_mach_udt(integer_target=integer_target)
 
-    model.set_decode_params(3, 100)
+    model.set_decode_params(3, OUTPUT_DIM)
     assert len(model.predict({"text": "something"})) == 3
     model.forget(2 if integer_target else "2")
     assert len(model.predict({"text": "something"})) == 2
@@ -349,3 +368,99 @@ def test_mach_udt_introduce_documents():
     )
 
     os.remove(new_docs)
+
+
+def test_mach_udt_hash_based_methods():
+    model = train_simple_mach_udt(integer_target=True)
+
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert len(hashes) == 7
+
+    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    assert hashes != new_hash_set
+
+    for _ in range(5):
+        model.train_with_hashes(
+            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            learning_rate=0.01,
+        )
+
+    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert set(new_hashes) == new_hash_set
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_save_load_get_set_index(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    make_simple_test_file()
+    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+
+    index = model.get_index()
+    save_loc = "index.mach"
+    index.save(save_loc)
+    if integer_target:
+        index = dataset.NumericMachIndex.load(save_loc)
+    else:
+        index = dataset.StringMachIndex.load(save_loc)
+
+    model.clear_index()
+    model.set_index(index)
+
+    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+
+    assert (
+        metrics_before["val_categorical_accuracy"]
+        == metrics_after["val_categorical_accuracy"]
+    )
+
+    os.remove(save_loc)
+
+
+@pytest.mark.parametrize("integer_target", [True, False])
+def test_mach_setting_wrong_index_type(integer_target):
+    model = train_simple_mach_udt(integer_target=integer_target)
+
+    if integer_target:
+        index = dataset.StringMachIndex(output_range=OUTPUT_DIM, num_hashes=7)
+    else:
+        index = dataset.NumericMachIndex({}, output_range=OUTPUT_DIM, num_hashes=7)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Incorrect index type provided. Index type should be consistent with the integer_target flag.",
+    ):
+        model.set_index(index)
+
+
+def test_mach_manual_index_creation():
+    model = train_simple_mach_udt(integer_target=True)
+
+    model.set_decode_params(3, OUTPUT_DIM)
+
+    samples = {
+        0: "haha one time",
+        1: "haha two times",
+        2: "haha thrice occurances",
+    }
+
+    entity_to_hashes = {
+        0: [0, 1, 2, 3, 4, 5, 6],
+        1: [7, 8, 9, 10, 11, 12, 13],
+        2: [14, 15, 16, 17, 18, 19, 20],
+    }
+
+    index = dataset.NumericMachIndex(
+        entity_to_hashes=entity_to_hashes,
+        output_range=OUTPUT_DIM,
+        num_hashes=7,
+    )
+
+    model.set_index(index)
+
+    make_simple_test_file()
+    model.train(SIMPLE_TEST_FILE, learning_rate=0.01, epochs=10)
+
+    for label, sample in samples.items():
+        new_hashes = model.predict_hashes({"text": sample})
+        assert set(new_hashes) == set(entity_to_hashes[label])

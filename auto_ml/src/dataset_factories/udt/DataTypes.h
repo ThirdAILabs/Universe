@@ -11,8 +11,9 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
-#include <dataset/src/blocks/text/TextEncoders.h>
-#include <dataset/src/blocks/text/TextTokenizers.h>
+#include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -83,6 +84,14 @@ struct TextDataType final : public DataType {
       : tokenizer(getTextTokenizerFromString(tokenizer)),
         encoder(getTextEncoderFromString(contextual_encoding)),
         lowercase(use_lowercase) {}
+
+  explicit TextDataType(
+      const dataset::WordpieceTokenizerPtr& wordpiece_tokenizer,
+      const std::string& contextual_encoding = "none")
+      : tokenizer(wordpiece_tokenizer),
+        encoder(getTextEncoderFromString(contextual_encoding)),
+        // in this case the wordpiece tokenizer handles the lowercasing
+        lowercase(false) {}
 
   dataset::TextTokenizerPtr tokenizer;
   dataset::TextEncoderPtr encoder;

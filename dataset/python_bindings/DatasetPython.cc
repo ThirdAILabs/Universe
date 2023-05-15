@@ -9,18 +9,18 @@
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/VectorBuffer.h>
-#include <dataset/src/Vocabulary.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/text/Text.h>
+#include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -103,6 +103,36 @@ void createDatasetSubmodule(py::module_& module) {
      Identifies the responsible input column.
       )pbdoc");
 
+  py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
+      dataset_submodule, "MachIndex");
+
+  py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
+             mach::NumericCategoricalMachIndexPtr>(dataset_submodule,
+                                                   "NumericMachIndex")
+      .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
+                    uint32_t, uint32_t>(),
+           py::arg("entity_to_hashes"), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def("get_entity_to_hashes",
+           &mach::NumericCategoricalMachIndex::getEntityToHashes)
+      .def("get_hash_to_entities",
+           &mach::NumericCategoricalMachIndex::getHashToEntities)
+      .def("num_hashes", &mach::NumericCategoricalMachIndex::numHashes)
+      .def("output_range", &mach::NumericCategoricalMachIndex::outputRange)
+      .def("save", &mach::NumericCategoricalMachIndex::save,
+           py::arg("filename"))
+      .def_static("load", &mach::NumericCategoricalMachIndex::load);
+
+  py::class_<mach::StringCategoricalMachIndex, mach::MachIndex,
+             mach::StringCategoricalMachIndexPtr>(dataset_submodule,
+                                                  "StringMachIndex")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def("num_hashes", &mach::StringCategoricalMachIndex::numHashes)
+      .def("output_range", &mach::StringCategoricalMachIndex::outputRange)
+      .def("save", &mach::StringCategoricalMachIndex::save, py::arg("filename"))
+      .def_static("load", &mach::StringCategoricalMachIndex::load);
+
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
       "Block abstract class.\n\n"
@@ -130,6 +160,17 @@ void createDatasetSubmodule(py::module_& module) {
              std::shared_ptr<WordPunctTokenizer>>(dataset_submodule,
                                                   "WordPunctTokenizer")
       .def(py::init<>());
+
+  py::class_<WordpieceTokenizer, TextTokenizer, WordpieceTokenizerPtr>(
+      dataset_submodule, "WordpieceTokenizer")
+      .def(py::init<std::string, bool>(), py::arg("vocab_file_path"),
+           py::arg("lower_case") = true)
+      .def("size", &WordpieceTokenizer::size)
+      .def("unk_id", &WordpieceTokenizer::unkId)
+      .def("mask_id", &WordpieceTokenizer::maskId)
+      .def("tokenize", &WordpieceTokenizer::tokenize, py::arg("sequence"))
+      .def("decode", &WordpieceTokenizer::decode, py::arg("piece_ids"))
+      .def("id", &WordpieceTokenizer::id, py::arg("token"));
 
   py::class_<TextEncoder, TextEncoderPtr>(  // NOLINT
       dataset_submodule, "TextEncoder");
@@ -246,14 +287,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<std::vector<BlockList>, bool, char, bool>(),
            py::arg("block_lists"), py::arg("has_header") = false,
            py::arg("delimiter") = ',', py::arg("parallel") = true);
-
-  py::class_<MaskedSentenceFeaturizer, Featurizer, MaskedSentenceFeaturizerPtr>(
-      dataset_submodule, "MLMFeaturizer")
-      .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
-           py::arg("vocabulary"), py::arg("pairgram_range"))
-      .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),
-           py::arg("vocabulary"), py::arg("pairgram_range"),
-           py::arg("masked_tokens_percentage"));
 
   py::class_<TextGenerationFeaturizer, Featurizer,
              std::shared_ptr<TextGenerationFeaturizer>>(
@@ -462,19 +495,6 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
-
-  py::class_<Vocabulary, std::shared_ptr<Vocabulary>>(dataset_submodule,
-                                                      "Vocabulary")
-      .def("size", &Vocabulary::size)
-      .def("unk_id", &Vocabulary::unkId)
-      .def("mask_id", &Vocabulary::maskId)
-      .def("encode", &Vocabulary::encode, py::arg("sequence"))
-      .def("decode", &Vocabulary::decode, py::arg("piece_ids"))
-      .def("id", &Vocabulary::id, py::arg("token"));
-
-  py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
-      dataset_submodule, "FixedVocabulary")
-      .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(

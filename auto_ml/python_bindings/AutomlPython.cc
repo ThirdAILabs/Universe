@@ -85,10 +85,6 @@ void defineAutomlInModule(py::module_& module) {
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
            py::arg("target_column"), py::arg("dataset_size"),
            py::arg("delimiter") = ',', docs::UDT_GENERATOR_INIT)
-      .def("__new__", &UDTFactory::buildTextClassifier,
-           py::arg("input_vocab_size"), py::arg("metadata_dim"),
-           py::arg("n_classes"), py::arg("model_size"),
-           docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 
@@ -98,7 +94,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            py::arg("metrics") = std::vector<std::string>{},
-           py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
+           py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
@@ -108,9 +104,8 @@ void defineAutomlInModule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
-           py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false, bolt::python::OutputRedirect())
+           py::arg("sparse_inference") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
@@ -144,6 +139,14 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"))
       .def("forget", &udt::UDT::forget, py::arg("label"))
+      .def("clear_index", &udt::UDT::clearIndex)
+      .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{})
+      .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
+           py::arg("sparse_inference") = false)
+      .def("get_index", &udt::UDT::getIndex)
+      .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -157,7 +160,6 @@ void defineAutomlInModule(py::module_& module) {
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_text_embedding_model", &udt::UDT::getTextEmbeddingModel,
-           py::arg("activation_func") = "linear",
            py::arg("distance_cutoff") = 1)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
@@ -233,18 +235,6 @@ void createModelsSubmodule(py::module_& module) {
           py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &UDTFactory::save_generator, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
-
-  py::class_<TextClassifier, std::shared_ptr<TextClassifier>>(
-      models_submodule, "UDTTextClassifier")
-      .def("train", &TextClassifier::trainOnBatch, py::arg("data"),
-           py::arg("labels"), py::arg("learning_rate"),
-           docs::TEXT_CLASSIFIER_TRAIN)
-      .def("validate", &TextClassifier::validateOnBatch, py::arg("data"),
-           py::arg("labels"), docs::TEXT_CLASSIFIER_VALIDATE)
-      .def("predict", &TextClassifier::predict, py::arg("data"),
-           docs::TEXT_CLASSIFIER_PREDICT)
-      .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
-           docs::TEXT_CLASSIFIER_SAVE);
 }
 
 void createDistributedPreprocessingWrapper(py::module_& module) {
@@ -309,7 +299,10 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<std::string, std::string, bool>(),
            py::arg("tokenizer") = "words",
            py::arg("contextual_encoding") = "none",
-           py::arg("lowercase") = false, docs::UDT_TEXT_TYPE);
+           py::arg("lowercase") = false, docs::UDT_TEXT_TYPE)
+      .def(py::init<dataset::WordpieceTokenizerPtr, std::string>(),
+           py::arg("tokenizer"), py::arg("contextual_encoding") = "none",
+           docs::UDT_TEXT_TYPE);
 
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
@@ -424,15 +417,6 @@ QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
       /* dataset_size = */ dataset_size, /* delimiter = */ delimiter);
 }
 
-TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
-                                               uint32_t input_vocab_size,
-                                               uint32_t metadata_dim,
-                                               uint32_t n_classes,
-                                               const std::string& model_size) {
-  (void)obj;
-  return TextClassifier(input_vocab_size, metadata_dim, n_classes, model_size);
-}
-
 std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
     py::object& obj, data::ColumnDataTypes data_types,
     const data::UserProvidedTemporalRelationships&
@@ -466,7 +450,7 @@ std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
 
 void UDTFactory::save_udt(const udt::UDT& classifier,
                           const std::string& filename) {
-  classifier.model()->saveWithOptimizer(false);
+  classifier.model()->setSerializeOptimizer(false);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
@@ -475,7 +459,7 @@ void UDTFactory::save_udt(const udt::UDT& classifier,
 
 void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
                                 const std::string& filename) {
-  classifier.model()->saveWithOptimizer(true);
+  classifier.model()->setSerializeOptimizer(true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
@@ -490,15 +474,6 @@ void UDTFactory::save_generator(const QueryCandidateGenerator& generator,
   generator.save_stream(filestream);
 }
 
-void UDTFactory::saveTextClassifier(const TextClassifier& text_classifier,
-                                    const std::string& filename) {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(
-      reinterpret_cast<const char*>(&UDT_TEXT_CLASSIFIER_IDENTIFIER), 1);
-  text_classifier.save_stream(filestream);
-}
-
 py::object UDTFactory::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -511,10 +486,6 @@ py::object UDTFactory::load(const std::string& filename) {
 
   if (first_byte == UDT_IDENTIFIER) {
     return py::cast(udt::UDT::load_stream(filestream));
-  }
-
-  if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
-    return py::cast(TextClassifier::load_stream(filestream));
   }
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");

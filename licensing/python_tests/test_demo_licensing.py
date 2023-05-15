@@ -1,8 +1,6 @@
-import os
-
-import numpy as np
 import pytest
 import thirdai
+from licensing_utils import deactivate_license_at_start_of_demo_test
 
 # These lines use a hack where we can import functions from different test files
 # as long as this file is run from bin/python-test.sh. To run just this file,
@@ -54,14 +52,3 @@ def test_census_demo_key_fails_on_generator(udt_query_reformulation_fixture):
         match="This dataset is not authorized under this license.",
     ):
         train_udt_query_reformulation_model(udt_query_reformulation_file)
-
-
-# This fixture removes the stored access key after each test finishes, ensuring
-# that other tests that run in this pytest environment will get a clean
-# licensing slate
-@pytest.fixture(autouse=True)
-def set_license_back_to_valid():
-    # The yield means that pytest will wait until the test finishes to run
-    # the code below it
-    yield
-    thirdai.licensing.deactivate()

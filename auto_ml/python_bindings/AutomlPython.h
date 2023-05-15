@@ -3,7 +3,6 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/Generator.h>
-#include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -13,7 +12,6 @@ namespace py = pybind11;
 namespace thirdai::automl::python {
 
 using models::QueryCandidateGenerator;
-using models::TextClassifier;
 
 void defineAutomlInModule(py::module_& module);
 
@@ -43,12 +41,6 @@ class UDTFactory {
       py::object& obj, const std::string& target_column,
       const std::string& dataset_size, char delimiter);
 
-  static TextClassifier buildTextClassifier(py::object& obj,
-                                            uint32_t input_vocab_size,
-                                            uint32_t metadata_dim,
-                                            uint32_t n_classes,
-                                            const std::string& model_size);
-
   static std::shared_ptr<udt::UDT> buildUDT(
       py::object& obj, data::ColumnDataTypes data_types,
       const data::UserProvidedTemporalRelationships&
@@ -68,7 +60,6 @@ class UDTFactory {
   // getting weird linking errors
   static constexpr uint8_t UDT_GENERATOR_IDENTIFIER = 0;
   static constexpr uint8_t UDT_IDENTIFIER = 1;
-  static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
 
   static void save_udt(const udt::UDT& classifier, const std::string& filename);
 
@@ -77,9 +68,6 @@ class UDTFactory {
 
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);
-
-  static void saveTextClassifier(const TextClassifier& text_classifier,
-                                 const std::string& filename);
 
   static py::object makeGeneratorInferenceTuple(
       std::vector<std::vector<std::string>> queries,
