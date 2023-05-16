@@ -104,4 +104,6 @@ class HashFunction {
   }
 };
 
+using HashFunctionPtr = std::shared_ptr<HashFunction>;
+
 }  // namespace thirdai::hashing

@@ -6,6 +6,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
 #include <vector>
 
@@ -131,9 +132,23 @@ class Model {
   std::vector<uint32_t> inputDims() const;
 
   /**
+   * Returns the expected dimensions of the labels the model is expecting, in
+   * the order they are expected.
+   */
+  std::vector<uint32_t> labelDims() const;
+
+  /**
    * Returns a list of references to gradients of all parameters in the model.
    */
   std::vector<std::vector<float>*> gradients() const;
+
+  /**
+   * Freezes all hash tables in the model. The parameter
+   * insert_labels_if_not_found controls if label neurons should be inserted
+   * into the hash tables at the buckets that were probed when they are not
+   * found during training.
+   */
+  void freezeHashTables(bool insert_labels_if_not_found);
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -141,9 +156,25 @@ class Model {
    * uuid, the date saved, number of train steps before the save, and the model
    * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
    */
-  void save(const std::string& filename, bool save_metadata = true) const;
+  void save(const std::string& filename, bool save_metadata = true);
 
+  /**
+   * Saves the model with optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void checkpoint(const std::string& filename, bool save_metadata = true);
+
+  /**
+   * Helper function to save the model to a stream.
+   */
   void save_stream(std::ostream& output_stream) const;
+
+  /**
+   * Controls if the model will save the optimizer along with the parameters.
+   */
+  void setSerializeOptimizer(bool should_save_optimizer);
 
   /**
    * Loads the model and automatically initializes the optimizer state.
@@ -199,6 +230,8 @@ class Model {
    */
   void saveMetadata(const std::string& save_path) const;
 
+  void verifyAllowedOutputDim() const;
+
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;
   autograd::ComputationList _labels;
@@ -212,12 +245,13 @@ class Model {
   uint32_t _train_steps;
 
   std::string _model_uuid;
+  uint64_t _total_training_samples = 0;
 
   Model() : _allocation_manager() { licensing::checkLicense(); }
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

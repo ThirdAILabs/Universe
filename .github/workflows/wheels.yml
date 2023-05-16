@@ -100,7 +100,6 @@ jobs:
             yum install openssl11-devel -y
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
-          # TODO(josh): Get cross compiling working to build more types of wheels
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
           # happens in C++ (it can actually make it slower!). Also, on some
@@ -109,6 +108,8 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
 
           CIBW_BEFORE_TEST_LINUX: yum install golang -y
+          CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem

@@ -8,6 +8,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -130,6 +131,10 @@ void FullyConnected::summary(std::ostream& summary,
   summary << "]";
 }
 
+void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
+  _kernel->saveWithOptimizer(should_serialize_optimizer);
+}
+
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
@@ -142,9 +147,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-std::vector<uint32_t> FullyConnected::dimensions() const {
-  return {_kernel->getDim(), _kernel->getInputDim()};
-}
+uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
 
 const float* FullyConnected::weightsPtr() const {
   return _kernel->getWeightsPtr();
@@ -152,6 +155,46 @@ const float* FullyConnected::weightsPtr() const {
 
 const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
+}
+
+std::shared_ptr<FullyConnectedLayer> FullyConnected::kernel() const {
+  return _kernel;
+}
+
+void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
+  _kernel->freezeHashTables(insert_labels_if_not_found);
+}
+
+void FullyConnected::setWeights(const float* weights) {
+  _kernel->setWeights(weights);
+}
+
+void FullyConnected::setBiases(const float* new_biases) {
+  _kernel->setBiases(new_biases);
+}
+
+std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+FullyConnected::getHashTable() const {
+  return _kernel->getHashTable();
+}
+
+void FullyConnected::setHashTable(hashing::HashFunctionPtr hash_fn,
+                                  hashtable::SampledHashTablePtr hash_table) {
+  return _kernel->setHashTable(std::move(hash_fn), std::move(hash_table));
+}
+
+void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
+                                           uint32_t batch_size) {
+  // TODO(Someone): Revisit this autotuning. It seems like for some datasets it
+  // will update too frequently, for instance 50 batches with a batch size of 2K
+  // will lead to updates every batch.
+  _reconstruct_hash_functions = std::max(num_batches / 4, 1U);
+
+  if (num_batches * batch_size >= 100000) {
+    _rebuild_hash_tables = std::max(num_batches / 100, 1U);
+  } else {
+    _rebuild_hash_tables = std::max(num_batches / 20, 1U);
+  }
 }
 
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;

@@ -10,6 +10,7 @@
 #include <exception>
 #include <numeric>
 #include <random>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace thirdai::bolt {
@@ -778,13 +779,48 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
 
   _sparse_dim = _sparsity * _dim;
 
-  // TODO(josh): Right now this is using the autotuning for DWTA even if this
-  // hash function isn't DWTA. Add autotuning for other hash function types.
+  // TODO(Nick): Right now we always switch to DWTA after setting sparsity
+  // instead of autotuning for whatever the existing hash function was. We
+  // should instead autotune the original hash function.
   if (_sparsity < 1.0) {
     auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
     std::random_device rd;
     initSamplingDatastructures(sampling_config, rd);
   }
+}
+
+std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+FullyConnectedLayer::getHashTable() {
+  return {_hasher, _hash_table};
+}
+
+void FullyConnectedLayer::setHashTable(
+    hashing::HashFunctionPtr hash_fn,
+    hashtable::SampledHashTablePtr hash_table) {
+  if (hash_fn->numTables() != hash_table->numTables()) {
+    throw std::invalid_argument(
+        "Hash function returning " + std::to_string(hash_fn->numTables()) +
+        "hashes cannot be used used with a hash table with " +
+        std::to_string(hash_table->numTables()) + " tables.");
+  }
+
+  if (hash_fn->range() != hash_table->tableRange()) {
+    throw std::invalid_argument("Hash function with range " +
+                                std::to_string(hash_fn->range()) +
+                                " cannot be used with hash table with range " +
+                                std::to_string(hash_table->tableRange()) + ".");
+  }
+
+  uint32_t max_element = _hash_table->maxElement();
+  if (max_element >= _dim) {
+    throw std::invalid_argument(
+        "Hash table containing neuron index " + std::to_string(max_element) +
+        " cannot be used in fully connected layer with dimension " +
+        std::to_string(_dim) + ".");
+  }
+
+  _hasher = std::move(hash_fn);
+  _hash_table = std::move(hash_table);
 }
 
 void FullyConnectedLayer::initOptimizer() {

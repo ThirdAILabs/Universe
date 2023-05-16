@@ -5,8 +5,6 @@ from typing import Callable, List, Optional, Tuple, Union
 from thirdai import bolt, data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
-# TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
-
 
 class DistributedDatasetLoader(ABC):
     @abstractmethod
@@ -53,6 +51,9 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
+        with_prompt=True,
+        batches_to_skip=0,
+        min_vecs_in_buffer=64000,
         *args,
         **kwargs,
     ):
@@ -61,6 +62,9 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.shuffle = shuffle
         self.data_source_factory = data_source_factory
+        self.with_prompt = with_prompt
+        self.batches_to_skip = batches_to_skip
+        self.min_vecs_in_buffer = min_vecs_in_buffer
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
@@ -71,7 +75,18 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
             data_source=data_source,
             featurizer=self.featurizer,
             shuffle=self.shuffle,
+            shuffle_config=dataset.ShuffleConfig(
+                min_vecs_in_buffer=self.min_vecs_in_buffer
+            ),
         )
+        # Note(pratik): This would still be approximate. Since, seed for buffer
+        # shuffling would be different for each run.
+        while self.batches_to_skip > 0:
+            num_batches_to_load = min(self.batches_to_skip, self.max_in_memory_batches)
+            self.generator.load_some(
+                num_batches=num_batches_to_load, batch_size=self.batch_size
+            )
+            self.batches_to_skip -= num_batches_to_load
 
     def next(self):
         if self.dataset_finished:
@@ -84,8 +99,10 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
             load = self.generator.load_some(
                 num_batches=self.max_in_memory_batches, batch_size=self.batch_size
             )
+        if self.with_prompt:
+            return load
 
-        return load
+        return load[1:]
 
     def restart(self):
         self.generator.restart()
@@ -105,6 +122,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         train_file: str,
         batch_size: int,
         data_processor,
+        min_vecs_in_buffer=None,
         max_in_memory_batches: int = None,
     ):
         self.generator = None
@@ -113,11 +131,17 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
+        self.min_vecs_in_buffer = min_vecs_in_buffer
 
     def load(self, shuffle: bool = True):
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
             training=shuffle,
+            shuffle_config=(
+                dataset.ShuffleConfig(min_vecs_in_buffer=self.min_vecs_in_buffer)
+                if self.min_vecs_in_buffer is not None
+                else None
+            ),
         )
 
     def next(self):
@@ -149,6 +173,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         weak_column_names: List[str],
         data_processor,
         cold_start_meta_data,
+        min_vecs_in_buffer=None,
     ):
         self.generator = None
         self.train_file = train_file
@@ -159,6 +184,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.dataset_finished = False
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
+        self.min_vecs_in_buffer = min_vecs_in_buffer
 
     def load(self, shuffle: bool = True):
         original_data_source = _create_data_source(self.train_file)
@@ -172,7 +198,13 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
             )
         )
         self.generator = self.data_processor.get_dataset_loader(
-            cold_start_data_source, training=shuffle
+            cold_start_data_source,
+            training=shuffle,
+            shuffle_config=(
+                dataset.ShuffleConfig(min_vecs_in_buffer=self.min_vecs_in_buffer)
+                if self.min_vecs_in_buffer is not None
+                else None
+            ),
         )
 
 

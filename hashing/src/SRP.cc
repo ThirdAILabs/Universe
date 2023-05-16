@@ -8,13 +8,9 @@
 
 namespace thirdai::hashing {
 
-// TODO(josh). TEST THIS CLASS. I didn't test this implementation
-// of SRP hashing, but I want to commit it before people work more on the
-// hash functions so that we comply with tidy restrictions. If we want to
-// we can revert this back, but I think an implementation with a single
-// array for the bits and indices should be significanlty faster.
-
-SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
+// TODO(Any). This class is currently untested (though it is also not clear
+// is is useful, so at some point we may delete it).
+SignedRandomProjection::SignedRandomProjection(uint32_t input_dim,
                                                uint32_t srps_per_table,
                                                uint32_t num_tables,
                                                uint32_t seed)
@@ -48,7 +44,7 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
   delete[] a;
 }
 
-void SparseRandomProjection::hashSingleDense(const float* values, uint32_t dim,
+void SignedRandomProjection::hashSingleDense(const float* values, uint32_t dim,
                                              uint32_t* output) const {
   assert(dim == _dim);
   (void)dim;
@@ -70,7 +66,7 @@ void SparseRandomProjection::hashSingleDense(const float* values, uint32_t dim,
   }
 }
 
-void SparseRandomProjection::hashSingleSparse(const uint32_t* indices,
+void SignedRandomProjection::hashSingleSparse(const uint32_t* indices,
                                               const float* values,
                                               uint32_t length,
                                               uint32_t* output) const {
@@ -99,7 +95,7 @@ void SparseRandomProjection::hashSingleSparse(const uint32_t* indices,
   }
 }
 
-SparseRandomProjection::~SparseRandomProjection() {
+SignedRandomProjection::~SignedRandomProjection() {
   delete[] _random_bits;
   delete[] _hash_indices;
 }

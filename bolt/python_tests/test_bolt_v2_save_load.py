@@ -16,6 +16,8 @@ def build_model(n_classes):
         dim=200, sparsity=0.3, input_dim=n_classes, activation="relu"
     )(vector_input)
 
+    hidden = bolt.nn.LayerNorm()(hidden)
+
     token_input = bolt.nn.Input(dim=n_classes)
 
     embedding = bolt.nn.Embedding(
@@ -25,6 +27,8 @@ def build_model(n_classes):
         update_chunk_size=8,
         reduction="sum",
     )(token_input)
+
+    embedding = bolt.nn.Tanh()(embedding)
 
     concat = bolt.nn.Concatenate()([hidden, embedding])
 
@@ -78,7 +82,7 @@ def check_metadata_file(model, save_filename):
 def train_model(model, train_data, train_labels):
     for x, y in zip(train_data, train_labels):
         model.train_on_batch(x, y)
-        model.update_parameters(learning_rate=0.1)
+        model.update_parameters(learning_rate=0.05)
 
 
 def evaluate_model(model, test_data, test_labels_np):
@@ -91,7 +95,6 @@ def evaluate_model(model, test_data, test_labels_np):
         predictions = np.argmax(output.activations, axis=1)
         acc = np.mean(predictions == test_labels_np)
         assert acc >= 0.8
-
         accs.append(acc)
 
     return accs
@@ -108,13 +111,10 @@ def test_bolt_save_load():
 
     # We use the labels as tokens to be embedded by the embedding table so they
     # are included as part of the inputs.
-    train_data = bolt.train.convert_datasets(
-        [train_data, train_labels], dims=[N_CLASSES, N_CLASSES]
-    )
-    train_labels = bolt.train.convert_datasets(
-        [train_labels, train_labels, train_labels],
-        dims=[N_CLASSES, N_CLASSES, N_CLASSES],
-    )
+    train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
+    train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
+    train_data = [x + y for x, y in zip(train_data, train_labels)]
+    train_labels = [x * 3 for x in train_labels]
 
     test_data_np, test_labels_np = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False

@@ -3,7 +3,10 @@
 import platform
 
 import pytest
-from licensing_utils import run_udt_training_routine
+from licensing_utils import (
+    deactivate_license_at_start_of_demo_test,
+    run_udt_training_routine,
+)
 
 pytestmark = [pytest.mark.release]
 
@@ -48,6 +51,21 @@ def test_with_valid_license():
     this_should_require_a_license_query_reformulation()
 
 
+def test_license_print(capfd):
+    import thirdai
+
+    thirdai.licensing.set_path(str(max_train_samples_100_license_path), verbose=True)
+    out, err = capfd.readouterr()
+    print(out)
+    assert (
+        out.strip()
+        == "This is a license with an expiry time of 1711083134694 epoch ms. "
+        "Entitlements are as follows: FULL_DATASET_ACCESS, LOAD_SAVE, "
+        "MAX_OUTPUT_DIM 18446744073709551615, MAX_TRAIN_SAMPLES 100,"
+    )
+    assert err == ""
+
+
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="TSK-568: Expired license currently does an access violation on Windows",
@@ -55,12 +73,22 @@ def test_with_valid_license():
 def test_with_expired_license():
     import thirdai
 
-    thirdai.licensing.set_path(str(expired_license_path))
-    with pytest.raises(Exception, match=r".*license file is expired.*"):
+    with pytest.raises(Exception, match=r"license file is expired"):
+        thirdai.licensing.set_path(str(expired_license_path))
+    with pytest.raises(
+        Exception,
+        match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+    ):
         this_should_require_a_license_search()
-    with pytest.raises(Exception, match=r".*license file is expired.*"):
+    with pytest.raises(
+        Exception,
+        match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+    ):
         run_udt_training_routine()
-    with pytest.raises(Exception, match=r".*license file is expired.*"):
+    with pytest.raises(
+        Exception,
+        match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+    ):
         this_should_require_a_license_query_reformulation()
 
 
@@ -72,12 +100,22 @@ def test_with_invalid_license():
     import thirdai
 
     for invalid_license_path in invalid_license_1_path, invalid_license_2_path:
-        thirdai.licensing.set_path(str(invalid_license_path))
-        with pytest.raises(Exception, match=r".*license verification failure.*"):
+        with pytest.raises(Exception, match=r"license verification failure"):
+            thirdai.licensing.set_path(str(invalid_license_path))
+        with pytest.raises(
+            Exception,
+            match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):
             this_should_require_a_license_search()
-        with pytest.raises(Exception, match=r".*license verification failure.*"):
+        with pytest.raises(
+            Exception,
+            match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):
             run_udt_training_routine()
-        with pytest.raises(Exception, match=r".*license verification failure.*"):
+        with pytest.raises(
+            Exception,
+            match=r"call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):
             this_should_require_a_license_query_reformulation()
 
 
@@ -118,14 +156,3 @@ def test_max_train_samples_license():
         match=r"This model has exceeded the number of training examples allowed for this license",
     ):
         run_udt_training_routine(num_data_points=102)
-
-
-# See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed
-# This sets the license back to a valid value after each tests run
-@pytest.fixture(autouse=True)
-def set_license_back_to_valid():
-    import thirdai
-
-    # The yield means that it will run AFTER each test, not before.
-    yield
-    thirdai.licensing.set_path(str(valid_license_path))

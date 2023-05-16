@@ -1,6 +1,9 @@
 #include "RecurrentDatasetFactory.h"
 #include "TabularBlockComposer.h"
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -88,18 +91,20 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
 
 dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
-  return std::make_unique<dataset::DatasetLoader>(data_source,
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
+  return std::make_unique<dataset::DatasetLoader>(csv_data_source,
                                                   _labeled_featurizer,
                                                   /* shuffle= */ shuffle);
 }
 
-std::vector<BoltVector> RecurrentDatasetFactory::featurizeInput(
-    const MapInput& sample) {
+TensorList RecurrentDatasetFactory::featurizeInput(const MapInput& sample) {
   dataset::MapSampleRef sample_ref(sample);
-  return _inference_featurizer->featurize(sample_ref);
+  return bolt::train::convertVectors(
+      _inference_featurizer->featurize(sample_ref),
+      _inference_featurizer->getDimensions());
 }
 
-std::vector<BoltBatch> RecurrentDatasetFactory::featurizeInputBatch(
+TensorList RecurrentDatasetFactory::featurizeInputBatch(
     const MapInputBatch& samples) {
   dataset::MapBatchRef batch_ref(samples);
   auto batches = _inference_featurizer->featurize(batch_ref);
@@ -108,7 +113,8 @@ std::vector<BoltBatch> RecurrentDatasetFactory::featurizeInputBatch(
   // deleted for BoltBatch.
   std::vector<BoltBatch> batch_list;
   batch_list.emplace_back(std::move(batches.at(0)));
-  return batch_list;
+  return bolt::train::convertBatch(std::move(batch_list),
+                                   _inference_featurizer->getDimensions());
 }
 
 uint32_t RecurrentDatasetFactory::elementIdAtStep(const BoltVector& output,

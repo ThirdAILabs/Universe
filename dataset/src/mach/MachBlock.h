@@ -14,7 +14,7 @@ namespace thirdai::dataset::mach {
 /**
  * A MachBlock applies to a a single column with potentially more than one
  * category (as specified by the delimiter). For each category found, we will
- * update the given MachIndex by calls to hashAndStoreEntity. This will hash the
+ * update the given MachIndex by calls to hashEntity. This will hash the
  * given category some number of times and return those hashes. It will also
  * store an inverted index from hashes to entities.
  */
@@ -30,6 +30,8 @@ class MachBlock final : public CategoricalBlock {
   }
 
   MachIndexPtr index() const { return _index; }
+
+  void setIndex(const MachIndexPtr& index);
 
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final;

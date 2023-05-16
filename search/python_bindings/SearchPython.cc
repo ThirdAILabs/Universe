@@ -6,7 +6,6 @@ namespace thirdai::search::python {
 
 void createSearchSubmodule(py::module_& module) {
   auto search_submodule = module.def_submodule("search");
-  // TODO(josh): Comment this class more
   py::class_<PyDocSearch>(
       search_submodule, "DocRetrieval",
       "The DocRetrieval module allows you to build, query, save, and load a "

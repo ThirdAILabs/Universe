@@ -17,7 +17,7 @@ from thirdai._distributed_bolt.dataset_loaders import (
     DistributedUDTDatasetLoader,
     ValidationContext,
 )
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, dataset
 
 from .utils import get_num_cpus, init_logging
 
@@ -50,7 +50,7 @@ def add_distributed_to_udt():
 
         model = self._get_model()
 
-        dist_model = DistributedDataParallel(
+        distributed_trainer = DistributedDataParallel(
             cluster_config=cluster_config,
             model=model,
             train_config=train_config,
@@ -58,17 +58,13 @@ def add_distributed_to_udt():
             validation_context=validation_context,
         )
 
-        # We are freezing hashtables by default for distributed training after one epoch,
-        # Ideally we should read freezehashtables from UDTOptions and then pass
-        # it to distributed Wrapper. However, for the time being we are just
-        # initializing freeze-hash-tables=True by default.
-        training_metrics = dist_model.train(freeze_hash_tables=True)
+        distributed_trainer.train(epochs)
 
-        model = dist_model.get_model(with_optimizer=True)
+        model = distributed_trainer.get_model(with_optimizer=True)
 
         self._set_model(trained_model=model)
 
-        return training_metrics
+        return distributed_trainer.get_metrics()
 
     def train_distributed(
         self,
@@ -81,6 +77,7 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
+        min_vecs_in_buffer: Optional[int] = None,
     ):
         """
         This function trains UDT in the distributed setting. ThirdAI uses Ray
@@ -141,6 +138,7 @@ def add_distributed_to_udt():
                 batch_size=batch_size_per_node(batch_size, cluster_config),
                 max_in_memory_batches=max_in_memory_batches,
                 data_processor=self.get_data_processor(),
+                min_vecs_in_buffer=min_vecs_in_buffer,
             )
             for file in filenames
         ]
@@ -188,6 +186,7 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
+        min_vecs_in_buffer: Optional[int] = None,
     ):
         """
         This function does cold-start pretraining for UDT in the distributed setting.
@@ -270,20 +269,17 @@ def add_distributed_to_udt():
                 weak_column_names=weak_column_names,
                 data_processor=self.get_data_processor(),
                 cold_start_meta_data=self.get_cold_start_meta_data(),
+                min_vecs_in_buffer=min_vecs_in_buffer,
             )
             for file in filenames
         ]
 
         validation_context = None
         if validation != None:
-            validation_source = DistributedColdStartDatasetLoader(
+            validation_source = DistributedUDTDatasetLoader(
                 train_file=validation.filename(),
                 batch_size=batch_size_per_node(batch_size, cluster_config),
-                max_in_memory_batches=max_in_memory_batches,
-                strong_column_names=strong_column_names,
-                weak_column_names=weak_column_names,
                 data_processor=self.get_data_processor(),
-                cold_start_meta_data=self.get_cold_start_meta_data(),
             )
 
             validation_args = validation.args()
@@ -475,39 +471,12 @@ class DistributedDataParallel:
         else:
             licensing_lambda = lambda: None
 
-        self.logging.info("Initializing Primary Worker")
-        self.primary_worker = cluster_config.primary_worker_config.remote(
-            num_workers=cluster_config.num_workers,
-            model_lambda=lambda: ray.get(ray_model_ref),
-            licensing_lambda=licensing_lambda,
-            train_source=train_sources[0],
-            train_config=train_config,
-            communication_type=cluster_config.communication_type,
-            log_dir=cluster_config.log_dir,
-            validation_context=self.validation_context,
+        self.primary_worker = self._intialize_primary_worker(
+            cluster_config, ray_model_ref, licensing_lambda, train_sources
         )
-
-        self.logging.info("Primary Worker Intialized")
-        self.logging.info("Initializing Replica Workers")
-        self.replica_workers = []
-        for worker_id, replica_worker_config in enumerate(
-            cluster_config.replica_worker_configs, start=1
-        ):
-            self.replica_workers.append(
-                replica_worker_config.remote(
-                    num_workers=cluster_config.num_workers,
-                    model_lambda=lambda: ray.get(ray_model_ref),
-                    licensing_lambda=licensing_lambda,
-                    train_source=train_sources[worker_id],
-                    train_config=train_config,
-                    id=worker_id,
-                    primary_worker=self.primary_worker,
-                    communication_type=cluster_config.communication_type,
-                    log_dir=cluster_config.log_dir,
-                )
-            )
-        self.logging.info("Replica Workers Intialized")
-
+        self.replica_workers = self._initialize_replica_workers(
+            cluster_config, ray_model_ref, licensing_lambda, train_sources
+        )
         self.workers = [self.primary_worker] + self.replica_workers
 
         self.num_of_batches = min(
@@ -519,77 +488,115 @@ class DistributedDataParallel:
         )
         self.total_batches_trained = 0
         self.validation_metrics = []
+        self.train_metrics = []
 
-    def post_batch_training_updates(self, train_state_manager):
-        self.total_batches_trained += 1
-        # whether we need to validate
-        if self.validation_context != None:
-            if (
-                train_state_manager.updates
-                % self.validation_context.validation_frequency
-                == 0
-            ):
-                self.validation_metrics.append(
-                    train_state_manager.validate_and_save_if_best()
-                )
-
-    def train_on_epoch(self, train_state_manager, epoch):
-        while train_state_manager.train_batch(epoch=epoch):
-            self.post_batch_training_updates(train_state_manager)
-
-        self.post_batch_training_updates(train_state_manager)
-        return train_state_manager.move_to_next_epoch()
-
-    def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
-        """
-        Runs distributed training on the passed in Bolt model on the passed in
-        Ray cluster. Note that this method does not call finish_training on the
-        underlying DistributedTrainingWrappers. This is not dangerous because
-        the only way to do inference on the wrapped models is to call
-        get_model(), which will do a pickle and depickle of the wrapped Bolt
-        model, which has the side effect of throwing away any batch state as
-        it is not saved as part of the model.
-
-        Returns:
-            Dict: A dictionary with some statistics about training, including
-            total batches trained and total real time.
-        """
-        train_start = time.time()
-        train_state_manager = TrainStateManager(
+        self.train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
             self.logging,
             self.communication_type,
         )
+        self.current_epoch = 0
 
-        starting_epoch = 0
-        train_metrics = {}
-        # We need this check since we have a test with num_epochs = 0
-        if freeze_hash_tables and self.train_config.num_epochs > 0:
-            train_metrics = self.train_on_epoch(
-                train_state_manager=train_state_manager,
-                epoch=starting_epoch,
-            )
+    def step(self):
+        has_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
+        self.total_batches_trained += 1
 
-            train_state_manager.freeze_hash_tables()
+        self._validate()
 
-            starting_epoch += 1
+        return has_next_batch
 
-        for epoch in range(starting_epoch, self.train_config.num_epochs):
-            train_metrics = self.train_on_epoch(
-                train_state_manager=train_state_manager, epoch=epoch
-            )
+    def restart_data(self):
+        self.train_metrics = self.train_state_manager.move_to_next_epoch()
+        self.current_epoch += 1
 
-        # Here we are returning the whole train_metrics independently for each of
-        # the worker with the assumption that train_metrics for each of the worker
-        # would be aggregated by the user.
+    # Note(pratik): This function simplifies training for bolt, for training with bolt_v2,
+    # use step based training as freeze_hash_tables not implemented for it.
+    def train(self, epochs, freeze_hash_tables=True):
+        for epoch in range(epochs):
+            # We are freezing hashtables by default for distributed training after one epoch,
+            # Ideally we should read freezehashtables from UDTOptions and then pass
+            # it to distributed Wrapper. However, for the time being we are just
+            # initializing freeze-hash-tables=True by default.
+            if epoch == 1 and freeze_hash_tables:
+                self.train_state_manager.freeze_hash_tables()
+
+            while self.step():
+                pass
+
+            self.restart_data()
+
+        return self.get_metrics()
+
+    def get_metrics(self):
         distributed_train_metrics = {
-            "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,
-            "train_metrics": train_metrics,
+            "train_metrics": self.train_metrics,
             "validation_metrics": self.validation_metrics,
         }
         return distributed_train_metrics
 
     def get_model(self, worker_id=0, with_optimizer=False):
         return ray.get(self.workers[worker_id].model.remote(with_optimizer))
+
+    def _validate(self):
+        # whether we need to validate
+        if self.validation_context != None:
+            if (
+                self.train_state_manager.updates
+                % self.validation_context.validation_frequency
+                == 0
+            ):
+                self.validation_metrics.append(
+                    self.train_state_manager.validate_and_save_if_best()
+                )
+
+    def _intialize_primary_worker(
+        self,
+        cluster_config: RayTrainingClusterConfig,
+        ray_model_ref,
+        licensing_lambda,
+        train_sources: Union[List[DistributedDatasetLoader], List[str]],
+    ):
+        self.logging.info("Initializing Primary Worker")
+        primary_worker = cluster_config.primary_worker_config.remote(
+            num_workers=cluster_config.num_workers,
+            model_lambda=lambda: ray.get(ray_model_ref),
+            licensing_lambda=licensing_lambda,
+            train_source=train_sources[0],
+            train_config=self.train_config,
+            communication_type=cluster_config.communication_type,
+            log_dir=cluster_config.log_dir,
+            validation_context=self.validation_context,
+        )
+
+        self.logging.info("Primary Worker Intialized")
+        return primary_worker
+
+    def _initialize_replica_workers(
+        self,
+        cluster_config: RayTrainingClusterConfig,
+        ray_model_ref,
+        licensing_lambda,
+        train_sources: Union[List[DistributedDatasetLoader], List[str]],
+    ):
+        self.logging.info("Initializing Replica Workers")
+        replica_workers = []
+        for worker_id, replica_worker_config in enumerate(
+            cluster_config.replica_worker_configs, start=1
+        ):
+            replica_workers.append(
+                replica_worker_config.remote(
+                    num_workers=cluster_config.num_workers,
+                    model_lambda=lambda: ray.get(ray_model_ref),
+                    licensing_lambda=licensing_lambda,
+                    train_source=train_sources[worker_id],
+                    train_config=self.train_config,
+                    id=worker_id,
+                    primary_worker=self.primary_worker,
+                    communication_type=cluster_config.communication_type,
+                    log_dir=cluster_config.log_dir,
+                )
+            )
+        self.logging.info("Replica Workers Intialized")
+        return replica_workers

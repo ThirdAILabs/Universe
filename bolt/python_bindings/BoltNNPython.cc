@@ -130,6 +130,12 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
 
+  py::class_<hashtable::SampledHashTable, hashtable::SampledHashTablePtr>(
+      nn_submodule, "HashTable")
+      .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
+      .def_static("load", &hashtable::SampledHashTable::load,
+                  py::arg("filename"));
+
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
       .def(py::init(&FullyConnectedNode::makeDense), py::arg("dim"),
@@ -174,7 +180,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      // TODO(Nick, Josh): sparsity can be def_property
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
@@ -214,7 +219,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("get_hash_table", &FullyConnectedNode::getHashTable)
+      .def("set_hash_table", &FullyConnectedNode::setHashTable,
+           py::arg("hash_fn"), py::arg("hash_table"));
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       nn_submodule, "LayerNormalization")
@@ -568,8 +576,6 @@ That's all for now, folks! More docs coming soon :)
           "* detailed: boolean. Optional, default False. When specified to "
           "\"True\", summary will additionally return/print sampling config "
           "details for each layer in the network.")
-      // TODO(josh/nick): These are temporary until we have a better story
-      // for converting numpy to BoltGraphs
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "
@@ -639,7 +645,10 @@ That's all for now, folks! More docs coming soon :)
            bolt::python::OutputRedirect())
       .def("should_save_optimizer",
            &thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer,
-           py::arg("should_save_optimizer"));
+           py::arg("should_save_optimizer"))
+      .def("update_learning_rate",
+           &thirdai::bolt::DistributedTrainingWrapper::updateLearningRate,
+           py::arg("learning_rate"));
 
   createLossesSubmodule(nn_submodule);
 }

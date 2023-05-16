@@ -37,9 +37,9 @@ class ParquetSource(DataSource):
             header, data_line, *_ = buf.read().decode().split("\n")
 
             if first:
-                yield header + "\n"
+                yield header
                 first = False
-            yield data_line + "\n"
+            yield data_line
 
     def next_batch(self, target_batch_size):
         lines = []

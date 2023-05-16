@@ -265,6 +265,8 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
+
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
 set(ENABLE_TESTING OFF)
@@ -324,6 +326,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
+    bolt/src/nn/ops/Tanh.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -335,6 +338,7 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/CategoricalAccuracy.cc
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
+    bolt/src/train/metrics/FMeasure.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc
@@ -359,6 +363,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/SamplingConfig.cc
     bolt/src/loss_functions/LossFunctions.cc
     bolt/src/metrics/Metric.cc
+    bolt/src/root_cause_analysis/RCA.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -371,7 +376,7 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    dataset/src/Vocabulary.cc
+    dataset/src/DataSource.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
@@ -381,7 +386,6 @@ set(THIRDAI_SOURCES
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
-    dataset/src/featurizers/MaskedSentenceFeaturizer.cc
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
@@ -390,6 +394,8 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/text/Text.cc
+    dataset/src/blocks/text/WordpieceTokenizer.cc
     dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
@@ -415,23 +421,30 @@ set(THIRDAI_SOURCES
     utils/StringManipulation.cc
     utils/UUID.cc
     licensing/src/entitlements/RestrictionTree.cc
-    licensing/src/entitlements/Entitlements.cc)
+    licensing/src/entitlements/Entitlements.cc
+    versioning/src/Versions.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES} licensing/src/methods/keygen/KeygenCommunication.cc
+      ${THIRDAI_SOURCES}
+      licensing/src/methods/keygen/KeygenCommunication.cc
       licensing/src/methods/heartbeat/Heartbeat.cc
-      licensing/src/CheckLicenseEnabled.cc)
+      licensing/src/CheckLicenseEnabled.cc
+      licensing/src/methods/keygen/KeyMethod.cc
+      licensing/src/methods/heartbeat/LocalServerMethod.cc
+      licensing/src/methods/file/FileMethod.cc)
 else()
   set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal prometheus-cpp::pull)
+target_link_libraries(
+  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
+                 prometheus-cpp::pull utf8proc)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
                                        OpenSSL::SSL)
@@ -453,18 +466,17 @@ pybind11_add_module(
   bolt/python_bindings/CallbacksPython.cc
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/NumpyConversions.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
-  new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
   auto_ml/src/udt/UDT.cc
-  auto_ml/src/udt/utils/Conversion.cc
   auto_ml/src/udt/utils/Models.cc
-  auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTMachClassifier.cc
@@ -473,7 +485,6 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
-  auto_ml/src/models/TextClassifier.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

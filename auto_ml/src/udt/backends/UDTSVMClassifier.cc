@@ -3,10 +3,13 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
+#include <bolt/src/train/trainer/Dataset.h>
+#include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
 #include <pybind11/stl.h>
+#include <utils/Version.h>
+#include <versioning/src/Versions.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -29,15 +32,14 @@ py::object UDTSVMClassifier::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
   auto train_dataset_loader = svmDatasetLoader(data, /* shuffle= */ true);
 
-  std::optional<ValidationDatasetLoader> validation_dataset_loader =
-      std::nullopt;
+  ValidationDatasetLoader validation_dataset_loader;
   if (validation) {
-    validation_dataset_loader = ValidationDatasetLoader(
+    validation_dataset_loader = std::make_pair(
         svmDatasetLoader(validation->first, /* shuffle= */ false),
         validation->second);
   }
@@ -50,36 +52,47 @@ py::object UDTSVMClassifier::train(
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       const std::vector<std::string>& metrics,
-                                      bool sparse_inference,
-                                      bool return_predicted_class, bool verbose,
-                                      bool return_metrics) {
+                                      bool sparse_inference, bool verbose) {
   auto dataset = svmDatasetLoader(data, /* shuffle= */ false);
 
-  return _classifier->evaluate(dataset, metrics, sparse_inference,
-                               return_predicted_class, verbose, return_metrics);
+  return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
 
 py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class) {
-  return _classifier->predict(
-      {dataset::SvmDatasetLoader::toSparseVector(sample)}, sparse_inference,
-      return_predicted_class);
+  auto inputs = bolt::train::convertVectors(
+      {dataset::SvmDatasetLoader::toSparseVector(sample)},
+      _classifier->model()->inputDims());
+  return _classifier->predict(inputs, sparse_inference, return_predicted_class,
+                              /* single= */ true);
 }
 
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
                                           bool return_predicted_class) {
-  return _classifier->predictBatch(
-      {dataset::SvmDatasetLoader::toSparseVectors(samples)}, sparse_inference,
-      return_predicted_class);
+  auto inputs = bolt::train::convertBatch(
+      {dataset::SvmDatasetLoader::toSparseVectors(samples)},
+      _classifier->model()->inputDims());
+  return _classifier->predict(inputs, sparse_inference, return_predicted_class,
+                              /* single= */ false);
 }
 
-template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&);
-template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&);
+template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,
+                                          const uint32_t version);
+template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&,
+                                          const uint32_t version);
 
 template <class Archive>
-void UDTSVMClassifier::serialize(Archive& archive) {
+void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+  std::string class_name = "UDT_SVM_CLASSIFIER";
+  versions::checkVersion(version, versions::UDT_SVM_CLASSIFIER_VERSION,
+                         thirdai_version, thirdai::version(), class_name);
+
+  // Increment thirdai::versions::UDT_SVM_CLASSIFIER_VERSION after serialization
+  // changes
   archive(cereal::base_class<UDTBackend>(this), _classifier);
 }
 
@@ -95,3 +108,5 @@ dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
 }  // namespace thirdai::automl::udt
 
 CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTSVMClassifier)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTSVMClassifier,
+                     thirdai::versions::UDT_SVM_CLASSIFIER_VERSION)

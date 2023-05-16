@@ -12,7 +12,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
@@ -355,14 +355,14 @@ class QueryCandidateGenerator {
     return {std::move(query_outputs), std::move(candidate_query_scores)};
   }
 
-  // TODO(Blaise/Josh): Because of our current flash implementation, this
-  // function doesn't always return k items per vector, but it should.
   /**
    * @brief Returns a list of recommended queries and Computes Recall at K
    * (R1@K).
    *
    * @param file_name: CSV file expected to have correct queries in column 0,
    * and incorrect queries in column 1.
+   * @param Requested number of items to return per query (we may return less
+   * than this many elements).
    * @return Recommended queries and the corresponding scores.
    */
   std::pair<std::vector<std::vector<std::string>>,
@@ -486,9 +486,10 @@ class QueryCandidateGenerator {
     input_blocks.reserve(n_grams.size());
 
     for (auto n_gram : n_grams) {
-      input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
+      input_blocks.emplace_back(dataset::TextBlock::make(
           /* col = */ column_index,
-          /* k = */ n_gram,
+          /* tokenizer = */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
+          /* lowercase = */ true,
           /* dim = */ _query_generator_config->defaultTextEncodingDim()));
     }
 
@@ -586,8 +587,7 @@ class QueryCandidateGenerator {
   }
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
-    std::vector<std::string_view> input_vector{
-        std::string_view(query.data(), query.length())};
+    std::vector<std::string> input_vector{query};
     dataset::RowSampleRef input_vector_ref(input_vector);
     return _inference_featurizer->featurize(input_vector_ref).at(0);
   }
