@@ -4,7 +4,7 @@ from thirdai import bolt
 
 from ...configs.query_reformulation_configs import *
 from ..query_reformulation import QueryReformulationRunner
-from .utils import OLD_MODEL_PATH, get_package_versions
+from .utils import OLD_MODEL_PATH, get_filtered_versions
 
 
 class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
@@ -25,19 +25,13 @@ class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
     ):
         config.dataset_size = "small"
 
-        with open("thirdai.version") as version_file:
-            full_version = version_file.read().strip()
-            minor_version = ".".join(full_version.split(".")[:-1]) + "."
-
-        filtered_versions = [
-            version
-            for version in get_package_versions("thirdai")
-            if version[: len(minor_version)] == minor_version
-        ]
+        filtered_versions = get_filtered_versions()
 
         for filtered_version in filtered_versions:
+            print(filtered_version)
+            formatted_version = filtered_version.replace(".", "_")
             BackwardCompatibilityQueryReformulationRunner.old_model_path = os.path.join(
-                OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model"
+                OLD_MODEL_PATH, f"{formatted_version}_{config.config_name}.model"
             )
             QueryReformulationRunner.run_benchmark.__func__(
                 BackwardCompatibilityQueryReformulationRunner,
@@ -45,3 +39,4 @@ class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
                 path_prefix,
                 mlflow_logger,
             )
+

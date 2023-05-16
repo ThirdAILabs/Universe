@@ -12,3 +12,23 @@ def get_package_versions(package_name):
     versions = list(data["releases"].keys())
     versions.sort(key=StrictVersion, reverse=True)
     return versions
+
+
+def get_filtered_versions():
+    with open("thirdai.version") as version_file:
+        full_version = version_file.read().strip()
+        minor_version = ".".join(full_version.split(".")[:-1]) + "."
+
+    versions = get_package_versions("thirdai")
+    print("in get_filtered_versions")
+    print(versions)
+    print(minor_version)
+
+    filtered_versions = [
+        version
+        for version in versions
+        if version[: len(minor_version)] == minor_version
+    ]
+    print(filtered_versions)
+
+    return filtered_versions

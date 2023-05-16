@@ -26,7 +26,6 @@ jobs:
           source ../old_thirdai/bin/activate
           git checkout ${GITHUB_REF##*/}
           bin/build.py --extras test
-          pip uninstall -y thirdai
     - name: Save old model versions
       run: |
           source ../old_thirdai/bin/activate

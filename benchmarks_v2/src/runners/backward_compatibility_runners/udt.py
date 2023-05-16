@@ -7,7 +7,7 @@ from ...configs.graph_configs import *
 from ...configs.mach_configs import *
 from ...configs.udt_configs import *
 from ..udt import UDTRunner
-from .utils import OLD_MODEL_PATH, get_package_versions
+from .utils import OLD_MODEL_PATH, get_filtered_versions
 
 
 class BackwardCompatibilityUDTRunner(UDTRunner):
@@ -30,19 +30,13 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
         if config.cold_start_num_epochs:
             config.cold_start_num_epochs = 1
 
-        with open("thirdai.version") as version_file:
-            full_version = version_file.read().strip()
-            minor_version = ".".join(full_version.split(".")[:-1]) + "."
-
-        filtered_versions = [
-            version
-            for version in get_package_versions("thirdai")
-            if version[: len(minor_version)] == minor_version
-        ]
+        filtered_versions = get_filtered_versions()
 
         for filtered_version in filtered_versions:
+            print(filtered_version)
+            formatted_version = filtered_version.replace(".", "_")
             BackwardCompatibilityUDTRunner.old_model_path = os.path.join(
-                OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model"
+                OLD_MODEL_PATH, f"{formatted_version}_{config.config_name}.model"
             )
             UDTRunner.run_benchmark.__func__(
                 BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger
