@@ -131,6 +131,7 @@ def main(**kwargs):
             else:
                 mlflow_logger = None
 
+            throw_exception = False
             try:
                 runner.run_benchmark(
                     config=config,
