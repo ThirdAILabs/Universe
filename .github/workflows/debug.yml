@@ -24,11 +24,10 @@ jobs:
           python -m venv old_thirdai
           source old_thirdai/bin/activate
           cd Universe
-          pip install numpy
+          pip install Pillow
     - name: Try numpy
       run: |
-          python
-          import numpy
+          pip show Pillow
     # - name: Get filtered verions
     #   run: |
     #       versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
