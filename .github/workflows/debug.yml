@@ -5,5 +5,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Get filtered verions
+      run: |
+      versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
+      file_version=$(cat "thirdai.version")
+      file_major_minor=$(echo "$file_version" | cut -d. -f1-2)
+      filtered_versions=()
+      for version in $versions; do
+          major_minor=$(echo "$version" | cut -d. -f1-2)
+          if [ "$major_minor" = "$file_major_minor" ]; then
+              filtered_versions+=( $version )
+          fi
+      done
+      for filtered_version in "${filtered_versions[@]}"; do
+          echo $filtered_version
+      done
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
