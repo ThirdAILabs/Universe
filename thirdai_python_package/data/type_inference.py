@@ -36,7 +36,7 @@ def _is_multi_categorical(column: pd.Series) -> Tuple[bool, Optional[str]]:
     most_occurring_delimiter = max(ratios, key=lambda entry: ratios[entry])
     most_occurring_ratio = ratios[most_occurring_delimiter]
 
-    if most_occurring_ratio > _MULTI_CATEGORICAL_DELIMITER_RATIO_THRESHOLD:
+    if most_occurring_ratio >= _MULTI_CATEGORICAL_DELIMITER_RATIO_THRESHOLD:
         return True, most_occurring_delimiter
 
     return False, None
