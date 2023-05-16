@@ -312,7 +312,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
   } else if (text::lower(dataset_size) == "large") {
     hash_fn = std::make_shared<hashing::MinHash>(/* hashes_per_table= */ 4,
                                                  /* num_tables= */ 256,
-                                                 /* range= */ 512);
+                                                 /* range= */ 1000000);
     reservoir_size = 512;
   } else {
     throw std::invalid_argument(
