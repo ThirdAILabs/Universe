@@ -32,7 +32,10 @@ jobs:
               fi
           done
           for filtered_version in "${filtered_versions[@]}"; do
-              echo $filtered_version
+              git checkout tags/v$filtered_version
+              old_file_version=$(cat "thirdai.version")
+              echo $old_file_version
+              git checkout main
           done
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
