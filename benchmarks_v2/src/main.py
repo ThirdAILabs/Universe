@@ -131,13 +131,14 @@ def main(**kwargs):
             else:
                 mlflow_logger = None
 
-            throw_exception = False
             try:
                 runner.run_benchmark(
                     config=config,
                     path_prefix=args.path_prefix,
                     mlflow_logger=mlflow_logger,
                 )
+                if mlflow_logger:
+                    mlflow_logger.end_run()
             except Exception as error:
                 throw_exception = True
                 print(
