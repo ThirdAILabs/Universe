@@ -5,6 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Create venv
+      run: |
+          cd ..
+          python -m venv old_thirdai
+          source old_thirdai/bin/activate
+          cd Universe
+          bin/build.py --extras test
+          pip uninstall -y thirdai
     - name: Get filtered verions
       run: |
           versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
