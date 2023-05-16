@@ -4,18 +4,8 @@ from ...configs.mach_configs import *
 from ...configs.udt_configs import *
 from ..udt import UDTRunner
 from thirdai import bolt
-import json
-import requests
-from distutils.version import StrictVersion
-from .save_old_models import OLD_MODEL_PATH
-
-
-def versions(package_name):
-    url = "https://pypi.org/pypi/%s/json" % (package_name,)
-    data = json.loads(requests.get(url).content)
-    versions = list(data["releases"].keys())
-    versions.sort(key=StrictVersion, reverse=True)
-    return versions
+import os
+from .utils import get_package_versions, OLD_MODEL_PATH
 
 
 class BackwardCompatibilityUDTRunner(UDTRunner):
@@ -40,7 +30,7 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
             full_version = version_file.read().strip()
             minor_version = ".".join(full_version.split(".")[:-1]) + "."
 
-        filtered_versions = [version for version in versions("thirdai") if version[:len(minor_version)] == minor_version]
+        filtered_versions = [version for version in get_package_versions("thirdai") if version[:len(minor_version)] == minor_version]
 
         for filtered_version in filtered_versions:
             BackwardCompatibilityUDTRunner.old_model_path = os.path.join(OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model")

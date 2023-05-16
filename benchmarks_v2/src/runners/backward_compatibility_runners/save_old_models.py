@@ -8,7 +8,7 @@ from ...configs.udt_configs import *
 from ...runners.runner_map import runner_map
 from ...utils import get_configs
 
-OLD_MODEL_PATH = "./old_models"
+from .utils import OLD_MODEL_PATH
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Benchmark a dataset with Bolt")

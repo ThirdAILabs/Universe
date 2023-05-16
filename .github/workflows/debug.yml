@@ -12,10 +12,8 @@ jobs:
         fetch-depth: 0
     - name: Create venv
       run: |
-          cd ..
-          python -m venv old_thirdai
-          source old_thirdai/bin/activate
-          cd Universe
+          python -m venv ../old_thirdai
+          source ../old_thirdai/bin/activate
           git checkout backwards-compatibility-benchmarks
           bin/build.py --extras test
           pip uninstall -y thirdai
@@ -37,10 +35,9 @@ jobs:
           done
           for filtered_version in "${filtered_versions[@]}"; do
             git checkout tags/v${filtered_version}
-            old_file_version=$(cat "thirdai.version")
             bin/build.py
             git checkout backwards-compatibility-benchmarks
-            python -m benchmarks_v2.src.runners.backward_compatibility_runners.save_model --runner udt temporal query_reformulation --version $filtered_version
+            python -m benchmarks_v2.src.runners.backward_compatibility_runners.save_old_models --runner udt temporal query_reformulation --version $filtered_version
           done
     - name: Run mini benchmarks with old models
       run: |
