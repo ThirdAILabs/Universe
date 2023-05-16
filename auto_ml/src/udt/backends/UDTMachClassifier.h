@@ -119,22 +119,15 @@ class UDTMachClassifier final : public UDTBackend {
       float distance_cutoff) const final;
 
  private:
-  bool integerTarget() const {
-    return static_cast<bool>(
-        dataset::mach::asNumericIndex(_mach_label_block->index()));
-  }
-
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName());
   }
 
-  std::string variantToString(const Label& variant);
-
   std::string textColumnForDocumentIntroduction();
 
-  std::unordered_map<Label, MapInputBatch> aggregateSamplesByDoc(
+  static std::unordered_map<uint32_t, MapInputBatch> aggregateSamplesByDoc(
       const thirdai::data::ColumnMap& augmented_data,
       const std::string& text_column_name,
       const std::string& label_column_name);

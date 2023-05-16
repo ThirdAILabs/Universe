@@ -23,7 +23,7 @@ def make_simple_test_file(invalid_data=False):
             f.write("haha,3\n")
 
 
-def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_dim=256):
+def train_simple_mach_udt(invalid_data=False, embedding_dim=256):
     make_simple_test_file(invalid_data=invalid_data)
 
     model = bolt.UniversalDeepTransformer(
@@ -33,7 +33,7 @@ def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_di
         },
         target="label",
         n_target_classes=3,
-        integer_target=integer_target,
+        integer_target=True,
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
@@ -94,7 +94,7 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
+def train_on_scifact(download_scifact_dataset, coldstart):
     (
         unsupervised_file,
         supervised_trn,
@@ -109,7 +109,7 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
         },
         target="DOC_ID",
         n_target_classes=n_target_classes,
-        integer_target=integer_target,
+        integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
 
@@ -148,9 +148,7 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
 
 def test_mach_udt_on_scifact(download_scifact_dataset):
     model, metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset,
-        integer_target=True,
-        coldstart=True,
+        download_scifact_dataset, coldstart=True
     )
 
     assert metrics["train_precision@1"][-1] > 0.45
@@ -170,36 +168,18 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     os.remove(save_loc)
 
 
-# We can't coldstart without integer target but we can still train on the
-# supervised data. Asserting an accuracy threshold seems to be very flaky so we
-# just assert that we don't run into any failures with string target. The remaining behaviours should be covered by the remaining python and c++ tests
-def test_mach_udt_string_target(download_scifact_dataset):
-    _, string_metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset, integer_target=False, coldstart=False
-    )
-
-    _, integer_metrics, _ = train_on_scifact(
-        download_scifact_dataset, integer_target=True, coldstart=False
-    )
-
-
-def test_mach_udt_integer_target_label_too_large():
+def test_mach_udt_label_too_large():
     with pytest.raises(
         ValueError,
         match=r"Received unexpected label: 3.",
     ):
-        train_simple_mach_udt(integer_target=True, invalid_data=True)
+        train_simple_mach_udt(invalid_data=True)
 
 
-@pytest.mark.parametrize(
-    "embedding_dim, integer_label",
-    [(128, True), (128, False), (256, True), (256, False)],
-)
-def test_mach_udt_entity_embedding(embedding_dim, integer_label):
-    model = train_simple_mach_udt(
-        integer_target=integer_label, embedding_dim=embedding_dim
-    )
-    output_labels = [0, 1] if integer_label else ["0", "1"]
+@pytest.mark.parametrize("embedding_dim", [128, 256])
+def test_mach_udt_entity_embedding(embedding_dim):
+    model = train_simple_mach_udt(embedding_dim=embedding_dim)
+    output_labels = [0, 1]
     for output_id, output_label in enumerate(output_labels):
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
@@ -239,30 +219,10 @@ def test_mach_udt_decode_params():
     assert len(model.predict({"text": "something"})) == 1
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_invalid_class_type(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_introduce_and_forget():
+    model = train_simple_mach_udt()
 
-    label = "1" if integer_target else 1
-
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
-    ):
-        model.get_entity_embedding(label)
-
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
-    ):
-        model.introduce_label([{"text": "something"}], label)
-
-
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_introduce_and_forget(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
-
-    label = 4 if integer_target else "4"
+    label = 4
 
     sample = {"text": "something or another with lots of words"}
     assert model.predict(sample)[0][0] != str(label)
@@ -272,72 +232,61 @@ def test_mach_udt_introduce_and_forget(integer_target):
     assert model.predict(sample)[0][0] != str(label)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_introduce_existing_class(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_introduce_existing_class():
+    model = train_simple_mach_udt()
 
     with pytest.raises(
         ValueError,
         match=r"Manually adding a previously seen label: 0. Please use a new label for any new insertions.",
     ):
-        model.introduce_label([{"text": "something"}], 0 if integer_target else "0")
+        model.introduce_label([{"text": "something"}], 0)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_forget_non_existing_class(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_forget_non_existing_class():
+    model = train_simple_mach_udt()
 
     with pytest.raises(
         ValueError,
         match=r"Tried to forget label 1000 which does not exist.",
     ):
-        model.forget(1000 if integer_target else "1000")
+        model.forget(1000)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_forgetting_everything(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_forgetting_everything():
+    model = train_simple_mach_udt()
 
-    if integer_target:
-        model.forget(0)
-        model.forget(1)
-        model.forget(2)
-    else:
-        model.forget("0")
-        model.forget("1")
-        model.forget("2")
+    model.forget(0)
+    model.forget(1)
+    model.forget(2)
 
     assert len(model.predict({"text": "something"})) == 0
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_forgetting_everything_with_clear_index(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_forgetting_everything_with_clear_index():
+    model = train_simple_mach_udt()
 
     model.clear_index()
 
     assert len(model.predict({"text": "something"})) == 0
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_cant_predict_forgotten(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_cant_predict_forgotten():
+    model = train_simple_mach_udt()
 
     model.set_decode_params(3, OUTPUT_DIM)
-    assert "0" in [class_name for class_name, _ in model.predict({"text": "something"})]
-    model.forget(0 if integer_target else "0")
-    assert "0" not in [
+    assert 0 in [class_name for class_name, _ in model.predict({"text": "something"})]
+    model.forget(0)
+    assert 0 not in [
         class_name for class_name, _ in model.predict({"text": "something"})
     ]
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_min_num_eval_results_adjusts_on_forget():
+    model = train_simple_mach_udt()
 
     model.set_decode_params(3, OUTPUT_DIM)
     assert len(model.predict({"text": "something"})) == 3
-    model.forget(2 if integer_target else "2")
+    model.forget(2)
     assert len(model.predict({"text": "something"})) == 2
 
 
@@ -353,7 +302,7 @@ def test_mach_udt_introduce_document():
 
 
 def test_mach_udt_introduce_documents():
-    model = train_simple_mach_udt(integer_target=True)
+    model = train_simple_mach_udt()
 
     new_docs = "NEW_DOCS.csv"
     with open(new_docs, "w") as f:
@@ -371,7 +320,7 @@ def test_mach_udt_introduce_documents():
 
 
 def test_mach_udt_hash_based_methods():
-    model = train_simple_mach_udt(integer_target=True)
+    model = train_simple_mach_udt()
 
     hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert len(hashes) == 7
@@ -389,9 +338,8 @@ def test_mach_udt_hash_based_methods():
     assert set(new_hashes) == new_hash_set
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_save_load_get_set_index(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_save_load_get_set_index():
+    model = train_simple_mach_udt()
 
     make_simple_test_file()
     metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
@@ -399,10 +347,7 @@ def test_mach_save_load_get_set_index(integer_target):
     index = model.get_index()
     save_loc = "index.mach"
     index.save(save_loc)
-    if integer_target:
-        index = dataset.NumericMachIndex.load(save_loc)
-    else:
-        index = dataset.StringMachIndex.load(save_loc)
+    index = dataset.MachIndex.load(save_loc)
 
     model.clear_index()
     model.set_index(index)
@@ -417,24 +362,8 @@ def test_mach_save_load_get_set_index(integer_target):
     os.remove(save_loc)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_setting_wrong_index_type(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
-
-    if integer_target:
-        index = dataset.StringMachIndex(output_range=OUTPUT_DIM, num_hashes=7)
-    else:
-        index = dataset.NumericMachIndex({}, output_range=OUTPUT_DIM, num_hashes=7)
-
-    with pytest.raises(
-        ValueError,
-        match=r"Incorrect index type provided. Index type should be consistent with the integer_target flag.",
-    ):
-        model.set_index(index)
-
-
 def test_mach_manual_index_creation():
-    model = train_simple_mach_udt(integer_target=True)
+    model = train_simple_mach_udt()
 
     model.set_decode_params(3, OUTPUT_DIM)
 

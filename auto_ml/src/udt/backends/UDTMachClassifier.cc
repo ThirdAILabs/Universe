@@ -7,10 +7,11 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/mach/MachBlock.h>
-#include <dataset/src/mach/MachDecode.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <stdexcept>
+#include <variant>
 
 namespace thirdai::automl::udt {
 
@@ -26,16 +27,16 @@ UDTMachClassifier::UDTMachClassifier(
     const config::ArgumentMap& user_args)
     : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
       _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
-  uint32_t output_range = user_args.get<uint32_t>(
+  uint32_t num_buckets = user_args.get<uint32_t>(
       "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
   uint32_t num_hashes = user_args.get<uint32_t>(
       "extreme_num_hashes", "integer",
-      autotuneMachNumHashes(n_target_classes, output_range));
+      autotuneMachNumHashes(n_target_classes, num_buckets));
 
   _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ tabular_options.feature_hash_range,
-          /* output_dim= */ output_range,
+          /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
           /* use_sigmoid_bce = */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
@@ -46,12 +47,13 @@ UDTMachClassifier::UDTMachClassifier(
 
   dataset::mach::MachIndexPtr mach_index;
   if (integer_target) {
-    mach_index = dataset::mach::NumericCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
+    mach_index = dataset::mach::MachIndex::make(
+        /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
         /* num_elements = */ n_target_classes);
   } else {
-    mach_index = dataset::mach::StringCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
+    throw std::invalid_argument(
+        "Option 'integer_target=True' must be specified when using extreme "
+        "classification options.");
   }
 
   _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
@@ -69,7 +71,7 @@ UDTMachClassifier::UDTMachClassifier(
 
   auto hash_processing_block = dataset::NumericalCategoricalBlock::make(
       /* col= */ target_name,
-      /* n_classes= */ output_range,
+      /* n_classes= */ num_buckets,
       /* delimiter= */ ' ',
       /* normalize_categories= */ false);
 
@@ -137,9 +139,8 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
-  auto decoded_output = dataset::mach::topKUnlimitedDecode(
+  auto decoded_output = _mach_label_block->index()->decode(
       /* output = */ output,
-      /* index = */ _mach_label_block->index(),
       /* min_num_eval_results = */ _min_num_eval_results,
       /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
 
@@ -176,14 +177,13 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                sparse_inference)
                      .at(0);
 
-  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities(
+  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
       outputs->batchSize());
 #pragma omp parallel for default(none) shared(outputs, predicted_entities)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
     const BoltVector& vector = outputs->getVector(i);
-    auto predictions = dataset::mach::topKUnlimitedDecode(
+    auto predictions = _mach_label_block->index()->decode(
         /* output = */ vector,
-        /* index = */ _mach_label_block->index(),
         /* min_num_eval_results = */ _min_num_eval_results,
         /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
     predicted_entities[i] = predictions;
@@ -261,9 +261,16 @@ py::object UDTMachClassifier::embedding(const MapInput& sample) {
   return _classifier->embedding(_dataset_factory->featurizeInput(sample));
 }
 
+uint32_t expectInteger(const Label& label) {
+  if (!std::holds_alternative<uint32_t>(label)) {
+    throw std::invalid_argument("Must use integer label.");
+  }
+  return std::get<uint32_t>(label);
+}
+
 py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   std::vector<uint32_t> hashed_neurons =
-      _mach_label_block->index()->hashEntity(variantToString(label));
+      _mach_label_block->index()->getHashes(expectInteger(label));
 
   auto outputs = _classifier->model()->outputs();
 
@@ -319,7 +326,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
-std::unordered_map<Label, MapInputBatch>
+std::unordered_map<uint32_t, MapInputBatch>
 UDTMachClassifier::aggregateSamplesByDoc(
     const thirdai::data::ColumnMap& augmented_data,
     const std::string& text_column_name, const std::string& label_column_name) {
@@ -328,18 +335,15 @@ UDTMachClassifier::aggregateSamplesByDoc(
 
   assert(label_column->numRows() == text_column->numRows());
 
-  std::unordered_map<Label, MapInputBatch> samples_by_doc;
+  std::unordered_map<uint32_t, MapInputBatch> samples_by_doc;
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string string_label = (*label_column)[row_id];
     std::string text = (*text_column)[row_id];
 
     MapInput input = {{text_column_name, text}};
-    if (integerTarget()) {
-      uint32_t integer_label = std::stoi(string_label);
-      samples_by_doc[integer_label].push_back(input);
-    } else {
-      samples_by_doc[string_label].push_back(input);
-    }
+
+    uint32_t integer_label = std::stoi(string_label);
+    samples_by_doc[integer_label].push_back(input);
   }
 
   return samples_by_doc;
@@ -440,13 +444,13 @@ void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
     new_hashes[i] = hash;
   }
 
-  _mach_label_block->index()->manualAdd(variantToString(new_label), new_hashes);
+  _mach_label_block->index()->insert(expectInteger(new_label), new_hashes);
 }
 
 void UDTMachClassifier::forget(const Label& label) {
-  _mach_label_block->index()->erase(variantToString(label));
+  _mach_label_block->index()->erase(expectInteger(label));
 
-  if (_mach_label_block->index()->numElements() == 0) {
+  if (_mach_label_block->index()->numEntities() == 0) {
     std::cout << "Warning. Every learned class has been forgotten. The model "
                  "will currently return nothing on calls to evaluate, "
                  "predict, or predictBatch."
@@ -460,14 +464,14 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
     throw std::invalid_argument("Params must not be 0.");
   }
 
-  uint32_t output_range = _mach_label_block->index()->outputRange();
-  if (top_k_per_eval_aggregation > output_range) {
+  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
+  if (top_k_per_eval_aggregation > num_buckets) {
     throw std::invalid_argument(
         "Cannot eval with top_k_per_eval_aggregation greater than " +
-        std::to_string(output_range) + ".");
+        std::to_string(num_buckets) + ".");
   }
 
-  uint32_t num_classes = _mach_label_block->index()->numElements();
+  uint32_t num_classes = _mach_label_block->index()->numEntities();
   if (min_num_eval_results > num_classes) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to predict. "
@@ -480,29 +484,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  auto is_numeric_index =
-      static_cast<bool>(dataset::mach::asNumericIndex(index));
-
-  if (integerTarget() != is_numeric_index) {
-    throw std::invalid_argument(
-        "Incorrect index type provided. Index type should be consistent with "
-        "the integer_target flag.");
-  }
-
   // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
-}
-
-std::string UDTMachClassifier::variantToString(const Label& variant) {
-  if (std::holds_alternative<std::string>(variant) && !integerTarget()) {
-    return std::get<std::string>(variant);
-  }
-  if (std::holds_alternative<uint32_t>(variant) && integerTarget()) {
-    return std::to_string(std::get<uint32_t>(variant));
-  }
-  throw std::invalid_argument(
-      "Invalid class type. If integer_target=True please use integers as "
-      "classes, otherwise use strings.");
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
