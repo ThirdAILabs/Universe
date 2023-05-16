@@ -12,8 +12,9 @@ namespace thirdai::dataset::mach {
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
                      uint32_t num_elements)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
-  for (uint32_t i = 0; i < num_elements; i++) {
-    insert(i, hashing::hashNTimesToOutputRange(i, num_hashes, num_buckets));
+  for (uint32_t element = 0; element < num_elements; element++) {
+    insert(element,
+           hashing::hashNTimesToOutputRange(element, num_hashes, num_buckets));
   }
 }
 
