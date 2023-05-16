@@ -9,14 +9,6 @@ jobs:
       with:           
         submodules: 'recursive'
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-    - name: Create venv
-      run: |
-          cd ..
-          python -m venv old_thirdai
-          source old_thirdai/bin/activate
-          cd Universe
-          bin/build.py --extras test
-          pip uninstall -y thirdai
     - name: Get filtered verions
       run: |
           versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
@@ -29,6 +21,8 @@ jobs:
                   filtered_versions+=( $version )
               fi
           done
+    - name: Save old models
+      run: |
           for filtered_version in "${filtered_versions[@]}"; do
               echo $filtered_version
           done
