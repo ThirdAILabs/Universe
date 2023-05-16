@@ -1,8 +1,10 @@
+import os
+
+from thirdai import bolt
+
 from ...configs.query_reformulation_configs import *
 from ..query_reformulation import QueryReformulationRunner
-from thirdai import bolt
-import os
-from .utils import get_package_versions, OLD_MODEL_PATH
+from .utils import OLD_MODEL_PATH, get_package_versions
 
 
 class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
@@ -11,7 +13,9 @@ class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
     @staticmethod
     def create_model(config, path_prefix):
         print(BackwardCompatibilityQueryReformulationRunner.old_model_path)
-        model = bolt.UniversalDeepTransformer.load(BackwardCompatibilityQueryReformulationRunner.old_model_path)
+        model = bolt.UniversalDeepTransformer.load(
+            BackwardCompatibilityQueryReformulationRunner.old_model_path
+        )
 
         return model
 
@@ -25,9 +29,19 @@ class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
             full_version = version_file.read().strip()
             minor_version = ".".join(full_version.split(".")[:-1]) + "."
 
-        filtered_versions = [version for version in get_package_versions("thirdai") if version[:len(minor_version)] == minor_version]
+        filtered_versions = [
+            version
+            for version in get_package_versions("thirdai")
+            if version[: len(minor_version)] == minor_version
+        ]
 
         for filtered_version in filtered_versions:
-            BackwardCompatibilityQueryReformulationRunner.old_model_path = os.path.join(OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model")
-            QueryReformulationRunner.run_benchmark.__func__(BackwardCompatibilityQueryReformulationRunner, config, path_prefix, mlflow_logger)
-
+            BackwardCompatibilityQueryReformulationRunner.old_model_path = os.path.join(
+                OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model"
+            )
+            QueryReformulationRunner.run_benchmark.__func__(
+                BackwardCompatibilityQueryReformulationRunner,
+                config,
+                path_prefix,
+                mlflow_logger,
+            )

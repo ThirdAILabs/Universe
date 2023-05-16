@@ -1,8 +1,10 @@
+import os
+
+from thirdai import bolt
+
 from ...configs.temporal_configs import *
 from ..temporal import TemporalRunner
-from thirdai import bolt
-import os
-from .utils import get_package_versions, OLD_MODEL_PATH
+from .utils import OLD_MODEL_PATH, get_package_versions
 
 
 class BackwardCompatibilityTemporalRunner(TemporalRunner):
@@ -11,7 +13,9 @@ class BackwardCompatibilityTemporalRunner(TemporalRunner):
     @staticmethod
     def create_model(config, path_prefix):
         print(BackwardCompatibilityTemporalRunner.old_model_path)
-        model = bolt.UniversalDeepTransformer.load(BackwardCompatibilityTemporalRunner.old_model_path)
+        model = bolt.UniversalDeepTransformer.load(
+            BackwardCompatibilityTemporalRunner.old_model_path
+        )
 
         return model
 
@@ -26,8 +30,16 @@ class BackwardCompatibilityTemporalRunner(TemporalRunner):
             full_version = version_file.read().strip()
             minor_version = ".".join(full_version.split(".")[:-1]) + "."
 
-        filtered_versions = [version for version in get_package_versions("thirdai") if version[:len(minor_version)] == minor_version]
+        filtered_versions = [
+            version
+            for version in get_package_versions("thirdai")
+            if version[: len(minor_version)] == minor_version
+        ]
 
         for filtered_version in filtered_versions:
-            BackwardCompatibilityTemporalRunner.old_model_path = os.path.join(OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model")
-            TemporalRunner.run_benchmark.__func__(BackwardCompatibilityTemporalRunner, config, path_prefix, mlflow_logger)
+            BackwardCompatibilityTemporalRunner.old_model_path = os.path.join(
+                OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model"
+            )
+            TemporalRunner.run_benchmark.__func__(
+                BackwardCompatibilityTemporalRunner, config, path_prefix, mlflow_logger
+            )

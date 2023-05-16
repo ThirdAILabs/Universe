@@ -1,5 +1,15 @@
-name: CI
+name: Backwards Compatibility Benchmarks
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# on:
+#   push:
+#     branches: [main]
+
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,7 +24,7 @@ jobs:
       run: |
           python -m venv ../old_thirdai
           source ../old_thirdai/bin/activate
-          git checkout backwards-compatibility-benchmarks
+          git checkout ${GITHUB_REF##*/}
           bin/build.py --extras test
           pip uninstall -y thirdai
     - name: Save old model versions
@@ -36,11 +46,12 @@ jobs:
           for filtered_version in "${filtered_versions[@]}"; do
             git checkout tags/v${filtered_version}
             bin/build.py
-            git checkout backwards-compatibility-benchmarks
+            git checkout ${GITHUB_REF##*/}
             python -m benchmarks_v2.src.runners.backward_compatibility_runners.save_old_models --runner udt temporal query_reformulation --version $filtered_version
           done
     - name: Run mini benchmarks with old models
       run: |
-          python -m benchmarks_v2.src.main --runner backward_compatibility_udt
+          source ../old_thirdai/bin/activate
+          python -m benchmarks_v2.src.main --runner backward_compatibility_udt backward_compatibility_query_reformulation backward_compatibility_temporal
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3

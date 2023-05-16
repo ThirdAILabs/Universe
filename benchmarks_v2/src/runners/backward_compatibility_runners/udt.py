@@ -1,11 +1,13 @@
+import os
+
+from thirdai import bolt
+
 from ...configs.cold_start_configs import *
 from ...configs.graph_configs import *
 from ...configs.mach_configs import *
 from ...configs.udt_configs import *
 from ..udt import UDTRunner
-from thirdai import bolt
-import os
-from .utils import get_package_versions, OLD_MODEL_PATH
+from .utils import OLD_MODEL_PATH, get_package_versions
 
 
 class BackwardCompatibilityUDTRunner(UDTRunner):
@@ -15,7 +17,9 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
     @staticmethod
     def create_model(config, path_prefix):
         print(BackwardCompatibilityUDTRunner.old_model_path)
-        model = bolt.UniversalDeepTransformer.load(BackwardCompatibilityUDTRunner.old_model_path)
+        model = bolt.UniversalDeepTransformer.load(
+            BackwardCompatibilityUDTRunner.old_model_path
+        )
 
         return model
 
@@ -30,10 +34,16 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
             full_version = version_file.read().strip()
             minor_version = ".".join(full_version.split(".")[:-1]) + "."
 
-        filtered_versions = [version for version in get_package_versions("thirdai") if version[:len(minor_version)] == minor_version]
+        filtered_versions = [
+            version
+            for version in get_package_versions("thirdai")
+            if version[: len(minor_version)] == minor_version
+        ]
 
         for filtered_version in filtered_versions:
-            BackwardCompatibilityUDTRunner.old_model_path = os.path.join(OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model")
-            UDTRunner.run_benchmark.__func__(BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger)
-
-        
+            BackwardCompatibilityUDTRunner.old_model_path = os.path.join(
+                OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model"
+            )
+            UDTRunner.run_benchmark.__func__(
+                BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger
+            )
