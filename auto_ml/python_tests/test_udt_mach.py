@@ -171,7 +171,7 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
 def test_mach_udt_label_too_large():
     with pytest.raises(
         ValueError,
-        match=r"Received unexpected label: 3.",
+        match=r"Invalid entity in index: 3.",
     ):
         train_simple_mach_udt(invalid_data=True)
 
@@ -225,11 +225,11 @@ def test_mach_udt_introduce_and_forget():
     label = 4
 
     sample = {"text": "something or another with lots of words"}
-    assert model.predict(sample)[0][0] != str(label)
+    assert model.predict(sample)[0][0] != label
     model.introduce_label([sample], label)
-    assert model.predict(sample)[0][0] == str(label)
+    assert model.predict(sample)[0][0] == label
     model.forget(label)
-    assert model.predict(sample)[0][0] != str(label)
+    assert model.predict(sample)[0][0] != label
 
 
 def test_mach_udt_introduce_existing_class():
@@ -247,7 +247,7 @@ def test_mach_udt_forget_non_existing_class():
 
     with pytest.raises(
         ValueError,
-        match=r"Tried to forget label 1000 which does not exist.",
+        match=r"Invalid entity in index: 1000.",
     ):
         model.forget(1000)
 
@@ -297,7 +297,7 @@ def test_mach_udt_introduce_document():
         {"title": "this is a title", "description": "this is a description"},
         strong_column_names=["title"],
         weak_column_names=["description"],
-        label="1000",
+        label=1000,
     )
 
 
@@ -379,7 +379,7 @@ def test_mach_manual_index_creation():
         2: [14, 15, 16, 17, 18, 19, 20],
     }
 
-    index = dataset.NumericMachIndex(
+    index = dataset.MachIndex(
         entity_to_hashes=entity_to_hashes,
         output_range=OUTPUT_DIM,
         num_hashes=7,

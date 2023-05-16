@@ -89,7 +89,7 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
   uint32_t num_to_return =
       std::min<uint32_t>(min_num_eval_results, entity_scores.size());
 
-  while (entity_to_scores.size() > num_to_return) {
+  while (entity_scores.size() > num_to_return) {
     entity_scores.pop_back();
   }
 
@@ -110,9 +110,9 @@ void MachIndex::erase(uint32_t entity) {
 
 void MachIndex::verifyHash(uint32_t hash) const {
   if (hash >= numBuckets()) {
-    throw std::runtime_error("Invalid hash " + std::to_string(hash) +
-                             " for index with range " +
-                             std::to_string(numBuckets()) + ".");
+    throw std::invalid_argument("Invalid hash " + std::to_string(hash) +
+                                " for index with range " +
+                                std::to_string(numBuckets()) + ".");
   }
 }
 

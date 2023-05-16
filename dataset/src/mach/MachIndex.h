@@ -28,7 +28,7 @@ class MachIndex {
 
   const std::vector<uint32_t>& getHashes(uint32_t entity) const {
     if (!_entity_to_hashes.count(entity)) {
-      throw std::runtime_error(
+      throw std::invalid_argument(
           "Invalid entity in index: " + std::to_string(entity) + ".");
     }
     return _entity_to_hashes.at(entity);
