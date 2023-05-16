@@ -39,4 +39,3 @@ class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
                 path_prefix,
                 mlflow_logger,
             )
-
