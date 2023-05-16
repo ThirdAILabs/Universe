@@ -17,7 +17,7 @@ def parse_arguments():
         nargs="+",
         required=True,
         choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
-        help="The runner to retrieve benchmark results for.",
+        help="The runner to retrieve configs for.",
     )
     parser.add_argument(
         "--config",
@@ -29,13 +29,13 @@ def parse_arguments():
         "--read_path_prefix",
         type=str,
         default="/share/data/",
-        help="The path prefex to prepend to dataset paths. Defaults to './'",
+        help="The path prefix to read the original benchmark datasets from",
     )
     parser.add_argument(
         "--write_path_prefix",
         type=str,
         default="./benchmarks-v2/mini_benchmark_datasets/",
-        help="The path prefex to prepend to dataset paths. Defaults to './'",
+        help="The path prefix to write the mini benchmark datasets to",
     )
     return parser.parse_args()
 

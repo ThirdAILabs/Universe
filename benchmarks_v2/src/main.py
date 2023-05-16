@@ -55,11 +55,6 @@ def parse_arguments():
     parser.add_argument(
         "--run_name", type=str, default=None, help="The job name to track in MLflow"
     )
-    parser.add_argument(
-        "--fail_on_error",
-        action="store_true",
-        help="Throw an exception when any of the benchmarks fails",
-    )
 
     # Do not set the following args when running this script manually, these are only for github actions
     parser.add_argument(
@@ -133,6 +128,7 @@ def main(**kwargs):
             else:
                 mlflow_logger = None
 
+            throw_exception = False
             try:
                 runner.run_benchmark(
                     config=config,
@@ -140,6 +136,7 @@ def main(**kwargs):
                     mlflow_logger=mlflow_logger,
                 )
             except Exception as error:
+                throw_exception = True
                 print(
                     f"An error occurred running the {config.config_name} benchmark:",
                     error,
@@ -150,8 +147,8 @@ def main(**kwargs):
                 else:
                     print(payload)
 
-                if args.fail_on_error:
-                    raise Exception(error)
+            if throw_exception:
+                raise Exception("One or more benchmark runs have failed")
 
             if mlflow_logger:
                 mlflow_logger.end_run()

@@ -16,7 +16,6 @@ def test_mini_benchmarks():
             "mini_benchmark_temporal",
         ],
         path_prefix=os.path.join(curr_path, "../src/mini_benchmark_datasets/"),
-        fail_on_error=True,
         config="",
         mlflow_uri="",
         run_name="",
