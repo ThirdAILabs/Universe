@@ -2,6 +2,7 @@ import os
 
 import pytest
 import thirdai
+from licensing_utils import deactivate_license_at_start_of_demo_test
 
 # These lines use a hack where we can import functions from different test files
 # as long as this file is run from bin/python-test.sh. To run just this file,
