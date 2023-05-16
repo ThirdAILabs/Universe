@@ -101,6 +101,9 @@ def main(**kwargs):
     if args.branch_name:
         args.run_name = args.branch_name
 
+    # If any of the benchmarks fail, we throw an error at the end of the script
+    throw_exception = False
+
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]
 
@@ -128,13 +131,14 @@ def main(**kwargs):
             else:
                 mlflow_logger = None
 
-            throw_exception = False
             try:
                 runner.run_benchmark(
                     config=config,
                     path_prefix=args.path_prefix,
                     mlflow_logger=mlflow_logger,
                 )
+                if mlflow_logger:
+                    mlflow_logger.end_run()
             except Exception as error:
                 throw_exception = True
                 print(
@@ -147,11 +151,8 @@ def main(**kwargs):
                 else:
                     print(payload)
 
-            if throw_exception:
-                raise Exception("One or more benchmark runs have failed")
-
-            if mlflow_logger:
-                mlflow_logger.end_run()
+    if throw_exception:
+        raise Exception("One or more benchmark runs have failed")
 
 
 if __name__ == "__main__":
