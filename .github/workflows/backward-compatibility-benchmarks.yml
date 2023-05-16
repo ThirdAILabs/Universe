@@ -4,11 +4,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# on:
-#   push:
-#     branches: [main]
-
-on: [push]
+on:
+  push:
+    branches: [main]
 
 jobs:
   build:
@@ -53,5 +51,3 @@ jobs:
           source ../old_thirdai/bin/activate
           bin/build.py
           python -m benchmarks_v2.src.main --runner backward_compatibility_udt backward_compatibility_query_reformulation backward_compatibility_temporal --path_prefix benchmarks_v2/src/mini_benchmark_datasets
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3

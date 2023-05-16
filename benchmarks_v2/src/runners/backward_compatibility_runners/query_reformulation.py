@@ -9,6 +9,7 @@ from .utils import OLD_MODEL_PATH, get_filtered_versions
 
 class BackwardCompatibilityQueryReformulationRunner(QueryReformulationRunner):
     config_type = QueryReformulationBenchmarkConfig
+    old_model_path = ""
 
     @staticmethod
     def create_model(config, path_prefix):
