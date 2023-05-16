@@ -8,6 +8,8 @@ from ...configs.udt_configs import *
 from ...runners.runner_map import runner_map
 from ...utils import get_configs
 
+OLD_MODEL_PATH = "./old_models"
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Benchmark a dataset with Bolt")
     parser.add_argument(
@@ -15,7 +17,7 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
+        choices=["udt", "query_reformulation", "temporal"],
         help="The runner to retrieve configs for.",
     )
     parser.add_argument(
@@ -25,10 +27,10 @@ def parse_arguments():
         help="Regular expression indicating which configs to retrieve for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
-        "--model_folder",
+        "--version",
         type=str,
-        default="./old_models/",
-        help="The path to the folder where old thirdai version models are saved",
+        default="",
+        help="thirdai version that is being used to save the model"
     )
     return parser.parse_args()
 
@@ -44,12 +46,8 @@ if __name__ == "__main__":
         for config in configs:
             model = runner.create_model(config, path_prefix="./benchmarks_v2/src/mini_benchmark_datasets/")
 
-            if not os.path.exists(args.model_folder):
-                # Create a new directory because it does not exist
-                os.makedirs(args.model_folder)
+            if not os.path.exists(OLD_MODEL_PATH):
+                os.makedirs(OLD_MODEL_PATH)
 
-            with open("thirdai.version") as version_file:
-                version = version_file.read().strip()
-                version = version.replace(".", "_")
-
-            model.save(os.path.join(args.model_folder, f"{version}_{config.config_name}.model"))
+            version = args.version.replace(".", "_")
+            model.save(os.path.join(OLD_MODEL_PATH, f"{version}_{config.config_name}.model"))

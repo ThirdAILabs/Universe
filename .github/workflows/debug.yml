@@ -19,7 +19,7 @@ jobs:
           git checkout backwards-compatibility-benchmarks
           bin/build.py --extras test
           pip uninstall -y thirdai
-    - name: Get filtered verions
+    - name: Save old model versions
       run: |
           source ../old_thirdai/bin/activate
           versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
@@ -40,7 +40,10 @@ jobs:
             old_file_version=$(cat "thirdai.version")
             bin/build.py
             git checkout backwards-compatibility-benchmarks
-            python -m benchmarks_v2.src.runners.backward_compatibility_runners.save_model --runner udt temporal query_reformulation
+            python -m benchmarks_v2.src.runners.backward_compatibility_runners.save_model --runner udt temporal query_reformulation --version $filtered_version
           done
+    - name: Run mini benchmarks with old models
+      run: |
+          python -m benchmarks_v2.src.main --runner backward_compatibility_udt
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3

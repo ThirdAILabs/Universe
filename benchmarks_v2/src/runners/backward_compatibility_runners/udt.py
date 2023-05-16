@@ -3,10 +3,12 @@ from ...configs.graph_configs import *
 from ...configs.mach_configs import *
 from ...configs.udt_configs import *
 from ..udt import UDTRunner
-from thirdai import bolt, deployment
+from thirdai import bolt
 import json
 import requests
 from distutils.version import StrictVersion
+from .save_old_models import OLD_MODEL_PATH
+
 
 def versions(package_name):
     url = "https://pypi.org/pypi/%s/json" % (package_name,)
@@ -38,10 +40,10 @@ class BackwardCompatibilityUDTRunner(UDTRunner):
             full_version = version_file.read().strip()
             minor_version = ".".join(full_version.split(".")[:-1]) + "."
 
-        test_versions = [version for version in versions("thirdai") if version[:len(minor_version)] == minor_version]
+        filtered_versions = [version for version in versions("thirdai") if version[:len(minor_version)] == minor_version]
 
-        BackwardCompatibilityUDTRunner.old_model_path = "test_udt.model"
-
-        UDTRunner.run_benchmark.__func__(BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger)
+        for filtered_version in filtered_versions:
+            BackwardCompatibilityUDTRunner.old_model_path = os.path.join(OLD_MODEL_PATH, f"{filtered_version}_{config.config_name}.model")
+            UDTRunner.run_benchmark.__func__(BackwardCompatibilityUDTRunner, config, path_prefix, mlflow_logger)
 
         
