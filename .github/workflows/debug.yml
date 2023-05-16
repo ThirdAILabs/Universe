@@ -18,23 +18,34 @@ jobs:
     #       cd Universe
     #       bin/build.py --extras test
     #       pip uninstall -y thirdai
-    - name: Get filtered verions
+    - name: Create venv
       run: |
-          versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
-          file_version=$(cat "thirdai.version")
-          file_major_minor=$(echo "$file_version" | cut -d. -f1-2)
-          filtered_versions=()
-          for version in $versions; do
-              major_minor=$(echo "$version" | cut -d. -f1-2)
-              if [ "$major_minor" = "$file_major_minor" ]; then
-                  filtered_versions+=( $version )
-              fi
-          done
-          for filtered_version in "${filtered_versions[@]}"; do
-              git checkout tags/v$filtered_version
-              old_file_version=$(cat "thirdai.version")
-              echo $old_file_version
-              git checkout main
-          done
+          cd ..
+          python -m venv old_thirdai
+          source old_thirdai/bin/activate
+          cd Universe
+          pip install numpy
+    - name: Try numpy
+      run: |
+          python
+          import numpy
+    # - name: Get filtered verions
+    #   run: |
+    #       versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
+    #       file_version=$(cat "thirdai.version")
+    #       file_major_minor=$(echo "$file_version" | cut -d. -f1-2)
+    #       filtered_versions=()
+    #       for version in $versions; do
+    #           major_minor=$(echo "$version" | cut -d. -f1-2)
+    #           if [ "$major_minor" = "$file_major_minor" ]; then
+    #               filtered_versions+=( $version )
+    #           fi
+    #       done
+    #       for filtered_version in "${filtered_versions[@]}"; do
+    #           git checkout tags/v$filtered_version
+    #           old_file_version=$(cat "thirdai.version")
+    #           echo $old_file_version
+    #           git checkout main
+    #       done
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
