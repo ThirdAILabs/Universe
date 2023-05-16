@@ -4,10 +4,15 @@ import pandas as pd
 
 _TEXT_DELIMITER = " "
 _CATEGORICAL_DELIMITERS = [";", ":", "-", "\t", "|"]
-# If the most occurring delimiter would cause there to be more than _DELIMITER_RATIO_THRESHOLD
+# If for the text delimiter would cause there to be more than _DELIMITER_RATIO_THRESHOLD
 # items per line, that is enough to assume that these are valid splits and that
-# the column is indeed multi-categorical (or text)
-_DELIMITER_RATIO_THRESHOLD = 1.5
+# the column is indeed text.
+_TEXT_DELIMITER_RATIO_THRESHOLD = 1.5
+
+# For the most occuring delimiter in categorical delimiters if there to be
+# more than _MULTI_CATEGORICAL_DELIMITER_RATIO_THRESHOLD items per line,
+# that is enough to assume that column is multi-categorical.
+_MULTI_CATEGORICAL_DELIMITER_RATIO_THRESHOLD = 1.1
 
 
 # Returns the average number of entries per row there would be if the passed in
@@ -31,7 +36,7 @@ def _is_multi_categorical(column: pd.Series) -> Tuple[bool, Optional[str]]:
     most_occurring_delimiter = max(ratios, key=lambda entry: ratios[entry])
     most_occurring_ratio = ratios[most_occurring_delimiter]
 
-    if most_occurring_ratio >= _DELIMITER_RATIO_THRESHOLD:
+    if most_occurring_ratio > _MULTI_CATEGORICAL_DELIMITER_RATIO_THRESHOLD:
         return True, most_occurring_delimiter
 
     return False, None
@@ -39,7 +44,7 @@ def _is_multi_categorical(column: pd.Series) -> Tuple[bool, Optional[str]]:
 
 def _is_text_col(column: pd.Series) -> bool:
     space_ratio = _get_delimiter_ratio(column, delimiter=_TEXT_DELIMITER)
-    return space_ratio > _DELIMITER_RATIO_THRESHOLD
+    return space_ratio > _TEXT_DELIMITER_RATIO_THRESHOLD
 
 
 def _is_datetime_col(column: pd.Series) -> bool:
