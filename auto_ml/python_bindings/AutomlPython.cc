@@ -396,7 +396,7 @@ std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
     const std::optional<std::string>& model_config, const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* incorrect_column_name = */ std::nullopt,
-      /* correct_column_name = */ target_column,
+      /* correct_column_name = */ std::move(target_column),
       /* dataset_size = */ dataset_size,
       /* delimiter = */ delimiter, /* model_config = */ model_config,
       /* user_args= */ createArgumentMap(options));
