@@ -4,7 +4,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - uses: AutoModality/action-clean@v1
     - uses: actions/checkout@v3
+      with:           
+        submodules: 'recursive'
+        token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
     - name: Create venv
       run: |
           cd ..
