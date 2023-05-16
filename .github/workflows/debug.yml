@@ -9,8 +9,7 @@ jobs:
       with:           
         submodules: 'recursive'
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-    - name: Get tags
-      run: git fetch --tags origin
+        fetch-depth: 0
     # - name: Create venv
     #   run: |
     #       cd ..
