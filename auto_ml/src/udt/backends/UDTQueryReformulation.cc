@@ -182,9 +182,8 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
   (void)sparse_inference;
   (void)return_predicted_class;
   (void)top_k;
-  throw exceptions::NotImplemented(
-      "predict is not yet supported for query reformulation, please use "
-      "predict_batch.");
+  return predictBatch({sample}, sparse_inference, return_predicted_class,
+                      top_k);
 }
 
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
