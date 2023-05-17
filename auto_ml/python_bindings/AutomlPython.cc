@@ -4,8 +4,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
