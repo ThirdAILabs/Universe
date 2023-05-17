@@ -5,6 +5,7 @@
 #include <dataset/src/utils/SafeFileIO.h>
 #include <algorithm>
 #include <limits>
+#include <optional>
 #include <random>
 #include <unordered_map>
 
@@ -13,15 +14,21 @@ namespace thirdai::hashing {
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
-                                   uint32_t binsize, uint32_t permutations,
+                                   uint32_t binsize,
+                                   std::optional<uint32_t> permutations,
                                    uint32_t seed)
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
       _binsize(binsize),
-      _log_binsize(floor(log2(_binsize))),
-      _permute(permutations) {
+      _log_binsize(floor(log2(_binsize))) {
+  if (permutations.has_value()) {
+    _permute = permutations.value();
+  } else {
+    _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
+  }
+
   std::mt19937 gen(seed);
   _bin_map = std::vector<uint32_t>(_dim * _permute);
   _positions = std::vector<uint32_t>(_dim * _permute);

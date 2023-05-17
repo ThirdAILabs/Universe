@@ -36,9 +36,11 @@ using SamplingConfigPtr = std::shared_ptr<SamplingConfig>;
 
 class DWTASamplingConfig final : public SamplingConfig {
  public:
+  DWTASamplingConfig() {}
   DWTASamplingConfig(uint32_t num_tables, uint32_t hashes_per_table,
                      uint32_t range_pow, uint32_t binsize,
-                     uint32_t reservoir_size, uint32_t permutations)
+                     uint32_t reservoir_size,
+                     std::optional<uint32_t> permutations)
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _range_pow(range_pow),
@@ -59,10 +61,10 @@ class DWTASamplingConfig final : public SamplingConfig {
 
  private:
   uint32_t _num_tables, _hashes_per_table, _range_pow, _binsize,
-      _reservoir_size, _permutes;
+      _reservoir_size;
+  std::optional<uint32_t> _permutes;
 
   // Private constructor for cereal.
-  DWTASamplingConfig() {}
 
   friend class cereal::access;
   template <class Archive>

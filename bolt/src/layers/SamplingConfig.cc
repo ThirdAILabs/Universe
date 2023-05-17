@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <algorithm>
 
@@ -108,7 +109,7 @@ SamplingConfigPtr DWTASamplingConfig::oldAutotune(uint32_t layer_dim,
       /* range_pow=*/range_pow,
       /* binsize=*/8,
       /* reservoir_size= */ reservoir_size,
-      /* permutations=*/8);
+      /* permutations=*/std::nullopt);
 }
 
 SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,

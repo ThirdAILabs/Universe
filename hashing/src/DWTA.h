@@ -26,7 +26,8 @@ class DWTAHashFunction final : public HashFunction {
  public:
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
                    uint32_t _num_tables, uint32_t range_pow, uint32_t binsize,
-                   uint32_t permutations, uint32_t seed = time(nullptr));
+                   std::optional<uint32_t> permutations,
+                   uint32_t seed = time(nullptr));
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
