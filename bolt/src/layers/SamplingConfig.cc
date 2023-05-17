@@ -28,6 +28,41 @@ hashtable::SampledHashTablePtr DWTASamplingConfig::getHashTable() const {
 
 SamplingConfigPtr DWTASamplingConfig::newAutotune(uint32_t layer_dim,
                                                   float sparsity) {
+  /**
+   * Setup:
+   * - We have a set of weight vectors, denoted as 'w'.
+   * - We also have a query vector, denoted as 'q'.
+   * - We aim to find the weight vector that maximizes the inner product with
+   * the query vector, i.e., argmax_{w_i} (inner_product(q, w)).
+   *
+   * It's important to note that the inner product between 'w_i' and 'q' induces
+   * an ordering on the set 'w'. Our goal is to approximate this ordering using
+   * Discrete Winner Take All (DWTA).
+   *
+   * The original autotuner continuously increased the number of hashes per
+   * table as the layer dimension (|w|) became larger. This strategy is based on
+   * the intuition that, when we are retrieving vectors from a large set, a
+   * loose similarity definition can lead us to retrieve irrelevant vectors.
+   *
+   * However, this approach doesn't consider the query vector. For instance, if
+   * the dimension of the query vector is small or it contains few non-zeros,
+   * approximating the ordering using DWTA could be difficult when the number of
+   * hashes_per_table is high. High number of hashes_per_table essentially
+   * randomizes the ordering over the set of weight vectors.
+   *
+   * To address these issues, we conducted several experiments to determine the
+   * optimal hyperparameters for DWTA. The experiment setup can be found at this
+   * link:
+   * https://www.notion.so/Retrieval-of-Neurons-Correctness-of-DWTA-d3072ed2413b4329a1f58db48ace367f#fc44fda03c4a44f7be9f7c9bc8d17a4c
+   *
+   * The results of the experiments can be found here:
+   * https://www.notion.so/a78a1cb7aeb44c11b50fc640051b5035?v=584d411f646b42c484ab7aae7279df22
+   *
+   * Additionally, the updated autotuner has been benchmarked against various
+   * datasets. The benchmarking results are available here:
+   * https://www.notion.so/Retrieval-of-Neurons-Correctness-of-DWTA-d3072ed2413b4329a1f58db48ace367f?pvs=4#fc44fda03c4a44f7be9f7c9bc8d17a4c
+   */
+
   uint32_t hashes_per_table = 1;
   uint32_t sparse_dim = (layer_dim * sparsity);
 
