@@ -144,21 +144,30 @@ class UDT {
 
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names) {
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names);
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_add_to,
+                          std::optional<uint32_t> num_buckets_to_sample) {
+    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
+                                 num_buckets_to_add_to, num_buckets_to_sample);
   }
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const std::variant<uint32_t, std::string>& new_label) {
+                         const std::variant<uint32_t, std::string>& new_label,
+                         std::optional<uint32_t> num_buckets_to_add_to,
+                         std::optional<uint32_t> num_buckets_to_sample) {
     _backend->introduceDocument(document, strong_column_names,
-                                weak_column_names, new_label);
+                                weak_column_names, new_label,
+                                num_buckets_to_add_to, num_buckets_to_sample);
   }
 
   void introduceLabel(const MapInputBatch& sample,
-                      const std::variant<uint32_t, std::string>& new_label) {
-    _backend->introduceLabel(sample, new_label);
+                      const std::variant<uint32_t, std::string>& new_label,
+                      std::optional<uint32_t> num_buckets_to_add_to,
+                      std::optional<uint32_t> num_buckets_to_sample) {
+    _backend->introduceLabel(sample, new_label, num_buckets_to_add_to,
+                             num_buckets_to_sample);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {
