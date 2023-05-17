@@ -6,6 +6,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <stdexcept>
@@ -56,11 +57,12 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                                           /* activation= */ hidden_activation)
           ->apply(input);
 
+  auto layer_norm = bolt::nn::ops::LayerNorm::make()->apply(hidden);
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::nn::ops::FullyConnected::make(output_dim, hidden->dim(),
                                                     sparsity, activation)
-                    ->apply(hidden);
+                    ->apply(layer_norm);
 
   auto labels = bolt::nn::ops::Input::make(output_dim);
 
