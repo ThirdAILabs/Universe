@@ -64,6 +64,11 @@ class MachIndex {
 
   uint32_t numHashes() const { return _num_hashes; }
 
+  size_t bucketSize(uint32_t bucket) const {
+    verifyHash(bucket);
+    return _buckets.at(bucket).size();
+  }
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<MachIndex> load(const std::string& filename);

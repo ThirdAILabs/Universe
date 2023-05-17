@@ -11,10 +11,8 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <stdexcept>
-#include <variant>
 
 namespace thirdai::automl::udt {
-
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
@@ -75,8 +73,8 @@ UDTMachClassifier::UDTMachClassifier(
       /* delimiter= */ ' ',
       /* normalize_categories= */ false);
 
-  // We want to be able to train input samples on a specific set of hashes so we
-  // create a separate dataset factory that does all the same things as the
+  // We want to be able to train input samples on a specific set of hashes so
+  // we create a separate dataset factory that does all the same things as the
   // regular dataset factory except with the label block switched out
   _pre_hashed_labels_dataset_factory = std::make_shared<
       data::TabularDatasetFactory>(
@@ -323,7 +321,8 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured with a "
+        "Introducing documents can only be used when UDT is configured with "
+        "a "
         "single text input column and target column. The current model is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
@@ -359,7 +358,9 @@ UDTMachClassifier::aggregateSamplesByDoc(
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
+    const std::vector<std::string>& weak_column_names,
+    std::optional<uint32_t> num_buckets_to_add_to,
+    std::optional<uint32_t> num_buckets_to_sample) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
@@ -379,14 +380,16 @@ void UDTMachClassifier::introduceDocuments(
                                                label_column_name);
 
   for (const auto& [doc, samples] : samples_per_doc) {
-    introduceLabel(samples, doc);
+    introduceLabel(samples, doc, num_buckets_to_add_to, num_buckets_to_sample);
   }
 }
 
 void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, const Label& new_label) {
+    const std::vector<std::string>& weak_column_names, const Label& new_label,
+    std::optional<uint32_t> num_buckets_to_add_to,
+    std::optional<uint32_t> num_buckets_to_sample) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   thirdai::data::ColdStartTextAugmentation augmentation(
@@ -402,21 +405,34 @@ void UDTMachClassifier::introduceDocument(
     batch.push_back(input);
   }
 
-  introduceLabel(batch, new_label);
+  introduceLabel(batch, new_label, num_buckets_to_add_to,
+                 num_buckets_to_sample);
 }
 
-void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
-                                       const Label& new_label) {
+void UDTMachClassifier::introduceLabel(
+    const MapInputBatch& samples, const Label& new_label,
+    std::optional<uint32_t> num_buckets_to_add_to_opt,
+    std::optional<uint32_t> num_buckets_to_sample_opt) {
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
                     .at(0);
 
+  uint32_t num_buckets_to_add_to = num_buckets_to_add_to_opt.value_or(
+      _mach_label_block->index()->numHashes());
+  uint32_t num_buckets_to_sample =
+      std::max(num_buckets_to_add_to,
+               num_buckets_to_sample_opt.value_or(num_buckets_to_add_to));
+  if (num_buckets_to_sample > _mach_label_block->index()->numBuckets()) {
+    throw std::invalid_argument(
+        "Cannot sample more buckets than there are in the index.");
+  }
+
   // map from output hash to an aggregated pair of (frequency, score)
   std::unordered_map<uint32_t, std::pair<uint32_t, float>> hash_freq_and_scores;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    auto top_K = output->getVector(i).findKLargestActivations(
-        _mach_label_block->index()->numHashes());
+    auto top_K =
+        output->getVector(i).findKLargestActivations(num_buckets_to_sample);
 
     while (!top_K.empty()) {
       auto [activation, active_neuron] = top_K.top();
@@ -445,8 +461,15 @@ void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
               return left_frequency > right_frequency;
             });
 
+  std::sort(sorted_hashes.begin(),
+            sorted_hashes.begin() + num_buckets_to_sample,
+            [this](const auto& lhs, const auto& rhs) {
+              return _mach_label_block->index()->bucketSize(lhs.first) >
+                     _mach_label_block->index()->bucketSize(rhs.first);
+            });
+
   std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
-  for (uint32_t i = 0; i < _mach_label_block->index()->numHashes(); i++) {
+  for (uint32_t i = 0; i < num_buckets_to_add_to; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes[i] = hash;
   }
@@ -491,7 +514,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output ranges
+  // block allows indexes with different number of hashes but not output
+  // ranges
   _mach_label_block->setIndex(index);
 }
 
