@@ -113,7 +113,10 @@ py::object UDTMachClassifier::train(
 
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
-                                       bool sparse_inference, bool verbose) {
+                                       bool sparse_inference, bool verbose,
+                                       std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   auto eval_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
@@ -125,7 +128,9 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
-                                      bool return_predicted_class) {
+                                      bool return_predicted_class,
+                                      std::optional<uint32_t> top_k) {
+  (void)top_k;
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
@@ -164,7 +169,9 @@ py::object UDTMachClassifier::trainBatch(
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
-                                           bool return_predicted_class) {
+                                           bool return_predicted_class,
+                                           std::optional<uint32_t> top_k) {
+  (void)top_k;
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "

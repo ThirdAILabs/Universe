@@ -415,6 +415,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
@@ -482,6 +483,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc

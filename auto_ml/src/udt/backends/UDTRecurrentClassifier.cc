@@ -92,7 +92,9 @@ py::object UDTRecurrentClassifier::train(
 
 py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool verbose) {
+    bool sparse_inference, bool verbose, std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   throwIfSparseInference(sparse_inference);
 
   bolt::train::Trainer trainer(_model);
@@ -107,9 +109,11 @@ py::object UDTRecurrentClassifier::evaluate(
 
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
-                                           bool return_predicted_class) {
+                                           bool return_predicted_class,
+                                           std::optional<uint32_t> top_k) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
+  (void)top_k;
 
   auto mutable_sample = sample;
 
@@ -157,9 +161,11 @@ struct PredictBatchProgress {
 
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
-                                                bool return_predicted_class) {
+                                                bool return_predicted_class,
+                                                std::optional<uint32_t> top_k) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
+  (void)top_k;
 
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());

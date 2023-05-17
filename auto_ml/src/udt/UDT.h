@@ -31,6 +31,11 @@ class UDT {
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  UDT(std::optional<std::string> incorrect_column_name,
+      std::string correct_column_name, const std::string& dataset_size,
+      char delimiter, const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
+
   UDT(const std::string& file_format, uint32_t n_target_classes,
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
@@ -49,13 +54,16 @@ class UDT {
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool verbose);
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k);
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class);
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k);
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class);
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k);
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
@@ -185,6 +193,8 @@ class UDT {
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
+
+  void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 

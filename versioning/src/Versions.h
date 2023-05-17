@@ -14,7 +14,7 @@ void checkVersion(uint32_t loaded_version, uint32_t current_version,
 
 // UDT BASE VERSION
 
-constexpr uint32_t UDT_BASE_VERSION = 1;
+constexpr uint32_t UDT_BASE_VERSION = 2;
 
 // UDT BACKEND VERSIONS
 
