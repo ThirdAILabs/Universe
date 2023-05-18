@@ -23,7 +23,7 @@ class FullyConnected final
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
       uint32_t rebuild_hash_tables = 4,
-      uint32_t reconstruct_hash_functions = 100);
+      uint32_t reconstruct_hash_functions = 100, bool train_without_bias = false);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which

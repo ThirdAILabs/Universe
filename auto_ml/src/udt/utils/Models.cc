@@ -47,7 +47,7 @@ float autotuneSparsity(uint32_t dim) {
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce,
-                      bool use_tanh, bool use_layer_norm = false) {
+                      bool use_tanh, bool use_layer_norm) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
@@ -60,7 +60,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   
   // Using layer norm for bias overvalues
   if(use_layer_norm){
-    auto layer_norm = bolt::nn::ops:LayerNorm::make()->apply(hidden);
+    auto layer_norm = bolt::nn::ops::LayerNorm::make()->apply(hidden);
     hidden = layer_norm;
   }
 

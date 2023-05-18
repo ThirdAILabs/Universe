@@ -39,7 +39,8 @@ class FullyConnectedLayer final {
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim,
-                      bool disable_sparse_parameter_updates = false);
+                      bool disable_sparse_parameter_updates = false,
+                      bool train_without_bias = false);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -181,6 +182,8 @@ class FullyConnectedLayer final {
   // A flag to determine whether the current network saves the optimizer states
   // or not. If true, it saves the optimizer states, else doesn't.
   bool _should_save_optimizer;
+
+  bool _train_without_bias
 
   BoltSamplingMode _sampling_mode;
 

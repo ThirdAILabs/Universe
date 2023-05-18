@@ -23,28 +23,30 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
                                SamplingConfigPtr sampling,
                                uint32_t rebuild_hash_tables,
-                               uint32_t reconstruct_hash_functions)
+                               uint32_t reconstruct_hash_functions,
+                               bool train_without_bias)
     : Op(nextFullyConnectedOpName()),
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0) {
+      _updates_since_reconstruct_hash_functions(0),
+ {
   if (!sampling) {
     sampling = DWTASamplingConfig::autotune(dim, sparsity);
   }
   FullyConnectedLayerConfig config(dim, sparsity, activation,
                                    std::move(sampling));
 
-  _kernel = std::make_shared<FullyConnectedLayer>(config, input_dim);
+  _kernel = std::make_shared<FullyConnectedLayer>(config, input_dim, /* disable_sparse_sparse_updates */false, train_without_bias);
 }
 
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
     const std::string& activation, SamplingConfigPtr sampling,
-    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions, bool train_without_bias) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
       dim, input_dim, sparsity, activation, std::move(sampling),
-      rebuild_hash_tables, reconstruct_hash_functions));
+      rebuild_hash_tables, reconstruct_hash_functions), train_without_bias);
 }
 
 void FullyConnected::forward(const autograd::ComputationList& inputs,

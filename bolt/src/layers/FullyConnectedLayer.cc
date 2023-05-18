@@ -17,7 +17,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool disable_sparse_parameter_updates)
+    bool disable_sparse_parameter_updates, bool train_without_bias)
     : _dim(config.getDim()),
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
@@ -33,6 +33,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
       _sampling_mode(BoltSamplingMode::LSH),
+      _train_without_bias(train_without_bias)
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
@@ -42,6 +43,9 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
+  if(_train_without_bias){
+    _biases.assign(_biases.size(), 0.0);
+  }
   if (_sparsity < 1.0) {
     initSamplingDatastructures(config.getSamplingConfig(), rd);
   }
@@ -581,6 +585,9 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
   assert(_bias_optimizer.has_value());
+  if(_train_without_bias){
+    continue;
+  }
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
