@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -11,6 +12,7 @@
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <optional>
 
 namespace thirdai::automl::udt {
 
@@ -70,7 +72,8 @@ py::object UDTRegression::train(
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  bolt::train::Trainer trainer(_model);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
       train_dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
@@ -88,7 +91,8 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  bolt::train::Trainer trainer(_model);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
