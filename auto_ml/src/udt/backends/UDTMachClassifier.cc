@@ -73,8 +73,8 @@ UDTMachClassifier::UDTMachClassifier(
       /* delimiter= */ ' ',
       /* normalize_categories= */ false);
 
-  // We want to be able to train input samples on a specific set of hashes so
-  // we create a separate dataset factory that does all the same things as the
+  // We want to be able to train input samples on a specific set of hashes so we
+  // create a separate dataset factory that does all the same things as the
   // regular dataset factory except with the label block switched out
   _pre_hashed_labels_dataset_factory = std::make_shared<
       data::TabularDatasetFactory>(
