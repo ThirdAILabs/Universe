@@ -359,7 +359,6 @@ void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    std::optional<uint32_t> num_buckets_to_add_to,
     std::optional<uint32_t> num_buckets_to_sample) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
@@ -380,7 +379,7 @@ void UDTMachClassifier::introduceDocuments(
                                                label_column_name);
 
   for (const auto& [doc, samples] : samples_per_doc) {
-    introduceLabel(samples, doc, num_buckets_to_add_to, num_buckets_to_sample);
+    introduceLabel(samples, doc, num_buckets_to_sample);
   }
 }
 
@@ -388,7 +387,6 @@ void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_add_to,
     std::optional<uint32_t> num_buckets_to_sample) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
@@ -405,24 +403,20 @@ void UDTMachClassifier::introduceDocument(
     batch.push_back(input);
   }
 
-  introduceLabel(batch, new_label, num_buckets_to_add_to,
-                 num_buckets_to_sample);
+  introduceLabel(batch, new_label, num_buckets_to_sample);
 }
 
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_add_to_opt,
     std::optional<uint32_t> num_buckets_to_sample_opt) {
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
                     .at(0);
 
-  uint32_t num_buckets_to_add_to = num_buckets_to_add_to_opt.value_or(
-      _mach_label_block->index()->numHashes());
+  uint32_t num_hashes = _mach_label_block->index()->numHashes();
   uint32_t num_buckets_to_sample =
-      std::max(num_buckets_to_add_to,
-               num_buckets_to_sample_opt.value_or(num_buckets_to_add_to));
+      std::max(num_hashes, num_buckets_to_sample_opt.value_or(num_hashes));
   if (num_buckets_to_sample > _mach_label_block->index()->numBuckets()) {
     throw std::invalid_argument(
         "Cannot sample more buckets than there are in the index.");
@@ -464,12 +458,12 @@ void UDTMachClassifier::introduceLabel(
   std::sort(sorted_hashes.begin(),
             sorted_hashes.begin() + num_buckets_to_sample,
             [this](const auto& lhs, const auto& rhs) {
-              return _mach_label_block->index()->bucketSize(lhs.first) >
+              return _mach_label_block->index()->bucketSize(lhs.first) <
                      _mach_label_block->index()->bucketSize(rhs.first);
             });
 
-  std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
-  for (uint32_t i = 0; i < num_buckets_to_add_to; i++) {
+  std::vector<uint32_t> new_hashes(num_hashes);
+  for (uint32_t i = 0; i < num_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes[i] = hash;
   }

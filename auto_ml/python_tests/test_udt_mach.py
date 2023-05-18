@@ -393,3 +393,41 @@ def test_mach_manual_index_creation():
     for label, sample in samples.items():
         new_hashes = model.predict_hashes({"text": sample})
         assert set(new_hashes) == set(entity_to_hashes[label])
+
+
+def test_load_balancing():
+    model = train_simple_mach_udt()
+    num_hashes = 8
+    half_num_hashes = 4
+
+    # Set the index so that we know that the number of hashes is 8.
+    model.set_index(
+        dataset.MachIndex({}, output_range=OUTPUT_DIM, num_hashes=num_hashes)
+    )
+
+    # This gives the top 8 locations where the new sample will end up.
+    hash_locs = model.predict_hashes({"text": "tomato"})
+
+    # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
+    # for the new element.
+    new_index = dataset.MachIndex(
+        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[:half_num_hashes])},
+        output_range=OUTPUT_DIM,
+        num_hashes=half_num_hashes,
+    )
+    model.set_index(new_index)
+
+    # We are sampling 8 locations, this should be the top 8 locations we determined
+    # earlier. However since we have inserted elements in the index in 4 of these
+    # top 8 locations it should insert the new element in the other 4 locations
+    # due to the load balancing constraint.
+    new_label = 9999
+    model.introduce_label(
+        input_batch=[{"text": "tomato"}],
+        label=new_label,
+        num_buckets_to_sample=num_hashes,
+    )
+
+    assert set(model.get_index().get_entity_hashes(new_label)) == set(
+        hash_locs[half_num_hashes:]
+    )
