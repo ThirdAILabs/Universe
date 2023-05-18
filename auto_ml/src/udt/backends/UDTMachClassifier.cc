@@ -469,20 +469,24 @@ void UDTMachClassifier::introduceLabel(
   CompareBuckets cmp;
   std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
 
-  std::sort(
-      sorted_hashes.begin(), sorted_hashes.begin() + num_buckets_to_sample,
-      [this, &cmp](const auto& lhs, const auto& rhs) {
-        size_t lhs_size = _mach_label_block->index()->bucketSize(lhs.first);
-        size_t rhs_size = _mach_label_block->index()->bucketSize(rhs.first);
+  if (num_buckets_to_sample > num_hashes) {
+    // If we are sampling more buckets then we end up using we rerank the
+    // buckets based on size to load balance the index.
+    std::sort(sorted_hashes.begin(),
+              sorted_hashes.begin() + num_buckets_to_sample,
+              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
+                size_t lhs_size = mach_index->bucketSize(lhs.first);
+                size_t rhs_size = mach_index->bucketSize(rhs.first);
 
-        // Give preference to emptier buckets. If buckets are equally empty, use
-        // one with the best score.
-        if (lhs_size == rhs_size) {
-          return cmp(lhs, rhs);
-        }
+                // Give preference to emptier buckets. If buckets are equally
+                // empty, use one with the best score.
+                if (lhs_size == rhs_size) {
+                  return cmp(lhs, rhs);
+                }
 
-        return lhs_size < rhs_size;
-      });
+                return lhs_size < rhs_size;
+              });
+  }
 
   std::vector<uint32_t> new_hashes(num_hashes);
   for (uint32_t i = 0; i < num_hashes; i++) {
