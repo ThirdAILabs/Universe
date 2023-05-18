@@ -15,12 +15,11 @@ namespace thirdai::bolt::train {
 using InterruptCheck = std::optional<std::function<void()>>;
 
 /**
- * A Trainer is a helper class for training a model. It provides a training
- * loop that supports validation, callbacks, and metrics. Part of the
- * motivation for this class over integrating these methods directly with
- * the Model class is to separate the logic better and make the code
- * simplier because the Model now exists independently of metrics,
- * callbacks, etc.
+ * A Trainer is a helper class for training a model. It provides a training loop
+ * that supports validation, callbacks, and metrics. Part of the motivation for
+ * this class over integrating these methods directly with the Model class is to
+ * separate the logic better and make the code simplier because the Model now
+ * exists independently of metrics, callbacks, etc.
  */
 class Trainer {
  public:
