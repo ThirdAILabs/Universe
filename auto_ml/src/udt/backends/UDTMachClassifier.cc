@@ -508,8 +508,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output
-  // ranges
+  // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
 }
 
