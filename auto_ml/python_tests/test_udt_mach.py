@@ -412,7 +412,7 @@ def test_load_balancing():
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
     new_index = dataset.MachIndex(
-        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[half_num_hashes:])},
+        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[:half_num_hashes])},
         output_range=OUTPUT_DIM,
         num_hashes=half_num_hashes,
     )
@@ -445,7 +445,7 @@ def test_load_balancing():
     )
 
     # Check that it inserts into the empty buckets without load balancing.
-    assert set(hashes_with_load_balancing) == set(hash_locs[:half_num_hashes])
+    assert set(hashes_with_load_balancing) == set(hash_locs[half_num_hashes:])
 
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing

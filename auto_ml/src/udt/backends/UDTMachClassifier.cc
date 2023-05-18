@@ -10,6 +10,7 @@
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <algorithm>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -231,6 +232,8 @@ py::object UDTMachClassifier::predictHashes(const MapInput& sample,
     hashes_to_return.push_back(active_neuron);
     heap.pop();
   }
+
+  std::reverse(hashes_to_return.begin(), hashes_to_return.end());
 
   return py::cast(hashes_to_return);
 }
