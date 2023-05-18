@@ -399,6 +399,7 @@ def test_load_balancing():
     model = train_simple_mach_udt()
     num_hashes = 8
     half_num_hashes = 4
+    sample = {"text": "tomato"}
 
     # Set the index so that we know that the number of hashes is 8.
     model.set_index(
@@ -406,28 +407,46 @@ def test_load_balancing():
     )
 
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes({"text": "tomato"})
+    hash_locs = model.predict_hashes(sample)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
     new_index = dataset.MachIndex(
-        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[:half_num_hashes])},
+        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[half_num_hashes:])},
         output_range=OUTPUT_DIM,
         num_hashes=half_num_hashes,
     )
     model.set_index(new_index)
 
+    # Insert an id for the same sample without load balancing to ensure that
+    # it goes to different locations than with load balancing
+    label_without_load_balancing = 9999
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_without_load_balancing,
+    )
+
     # We are sampling 8 locations, this should be the top 8 locations we determined
     # earlier. However since we have inserted elements in the index in 4 of these
     # top 8 locations it should insert the new element in the other 4 locations
     # due to the load balancing constraint.
-    new_label = 9999
+    label_with_load_balancing = 10000
     model.introduce_label(
-        input_batch=[{"text": "tomato"}],
-        label=new_label,
+        input_batch=[sample],
+        label=label_with_load_balancing,
         num_buckets_to_sample=num_hashes,
     )
 
-    assert set(model.get_index().get_entity_hashes(new_label)) == set(
-        hash_locs[half_num_hashes:]
+    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+        label_with_load_balancing
     )
+    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+        label_without_load_balancing
+    )
+
+    # Check that it inserts into the empty buckets without load balancing.
+    assert set(hashes_with_load_balancing) == set(hash_locs[:half_num_hashes])
+
+    # Check that the buckets it inserts into with load balancing is different
+    # than the buckets it inserts into without load balancing
+    assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)

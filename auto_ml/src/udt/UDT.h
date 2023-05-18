@@ -163,7 +163,6 @@ class UDT {
 
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
-
                       std::optional<uint32_t> num_buckets_to_sample) {
     _backend->introduceLabel(sample, new_label, num_buckets_to_sample);
   }
