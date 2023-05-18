@@ -17,6 +17,9 @@ constexpr bool FREEZE_HASH_TABLES = true;
 // Whether to use sigmoid and bce for the output layer in UDT
 constexpr bool USE_SIGMOID_BCE = false;
 
+// Whether to use layer norm between input and output layer
+constexpr bool USE_LAYER_NORM = true;
+
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;
 

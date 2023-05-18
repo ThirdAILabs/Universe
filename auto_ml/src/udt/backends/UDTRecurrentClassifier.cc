@@ -46,7 +46,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
     _model =
         utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                            output_dim, /* use_sigmoid_bce= */ false, use_tanh);
+                            output_dim, /* use_sigmoid_bce= */ false, use_tanh, /* use_layer_norm= */ false);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
