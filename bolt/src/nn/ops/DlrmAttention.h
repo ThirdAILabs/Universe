@@ -7,9 +7,9 @@ namespace thirdai::bolt::nn::ops {
 
 /**
  * This op computes the pairwise dot products between the output of a fully
- * connected layer and an embedding. The embedding is broken into chunks of
- * dimension the same as the fuly connected output. Then the following dot
- * products are computed.
+ * connected layer and chunks of an embedding. The embedding is broken into
+ * chunks of dimension the same as the fuly connected output. Then the following
+ * dot products are computed.
  *
  *            | fc_output | emb_1 | emb_2 | ... | emb_n
  *  fc_output |               X       X      X      X
@@ -22,7 +22,7 @@ namespace thirdai::bolt::nn::ops {
  * layer will have a dimension that is the same as the dimension of the
  * embedding for each token.
  *
- * The the number of pairwise combinations of interest is (n+1)n/2, meaning the
+ * Thus the number of pairwise combinations of interest is (n+1)n/2, meaning the
  * output of the layer is (n+1)n/2.
  */
 class DlrmAttention final : public Op,

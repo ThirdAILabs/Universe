@@ -14,14 +14,14 @@
 namespace thirdai::bolt::nn::tests {
 
 /**
- * Generates a dataset where the first dataset is a list of vectors of
- * dimensin n_ids in which one random id is one hot encoded, and a small
- * amound of noise is added to the rest of the vector. The second dataset is a
- * set of tokens which can possible contain the one hot encoded id. The label
- * is 1 if the set contains the one hot encoded id and 0 otherwise. The
- * intuition is that we are looking for similarity between the tokens and the
- * dense input vector, and this similarity will be captured by the dot product
- * attention in the DlrmAttentionLayer.
+ * Tests on a task where the first dataset is a list of vectors of dimension
+ * n_ids in which one random id is one hot encoded, and a small amound of noise
+ * is added to the rest of the vector. The second dataset is a set of tokens
+ * which can possibly contain the one hot encoded id. The label is 1 if the set
+ * contains the one hot encoded id and 0 otherwise. The intuition is that we are
+ * looking for similarity between the tokens and the dense input vector, and
+ * this similarity will be captured by the dot product attention in the
+ * DlrmAttentionLayer.
  */
 TEST(DlrmAttentionTests, TestSetMembership) {
   uint32_t n_ids = 1000, n_tokens = 5, batch_size = 100, n_batches = 100;
