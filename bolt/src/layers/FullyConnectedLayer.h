@@ -183,7 +183,7 @@ class FullyConnectedLayer final {
   // or not. If true, it saves the optimizer states, else doesn't.
   bool _should_save_optimizer;
 
-  bool _train_without_bias
+  bool _train_without_bias;
 
   BoltSamplingMode _sampling_mode;
 

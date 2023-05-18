@@ -5,8 +5,8 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
-#include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <stdexcept>
@@ -23,9 +23,13 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
   bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
-  bool use_layer_norm = args.get<bool>("use_layer_norm", "bool", defaults::USE_LAYER_NORM);
+  bool use_layer_norm =
+      args.get<bool>("use_layer_norm", "bool", defaults::USE_LAYER_NORM);
+
+  bool train_without_bias = 
+      args.get<bool>("train_without_bias", "bool", defaults::TRAIN_WITHOUT_BIAS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
-                             use_tanh, use_layer_norm);
+                             use_tanh, use_layer_norm, train_without_bias);
 }
 
 namespace {
@@ -46,8 +50,8 @@ float autotuneSparsity(uint32_t dim) {
 }  // namespace
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                      uint32_t output_dim, bool use_sigmoid_bce,
-                      bool use_tanh, bool use_layer_norm) {
+                      uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
+                      bool use_layer_norm, bool train_without_bias) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
@@ -55,11 +59,11 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   auto hidden =
       bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
                                           /* sparsity= */ 1.0,
-                                          /* activation= */ hidden_activation)
+                                          /* activation= */ hidden_activation, nullptr, train_without_bias)
           ->apply(input);
-  
+
   // Using layer norm for bias overvalues
-  if(use_layer_norm){
+  if (use_layer_norm) {
     auto layer_norm = bolt::nn::ops::LayerNorm::make()->apply(hidden);
     hidden = layer_norm;
   }

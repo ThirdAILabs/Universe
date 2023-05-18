@@ -32,8 +32,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _biases(config.getDim()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
+      _train_without_bias(train_without_bias),
       _sampling_mode(BoltSamplingMode::LSH),
-      _train_without_bias(train_without_bias)
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
@@ -43,7 +43,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
-  if(_train_without_bias){
+  if (_train_without_bias) {
     _biases.assign(_biases.size(), 0.0);
   }
   if (_sparsity < 1.0) {
@@ -585,8 +585,8 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
   assert(_bias_optimizer.has_value());
-  if(_train_without_bias){
-    continue;
+  if (_train_without_bias) {
+    return;
   }
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
