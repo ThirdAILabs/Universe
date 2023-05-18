@@ -13,6 +13,7 @@
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
+
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
@@ -413,8 +414,10 @@ struct BucketScore {
 struct CompareBuckets {
   bool operator()(const std::pair<uint32_t, BucketScore>& lhs,
                   const std::pair<uint32_t, BucketScore>& rhs) {
-    return lhs.second.frequency > rhs.second.frequency ||
-           lhs.second.score > rhs.second.score;
+    if (lhs.second.frequency == rhs.second.frequency) {
+      return lhs.second.score > rhs.second.score;
+    }
+    return lhs.second.frequency > rhs.second.frequency;
   }
 };
 
@@ -474,7 +477,11 @@ void UDTMachClassifier::introduceLabel(
 
         // Give preference to emptier buckets. If buckets are equally empty, use
         // one with the best score.
-        return lhs_size < rhs_size || cmp(lhs, rhs);
+        if (lhs_size == rhs_size) {
+          return cmp(lhs, rhs);
+        }
+
+        return lhs_size < rhs_size;
       });
 
   std::vector<uint32_t> new_hashes(num_hashes);
