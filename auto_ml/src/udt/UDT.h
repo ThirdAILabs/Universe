@@ -2,7 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
 #include <stdexcept>

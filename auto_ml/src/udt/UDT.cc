@@ -2,7 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/utils/Timer.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>

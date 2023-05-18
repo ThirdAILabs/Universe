@@ -3,7 +3,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/GraphInfo.h>
