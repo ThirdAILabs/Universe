@@ -7,7 +7,6 @@
 #include <limits>
 #include <optional>
 #include <random>
-#include <unordered_map>
 
 namespace thirdai::hashing {
 

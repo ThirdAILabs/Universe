@@ -65,7 +65,7 @@ class FullyConnectedNode final
   float getSparsity();
 
   std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity,
-                                                  bool rebuild_tables,
+                                                  bool rebuild_hash_tables,
                                                   bool experimental_autotune);
 
   float* getWeightsPtr();

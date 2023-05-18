@@ -68,6 +68,13 @@ SamplingConfigPtr DWTASamplingConfig::newAutotune(uint32_t layer_dim,
 
   uint32_t expected_num_elements_per_bucket;
 
+  /**
+   * This is a "magic function". When running grid search, we used some fixed
+   * values for expected number of values per bucket. This function is just an
+   * extrapolation over those values.
+   * While this is not ideal, until we do a grid search on this parameter or
+   * come up with some other formulation, this is what we have.
+   */
   expected_num_elements_per_bucket = static_cast<uint32_t>(std::max(
       std::log(layer_dim) * 2 * (layer_dim / (layer_dim + 5000.0)), 1.0));
 

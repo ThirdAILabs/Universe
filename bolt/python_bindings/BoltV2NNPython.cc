@@ -156,7 +156,7 @@ void defineOps(py::module_& nn) {
       .def("dim", &ops::FullyConnected::dim)
       .def("get_sparsity", &ops::FullyConnected::getSparsity)
       .def("set_sparsity", &ops::FullyConnected::setSparsity,
-           py::arg("sparsity"), py::arg("rebuild_tables") = false,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
            py::arg("experimental_autotune") = false)
       .def_property_readonly(
           "weights",

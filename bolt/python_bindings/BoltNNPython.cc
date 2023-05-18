@@ -185,7 +185,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
-           py::arg("sparsity"), py::arg("rebuild_tables") = false,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
            py::arg("experimental_autotune") = false)
       .def("get_dim", &FullyConnectedNode::outputDim)
       .def_property_readonly(

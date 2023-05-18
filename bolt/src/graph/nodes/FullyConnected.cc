@@ -150,14 +150,14 @@ float FullyConnectedNode::getSparsity() {
 }
 
 std::shared_ptr<FullyConnectedNode> FullyConnectedNode::setSparsity(
-    float sparsity, bool rebuild_tables, bool experimental_autotune) {
+    float sparsity, bool rebuild_hash_tables, bool experimental_autotune) {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
         "FullyConnectedNode must be in a compiled state to call "
         "setSparsity");
   }
-  _layer->setSparsity(sparsity, rebuild_tables, experimental_autotune);
+  _layer->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
   return shared_from_this();
 }
 

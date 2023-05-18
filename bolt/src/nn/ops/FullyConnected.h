@@ -107,9 +107,9 @@ class FullyConnected final
 
   float getSparsity() { return _kernel->getSparsity(); }
 
-  void setSparsity(float sparsity, bool rebuild_tables,
+  void setSparsity(float sparsity, bool rebuild_hash_tables,
                    bool experimental_autotune) {
-    _kernel->setSparsity(sparsity, rebuild_tables, experimental_autotune);
+    _kernel->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
   }
 
  private:
