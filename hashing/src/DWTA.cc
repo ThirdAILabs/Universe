@@ -22,11 +22,8 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _dim(input_dim),
       _binsize(binsize),
       _log_binsize(floor(log2(_binsize))) {
-  if (permutations.has_value()) {
-    _permute = permutations.value();
-  } else {
-    _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
-  }
+  _permute = permutations.value_or(
+      ceil((static_cast<double>(_num_hashes) * _binsize) / _dim));
 
   std::mt19937 gen(seed);
   _bin_map = std::vector<uint32_t>(_dim * _permute);
