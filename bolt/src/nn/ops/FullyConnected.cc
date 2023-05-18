@@ -30,7 +30,8 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
       _updates_since_rebuild_hash_tables(0),
       _updates_since_reconstruct_hash_functions(0) {
   if (!sampling) {
-    sampling = DWTASamplingConfig::autotune(dim, sparsity);
+    sampling = DWTASamplingConfig::autotune(dim, sparsity,
+                                            /* experimental_autotune=*/false);
   }
   FullyConnectedLayerConfig config(dim, sparsity, activation,
                                    std::move(sampling));

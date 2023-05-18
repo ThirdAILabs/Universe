@@ -153,6 +153,11 @@ void defineOps(py::module_& nn) {
            py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnected::apply)
+      .def("dim", &ops::FullyConnected::dim)
+      .def("get_sparsity", &ops::FullyConnected::getSparsity)
+      .def("set_sparsity", &ops::FullyConnected::setSparsity,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
       .def_property_readonly(
           "weights",
           [](const ops::FullyConnected& op) {
