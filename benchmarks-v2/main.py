@@ -20,7 +20,15 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
+        choices=[
+            "udt",
+            "bolt_fc",
+            "bolt_v2_fc",
+            "dlrm",
+            "dlrm_v2",
+            "query_reformulation",
+            "temporal",
+        ],
         help="Which runners to use to run the benchmark.",
     )
     parser.add_argument(
@@ -109,6 +117,7 @@ if __name__ == "__main__":
                 mlflow_logger.log_additional_param(
                     "thirdai_version", thirdai.__version__
                 )
+                mlflow_logger.log_additional_param("runner", runner_name)
             else:
                 mlflow_logger = None
 
