@@ -50,4 +50,47 @@ inline uint32_t toInteger(const char* start) {
 
 bool startsWith(const std::string& to_search_in, const std::string& prefix);
 
+/* HELPER METHODS FOR UNICODE STRINGS */
+
+std::wstring toUnicode(const std::string& text);
+std::string fromUnicode(const std::wstring& wText);
+
+/**
+ * Converts the given input string into a consistent normalized form in case of
+ * unicode text. Read more about normalization here:
+ * https://unicode.org/faq/normalization.html
+ */
+std::string normalize(const std::string& s);
+
+std::wstring lower(const std::wstring& s);
+
+const std::wstring DEFAULT_UNICODE_STRIP_CHARACTERS = L" \t\n\r\v\f";
+
+std::wstring strip(
+    const std::wstring& text,
+    const std::wstring& strip_characters = DEFAULT_UNICODE_STRIP_CHARACTERS);
+
+std::vector<std::wstring> split(
+    const std::wstring& text,
+    const std::wstring& split_characters = DEFAULT_UNICODE_STRIP_CHARACTERS);
+
+template <class Predicate>
+std::vector<std::wstring> splitIf(const std::wstring& text,
+                                  Predicate predicate);
+
+/**
+ * Cleans the text by doing things like stripping accents, replacing common
+ * whitespace characters with a space, and cleaning out extraneous control
+ * charcters, null characters, and unrepresentable characters.
+ */
+std::wstring cleanText(const std::wstring& text);
+
+bool isControl(const wchar_t& c);
+bool isWhitespace(const wchar_t& c);
+bool isPunctuation(const wchar_t& c);
+bool isChineseChar(const wchar_t& c);
+
+std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text);
+std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
+
 }  // namespace thirdai::text

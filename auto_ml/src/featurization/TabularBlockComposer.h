@@ -1,8 +1,8 @@
 #pragma once
 
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/featurization/TemporalContext.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/PreprocessedVectors.h>

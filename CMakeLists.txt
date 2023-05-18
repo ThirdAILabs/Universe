@@ -265,6 +265,8 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
+
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
 set(ENABLE_TESTING OFF)
@@ -375,7 +377,6 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    dataset/src/Vocabulary.cc
     dataset/src/DataSource.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
@@ -386,7 +387,6 @@ set(THIRDAI_SOURCES
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
-    dataset/src/featurizers/MaskedSentenceFeaturizer.cc
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
@@ -396,7 +396,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
-    dataset/src/mach/MachDecode.cc
+    dataset/src/blocks/text/WordpieceTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
@@ -409,12 +409,13 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/featurization/DataTypes.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
@@ -428,17 +429,23 @@ set(THIRDAI_SOURCES
 # corresponding flag is set
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES} licensing/src/methods/keygen/KeygenCommunication.cc
+      ${THIRDAI_SOURCES}
+      licensing/src/methods/keygen/KeygenCommunication.cc
       licensing/src/methods/heartbeat/Heartbeat.cc
-      licensing/src/CheckLicenseEnabled.cc)
+      licensing/src/CheckLicenseEnabled.cc
+      licensing/src/methods/keygen/KeyMethod.cc
+      licensing/src/methods/heartbeat/LocalServerMethod.cc
+      licensing/src/methods/file/FileMethod.cc)
 else()
   set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal prometheus-cpp::pull)
+target_link_libraries(
+  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
+                 prometheus-cpp::pull utf8proc)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
                                        OpenSSL::SSL)
@@ -476,10 +483,10 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
-  auto_ml/src/models/TextClassifier.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

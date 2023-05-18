@@ -9,9 +9,13 @@ Explanation TextBlock::explainIndex(uint32_t index_within_block,
   if (_lowercase) {
     string = text::lower(string);
   }
-  std::vector<std::string> tokens = _tokenizer->apply(string);
-  std::string keyword =
-      _encoder->getResponsibleWord(tokens, index_within_block, _dim);
+
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(string);
+
+  uint32_t source_token =
+      _encoder->undoEncoding(tokens, index_within_block, _dim);
+
+  std::string keyword = _tokenizer->getResponsibleWord(string, source_token);
 
   return {_col, keyword};
 }
@@ -24,8 +28,8 @@ void TextBlock::buildSegment(ColumnarInputSample& input,
     string = text::lower(string);
   }
 
-  std::vector<std::string> tokens = _tokenizer->apply(string);
-  std::vector<uint32_t> indices = _encoder->apply(tokens);
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(string);
+  std::vector<uint32_t> indices = _encoder->encode(tokens);
   token_encoding::mod(indices, _dim);
 
   for (auto& [index, value] : token_encoding::sumRepeatedIndices(indices)) {

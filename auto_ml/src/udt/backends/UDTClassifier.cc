@@ -8,7 +8,7 @@
 #include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -100,14 +100,19 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
-                                   bool sparse_inference, bool verbose) {
+                                   bool sparse_inference, bool verbose,
+                                   std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
-                                  bool return_predicted_class) {
+                                  bool return_predicted_class,
+                                  std::optional<uint32_t> top_k) {
+  (void)top_k;
   return _classifier->predict(_dataset_factory->featurizeInput(sample),
                               sparse_inference, return_predicted_class,
                               /* single= */ true);
@@ -115,7 +120,10 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
-                                       bool return_predicted_class) {
+                                       bool return_predicted_class,
+                                       std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   return _classifier->predict(_dataset_factory->featurizeInputBatch(samples),
                               sparse_inference, return_predicted_class,
                               /* single= */ false);

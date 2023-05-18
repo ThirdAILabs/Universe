@@ -69,7 +69,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim);
  * explainability.
  */
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    const std::vector<std::string>& words, uint32_t output_range);
+    const std::vector<std::string>& words);
 
 /**
  * Given a vector of indices, sums repeated indices by multiplying the number of

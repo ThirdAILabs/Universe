@@ -208,9 +208,17 @@ def get_mach_precision_at_k_metric_fn(target_column, k=1, target_delimeter=None)
     return precision_at_k_additional_metric
 
 
+def get_qr_predictions(model, test_file, k):
+    samples = create_test_samples(test_file=test_file, target_column="target_queries")
+    samples = [{"phrase": x["source_queries"]} for x in samples]
+
+    return model.predict_batch(samples, top_k=k)[0]
+
+
 def get_qr_recall_at_k_metric_fn(target_column, k=1):
     def recall_at_k_additional_metric(model, test_file):
-        predictions = model.evaluate(filename=test_file, top_k=k)[0]  # shape of (-1, k)
+        predictions = get_qr_predictions(model, test_file=test_file, k=k)
+
         df = pd.read_csv(test_file)
         labels = df[target_column].to_numpy()  # shape of (-1,)
 

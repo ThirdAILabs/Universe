@@ -26,20 +26,20 @@ void DlrmAttention::forward(const autograd::ComputationList& inputs,
 
   // Compute interactions between outputs of fully connected layer and
   // embeddings.
+  uint32_t output_idx = 0;
   for (uint32_t emb_idx = 0; emb_idx < _n_emb_chunks; emb_idx++) {
     if (fc_input.isDense()) {
-      output_vec.activations[emb_idx] =
+      output_vec.activations[output_idx++] =
           fcOutputEmbeddingDotProduct</* FC_OUTPUT_DENSE= */ true>(
               fc_input, emb_input.activations + emb_idx * _emb_chunk_size);
     } else {
-      output_vec.activations[emb_idx] =
+      output_vec.activations[output_idx++] =
           fcOutputEmbeddingDotProduct</* FC_OUTPUT_DENSE= */ false>(
               fc_input, emb_input.activations + emb_idx * _emb_chunk_size);
     }
   }
 
   // Compute pairwise interactions between embeddings.
-  uint32_t output_idx = _n_emb_chunks;
   for (uint32_t emb_idx_1 = 0; emb_idx_1 < _n_emb_chunks; emb_idx_1++) {
     for (uint32_t emb_idx_2 = emb_idx_1 + 1; emb_idx_2 < _n_emb_chunks;
          emb_idx_2++) {
@@ -58,8 +58,9 @@ void DlrmAttention::backpropagate(autograd::ComputationList& inputs,
 
   const BoltVector& output_vec = output->getVector(index_in_batch);
 
+  uint32_t output_idx = 0;
   for (uint32_t emb_idx = 0; emb_idx < _n_emb_chunks; emb_idx++) {
-    float dot_product_gradient = output_vec.gradients[emb_idx];
+    float dot_product_gradient = output_vec.gradients[output_idx++];
 
     uint64_t embedding_offset = emb_idx * _emb_chunk_size;
     const float* embedding = emb_input.activations + embedding_offset;
@@ -74,7 +75,6 @@ void DlrmAttention::backpropagate(autograd::ComputationList& inputs,
     }
   }
 
-  uint32_t output_idx = _n_emb_chunks;
   for (uint32_t emb_idx_1 = 0; emb_idx_1 < _n_emb_chunks; emb_idx_1++) {
     for (uint32_t emb_idx_2 = emb_idx_1 + 1; emb_idx_2 < _n_emb_chunks;
          emb_idx_2++) {

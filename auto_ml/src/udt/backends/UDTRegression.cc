@@ -84,7 +84,10 @@ py::object UDTRegression::train(
 
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
-                                   bool sparse_inference, bool verbose) {
+                                   bool sparse_inference, bool verbose,
+                                   std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   bolt::train::Trainer trainer(_model);
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
@@ -96,8 +99,10 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 }
 
 py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
-                                  bool return_predicted_class) {
+                                  bool return_predicted_class,
+                                  std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   auto output = _model->forward(_dataset_factory->featurizeInput(sample),
                                 sparse_inference);
@@ -107,8 +112,10 @@ py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDTRegression::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
-                                       bool return_predicted_class) {
+                                       bool return_predicted_class,
+                                       std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   auto outputs = _model->forward(_dataset_factory->featurizeInputBatch(samples),
                                  sparse_inference);

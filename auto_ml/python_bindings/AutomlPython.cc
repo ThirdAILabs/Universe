@@ -4,8 +4,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -34,6 +34,29 @@ class ValidationOptions {
   udt::ValidationArgs _args;
 };
 
+std::shared_ptr<udt::UDT> makeUDT(
+    data::ColumnDataTypes data_types,
+    const data::UserProvidedTemporalRelationships&
+        temporal_tracking_relationships,
+    const std::string& target_col, std::optional<uint32_t> n_target_classes,
+    bool integer_target, std::string time_granularity, uint32_t lookahead,
+    char delimiter, const std::optional<std::string>& model_config,
+    const py::dict& options);
+
+std::shared_ptr<udt::UDT> makeQueryReformulation(
+    std::string source_column, std::string target_column,
+    const std::string& dataset_size, char delimiter,
+    const std::optional<std::string>& model_config, const py::dict& options);
+
+std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
+    std::string target_column, const std::string& dataset_size, char delimiter,
+    const std::optional<std::string>& model_config, const py::dict& options);
+
+std::shared_ptr<udt::UDT> makeSvmClassifier(
+    const std::string& file_format, uint32_t n_target_classes,
+    uint32_t input_dim, const std::optional<std::string>& model_config,
+    const py::dict& options);
+
 void defineAutomlInModule(py::module_& module) {
   py::class_<ValidationOptions>(module, "Validation")
       .def(py::init<std::string, std::vector<std::string>,
@@ -54,18 +77,9 @@ void defineAutomlInModule(py::module_& module) {
           "sparse_inference",
           [](udt::ValidationArgs const& v) { return v.sparseInference(); });
 
-  /**
-   * This class definition overrides the __new__ method because we want to
-   * modify class instantiation such that we can return objects of type
-   * bolt.models.UDTGenerator or bolt.models.UDTClassifier instead of
-   * an object of type bolt.UniversalDeepTransformer. Having this method
-   * return a type other than that of the class on which it is being called
-   * ensures that the __init__ method is never called.
-   * https://stackoverflow.com/questions/26793600/decorate-call-with-staticmethod
-   *
-   */
-  py::class_<UDTFactory>(module, "UniversalDeepTransformer", docs::UDT_CLASS)
-      .def("__new__", &UDTFactory::buildUDT, py::arg("data_types"),
+  py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
+                                                  "UniversalDeepTransformer")
+      .def(py::init(&makeUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                data::UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
@@ -74,25 +88,18 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
-      .def("__new__", &UDTFactory::createUDTSpecifiedFileFormat,
-           py::arg("file_format"), py::arg("n_target_classes"),
-           py::arg("input_dim"), py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict())
-      .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
-           py::arg("source_column"), py::arg("target_column"),
-           py::arg("dataset_size"), py::arg("delimiter") = ',',
-           docs::UDT_GENERATOR_INIT)
-      .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
+      .def(py::init(&makeQueryReformulation), py::arg("source_column"),
            py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("delimiter") = ',', docs::UDT_GENERATOR_INIT)
-      .def("__new__", &UDTFactory::buildTextClassifier,
-           py::arg("input_vocab_size"), py::arg("metadata_dim"),
-           py::arg("n_classes"), py::arg("model_size"),
-           docs::TEXT_CLASSIFIER_INIT)
-      .def_static("load", &UDTFactory::load, py::arg("filename"),
-                  docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
-
-  py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
+      .def(py::init(&makeQueryReformulationTargetOnly),
+           py::arg("target_column"), py::arg("dataset_size"),
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
+      .def(py::init(&makeSvmClassifier), py::arg("file_format"),
+           py::arg("n_target_classes"), py::arg("input_dim"),
+           py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"), py::arg("validation") = std::nullopt,
            py::arg("batch_size") = std::nullopt,
@@ -109,13 +116,15 @@ void defineAutomlInModule(py::module_& module) {
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect())
+           py::arg("top_k") = std::nullopt, bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false)
+           py::arg("return_predicted_class") = false,
+           py::arg("top_k") = std::nullopt)
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false)
+           py::arg("return_predicted_class") = false,
+           py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
@@ -143,6 +152,14 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"))
       .def("forget", &udt::UDT::forget, py::arg("label"))
+      .def("clear_index", &udt::UDT::clearIndex)
+      .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{})
+      .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
+           py::arg("sparse_inference") = false)
+      .def("get_index", &udt::UDT::getIndex)
+      .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -158,8 +175,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("get_text_embedding_model", &udt::UDT::getTextEmbeddingModel,
            py::arg("distance_cutoff") = 1)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
-      .def("save", &UDTFactory::save_udt, py::arg("filename"))
-      .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))
+      .def("save", &udt::UDT::save, py::arg("filename"))
+      .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
 
@@ -186,63 +203,6 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("data_source"), py::arg("training"),
            py::arg("shuffle_config") = std::nullopt)
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
-
-  py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
-      models_submodule, "UDTGenerator")
-      .def(py::init(&QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("source_column"), py::arg("target_column"),
-           py::arg("dataset_size"), py::arg("delimiter") = ',',
-           docs::UDT_GENERATOR_INIT)
-      .def("train", &QueryCandidateGenerator::train, py::arg("filename"),
-           py::arg("use_supervised") = true, docs::UDT_GENERATOR_TRAIN)
-      .def(
-          "evaluate",
-          [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& filename, uint32_t top_k, bool return_scores) {
-            auto [reformulated_queries, scores] =
-                udt_generator_model.evaluateOnFile(filename, top_k);
-            return UDTFactory::makeGeneratorInferenceTuple(
-                reformulated_queries, scores, return_scores);
-          },
-          py::arg("filename"), py::arg("top_k"),
-          py::arg("return_scores") = false, docs::UDT_GENERATOR_EVALUATE)
-      .def(
-          "predict",
-          [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& sample, uint32_t top_k, bool return_scores) {
-            auto [reformulated_queries, scores] =
-                udt_generator_model.queryFromList({sample}, top_k);
-            return UDTFactory::makeGeneratorInferenceTuple(
-                reformulated_queries, scores, return_scores);
-          },
-          py::arg("query"), py::arg("top_k"), py::arg("return_scores") = false,
-          docs::UDT_GENERATOR_PREDICT)
-      .def(
-          "predict_batch",
-          [](QueryCandidateGenerator& udt_generator_model,
-             const std::vector<std::string>& queries, uint32_t top_k,
-             bool return_scores) {
-            auto [reformulated_queries, scores] =
-                udt_generator_model.queryFromList(queries, top_k);
-            return UDTFactory::makeGeneratorInferenceTuple(
-                reformulated_queries, scores, return_scores);
-          },
-          py::arg("queries"), py::arg("top_k"),
-          py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
-      .def("save", &UDTFactory::save_generator, py::arg("filename"),
-           docs::UDT_GENERATOR_SAVE);
-
-  py::class_<TextClassifier, std::shared_ptr<TextClassifier>>(
-      models_submodule, "UDTTextClassifier")
-      .def("train", &TextClassifier::trainOnBatch, py::arg("data"),
-           py::arg("labels"), py::arg("learning_rate"),
-           docs::TEXT_CLASSIFIER_TRAIN)
-      .def("validate", &TextClassifier::validateOnBatch, py::arg("data"),
-           py::arg("labels"), docs::TEXT_CLASSIFIER_VALIDATE)
-      .def("predict", &TextClassifier::predict, py::arg("data"),
-           docs::TEXT_CLASSIFIER_PREDICT)
-      .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
-           docs::TEXT_CLASSIFIER_SAVE);
 }
 
 void createDistributedPreprocessingWrapper(py::module_& module) {
@@ -307,7 +267,10 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<std::string, std::string, bool>(),
            py::arg("tokenizer") = "words",
            py::arg("contextual_encoding") = "none",
-           py::arg("lowercase") = false, docs::UDT_TEXT_TYPE);
+           py::arg("lowercase") = false, docs::UDT_TEXT_TYPE)
+      .def(py::init<dataset::WordpieceTokenizerPtr, std::string>(),
+           py::arg("tokenizer"), py::arg("contextual_encoding") = "none",
+           docs::UDT_TEXT_TYPE);
 
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
@@ -398,52 +361,17 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
   return args;
 }
 
-// UDT Factory Methods
-
-QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
-    py::object& obj, const std::string& source_column,
-    const std::string& target_column, const std::string& dataset_size,
-    char delimiter) {
-  (void)obj;
-  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-      /* source_column_name = */ source_column,
-      /* target_column_name = */ target_column,
-      /* dataset_size = */ dataset_size,
-      /* delimiter = */ delimiter);
-}
-
-QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
-    py::object& obj, const std::string& target_column,
-    const std::string& dataset_size, char delimiter) {
-  (void)obj;
-  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-      /* source_column_name = */ target_column,
-      /* target_column_name = */ target_column,
-      /* dataset_size = */ dataset_size, /* delimiter = */ delimiter);
-}
-
-TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
-                                               uint32_t input_vocab_size,
-                                               uint32_t metadata_dim,
-                                               uint32_t n_classes,
-                                               const std::string& model_size) {
-  (void)obj;
-  return TextClassifier(input_vocab_size, metadata_dim, n_classes, model_size);
-}
-
-std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
-    py::object& obj, data::ColumnDataTypes data_types,
+std::shared_ptr<udt::UDT> makeUDT(
+    data::ColumnDataTypes data_types,
     const data::UserProvidedTemporalRelationships&
         temporal_tracking_relationships,
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
-  (void)obj;
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
-      /* temporal_tracking_relationships = */
-      temporal_tracking_relationships,
+      /* temporal_tracking_relationships = */ temporal_tracking_relationships,
       /* target_col = */ target_col,
       /* n_target_classes = */ n_target_classes,
       /* integer_target = */ integer_target,
@@ -453,68 +381,35 @@ std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
       /* options = */ createArgumentMap(options));
 }
 
-std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
-    py::object& obj, const std::string& file_format, uint32_t n_target_classes,
+std::shared_ptr<udt::UDT> makeQueryReformulation(
+    std::string source_column, std::string target_column,
+    const std::string& dataset_size, char delimiter,
+    const std::optional<std::string>& model_config, const py::dict& options) {
+  return std::make_shared<udt::UDT>(
+      /* incorrect_column_name = */ std::move(source_column),
+      /* correct_column_name = */ std::move(target_column),
+      /* dataset_size = */ dataset_size,
+      /* delimiter = */ delimiter, /* model_config = */ model_config,
+      /* user_args= */ createArgumentMap(options));
+}
+
+std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
+    std::string target_column, const std::string& dataset_size, char delimiter,
+    const std::optional<std::string>& model_config, const py::dict& options) {
+  return std::make_shared<udt::UDT>(
+      /* incorrect_column_name = */ std::nullopt,
+      /* correct_column_name = */ std::move(target_column),
+      /* dataset_size = */ dataset_size,
+      /* delimiter = */ delimiter, /* model_config = */ model_config,
+      /* user_args= */ createArgumentMap(options));
+}
+
+std::shared_ptr<udt::UDT> makeSvmClassifier(
+    const std::string& file_format, uint32_t n_target_classes,
     uint32_t input_dim, const std::optional<std::string>& model_config,
-    const py::dict& user_args) {
-  (void)obj;
+    const py::dict& options) {
   return std::make_shared<udt::UDT>(file_format, n_target_classes, input_dim,
-                                    model_config, createArgumentMap(user_args));
+                                    model_config, createArgumentMap(options));
 }
 
-void UDTFactory::save_udt(const udt::UDT& classifier,
-                          const std::string& filename) {
-  classifier.model()->setSerializeOptimizer(false);
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
-  classifier.save_stream(filestream);
-}
-
-void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
-                                const std::string& filename) {
-  classifier.model()->setSerializeOptimizer(true);
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
-  classifier.save_stream(filestream);
-}
-
-void UDTFactory::save_generator(const QueryCandidateGenerator& generator,
-                                const std::string& filename) {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(reinterpret_cast<const char*>(&UDT_GENERATOR_IDENTIFIER), 1);
-  generator.save_stream(filestream);
-}
-
-void UDTFactory::saveTextClassifier(const TextClassifier& text_classifier,
-                                    const std::string& filename) {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(
-      reinterpret_cast<const char*>(&UDT_TEXT_CLASSIFIER_IDENTIFIER), 1);
-  text_classifier.save_stream(filestream);
-}
-
-py::object UDTFactory::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  uint8_t first_byte;
-  filestream.read(reinterpret_cast<char*>(&first_byte), 1);
-
-  if (first_byte == UDT_GENERATOR_IDENTIFIER) {
-    return py::cast(QueryCandidateGenerator::load_stream(filestream));
-  }
-
-  if (first_byte == UDT_IDENTIFIER) {
-    return py::cast(udt::UDT::load_stream(filestream));
-  }
-
-  if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
-    return py::cast(TextClassifier::load_stream(filestream));
-  }
-
-  throw std::invalid_argument("Found an invalid header byte in the saved file");
-}
 }  // namespace thirdai::automl::python
