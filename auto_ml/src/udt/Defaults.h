@@ -18,7 +18,7 @@ constexpr bool FREEZE_HASH_TABLES = true;
 constexpr bool USE_SIGMOID_BCE = false;
 
 // Whether to use layer norm between hidden and output layer
-constexpr bool USE_LAYER_NORM = true;
+constexpr bool USE_LAYER_NORM = false;
 
 // Whether there is bias in training in hidden layer
 constexpr bool TRAIN_WITHOUT_BIAS = false;
