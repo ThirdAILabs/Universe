@@ -84,18 +84,19 @@ class UDTMachClassifier final : public UDTBackend {
    */
   py::object entityEmbedding(const Label& label) final;
 
-  void introduceDocuments(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names) final;
+  void introduceDocuments(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const Label& new_label) final;
+                         const Label& new_label,
+                         std::optional<uint32_t> num_buckets_to_sample) final;
 
-  void introduceLabel(const MapInputBatch& samples,
-                      const Label& new_label) final;
+  void introduceLabel(const MapInputBatch& samples, const Label& new_label,
+                      std::optional<uint32_t> num_buckets_to_sample) final;
 
   void forget(const Label& label) final;
 

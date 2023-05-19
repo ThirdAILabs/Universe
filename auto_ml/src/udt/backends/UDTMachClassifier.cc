@@ -10,8 +10,8 @@
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <algorithm>
 #include <stdexcept>
-#include <variant>
 
 namespace thirdai::automl::udt {
 
@@ -233,6 +233,8 @@ py::object UDTMachClassifier::predictHashes(const MapInput& sample,
     heap.pop();
   }
 
+  std::reverse(hashes_to_return.begin(), hashes_to_return.end());
+
   return py::cast(hashes_to_return);
 }
 
@@ -359,7 +361,8 @@ UDTMachClassifier::aggregateSamplesByDoc(
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
+    const std::vector<std::string>& weak_column_names,
+    std::optional<uint32_t> num_buckets_to_sample) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
@@ -379,14 +382,15 @@ void UDTMachClassifier::introduceDocuments(
                                                label_column_name);
 
   for (const auto& [doc, samples] : samples_per_doc) {
-    introduceLabel(samples, doc);
+    introduceLabel(samples, doc, num_buckets_to_sample);
   }
 }
 
 void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, const Label& new_label) {
+    const std::vector<std::string>& weak_column_names, const Label& new_label,
+    std::optional<uint32_t> num_buckets_to_sample) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   thirdai::data::ColdStartTextAugmentation augmentation(
@@ -402,29 +406,58 @@ void UDTMachClassifier::introduceDocument(
     batch.push_back(input);
   }
 
-  introduceLabel(batch, new_label);
+  introduceLabel(batch, new_label, num_buckets_to_sample);
 }
 
-void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
-                                       const Label& new_label) {
+struct BucketScore {
+  uint32_t frequency = 0;
+  float score = 0.0;
+};
+
+struct CompareBuckets {
+  bool operator()(const std::pair<uint32_t, BucketScore>& lhs,
+                  const std::pair<uint32_t, BucketScore>& rhs) {
+    if (lhs.second.frequency == rhs.second.frequency) {
+      return lhs.second.score > rhs.second.score;
+    }
+    return lhs.second.frequency > rhs.second.frequency;
+  }
+};
+
+void UDTMachClassifier::introduceLabel(
+    const MapInputBatch& samples, const Label& new_label,
+    std::optional<uint32_t> num_buckets_to_sample_opt) {
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
                     .at(0);
+  const auto& mach_index = _mach_label_block->index();
+
+  uint32_t num_hashes = mach_index->numHashes();
+  uint32_t num_buckets_to_sample =
+      num_buckets_to_sample_opt.value_or(num_hashes);
+  if (num_buckets_to_sample < mach_index->numHashes()) {
+    std::cout << "Warning. Sampling from fewer buckets than num_hashes. "
+                 "Defaulting to sampling from num_hashes buckets.";
+  }
+  if (num_buckets_to_sample > mach_index->numBuckets()) {
+    throw std::invalid_argument(
+        "Cannot sample more buckets than there are in the index.");
+  }
 
   // map from output hash to an aggregated pair of (frequency, score)
-  std::unordered_map<uint32_t, std::pair<uint32_t, float>> hash_freq_and_scores;
+  std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    auto top_K = output->getVector(i).findKLargestActivations(
-        _mach_label_block->index()->numHashes());
+    auto top_K =
+        output->getVector(i).findKLargestActivations(num_buckets_to_sample);
 
     while (!top_K.empty()) {
       auto [activation, active_neuron] = top_K.top();
       if (!hash_freq_and_scores.count(active_neuron)) {
-        hash_freq_and_scores[active_neuron] = std::make_pair(1, activation);
+        hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
       } else {
-        hash_freq_and_scores[active_neuron].first += 1;
-        hash_freq_and_scores[active_neuron].second += activation;
+        hash_freq_and_scores[active_neuron].frequency += 1;
+        hash_freq_and_scores[active_neuron].score += activation;
       }
       top_K.pop();
     }
@@ -433,20 +466,33 @@ void UDTMachClassifier::introduceLabel(const MapInputBatch& samples,
   // We sort the hashes first by number of occurances and tiebreak with the
   // higher aggregated score if necessary. We don't only use the activations
   // since those typically aren't as useful as the frequencies.
-  std::vector<std::pair<uint32_t, std::pair<uint32_t, float>>> sorted_hashes(
+  std::vector<std::pair<uint32_t, BucketScore>> sorted_hashes(
       hash_freq_and_scores.begin(), hash_freq_and_scores.end());
-  std::sort(sorted_hashes.begin(), sorted_hashes.end(),
-            [](auto& left, auto& right) {
-              auto [left_frequency, left_score] = left.second;
-              auto [right_frequency, right_score] = right.second;
-              if (left_frequency == right_frequency) {
-                return left_score > right_score;
-              }
-              return left_frequency > right_frequency;
-            });
 
-  std::vector<uint32_t> new_hashes(_mach_label_block->index()->numHashes());
-  for (uint32_t i = 0; i < _mach_label_block->index()->numHashes(); i++) {
+  CompareBuckets cmp;
+  std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
+
+  if (num_buckets_to_sample > num_hashes) {
+    // If we are sampling more buckets then we end up using we rerank the
+    // buckets based on size to load balance the index.
+    std::sort(sorted_hashes.begin(),
+              sorted_hashes.begin() + num_buckets_to_sample,
+              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
+                size_t lhs_size = mach_index->bucketSize(lhs.first);
+                size_t rhs_size = mach_index->bucketSize(rhs.first);
+
+                // Give preference to emptier buckets. If buckets are equally
+                // empty, use one with the best score.
+                if (lhs_size == rhs_size) {
+                  return cmp(lhs, rhs);
+                }
+
+                return lhs_size < rhs_size;
+              });
+  }
+
+  std::vector<uint32_t> new_hashes(num_hashes);
+  for (uint32_t i = 0; i < num_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes[i] = hash;
   }
