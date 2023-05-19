@@ -32,6 +32,9 @@ def parse_arguments():
             "mini_benchmark_udt",
             "mini_benchmark_query_reformulation",
             "mini_benchmark_temporal",
+            "backward_compatibility_udt",
+            "backward_compatibility_query_reformulation",
+            "backward_compatibility_temporal",
         ],
         help="Which runners to use to run the benchmark.",
     )
@@ -137,8 +140,6 @@ def main(**kwargs):
                     path_prefix=args.path_prefix,
                     mlflow_logger=mlflow_logger,
                 )
-                if mlflow_logger:
-                    mlflow_logger.end_run()
             except Exception as error:
                 throw_exception = True
                 print(
@@ -150,6 +151,9 @@ def main(**kwargs):
                     requests.post(slack_webhook, json.dumps({"text": payload}))
                 else:
                     print(payload)
+
+            if mlflow_logger:
+                mlflow_logger.end_run()
 
     if throw_exception:
         raise Exception("One or more benchmark runs have failed")

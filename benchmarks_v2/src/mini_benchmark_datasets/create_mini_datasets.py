@@ -42,8 +42,7 @@ def parse_arguments():
 
 def save_non_graph_subset(file, num_lines=11):
     if not file:
-        raise Exception
-    print(file)
+        return
 
     read_path = os.path.join(args.read_path_prefix, file)
 
@@ -70,20 +69,14 @@ def save_data_subset(config, num_lines=11):
         has_gnn_backend = False
 
     if not has_gnn_backend:
-        try:
+        if hasattr(config, "train_file"):
             save_non_graph_subset(config.train_file, num_lines)
-        except:
-            pass
 
-        try:
+        if hasattr(config, "test_file"):
             save_non_graph_subset(config.test_file, num_lines)
-        except:
-            pass
 
-        try:
+        if hasattr(config, "cold_start_train_file"):
             save_non_graph_subset(config.cold_start_train_file, num_lines)
-        except:
-            pass
 
     else:
         # We create a small dummy graph dataset from a given file graph csv files
@@ -93,22 +86,14 @@ def save_data_subset(config, num_lines=11):
         data_types = config.get_data_types(args.read_path_prefix)
 
         # Get column name corresponding to node_id type from data_types
-        node_id_col = (list(data_types.keys()))[
-            [
-                i
-                for i, (_, v) in enumerate(data_types.items())
-                if isinstance(v, bolt.types.node_id)
-            ][0]
-        ]
+        node_id_col = [
+            k for k, v in data_types.items() if isinstance(v, bolt.types.node_id)
+        ][0]
 
         # Get column name corresponding to neighbors type from data_types
-        neighbors_col = (list(data_types.keys()))[
-            [
-                i
-                for i, (_, v) in enumerate(data_types.items())
-                if isinstance(v, bolt.types.neighbors)
-            ][0]
-        ]
+        neighbors_col = [
+            k for k, v in data_types.items() if isinstance(v, bolt.types.neighbors)
+        ][0]
 
         read_test_file_path = os.path.join(args.read_path_prefix, config.test_file)
 
@@ -131,6 +116,8 @@ def save_data_subset(config, num_lines=11):
 
         # Create valid neighbors
         neighbor_matrix = np.random.randint(0, 2, size=(num_lines - 1, num_lines - 1))
+        # Create symmetric matrix for undirected graph by taking ths lower triangular matrix (tril)
+        # and setting it to the upper triangular matrix as well (tril.T)
         neighbor_matrix = np.tril(neighbor_matrix) + np.tril(neighbor_matrix, -1).T
         neighbors = [
             " ".join([str(nb) for nb in np.nonzero(nbs)[0]]) for nbs in neighbor_matrix
