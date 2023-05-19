@@ -851,6 +851,7 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
     summary << ", sampling=(";
     buildSamplingSummary(summary);
     summary << ")";
+    summary << "training_without_bias" << _train_without_bias;
   }
 
   summary << "\n";
