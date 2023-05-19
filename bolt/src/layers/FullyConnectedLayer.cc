@@ -1,6 +1,7 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/neuron_index/LshIndex.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -420,32 +421,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  std::vector<uint32_t> hashes(_hasher->numTables());
-  if constexpr (PREV_DENSE) {
-    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
-  } else {
-    _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes.data());
-  }
-
-  if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
-    /**
-     * QueryBySet just returns a set of the elements in the given buckets of
-     * the hash table.
-     *
-     * QueryAndInsertForInference returns the set of elements in the given
-     * buckets but will also insert the labels (during training only) for the
-     * vector into the buckets the vector maps to if they are not already
-     * present in the buckets. The intuition is that during sparse inference
-     * this will help force the hash tables to map vectors towards buckets
-     * that contain their correct labels. This is specific to the output
-     * layer.
-     */
-    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
-                                            _sparse_dim);
-  } else {
-    _hash_table->queryBySet(hashes.data(), active_set);
-  }
+  _neuron_index->query(input, active_set, _sparse_dim);
 
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
@@ -664,8 +640,7 @@ void FullyConnectedLayer::initSamplingDatastructures(
 }
 
 inline void FullyConnectedLayer::deinitSamplingDatastructures() {
-  _hasher = {};
-  _hash_table = {};
+  _neuron_index = {};
   _rand_neurons = {};
 }
 
@@ -674,18 +649,8 @@ void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
       useRandomSampling()) {
     return;
   }
-  uint64_t num_tables = _hash_table->numTables();
-  // TODO(nicholas): hashes could be array with size max(batch size, dim) that
-  // is allocated once
-  std::vector<uint32_t> hashes(num_tables * _dim);
-#pragma omp parallel for default(none) shared(num_tables, hashes)
-  for (uint64_t n = 0; n < _dim; n++) {
-    _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,
-                             hashes.data() + n * num_tables);
-  }
 
-  _hash_table->clearTables();
-  _hash_table->insertSequential(_dim, 0, hashes.data());
+  _neuron_index->buildIndex(_weights, _dim, false);
 }
 
 /* setting force_build to false. force_build true only when setting weights or
@@ -699,7 +664,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
     return;
   }
 
-  _hasher = _hasher->copyWithNewSeeds();
+  _neuron_index->buildIndex(_weights, _dim, true);
 }
 
 float* FullyConnectedLayer::getWeights() const {
@@ -816,7 +781,10 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
 
 std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
 FullyConnectedLayer::getHashTable() {
-  return {_hasher, _hash_table};
+  if (auto* index = nn::LshIndex::cast(_neuron_index)) {
+  }
+
+  return {nullptr, nullptr};
 }
 
 void FullyConnectedLayer::setHashTable(
@@ -836,7 +804,7 @@ void FullyConnectedLayer::setHashTable(
                                 std::to_string(hash_table->tableRange()) + ".");
   }
 
-  uint32_t max_element = _hash_table->maxElement();
+  uint32_t max_element = hash_table->maxElement();
   if (max_element >= _dim) {
     throw std::invalid_argument(
         "Hash table containing neuron index " + std::to_string(max_element) +
@@ -844,8 +812,7 @@ void FullyConnectedLayer::setHashTable(
         std::to_string(_dim) + ".");
   }
 
-  _hasher = std::move(hash_fn);
-  _hash_table = std::move(hash_table);
+  _neuron_index = nn::LshIndex::make(hash_fn, hash_table);
 }
 
 void FullyConnectedLayer::initOptimizer() {

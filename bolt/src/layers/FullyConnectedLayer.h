@@ -5,6 +5,7 @@
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/neuron_index/NeuronIndex.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
@@ -162,8 +163,7 @@ class FullyConnectedLayer final {
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
-  hashing::HashFunctionPtr _hasher;
-  hashtable::SampledHashTablePtr _hash_table;
+  nn::NeuronIndexPtr _neuron_index;
   std::vector<uint32_t> _rand_neurons;
 
   template <bool DENSE>
@@ -293,7 +293,7 @@ class FullyConnectedLayer final {
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
-            _weights, _biases, _hasher, _hash_table, _rand_neurons,
+            _weights, _biases, _neuron_index, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,
             _should_save_optimizer);
     if (_should_save_optimizer) {
@@ -319,7 +319,7 @@ class FullyConnectedLayer final {
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
-            _weights, _biases, _hasher, _hash_table, _rand_neurons,
+            _weights, _biases, _neuron_index, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,
             _should_save_optimizer);
     if (_should_save_optimizer) {
