@@ -2,7 +2,6 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -351,10 +350,9 @@ void UDTMachClassifier::introduceDocuments(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   auto dataset_loader =
-      _dataset_factory->getDatasetLoader(cold_start_data, /* shuffle= */ false);
+      _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
 
   auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE);
-  doc_samples.pop_back();  // Remove labels
 
   auto doc_samples_tensors = bolt::train::convertDatasets(
       doc_samples, _classifier->model()->inputDims());

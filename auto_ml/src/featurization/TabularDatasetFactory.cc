@@ -63,6 +63,13 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
       /* shuffle= */ shuffle, shuffle_config.value());
 }
 
+dataset::DatasetLoaderPtr TabularDatasetFactory::getUnLabeledDatasetLoader(
+    const dataset::DataSourcePtr& data_source) {
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, delimiter());
+  return std::make_unique<dataset::DatasetLoader>(
+      csv_data_source, _inference_featurizer, /* shuffle= */ false);
+}
+
 TensorList TabularDatasetFactory::featurizeInputBatch(
     const MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);

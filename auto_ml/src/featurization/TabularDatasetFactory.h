@@ -46,6 +46,9 @@ class TabularDatasetFactory {
       std::optional<dataset::DatasetShuffleConfig> shuffle_config =
           std::nullopt);
 
+  dataset::DatasetLoaderPtr getUnLabeledDatasetLoader(
+      const dataset::DataSourcePtr& data_source);
+
   TensorList featurizeInput(const MapInput& input) {
     for (const auto& [column_name, _] : input) {
       if (!_data_types.count(column_name)) {
