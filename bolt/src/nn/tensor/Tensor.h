@@ -56,6 +56,8 @@ class Tensor {
 
   const float* gradientsPtr() const;
 
+  const auto& vectors() const { return _vectors; }
+
  private:
   static void checkBatchContents(const BoltBatch& batch, uint32_t dim);
 
