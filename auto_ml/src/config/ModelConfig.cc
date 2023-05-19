@@ -85,7 +85,10 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
 
   auto predecessor = getPredecessor(config, created_comps);
 
-  auto layer = bolt::nn::ops::FullyConnected::make(
+  auto train_without_bias = integerParameter(config, "train_without_bias", args);
+
+  auto layer = train_without_bias==1 ? bolt::nn::ops::FullyConnected::make(
+      dim, predecessor->dim(), sparsity, activation, sampling_config, true) : bolt::nn::ops::FullyConnected::make(
       dim, predecessor->dim(), sparsity, activation, sampling_config);
 
   return layer->apply(predecessor);
