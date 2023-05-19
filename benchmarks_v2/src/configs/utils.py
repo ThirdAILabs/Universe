@@ -209,9 +209,9 @@ def get_mach_precision_at_k_metric_fn(target_column, k=1, target_delimeter=None)
 
 
 def get_qr_predictions(model, test_file, k):
-     samples = create_test_samples(test_file=test_file, target_column="target_queries")
-     samples = [{"phrase": x["source_queries"]} for x in samples]
-     return model.predict_batch(samples, top_k=k)[0]
+    samples = create_test_samples(test_file=test_file, target_column="target_queries")
+    samples = [{"phrase": x["source_queries"]} for x in samples]
+    return model.predict_batch(samples, top_k=k)[0]
 
 
 def get_qr_recall_at_k_metric_fn(target_column, k=1):

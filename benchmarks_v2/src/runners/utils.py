@@ -2,7 +2,6 @@ from thirdai import bolt, bolt_v2
 
 
 def get_train_config(benchmark_config, learning_rate):
-
     train_config = bolt.TrainConfig(epochs=1, learning_rate=learning_rate)
 
     if hasattr(benchmark_config, "reconstruct_hash_functions"):

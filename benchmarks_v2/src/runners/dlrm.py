@@ -51,7 +51,6 @@ class DLRMRunner(Runner):
                 step=epoch,
             )
 
-
     def get_model(config: DLRMConfig):
         int_input = bolt.nn.Input(dim=config.int_features)
         hidden1 = bolt.nn.FullyConnected(
@@ -87,7 +86,7 @@ class DLRMRunner(Runner):
         model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
         return model
-    
+
 
 def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0):
     with open(test_labels_path) as file:
