@@ -365,7 +365,7 @@ void UDTMachClassifier::introduceDocuments(
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = std::stoi((*labels)[row_idx]);
+      uint32_t label = std::stoi((*labels)[row_idx++]);
       outputs_per_doc[label].push_back(scores->getVector(i));
     }
   }
