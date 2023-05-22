@@ -13,14 +13,14 @@ from .runner import Runner
 class QueryReformulationRunner(Runner):
     config_type = QueryReformulationBenchmarkConfig
 
-    @staticmethod
+    @classmethod
     def run_benchmark(
-        config: QueryReformulationBenchmarkConfig, path_prefix: str, mlflow_logger
+        cls, config: QueryReformulationBenchmarkConfig, path_prefix: str, mlflow_logger
     ):
         train_file = os.path.join(path_prefix, config.train_file)
         test_file = os.path.join(path_prefix, config.test_file)
 
-        model = QueryReformulationRunner.create_model(config, path_prefix)
+        model = cls.create_model(config, path_prefix)
 
         model.train(train_file)
 
@@ -33,7 +33,7 @@ class QueryReformulationRunner(Runner):
                     key=f"val_{metric_name}", value=metric_value, step=0
                 )
 
-        average_predict_time_ms = QueryReformulationRunner.get_average_predict_time(
+        average_predict_time_ms = cls.get_average_predict_time(
             model, test_file, config, path_prefix, num_samples=1000
         )
 
