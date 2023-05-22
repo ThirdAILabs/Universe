@@ -44,7 +44,6 @@ class LshIndex final : public NeuronIndex {
  private:
   hashing::HashFunctionPtr _hash_fn;
   hashtable::SampledHashTablePtr _hash_table;
-  uint32_t _layer_dim;
 
   std::vector<uint32_t> _rand_neurons;
 
