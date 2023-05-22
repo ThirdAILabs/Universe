@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::dataset::mach {
@@ -15,9 +16,9 @@ class MachIndex {
  public:
   MachIndex(uint32_t num_buckets, uint32_t num_hashes, uint32_t num_elements);
 
-  MachIndex(
-      std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes,
-      uint32_t num_buckets, uint32_t num_hashes);
+  MachIndex(const std::unordered_map<uint32_t, std::vector<uint32_t>>&
+                entity_to_hashes,
+            uint32_t num_buckets, uint32_t num_hashes);
 
   static auto make(uint32_t num_buckets, uint32_t num_hashes,
                    uint32_t num_elements) {
@@ -69,6 +70,8 @@ class MachIndex {
     return _buckets.at(bucket).size();
   }
 
+  const auto& nonemptyBuckets() const { return _nonempty_buckets; }
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<MachIndex> load(const std::string& filename);
@@ -79,6 +82,8 @@ class MachIndex {
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;
   uint32_t _num_hashes;
+
+  std::unordered_set<uint32_t> _nonempty_buckets;
 
   MachIndex() {}
 
