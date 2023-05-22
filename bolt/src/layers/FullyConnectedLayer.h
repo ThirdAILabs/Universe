@@ -252,8 +252,8 @@ class FullyConnectedLayer final {
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _neuron_index, _disable_sparse_parameter_updates,
-            _should_save_optimizer);
+            _biases, _neuron_index, _index_frozen,
+            _disable_sparse_parameter_updates, _should_save_optimizer);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
@@ -277,8 +277,8 @@ class FullyConnectedLayer final {
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _neuron_index, _disable_sparse_parameter_updates,
-            _should_save_optimizer);
+            _biases, _neuron_index, _index_frozen,
+            _disable_sparse_parameter_updates, _should_save_optimizer);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }

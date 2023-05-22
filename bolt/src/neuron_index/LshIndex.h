@@ -49,6 +49,12 @@ class LshIndex final : public NeuronIndex {
   std::vector<uint32_t> _rand_neurons;
 
   bool _insert_labels_when_not_found = false;
+
+  LshIndex() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt::nn

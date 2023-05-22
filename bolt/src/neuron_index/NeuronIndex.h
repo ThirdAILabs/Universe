@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
 #include <unordered_set>
@@ -19,6 +20,15 @@ class NeuronIndex {
                                       bool experimental_autotune) = 0;
 
   virtual void summarize(std::ostream& summary) const = 0;
+
+  virtual ~NeuronIndex() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using NeuronIndexPtr = std::shared_ptr<NeuronIndex>;

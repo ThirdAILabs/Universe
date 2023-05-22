@@ -1,4 +1,8 @@
 #include "RandomSampler.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <random>
 
@@ -48,4 +52,14 @@ void RandomSampler::query(const BoltVector& input, BoltVector& output,
                  /* starting_offset= */ random_offset);
 }
 
+template void RandomSampler::serialize(cereal::BinaryInputArchive&);
+template void RandomSampler::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void RandomSampler::serialize(Archive& archive) {
+  archive(cereal::base_class<NeuronIndex>(this), _rand_neurons, _layer_dim);
+}
+
 }  // namespace thirdai::bolt::nn
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::RandomSampler)

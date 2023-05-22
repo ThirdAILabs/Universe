@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/neuron_index/NeuronIndex.h>
 #include <random>
 
@@ -36,6 +37,12 @@ class RandomSampler final : public NeuronIndex {
  private:
   std::vector<uint32_t> _rand_neurons;
   uint32_t _layer_dim;
+
+  RandomSampler() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt::nn

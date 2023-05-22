@@ -1,4 +1,8 @@
 #include "LshIndex.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <hashing/src/HashUtils.h>
 #include <algorithm>
@@ -79,7 +83,7 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
     if (cnt == sparse_dim) {
       break;
     }
-    assert(x < _dim);
+    assert(x < _layer_dim);
     output.active_neurons[cnt++] = x;
   }
 }
@@ -128,4 +132,15 @@ void LshIndex::summarize(std::ostream& summary) const {
   _hash_table->summarize(summary);
 }
 
+template void LshIndex::serialize(cereal::BinaryInputArchive&);
+template void LshIndex::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void LshIndex::serialize(Archive& archive) {
+  archive(cereal::base_class<NeuronIndex>(this), _hash_fn, _hash_table,
+          _layer_dim, _rand_neurons, _insert_labels_when_not_found);
+}
+
 }  // namespace thirdai::bolt::nn
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::LshIndex)
