@@ -47,7 +47,6 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
     const std::string& activation, SamplingConfigPtr sampling,
     bool train_without_bias,
     uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
-  std::cout << "train_without_bias " << train_without_bias << std::endl; 
   return std::shared_ptr<FullyConnected>(new FullyConnected(
       dim, input_dim, sparsity, activation, std::move(sampling), train_without_bias,
       rebuild_hash_tables, reconstruct_hash_functions));

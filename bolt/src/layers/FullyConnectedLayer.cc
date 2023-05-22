@@ -876,7 +876,6 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
     summary << ", sampling=(";
     buildSamplingSummary(summary);
     summary << ")";
-    summary << "training_without_bias=" << _train_without_bias;
   }
 
   summary << "\n";
@@ -896,6 +895,7 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
                 << "binsize= " << dwta_hasher->getBinsize() << ", "
                 << "hashes_per_table= " << dwta_hasher->getHashesPerTable()
                 << ", ";
+        summary << "training_without_bias= " << _train_without_bias;
       }
       _hash_table->summarize(summary);
     }
