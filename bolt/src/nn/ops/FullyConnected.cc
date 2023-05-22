@@ -83,7 +83,6 @@ void FullyConnected::updateParameters(float learning_rate,
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
     _kernel->reBuildHashFunction();
-    _kernel->buildHashTables();
 
     _updates_since_rebuild_hash_tables = 0;
     _updates_since_reconstruct_hash_functions = 0;

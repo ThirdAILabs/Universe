@@ -4,9 +4,17 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/neuron_index/LshIndex.h>
 #include <algorithm>
 
 namespace thirdai::bolt {
+
+nn::NeuronIndexPtr DWTASamplingConfig::getNeuronIndex(
+    uint32_t layer_dim, uint32_t input_dim, std::random_device& rd) const {
+  auto hash_fn = getHashFunction(input_dim);
+  auto hash_table = getHashTable();
+  return nn::LshIndex::make(layer_dim, hash_fn, hash_table, rd);
+}
 
 hashing::HashFunctionPtr DWTASamplingConfig::getHashFunction(
     uint32_t input_dim) const {
@@ -26,8 +34,8 @@ hashtable::SampledHashTablePtr DWTASamplingConfig::getHashTable() const {
       /* range= */ 1 << _range_pow);
 }
 
-SamplingConfigPtr DWTASamplingConfig::newAutotune(uint32_t layer_dim,
-                                                  float sparsity) {
+std::shared_ptr<DWTASamplingConfig> DWTASamplingConfig::newAutotune(
+    uint32_t layer_dim, float sparsity) {
   /**
    * Setup:
    * - We have a set of weight vectors, denoted as 'w'.
@@ -97,8 +105,8 @@ SamplingConfigPtr DWTASamplingConfig::newAutotune(uint32_t layer_dim,
       /* permutations=*/2);
 }
 
-SamplingConfigPtr DWTASamplingConfig::oldAutotune(uint32_t layer_dim,
-                                                  float sparsity) {
+std::shared_ptr<DWTASamplingConfig> DWTASamplingConfig::oldAutotune(
+    uint32_t layer_dim, float sparsity) {
   // The number of items in the table is equal to the number of neurons in
   // this layer, which is stored in the "dim" variable. By analyzing the
   // hash table, we find that
@@ -154,9 +162,8 @@ SamplingConfigPtr DWTASamplingConfig::oldAutotune(uint32_t layer_dim,
       /* permutations=*/std::nullopt);
 }
 
-SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
-                                               float sparsity,
-                                               bool experimental_autotune) {
+std::shared_ptr<DWTASamplingConfig> DWTASamplingConfig::autotune(
+    uint32_t layer_dim, float sparsity, bool experimental_autotune) {
   if (sparsity == 1.0) {
     // If the layer is dense then we don't need to create a sampling config
     // for it.
@@ -168,6 +175,13 @@ SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
   }
 
   return oldAutotune(layer_dim, sparsity);
+}
+
+nn::NeuronIndexPtr FastSRPSamplingConfig::getNeuronIndex(
+    uint32_t layer_dim, uint32_t input_dim, std::random_device& rd) const {
+  auto hash_fn = getHashFunction(input_dim);
+  auto hash_table = getHashTable();
+  return nn::LshIndex::make(layer_dim, hash_fn, hash_table, rd);
 }
 
 hashing::HashFunctionPtr FastSRPSamplingConfig::getHashFunction(

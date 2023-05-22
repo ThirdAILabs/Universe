@@ -24,17 +24,11 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
       _sparsity(config.getSparsity()),
-
-      // trainable parameter not present in config file
-      // TODO(Shubh) : should we add a trainable parameter to the config file?
-      _trainable(true),
-
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
-      _sampling_mode(BoltSamplingMode::LSH),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
@@ -45,7 +39,10 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    initSamplingDatastructures(config.getSamplingConfig(), rd);
+    _neuron_index =
+        config.getSamplingConfig()->getNeuronIndex(_dim, _prev_dim, rd);
+
+    buildHashTables();
   }
 
   initOptimizer();
@@ -83,17 +80,18 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
          (output.active_neurons != nullptr && !DENSE));
   assert(labels == nullptr || labels->len > 0);
 
-  selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
+  if constexpr (!DENSE) {
+    _neuron_index->query(input, output, labels, _sparse_dim);
+  }
 
   float max_act = 0;
   uint32_t len_out = nonzerosInOutput<DENSE>();
 
-  // active neurons are for updateParameters so we only mark them if trainable
-  if (_trainable) {
-    // TODO(david) this is not needed for inference, we can optionally remove
-    // this with some refactoring if we want slightly faster inference
-    markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output, len_out);
-  }
+  // TODO(david) this is not needed for inference, we can optionally remove
+  // this with some refactoring if we want slightly faster inference. This
+  // function should be done in the backpropagate method, then we only mark
+  // neurons for gradient updates when we actually compute gradients for them.
+  markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output, len_out);
 
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -353,113 +351,10 @@ void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
   }
 }
 
-template <bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
-                                              BoltVector& output,
-                                              const BoltVector* labels) {
-  if constexpr (DENSE) {
-    return;
-  }
-
-  if (useRandomSampling()) {
-    randomNeuronSampling(input, output, labels);
-  } else {
-    lshNeuronSampling<PREV_DENSE>(input, output, labels);
-  }
-}
-
-static void wrapAroundCopy(const uint32_t* const src, uint64_t src_len,
-                           uint32_t* const dest, uint64_t copy_size,
-                           uint64_t starting_offset) {
-  assert(starting_offset < src_len);
-  assert(copy_size <= src_len);
-
-  uint64_t length_to_end = std::min(src_len - starting_offset, copy_size);
-  uint64_t length_of_remainder =
-      length_to_end < copy_size ? copy_size - length_to_end : 0;
-
-  std::copy(src + starting_offset, src + starting_offset + length_to_end, dest);
-  std::copy(src, src + length_of_remainder, dest + length_to_end);
-}
-
-void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
-                                               const BoltVector& output,
-                                               const BoltVector* labels) {
-  uint32_t label_len = 0;
-  if (labels) {
-    label_len = std::min<uint64_t>(labels->len, _sparse_dim);
-    std::copy(labels->active_neurons, labels->active_neurons + label_len,
-              output.active_neurons);
-  }
-
-  // This is because rand() is not threadsafe and because we want to make the
-  // output more deterministic.
-  uint64_t random_offset =
-      hashing::simpleIntegerHash(
-          // Hack to intepret the float as an integer without doing a
-          // conversion.
-          *reinterpret_cast<uint32_t*>(&input.activations[0])) %
-      _dim;
-
-  uint64_t neurons_to_sample = _sparse_dim - label_len;
-
-  wrapAroundCopy(/* src= */ _rand_neurons.data(), /* src_len= */ _dim,
-                 /* dest= */ output.active_neurons + label_len,
-                 /* copy_size= */ neurons_to_sample,
-                 /* starting_offset= */ random_offset);
-}
-
-template <bool PREV_DENSE>
-void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
-                                            BoltVector& output,
-                                            const BoltVector* labels) {
-  std::unordered_set<uint32_t> active_set;
-
-  uint32_t label_len = labels != nullptr ? labels->len : 0;
-  for (uint32_t i = 0; i < label_len; i++) {
-    assert(labels->active_neurons[i] < _dim);
-    active_set.insert(labels->active_neurons[i]);
-  }
-
-  _neuron_index->query(input, active_set, _sparse_dim);
-
-  if (active_set.size() < _sparse_dim) {
-    // here we use hashes[0] as our random number because rand() is not thread
-    // safe and we want to have deterministic sampling.
-    uint32_t rand_offset = hashes.at(0) % _dim;
-    while (active_set.size() < _sparse_dim) {
-      active_set.insert(_rand_neurons[rand_offset++]);
-      rand_offset = rand_offset % _dim;
-    }
-  }
-
-  uint32_t cnt = 0;
-  for (uint32_t i = 0; i < label_len; i++) {
-    if (cnt == _sparse_dim) {
-      break;
-    }
-    output.active_neurons[cnt++] = labels->active_neurons[i];
-    active_set.erase(labels->active_neurons[i]);
-  }
-
-  for (auto x : active_set) {
-    if (cnt == _sparse_dim) {
-      break;
-    }
-    assert(x < _dim);
-    output.active_neurons[cnt++] = x;
-  }
-}
-
 void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
                                            float B2, float eps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
-
-  if (!_trainable) {
-    cleanupWithinBatchVars();
-    return;
-  }
 
   /*
    * In distributed setting, as of now the updates are dense as we
@@ -616,55 +511,30 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _weight_optimizer->gradients[indx] = 0;
 }
 
-void FullyConnectedLayer::initSamplingDatastructures(
-    const SamplingConfigPtr& sampling_config, std::random_device& rd) {
-  if (sampling_config->isRandomSampling()) {
-    _sampling_mode = BoltSamplingMode::RandomSampling;
-  } else {
-    _sampling_mode = BoltSamplingMode::LSH;
-  }
-
-  _hasher = sampling_config->getHashFunction(_prev_dim);
-
-  _hash_table = sampling_config->getHashTable();
-
-  /* Initializing hence, we need to force build the hash tables
-   * Hence, force_build is true here in buildHashTablesImpl(force_build)
-   */
-  buildHashTablesImpl(true);
-
-  _rand_neurons = std::vector<uint32_t>(_dim);
-
-  std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
-}
-
-inline void FullyConnectedLayer::deinitSamplingDatastructures() {
-  _neuron_index = {};
-  _rand_neurons = {};
-}
-
-void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen() ||
-      useRandomSampling()) {
+void FullyConnectedLayer::buildHashTables() {
+  if (_sparsity >= 1.0 || _index_frozen) {
     return;
   }
 
   _neuron_index->buildIndex(_weights, _dim, false);
 }
 
-/* setting force_build to false. force_build true only when setting weights or
- * initializing
- */
-void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
-
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen() ||
-      useRandomSampling()) {
+  if (_sparsity >= 1.0 || _index_frozen) {
     return;
   }
 
   _neuron_index->buildIndex(_weights, _dim, true);
+}
+
+void FullyConnectedLayer::freezeHashTables(bool insert_labels_if_not_found) {
+  _index_frozen = true;
+
+  if (insert_labels_if_not_found) {
+    if (auto index = nn::LshIndex::cast(_neuron_index)) {
+      index->insertLabelsIfNotFound();
+    }
+  }
 }
 
 float* FullyConnectedLayer::getWeights() const {
@@ -673,12 +543,6 @@ float* FullyConnectedLayer::getWeights() const {
 
   return weights_copy;
 }
-
-void FullyConnectedLayer::setTrainable(bool trainable) {
-  _trainable = trainable;
-}
-
-bool FullyConnectedLayer::getTrainable() const { return _trainable; }
 
 float* FullyConnectedLayer::getBiases() const {
   float* biases_copy = new float[_dim];
@@ -690,10 +554,7 @@ float* FullyConnectedLayer::getBiases() const {
 void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 
-  /* Setting weights => we need to force build the hash tables
-   * Hence, force_build is true here in buildHashTablesImpl(force_build)
-   */
-  buildHashTablesImpl(true);
+  buildHashTables();
 }
 
 void FullyConnectedLayer::setBiases(const float* new_biases) {
@@ -750,17 +611,18 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
   if (_sparsity == 1 && sparsity < 1) {
     _sparsity = sparsity;
     _sparse_dim = _sparsity * _dim;
-    auto sampling_config =
-        DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
+
     std::random_device rd;
-    initSamplingDatastructures(sampling_config, rd);
+    _neuron_index =
+        DWTASamplingConfig::autotune(_dim, sparsity, experimental_autotune)
+            ->getNeuronIndex(_dim, _prev_dim, rd);
     return;
   }
 
   if (_sparsity < 1 && sparsity == 1) {
     _sparsity = 1;
-    _sparse_dim = _sparsity * _dim;
-    deinitSamplingDatastructures();
+    _sparse_dim = _dim;
+    _neuron_index = {};
     return;
   }
 
@@ -769,11 +631,8 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
     _sparse_dim = _sparsity * _dim;
 
     if (rebuild_hash_tables) {
-      deinitSamplingDatastructures();
-      auto sampling_config =
-          DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
-      std::random_device rd;
-      initSamplingDatastructures(sampling_config, rd);
+      _neuron_index->autotuneForNewSparsity(_dim, _prev_dim, sparsity,
+                                            experimental_autotune);
     }
     return;
   }
@@ -781,7 +640,8 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
 
 std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
 FullyConnectedLayer::getHashTable() {
-  if (auto* index = nn::LshIndex::cast(_neuron_index)) {
+  if (auto index = nn::LshIndex::cast(_neuron_index)) {
+    return {index->hashFn(), index->hashTable()};
   }
 
   return {nullptr, nullptr};
@@ -812,7 +672,9 @@ void FullyConnectedLayer::setHashTable(
         std::to_string(_dim) + ".");
   }
 
-  _neuron_index = nn::LshIndex::make(hash_fn, hash_table);
+  std::random_device rd;
+  _neuron_index =
+      nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table), rd);
 }
 
 void FullyConnectedLayer::initOptimizer() {
@@ -842,22 +704,9 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
-  if (_sparsity < 1.0) {
-    if (useRandomSampling()) {
-      summary << "random";
-    } else {
-      summary << "hash_function=" << _hasher->getName() << ", ";
-
-      if (_hasher->getName() == "DWTA") {
-        auto dwta_hasher =
-            std::dynamic_pointer_cast<hashing::DWTAHashFunction>(_hasher);
-        summary << "permutations= " << dwta_hasher->getNumPermutations() << ", "
-                << "binsize= " << dwta_hasher->getBinsize() << ", "
-                << "hashes_per_table= " << dwta_hasher->getHashesPerTable()
-                << ", ";
-      }
-      _hash_table->summarize(summary);
-    }
+  if (_neuron_index) {
+    _neuron_index->summarize(summary);
   }
 }
+
 }  // namespace thirdai::bolt

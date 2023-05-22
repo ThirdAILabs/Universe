@@ -1,11 +1,31 @@
 #include "LshIndex.h"
 #include <bolt/src/layers/SamplingConfig.h>
+#include <hashing/src/HashUtils.h>
+#include <algorithm>
+#include <random>
 
 namespace thirdai::bolt::nn {
 
-void LshIndex::query(const BoltVector& input,
-                     std::unordered_set<uint32_t>& selected_neurons,
-                     uint32_t sparse_dim) const {
+LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
+                   hashtable::SampledHashTablePtr hash_table,
+                   std::random_device& rd)
+    : _hash_fn(std::move(hash_fn)),
+      _hash_table(std::move(hash_table)),
+      _layer_dim(layer_dim),
+      _rand_neurons(layer_dim) {
+  std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+}
+
+void LshIndex::query(const BoltVector& input, BoltVector& output,
+                     const BoltVector* labels, uint32_t sparse_dim) const {
+  std::unordered_set<uint32_t> selected_neurons;
+
+  uint32_t label_len = labels != nullptr ? labels->len : 0;
+  for (uint32_t i = 0; i < label_len; i++) {
+    selected_neurons.insert(labels->active_neurons[i]);
+  }
+
   std::vector<uint32_t> hashes(_hash_fn->numTables());
   if (input.isDense()) {
     _hash_fn->hashSingleDense(input.activations, input.len, hashes.data());
@@ -14,7 +34,7 @@ void LshIndex::query(const BoltVector& input,
                                input.len, hashes.data());
   }
 
-  if (_freeze_with_insertions) {
+  if (_insert_labels_when_not_found) {
     /**
      * QueryBySet just returns a set of the elements in the given buckets of
      * the hash table.
@@ -31,6 +51,36 @@ void LshIndex::query(const BoltVector& input,
                                             sparse_dim);
   } else {
     _hash_table->queryBySet(hashes.data(), selected_neurons);
+  }
+
+  if (selected_neurons.size() < sparse_dim) {
+    // here we use hashes[0] as our random number because rand() is not thread
+    // safe and we want to have deterministic sampling. We do the additional
+    // hash on because the range of each hash from the lsh hash functions is
+    // probably less than the layer dim.
+    uint32_t rand_offset =
+        hashing::simpleIntegerHash(hashes.at(0)) % _layer_dim;
+    while (selected_neurons.size() < sparse_dim) {
+      selected_neurons.insert(_rand_neurons[rand_offset++]);
+      rand_offset = rand_offset % _layer_dim;
+    }
+  }
+
+  uint32_t cnt = 0;
+  for (uint32_t i = 0; i < label_len; i++) {
+    if (cnt == sparse_dim) {
+      break;
+    }
+    output.active_neurons[cnt++] = labels->active_neurons[i];
+    selected_neurons.erase(labels->active_neurons[i]);
+  }
+
+  for (auto x : selected_neurons) {
+    if (cnt == sparse_dim) {
+      break;
+    }
+    assert(x < _dim);
+    output.active_neurons[cnt++] = x;
   }
 }
 
@@ -54,14 +104,28 @@ void LshIndex::buildIndex(const std::vector<float>& weights, uint32_t dim,
   _hash_table->insertSequential(dim, 0, hashes.data());
 }
 
-void LshIndex::updateSparsity(uint32_t dim, uint32_t prev_dim, float sparsity,
-                              bool experimental_autotune) {
+void LshIndex::autotuneForNewSparsity(uint32_t dim, uint32_t prev_dim,
+                                      float sparsity,
+                                      bool experimental_autotune) {
   auto sampling_config =
       DWTASamplingConfig::autotune(dim, sparsity, experimental_autotune);
 
   _hash_fn = sampling_config->getHashFunction(prev_dim);
 
   _hash_table = sampling_config->getHashTable();
+}
+
+void LshIndex::summarize(std::ostream& summary) const {
+  summary << "hash_function=" << _hash_fn->getName() << ", ";
+
+  if (_hash_fn->getName() == "DWTA") {
+    auto dwta_hasher =
+        std::dynamic_pointer_cast<hashing::DWTAHashFunction>(_hash_fn);
+    summary << "permutations= " << dwta_hasher->getNumPermutations() << ", "
+            << "binsize= " << dwta_hasher->getBinsize() << ", "
+            << "hashes_per_table= " << dwta_hasher->getHashesPerTable() << ", ";
+  }
+  _hash_table->summarize(summary);
 }
 
 }  // namespace thirdai::bolt::nn
