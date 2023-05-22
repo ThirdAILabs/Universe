@@ -11,7 +11,8 @@ set(BOLT_NN_TESTS
     TrainerTests
     ReduceLROnPlateauTests
     RootCauseAnalysisTests
-    DlrmAttentionTests)
+    DlrmAttentionTests
+    UpdateSparsityTests)
 
 foreach(BOLT_NN_TEST IN LISTS BOLT_NN_TESTS)
   add_executable(${BOLT_NN_TEST} ${BOLT_NN_TEST}.cc)

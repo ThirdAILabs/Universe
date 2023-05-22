@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -136,6 +137,24 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
+void FullyConnected::registerModel(
+    const std::weak_ptr<model::Model>& new_model) {
+  bool found = false;
+
+  for (const auto& model_wp : _models_using_op) {
+    if (auto model = model_wp.lock()) {
+      if (model == new_model.lock()) {
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    _models_using_op.push_back(new_model);
+  }
+}
+
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
@@ -195,6 +214,22 @@ void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
     _rebuild_hash_tables = std::max(num_batches / 100, 1U);
   } else {
     _rebuild_hash_tables = std::max(num_batches / 20, 1U);
+  }
+}
+
+void FullyConnected::setSparsity(float sparsity, bool rebuild_hash_tables,
+                                 bool experimental_autotune) {
+  _kernel->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
+
+  // We need to the state to be reallocated after updating the sparsity. If a
+  // sparsity is increased between processing batches of the same batch size,
+  // both using sparsity. Then there will otherwise be no reallocation of state
+  // for activations, and the existing allocated state will not be large enough
+  // for the increased sparsity.
+  for (auto& model_wp : _models_using_op) {
+    if (auto model = model_wp.lock()) {
+      model->forceStateReallocation();
+    }
   }
 }
 

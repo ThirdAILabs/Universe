@@ -54,6 +54,8 @@ class FullyConnected final
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  void registerModel(const std::weak_ptr<model::Model>& new_model) final;
+
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.
@@ -108,9 +110,7 @@ class FullyConnected final
   float getSparsity() { return _kernel->getSparsity(); }
 
   void setSparsity(float sparsity, bool rebuild_hash_tables,
-                   bool experimental_autotune) {
-    _kernel->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
-  }
+                   bool experimental_autotune);
 
  private:
   FullyConnected(
@@ -126,6 +126,10 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+
+  // This does not need to be serialized because models will register with their
+  // ops again once loaded.
+  std::vector<std::weak_ptr<model::Model>> _models_using_op;
 
   FullyConnected() {}
 

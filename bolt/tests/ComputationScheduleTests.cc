@@ -21,19 +21,19 @@ TEST(ComputationScheduleTests, SingleOutput) {
 
   auto loss = MockLoss::make({comp_5});
 
-  model::Model model(/* inputs= */ {input},
-                     /* outputs= */ {comp_5},
-                     /* losses= */ {loss});
+  auto model = model::Model::make(/* inputs= */ {input},
+                                  /* outputs= */ {comp_5},
+                                  /* losses= */ {loss});
 
-  ASSERT_EQ(model.opExecutionOrder().size(), 5);
+  ASSERT_EQ(model->opExecutionOrder().size(), 5);
   uint32_t op_cnt = 0;
-  for (const auto& op : model.opExecutionOrder()) {
+  for (const auto& op : model->opExecutionOrder()) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++op_cnt));
   }
 
-  ASSERT_EQ(model.computationOrder().size(), 6);
+  ASSERT_EQ(model->computationOrder().size(), 6);
   uint32_t comp_cnt = 0;
-  for (const auto& comp : model.computationOrder()) {
+  for (const auto& comp : model->computationOrder()) {
     ASSERT_EQ(comp->name(), "tensor_" + std::to_string(++comp_cnt));
   }
 }
@@ -53,34 +53,34 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
 
   auto loss = MockLoss::make({comp_4, comp_7});
 
-  model::Model model(
+  auto model = model::Model::make(
       /* inputs= */ {input_1, input_2, input_3},
       /* outputs= */ {comp_4, comp_7},
       /* losses= */ {loss});
 
-  ASSERT_EQ(model.opExecutionOrder().size(), 7);
+  ASSERT_EQ(model->opExecutionOrder().size(), 7);
 
   std::vector<uint32_t> op_order_first_part = {1, 2, 3, 5, 6};
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.opExecutionOrder()[i]->name(),
+    ASSERT_EQ(model->opExecutionOrder()[i]->name(),
               "op_" + std::to_string(op_order_first_part[i]));
   }
 
-  ASSERT_EQ(model.computationOrder().size(), 10);
+  ASSERT_EQ(model->computationOrder().size(), 10);
   std::vector<uint32_t> comp_order_first_part = {1, 2, 3, 4, 5, 6, 8, 9};
   for (uint32_t i = 0; i < 8; i++) {
-    ASSERT_EQ(model.computationOrder()[i]->name(),
+    ASSERT_EQ(model->computationOrder()[i]->name(),
               "tensor_" + std::to_string(comp_order_first_part[i]));
   }
 
-  auto sixth_op = model.opExecutionOrder()[5]->name();
-  auto seventh_op = model.opExecutionOrder()[6]->name();
+  auto sixth_op = model->opExecutionOrder()[5]->name();
+  auto seventh_op = model->opExecutionOrder()[6]->name();
 
   ASSERT_TRUE(sixth_op == "op_4" && seventh_op == "op_7" ||
               sixth_op == "op_7" && seventh_op == "op_4");
 
-  auto ninth_comp = model.computationOrder()[8]->name();
-  auto tenth_cmp = model.computationOrder()[9]->name();
+  auto ninth_comp = model->computationOrder()[8]->name();
+  auto tenth_cmp = model->computationOrder()[9]->name();
 
   ASSERT_TRUE(ninth_comp == "tensor_7" && tenth_cmp == "tensor_10" ||
               ninth_comp == "tensor_10" && tenth_cmp == "tensor_7");
@@ -103,20 +103,20 @@ TEST(ComputationScheduleTests, Recurrence) {
 
   auto loss = MockLoss::make({comp_5});
 
-  model::Model model(
+  auto model = model::Model::make(
       /* inputs= */ {input_1, input_2, input_3, input_4, input_5},
       /* outputs= */ {comp_5}, /* losses= */ {loss});
 
   std::vector<std::string> op_order = {"recurrence", "recurrence", "recurrence",
                                        "recurrence", "output"};
-  ASSERT_EQ(model.opExecutionOrder().size(), 5);
+  ASSERT_EQ(model->opExecutionOrder().size(), 5);
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.opExecutionOrder()[i]->name(), op_order[i]);
+    ASSERT_EQ(model->opExecutionOrder()[i]->name(), op_order[i]);
   }
 
-  ASSERT_EQ(model.computationOrder().size(), 10);
+  ASSERT_EQ(model->computationOrder().size(), 10);
   for (uint32_t i = 0; i < 10; i++) {
-    ASSERT_EQ(model.computationOrder()[i]->name(),
+    ASSERT_EQ(model->computationOrder()[i]->name(),
               "tensor_" + std::to_string(i + 1));
   }
 }

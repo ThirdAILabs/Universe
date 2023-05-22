@@ -8,6 +8,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
+#include <memory>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -22,11 +23,12 @@ namespace thirdai::bolt::nn::model {
  * to write custom training functions and interact with the state of the model
  * after processing batches.
  */
-class Model {
- public:
+class Model : public std::enable_shared_from_this<Model> {
+ private:
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
         std::vector<loss::LossPtr> losses);
 
+ public:
   static std::shared_ptr<Model> make(autograd::ComputationList inputs,
                                      autograd::ComputationList outputs,
                                      std::vector<loss::LossPtr> losses);
@@ -68,6 +70,13 @@ class Model {
    * optimizer step on all of its trainable parameters.
    */
   void updateParameters(float learning_rate);
+
+  /**
+   * Forces reallocation of any state for storing activations, gradients, etc
+   * that is used for processing a batch. This does not include gradients for
+   * parameters.
+   */
+  void forceStateReallocation();
 
   /**
    * Returns the list of ops in the model in the order they will be executed
@@ -222,6 +231,11 @@ class Model {
    * the layer is sparse.
    */
   void matchOutputFullyConnectedLayersWithLabels() const;
+
+  /**
+   * Registers the model with the ops that it uses.
+   */
+  void registerWithOps();
 
   /**
    * Creates a metadata file which gives the thirdai version, model uuid, the
