@@ -1,10 +1,10 @@
-from .bolt_fc import BoltFullyConnectedRunner, BoltV2FullyConnectedRunner
-from .dlrm import DLRMRunner, DLRMV2Runner
 from .backward_compatibility_runners.query_reformulation import (
     BackwardCompatibilityQueryReformulationRunner,
 )
 from .backward_compatibility_runners.temporal import BackwardCompatibilityTemporalRunner
 from .backward_compatibility_runners.udt import BackwardCompatibilityUDTRunner
+from .bolt_fc import BoltFullyConnectedRunner, BoltV2FullyConnectedRunner
+from .dlrm import DLRMRunner, DLRMV2Runner
 from .mini_benchmark_runners.query_reformulation import (
     MiniBenchmarkQueryReformulationRunner,
 )
