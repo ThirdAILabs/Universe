@@ -26,6 +26,7 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
   void disableSparseParameterUpdates() final;
 
   std::vector<std::vector<float>*> gradients() final;
+
   std::vector<std::vector<float>*> parameters() final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,

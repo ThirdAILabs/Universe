@@ -234,7 +234,7 @@ uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
   return total_dim;
 }
 
-std::pair<const float*, uint64_t> getValues(
+std::pair<const float*, uint64_t> concatenateValues(
     const std::vector<std::vector<float>*>& values) {
   uint64_t total_dim = sumFlattenedDims(values);
 
@@ -250,7 +250,7 @@ std::pair<const float*, uint64_t> getValues(
 }
 
 void setValues(const std::vector<std::vector<float>*>& values,
-               const float* new_value, uint64_t flattened_dim) {
+               const float* concatenated_values, uint64_t flattened_dim) {
   uint64_t total_dim = sumFlattenedDims(values);
 
   if (total_dim != flattened_dim) {
@@ -263,28 +263,28 @@ void setValues(const std::vector<std::vector<float>*>& values,
 
   uint64_t offset = 0;
   for (auto* value : values) {
-    std::copy(new_value + offset, new_value + offset + value->size(),
+    std::copy(concatenated_values + offset, concatenated_values + offset + value->size(),
               value->data());
     offset += value->size();
   }
 }
 
 std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
-  return getValues(gradients());
+  return concatenateValues(gradients());
 }
 
 std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
-  return getValues(parameters());
+  return concatenateValues(parameters());
 }
 
-void Model::setFlattenedGradients(const float* new_value,
+void Model::setFlattenedGradients(const float* concatenated_values,
                                   uint64_t flattened_dim) const {
-  setValues(gradients(), new_value, flattened_dim);
+  setValues(gradients(), concatenated_values, flattened_dim);
 }
 
-void Model::setFlattenedParameters(const float* new_value,
+void Model::setFlattenedParameters(const float* concatenated_values,
                                    uint64_t flattened_dim) const {
-  setValues(parameters(), new_value, flattened_dim);
+  setValues(parameters(), concatenated_values, flattened_dim);
   /*
    * Here, we are re-building the hash tables again, as the older weights
    * seems to be redundant, when we all-reduce the weights while using
