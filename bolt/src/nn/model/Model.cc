@@ -263,8 +263,8 @@ void setValues(const std::vector<std::vector<float>*>& values,
 
   uint64_t offset = 0;
   for (auto* value : values) {
-    std::copy(concatenated_values + offset, concatenated_values + offset + value->size(),
-              value->data());
+    std::copy(concatenated_values + offset,
+              concatenated_values + offset + value->size(), value->data());
     offset += value->size();
   }
 }

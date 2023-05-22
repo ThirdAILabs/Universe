@@ -78,7 +78,8 @@ NumpyArray<float> getParameterValues(const nn::model::ModelPtr& _model) {
   return NumpyArray<float>(flattened_dim, grads, free_when_done);
 }
 
-void setGradientValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values) {
+void setGradientValues(const nn::model::ModelPtr& _model,
+                       NumpyArray<float>& new_values) {
   if (new_values.ndim() != 1) {
     throw std::invalid_argument("Expected grads to be flattened.");
   }
@@ -87,14 +88,14 @@ void setGradientValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new
   _model->setFlattenedGradients(new_values.data(), flattened_dim);
 }
 
-void setParameterValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values) {
+void setParameterValues(const nn::model::ModelPtr& _model,
+                        NumpyArray<float>& new_values) {
   if (new_values.ndim() != 1) {
     throw std::invalid_argument("Expected grads to be flattened.");
   }
 
   uint64_t flattened_dim = new_values.shape(0);
   _model->setFlattenedParameters(new_values.data(), flattened_dim);
-  
 }
 
 void defineTensor(py::module_& nn);
