@@ -8,28 +8,11 @@
 
 namespace thirdai::bolt::nn::tests {
 
-TEST(UpdateSparsityTests, ReallocateModelStateAfterSetSparsity) {
-  constexpr uint32_t INPUT_DIM = 20, HIDDEN_DIM = 100, OUTPUT_DIM = 10;
+constexpr uint32_t INPUT_DIM = 20, HIDDEN_DIM = 100, OUTPUT_DIM = 10;
 
-  auto input = ops::Input::make(INPUT_DIM);
-
-  auto fc = ops::FullyConnected::make(
-      /* dim= */ HIDDEN_DIM, /* input_dim= */ INPUT_DIM,
-      /* sparsity= */ 0.5, /* activation= */ "relu");
-
-  auto fc_output = fc->apply(input);
-
-  auto output = ops::FullyConnected::make(/* dim= */ OUTPUT_DIM,
-                                          /* input_dim= */ HIDDEN_DIM,
-                                          /* sparsity= */ 1.0,
-                                          /* activation= */ "softmax")
-                    ->apply(fc_output);
-
-  auto loss =
-      loss::CategoricalCrossEntropy::make(output, ops::Input::make(OUTPUT_DIM));
-
-  auto model = model::Model::make({input}, {output}, {loss});
-
+void testSparsityChanges(model::ModelPtr& model,
+                         const ops::FullyConnectedPtr& fc,
+                         const autograd::ComputationPtr& fc_output) {
   auto input_batch = tensor::Tensor::convert(
       BoltVector::singleElementSparseVector(0), INPUT_DIM);
 
@@ -49,6 +32,40 @@ TEST(UpdateSparsityTests, ReallocateModelStateAfterSetSparsity) {
                   /* experimental_autotune= */ true);
 
   EXPECT_EQ(fc_output->tensor()->nonzeros(), 30);
+}
+
+TEST(UpdateSparsityTests, ReallocateModelStateAfterSetSparsity) {
+  auto input = ops::Input::make(INPUT_DIM);
+
+  auto fc = ops::FullyConnected::make(
+      /* dim= */ HIDDEN_DIM, /* input_dim= */ INPUT_DIM,
+      /* sparsity= */ 0.5, /* activation= */ "relu");
+
+  auto fc_output = fc->apply(input);
+
+  auto output = ops::FullyConnected::make(/* dim= */ OUTPUT_DIM,
+                                          /* input_dim= */ HIDDEN_DIM,
+                                          /* sparsity= */ 1.0,
+                                          /* activation= */ "softmax")
+                    ->apply(fc_output);
+
+  auto loss =
+      loss::CategoricalCrossEntropy::make(output, ops::Input::make(OUTPUT_DIM));
+
+  auto model = model::Model::make({input}, {output}, {loss});
+
+  std::string save_path = "./saved_sparse_model.tmp";
+  model->save(save_path);
+
+  testSparsityChanges(model, fc, fc_output);
+
+  auto new_model = model::Model::load(save_path);
+
+  testSparsityChanges(
+      new_model, ops::FullyConnected::cast(new_model->opExecutionOrder().at(0)),
+      new_model->computationOrder().at(1));
+
+  std::remove(save_path.c_str());
 }
 
 }  // namespace thirdai::bolt::nn::tests

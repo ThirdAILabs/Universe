@@ -61,6 +61,9 @@ std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
                                    std::vector<loss::LossPtr> losses) {
   auto model = std::shared_ptr<Model>(
       new Model(std::move(inputs), std::move(outputs), std::move(losses)));
+
+  // This has to be done here because we need the model to be allocated using a
+  // shared_ptr in order to use shared_from_this() to get a valid reference.
   model->registerWithOps();
   return model;
 }
