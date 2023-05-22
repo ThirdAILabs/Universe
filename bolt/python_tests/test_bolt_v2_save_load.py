@@ -93,13 +93,14 @@ def evaluate_model(model, test_data, test_labels_np):
     accs = []
     # We constructed the test data to only contain 1 batch.
     outputs = model.forward(test_data[0], use_sparsity=False)
+    print("Printing: ")
     for output in outputs:
         predictions = np.argmax(output.activations, axis=1)
         acc = np.mean(predictions == test_labels_np)
         # assert acc >= 0.8
         print(acc)
         accs.append(acc)
-
+    print("Done!!")
     return accs
 
 
@@ -160,67 +161,3 @@ def test_bolt_save_load():
     # Check that the model can continue to be trained after save/load.
     train_model(model, train_data, train_labels)
     evaluate_model(model, test_data, test_labels_np)
-
-
-def average_values(trainers, get_func, set_func):
-    values = [np.array(get_func(trainer.model)) for trainer in trainers]
-    avg_values = sum(values) / len(values)
-    for trainer in trainers:
-        set_func(trainer.model, avg_values)
-
-
-def equal_model_paramters(trainers):
-    params = [np.array(trainer.model.get_parameters()) for trainer in trainers]
-    return np.allclose(params[0], params[1])
-
-
-def disable_sparse_updates(trainers):
-    for trainer in trainers:
-        trainer.model.disable_sparse_parameter_updates()
-
-
-# We dont have pygloo wheels working in release, So, we can't have a integration tests.
-# TODO(pratik): remove this test, once we have a integration test using pygloo,or we
-# have implemented internal support for gloo.
-@pytest.mark.unit
-def test_multiple_trainers():
-    # TODO(pratik): This particular training appears to take longer to converge, as compared to the normal
-    # single machine training. We need to run bigger benchmarks make sure, is there a performance regression
-    # with V2 when we just all-reduce the parameters among several models.
-    EPOCHS = 1
-
-    model_1 = get_model()
-    model_2 = get_model()
-
-    train_data_1, train_labels_1, test_data, test_labels_np = get_data()
-
-    trainers = [bolt.train.Trainer(model_1), bolt.train.Trainer(model_2)]
-
-    # averages model parameters
-    average_values(
-        trainers,
-        lambda model: model.get_parameters(),
-        lambda model, values: model.set_parameters(values),
-    )
-    disable_sparse_updates(trainers)
-
-    # Training them on same data should still get different
-    # gradients as we are training with sparsity
-    for _ in range(EPOCHS):
-        for x, y in zip(train_data_1, train_labels_1):
-            for trainer in trainers:
-                trainer.model.train_on_batch(x, y)
-
-            # averages model gradients
-            average_values(
-                trainers,
-                lambda model: model.get_gradients(),
-                lambda model, values: model.set_gradients(values),
-            )
-
-            for trainer in trainers:
-                trainer.model.update_parameters(learning_rate=0.05)
-
-    assert equal_model_paramters(trainers), "Trainer models are not the same."
-    evaluate_model(trainers[0].model, test_data, test_labels_np)
-    evaluate_model(trainers[1].model, test_data, test_labels_np)
