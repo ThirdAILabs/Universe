@@ -113,7 +113,9 @@ void FullyConnected::disableSparseParameterUpdates() {
 std::vector<std::vector<float>*> FullyConnected::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }
-
+std::vector<std::vector<float>*> FullyConnected::parameters() {
+  return {&_kernel->weights(), &_kernel->biases()};
+}
 void FullyConnected::summary(std::ostream& summary,
                              const autograd::ComputationList& inputs,
                              const autograd::Computation* output) const {
@@ -135,6 +137,8 @@ void FullyConnected::summary(std::ostream& summary,
 void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
+
+void FullyConnected::forceBuildHashTables() { _kernel->forceBuildHashTables(); }
 
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {

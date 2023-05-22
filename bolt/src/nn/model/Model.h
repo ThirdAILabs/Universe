@@ -142,6 +142,18 @@ class Model {
    */
   std::vector<std::vector<float>*> gradients() const;
 
+  std::vector<std::vector<float>*> parameters() const;
+
+  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+
+  void setFlattenedGradients(const float* new_value,
+                             uint64_t flattened_dim) const;
+
+  std::pair<const float*, uint64_t> getFlattenedParameters() const;
+
+  void setFlattenedParameters(const float* new_value,
+                              uint64_t flattened_dim) const;
+
   /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted
@@ -166,6 +178,7 @@ class Model {
    */
   void checkpoint(const std::string& filename, bool save_metadata = true);
 
+  void disableSparseParameterUpdates();
   /**
    * Helper function to save the model to a stream.
    */

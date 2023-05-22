@@ -99,6 +99,8 @@ class Trainer {
       const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
+  nn::model::ModelPtr getModel() { return _model; }
+
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 

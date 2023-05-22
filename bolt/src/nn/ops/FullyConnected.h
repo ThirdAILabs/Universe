@@ -49,6 +49,8 @@ class FullyConnected final
 
   std::vector<std::vector<float>*> gradients() final;
 
+  std::vector<std::vector<float>*> parameters() final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
@@ -89,6 +91,7 @@ class FullyConnected final
 
   void setBiases(const float* new_biases);
 
+  void forceBuildHashTables();
   std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
   getHashTable() const;
 
