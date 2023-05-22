@@ -20,14 +20,14 @@ def get_package_versions(package_name):
 def get_filtered_versions():
     with open("thirdai.version") as version_file:
         full_version = version_file.read().strip()
-        minor_version = ".".join(full_version.split(".")[:-1]) + "."
+        major_minor_version = ".".join(full_version.split(".")[:-1]) + "."
 
     versions = get_package_versions("thirdai")
 
     filtered_versions = [
         version
         for version in versions
-        if version[: len(minor_version)] == minor_version
+        if version[: len(major_minor_version)] == major_minor_version
     ]
 
     return filtered_versions

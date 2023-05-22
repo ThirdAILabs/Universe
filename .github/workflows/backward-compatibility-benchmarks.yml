@@ -30,11 +30,11 @@ jobs:
           source ../old_thirdai/bin/activate
           versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
           file_version=$(cat "thirdai.version")
-          file_major_minor=$(echo "$file_version" | cut -d. -f1-2)
+          file_major_minor_version=$(echo "$file_version" | cut -d. -f1-2)
           filtered_versions=()
           for version in $versions; do
-            major_minor=$(echo "$version" | cut -d. -f1-2)
-            if [ "$major_minor" = "$file_major_minor" ]; then
+            major_minor_version=$(echo "$version" | cut -d. -f1-2)
+            if [ "$major_minor_version" = "$file_major_minor_version" ]; then
               filtered_versions+=( $version )
             fi
           done
