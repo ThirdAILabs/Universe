@@ -1,4 +1,5 @@
 #include "GraphDatasetManager.h"
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -79,11 +80,13 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
 
 dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetLabeledDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
-  index(data_source);
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  data_source->restart();
+  index(csv_data_source);
 
-  return std::make_unique<dataset::DatasetLoader>(data_source,
+  csv_data_source->restart();
+
+  return std::make_unique<dataset::DatasetLoader>(csv_data_source,
                                                   _labeled_featurizer, shuffle);
 }
 
@@ -142,7 +145,7 @@ void GraphDatasetManager::serialize(Archive& archive) {
           _graph_info);
 }
 
-std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
+TensorList GraphDatasetManager::featurizeInputBatch(
     const dataset::MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);
   std::vector<std::vector<BoltVector>> batches =
@@ -154,13 +157,15 @@ std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
     result.emplace_back(std::move(batch));
   }
 
-  return result;
+  return bolt::train::convertBatch(std::move(result),
+                                   _inference_featurizer->getDimensions());
 }
 
-std::vector<BoltVector> GraphDatasetManager::featurizeInput(
-    const dataset::MapInput& input) {
+TensorList GraphDatasetManager::featurizeInput(const dataset::MapInput& input) {
   dataset::MapSampleRef input_ref(input);
-  return _inference_featurizer->featurize(input_ref);
+  return bolt::train::convertVectors(
+      _inference_featurizer->featurize(input_ref),
+      _inference_featurizer->getDimensions());
 }
 
 }  // namespace thirdai::automl::data

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import textwrap
 
 import pytest
@@ -53,7 +54,10 @@ def get_config(have_user_specified_parameters: bool = False):
                 "sampling_config": {
                     "num_tables": 4,
                     "hashes_per_table": 2,
+                    "range_pow": 6,
+                    "binsize": 8,
                     "reservoir_size": 10,
+                    "permutations": 8,
                 },
                 "predecessor": "fc_3",
             },
@@ -63,6 +67,21 @@ def get_config(have_user_specified_parameters: bool = False):
     }
 
     return config
+
+
+def compare_summaries(model, expected_summary):
+    summary = model.summary(print=False)
+    summary = textwrap.dedent(summary).strip().replace("\n", "")
+
+    expected_summary = re.escape(
+        textwrap.dedent(expected_summary).strip().replace("\n", "")
+    )
+
+    # In bolt v2 names are assigned by session not by model, and so which numbers
+    # are assigned to each op/tensor is not deterministic based on which tests run.
+    expected_summary = expected_summary.replace("NUM", R"\d+")
+
+    assert re.match(expected_summary, summary)
 
 
 def verify_model_summary(config, params, input_dims, expected_summary):
@@ -80,9 +99,7 @@ def verify_model_summary(config, params, input_dims, expected_summary):
 
     os.remove(CONFIG_FILE)
 
-    summary = model.summary(detailed=True, print=False)
-
-    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+    compare_summaries(model, expected_summary)
 
 
 @pytest.mark.unit
@@ -90,13 +107,13 @@ def test_load_model_from_config():
     config = get_config(have_user_specified_parameters=True)
 
     expected_summary = """
-    ======================= Bolt Model =======================
-    input_1 (Input): dim=100
-    input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
-    fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.25, act_func=ReLU, sampling=(random)
-    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=Tanh, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
-    fc_3 -> fc_4 (FullyConnected): dim=50, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
-    ============================================================
+    ===================== Model =====================
+    Input(input_NUM) -> tensor_NUM
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.25, activation=ReLU, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    =================================================
     """
 
     verify_model_summary(
@@ -136,11 +153,11 @@ def test_embedding_layer_config():
     }
 
     expected_summary = """
-    ======================= Bolt Model =======================
-    input_1 (Input): dim=100
-    input_1 -> embedding_1: (Embedding): num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5
-    embedding_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Softmax
-    ============================================================
+    ===================== Model =====================
+    Input(input_NUM) -> tensor_NUM
+    Embedding(emb_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax]
+    =================================================
     """
 
     verify_model_summary(
@@ -165,22 +182,19 @@ def test_udt_model_config_override():
         n_target_classes=40,
         model_config=CONFIG_FILE,
     )
-
-    summary = udt_model._get_model().summary(detailed=True, print=False)
+    os.remove(CONFIG_FILE)
 
     expected_summary = """
-    ======================= Bolt Model =======================
-    input_1 (Input): dim=100000
-    input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
-    fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.5, act_func=ReLU, sampling=(random)
-    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=ReLU, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
-    fc_3 -> fc_4 (FullyConnected): dim=40, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
-    ============================================================
+    ===================== Model =====================
+    Input(input_NUM) -> tensor_NUM
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.5, activation=ReLU, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    =================================================
     """
 
-    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
-
-    os.remove(CONFIG_FILE)
+    compare_summaries(udt_model._get_model(), expected_summary)
 
 
 @pytest.mark.unit

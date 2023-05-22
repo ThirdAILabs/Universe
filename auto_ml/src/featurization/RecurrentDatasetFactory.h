@@ -1,8 +1,10 @@
 #pragma once
 
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
@@ -13,6 +15,8 @@
 #include <vector>
 
 namespace thirdai::automl::data {
+
+using bolt::nn::tensor::TensorList;
 
 class RecurrentDatasetFactory {
  public:
@@ -27,9 +31,9 @@ class RecurrentDatasetFactory {
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);
 
-  std::vector<BoltVector> featurizeInput(const MapInput& sample);
+  TensorList featurizeInput(const MapInput& sample);
 
-  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& samples);
+  TensorList featurizeInputBatch(const MapInputBatch& samples);
 
   uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
 

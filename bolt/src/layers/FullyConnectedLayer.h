@@ -7,6 +7,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
+#include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
 #include <optional>
@@ -130,9 +131,16 @@ class FullyConnectedLayer final {
 
   float getSparsity() const { return _sparsity; }
 
-  void setSparsity(float sparsity);
+  void setSparsity(float sparsity, bool rebuild_hash_tables,
+                   bool experimental_autotune);
 
   ActivationFunction getActivationFunction() const { return _act_func; }
+
+  std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+  getHashTable();
+
+  void setHashTable(hashing::HashFunctionPtr hash_fn,
+                    hashtable::SampledHashTablePtr hash_table);
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
@@ -154,8 +162,8 @@ class FullyConnectedLayer final {
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
-  std::unique_ptr<hashing::HashFunction> _hasher;
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  hashing::HashFunctionPtr _hasher;
+  hashtable::SampledHashTablePtr _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
   template <bool DENSE>

@@ -1,11 +1,9 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
-#include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -33,35 +31,39 @@ class UDTMachClassifier final : public UDTBackend {
                     const std::optional<std::string>& model_config,
                     const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size_opt,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size_opt,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final;
+
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        const std::vector<std::string>& metrics) final;
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final;
 
-  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
+                             const std::vector<std::string>& metrics) final;
 
-  void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
-    curr_model = model;
-  }
+  py::object predictHashes(const MapInput& sample, bool sparse_inference) final;
+
+  ModelPtr model() const final { return _classifier->model(); }
+
+  void setModel(const ModelPtr& model) final;
 
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
@@ -69,7 +71,7 @@ class UDTMachClassifier final : public UDTBackend {
                        float learning_rate, uint32_t epochs,
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
-                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
                        bool verbose) final;
 
@@ -82,20 +84,23 @@ class UDTMachClassifier final : public UDTBackend {
    */
   py::object entityEmbedding(const Label& label) final;
 
-  void introduceDocuments(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names) final;
+  void introduceDocuments(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const Label& new_label) final;
+                         const Label& new_label,
+                         std::optional<uint32_t> num_buckets_to_sample) final;
 
-  void introduceLabel(const MapInputBatch& samples,
-                      const Label& new_label) final;
+  void introduceLabel(const MapInputBatch& samples, const Label& new_label,
+                      std::optional<uint32_t> num_buckets_to_sample) final;
 
   void forget(const Label& label) final;
+
+  void clearIndex() final { _mach_label_block->index()->clear(); }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -108,26 +113,25 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      const std::string& activation_func, float distance_cutoff) const final;
-
- private:
-  bool integerTarget() const {
-    return static_cast<bool>(
-        dataset::mach::asNumericIndex(_mach_label_block->index()));
+  dataset::mach::MachIndexPtr getIndex() final {
+    return _mach_label_block->index();
   }
 
+  void setIndex(const dataset::mach::MachIndexPtr& index) final;
+
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      float distance_cutoff) const final;
+
+ private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName());
   }
 
-  std::string variantToString(const Label& variant);
-
   std::string textColumnForDocumentIntroduction();
 
-  std::unordered_map<Label, MapInputBatch> aggregateSamplesByDoc(
+  static std::unordered_map<uint32_t, MapInputBatch> aggregateSamplesByDoc(
       const thirdai::data::ColumnMap& augmented_data,
       const std::string& text_column_name,
       const std::string& label_column_name);
@@ -159,6 +163,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
+  data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
 };

@@ -32,7 +32,8 @@ struct SvmDatasetLoader {
   }
 
   static BoltVector toSparseVector(const MapInput& keys_to_values) {
-    BoltVector vector(/* l = */ keys_to_values.size(), /* is_dense = */ false);
+    BoltVector vector(/* l = */ keys_to_values.size(), /* is_dense = */ false,
+                      /* has_gradient= */ false);
     size_t current_index = 0;
     for (const auto& key_and_value : keys_to_values) {
       uint32_t key = std::stoul(key_and_value.first);

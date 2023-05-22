@@ -3,8 +3,8 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include "TextEncoders.h"
-#include "TextTokenizers.h"
+#include "TextEncoder.h"
+#include "TextTokenizer.h"
 #include <dataset/src/blocks/BlockInterface.h>
 #include <memory>
 #include <stdexcept>

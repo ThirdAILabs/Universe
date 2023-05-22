@@ -108,8 +108,11 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<thirdai::bolt::DWTASamplingConfig,
              std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
       nn_submodule, "DWTASamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t,
+                    uint32_t>(),
+           py::arg("num_tables"), py::arg("hashes_per_table"),
+           py::arg("range_pow"), py::arg("binsize"), py::arg("reservoir_size"),
+           py::arg("permutations"));
 
   py::class_<thirdai::bolt::FastSRPSamplingConfig,
              std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
@@ -129,6 +132,12 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def("disable_sparse_parameter_updates",
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
+
+  py::class_<hashtable::SampledHashTable, hashtable::SampledHashTablePtr>(
+      nn_submodule, "HashTable")
+      .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
+      .def_static("load", &hashtable::SampledHashTable::load,
+                  py::arg("filename"));
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
@@ -176,7 +185,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
-           py::arg("sparsity"))
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
       .def("get_dim", &FullyConnectedNode::outputDim)
       .def_property_readonly(
           "weights",
@@ -213,7 +223,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("get_hash_table", &FullyConnectedNode::getHashTable)
+      .def("set_hash_table", &FullyConnectedNode::setHashTable,
+           py::arg("hash_fn"), py::arg("hash_table"));
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       nn_submodule, "LayerNormalization")

@@ -9,9 +9,9 @@ concurrency:
 # Controls when the workflow will run
 on:
   schedule:
-      # Sets the workflow to run at 1900 UTC every day
+      # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 19 * * *" 
+      - cron: "0 16 * * 0,3" 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -19,6 +19,7 @@ on:
 jobs:
   benchmarks:
     runs-on: self-hosted
+    timeout-minutes: 1200  # Github Actions defaults to a timeout of 360 minutes
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -40,19 +41,30 @@ jobs:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
           UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.UDT_BENCHMARK_SLACK_WEBHOOK}}
+          BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK}}
         run: >- 
           bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
-          python3 -m Universe.benchmarks-v2.main --runner udt query_reformulation temporal --run_name udt_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com &&
-          python3 -m Universe.benchmarks-v2.slack_benchmark_results --runner udt query_reformulation temporal --official_benchmark --num_runs 5 --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK"
+          python3 -m Universe.benchmarks_v2.src.main --runner udt query_reformulation temporal --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
+          python3 -m Universe.benchmarks_v2.src.slack_benchmark_results --runner udt query_reformulation temporal --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
       - name: Delete Container
         run: sudo docker system prune -a -f
 
       - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
-        if: failure()
+        if: failure() && github.ref == 'refs/heads/main'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
           channel_id: daily_udt_benchmarks
+          status: FAILED
+          color: danger
+
+      - name: Notify slack fail
+        if: failure() && github.ref != 'refs/heads/main'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: branch_udt_benchmarks
           status: FAILED
           color: danger

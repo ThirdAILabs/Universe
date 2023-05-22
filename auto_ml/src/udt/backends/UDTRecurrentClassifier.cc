@@ -1,8 +1,12 @@
 #include "UDTRecurrentClassifier.h"
+#include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
-#include <auto_ml/src/udt/utils/Conversion.h>
+#include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <auto_ml/src/udt/utils/Train.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
@@ -40,8 +44,10 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 output_dim);
+    bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
+    _model =
+        utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
+                            output_dim, /* use_sigmoid_bce= */ false, use_tanh);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
@@ -54,78 +60,76 @@ py::object UDTRecurrentClassifier::train(
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    const std::vector<CallbackPtr>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  std::optional<ValidationDatasetLoader> validation_dataset_loader =
-      std::nullopt;
+  dataset::DatasetLoaderPtr val_dataset = nullptr;
+  ValidationArgs val_args;
   if (validation) {
-    validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
-                                    validation->first, /* shuffle= */ false),
-                                validation->second);
+    val_dataset = _dataset_factory->getDatasetLoader(validation->first,
+                                                     /* shuffle= */ false);
+    val_args = validation->second;
   }
 
-  bolt::TrainConfig train_config =
-      utils::getTrainConfig(epochs, learning_rate, validation_dataset_loader,
-                            metrics, callbacks, verbose, logging_interval);
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  return py::cast(utils::train(_model, train_dataset, train_config, batch_size,
-                               max_in_memory_batches,
-                               /* freeze_hash_tables= */ _freeze_hash_tables,
-                               licensing::TrainPermissionsToken(data)));
+  auto history = trainer.train_with_dataset_loader(
+      train_dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
+      metrics, val_dataset, val_args.metrics(), val_args.stepsPerValidation(),
+      val_args.sparseInference(), callbacks,
+      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+
+  return py::cast(history);
 }
 
 py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool return_predicted_class, bool verbose,
-    bool return_metrics) {
+    bool sparse_inference, bool verbose, std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   throwIfSparseInference(sparse_inference);
 
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose,
-                           /* return_activations = */ !return_metrics);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
-                     ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] = utils::splitDataLabels(std::move(dataset));
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  auto [output_metrics, output] =
-      _model->evaluate(test_data, test_labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
+  auto history = trainer.validate_with_dataset_loader(
+      dataset, metrics, sparse_inference, verbose);
 
-  if (return_predicted_class) {
-    utils::NumpyArray<uint32_t> predictions(output.numSamples());
-    for (uint32_t i = 0; i < output.numSamples(); i++) {
-      BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
-      predictions.mutable_at(i) = activation_vec.getHighestActivationId();
-    }
-    return std::move(predictions);
-  }
-
-  return utils::convertInferenceTrackerToNumpy(output);
+  return py::cast(history);
 }
 
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
-                                           bool return_predicted_class) {
+                                           bool return_predicted_class,
+                                           std::optional<uint32_t> top_k) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
+  (void)top_k;
 
   auto mutable_sample = sample;
 
   std::vector<std::string> predictions;
 
   for (uint32_t step = 0; step < _target->max_length; step++) {
-    BoltVector output = _model->predictSingle(
-        _dataset_factory->featurizeInput(mutable_sample), sparse_inference);
-    auto predicted_id = _dataset_factory->elementIdAtStep(output, step);
+    auto output =
+        _model
+            ->forward(_dataset_factory->featurizeInput(mutable_sample),
+                      sparse_inference)
+            .at(0);
+    auto predicted_id =
+        _dataset_factory->elementIdAtStep(output->getVector(0), step);
     if (_dataset_factory->isEOS(predicted_id)) {
       break;
     }
@@ -160,9 +164,11 @@ struct PredictBatchProgress {
 
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
-                                                bool return_predicted_class) {
+                                                bool return_predicted_class,
+                                                std::optional<uint32_t> top_k) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
+  (void)top_k;
 
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
@@ -170,15 +176,17 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 
   for (uint32_t step = 0; step < _target->max_length && !progress.allDone();
        step++) {
-    auto batch_activations = _model->predictSingleBatch(
-        _dataset_factory->featurizeInputBatch(mutable_samples),
-        sparse_inference);
+    auto batch_activations =
+        _model
+            ->forward(_dataset_factory->featurizeInputBatch(mutable_samples),
+                      sparse_inference)
+            .at(0);
 
-    for (uint32_t i = 0; i < batch_activations.getBatchSize(); i++) {
+    for (uint32_t i = 0; i < batch_activations->batchSize(); i++) {
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
-        auto predicted_id =
-            _dataset_factory->elementIdAtStep(batch_activations[i], step);
+        auto predicted_id = _dataset_factory->elementIdAtStep(
+            batch_activations->getVector(i), step);
         if (_dataset_factory->isEOS(predicted_id)) {
           progress.markSampleDone(i);
           continue;

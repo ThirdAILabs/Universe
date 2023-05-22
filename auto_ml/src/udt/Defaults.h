@@ -14,6 +14,12 @@ constexpr uint32_t BATCH_SIZE = 2048;
 // Whether to freeze hash tables after first epoch of training.
 constexpr bool FREEZE_HASH_TABLES = true;
 
+// Whether to use sigmoid and bce for the output layer in UDT
+constexpr bool USE_SIGMOID_BCE = false;
+
+// Whether to use tanh for the hidden layers in UDT
+constexpr bool USE_TANH = false;
+
 // Whether to use tabular pairgrams.
 constexpr bool CONTEXTUAL_COLUMNS = false;
 
@@ -45,6 +51,9 @@ constexpr uint32_t REGRESSION_BINS = 100;
 // regression as classification.
 constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 2;
 
+// Batch size to use for processing in query reformulation.
+constexpr uint32_t QUERY_REFORMULATION_BATCH_SIZE = 10000;
+
 // Whether to use the Mach Extreme Classification Backend.
 constexpr bool USE_MACH = false;
 
@@ -63,5 +72,9 @@ constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
 
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
+
+// Whether to use the experimental autotune for fully connected layer hash
+// tables
+constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
 
 }  // namespace thirdai::automl::udt::defaults

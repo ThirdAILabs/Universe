@@ -2,6 +2,7 @@ enable_testing()
 
 set(DATASET_TESTS
     CsvParserTests
+    CsvDataSourceTests
     SvmDatasetTests
     ClickThroughDatasetTests
     SegmentedFeatureVectorsTests
@@ -15,7 +16,6 @@ set(DATASET_TESTS
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
     TabularFeaturizerTests
-    MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
     TokenEncodingTests

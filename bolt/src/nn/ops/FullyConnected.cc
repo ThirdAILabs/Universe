@@ -30,7 +30,8 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
       _updates_since_rebuild_hash_tables(0),
       _updates_since_reconstruct_hash_functions(0) {
   if (!sampling) {
-    sampling = DWTASamplingConfig::autotune(dim, sparsity);
+    sampling = DWTASamplingConfig::autotune(dim, sparsity,
+                                            /* experimental_autotune=*/false);
   }
   FullyConnectedLayerConfig config(dim, sparsity, activation,
                                    std::move(sampling));
@@ -157,14 +158,30 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+std::shared_ptr<FullyConnectedLayer> FullyConnected::kernel() const {
+  return _kernel;
+}
+
 void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
   _kernel->freezeHashTables(insert_labels_if_not_found);
 }
 
-void FullyConnected::setWeightsAndBiases(const float* weights,
-                                         const float* biases) {
+void FullyConnected::setWeights(const float* weights) {
   _kernel->setWeights(weights);
-  _kernel->setBiases(biases);
+}
+
+void FullyConnected::setBiases(const float* new_biases) {
+  _kernel->setBiases(new_biases);
+}
+
+std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
+FullyConnected::getHashTable() const {
+  return _kernel->getHashTable();
+}
+
+void FullyConnected::setHashTable(hashing::HashFunctionPtr hash_fn,
+                                  hashtable::SampledHashTablePtr hash_table) {
+  return _kernel->setHashTable(std::move(hash_fn), std::move(hash_table));
 }
 
 void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,

@@ -31,6 +31,8 @@ class MachBlock final : public CategoricalBlock {
 
   MachIndexPtr index() const { return _index; }
 
+  void setIndex(const MachIndexPtr& index);
+
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final;
 

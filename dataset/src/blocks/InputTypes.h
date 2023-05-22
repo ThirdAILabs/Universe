@@ -6,19 +6,20 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 
 namespace thirdai::dataset {
 
 // Single input type aliases
 using MapInput = std::unordered_map<std::string, std::string>;
-using RowInput = std::vector<std::string_view>;
+using RowInput = std::vector<std::string>;
 using LineInput = std::string;
 
 // Batch input type aliases
 using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 using LineInputBatch = std::vector<std::string>;
+
+static constexpr const char* EMPTY_STRING = "";
 
 /**
  * An interface that allows the data pipeline to operate on arbitrary
@@ -35,7 +36,7 @@ class ColumnarInputSample {
    * Returns the identified column (either by column number or column name)
    * as a string view.
    */
-  virtual std::string_view column(const ColumnIdentifier& column) = 0;
+  virtual std::string column(const ColumnIdentifier& column) = 0;
   /**
    * The size of the columnar sample; the number of columns.
    */
@@ -55,9 +56,9 @@ class MapSampleRef final : public ColumnarInputSample {
  public:
   explicit MapSampleRef(const MapInput& columns) : _columns(columns) {}
 
-  std::string_view column(const ColumnIdentifier& column) final {
+  std::string column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
-      return {};
+      return "";
     }
     return _columns.at(column.name());
   }
@@ -79,13 +80,13 @@ class RowSampleRef final : public ColumnarInputSample {
  public:
   explicit RowSampleRef(const RowInput& columns) : _columns(columns) {}
 
-  std::string_view column(const ColumnIdentifier& column) final {
+  std::string column(const ColumnIdentifier& column) final {
     if (column.number() >= _columns.size()) {
       std::stringstream error;
       error << "Tried to access " << column.number()
             << "-th column but this row only has " << _columns.size()
             << " columns:" << std::endl;
-      for (auto column : _columns) {
+      for (const auto& column : _columns) {
         error << " \"" << column << "\"";
       }
       throw std::invalid_argument(error.str());
@@ -116,14 +117,14 @@ class CsvSampleRef final : public ColumnarInputSample {
       error << "Expected " << *expected_num_cols
             << " columns in each row of the dataset. Found row with "
             << _columns.size() << " columns:";
-      for (auto column : _columns) {
+      for (const auto& column : _columns) {
         error << " \"" << column << "\"";
       }
       throw std::invalid_argument(error.str());
     }
   }
 
-  std::string_view column(const ColumnIdentifier& column) final {
+  std::string column(const ColumnIdentifier& column) final {
     return RowSampleRef(_columns).column(column);
   }
 

@@ -171,7 +171,7 @@ def add_distributed_to_udt():
             validation_context,
         )
 
-    setattr(bolt.UDT, "train_distributed", train_distributed)
+    setattr(bolt.UniversalDeepTransformer, "train_distributed", train_distributed)
 
     def cold_start_distributed(
         self,
@@ -276,14 +276,10 @@ def add_distributed_to_udt():
 
         validation_context = None
         if validation != None:
-            validation_source = DistributedColdStartDatasetLoader(
+            validation_source = DistributedUDTDatasetLoader(
                 train_file=validation.filename(),
                 batch_size=batch_size_per_node(batch_size, cluster_config),
-                max_in_memory_batches=max_in_memory_batches,
-                strong_column_names=strong_column_names,
-                weak_column_names=weak_column_names,
                 data_processor=self.get_data_processor(),
-                cold_start_meta_data=self.get_cold_start_meta_data(),
             )
 
             validation_args = validation.args()
@@ -306,7 +302,9 @@ def add_distributed_to_udt():
             validation_context,
         )
 
-    setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
+    setattr(
+        bolt.UniversalDeepTransformer, "cold_start_distributed", cold_start_distributed
+    )
 
 
 class RayTrainingClusterConfig:

@@ -1,4 +1,5 @@
 #include "BoltV2TrainPython.h"
+#include "CtrlCCheck.h"
 #include "PyCallback.h"
 #include "PybindUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
@@ -19,6 +20,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
+#include <optional>
 #include <stdexcept>
 
 namespace py = pybind11;
@@ -81,17 +83,23 @@ void createBoltV2TrainSubmodule(py::module_& module) {
   defineDistributedTrainer(train);
 }
 
+Trainer makeTrainer(nn::model::ModelPtr model,
+                    std::optional<uint32_t> freeze_hash_tables_epoch) {
+  return Trainer(std::move(model), freeze_hash_tables_epoch, CtrlCCheck{});
+}
+
 void defineTrainer(py::module_& train) {
   // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
   // this.
   train.def("convert_dataset", convertDataset, py::arg("dataset"),
-            py::arg("dim"));
+            py::arg("dim"), py::arg("copy") = true);
 
   train.def("convert_datasets", convertDatasets, py::arg("datasets"),
-            py::arg("dims"));
+            py::arg("dims"), py::arg("copy") = true);
 
   py::class_<Trainer>(train, "Trainer")
-      .def(py::init<nn::model::ModelPtr>(), py::arg("model"))
+      .def(py::init(&makeTrainer), py::arg("model"),
+           py::arg("freeze_hash_tables_epoch") = std::nullopt)
       .def("train", &Trainer::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = metrics::InputMetrics(),

@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import pytest
 
 
 # This function builds a UDT model, trains the model, saves it, and run a
@@ -38,6 +39,13 @@ def run_udt_training_routine(do_save_load=True, n_target_classes=2, num_data_poi
     model.predict({"col_2": "0"})
 
     os.remove("temp_training.csv")
+
+
+@pytest.fixture(autouse=True)
+def deactivate_license_at_start_of_demo_test():
+    import thirdai
+
+    thirdai.licensing.deactivate()
 
 
 LOCAL_HEARTBEAT_SERVER = f"http://localhost:50421"

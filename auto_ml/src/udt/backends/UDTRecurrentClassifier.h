@@ -2,9 +2,10 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -27,27 +28,29 @@ class UDTRecurrentClassifier final : public UDTBackend {
                          const std::optional<std::string>& model_config,
                          const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size_opt,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size_opt,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final;
 
-  bolt::BoltGraphPtr model() const final { return _model; }
+  ModelPtr model() const final { return _model; }
 
   void verifyCanDistribute() const final {
     throw std::invalid_argument(
@@ -77,7 +80,7 @@ class UDTRecurrentClassifier final : public UDTBackend {
 
   data::SequenceDataTypePtr _target;
 
-  bolt::BoltGraphPtr _model;
+  ModelPtr _model;
   data::RecurrentDatasetFactoryPtr _dataset_factory;
 
   bool _freeze_hash_tables;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace thirdai::dataset::parsers::CSV {
@@ -57,7 +56,6 @@ class StateMachine {
  * in the middle of the line, and trims the character if it is at the end of the
  * line. This is the main parsing function.
  */
-std::vector<std::string_view> parseLine(const std::string& line,
-                                        char delimiter);
+std::vector<std::string> parseLine(const std::string& line, char delimiter);
 
 }  // namespace thirdai::dataset::parsers::CSV

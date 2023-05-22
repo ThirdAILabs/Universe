@@ -1,8 +1,8 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
+#include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
 #include <stdexcept>
@@ -31,32 +31,39 @@ class UDT {
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  UDT(std::optional<std::string> incorrect_column_name,
+      std::string correct_column_name, const std::string& dataset_size,
+      char delimiter, const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
+
   UDT(const std::string& file_format, uint32_t n_target_classes,
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval);
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics);
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k);
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class);
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k);
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class);
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k);
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
@@ -68,13 +75,9 @@ class UDT {
                        float learning_rate, uint32_t epochs,
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
-                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
-                       bool verbose) {
-    return _backend->coldstart(data, strong_column_names, weak_column_names,
-                               learning_rate, epochs, metrics, validation,
-                               callbacks, max_in_memory_batches, verbose);
-  }
+                       bool verbose);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
@@ -135,45 +138,69 @@ class UDT {
                                      top_k_per_eval_aggregation);
   }
 
+  ModelPtr model() const { return _backend->model(); }
+
+  void setModel(const ModelPtr& model) { _backend->setModel(model); }
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names) {
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names);
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample) {
+    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
+                                 num_buckets_to_sample);
   }
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const std::variant<uint32_t, std::string>& new_label) {
+                         const std::variant<uint32_t, std::string>& new_label,
+
+                         std::optional<uint32_t> num_buckets_to_sample) {
     _backend->introduceDocument(document, strong_column_names,
-                                weak_column_names, new_label);
+                                weak_column_names, new_label,
+                                num_buckets_to_sample);
   }
 
   void introduceLabel(const MapInputBatch& sample,
-                      const std::variant<uint32_t, std::string>& new_label) {
-    _backend->introduceLabel(sample, new_label);
+                      const std::variant<uint32_t, std::string>& new_label,
+                      std::optional<uint32_t> num_buckets_to_sample) {
+    _backend->introduceLabel(sample, new_label, num_buckets_to_sample);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {
     _backend->forget(label);
   }
 
-  bolt::BoltGraphPtr model() const { return _backend->model(); }
+  void clearIndex() { _backend->clearIndex(); }
 
-  void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
+                             const std::vector<std::string>& metrics) {
+    return _backend->trainWithHashes(batch, learning_rate, metrics);
+  }
+
+  py::object predictHashes(const MapInput& sample, bool sparse_inference) {
+    return _backend->predictHashes(sample, sparse_inference);
+  }
+
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
+
+  void setIndex(const dataset::mach::MachIndexPtr& index) {
+    return _backend->setIndex(index);
+  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }
 
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      const std::string& activation_func, float distance_cutoff) const {
-    return _backend->getTextEmbeddingModel(activation_func, distance_cutoff);
+  TextEmbeddingModelPtr getTextEmbeddingModel(float distance_cutoff) const {
+    return _backend->getTextEmbeddingModel(distance_cutoff);
   }
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
+
+  void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 
