@@ -1,4 +1,8 @@
 #include "MachNeuronIndex.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 
 namespace thirdai::bolt::nn {
@@ -33,6 +37,14 @@ void MachNeuronIndex::query(const BoltVector& input, BoltVector& output,
       break;
     }
   }
+}
+
+template void MachNeuronIndex::serialize(cereal::BinaryInputArchive&);
+template void MachNeuronIndex::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void MachNeuronIndex::serialize(Archive& archive) {
+  archive(cereal::base_class<NeuronIndex>(this), _mach_index, _rand_neurons);
 }
 
 }  // namespace thirdai::bolt::nn

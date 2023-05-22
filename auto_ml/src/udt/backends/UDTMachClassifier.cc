@@ -1,4 +1,6 @@
 #include "UDTMachClassifier.h"
+#include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
@@ -11,6 +13,8 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <memory>
+#include <random>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -335,6 +339,40 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
+void UDTMachClassifier::updateSamplingStrategy() {
+  auto mach_index = _mach_label_block->index();
+
+  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  float index_sparsity =
+      static_cast<float>(mach_index->nonemptyBuckets().size()) /
+      mach_index->numBuckets();
+  if (index_sparsity <= 0.2) {
+    if (!std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
+      output_layer->kernel()->setNeuronIndex(new_index);
+    }
+    output_layer->setSparsity(index_sparsity, false, false);
+  } else {
+    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
+
+      std::random_device rd;
+      auto new_index =
+          bolt::DWTASamplingConfig::autotune(mach_index->numBuckets(), sparsity,
+                                             /* experimental_autotune= */ false)
+              ->getNeuronIndex(output_layer->dim(), output_layer->inputDim(),
+                               rd);
+
+      output_layer->setSparsity(sparsity, false, false);
+      output_layer->kernel()->setNeuronIndex(new_index);
+    }
+  }
+}
+
 std::unordered_map<uint32_t, MapInputBatch>
 UDTMachClassifier::aggregateSamplesByDoc(
     const thirdai::data::ColumnMap& augmented_data,
@@ -498,6 +536,8 @@ void UDTMachClassifier::introduceLabel(
   }
 
   _mach_label_block->index()->insert(expectInteger(new_label), new_hashes);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::forget(const Label& label) {
@@ -509,6 +549,8 @@ void UDTMachClassifier::forget(const Label& label) {
                  "predict, or predictBatch."
               << std::endl;
   }
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,

@@ -516,7 +516,7 @@ void FullyConnectedLayer::buildHashTables() {
     return;
   }
 
-  _neuron_index->buildIndex(_weights, _dim, false);
+  _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ false);
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
@@ -524,7 +524,12 @@ void FullyConnectedLayer::reBuildHashFunction() {
     return;
   }
 
-  _neuron_index->buildIndex(_weights, _dim, true);
+  _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ true);
+}
+
+void FullyConnectedLayer::setNeuronIndex(nn::NeuronIndexPtr index) {
+  _neuron_index = std::move(index);
+  _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ false);
 }
 
 void FullyConnectedLayer::freezeHashTables(bool insert_labels_if_not_found) {

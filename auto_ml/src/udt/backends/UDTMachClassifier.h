@@ -100,7 +100,11 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final { _mach_label_block->index()->clear(); }
+  void clearIndex() final {
+    _mach_label_block->index()->clear();
+
+    updateSamplingStrategy();
+  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -130,6 +134,8 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   std::string textColumnForDocumentIntroduction();
+
+  void updateSamplingStrategy();
 
   static std::unordered_map<uint32_t, MapInputBatch> aggregateSamplesByDoc(
       const thirdai::data::ColumnMap& augmented_data,

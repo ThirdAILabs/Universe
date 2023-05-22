@@ -75,6 +75,10 @@ class FullyConnectedLayer final {
 
   void reBuildHashFunction();
 
+  const nn::NeuronIndexPtr& neuronIndex() const { return _neuron_index; }
+
+  void setNeuronIndex(nn::NeuronIndexPtr index);
+
   uint32_t getDim() const { return _dim; }
 
   uint32_t getInputDim() const { return _prev_dim; }
