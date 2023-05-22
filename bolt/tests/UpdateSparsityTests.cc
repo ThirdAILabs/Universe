@@ -8,7 +8,7 @@
 
 namespace thirdai::bolt::nn::tests {
 
-constexpr uint32_t INPUT_DIM = 20, HIDDEN_DIM = 100, OUTPUT_DIM = 10;
+constexpr uint32_t INPUT_DIM = 20, HIDDEN_DIM = 100, N_CLASSES = 10;
 
 void testSparsityChanges(model::ModelPtr& model,
                          const ops::FullyConnectedPtr& fc,
@@ -17,7 +17,7 @@ void testSparsityChanges(model::ModelPtr& model,
       BoltVector::singleElementSparseVector(0), INPUT_DIM);
 
   auto label_batch = tensor::Tensor::convert(
-      BoltVector::singleElementSparseVector(0), OUTPUT_DIM);
+      BoltVector::singleElementSparseVector(0), N_CLASSES);
 
   model->trainOnBatch({input_batch}, {label_batch});
 
@@ -43,14 +43,14 @@ TEST(UpdateSparsityTests, ReallocateModelStateAfterSetSparsity) {
 
   auto fc_output = fc->apply(input);
 
-  auto output = ops::FullyConnected::make(/* dim= */ OUTPUT_DIM,
+  auto output = ops::FullyConnected::make(/* dim= */ N_CLASSES,
                                           /* input_dim= */ HIDDEN_DIM,
                                           /* sparsity= */ 1.0,
                                           /* activation= */ "softmax")
                     ->apply(fc_output);
 
   auto loss =
-      loss::CategoricalCrossEntropy::make(output, ops::Input::make(OUTPUT_DIM));
+      loss::CategoricalCrossEntropy::make(output, ops::Input::make(N_CLASSES));
 
   auto model = model::Model::make({input}, {output}, {loss});
 
@@ -65,7 +65,7 @@ TEST(UpdateSparsityTests, ReallocateModelStateAfterSetSparsity) {
       new_model, ops::FullyConnected::cast(new_model->opExecutionOrder().at(0)),
       new_model->computationOrder().at(1));
 
-  std::remove(save_path.c_str());
+  ASSERT_EQ(std::remove(save_path.c_str()), 0);
 }
 
 }  // namespace thirdai::bolt::nn::tests
