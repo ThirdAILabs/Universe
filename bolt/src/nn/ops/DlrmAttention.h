@@ -51,6 +51,8 @@ class DlrmAttention final : public Op,
 
   std::vector<std::vector<float>*> gradients() final { return {}; }
 
+  std::vector<std::vector<float>*> parameters() final { return {}; }
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
