@@ -6,6 +6,7 @@ import requests
 OLD_MODEL_PATH = "./old_models"
 
 
+# Get all previous version numbers of a given package
 def get_package_versions(package_name):
     url = "https://pypi.org/pypi/%s/json" % (package_name,)
     data = json.loads(requests.get(url).content)
@@ -14,6 +15,8 @@ def get_package_versions(package_name):
     return versions
 
 
+# Get all previous thirdai version numbers that share the same
+# major and minor version as the current repo version
 def get_filtered_versions():
     with open("thirdai.version") as version_file:
         full_version = version_file.read().strip()

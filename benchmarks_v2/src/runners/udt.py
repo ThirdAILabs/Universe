@@ -100,21 +100,6 @@ class UDTRunner(Runner):
         return train_file, cold_start_train_file, test_file
 
     @staticmethod
-    def get_datasets(config, path_prefix):
-        train_file = (
-            os.path.join(path_prefix, config.train_file)
-            if config.train_file is not None
-            else None
-        )
-        cold_start_train_file = (
-            os.path.join(path_prefix, config.cold_start_train_file)
-            if config.cold_start_train_file is not None
-            else None
-        )
-        test_file = os.path.join(path_prefix, config.test_file)
-        return train_file, cold_start_train_file, test_file
-
-    @staticmethod
     def get_average_predict_time(
         model, test_file, config, path_prefix, num_samples=1000
     ):

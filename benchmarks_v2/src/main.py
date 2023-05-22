@@ -140,8 +140,6 @@ def main(**kwargs):
                     path_prefix=args.path_prefix,
                     mlflow_logger=mlflow_logger,
                 )
-                if mlflow_logger:
-                    mlflow_logger.end_run()
             except Exception as error:
                 throw_exception = True
                 print(
