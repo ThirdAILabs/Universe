@@ -882,6 +882,7 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
+  summary << "training_without_bias= " << _train_without_bias << ", ";
   if (_sparsity < 1.0) {
     if (useRandomSampling()) {
       summary << "random";
@@ -895,7 +896,6 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
                 << "binsize= " << dwta_hasher->getBinsize() << ", "
                 << "hashes_per_table= " << dwta_hasher->getHashesPerTable()
                 << ", ";
-        summary << "training_without_bias= " << _train_without_bias;
       }
       _hash_table->summarize(summary);
     }
