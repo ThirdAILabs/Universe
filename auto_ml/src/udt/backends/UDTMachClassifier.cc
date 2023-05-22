@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
@@ -14,6 +15,7 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <chrono>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -161,10 +163,20 @@ py::object UDTMachClassifier::trainBatch(
     const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
+  bolt::utils::Timer timer;
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+  std::cout << "tb featurize " << timer.elapsed<std::chrono::milliseconds>()
+            << "ms" << std::endl;
 
+  bolt::utils::Timer timer2;
   model->trainOnBatch(inputs, labels);
+  std::cout << "tb train on batch "
+            << timer2.elapsed<std::chrono::milliseconds>() << "ms" << std::endl;
+
+  bolt::utils::Timer timer3;
   model->updateParameters(learning_rate);
+  std::cout << "tb update params "
+            << timer3.elapsed<std::chrono::milliseconds>() << "ms" << std::endl;
 
   // TODO(Nicholas): Add back metrics
   (void)metrics;
@@ -208,11 +220,24 @@ py::object UDTMachClassifier::trainWithHashes(
     const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
+  bolt::utils::Timer timer;
   auto [inputs, labels] =
       _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
 
+  timer.stop();
+
+  std::cout << "twh featurize " << timer.elapsed<std::chrono::milliseconds>()
+            << "ms" << std::endl;
+
+  bolt::utils::Timer timer2;
   model->trainOnBatch(inputs, labels);
+  std::cout << "twh train on batch "
+            << timer2.elapsed<std::chrono::milliseconds>() << "ms" << std::endl;
+
+  bolt::utils::Timer timer3;
   model->updateParameters(learning_rate);
+  std::cout << "twh update parameters "
+            << timer3.elapsed<std::chrono::milliseconds>() << "ms" << std::endl;
 
   // TODO(Nicholas): Add back metrics
   (void)metrics;
