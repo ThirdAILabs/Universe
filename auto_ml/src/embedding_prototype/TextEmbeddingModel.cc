@@ -1,4 +1,5 @@
 #include "TextEmbeddingModel.h"
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -9,7 +10,7 @@
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/Validation.h>
@@ -101,7 +102,8 @@ py::object TextEmbeddingModel::supervisedTrain(
 
   bolt::train::LabeledDataset tensor_data = {tensor_data_x, tensor_data_y};
 
-  bolt::train::Trainer trainer(_two_tower_model);
+  bolt::train::Trainer trainer(_two_tower_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
   return py::cast(trainer.train(tensor_data, learning_rate, epochs));
 }
 

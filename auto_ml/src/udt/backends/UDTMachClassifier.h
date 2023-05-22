@@ -3,7 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -84,18 +84,19 @@ class UDTMachClassifier final : public UDTBackend {
    */
   py::object entityEmbedding(const Label& label) final;
 
-  void introduceDocuments(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names) final;
+  void introduceDocuments(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const Label& new_label) final;
+                         const Label& new_label,
+                         std::optional<uint32_t> num_buckets_to_sample) final;
 
-  void introduceLabel(const MapInputBatch& samples,
-                      const Label& new_label) final;
+  void introduceLabel(const MapInputBatch& samples, const Label& new_label,
+                      std::optional<uint32_t> num_buckets_to_sample) final;
 
   void forget(const Label& label) final;
 
@@ -122,22 +123,15 @@ class UDTMachClassifier final : public UDTBackend {
       float distance_cutoff) const final;
 
  private:
-  bool integerTarget() const {
-    return static_cast<bool>(
-        dataset::mach::asNumericIndex(_mach_label_block->index()));
-  }
-
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName());
   }
 
-  std::string variantToString(const Label& variant);
-
   std::string textColumnForDocumentIntroduction();
 
-  std::unordered_map<Label, MapInputBatch> aggregateSamplesByDoc(
+  static std::unordered_map<uint32_t, MapInputBatch> aggregateSamplesByDoc(
       const thirdai::data::ColumnMap& augmented_data,
       const std::string& text_column_name,
       const std::string& label_column_name);

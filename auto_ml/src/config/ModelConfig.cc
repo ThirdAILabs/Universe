@@ -31,23 +31,38 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
   if (config.contains("sampling_config")) {
     const auto& sampling_json = config["sampling_config"];
 
-    if (sampling_json.is_string() &&
-        sampling_json.get<std::string>() == "random") {
-      return std::make_shared<bolt::RandomSamplingConfig>();
+    if (sampling_json.is_string()) {
+      if (sampling_json.get<std::string>() == "random") {
+        return std::make_shared<bolt::RandomSamplingConfig>();
+      }
+
+      if (sampling_json.get<std::string>() == "experimental_autotune") {
+        uint32_t dim = integerParameter(config, "dim", args);
+        float sparsity = floatParameter(config, "sparsity", args);
+        return bolt::DWTASamplingConfig::newAutotune(dim, sparsity);
+      }
     }
+
     if (sampling_json.is_object()) {
       uint32_t num_tables = integerParameter(sampling_json, "num_tables", args);
       uint32_t hashes_per_table =
           integerParameter(sampling_json, "hashes_per_table", args);
+      uint32_t range_pow = integerParameter(sampling_json, "range_pow", args);
+      uint32_t binsize = integerParameter(sampling_json, "binsize", args);
       uint32_t reservoir_size =
           integerParameter(sampling_json, "reservoir_size", args);
+      uint32_t permutations =
+          integerParameter(sampling_json, "permutations", args);
 
       return std::make_shared<bolt::DWTASamplingConfig>(
-          num_tables, hashes_per_table, reservoir_size);
+          num_tables, hashes_per_table, range_pow, binsize, reservoir_size,
+          permutations);
     }
     throw std::invalid_argument(
         "Parameter 'sampling_config' must be a string 'random' indicating "
-        "random sampling is used or an object providing sampling parameters.");
+        "random sampling is used, or a string 'experimental_autotune' "
+        "indicating experimental DWTA autotuner is used, or an object "
+        "providing sampling parameters.");
   }
 
   return nullptr;

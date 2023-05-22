@@ -4,8 +4,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -145,12 +145,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("top_k_per_eval_aggregation"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"))
+           py::arg("weak_column_names"),
+           py::arg("num_buckets_to_sample") = std::nullopt)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("label"))
+           py::arg("weak_column_names"), py::arg("label"),
+           py::arg("num_buckets_to_sample") = std::nullopt)
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
-           py::arg("label"))
+           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
       .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),

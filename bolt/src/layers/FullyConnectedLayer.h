@@ -132,7 +132,8 @@ class FullyConnectedLayer final {
 
   float getSparsity() const { return _sparsity; }
 
-  void setSparsity(float sparsity);
+  void setSparsity(float sparsity, bool rebuild_hash_tables,
+                   bool experimental_autotune);
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 

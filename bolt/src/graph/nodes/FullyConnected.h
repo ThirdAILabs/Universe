@@ -45,7 +45,8 @@ class FullyConnectedNode final
 
   static std::shared_ptr<FullyConnectedNode> makeExplicitSamplingConfig(
       uint32_t dim, float sparsity, const std::string& activation,
-      uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size);
+      uint32_t num_tables, uint32_t hashes_per_table, uint32_t range_pow,
+      uint32_t binsize, uint32_t reservoir_size, uint32_t permutes);
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 
@@ -63,7 +64,9 @@ class FullyConnectedNode final
 
   float getSparsity();
 
-  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity);
+  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity,
+                                                  bool rebuild_hash_tables,
+                                                  bool experimental_autotune);
 
   float* getWeightsPtr();
 

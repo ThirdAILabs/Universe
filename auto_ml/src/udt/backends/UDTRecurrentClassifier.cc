@@ -1,4 +1,5 @@
 #include "UDTRecurrentClassifier.h"
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -76,7 +77,8 @@ py::object UDTRecurrentClassifier::train(
     freeze_hash_tables_epoch = 1;
   }
 
-  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch);
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
@@ -97,7 +99,8 @@ py::object UDTRecurrentClassifier::evaluate(
 
   throwIfSparseInference(sparse_inference);
 
-  bolt::train::Trainer trainer(_model);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 

@@ -219,10 +219,12 @@ class UDTBackend {
   virtual void introduceDocuments(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names) {
+      const std::vector<std::string>& weak_column_names,
+      std::optional<uint32_t> num_buckets_to_sample) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
+    (void)num_buckets_to_sample;
     throw notSupported("introduce_documents");
   }
 
@@ -234,11 +236,13 @@ class UDTBackend {
       const MapInput& document,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::variant<uint32_t, std::string>& new_label) {
+      const std::variant<uint32_t, std::string>& new_label,
+      std::optional<uint32_t> num_buckets_to_sample) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
+    (void)num_buckets_to_sample;
     throw notSupported("introduce_document");
   }
 
@@ -248,9 +252,11 @@ class UDTBackend {
    */
   virtual void introduceLabel(
       const MapInputBatch& sample,
-      const std::variant<uint32_t, std::string>& new_label) {
+      const std::variant<uint32_t, std::string>& new_label,
+      std::optional<uint32_t> num_buckets_to_sample) {
     (void)sample;
     (void)new_label;
+    (void)num_buckets_to_sample;
     throw notSupported("introduce_label");
   }
 
