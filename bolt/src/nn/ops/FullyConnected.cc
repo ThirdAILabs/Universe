@@ -45,11 +45,11 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
     const std::string& activation, SamplingConfigPtr sampling,
-    bool train_without_bias,
-    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+    bool train_without_bias, uint32_t rebuild_hash_tables,
+    uint32_t reconstruct_hash_functions) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
-      dim, input_dim, sparsity, activation, std::move(sampling), train_without_bias,
-      rebuild_hash_tables, reconstruct_hash_functions));
+      dim, input_dim, sparsity, activation, std::move(sampling),
+      train_without_bias, rebuild_hash_tables, reconstruct_hash_functions));
 }
 
 void FullyConnected::forward(const autograd::ComputationList& inputs,
