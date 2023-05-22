@@ -14,7 +14,6 @@ class DLRMRunner(Runner):
 
     def run_benchmark(config: DLRMConfig, path_prefix, mlflow_logger):
         model = DLRMRunner.get_model(config)
-
         train_set, train_labels, test_set, test_labels = config.load_datasets(
             path_prefix
         )

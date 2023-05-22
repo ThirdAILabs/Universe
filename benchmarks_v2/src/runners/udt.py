@@ -16,21 +16,13 @@ from .runner import Runner
 class UDTRunner(Runner):
     config_type = UDTBenchmarkConfig
 
-    @staticmethod
-    def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
-        train_file = (
-            os.path.join(path_prefix, config.train_file)
-            if config.train_file is not None
-            else None
+    @classmethod
+    def run_benchmark(cls, config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
+        train_file, cold_start_train_file, test_file = cls.get_datasets(
+            config, path_prefix
         )
-        cold_start_train_file = (
-            os.path.join(path_prefix, config.cold_start_train_file)
-            if config.cold_start_train_file is not None
-            else None
-        )
-        test_file = os.path.join(path_prefix, config.test_file)
 
-        model = UDTRunner.create_model(config, path_prefix)
+        model = cls.create_model(config, path_prefix)
 
         validation = (
             bolt.Validation(
@@ -82,7 +74,7 @@ class UDTRunner(Runner):
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
 
-        average_predict_time_ms = UDTRunner.get_average_predict_time(
+        average_predict_time_ms = cls.get_average_predict_time(
             model, test_file, config, path_prefix, 1000
         )
 
@@ -91,6 +83,21 @@ class UDTRunner(Runner):
             mlflow_logger.log_additional_metric(
                 key="average_predict_time_ms", value=average_predict_time_ms
             )
+
+    @staticmethod
+    def get_datasets(config, path_prefix):
+        train_file = (
+            os.path.join(path_prefix, config.train_file)
+            if config.train_file is not None
+            else None
+        )
+        cold_start_train_file = (
+            os.path.join(path_prefix, config.cold_start_train_file)
+            if config.cold_start_train_file is not None
+            else None
+        )
+        test_file = os.path.join(path_prefix, config.test_file)
+        return train_file, cold_start_train_file, test_file
 
     @staticmethod
     def get_average_predict_time(

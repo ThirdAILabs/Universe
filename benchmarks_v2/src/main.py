@@ -1,6 +1,7 @@
 import argparse
 import json
 from datetime import date
+from types import SimpleNamespace
 
 import requests
 import thirdai
@@ -28,6 +29,9 @@ def parse_arguments():
             "dlrm_v2",
             "query_reformulation",
             "temporal",
+            "mini_benchmark_udt",
+            "mini_benchmark_query_reformulation",
+            "mini_benchmark_temporal",
         ],
         help="Which runners to use to run the benchmark.",
     )
@@ -80,8 +84,11 @@ def experiment_name(config_name, official_benchmark):
     return config_name
 
 
-if __name__ == "__main__":
-    args = parse_arguments()
+def main(**kwargs):
+    if not kwargs:
+        args = parse_arguments()
+    else:
+        args = SimpleNamespace(**kwargs)
 
     if args.branch_name == "main":
         slack_webhook = args.official_slack_webhook
@@ -93,6 +100,9 @@ if __name__ == "__main__":
     # If benchmarks are called from github action, run_name = branch_name
     if args.branch_name:
         args.run_name = args.branch_name
+
+    # If any of the benchmarks fail, we throw an error at the end of the script
+    throw_exception = False
 
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]
@@ -128,6 +138,7 @@ if __name__ == "__main__":
                     mlflow_logger=mlflow_logger,
                 )
             except Exception as error:
+                throw_exception = True
                 print(
                     f"An error occurred running the {config.config_name} benchmark:",
                     error,
@@ -140,3 +151,10 @@ if __name__ == "__main__":
 
             if mlflow_logger:
                 mlflow_logger.end_run()
+
+    if throw_exception:
+        raise Exception("One or more benchmark runs have failed")
+
+
+if __name__ == "__main__":
+    main()
