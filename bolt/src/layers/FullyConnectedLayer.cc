@@ -777,7 +777,7 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
 void FullyConnectedLayer::forceBuildHashTables() { buildHashTablesImpl(true); }
 
 void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
-                   bool experimental_autotune) {
+                                      bool experimental_autotune) {
   // TODO(Nick): Right now we always switch to DWTA after setting sparsity
   // instead of autotuning for whatever the existing hash function was. We
   // should instead autotune the original hash function.
