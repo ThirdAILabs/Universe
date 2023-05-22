@@ -60,11 +60,8 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
-NumpyArray<float> getValues(const nn::model::ModelPtr& _model,
-                            std::string type) {
-  auto [grads, flattened_dim] = (type == "gradients")
-                                    ? _model->getFlattenedGradients()
-                                    : _model->getFlattenedParameters();
+NumpyArray<float> getGradientValues(const nn::model::ModelPtr& _model) {
+  auto [grads, flattened_dim] = _model->getFlattenedGradients();
 
   py::capsule free_when_done(
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -72,20 +69,32 @@ NumpyArray<float> getValues(const nn::model::ModelPtr& _model,
   return NumpyArray<float>(flattened_dim, grads, free_when_done);
 }
 
-void setValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values,
-               std::string type) {
+NumpyArray<float> getParameterValues(const nn::model::ModelPtr& _model) {
+  auto [grads, flattened_dim] = _model->getFlattenedParameters();
+
+  py::capsule free_when_done(
+      grads, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+}
+
+void setGradientValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values) {
   if (new_values.ndim() != 1) {
     throw std::invalid_argument("Expected grads to be flattened.");
   }
 
   uint64_t flattened_dim = new_values.shape(0);
-  if (type == "gradients") {
-    _model->setFlattenedGradients(new_values.data(), flattened_dim);
-  } else if (type == "parameters") {
-    _model->setFlattenedParameters(new_values.data(), flattened_dim);
-  } else {
-    throw std::invalid_argument("Expected gradients or parameters");
+  _model->setFlattenedGradients(new_values.data(), flattened_dim);
+}
+
+void setParameterValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values) {
+  if (new_values.ndim() != 1) {
+    throw std::invalid_argument("Expected grads to be flattened.");
   }
+
+  uint64_t flattened_dim = new_values.shape(0);
+  _model->setFlattenedParameters(new_values.data(), flattened_dim);
+  
 }
 
 void defineTensor(py::module_& nn);
@@ -122,19 +131,19 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("summary", &model::Model::summary, py::arg("print") = true)
       .def("get_gradients",
            [](const nn::model::ModelPtr& model) {
-             return getValues(model, "gradients");
+             return getGradientValues(model);
            })
       .def("set_gradients",
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
-             setValues(model, new_values, "gradients");
+             setGradientValues(model, new_values);
            })
       .def("get_parameters",
            [](const nn::model::ModelPtr& model) {
-             return getValues(model, "parameters");
+             return getParameterValues(model);
            })
       .def("set_parameters",
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
-             setValues(model, new_values, "parameters");
+             setParameterValues(model, new_values);
            })
       .def("disable_sparse_parameter_updates",
            &model::Model::disableSparseParameterUpdates)
