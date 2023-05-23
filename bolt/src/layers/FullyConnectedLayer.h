@@ -116,6 +116,8 @@ class FullyConnectedLayer final {
 
   bool getTrainable() const;
 
+  bool useBias() const { return _use_bias; }
+
   void setWeights(const float* new_weights);
 
   void setBiases(const float* new_biases);
