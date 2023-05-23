@@ -12,8 +12,10 @@ from .runner import Runner
 class TemporalRunner(Runner):
     config_type = TemporalBenchmarkConfig
 
-    @staticmethod
-    def run_benchmark(config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger):
+    @classmethod
+    def run_benchmark(
+        cls, config: TemporalBenchmarkConfig, path_prefix: str, mlflow_logger
+    ):
         train_file = (
             os.path.join(path_prefix, config.train_file)
             if config.train_file is not None
@@ -21,7 +23,7 @@ class TemporalRunner(Runner):
         )
         test_file = os.path.join(path_prefix, config.test_file)
 
-        model = TemporalRunner.create_model(config, path_prefix)
+        model = cls.create_model(config, path_prefix)
 
         for callback in config.callbacks:
             if isinstance(callback, AdditionalMetricCallback):
@@ -59,7 +61,7 @@ class TemporalRunner(Runner):
             model.index(sample)
         del train_data
 
-        average_predict_time_ms = TemporalRunner.get_average_predict_time(
+        average_predict_time_ms = cls.get_average_predict_time(
             model, test_file, config, path_prefix, num_samples=1000
         )
 

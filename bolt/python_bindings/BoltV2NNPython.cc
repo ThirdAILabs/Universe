@@ -94,6 +94,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
 #endif
+      .def("freeze_hash_tables", &model::Model::freezeHashTables,
+           py::arg("insert_labels_if_not_found") = true)
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def("checkpoint", &model::Model::checkpoint, py::arg("filename"),
