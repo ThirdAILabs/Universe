@@ -44,9 +44,9 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
 
   if (_use_bias) {
-    _biases.assign(_biases.size(), 0.0);
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });  
   } else {
-    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
+    _biases.assign(_biases.size(), 0.0);
   }
   if (_sparsity < 1.0) {
     initSamplingDatastructures(config.getSamplingConfig(), rd);
@@ -587,7 +587,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
   assert(_bias_optimizer.has_value());
-  if (_use_bias) {
+  if (!_use_bias) {
     return;
   }
 #pragma omp parallel for default(none) \
