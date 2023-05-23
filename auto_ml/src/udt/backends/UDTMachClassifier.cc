@@ -103,13 +103,13 @@ py::object UDTMachClassifier::train(
   ValidationDatasetLoader validation_dataset_loader;
   if (validation) {
     validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+        ValidationDatasetLoader(_dataset_factory->getLabeledDatasetLoader(
                                     validation->first, /* shuffle= */ false),
                                 validation->second);
   }
 
   auto train_dataset_loader =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             validation_dataset_loader, batch_size_opt,
@@ -124,7 +124,7 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   (void)top_k;
 
   auto eval_dataset_loader =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
 
   // TODO(david) eventually we should use backend specific metrics
 
@@ -371,7 +371,7 @@ void UDTMachClassifier::introduceDocuments(
   }
 
   for (const auto& [doc, outputs] : outputs_per_doc) {
-    auto hashes = topHashesFoDoc(outputs, num_buckets_to_sample);
+    auto hashes = topHashesForDoc(outputs, num_buckets_to_sample);
     _mach_label_block->index()->insert(doc, hashes);
   }
 }
@@ -414,7 +414,7 @@ struct CompareBuckets {
   }
 };
 
-std::vector<uint32_t> UDTMachClassifier::topHashesFoDoc(
+std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     const std::vector<BoltVector>& output_samples,
     std::optional<uint32_t> num_buckets_to_sample_opt) const {
   const auto& mach_index = _mach_label_block->index();
@@ -493,7 +493,7 @@ void UDTMachClassifier::introduceLabel(
                               /* use_sparsity = */ false)
                     .at(0);
 
-  auto hashes = topHashesFoDoc(output->vectors(), num_buckets_to_sample_opt);
+  auto hashes = topHashesForDoc(output->vectors(), num_buckets_to_sample_opt);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 }

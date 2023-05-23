@@ -41,7 +41,7 @@ class TabularDatasetFactory {
         label_blocks, std::move(label_col_names), options, force_parallel);
   }
 
-  dataset::DatasetLoaderPtr getDatasetLoader(
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle,
       std::optional<dataset::DatasetShuffleConfig> shuffle_config =
           std::nullopt);

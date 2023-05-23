@@ -45,6 +45,8 @@ class Tensor {
    */
   BoltVector& getVector(uint32_t index);
 
+  const auto& vectors() const { return _vectors; }
+
   /**
    * Returns the number of vectors in the tensor.
    */
@@ -55,8 +57,6 @@ class Tensor {
   const float* activationsPtr() const;
 
   const float* gradientsPtr() const;
-
-  const auto& vectors() const { return _vectors; }
 
  private:
   static void checkBatchContents(const BoltBatch& batch, uint32_t dim);

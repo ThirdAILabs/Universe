@@ -131,7 +131,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::string textColumnForDocumentIntroduction();
 
-  std::vector<uint32_t> topHashesFoDoc(
+  std::vector<uint32_t> topHashesForDoc(
       const std::vector<BoltVector>& output_samples,
       std::optional<uint32_t> num_buckets_to_sample_opt) const;
 
