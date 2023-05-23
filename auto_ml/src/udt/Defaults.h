@@ -21,7 +21,7 @@ constexpr bool USE_SIGMOID_BCE = false;
 constexpr bool USE_LAYER_NORM = false;
 
 // Whether there is bias in training in hidden layer
-constexpr bool USE_BIAS = false;
+constexpr bool USE_BIAS = true;
 
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;

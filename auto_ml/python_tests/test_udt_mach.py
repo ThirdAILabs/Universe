@@ -23,7 +23,7 @@ def make_simple_test_file(invalid_data=False):
             f.write("haha,3\n")
 
 
-def train_simple_mach_udt(invalid_data=False, embedding_dim=256):
+def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=False):
     make_simple_test_file(invalid_data=invalid_data)
 
     model = bolt.UniversalDeepTransformer(

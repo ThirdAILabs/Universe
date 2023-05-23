@@ -40,7 +40,7 @@ class FullyConnectedLayer final {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim,
                       bool disable_sparse_parameter_updates = false,
-                      bool use_bias = false);
+                      bool use_bias = true);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
