@@ -49,7 +49,7 @@ TabularDatasetFactory::TabularDatasetFactory(
                      /* label_blocks = */ std::nullopt, parallel);
 }
 
-dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
+dataset::DatasetLoaderPtr TabularDatasetFactory::getLabeledDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle,
     std::optional<dataset::DatasetShuffleConfig> shuffle_config) {
   if (!shuffle_config.has_value()) {
