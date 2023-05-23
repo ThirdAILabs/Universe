@@ -402,10 +402,10 @@ def test_mach_without_bias():
 
     bolt_model = model._get_model()
 
-    bolt_model.summary()
+    ops = bolt_model.ops()
 
-    hidden_layer = bolt_model.__getitem__("fc_1")
-    output_layer = bolt_model.__getitem__("fc_2")
+    hidden_layer = ops[0]  # hidden layer
+    output_layer = ops[1]  # output layer
 
     hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
     output_bias_all_zeros = np.all(output_layer.biases == 0)
