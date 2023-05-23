@@ -73,7 +73,6 @@ def get_config(have_user_specified_parameters: bool = False):
 def compare_summaries(model, expected_summary):
     summary = model.summary(print=False)
 
-    model.summary()
     summary = textwrap.dedent(summary).strip().replace("\n", "")
 
     expected_summary = re.escape(
