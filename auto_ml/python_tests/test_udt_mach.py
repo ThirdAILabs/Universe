@@ -405,11 +405,8 @@ def test_mach_without_bias():
     hidden_layer = bolt_model.__getitem__("fc_1")
     output_layer = bolt_model.__getitem__("fc_2")
 
-    hidden_layer_biases = hidden_layer.biases
-    output_layer_biases = output_layer.biases
-
-    hidden_bias_all_zeros = np.all(hidden_layer_biases == 0)
-    output_bias_all_zeros = np.all(output_layer_biases == 0)
+    hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
+    output_bias_all_zeros = np.all(output_layer.biases == 0)
 
     assert hidden_bias_all_zeros, "Error: Hidden layer biases should be all zeros."
     assert not output_bias_all_zeros, "Error: All output layer biases are zeros."
