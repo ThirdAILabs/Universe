@@ -883,7 +883,7 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
-  summary << "bias= " << std::boolalpha << _use_bias ;
+  summary << "bias= " << std::boolalpha << _use_bias;
   if (_sparsity < 1.0) {
     if (useRandomSampling()) {
       summary << ", random";
