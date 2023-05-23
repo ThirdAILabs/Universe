@@ -401,6 +401,8 @@ def test_mach_without_bias():
     model = train_simple_mach_udt(use_bias=False)
 
     bolt_model = model._get_model()
+    
+    bolt_model.summary()
 
     hidden_layer = bolt_model.__getitem__("fc_1")
     output_layer = bolt_model.__getitem__("fc_2")

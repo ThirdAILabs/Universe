@@ -109,10 +109,10 @@ def test_load_model_from_config():
     expected_summary = """
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.25, activation=ReLU, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh, sampling=(bias=true)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.25, activation=ReLU, sampling=(bias=true, random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(bias=true, hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(bias=true, hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     =================================================
     """
 
@@ -156,7 +156,7 @@ def test_embedding_layer_config():
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
     Embedding(emb_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax, sampling=(bias=true)]
     =================================================
     """
 
@@ -187,10 +187,10 @@ def test_udt_model_config_override():
     expected_summary = """
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.5, activation=ReLU, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh, sampling=(bias=true)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.5, activation=ReLU, sampling=(bias=true, random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(bias=true, hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(bias=true, hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     =================================================
     """
 
