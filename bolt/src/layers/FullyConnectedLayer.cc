@@ -18,7 +18,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool disable_sparse_parameter_updates, bool train_without_bias)
+    bool disable_sparse_parameter_updates, bool use_bias)
     : _dim(config.getDim()),
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
@@ -33,7 +33,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _biases(config.getDim()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
-      _train_without_bias(train_without_bias),
+      _use_bias(use_bias),
       _sampling_mode(BoltSamplingMode::LSH),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
@@ -42,10 +42,11 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::normal_distribution<float> dist(0.0, 0.01);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
-  std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
-  if (_train_without_bias) {
+  if (_use_bias) {
     _biases.assign(_biases.size(), 0.0);
+  }else{
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
   }
   if (_sparsity < 1.0) {
     initSamplingDatastructures(config.getSamplingConfig(), rd);
@@ -586,7 +587,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
   assert(_bias_optimizer.has_value());
-  if (_train_without_bias) {
+  if (_use_bias) {
     return;
   }
 #pragma omp parallel for default(none) \
@@ -882,7 +883,7 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
-  summary << "training_without_bias= " << _train_without_bias << ", ";
+  summary << "bias= " << std::boolalpha << _use_bias << ", ";
   if (_sparsity < 1.0) {
     if (useRandomSampling()) {
       summary << "random";

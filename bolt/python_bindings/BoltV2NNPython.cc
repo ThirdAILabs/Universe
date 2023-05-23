@@ -153,8 +153,8 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
            py::arg("activation") = "relu",
-           py::arg("train_without_bias") = false,
            py::arg("sampling_config") = nullptr,
+           py::arg("use_bias") = false,
            py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnected::apply)

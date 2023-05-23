@@ -21,7 +21,7 @@ constexpr bool USE_SIGMOID_BCE = false;
 constexpr bool USE_LAYER_NORM = false;
 
 // Whether there is bias in training in hidden layer
-constexpr bool TRAIN_WITHOUT_BIAS = false;
+constexpr bool USE_BIAS = false;
 
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;
@@ -70,11 +70,11 @@ constexpr uint32_t MACH_DEFAULT_NUM_REPETITIONS = 7;
 constexpr uint32_t MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN = 25;
 
 // How many output buckets we restrict decoding to for UDT Mach Classifier.
-constexpr uint32_t MACH_TOP_K_PER_EVAL_AGGREGATION = 200;
+constexpr uint32_t MACH_TOP_K_PER_EVAL_AGGREGATION = 25;
 
 // How many results we're required to decode from the above num buckets for UDT
 // Mach Classifier.
-constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 25;
+constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
 
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
