@@ -39,7 +39,8 @@ class FullyConnectedLayer final {
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim,
-                      bool disable_sparse_parameter_updates = false);
+                      bool disable_sparse_parameter_updates = false,
+                      bool use_bias = true);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -115,6 +116,8 @@ class FullyConnectedLayer final {
 
   bool getTrainable() const;
 
+  bool useBias() const { return _use_bias; }
+
   void setWeights(const float* new_weights);
 
   void setBiases(const float* new_biases);
@@ -182,6 +185,8 @@ class FullyConnectedLayer final {
   // A flag to determine whether the current network saves the optimizer states
   // or not. If true, it saves the optimizer states, else doesn't.
   bool _should_save_optimizer;
+
+  bool _use_bias;
 
   BoltSamplingMode _sampling_mode;
 
@@ -295,7 +300,7 @@ class FullyConnectedLayer final {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,
-            _should_save_optimizer);
+            _should_save_optimizer, _use_bias);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
@@ -321,7 +326,7 @@ class FullyConnectedLayer final {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,
-            _should_save_optimizer);
+            _should_save_optimizer, _use_bias);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
