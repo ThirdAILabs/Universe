@@ -21,8 +21,7 @@ std::string nextFullyConnectedOpName() {
 
 FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
-                               SamplingConfigPtr sampling,
-                               bool use_bias,
+                               SamplingConfigPtr sampling, bool use_bias,
                                uint32_t rebuild_hash_tables,
                                uint32_t reconstruct_hash_functions)
     : Op(nextFullyConnectedOpName()),
@@ -38,18 +37,16 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                    std::move(sampling));
 
   _kernel = std::make_shared<FullyConnectedLayer>(
-      config, input_dim, /* disable_sparse_sparse_updates */ false,
-      use_bias);
+      config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
 
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
-    const std::string& activation, SamplingConfigPtr sampling,
-    bool use_bias, uint32_t rebuild_hash_tables,
-    uint32_t reconstruct_hash_functions) {
+    const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
-      dim, input_dim, sparsity, activation, std::move(sampling),
-      use_bias, rebuild_hash_tables, reconstruct_hash_functions));
+      dim, input_dim, sparsity, activation, std::move(sampling), use_bias,
+      rebuild_hash_tables, reconstruct_hash_functions));
 }
 
 void FullyConnected::forward(const autograd::ComputationList& inputs,

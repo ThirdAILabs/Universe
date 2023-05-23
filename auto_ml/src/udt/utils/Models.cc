@@ -26,8 +26,7 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   bool use_layer_norm =
       args.get<bool>("use_layer_norm", "bool", defaults::USE_LAYER_NORM);
 
-  bool use_bias = args.get<bool>("use_bias", "bool",
-                                           defaults::USE_BIAS);
+  bool use_bias = args.get<bool>("use_bias", "bool", defaults::USE_BIAS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, use_layer_norm, use_bias);
 }
@@ -56,12 +55,12 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 
-  auto hidden =
-      bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
-                                          /* sparsity= */ 1.0,
-                                          /* activation= */ hidden_activation,
-                                        /* sampling_config= */nullptr, use_bias)
-          ->apply(input);
+  auto hidden = bolt::nn::ops::FullyConnected::make(
+                    hidden_dim, input->dim(),
+                    /* sparsity= */ 1.0,
+                    /* activation= */ hidden_activation,
+                    /* sampling_config= */ nullptr, use_bias)
+                    ->apply(input);
 
   // Using layer norm for bias overvalues
   if (use_layer_norm) {

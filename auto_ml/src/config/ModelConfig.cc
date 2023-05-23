@@ -100,8 +100,7 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
 
   auto predecessor = getPredecessor(config, created_comps);
 
-  auto use_bias =
-      integerParameter(config, "use_bias", args);
+  auto use_bias = integerParameter(config, "use_bias", args);
 
   auto layer =
       use_bias == 0
