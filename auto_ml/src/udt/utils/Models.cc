@@ -27,7 +27,7 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
       args.get<bool>("use_layer_norm", "bool", defaults::USE_LAYER_NORM);
 
   bool use_bias = args.get<bool>("use_bias", "bool",
-                                           defaults::use_bias);
+                                           defaults::USE_BIAS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, use_layer_norm, use_bias);
 }
