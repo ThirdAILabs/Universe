@@ -123,13 +123,13 @@ void FullyConnected::summary(std::ostream& summary,
   summary << " [dim=" << _kernel->getDim()
           << ", sparsity=" << _kernel->getSparsity() << ", activation="
           << activationFunctionToStr(_kernel->getActivationFunction());
+  summary << ", sampling=(";
+  _kernel->buildSamplingSummary(summary);
   if (_kernel->getSparsity() < 1.0) {
-    summary << ", sampling=(";
-    _kernel->buildSamplingSummary(summary);
     summary << ", rebuild_hash_tables=" << _rebuild_hash_tables;
     summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
-    summary << ")";
   }
+  summary << ")";
   summary << "]";
 }
 

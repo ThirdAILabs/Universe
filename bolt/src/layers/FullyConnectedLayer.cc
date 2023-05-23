@@ -883,12 +883,12 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
-  summary << "bias= " << std::boolalpha << _use_bias << ", ";
+  summary << "bias= " << std::boolalpha << _use_bias ;
   if (_sparsity < 1.0) {
     if (useRandomSampling()) {
-      summary << "random";
+      summary << ", random";
     } else {
-      summary << "hash_function=" << _hasher->getName() << ", ";
+      summary << ", hash_function=" << _hasher->getName() << ", ";
 
       if (_hasher->getName() == "DWTA") {
         auto dwta_hasher =

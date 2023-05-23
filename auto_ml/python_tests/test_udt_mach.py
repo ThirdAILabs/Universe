@@ -402,6 +402,7 @@ def test_mach_without_bias():
 
     bolt_model = model._get_model()
 
+    bolt_model.summary()
     hidden_layer = bolt_model.__getitem__("fc_1")
     output_layer = bolt_model.__getitem__("fc_2")
 
