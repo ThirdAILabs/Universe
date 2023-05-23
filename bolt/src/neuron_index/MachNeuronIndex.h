@@ -37,6 +37,10 @@ class MachNeuronIndex final : public NeuronIndex {
 
   void summarize(std::ostream& summary) const final { summary << "mach_index"; }
 
+  void setNewIndex(dataset::mach::MachIndexPtr new_index) {
+    _mach_index = std::move(new_index);
+  }
+
  private:
   dataset::mach::MachIndexPtr _mach_index;
 

@@ -4,7 +4,8 @@ from collections import defaultdict
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, dataset
+from thirdai import bolt, dataset, bolt_v2
+import numpy as np
 
 pytestmark = [pytest.mark.unit]
 
@@ -450,3 +451,37 @@ def test_load_balancing():
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
+
+
+def test_mach_sparse_inference():
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30]}, output_range=OUTPUT_DIM, num_hashes=1
+        )
+    )
+    model._get_model().summary()
+
+    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30])
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30], 4: [40], 5: [50]},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30, 40, 50])
+
+    model.forget(label=3)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 40, 50])

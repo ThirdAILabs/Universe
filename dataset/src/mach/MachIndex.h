@@ -57,6 +57,7 @@ class MachIndex {
   void clear() {
     _entity_to_hashes.clear();
     _buckets.assign(_buckets.size(), {});
+    _nonempty_buckets.clear();
   }
 
   uint32_t numEntities() const { return _entity_to_hashes.size(); }

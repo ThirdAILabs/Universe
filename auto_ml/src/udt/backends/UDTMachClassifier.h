@@ -172,6 +172,7 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
+  float _sparse_inference_threshold;
 };
 
 }  // namespace thirdai::automl::udt

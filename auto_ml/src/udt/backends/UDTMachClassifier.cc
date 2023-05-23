@@ -90,6 +90,10 @@ UDTMachClassifier::UDTMachClassifier(
       std::vector<dataset::BlockPtr>{hash_processing_block},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  _sparse_inference_threshold =
+      user_args.get<float>("sparse_inference_threshold", "float",
+                           defaults::MACH_SPARSE_INFERENCE_THRESHOLD);
 }
 
 py::object UDTMachClassifier::train(
@@ -350,12 +354,14 @@ void UDTMachClassifier::updateSamplingStrategy() {
   float index_sparsity =
       static_cast<float>(mach_index->nonemptyBuckets().size()) /
       mach_index->numBuckets();
-  if (index_sparsity <= 0.2) {
+  if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
+    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
+    output_layer->setSparsity(index_sparsity, false, false);
+
     if (!std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
       auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
       output_layer->kernel()->setNeuronIndex(new_index);
     }
-    output_layer->setSparsity(index_sparsity, false, false);
   } else {
     if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
@@ -581,6 +587,18 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
+
+  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  if (auto mach_neuron_index =
+          std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+    mach_neuron_index->setNewIndex(index);
+  }
+
+  updateSamplingStrategy();
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
@@ -606,7 +624,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _min_num_eval_results, _top_k_per_eval_aggregation);
+          _min_num_eval_results, _top_k_per_eval_aggregation,
+          _sparse_inference_threshold);
 }
 
 }  // namespace thirdai::automl::udt
