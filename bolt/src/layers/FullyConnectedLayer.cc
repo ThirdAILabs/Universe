@@ -44,7 +44,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
 
   if (_use_bias) {
-    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });  
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
   } else {
     _biases.assign(_biases.size(), 0.0);
   }

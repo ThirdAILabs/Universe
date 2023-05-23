@@ -1,11 +1,11 @@
 import os
 from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
 from thirdai import bolt, dataset
-import numpy as np
 
 pytestmark = [pytest.mark.unit]
 
