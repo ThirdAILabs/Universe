@@ -9,7 +9,7 @@
 namespace thirdai::bolt::nn {
 
 RandomSampler::RandomSampler(uint32_t layer_dim, std::random_device& rd)
-    : _rand_neurons(layer_dim), _layer_dim(layer_dim) {
+    : _rand_neurons(layer_dim) {
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
 }
@@ -42,11 +42,13 @@ void RandomSampler::query(const BoltVector& input, BoltVector& output,
 
   // This is because rand() is not threadsafe and because we want to make the
   // output more deterministic.
-  uint64_t random_offset = hashing::simpleIntegerHash(seed) % _layer_dim;
+  uint64_t random_offset =
+      hashing::simpleIntegerHash(seed) % _rand_neurons.size();
 
   uint64_t neurons_to_sample = sparse_dim - label_len;
 
-  wrapAroundCopy(/* src= */ _rand_neurons.data(), /* src_len= */ _layer_dim,
+  wrapAroundCopy(/* src= */ _rand_neurons.data(),
+                 /* src_len= */ _rand_neurons.size(),
                  /* dest= */ output.active_neurons + label_len,
                  /* copy_size= */ neurons_to_sample,
                  /* starting_offset= */ random_offset);
@@ -57,7 +59,7 @@ template void RandomSampler::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void RandomSampler::serialize(Archive& archive) {
-  archive(cereal::base_class<NeuronIndex>(this), _rand_neurons, _layer_dim);
+  archive(cereal::base_class<NeuronIndex>(this), _rand_neurons);
 }
 
 }  // namespace thirdai::bolt::nn

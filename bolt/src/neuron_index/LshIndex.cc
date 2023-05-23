@@ -15,7 +15,6 @@ LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
                    std::random_device& rd)
     : _hash_fn(std::move(hash_fn)),
       _hash_table(std::move(hash_table)),
-      _layer_dim(layer_dim),
       _rand_neurons(layer_dim) {
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
@@ -63,10 +62,10 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
     // hash on because the range of each hash from the lsh hash functions is
     // probably less than the layer dim.
     uint32_t rand_offset =
-        hashing::simpleIntegerHash(hashes.at(0)) % _layer_dim;
+        hashing::simpleIntegerHash(hashes.at(0)) % _rand_neurons.size();
     while (selected_neurons.size() < sparse_dim) {
       selected_neurons.insert(_rand_neurons[rand_offset++]);
-      rand_offset = rand_offset % _layer_dim;
+      rand_offset = rand_offset % _rand_neurons.size();
     }
   }
 
@@ -83,7 +82,7 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
     if (cnt == sparse_dim) {
       break;
     }
-    assert(x < _layer_dim);
+    assert(x < _rand_neurons.size());
     output.active_neurons[cnt++] = x;
   }
 }
@@ -138,7 +137,7 @@ template void LshIndex::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void LshIndex::serialize(Archive& archive) {
   archive(cereal::base_class<NeuronIndex>(this), _hash_fn, _hash_table,
-          _layer_dim, _rand_neurons, _insert_labels_when_not_found);
+          _rand_neurons, _insert_labels_when_not_found);
 }
 
 }  // namespace thirdai::bolt::nn
