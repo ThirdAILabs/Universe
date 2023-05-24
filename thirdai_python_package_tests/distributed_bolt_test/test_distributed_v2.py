@@ -117,27 +117,8 @@ def test_distributed_v2_skip():
     print(result)
 
 
-def initialize_and_checkpoint():
-    n_classes = 10
-    input_layer = bolt.nn.Input(dim=n_classes)
-
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=20000,
-        input_dim=n_classes,
-        sparsity=0.01,
-        activation="relu",
-        rebuild_hash_tables=12,
-        reconstruct_hash_functions=40,
-    )(input_layer)
-    output = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=20000, activation="softmax"
-    )(hidden_layer)
-
-    labels = bolt.nn.Input(dim=n_classes)
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
-
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
-
+def initialize_and_checkpoint(config):
+    model = config.get("model")
     train_x, train_y = gen_numpy_training_data(n_samples=8000, n_classes=10)
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
@@ -175,6 +156,25 @@ def initialize_and_checkpoint():
 
 
 def test_independent_model():
+    n_classes = 10
+    input_layer = bolt.nn.Input(dim=n_classes)
+
+    hidden_layer = bolt.nn.FullyConnected(
+        dim=20000,
+        input_dim=n_classes,
+        sparsity=0.01,
+        activation="relu",
+        rebuild_hash_tables=12,
+        reconstruct_hash_functions=40,
+    )(input_layer)
+    output = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=20000, activation="softmax"
+    )(hidden_layer)
+
+    labels = bolt.nn.Input(dim=n_classes)
+    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
     num_cpu_per_node = dist.get_num_cpus()
 
     working_dir = os.path.dirname(os.path.realpath(__file__))
@@ -194,6 +194,7 @@ def test_independent_model():
     )
     trainer = dist.BoltTrainer(
         train_loop_per_worker=initialize_and_checkpoint,
+        train_loop_config={"model": model},
         scaling_config=scaling_config,
     )
 
