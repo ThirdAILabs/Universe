@@ -14,12 +14,16 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/stl.h>
+#include <utils/StringManipulation.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <iterator>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::automl::udt {
 
@@ -95,8 +99,8 @@ UDTMachClassifier::UDTMachClassifier(
       /* delimiter= */ ' ',
       /* normalize_categories= */ false);
 
-  // We want to be able to train input samples on a specific set of hashes so we
-  // create a separate dataset factory that does all the same things as the
+  // We want to be able to train input samples on a specific set of hashes so
+  // we create a separate dataset factory that does all the same things as the
   // regular dataset factory except with the label block switched out
   _pre_hashed_labels_dataset_factory = data::TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
@@ -159,6 +163,11 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
         "return_predicted_class flag.");
   }
 
+  return py::cast(predictImpl(sample, sparse_inference));
+}
+
+std::vector<std::pair<uint32_t, double>> UDTMachClassifier::predictImpl(
+    const MapInput& sample, bool sparse_inference) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
@@ -169,7 +178,7 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
       /* min_num_eval_results = */ _min_num_eval_results,
       /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
 
-  return py::cast(decoded_output);
+  return decoded_output;
 }
 
 py::object UDTMachClassifier::trainBatch(
@@ -238,6 +247,11 @@ py::object UDTMachClassifier::trainWithHashes(
 
 py::object UDTMachClassifier::predictHashes(const MapInput& sample,
                                             bool sparse_inference) {
+  return py::cast(predictHashesImpl(sample, sparse_inference));
+}
+
+std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
+    const MapInput& sample, bool sparse_inference) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
@@ -255,7 +269,7 @@ py::object UDTMachClassifier::predictHashes(const MapInput& sample,
 
   std::reverse(hashes_to_return.begin(), hashes_to_return.end());
 
-  return py::cast(hashes_to_return);
+  return hashes_to_return;
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
@@ -345,7 +359,8 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured with a "
+        "Introducing documents can only be used when UDT is configured with "
+        "a "
         "single text input column and target column. The current model is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
@@ -547,6 +562,86 @@ void UDTMachClassifier::addBalancingSamples(
   }
 }
 
+template <typename T>
+std::vector<T> sample(const std::vector<T>& source, uint32_t n) {
+  std::vector<T> out;
+  std::sample(source.begin(), source.end(), std::back_inserter(out), n,
+              std::random_device());
+
+  return out;
+}
+
+MapInput createSample(MapInput source,
+                      const std::vector<uint32_t>& target_hashes, uint32_t n,
+                      const std::string& label_col) {
+  std::string labels;
+  for (uint32_t h : sample(target_hashes, n)) {
+    labels += std::to_string(h) + ' ';
+  }
+  labels.pop_back();
+
+  source[label_col] = labels;
+
+  return source;
+}
+
+float jaccardSimilarity(const std::vector<uint32_t>& a,
+                        const std::vector<uint32_t>& b) {
+  std::unordered_set<uint32_t> b_set(b.begin(), b.end());
+
+  uint32_t intersection = 0;
+  uint32_t in_a_not_b = 0;
+  for (uint32_t x : a) {
+    if (b_set.count(x)) {
+      intersection++;
+    } else {
+      in_a_not_b++;
+    }
+  }
+
+  return static_cast<float>(intersection) / (b.size() + in_a_not_b);
+}
+
+void UDTMachClassifier::associate(const MapInput& source,
+                                  const MapInput& target, uint32_t top_k,
+                                  float jaccard_threshold) {
+  auto hashes = predictHashesImpl(target, false);
+
+  MapInputBatch samples = {
+      createSample(source, hashes, top_k, _mach_label_block->columnName()),
+      createSample(source, hashes, top_k, _mach_label_block->columnName())};
+
+  for (int i = 0; i < 50; i++) {
+    trainBatch(samples, 0.001, {});
+    trainBalancingSamples();
+
+    auto source_hashes = predictHashesImpl(source, false);
+    auto target_hashes = predictHashesImpl(target, false);
+
+    if (jaccardSimilarity(source_hashes, target_hashes) >= jaccard_threshold) {
+      break;
+    }
+  }
+
+  MapInputBatch samples_top_1 = {
+      createSample(source, hashes, 1, _mach_label_block->columnName()),
+      createSample(source, hashes, 1, _mach_label_block->columnName())};
+
+  trainBatch(samples_top_1, 0.001, {});
+}
+
+void UDTMachClassifier::teach(const MapInput& sample,
+                              const Label& expected_label) {
+  uint32_t label = expectInteger(expected_label);
+
+  MapInput mutable_sample = sample;
+  mutable_sample[_mach_label_block->columnName()] = std::to_string(label);
+
+  while (predictImpl(sample, false).front().first != label) {
+    trainBatch({mutable_sample}, 0.001, {});
+  }
+}
+
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
                                         uint32_t top_k_per_eval_aggregation) {
   if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
@@ -573,7 +668,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output ranges
+  // block allows indexes with different number of hashes but not output
+  // ranges
   _mach_label_block->setIndex(index);
 }
 

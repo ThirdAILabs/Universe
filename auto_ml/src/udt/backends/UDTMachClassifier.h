@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
@@ -102,7 +103,17 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final { _mach_label_block->index()->clear(); }
+  void clearIndex() final {
+    _mach_label_block->index()->clear();
+    if (_rlhf_sampler) {
+      _rlhf_sampler->clear();
+    }
+  }
+
+  void associate(const MapInput& source, const MapInput& target, uint32_t top_k,
+                 float jaccard_threshold);
+
+  void teach(const MapInput& sample, const Label& expected_label);
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -125,6 +136,12 @@ class UDTMachClassifier final : public UDTBackend {
       float distance_cutoff) const final;
 
  private:
+  std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
+                                                       bool sparse_inference);
+
+  std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
+                                          bool sparse_inference);
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
