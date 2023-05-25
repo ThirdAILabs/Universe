@@ -110,10 +110,10 @@ class UDTMachClassifier final : public UDTBackend {
     }
   }
 
-  void associate(const MapInput& source, const MapInput& target, uint32_t top_k,
-                 float jaccard_threshold);
-
-  void teach(const MapInput& sample, const Label& expected_label);
+  void associate(const MapInput& source, const MapInput& target,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
+                 uint32_t epochs) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;

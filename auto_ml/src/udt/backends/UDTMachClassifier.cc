@@ -562,83 +562,42 @@ void UDTMachClassifier::addBalancingSamples(
   }
 }
 
-template <typename T>
-std::vector<T> sample(const std::vector<T>& source, uint32_t n) {
-  std::vector<T> out;
-  std::sample(source.begin(), source.end(), std::back_inserter(out), n,
-              std::random_device());
+BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
+                               uint32_t n_buckets) {
+  std::vector<uint32_t> indices;
+  std::sample(hashes.begin(), hashes.end(), std::back_inserter(indices),
+              n_buckets, std::random_device());
 
-  return out;
-}
-
-MapInput createSample(MapInput source,
-                      const std::vector<uint32_t>& target_hashes, uint32_t n,
-                      const std::string& label_col) {
-  std::string labels;
-  for (uint32_t h : sample(target_hashes, n)) {
-    labels += std::to_string(h) + ' ';
-  }
-  labels.pop_back();
-
-  source[label_col] = labels;
-
-  return source;
-}
-
-float jaccardSimilarity(const std::vector<uint32_t>& a,
-                        const std::vector<uint32_t>& b) {
-  std::unordered_set<uint32_t> b_set(b.begin(), b.end());
-
-  uint32_t intersection = 0;
-  uint32_t in_a_not_b = 0;
-  for (uint32_t x : a) {
-    if (b_set.count(x)) {
-      intersection++;
-    } else {
-      in_a_not_b++;
-    }
-  }
-
-  return static_cast<float>(intersection) / (b.size() + in_a_not_b);
+  return BoltVector::makeSparseVector(indices,
+                                      std::vector<float>(indices.size(), 1.0));
 }
 
 void UDTMachClassifier::associate(const MapInput& source,
-                                  const MapInput& target, uint32_t top_k,
-                                  float jaccard_threshold) {
-  auto hashes = predictHashesImpl(target, false);
+                                  const MapInput& target, uint32_t n_buckets,
+                                  uint32_t n_association_samples,
+                                  uint32_t n_balancing_samples,
+                                  float learning_rate, uint32_t epochs) {
+  auto target_hashes = predictHashesImpl(target, false);
 
-  MapInputBatch samples = {
-      createSample(source, hashes, top_k, _mach_label_block->columnName()),
-      createSample(source, hashes, top_k, _mach_label_block->columnName())};
+  BoltVector source_vec =
+      _dataset_factory->featurizeInput(source).at(0)->getVector(0);
 
-  for (int i = 0; i < 50; i++) {
-    trainBatch(samples, 0.001, {});
-    trainBalancingSamples();
+  auto [inputs, labels] = _rlhf_sampler->balancingSamples(n_balancing_samples);
 
-    auto source_hashes = predictHashesImpl(source, false);
-    auto target_hashes = predictHashesImpl(target, false);
-
-    if (jaccardSimilarity(source_hashes, target_hashes) >= jaccard_threshold) {
-      break;
-    }
+  for (uint32_t i = 0; i < n_association_samples; i++) {
+    inputs.push_back(source_vec);
+    labels.push_back(makeLabelFromHashes(target_hashes, n_buckets));
   }
 
-  MapInputBatch samples_top_1 = {
-      createSample(source, hashes, 1, _mach_label_block->columnName()),
-      createSample(source, hashes, 1, _mach_label_block->columnName())};
+  auto input_tensor = bolt::nn::tensor::Tensor::convert(
+      BoltBatch(std::move(inputs)), _classifier->model()->inputDims().at(0));
 
-  trainBatch(samples_top_1, 0.001, {});
-}
+  auto label_tensor = bolt::nn::tensor::Tensor::convert(
+      BoltBatch(std::move(labels)), _classifier->model()->labelDims().at(0));
 
-void UDTMachClassifier::teach(const MapInput& sample,
-                              const Label& expected_label) {
-  uint32_t label = expectInteger(expected_label);
-
-  MapInput mutable_sample = sample;
-  mutable_sample[_mach_label_block->columnName()] = std::to_string(label);
-
-  while (predictImpl(sample, false).front().first != label) {
-    trainBatch({mutable_sample}, 0.001, {});
+  for (uint32_t i = 0; i < epochs; i++) {
+    _classifier->model()->trainOnBatch({input_tensor}, {label_tensor});
+    _classifier->model()->updateParameters(learning_rate);
   }
 }
 
