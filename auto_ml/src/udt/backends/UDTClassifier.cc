@@ -51,10 +51,10 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
-  _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
+  _dataset_factory = data::TabularDatasetFactory::make(
       input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{_label_block},
-      std::set<std::string>{target_name}, tabular_options, force_parallel);
+      {dataset::BlockList({_label_block})}, std::set<std::string>{target_name},
+      tabular_options, force_parallel);
 }
 
 py::object UDTClassifier::train(

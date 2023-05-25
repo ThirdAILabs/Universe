@@ -77,4 +77,8 @@ constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 // tables
 constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
 
+// Maximum number of samples to take from a dataset to use as balancing samples
+// for rlhf.
+constexpr uint32_t MAX_BALANCING_SAMPLES = 10000;
+
 }  // namespace thirdai::automl::udt::defaults

@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -164,8 +165,11 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
+  data::TabularDatasetFactoryPtr _label_and_hashes_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
+
+  std::optional<RLHFSampler> _rlhf_sampler;
 };
 
 }  // namespace thirdai::automl::udt

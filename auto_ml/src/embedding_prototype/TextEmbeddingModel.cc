@@ -71,14 +71,14 @@ py::object TextEmbeddingModel::supervisedTrain(
   auto supervised_factory_1 = data::TabularDatasetFactory::make(
       input_data_types_1,
       /* provided_temporal_relationships = */ {},
-      /* label_blocks = */ {label_block},
+      /* label_blocks = */ {dataset::BlockList({label_block})},
       /* label_col_names = */ {},
       /* options = */ _options,
       /* force_parallel = */ false);
   auto supervised_factory_2 = data::TabularDatasetFactory::make(
       input_data_types_2,
       /* provided_temporal_relationships = */ {},
-      /* label_blocks = */ {label_block},
+      /* label_blocks = */ {dataset::BlockList({label_block})},
       /* label_col_names = */ {},
       /* options = */ _options,
       /* force_parallel = */ false);

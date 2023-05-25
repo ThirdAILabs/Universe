@@ -6,11 +6,14 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <dataset/src/blocks/BlockList.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -61,11 +64,23 @@ UDTMachClassifier::UDTMachClassifier(
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
-  _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
+  _dataset_factory = data::TabularDatasetFactory::make(
+      /* input_data_types = */ input_data_types,
+      /* provided_temporal_relationships = */ temporal_tracking_relationships,
+      /* label_blocks = */ {dataset::BlockList({_mach_label_block})},
+      /* label_col_names = */ std::set<std::string>{target_name},
+      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  // No limit on the number of classes.
+  auto doc_id_block = dataset::NumericalCategoricalBlock::make(
+      target_name, std::numeric_limits<uint32_t>::max());
+
+  _label_and_hashes_factory = data::TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
       /* provided_temporal_relationships = */ temporal_tracking_relationships,
       /* label_blocks = */
-      std::vector<dataset::BlockPtr>{_mach_label_block},
+      {dataset::BlockList({_mach_label_block}),
+       dataset::BlockList({doc_id_block})},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 
@@ -78,12 +93,10 @@ UDTMachClassifier::UDTMachClassifier(
   // We want to be able to train input samples on a specific set of hashes so we
   // create a separate dataset factory that does all the same things as the
   // regular dataset factory except with the label block switched out
-  _pre_hashed_labels_dataset_factory = std::make_shared<
-      data::TabularDatasetFactory>(
+  _pre_hashed_labels_dataset_factory = data::TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
       /* provided_temporal_relationships = */ temporal_tracking_relationships,
-      /* label_blocks = */
-      std::vector<dataset::BlockPtr>{hash_processing_block},
+      /* label_blocks = */ {dataset::BlockList({hash_processing_block})},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 }
@@ -102,6 +115,21 @@ py::object UDTMachClassifier::train(
         ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
                                     validation->first, /* shuffle= */ false),
                                 validation->second);
+  }
+
+  if (_rlhf_sampler) {
+    auto samples =
+        _label_and_hashes_factory->getDatasetLoader(data, /* shuffle= */ true)
+            ->loadSome(defaults::MAX_BALANCING_SAMPLES, 1, false)
+            .value();
+
+    for (uint32_t i = 0; i < samples.front()->len(); i++) {
+      uint32_t doc_id = samples.at(2)->at(0)[i].getHighestActivationId();
+
+      const BoltVector& input = samples.at(0)->at(0)[i];
+      const BoltVector& label = samples.at(1)->at(0)[i];
+      _rlhf_sampler->addSample(doc_id, input, label);
+    }
   }
 
   auto train_dataset_loader =

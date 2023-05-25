@@ -26,7 +26,7 @@ namespace thirdai::automl::data {
 TabularDatasetFactory::TabularDatasetFactory(
     ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& provided_temporal_relationships,
-    const std::vector<dataset::BlockPtr>& label_blocks,
+    const std::vector<dataset::BlockList>& label_blocks,
     std::set<std::string> label_col_names, const TabularOptions& options,
     bool force_parallel)
     : _data_types(std::move(data_types)),
@@ -46,7 +46,7 @@ TabularDatasetFactory::TabularDatasetFactory(
   _inference_featurizer =
       makeFeaturizer(temporal_relationships,
                      /* should_update_history= */ false, options,
-                     /* label_blocks = */ std::nullopt, parallel);
+                     /* label_blocks = */ {}, parallel);
 }
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
@@ -127,7 +127,7 @@ void TabularDatasetFactory::updateMetadataBatch(const std::string& col_name,
 dataset::TabularFeaturizerPtr TabularDatasetFactory::makeFeaturizer(
     const TemporalRelationships& temporal_relationships,
     bool should_update_history, const TabularOptions& options,
-    std::optional<std::vector<dataset::BlockPtr>> label_blocks, bool parallel) {
+    const std::vector<dataset::BlockList>& label_blocks, bool parallel) {
   auto input_blocks = makeTabularInputBlocks(
       _data_types, _label_col_names, temporal_relationships, _vectors_map,
       _temporal_context, should_update_history, options);
@@ -135,9 +135,9 @@ dataset::TabularFeaturizerPtr TabularDatasetFactory::makeFeaturizer(
   std::vector<dataset::BlockList> block_lists = {
       dataset::BlockList(std::move(input_blocks),
                          /* hash_range= */ options.feature_hash_range)};
-  if (label_blocks.has_value()) {
-    block_lists.push_back(dataset::BlockList(std::move(*label_blocks)));
-  }
+
+  block_lists.insert(block_lists.end(), label_blocks.begin(),
+                     label_blocks.end());
 
   return dataset::TabularFeaturizer::make(
       /* block_lists = */ block_lists,
