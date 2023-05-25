@@ -132,7 +132,7 @@ class ColdStartTextAugmentation final : public Augmentation {
       std::vector<std::string> weak_column_names, std::string label_column_name,
       std::string output_column_name,
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
-      uint32_t seed = time(nullptr));
+      uint32_t seed = 42092831);
 
   ColumnMap apply(const ColumnMap& columns) final;
 
