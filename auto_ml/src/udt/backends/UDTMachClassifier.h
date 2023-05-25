@@ -100,7 +100,11 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final { _mach_label_block->index()->clear(); }
+  void clearIndex() final {
+    _mach_label_block->index()->clear();
+
+    updateSamplingStrategy();
+  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -135,6 +139,13 @@ class UDTMachClassifier final : public UDTBackend {
       const std::vector<BoltVector>& output_samples,
       std::optional<uint32_t> num_buckets_to_sample_opt) const;
 
+  void updateSamplingStrategy();
+
+  static std::unordered_map<uint32_t, MapInputBatch> aggregateSamplesByDoc(
+      const thirdai::data::ColumnMap& augmented_data,
+      const std::string& text_column_name,
+      const std::string& label_column_name);
+
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
     if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {
@@ -165,6 +176,7 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
+  float _sparse_inference_threshold;
 };
 
 }  // namespace thirdai::automl::udt

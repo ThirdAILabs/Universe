@@ -1,4 +1,6 @@
 #include "UDTMachClassifier.h"
+#include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -14,6 +16,8 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <memory>
+#include <random>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -90,6 +94,10 @@ UDTMachClassifier::UDTMachClassifier(
       std::vector<dataset::BlockPtr>{hash_processing_block},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  _sparse_inference_threshold =
+      user_args.get<float>("sparse_inference_threshold", "float",
+                           defaults::MACH_SPARSE_INFERENCE_THRESHOLD);
 }
 
 py::object UDTMachClassifier::train(
@@ -339,6 +347,65 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
+void UDTMachClassifier::updateSamplingStrategy() {
+  auto mach_index = _mach_label_block->index();
+
+  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  float index_sparsity =
+      static_cast<float>(mach_index->nonemptyBuckets().size()) /
+      mach_index->numBuckets();
+  if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
+    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
+    output_layer->setSparsity(index_sparsity, false, false);
+
+    if (!std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
+      output_layer->kernel()->setNeuronIndex(new_index);
+    }
+  } else {
+    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
+
+      std::random_device rd;
+      auto new_index =
+          bolt::DWTASamplingConfig::autotune(mach_index->numBuckets(), sparsity,
+                                             /* experimental_autotune= */ false)
+              ->getNeuronIndex(output_layer->dim(), output_layer->inputDim(),
+                               rd);
+
+      output_layer->setSparsity(sparsity, false, false);
+      output_layer->kernel()->setNeuronIndex(new_index);
+    }
+  }
+}
+
+std::unordered_map<uint32_t, MapInputBatch>
+UDTMachClassifier::aggregateSamplesByDoc(
+    const thirdai::data::ColumnMap& augmented_data,
+    const std::string& text_column_name, const std::string& label_column_name) {
+  auto text_column = augmented_data.getStringColumn(text_column_name);
+  auto label_column = augmented_data.getStringColumn(label_column_name);
+
+  assert(label_column->numRows() == text_column->numRows());
+
+  std::unordered_map<uint32_t, MapInputBatch> samples_by_doc;
+  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
+    std::string string_label = (*label_column)[row_id];
+    std::string text = (*text_column)[row_id];
+
+    MapInput input = {{text_column_name, text}};
+
+    uint32_t integer_label = std::stoi(string_label);
+    samples_by_doc[integer_label].push_back(input);
+  }
+
+  return samples_by_doc;
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
@@ -496,6 +563,8 @@ void UDTMachClassifier::introduceLabel(
   auto hashes = topHashesForDoc(output->vectors(), num_buckets_to_sample_opt);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::forget(const Label& label) {
@@ -507,6 +576,8 @@ void UDTMachClassifier::forget(const Label& label) {
                  "predict, or predictBatch."
               << std::endl;
   }
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
@@ -537,6 +608,18 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
+
+  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  if (auto mach_neuron_index =
+          std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+    mach_neuron_index->setNewIndex(index);
+  }
+
+  updateSamplingStrategy();
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
@@ -562,7 +645,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _min_num_eval_results, _top_k_per_eval_aggregation);
+          _min_num_eval_results, _top_k_per_eval_aggregation,
+          _sparse_inference_threshold);
 }
 
 }  // namespace thirdai::automl::udt
