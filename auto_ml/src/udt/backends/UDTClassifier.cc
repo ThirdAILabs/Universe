@@ -67,14 +67,14 @@ py::object UDTClassifier::train(
     std::optional<uint32_t> logging_interval) {
   ValidationDatasetLoader validation_dataset_loader;
   if (validation) {
-    validation_dataset_loader =
-        std::make_pair(_dataset_factory->getDatasetLoader(validation->first,
-                                                          /* shuffle= */ false),
-                       validation->second);
+    validation_dataset_loader = std::make_pair(
+        _dataset_factory->getLabeledDatasetLoader(validation->first,
+                                                  /* shuffle= */ false),
+        validation->second);
   }
 
   auto train_dataset_loader =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             validation_dataset_loader, batch_size_opt,
@@ -104,7 +104,8 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+  auto dataset =
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }

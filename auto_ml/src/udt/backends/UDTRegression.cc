@@ -64,14 +64,14 @@ py::object UDTRegression::train(
 
   ValidationDatasetLoader validation_dataset;
   if (validation) {
-    validation_dataset =
-        std::make_pair(_dataset_factory->getDatasetLoader(validation->first,
-                                                          /* shuffle= */ false),
-                       validation->second);
+    validation_dataset = std::make_pair(
+        _dataset_factory->getLabeledDatasetLoader(validation->first,
+                                                  /* shuffle= */ false),
+        validation->second);
   }
 
   auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
 
   bolt::train::Trainer trainer(_model, std::nullopt,
                                bolt::train::python::CtrlCCheck{});
@@ -95,7 +95,8 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
   bolt::train::Trainer trainer(_model, std::nullopt,
                                bolt::train::python::CtrlCCheck{});
 
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+  auto dataset =
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);

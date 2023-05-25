@@ -49,7 +49,7 @@ TabularDatasetFactory::TabularDatasetFactory(
                      /* label_blocks = */ {}, parallel);
 }
 
-dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
+dataset::DatasetLoaderPtr TabularDatasetFactory::getLabeledDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle,
     std::optional<dataset::DatasetShuffleConfig> shuffle_config) {
   if (!shuffle_config.has_value()) {
@@ -61,6 +61,13 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
   return std::make_unique<dataset::DatasetLoader>(
       csv_data_source, _labeled_featurizer,
       /* shuffle= */ shuffle, shuffle_config.value());
+}
+
+dataset::DatasetLoaderPtr TabularDatasetFactory::getUnLabeledDatasetLoader(
+    const dataset::DataSourcePtr& data_source) {
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, delimiter());
+  return std::make_unique<dataset::DatasetLoader>(
+      csv_data_source, _inference_featurizer, /* shuffle= */ false);
 }
 
 TensorList TabularDatasetFactory::featurizeInputBatch(

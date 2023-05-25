@@ -21,7 +21,7 @@ std::string nextFullyConnectedOpName() {
 
 FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
-                               SamplingConfigPtr sampling,
+                               SamplingConfigPtr sampling, bool use_bias,
                                uint32_t rebuild_hash_tables,
                                uint32_t reconstruct_hash_functions)
     : Op(nextFullyConnectedOpName()),
@@ -36,15 +36,16 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
   FullyConnectedLayerConfig config(dim, sparsity, activation,
                                    std::move(sampling));
 
-  _kernel = std::make_shared<FullyConnectedLayer>(config, input_dim);
+  _kernel = std::make_shared<FullyConnectedLayer>(
+      config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
 
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
-    const std::string& activation, SamplingConfigPtr sampling,
+    const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
     uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
-      dim, input_dim, sparsity, activation, std::move(sampling),
+      dim, input_dim, sparsity, activation, std::move(sampling), use_bias,
       rebuild_hash_tables, reconstruct_hash_functions));
 }
 
@@ -122,6 +123,9 @@ void FullyConnected::summary(std::ostream& summary,
   summary << " [dim=" << _kernel->getDim()
           << ", sparsity=" << _kernel->getSparsity() << ", activation="
           << activationFunctionToStr(_kernel->getActivationFunction());
+  if (!_kernel->useBias()) {
+    summary << ", bias=" << std::boolalpha << _kernel->useBias();
+  }
   if (_kernel->getSparsity() < 1.0) {
     summary << ", sampling=(";
     _kernel->buildSamplingSummary(summary);

@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
@@ -23,7 +24,7 @@ def make_simple_test_file(invalid_data=False):
             f.write("haha,3\n")
 
 
-def train_simple_mach_udt(invalid_data=False, embedding_dim=256):
+def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=True):
     make_simple_test_file(invalid_data=invalid_data)
 
     model = bolt.UniversalDeepTransformer(
@@ -38,6 +39,7 @@ def train_simple_mach_udt(invalid_data=False, embedding_dim=256):
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
             "extreme_output_dim": OUTPUT_DIM,
+            "use_bias": use_bias,
         },
     )
 
@@ -393,6 +395,23 @@ def test_mach_manual_index_creation():
     for label, sample in samples.items():
         new_hashes = model.predict_hashes({"text": sample})
         assert set(new_hashes) == set(entity_to_hashes[label])
+
+
+def test_mach_without_bias():
+    model = train_simple_mach_udt(use_bias=False)
+
+    bolt_model = model._get_model()
+
+    ops = bolt_model.ops()
+
+    hidden_layer = ops[0]  # hidden layer
+    output_layer = ops[1]  # output layer
+
+    hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
+    output_bias_all_zeros = np.all(output_layer.biases == 0)
+
+    assert hidden_bias_all_zeros, "Error: Hidden layer biases should be all zeros."
+    assert not output_bias_all_zeros, "Error: All output layer biases are zeros."
 
 
 def test_load_balancing():

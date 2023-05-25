@@ -83,13 +83,13 @@ py::object TextEmbeddingModel::supervisedTrain(
       /* options = */ _options,
       /* force_parallel = */ false);
 
-  auto train_dataset_loader_1 =
-      supervised_factory_1->getDatasetLoader(data_source, /* shuffle = */ true);
+  auto train_dataset_loader_1 = supervised_factory_1->getLabeledDatasetLoader(
+      data_source, /* shuffle = */ true);
   auto boltv1_data_1 = train_dataset_loader_1->loadAll(defaults::BATCH_SIZE);
 
   data_source->restart();
-  auto train_dataset_loader_2 =
-      supervised_factory_2->getDatasetLoader(data_source, /* shuffle = */ true);
+  auto train_dataset_loader_2 = supervised_factory_2->getLabeledDatasetLoader(
+      data_source, /* shuffle = */ true);
   auto boltv1_data_2 = train_dataset_loader_2->loadAll(defaults::BATCH_SIZE);
 
   auto boltv1_data_x = {boltv1_data_1.at(0), boltv1_data_2.at(0)};
