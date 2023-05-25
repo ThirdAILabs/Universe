@@ -9,6 +9,7 @@
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
@@ -131,6 +132,8 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   std::string textColumnForDocumentIntroduction();
+
+  void addBalancingSamples(const dataset::DataSourcePtr& data);
 
   std::vector<uint32_t> topHashesForDoc(
       const std::vector<BoltVector>& output_samples,

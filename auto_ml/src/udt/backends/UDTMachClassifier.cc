@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
@@ -121,20 +122,7 @@ py::object UDTMachClassifier::train(
                                 validation->second);
   }
 
-  if (_rlhf_sampler) {
-    auto samples =
-        _label_and_hashes_factory->getDatasetLoader(data, /* shuffle= */ true)
-            ->loadSome(defaults::MAX_BALANCING_SAMPLES, 1, false)
-            .value();
-
-    for (uint32_t i = 0; i < samples.front()->len(); i++) {
-      uint32_t doc_id = samples.at(2)->at(0)[i].getHighestActivationId();
-
-      const BoltVector& input = samples.at(0)->at(0)[i];
-      const BoltVector& label = samples.at(1)->at(0)[i];
-      _rlhf_sampler->addSample(doc_id, input, label);
-    }
-  }
+  addBalancingSamples(data);
 
   auto train_dataset_loader =
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
@@ -402,6 +390,8 @@ void UDTMachClassifier::introduceDocuments(
     auto hashes = topHashesForDoc(outputs, num_buckets_to_sample);
     _mach_label_block->index()->insert(doc, hashes);
   }
+
+  addBalancingSamples(cold_start_data);
 }
 
 void UDTMachClassifier::introduceDocument(
@@ -534,6 +524,26 @@ void UDTMachClassifier::forget(const Label& label) {
                  "will currently return nothing on calls to evaluate, "
                  "predict, or predictBatch."
               << std::endl;
+  }
+}
+
+void UDTMachClassifier::addBalancingSamples(
+    const dataset::DataSourcePtr& data) {
+  if (_rlhf_sampler) {
+    data->restart();
+    auto samples = _label_and_hashes_factory
+                       ->getLabeledDatasetLoader(data, /* shuffle= */ true)
+                       ->loadSome(defaults::MAX_BALANCING_SAMPLES, 1, false)
+                       .value();
+
+    for (uint32_t i = 0; i < samples.front()->len(); i++) {
+      uint32_t doc_id = samples.at(2)->at(0)[i].getHighestActivationId();
+
+      const BoltVector& input = samples.at(0)->at(0)[i];
+      const BoltVector& label = samples.at(1)->at(0)[i];
+      _rlhf_sampler->addSample(doc_id, input, label);
+    }
+    data->restart();
   }
 }
 
