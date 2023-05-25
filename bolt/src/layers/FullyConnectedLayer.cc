@@ -87,6 +87,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
   if constexpr (!DENSE) {
     _neuron_index->query(input, output, labels, _sparse_dim);
+  } else {
+    (void)labels;
   }
 
   float max_act = 0;
