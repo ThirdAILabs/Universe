@@ -24,7 +24,9 @@ def make_simple_test_file(invalid_data=False):
             f.write("haha,3\n")
 
 
-def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=True):
+def train_simple_mach_udt(
+    invalid_data=False, embedding_dim=256, use_bias=True, rlhf_args={}
+):
     make_simple_test_file(invalid_data=invalid_data)
 
     model = bolt.UniversalDeepTransformer(
@@ -40,6 +42,7 @@ def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=True):
             "embedding_dimension": embedding_dim,
             "extreme_output_dim": OUTPUT_DIM,
             "use_bias": use_bias,
+            **rlhf_args,
         },
     )
 
@@ -469,3 +472,31 @@ def test_load_balancing():
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
+
+
+def test_associate():
+    model = train_simple_mach_udt(
+        rlhf_args={
+            "rlhf": True,
+            "rlhf_balancing_docs": 100,
+            "rlhf_balancing_samples_per_doc": 10,
+        }
+    )
+
+    target_sample = {"text": "haha one time"} # From the original data
+    target_hashes = set(model.predict_hashes(target_sample))
+
+    source_sample = {"text": "tomato"}
+    model.introduce_label([source_sample], label=100)
+    source_hashes = set(model.predict_hashes(source_sample))
+
+    original_intersection = len(target_hashes.intersection(source_hashes))
+
+    model.associate(source=source_sample, target=target_sample, n_buckets=7)
+
+    new_target_hashes = set(model.predict_hashes(target_sample))
+    new_source_hashes = set(model.predict_hashes(source_sample))
+
+    new_intersection = len(new_target_hashes.intersection(new_source_hashes))
+
+    assert new_intersection >= original_intersection

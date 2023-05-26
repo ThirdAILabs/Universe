@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <unordered_map>
@@ -108,6 +109,17 @@ UDTMachClassifier::UDTMachClassifier(
       /* label_blocks = */ {dataset::BlockList({hash_processing_block})},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  if (user_args.get<bool>("rlhf", "bool", false)) {
+    size_t num_balancing_docs = user_args.get<uint32_t>(
+        "rlhf_balancing_docs", "int", defaults::MAX_BALANCING_DOCS);
+    size_t num_balancing_samples_per_doc =
+        user_args.get<uint32_t>("rlhf_balancing_samples_per_doc", "int",
+                                defaults::MAX_BALANCING_SAMPLES_PER_DOC);
+
+    _rlhf_sampler = std::make_optional<RLHFSampler>(
+        num_balancing_docs, num_balancing_samples_per_doc);
+  }
 }
 
 py::object UDTMachClassifier::train(
