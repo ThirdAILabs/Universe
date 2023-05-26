@@ -201,7 +201,8 @@ void createModelsSubmodule(py::module_& module) {
 
   py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
       models_submodule, "TabularDatasetFactory")
-      .def("get_dataset_loader", &data::TabularDatasetFactory::getDatasetLoader,
+      .def("get_dataset_loader",
+           &data::TabularDatasetFactory::getLabeledDatasetLoader,
            py::arg("data_source"), py::arg("training"),
            py::arg("shuffle_config") = std::nullopt)
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());

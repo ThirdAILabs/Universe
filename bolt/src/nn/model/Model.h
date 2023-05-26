@@ -42,7 +42,7 @@ class Model : public std::enable_shared_from_this<Model> {
    * used.
    */
   tensor::TensorList forward(const tensor::TensorList& inputs,
-                             bool use_sparsity);
+                             bool use_sparsity = false);
 
   /**
    * Performs the foward and backward pass through the model for the given
