@@ -52,6 +52,9 @@ class MachIndex {
       const BoltVector& output, uint32_t min_num_eval_results,
       uint32_t top_k_per_eval_aggregation) const;
 
+  TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
+                                           uint32_t k) const;
+
   void erase(uint32_t entity);
 
   void clear() {
@@ -79,9 +82,6 @@ class MachIndex {
 
  private:
   void verifyHash(uint32_t hash) const;
-
-  TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
-                                           uint32_t k) const;
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;

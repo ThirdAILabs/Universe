@@ -229,14 +229,18 @@ py::object UDTMachClassifier::trainWithHashes(
 }
 
 py::object UDTMachClassifier::predictHashes(const MapInput& sample,
-                                            bool sparse_inference) {
+                                            bool sparse_inference,
+                                            bool only_nonempty) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
   uint32_t k = _mach_label_block->index()->numHashes();
-  auto heap = output.findKLargestActivations(k);
+
+  auto heap = only_nonempty
+                  ? _mach_label_block->index()->topKNonEmptyBuckets(output, k)
+                  : output.findKLargestActivations(k);
 
   std::vector<uint32_t> hashes_to_return;
   while (hashes_to_return.size() < k && !heap.empty()) {
