@@ -43,10 +43,6 @@ def train_loop_per_worker(config):
     train_x = bolt.train.convert_dataset(train_x, dim=784)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    test_x, test_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist.t", 250)
-    test_x = bolt.train.convert_dataset(test_x, dim=784)
-    test_y = bolt.train.convert_dataset(test_y, dim=10)
-
     history = trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
@@ -58,30 +54,9 @@ def train_loop_per_worker(config):
         for x, y in zip(train_x, train_y):
             trainer.train_on_batch(x, y, 0.005)
 
-    old_history = trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
-
     session.report(
         history,
         checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
-    )
-
-    ckpt = session.get_checkpoint()
-    print(ckpt)
-    model = ckpt.get_model()
-    new_trainer = bolt.train.Trainer(model)
-
-    history = new_trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
-    assert (
-        history["val_categorical_accuracy"][-1]
-        == old_history["val_categorical_accuracy"][-1]
     )
 
 
@@ -114,7 +89,20 @@ def test_distributed_v2_skip():
     )
     result = trainer.fit()
 
-    print(result)
+    test_x, test_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist.t", 250)
+    test_x = bolt.train.convert_dataset(test_x, dim=784)
+    test_y = bolt.train.convert_dataset(test_y, dim=10)
+
+    trained_model = result.checkpoint.get_model()
+
+    new_trainer = bolt.train.Trainer(trained_model)
+
+    history = new_trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=False,
+    )
+    assert history["val_categorical_accuracy"][-1] > 0.9
 
 
 def initialize_and_checkpoint(config):
