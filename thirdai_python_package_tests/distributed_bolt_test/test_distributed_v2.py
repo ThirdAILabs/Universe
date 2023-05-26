@@ -66,6 +66,7 @@ Wheels can be downloaded from: https://github.com/pratkpranav/pygloo/releases/ta
 
 @pytest.mark.skip(reason=reason)
 def test_distributed_v2_skip():
+    # this test is configured to run on blade
     working_dir = os.path.dirname(os.path.realpath(__file__))
     ray.init(
         runtime_env={"working_dir": working_dir, "env_vars": {"OMP_NUM_THREADS": "23"}}
