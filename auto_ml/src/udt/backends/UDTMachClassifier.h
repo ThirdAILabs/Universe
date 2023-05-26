@@ -152,6 +152,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   void addBalancingSamples(const dataset::DataSourcePtr& data);
 
+  void requireRLHFSampler();
+
   std::vector<uint32_t> topHashesForDoc(
       const std::vector<BoltVector>& output_samples,
       std::optional<uint32_t> num_buckets_to_sample_opt) const;
@@ -184,7 +186,7 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
-  data::TabularDatasetFactoryPtr _label_and_hashes_factory;
+  data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
 

@@ -1,4 +1,5 @@
 import os
+import random
 from collections import defaultdict
 
 import numpy as np
@@ -483,20 +484,33 @@ def test_associate():
         }
     )
 
-    target_sample = {"text": "haha one time"}  # From the original data
+    target_sample = {"text": "random sample text"}
+    model.introduce_label([target_sample], label=200)
     target_hashes = set(model.predict_hashes(target_sample))
 
-    source_sample = {"text": "tomato"}
+    different_hashes = list(set(range(OUTPUT_DIM)).difference(target_hashes))
+    different_hashes = random.choices(different_hashes, k=7)
+    different_hashes = " ".join([str(x) for x in different_hashes])
+
+    source_sample = {"text": "tomato", "label": different_hashes}
+    target_sample["label"] = " ".join([str(x) for x in target_hashes])
+    for _ in range(100):
+        model.train_with_hashes([source_sample, target_sample], 0.001)
+    del source_sample["label"]
+
+    target_hashes = set(model.predict_hashes(target_sample))
+
     model.introduce_label([source_sample], label=100)
     source_hashes = set(model.predict_hashes(source_sample))
 
     original_intersection = len(target_hashes.intersection(source_hashes))
 
-    model.associate(source=source_sample, target=target_sample, n_buckets=7)
+    for _ in range(100):
+        model.associate(source=source_sample, target=target_sample, n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
 
     new_intersection = len(new_target_hashes.intersection(new_source_hashes))
 
-    assert new_intersection >= original_intersection
+    assert new_intersection > original_intersection

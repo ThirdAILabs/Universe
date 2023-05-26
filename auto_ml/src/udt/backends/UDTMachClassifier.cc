@@ -85,7 +85,7 @@ UDTMachClassifier::UDTMachClassifier(
   auto doc_id_block = dataset::NumericalCategoricalBlock::make(
       target_name, std::numeric_limits<uint32_t>::max());
 
-  _label_and_hashes_factory = data::TabularDatasetFactory::make(
+  _hashes_and_doc_id_factory = data::TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
       /* provided_temporal_relationships = */ temporal_tracking_relationships,
       /* label_blocks = */
@@ -371,8 +371,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured with "
-        "a "
+        "Introducing documents can only be used when UDT is configured with a "
         "single text input column and target column. The current model is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
@@ -556,21 +555,35 @@ void UDTMachClassifier::forget(const Label& label) {
 
 void UDTMachClassifier::addBalancingSamples(
     const dataset::DataSourcePtr& data) {
-  if (_rlhf_sampler) {
-    data->restart();
-    auto samples = _label_and_hashes_factory
-                       ->getLabeledDatasetLoader(data, /* shuffle= */ true)
-                       ->loadSome(defaults::MAX_BALANCING_SAMPLES, 1, false)
-                       .value();
+  requireRLHFSampler();
 
-    for (uint32_t i = 0; i < samples.front()->len(); i++) {
-      uint32_t doc_id = samples.at(2)->at(0)[i].getHighestActivationId();
+  data->restart();
+  auto samples =
+      _hashes_and_doc_id_factory
+          ->getLabeledDatasetLoader(data, /* shuffle= */ true)
+          ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
+                     /* num_batches= */ 1, /* verbose= */ false)
+          .value();
 
-      const BoltVector& input = samples.at(0)->at(0)[i];
-      const BoltVector& label = samples.at(1)->at(0)[i];
-      _rlhf_sampler->addSample(doc_id, input, label);
+  for (uint32_t i = 0; i < samples.front()->len(); i++) {
+    const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
+    if (doc_id_vec.len != 1) {
+      throw std::runtime_error("Expected doc id to be a single integer.");
     }
-    data->restart();
+    uint32_t doc_id = samples.at(2)->at(0)[i].active_neurons[0];
+
+    const BoltVector& input = samples.at(0)->at(0)[i];
+    const BoltVector& label = samples.at(1)->at(0)[i];
+    _rlhf_sampler->addSample(doc_id, input, label);
+  }
+  data->restart();
+}
+
+void UDTMachClassifier::requireRLHFSampler() {
+  if (!_rlhf_sampler) {
+    throw std::runtime_error(
+        "This model was not configured to support rlhf. Please pass {'rlhf': "
+        "True} in the model options.");
   }
 }
 
@@ -589,6 +602,8 @@ void UDTMachClassifier::associate(const MapInput& source,
                                   uint32_t n_association_samples,
                                   uint32_t n_balancing_samples,
                                   float learning_rate, uint32_t epochs) {
+  requireRLHFSampler();
+
   auto target_hashes = predictHashesImpl(target, false);
 
   BoltVector source_vec =

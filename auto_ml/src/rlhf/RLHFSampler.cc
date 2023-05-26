@@ -9,20 +9,26 @@ namespace thirdai::automl::udt {
 
 std::pair<std::vector<BoltVector>, std::vector<BoltVector>>
 RLHFSampler::balancingSamples(size_t num_samples) {
-  size_t num_docs_to_sample = std::min(num_samples, _samples_per_doc.size());
-  size_t samples_per_doc = static_cast<size_t>(
-      std::ceil(static_cast<float>(num_samples)) / num_docs_to_sample);
+  std::vector<std::pair<BoltVector, BoltVector>> samples;
+
+  while (num_samples > _samples_per_doc.size()) {
+    for (const auto& [_, doc_samples] : _samples_per_doc) {
+      std::sample(doc_samples.begin(), doc_samples.end(),
+                  std::back_inserter(samples), 1, _rng);
+      num_samples--;
+      if (num_samples < _samples_per_doc.size()) {
+        break;
+      }
+    }
+  }
 
   std::vector<uint32_t> docs_to_sample;
   std::sample(_doc_ids.begin(), _doc_ids.end(),
-              std::back_inserter(docs_to_sample), num_docs_to_sample, _rng);
-
-  std::vector<std::pair<BoltVector, BoltVector>> samples;
-
+              std::back_inserter(docs_to_sample), num_samples, _rng);
   for (uint32_t doc_id : docs_to_sample) {
     std::sample(_samples_per_doc.at(doc_id).begin(),
                 _samples_per_doc.at(doc_id).end(), std::back_inserter(samples),
-                samples_per_doc, _rng);
+                1, _rng);
   }
 
   std::vector<BoltVector> inputs;
@@ -46,6 +52,8 @@ void RLHFSampler::addSample(uint32_t doc_id, const BoltVector& input,
     _samples_per_doc[doc_id].push_back(std::make_pair(input, label));
     _doc_ids.insert(doc_id);
   } else {
+    //  Newer samples have a higher probability of being kept, we can change
+    //  this to reservoir sampling if this is an issue.
     std::uniform_int_distribution<> dist(0, _max_samples_per_doc - 1);
     size_t replace = dist(_rng);
     _samples_per_doc[doc_id][replace] = std::make_pair(input, label);
