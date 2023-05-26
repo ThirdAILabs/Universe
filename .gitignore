@@ -59,6 +59,9 @@ clang_tidy_logs
 licensing/src/methods/server/license-server
 licensing/src/methods/server/license-server-max-*
 
+# Versioning serialized archives
+versioning/python_tests/serialized_classes/
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]

@@ -59,8 +59,13 @@ Model::Model(autograd::ComputationList inputs,
 std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
                                    autograd::ComputationList outputs,
                                    std::vector<loss::LossPtr> losses) {
-  return std::make_shared<Model>(std::move(inputs), std::move(outputs),
-                                 std::move(losses));
+  auto model = std::shared_ptr<Model>(
+      new Model(std::move(inputs), std::move(outputs), std::move(losses)));
+
+  // This has to be done here because we need the model to be allocated using a
+  // shared_ptr in order to use shared_from_this() to get a valid reference.
+  model->registerWithOps();
+  return model;
 }
 
 tensor::TensorList Model::forward(const tensor::TensorList& inputs,
@@ -119,6 +124,10 @@ void Model::updateParameters(float learning_rate) {
   for (auto& op : _ops) {
     op->updateParameters(learning_rate, _train_steps);
   }
+}
+
+void Model::forceStateReallocation() {
+  _allocation_manager.forceReallocation();
 }
 
 std::vector<ops::OpPtr> Model::opExecutionOrder() const {
@@ -448,6 +457,12 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
   }
 }
 
+void Model::registerWithOps() {
+  for (auto& op : _ops) {
+    op->registerModel(weak_from_this());
+  }
+}
+
 void Model::saveMetadata(const std::string& save_path) const {
   auto file = dataset::SafeFileIO::ofstream(save_path + ".metadata");
 
@@ -497,6 +512,8 @@ void Model::serialize(Archive& archive, const uint32_t version) {
           _total_training_samples);
 
   verifyAllowedOutputDim();
+
+  registerWithOps();
 }
 
 }  // namespace thirdai::bolt::nn::model
