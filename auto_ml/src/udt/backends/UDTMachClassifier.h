@@ -62,7 +62,8 @@ class UDTMachClassifier final : public UDTBackend {
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) final;
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) final;
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           bool only_nonempty) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -143,7 +144,8 @@ class UDTMachClassifier final : public UDTBackend {
                                                        bool sparse_inference);
 
   std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
-                                          bool sparse_inference);
+                                          bool sparse_inference,
+                                          bool only_nonempty);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(

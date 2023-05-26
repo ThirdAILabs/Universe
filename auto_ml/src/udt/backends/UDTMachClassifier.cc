@@ -265,19 +265,23 @@ py::object UDTMachClassifier::trainWithHashes(
 }
 
 py::object UDTMachClassifier::predictHashes(const MapInput& sample,
-                                            bool sparse_inference) {
-  return py::cast(predictHashesImpl(sample, sparse_inference));
+                                            bool sparse_inference,
+                                            bool only_nonempty) {
+  return py::cast(predictHashesImpl(sample, sparse_inference, only_nonempty));
 }
 
 std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
-    const MapInput& sample, bool sparse_inference) {
+    const MapInput& sample, bool sparse_inference, bool only_nonempty) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
   uint32_t k = _mach_label_block->index()->numHashes();
-  auto heap = output.findKLargestActivations(k);
+
+  auto heap = only_nonempty
+                  ? _mach_label_block->index()->topKNonEmptyBuckets(output, k)
+                  : output.findKLargestActivations(k);
 
   std::vector<uint32_t> hashes_to_return;
   while (hashes_to_return.size() < k && !heap.empty()) {
@@ -676,7 +680,7 @@ void UDTMachClassifier::associate(const MapInput& source,
                                   float learning_rate, uint32_t epochs) {
   requireRLHFSampler();
 
-  auto target_hashes = predictHashesImpl(target, false);
+  auto target_hashes = predictHashesImpl(target, false, false);
 
   BoltVector source_vec =
       _dataset_factory->featurizeInput(source).at(0)->getVector(0);
