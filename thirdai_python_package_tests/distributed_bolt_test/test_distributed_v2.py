@@ -191,6 +191,7 @@ def test_independent_model():
     test_x = bolt.train.convert_dataset(test_x, dim=10)
     test_y = bolt.train.convert_dataset(test_y, dim=10)
 
+    # checks whether the checkpoint is working or not
     model = result_checkpoint_and_history.checkpoint.get_model()
     trainer = bolt.train.Trainer(model)
 
