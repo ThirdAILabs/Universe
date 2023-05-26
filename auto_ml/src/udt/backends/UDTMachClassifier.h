@@ -106,6 +106,8 @@ class UDTMachClassifier final : public UDTBackend {
   void clearIndex() final {
     _mach_label_block->index()->clear();
 
+    updateSamplingStrategy();
+
     if (_rlhf_sampler) {
       _rlhf_sampler->clear();
     }

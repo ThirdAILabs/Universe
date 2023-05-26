@@ -20,9 +20,9 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
-#include <memory>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <random>
 #include <stdexcept>
@@ -116,7 +116,7 @@ UDTMachClassifier::UDTMachClassifier(
   _sparse_inference_threshold =
       user_args.get<float>("sparse_inference_threshold", "float",
                            defaults::MACH_SPARSE_INFERENCE_THRESHOLD);
-                           
+
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
         "rlhf_balancing_docs", "int", defaults::MAX_BALANCING_DOCS);
@@ -484,6 +484,8 @@ void UDTMachClassifier::introduceDocuments(
   }
 
   addBalancingSamples(cold_start_data);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::introduceDocument(
