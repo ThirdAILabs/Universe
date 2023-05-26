@@ -1,15 +1,15 @@
 import numpy as np
 import pytest
 import thirdai
-from thirdai import bolt_v2 as bolt
-from thirdai import dataset
 from test_bolt_v2_save_load import (
     N_CLASSES,
-    gen_numpy_training_data,
-    get_model,
     evaluate_model,
+    gen_numpy_training_data,
     get_data,
+    get_model,
 )
+from thirdai import bolt_v2 as bolt
+from thirdai import dataset
 
 
 def average_values(trainers, get_func, set_func):
