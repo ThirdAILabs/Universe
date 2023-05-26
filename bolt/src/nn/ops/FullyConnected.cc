@@ -145,6 +145,10 @@ void FullyConnected::registerModel(
     const std::weak_ptr<model::Model>& new_model) {
   bool found = false;
 
+  // This adds the new model to the list of models that the fully connected
+  // layer is used in. This is so that if the sparsity of the layer is updated
+  // and the model's internal state needs to be reallocated it can call the
+  // appropriate method on the model to do so.
   for (const auto& model_wp : _models_using_op) {
     if (auto model = model_wp.lock()) {
       if (model == new_model.lock()) {
