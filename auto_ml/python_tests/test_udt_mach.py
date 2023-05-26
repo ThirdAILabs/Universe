@@ -483,7 +483,7 @@ def test_associate():
         }
     )
 
-    target_sample = {"text": "haha one time"} # From the original data
+    target_sample = {"text": "haha one time"}  # From the original data
     target_hashes = set(model.predict_hashes(target_sample))
 
     source_sample = {"text": "tomato"}
