@@ -93,14 +93,11 @@ def evaluate_model(model, test_data, test_labels_np):
     accs = []
     # We constructed the test data to only contain 1 batch.
     outputs = model.forward(test_data[0], use_sparsity=False)
-    print("Printing: ")
     for output in outputs:
         predictions = np.argmax(output.activations, axis=1)
         acc = np.mean(predictions == test_labels_np)
-        # assert acc >= 0.8
-        print(acc)
+        assert acc >= 0.8
         accs.append(acc)
-    print("Done!!")
     return accs
 
 

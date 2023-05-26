@@ -106,6 +106,7 @@ void defineLosses(py::module_& nn);
 
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
+
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**

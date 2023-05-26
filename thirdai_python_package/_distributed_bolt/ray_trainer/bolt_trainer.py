@@ -15,8 +15,8 @@ class BoltTrainer(DataParallelTrainer):
     """A trainer for data parallel Bolt Model Training
 
     Ex:
-        def train_loop_per_worker():
-            mnist_model = get_mnist_model()
+        def train_loop_per_worker(config):
+            mnist_model = config.get('model')
             trainer = bolt.train.Trainer(mnist_model)
 
             trainer.distribute(2)
@@ -61,7 +61,6 @@ class BoltTrainer(DataParallelTrainer):
         resume_from_checkpoint: A checkpoint to resume training from.
     """
 
-    # TODO(pratik): remove function params which we are not using right now.
     def __init__(
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
@@ -69,10 +68,7 @@ class BoltTrainer(DataParallelTrainer):
         bolt_config: BoltBackendConfig = None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
-        dataset_config: Optional[Dict[str, DatasetConfig]] = None,
         run_config: Optional[RunConfig] = None,
-        datasets: Optional[Dict[str, GenDataset]] = None,
-        preprocessor: Optional["Preprocessor"] = None,
         resume_from_checkpoint: Optional[Checkpoint] = None,
     ):
         super(BoltTrainer, self).__init__(
@@ -80,9 +76,6 @@ class BoltTrainer(DataParallelTrainer):
             train_loop_config=train_loop_config,
             backend_config=bolt_config,
             scaling_config=scaling_config,
-            dataset_config=dataset_config,
             run_config=run_config,
-            datasets=datasets,
-            preprocessor=preprocessor,
             resume_from_checkpoint=resume_from_checkpoint,
         )

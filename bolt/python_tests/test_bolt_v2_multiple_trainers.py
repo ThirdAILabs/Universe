@@ -34,26 +34,17 @@ def disable_sparse_updates(trainers):
 # have implemented internal support for gloo.
 @pytest.mark.unit
 def test_multiple_trainers():
-    # TODO(pratik): This particular training appears to take longer to converge, as compared to the normal
-    # single machine training. We need to run bigger benchmarks make sure, is there a performance regression
-    # with V2 when we just all-reduce the parameters among several models.
-    EPOCHS = 2
+    EPOCHS = 1
 
     import copy
 
     model_1 = get_model()
-    model_2 = get_model()
+    model_2 = copy.deepcopy(model_1)
 
     train_data_1, train_labels_1, test_data, test_labels_np = get_data()
 
     trainers = [bolt.train.Trainer(model_1), bolt.train.Trainer(model_2)]
 
-    # averages model parameters
-    average_values(
-        trainers,
-        lambda model: model.get_parameters(),
-        lambda model, values: model.set_parameters(values),
-    )
     disable_sparse_updates(trainers)
 
     # Training them on same data should still get different

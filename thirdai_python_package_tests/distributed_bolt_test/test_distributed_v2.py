@@ -12,7 +12,6 @@ from thirdai.demos import download_mnist_dataset
 pytestmark = [pytest.mark.distributed]
 
 
-# Note(pratik): Write bunch of unit tests in place of integration test, as we dont have pygloo wheels :(.
 def get_mnist_model():
     input_layer = bolt.nn.Input(dim=784)
 
