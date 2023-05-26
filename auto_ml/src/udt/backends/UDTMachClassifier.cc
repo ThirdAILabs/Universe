@@ -631,28 +631,28 @@ void UDTMachClassifier::forget(const Label& label) {
 
 void UDTMachClassifier::addBalancingSamples(
     const dataset::DataSourcePtr& data) {
-  requireRLHFSampler();
+  if (_rlhf_sampler) {
+    data->restart();
+    auto samples =
+        _hashes_and_doc_id_factory
+            ->getLabeledDatasetLoader(data, /* shuffle= */ true)
+            ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
+                       /* num_batches= */ 1, /* verbose= */ false)
+            .value();
 
-  data->restart();
-  auto samples =
-      _hashes_and_doc_id_factory
-          ->getLabeledDatasetLoader(data, /* shuffle= */ true)
-          ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                     /* num_batches= */ 1, /* verbose= */ false)
-          .value();
+    for (uint32_t i = 0; i < samples.front()->len(); i++) {
+      const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
+      if (doc_id_vec.len != 1) {
+        throw std::runtime_error("Expected doc id to be a single integer.");
+      }
+      uint32_t doc_id = samples.at(2)->at(0)[i].active_neurons[0];
 
-  for (uint32_t i = 0; i < samples.front()->len(); i++) {
-    const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
-    if (doc_id_vec.len != 1) {
-      throw std::runtime_error("Expected doc id to be a single integer.");
+      const BoltVector& input = samples.at(0)->at(0)[i];
+      const BoltVector& label = samples.at(1)->at(0)[i];
+      _rlhf_sampler->addSample(doc_id, input, label);
     }
-    uint32_t doc_id = samples.at(2)->at(0)[i].active_neurons[0];
-
-    const BoltVector& input = samples.at(0)->at(0)[i];
-    const BoltVector& label = samples.at(1)->at(0)[i];
-    _rlhf_sampler->addSample(doc_id, input, label);
+    data->restart();
   }
-  data->restart();
 }
 
 void UDTMachClassifier::requireRLHFSampler() {
