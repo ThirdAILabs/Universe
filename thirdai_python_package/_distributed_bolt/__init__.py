@@ -22,5 +22,7 @@ import os
 
 feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
 
+
+# We are inheriting bolt_v2 Trainer which is under THIRDAI_EXPOSE_ALL
 if "THIRDAI_EXPOSE_ALL" in feature_flags:
     from .distributed_v2 import DistributedTrainer
