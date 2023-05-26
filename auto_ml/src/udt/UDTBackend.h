@@ -292,9 +292,10 @@ class UDTBackend {
    * sample.
    */
   virtual py::object predictHashes(const MapInput& sample,
-                                   bool sparse_inference) {
+                                   bool sparse_inference, bool only_nonempty) {
     (void)sample;
     (void)sparse_inference;
+    (void)only_nonempty;
     throw notSupported("predict_hashes");
   }
 
