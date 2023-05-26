@@ -35,12 +35,9 @@ def get_mnist_model():
     return model
 
 
-def train_loop_per_worker():
-    mnist_model = get_mnist_model()
-    trainer = bolt.train.Trainer(mnist_model)
-
-    # synchronizes models between each machines
-    trainer.distribute(2)
+def train_loop_per_worker(config):
+    mnist_model = config.get("model")
+    trainer = dist.DistributedTrainer(mnist_model)
 
     train_x, train_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist", 250)
     train_x = bolt.train.convert_dataset(train_x, dim=784)
@@ -56,12 +53,10 @@ def train_loop_per_worker():
         use_sparsity=False,
     )
 
-    print(history)
-    epochs = 1
-    print("Training")
+    epochs = 3
     for _ in range(epochs):
         for x, y in zip(train_x, train_y):
-            trainer.step(x, y, 2)
+            trainer.train_on_batch(x, y, 0.005)
 
     old_history = trainer.validate(
         validation_data=(test_x, test_y),
@@ -96,19 +91,24 @@ Wheels can be downloaded from: https://github.com/pratkpranav/pygloo/releases/ta
 
 @pytest.mark.skip(reason=reason)
 def test_distributed_v2_skip():
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+    ray.init(
+        runtime_env={"working_dir": working_dir, "env_vars": {"OMP_NUM_THREADS": "23"}}
+    )
     scaling_config = ScalingConfig(
         # Number of distributed workers.
         num_workers=2,
         # Turn on/off GPU.
         use_gpu=False,
         # Specify resources used for trainer.
-        trainer_resources={"CPU": 24},
+        trainer_resources={"CPU": 23},
         # Try to schedule workers on different nodes.
         placement_strategy="SPREAD",
     )
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=train_loop_per_worker,
+        train_loop_config={"model": get_mnist_model()},
         scaling_config=scaling_config,
         bolt_config=dist.BoltBackendConfig(),
     )
@@ -131,7 +131,7 @@ def initialize_and_checkpoint(config):
         model.train_on_batch(x, y)
         model.update_parameters(learning_rate=0.05)
 
-    trainer = bolt.train.Trainer(model)
+    trainer = dist.DistributedTrainer(model)
     history = trainer.validate(
         validation_data=(test_x, test_y),
         validation_metrics=["loss", "categorical_accuracy"],
@@ -156,6 +156,7 @@ def initialize_and_checkpoint(config):
 
 
 def test_independent_model():
+    # This test only trains for one worker,
     n_classes = 10
     input_layer = bolt.nn.Input(dim=n_classes)
 
@@ -180,7 +181,10 @@ def test_independent_model():
     working_dir = os.path.dirname(os.path.realpath(__file__))
 
     ray.init(
-        runtime_env={"working_dir": working_dir, "OMP_NUM_THREADS": num_cpu_per_node}
+        runtime_env={
+            "working_dir": working_dir,
+            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
+        }
     )
     scaling_config = ScalingConfig(
         # Number of distributed workers.
