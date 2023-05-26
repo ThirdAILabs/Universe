@@ -343,7 +343,7 @@ void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    std::optional<uint32_t> num_buckets_to_sample) {
+    std::optional<uint32_t> num_buckets_to_sample_opt) {
   auto metadata = getColdStartMetaData();
 
   auto cold_start_data = cold_start::preprocessColdStartTrainSource(
@@ -359,19 +359,24 @@ void UDTMachClassifier::introduceDocuments(
 
   const auto& labels = cold_start_data->labelColumn();
   uint32_t row_idx = 0;
-  std::unordered_map<uint32_t, std::vector<BoltVector>> outputs_per_doc;
+
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
   for (const auto& batch : doc_samples_tensors) {
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi((*labels)[row_idx++]);
-      outputs_per_doc[label].push_back(scores->getVector(i));
+      top_k_per_doc[label].push_back(
+          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
   }
 
-  for (const auto& [doc, outputs] : outputs_per_doc) {
-    auto hashes = topHashesForDoc(outputs, num_buckets_to_sample);
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
     _mach_label_block->index()->insert(doc, hashes);
   }
 }
@@ -415,13 +420,11 @@ struct CompareBuckets {
 };
 
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
-    const std::vector<BoltVector>& output_samples,
-    std::optional<uint32_t> num_buckets_to_sample_opt) const {
+    std::vector<TopKActivationsQueue>&& top_k_per_sample,
+    uint32_t num_buckets_to_sample) const {
   const auto& mach_index = _mach_label_block->index();
 
   uint32_t num_hashes = mach_index->numHashes();
-  uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(num_hashes);
 
   if (num_buckets_to_sample < mach_index->numHashes()) {
     std::cout << "Warning. Sampling from fewer buckets than num_hashes. "
@@ -433,18 +436,16 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   }
 
   std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
-  for (const auto& output : output_samples) {
-    auto top_K = output.findKLargestActivations(num_buckets_to_sample);
-
-    while (!top_K.empty()) {
-      auto [activation, active_neuron] = top_K.top();
+  for (auto& top_k : top_k_per_sample) {
+    while (!top_k.empty()) {
+      auto [activation, active_neuron] = top_k.top();
       if (!hash_freq_and_scores.count(active_neuron)) {
         hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
       } else {
         hash_freq_and_scores[active_neuron].frequency += 1;
         hash_freq_and_scores[active_neuron].score += activation;
       }
-      top_K.pop();
+      top_k.pop();
     }
   }
 
@@ -493,7 +494,16 @@ void UDTMachClassifier::introduceLabel(
                               /* use_sparsity = */ false)
                     .at(0);
 
-  auto hashes = topHashesForDoc(output->vectors(), num_buckets_to_sample_opt);
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  std::vector<TopKActivationsQueue> top_ks;
+  for (uint32_t i = 0; i < output->batchSize(); i++) {
+    top_ks.push_back(
+        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
+  }
+
+  auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 }
