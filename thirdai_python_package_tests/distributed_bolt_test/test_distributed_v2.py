@@ -123,35 +123,18 @@ def initialize_and_checkpoint(config):
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    test_x, test_y = gen_numpy_training_data()
-    test_x = bolt.train.convert_dataset(test_x, dim=10)
-    test_y = bolt.train.convert_dataset(test_y, dim=10)
-
     for x, y in zip(train_x, train_y):
+        # this unit test checks for working of BoltTrainer rather
+        # testing the whole system, and considering we dont have
+        # working wheel for pygloo. Hence, we are just doing a
+        # single machine training.
         model.train_on_batch(x, y)
         model.update_parameters(learning_rate=0.05)
 
-    trainer = dist.DistributedTrainer(model)
-    history = trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
+    # session report should always have a metrics stored, hence added a demo_metric
     session.report(
-        history,
+        {"demo_metric": 1},
         checkpoint=dist.BoltCheckPoint.from_model(model),
-    )
-
-    model = session.get_checkpoint().get_model()
-    trainer = bolt.train.Trainer(model)
-    new_history = trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
-    assert (
-        history["val_categorical_accuracy"][-1]
-        == new_history["val_categorical_accuracy"][-1]
     )
 
 
@@ -202,4 +185,19 @@ def test_independent_model():
         scaling_config=scaling_config,
     )
 
-    result = trainer.fit()
+    result_checkpoint_and_history = trainer.fit()
+
+    test_x, test_y = gen_numpy_training_data()
+    test_x = bolt.train.convert_dataset(test_x, dim=10)
+    test_y = bolt.train.convert_dataset(test_y, dim=10)
+
+    model = result_checkpoint_and_history.checkpoint.get_model()
+    trainer = bolt.train.Trainer(model)
+
+    history = trainer.validate(
+        validation_data=(test_x, test_y),
+        validation_metrics=["loss", "categorical_accuracy"],
+        use_sparsity=False,
+    )
+
+    assert history["val_categorical_accuracy"][-1] > 0.8
