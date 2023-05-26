@@ -155,12 +155,12 @@ class Model : public std::enable_shared_from_this<Model> {
 
   std::pair<const float*, uint64_t> getFlattenedGradients() const;
 
-  void setFlattenedGradients(const float* new_value,
+  void setFlattenedGradients(const float* concatenated_values,
                              uint64_t flattened_dim) const;
 
   std::pair<const float*, uint64_t> getFlattenedParameters() const;
 
-  void setFlattenedParameters(const float* new_value,
+  void setFlattenedParameters(const float* concatenated_values,
                               uint64_t flattened_dim) const;
 
   /**

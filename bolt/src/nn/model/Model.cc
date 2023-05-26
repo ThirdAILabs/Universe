@@ -299,7 +299,7 @@ void Model::setFlattenedParameters(const float* concatenated_values,
    * seems to be redundant, when we all-reduce the weights while using
    * distributed.
    */
-  for (auto& op : _ops) {
+  for (const auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
       fc->forceBuildHashTables();
     }
