@@ -18,11 +18,4 @@ from .utils import PandasColumnMapGenerator, get_num_cpus
 
 add_distributed_to_udt()
 
-import os
-
-feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
-
-
-# We are inheriting bolt_v2 Trainer which is under THIRDAI_EXPOSE_ALL
-if "THIRDAI_EXPOSE_ALL" in feature_flags:
-    from .distributed_v2 import DistributedTrainer
+from .distributed_v2 import DistributedTrainer
