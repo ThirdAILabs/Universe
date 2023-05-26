@@ -1,0 +1,54 @@
+name: Backwards Compatibility Benchmarks
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: AutoModality/action-clean@v1
+    - uses: actions/checkout@v3
+      with:           
+        submodules: 'recursive'
+        token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        fetch-depth: 0
+    - name: Create venv
+      run: |
+          python -m venv ../old_thirdai
+          source ../old_thirdai/bin/activate
+          git checkout ${GITHUB_REF##*/}
+          bin/build.py --extras test
+    - name: Save old model versions
+      run: |
+          source ../old_thirdai/bin/activate
+          versions=$(curl https://pypi.org/pypi/thirdai/json  | jq -r '.releases | keys | .[]')
+          file_version=$(cat "thirdai.version")
+          file_major_minor_version=$(echo "$file_version" | cut -d. -f1-2)
+          filtered_versions=()
+          for version in $versions; do
+            major_minor_version=$(echo "$version" | cut -d. -f1-2)
+            if [ "$major_minor_version" = "$file_major_minor_version" ]; then
+              filtered_versions+=( $version )
+            fi
+          done
+          for filtered_version in "${filtered_versions[@]}"; do
+            echo $filtered_version
+          done
+          for filtered_version in "${filtered_versions[@]}"; do
+            git checkout tags/v${filtered_version}
+            bin/build.py
+            git checkout ${GITHUB_REF##*/}
+            python -m benchmarks_v2.src.runners.backward_compatibility_runners.save_old_models --runner udt temporal query_reformulation --version $filtered_version
+          done
+    - name: Run mini benchmarks with old models
+      run: |
+          source ../old_thirdai/bin/activate
+          bin/build.py
+          python -m benchmarks_v2.src.main --runner backward_compatibility_udt backward_compatibility_query_reformulation backward_compatibility_temporal --path_prefix benchmarks_v2/src/mini_benchmark_datasets

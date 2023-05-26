@@ -34,7 +34,7 @@ def parse_arguments():
     parser.add_argument(
         "--write_path_prefix",
         type=str,
-        default="./benchmarks-v2/mini_benchmark_datasets/",
+        default="./benchmarks_v2/src/mini_benchmark_datasets/",
         help="The path prefix to write the mini benchmark datasets to",
     )
     return parser.parse_args()
@@ -48,7 +48,6 @@ def save_non_graph_subset(file, num_lines=11):
 
     with open(read_path) as input_file:
         head = [next(input_file) for _ in range(num_lines)]
-
     write_path = os.path.join(args.write_path_prefix, file)
     if not os.path.exists(os.path.dirname(write_path)):
         os.makedirs(os.path.dirname(write_path))

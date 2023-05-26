@@ -1,3 +1,8 @@
+from .backward_compatibility_runners.query_reformulation import (
+    BackwardCompatibilityQueryReformulationRunner,
+)
+from .backward_compatibility_runners.temporal import BackwardCompatibilityTemporalRunner
+from .backward_compatibility_runners.udt import BackwardCompatibilityUDTRunner
 from .bolt_fc import BoltFullyConnectedRunner, BoltV2FullyConnectedRunner
 from .dlrm import DLRMRunner, DLRMV2Runner
 from .mini_benchmark_runners.query_reformulation import (
@@ -20,4 +25,7 @@ runner_map = {
     "mini_benchmark_udt": MiniBenchmarkUDTRunner,
     "mini_benchmark_query_reformulation": MiniBenchmarkQueryReformulationRunner,
     "mini_benchmark_temporal": MiniBenchmarkTemporalRunner,
+    "backward_compatibility_udt": BackwardCompatibilityUDTRunner,
+    "backward_compatibility_query_reformulation": BackwardCompatibilityQueryReformulationRunner,
+    "backward_compatibility_temporal": BackwardCompatibilityTemporalRunner,
 }
