@@ -65,6 +65,7 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
   std::unordered_map<uint32_t, double> entity_to_scores;
   while (!top_K.empty()) {
     auto [activation, active_neuron] = top_K.top();
+    std::cout << active_neuron << ":" << activation << " ";
     const std::vector<uint32_t>& entities = _buckets.at(active_neuron);
     for (const auto& entity : entities) {
       if (!entity_to_scores.count(entity)) {
@@ -78,6 +79,7 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     }
     top_K.pop();
   }
+  std::cout << std::endl;
 
   std::vector<std::pair<uint32_t, double>> entity_scores(
       entity_to_scores.begin(), entity_to_scores.end());

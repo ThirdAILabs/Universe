@@ -14,8 +14,11 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <iostream>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::automl::udt {
 
@@ -176,6 +179,7 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class,
                                            std::optional<uint32_t> top_k) {
+  std::cout << "PREDICT BATCH" << std::endl;
   (void)top_k;
   if (return_predicted_class) {
     throw std::invalid_argument(
@@ -190,8 +194,14 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
 
   std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
       outputs->batchSize());
-#pragma omp parallel for default(none) shared(outputs, predicted_entities)
+  // #pragma omp parallel for default(none) shared(outputs, predicted_entities)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
+    std::cout << "Sample: ";
+    for (const auto& [key, value] : samples[i]) {
+      std::cout << key << ":" << value << " ";
+    }
+    std::cout << std::endl;
+
     const BoltVector& vector = outputs->getVector(i);
     auto predictions = _mach_label_block->index()->decode(
         /* output = */ vector,
@@ -359,18 +369,23 @@ void UDTMachClassifier::introduceDocuments(
 
   const auto& labels = cold_start_data->labelColumn();
   uint32_t row_idx = 0;
-  std::unordered_map<uint32_t, std::vector<BoltVector>> outputs_per_doc;
+  std::unordered_map<uint32_t, std::vector<std::pair<BoltVector, std::string>>>
+      outputs_per_doc;
 
+  cold_start_data->restart();
+  cold_start_data->nextLine();  // Skip header.
   for (const auto& batch : doc_samples_tensors) {
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi((*labels)[row_idx++]);
-      outputs_per_doc[label].push_back(scores->getVector(i));
+      outputs_per_doc[label].push_back(
+          std::make_pair(scores->getVector(i), *cold_start_data->nextLine()));
     }
   }
 
   for (const auto& [doc, outputs] : outputs_per_doc) {
+    std::cout << "Document ID: " << doc << std::endl;
     auto hashes = topHashesForDoc(outputs, num_buckets_to_sample);
     _mach_label_block->index()->insert(doc, hashes);
   }
@@ -415,7 +430,7 @@ struct CompareBuckets {
 };
 
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
-    const std::vector<BoltVector>& output_samples,
+    const std::vector<std::pair<BoltVector, std::string>>& output_samples,
     std::optional<uint32_t> num_buckets_to_sample_opt) const {
   const auto& mach_index = _mach_label_block->index();
 
@@ -433,11 +448,14 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   }
 
   std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
-  for (const auto& output : output_samples) {
+  for (const auto& [output, str] : output_samples) {
     auto top_K = output.findKLargestActivations(num_buckets_to_sample);
+
+    std::cout << "Coldstart sample: " << str << std::endl;
 
     while (!top_K.empty()) {
       auto [activation, active_neuron] = top_K.top();
+      std::cout << active_neuron << ":" << activation << " ";
       if (!hash_freq_and_scores.count(active_neuron)) {
         hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
       } else {
@@ -446,6 +464,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
       }
       top_K.pop();
     }
+    std::cout << std::endl;
   }
 
   // We sort the hashes first by number of occurances and tiebreak with the
@@ -456,6 +475,14 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 
   CompareBuckets cmp;
   std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
+
+  std::cout << "Aggregated, top " << num_buckets_to_sample << ": ";
+  for (uint32_t i = 0; i < num_buckets_to_sample; i++) {
+    std::cout << sorted_hashes[i].first << ":"
+              << sorted_hashes[i].second.frequency << ":"
+              << sorted_hashes[i].second.score << " ";
+  }
+  std::cout << std::endl;
 
   if (num_buckets_to_sample > num_hashes) {
     // If we are sampling more buckets then we end up using we rerank the
@@ -477,10 +504,15 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   }
 
   std::vector<uint32_t> new_hashes(num_hashes);
+
+  std::cout << "Final hashes: ";
   for (uint32_t i = 0; i < num_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes[i] = hash;
+    std::cout << hash << ":" << freq_score_pair.frequency << ":"
+              << freq_score_pair.score << " ";
   }
+  std::cout << std::endl;
 
   return new_hashes;
 }
@@ -493,7 +525,12 @@ void UDTMachClassifier::introduceLabel(
                               /* use_sparsity = */ false)
                     .at(0);
 
-  auto hashes = topHashesForDoc(output->vectors(), num_buckets_to_sample_opt);
+  std::vector<std::pair<BoltVector, std::string>> outputs;
+  for (const auto& vec : output->vectors()) {
+    outputs.push_back(std::make_pair(vec, ""));
+  }
+
+  auto hashes = topHashesForDoc(outputs, num_buckets_to_sample_opt);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 }
