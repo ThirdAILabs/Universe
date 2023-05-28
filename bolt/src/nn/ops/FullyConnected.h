@@ -22,7 +22,7 @@ class FullyConnected final
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
-      uint32_t rebuild_hash_tables = 4,
+      bool use_bias = true, uint32_t rebuild_hash_tables = 4,
       uint32_t reconstruct_hash_functions = 100);
 
   /**
@@ -53,6 +53,8 @@ class FullyConnected final
                const autograd::Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
+
+  void registerModel(const std::weak_ptr<model::Model>& new_model) final;
 
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
@@ -108,14 +110,13 @@ class FullyConnected final
   float getSparsity() { return _kernel->getSparsity(); }
 
   void setSparsity(float sparsity, bool rebuild_hash_tables,
-                   bool experimental_autotune) {
-    _kernel->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
-  }
+                   bool experimental_autotune);
 
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,
-      const std::string& activation, SamplingConfigPtr sampling,
+      const std::string& activation, SamplingConfigPtr sampling = nullptr,
+      bool use_bias = true,
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
@@ -126,6 +127,10 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+
+  // This does not need to be serialized because models will register with their
+  // ops again once loaded.
+  std::vector<std::weak_ptr<model::Model>> _models_using_op;
 
   FullyConnected() {}
 
