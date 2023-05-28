@@ -19,6 +19,8 @@ class NeuronIndex {
                                       float sparsity,
                                       bool experimental_autotune) = 0;
 
+  virtual void insertLabelsIfNotFound() {}
+
   virtual void summarize(std::ostream& summary) const = 0;
 
   virtual ~NeuronIndex() = default;

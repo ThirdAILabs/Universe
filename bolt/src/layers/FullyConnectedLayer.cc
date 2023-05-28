@@ -531,9 +531,7 @@ void FullyConnectedLayer::freezeHashTables(bool insert_labels_if_not_found) {
   _index_frozen = true;
 
   if (insert_labels_if_not_found) {
-    if (auto index = nn::LshIndex::cast(_neuron_index)) {
-      index->insertLabelsIfNotFound();
-    }
+    _neuron_index->insertLabelsIfNotFound();
   }
 }
 

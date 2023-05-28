@@ -35,7 +35,7 @@ class LshIndex final : public NeuronIndex {
 
   const auto& hashTable() const { return _hash_table; }
 
-  void insertLabelsIfNotFound() { _insert_labels_when_not_found = true; }
+  void insertLabelsIfNotFound() final { _insert_labels_when_not_found = true; }
 
   static auto cast(const NeuronIndexPtr& index) {
     return std::dynamic_pointer_cast<LshIndex>(index);
