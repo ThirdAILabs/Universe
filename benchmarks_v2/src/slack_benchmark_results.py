@@ -17,7 +17,7 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=["udt", "bolt_fc", "dlrm", "query_reformulation", "temporal"],
+        choices=list(runner_map.keys()),
         help="The runner to retrieve benchmark results for.",
     )
     parser.add_argument(
