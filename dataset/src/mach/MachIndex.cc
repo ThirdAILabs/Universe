@@ -113,7 +113,8 @@ float MachIndex::sparsity() const {
   do {
     guess = static_cast<float>(nonemptyBuckets().size() + tries) / numBuckets();
     tries++;
-  } while (guess * numBuckets() < nonemptyBuckets().size());
+  } while (static_cast<uint32_t>(guess * numBuckets()) <
+           nonemptyBuckets().size());
 
   return guess;
 }

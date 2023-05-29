@@ -367,14 +367,18 @@ void UDTMachClassifier::updateSamplingStrategy() {
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
       std::random_device rd;
-      auto new_index =
-          bolt::DWTASamplingConfig::autotune(mach_index->numBuckets(), sparsity,
-                                             /* experimental_autotune= */ false)
-              ->getNeuronIndex(output_layer->dim(), output_layer->inputDim(),
-                               rd);
+
+      auto sampling_config = bolt::DWTASamplingConfig::autotune(
+          mach_index->numBuckets(), sparsity,
+          /* experimental_autotune= */ false);
 
       output_layer->setSparsity(sparsity, false, false);
-      output_layer->kernel()->setNeuronIndex(new_index);
+
+      if (sampling_config) {
+        auto new_index = sampling_config->getNeuronIndex(
+            output_layer->dim(), output_layer->inputDim(), rd);
+        output_layer->kernel()->setNeuronIndex(new_index);
+      }
     }
   }
 }

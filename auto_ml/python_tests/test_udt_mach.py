@@ -482,7 +482,6 @@ def test_mach_sparse_inference():
             {1: [10], 2: [20], 3: [30]}, output_range=OUTPUT_DIM, num_hashes=1
         )
     )
-    model._get_model().summary()
 
     input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
 
@@ -508,12 +507,14 @@ def test_mach_sparse_inference():
     # This is above the threshold for mach index sampling, so it should revert back to LSH
     model.set_index(
         dataset.MachIndex(
-            {i: [i * 10] for i in range(OUTPUT_DIM // 2)},
+            {i * 10: [i] for i in range(OUTPUT_DIM // 2)},
             output_range=OUTPUT_DIM,
             num_hashes=1,
         )
     )
 
-    model._get_model().summary()
-
+    # When we set an index with 50% sparsity it will autotune the sampling, it
+    # will decide to not use any sort of sampling for this level of sparsity and
+    # so the output should be dense.
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert output.active_neurons == None
