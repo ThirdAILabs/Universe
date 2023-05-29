@@ -14,7 +14,7 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce = false,
-                      bool use_tanh = false);
+                      bool use_tanh = false, bool use_bias = true);
 
 float autotuneSparsity(uint32_t dim);
 

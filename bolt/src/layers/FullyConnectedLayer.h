@@ -20,13 +20,6 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-enum class BoltSamplingMode {
-  LSH,
-  FreezeHashTables,
-  FreezeHashTablesWithInsertions,
-  RandomSampling
-};
-
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
@@ -40,7 +33,8 @@ class FullyConnectedLayer final {
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim,
-                      bool disable_sparse_parameter_updates = false);
+                      bool disable_sparse_parameter_updates = false,
+                      bool use_bias = true);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -100,6 +94,8 @@ class FullyConnectedLayer final {
   float* getWeights() const;
 
   float* getBiases() const;
+
+  bool useBias() const { return _use_bias; }
 
   void setWeights(const float* new_weights);
 
@@ -167,6 +163,8 @@ class FullyConnectedLayer final {
   // A flag to determine whether the current network saves the optimizer states
   // or not. If true, it saves the optimizer states, else doesn't.
   bool _should_save_optimizer;
+
+  bool _use_bias;
 
   /* --------------- Within-batch variables ------------------------------
    * These variables are set while we are processing a batch (usually during
@@ -257,7 +255,8 @@ class FullyConnectedLayer final {
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
-            _disable_sparse_parameter_updates, _should_save_optimizer);
+            _disable_sparse_parameter_updates, _should_save_optimizer,
+            _use_bias);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
@@ -282,7 +281,8 @@ class FullyConnectedLayer final {
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
-            _disable_sparse_parameter_updates, _should_save_optimizer);
+            _disable_sparse_parameter_updates, _should_save_optimizer,
+            _use_bias);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }

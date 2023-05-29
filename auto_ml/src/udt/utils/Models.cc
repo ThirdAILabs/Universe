@@ -6,6 +6,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <stdexcept>
@@ -22,8 +23,10 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
   bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
+
+  bool use_bias = args.get<bool>("use_bias", "bool", defaults::USE_BIAS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
-                             use_tanh);
+                             use_tanh, use_bias);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -40,17 +43,18 @@ float autotuneSparsity(uint32_t dim) {
 }
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                      uint32_t output_dim, bool use_sigmoid_bce,
-                      bool use_tanh) {
+                      uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
+                      bool use_bias) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 
-  auto hidden =
-      bolt::nn::ops::FullyConnected::make(hidden_dim, input->dim(),
-                                          /* sparsity= */ 1.0,
-                                          /* activation= */ hidden_activation)
-          ->apply(input);
+  auto hidden = bolt::nn::ops::FullyConnected::make(
+                    hidden_dim, input->dim(),
+                    /* sparsity= */ 1.0,
+                    /* activation= */ hidden_activation,
+                    /* sampling_config= */ nullptr, use_bias)
+                    ->apply(input);
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";

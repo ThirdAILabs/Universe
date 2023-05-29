@@ -54,7 +54,7 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t min_num_eval_results,
     uint32_t top_k_per_eval_aggregation) const {
-  auto top_K = output.findKLargestActivations(top_k_per_eval_aggregation);
+  auto top_K = topKNonEmptyBuckets(output, top_k_per_eval_aggregation);
 
   std::unordered_map<uint32_t, double> entity_to_scores;
   while (!top_K.empty()) {
@@ -105,6 +105,31 @@ void MachIndex::erase(uint32_t entity) {
       _nonempty_buckets.erase(hash);
     }
   }
+}
+
+TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
+                                                    uint32_t k) const {
+  TopKActivationsQueue top_k;
+  uint32_t pos = 0;
+  for (; top_k.size() < k && pos < output.len; pos++) {
+    uint32_t idx = output.isDense() ? pos : output.active_neurons[pos];
+    if (!_buckets.at(idx).empty()) {
+      top_k.push({output.activations[pos], idx});
+    }
+  }
+
+  for (; pos < output.len; pos++) {
+    uint32_t idx = output.isDense() ? pos : output.active_neurons[pos];
+    if (!_buckets.at(idx).empty()) {
+      ValueIndexPair val_idx_pair = {output.activations[pos], idx};
+      // top_k.top() is minimum element.
+      if (val_idx_pair > top_k.top()) {
+        top_k.pop();
+        top_k.push(val_idx_pair);
+      }
+    }
+  }
+  return top_k;
 }
 
 void MachIndex::verifyHash(uint32_t hash) const {

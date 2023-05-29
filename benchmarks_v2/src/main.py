@@ -21,18 +21,7 @@ def parse_arguments():
         type=str,
         nargs="+",
         required=True,
-        choices=[
-            "udt",
-            "bolt_fc",
-            "bolt_v2_fc",
-            "dlrm",
-            "dlrm_v2",
-            "query_reformulation",
-            "temporal",
-            "mini_benchmark_udt",
-            "mini_benchmark_query_reformulation",
-            "mini_benchmark_temporal",
-        ],
+        choices=list(runner_map.keys()),
         help="Which runners to use to run the benchmark.",
     )
     parser.add_argument(

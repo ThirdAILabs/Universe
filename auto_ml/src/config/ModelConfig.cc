@@ -100,8 +100,13 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
 
   auto predecessor = getPredecessor(config, created_comps);
 
+  bool use_bias = true;
+  if (config.contains("use_bias")) {
+    use_bias = booleanParameter(config, "use_bias", args);
+  }
+
   auto layer = bolt::nn::ops::FullyConnected::make(
-      dim, predecessor->dim(), sparsity, activation, sampling_config);
+      dim, predecessor->dim(), sparsity, activation, sampling_config, use_bias);
 
   return layer->apply(predecessor);
 }

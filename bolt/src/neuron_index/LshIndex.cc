@@ -21,7 +21,11 @@ LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
 }
 
 void LshIndex::query(const BoltVector& input, BoltVector& output,
-                     const BoltVector* labels, uint32_t sparse_dim) const {
+                     const BoltVector* labels) const {
+  assert(!output.isDense());
+
+  uint32_t sparse_dim = output.len;
+
   std::unordered_set<uint32_t> selected_neurons;
 
   uint32_t label_len = labels != nullptr ? labels->len : 0;

@@ -19,7 +19,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool disable_sparse_parameter_updates)
+    bool disable_sparse_parameter_updates, bool use_bias)
     : _dim(config.getDim()),
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
@@ -29,6 +29,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _biases(config.getDim()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
+      _use_bias(use_bias),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
@@ -36,8 +37,12 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::normal_distribution<float> dist(0.0, 0.01);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
-  std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
+  if (_use_bias) {
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
+  } else {
+    _biases.assign(_biases.size(), 0.0);
+  }
   if (_sparsity < 1.0) {
     _neuron_index =
         config.getSamplingConfig()->getNeuronIndex(_dim, _prev_dim, rd);
@@ -81,7 +86,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   assert(labels == nullptr || labels->len > 0);
 
   if constexpr (!DENSE) {
-    _neuron_index->query(input, output, labels, _sparse_dim);
+    _neuron_index->query(input, output, labels);
   }
 
   float max_act = 0;
@@ -453,6 +458,9 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
   assert(_bias_optimizer.has_value());
+  if (!_use_bias) {
+    return;
+  }
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
@@ -536,9 +544,7 @@ void FullyConnectedLayer::freezeHashTables(bool insert_labels_if_not_found) {
   _index_frozen = true;
 
   if (insert_labels_if_not_found) {
-    if (auto index = nn::LshIndex::cast(_neuron_index)) {
-      index->insertLabelsIfNotFound();
-    }
+    _neuron_index->insertLabelsIfNotFound();
   }
 }
 
