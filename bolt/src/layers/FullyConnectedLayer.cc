@@ -538,7 +538,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
 void FullyConnectedLayer::freezeHashTables(bool insert_labels_if_not_found) {
   _index_frozen = true;
 
-  if (insert_labels_if_not_found) {
+  if (insert_labels_if_not_found && _neuron_index) {
     _neuron_index->insertLabelsIfNotFound();
   }
 }
