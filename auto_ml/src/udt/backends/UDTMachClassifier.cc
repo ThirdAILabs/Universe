@@ -347,6 +347,43 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
+void UDTMachClassifier::updateSamplingStrategy() {
+  auto mach_index = _mach_label_block->index();
+
+  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  float index_sparsity =
+      static_cast<float>(mach_index->nonemptyBuckets().size()) /
+      mach_index->numBuckets();
+  if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
+    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
+    output_layer->setSparsity(index_sparsity, false, false);
+
+    if (!std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      std::random_device rd;
+      auto new_index = bolt::nn::MachNeuronIndex::make(mach_index, rd);
+      output_layer->kernel()->setNeuronIndex(new_index);
+    }
+  } else {
+    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
+
+      std::random_device rd;
+      auto new_index =
+          bolt::DWTASamplingConfig::autotune(mach_index->numBuckets(), sparsity,
+                                             /* experimental_autotune= */ false)
+              ->getNeuronIndex(output_layer->dim(), output_layer->inputDim(),
+                               rd);
+
+      output_layer->setSparsity(sparsity, false, false);
+      output_layer->kernel()->setNeuronIndex(new_index);
+    }
+  }
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,

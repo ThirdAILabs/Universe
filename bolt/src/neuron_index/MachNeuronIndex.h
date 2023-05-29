@@ -4,17 +4,19 @@
 #include <bolt/src/neuron_index/NeuronIndex.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <memory>
+#include <random>
 #include <vector>
 
 namespace thirdai::bolt::nn {
 
 class MachNeuronIndex final : public NeuronIndex {
  public:
-  explicit MachNeuronIndex(dataset::mach::MachIndexPtr mach_index)
-      : _mach_index(std::move(mach_index)) {}
+  explicit MachNeuronIndex(dataset::mach::MachIndexPtr mach_index,
+                           std::random_device& rd);
 
-  static auto make(dataset::mach::MachIndexPtr mach_index) {
-    return std::make_shared<MachNeuronIndex>(std::move(mach_index));
+  static auto make(dataset::mach::MachIndexPtr mach_index,
+                   std::random_device& rd) {
+    return std::make_shared<MachNeuronIndex>(std::move(mach_index), rd);
   }
 
   void query(const BoltVector& input, BoltVector& output,

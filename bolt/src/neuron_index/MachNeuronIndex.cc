@@ -7,12 +7,21 @@
 
 namespace thirdai::bolt::nn {
 
+MachNeuronIndex::MachNeuronIndex(dataset::mach::MachIndexPtr mach_index,
+                                 std::random_device& rd)
+    : _mach_index(std::move(mach_index)) {
+  std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+}
+
 void MachNeuronIndex::query(const BoltVector& input, BoltVector& output,
                             const BoltVector* labels) const {
   (void)input;
   (void)labels;
 
   auto nonempty_buckets = _mach_index->nonemptyBuckets();
+
+  assert(nonempty_buckets.size() <= output.len);
 
   if (nonempty_buckets.size() < output.len) {
     // Hack to intepret the float as an integer without doing a conversion.
@@ -23,7 +32,7 @@ void MachNeuronIndex::query(const BoltVector& input, BoltVector& output,
     uint64_t random_offset =
         hashing::simpleIntegerHash(seed) % _rand_neurons.size();
 
-    while (nonempty_buckets.size() < sparse_dim) {
+    while (nonempty_buckets.size() < output.len) {
       nonempty_buckets.insert(_rand_neurons[random_offset]);
       random_offset = (random_offset + 1) % _rand_neurons.size();
     }
