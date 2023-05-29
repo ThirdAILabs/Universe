@@ -90,6 +90,17 @@ Trainer makeTrainer(nn::model::ModelPtr model,
 }
 
 void defineTrainer(py::module_& train) {
+  // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
+  // this.
+
+#if THIRDAI_EXPOSE_ALL
+  train.def("convert_dataset", convertDataset, py::arg("dataset"),
+            py::arg("dim"), py::arg("copy") = true);
+
+  train.def("convert_datasets", convertDatasets, py::arg("datasets"),
+            py::arg("dims"), py::arg("copy") = true);
+#endif
+
   /*
    * DistributedTrainer inherits Trainer objects. Hence, we need to expose
    * constructor for Trainer class.
@@ -104,6 +115,7 @@ void defineTrainer(py::module_& train) {
        * checks must be added to the train method.
        * ==============================================================
        */
+      
       .def("train", &Trainer::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = metrics::InputMetrics(),
@@ -116,7 +128,7 @@ void defineTrainer(py::module_& train) {
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
-      .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
+     .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = std::vector<std::string>(),
            py::arg("validation_data") = std::nullopt,
@@ -138,17 +150,9 @@ void defineTrainer(py::module_& train) {
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
            bolt::python::OutputRedirect())
       .def_property_readonly("model", &Trainer::getModel,
-                             py::return_value_policy::reference_internal);
-
-  // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
-  // this.
-  train.def("convert_dataset", convertDataset, py::arg("dataset"),
-            py::arg("dim"), py::arg("copy") = true);
-
-  train.def("convert_datasets", convertDatasets, py::arg("datasets"),
-            py::arg("dims"), py::arg("copy") = true);
-
+                             py::return_value_policy::reference_internal)
 #endif
+      ;
 }
 
 void defineMetrics(py::module_& train) {
