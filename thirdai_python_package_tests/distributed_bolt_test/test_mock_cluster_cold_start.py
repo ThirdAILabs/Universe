@@ -28,7 +28,12 @@ pytestmark = [pytest.mark.distributed]
 
 
 def training_data_loader_callback(distributed_data_loader):
-    print("Printing from callback: ", distributed_data_loader.train_file)
+    relative_path = os.path.relpath(
+        distributed_data_loader.train_file, start=os.getcwd()
+    )
+    assert (
+        relative_path == "amazon_product_catalog/part1"
+    ), "File names are not the same!"
 
 
 def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
