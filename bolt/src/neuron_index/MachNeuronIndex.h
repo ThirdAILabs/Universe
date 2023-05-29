@@ -11,12 +11,10 @@ namespace thirdai::bolt::nn {
 
 class MachNeuronIndex final : public NeuronIndex {
  public:
-  explicit MachNeuronIndex(dataset::mach::MachIndexPtr mach_index,
-                           std::random_device& rd);
+  explicit MachNeuronIndex(dataset::mach::MachIndexPtr mach_index);
 
-  static auto make(dataset::mach::MachIndexPtr mach_index,
-                   std::random_device& rd) {
-    return std::make_shared<MachNeuronIndex>(std::move(mach_index), rd);
+  static auto make(dataset::mach::MachIndexPtr mach_index) {
+    return std::make_shared<MachNeuronIndex>(std::move(mach_index));
   }
 
   void query(const BoltVector& input, BoltVector& output,
@@ -39,14 +37,8 @@ class MachNeuronIndex final : public NeuronIndex {
 
   void summarize(std::ostream& summary) const final { summary << "mach_index"; }
 
-  void setNewIndex(dataset::mach::MachIndexPtr new_index) {
-    _mach_index = std::move(new_index);
-  }
-
  private:
   dataset::mach::MachIndexPtr _mach_index;
-
-  std::vector<uint32_t> _rand_neurons;
 
   MachNeuronIndex() {}
 

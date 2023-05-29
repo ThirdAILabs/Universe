@@ -355,18 +355,13 @@ void UDTMachClassifier::updateSamplingStrategy() {
 
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
-  float index_sparsity =
-      static_cast<float>(mach_index->nonemptyBuckets().size()) /
-      mach_index->numBuckets();
+  float index_sparsity = mach_index->sparsity();
   if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
+    auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
+    output_layer->kernel()->setNeuronIndex(new_index);
 
-    if (!std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
-      std::random_device rd;
-      auto new_index = bolt::nn::MachNeuronIndex::make(mach_index, rd);
-      output_layer->kernel()->setNeuronIndex(new_index);
-    }
   } else {
     if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
@@ -407,6 +402,9 @@ void UDTMachClassifier::introduceDocuments(
   std::unordered_map<uint32_t, std::vector<BoltVector>> outputs_per_doc;
 
   for (const auto& batch : doc_samples_tensors) {
+    // Note: using sparse inference here could cause issues because the mach
+    // index sampler will only return nonempty buckets, which could cause new
+    // docs to only be mapped to buckets already containing entities.
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
@@ -533,6 +531,9 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt) {
+  // Note: using sparse inference here could cause issues because the mach index
+  // sampler will only return nonempty buckets, which could cause new docs to
+  // only be mapped to buckets already containing entities.
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
@@ -586,16 +587,6 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
-
-  auto output_layer = bolt::nn::ops::FullyConnected::cast(
-      _classifier->model()->opExecutionOrder().back());
-
-  const auto& neuron_index = output_layer->kernel()->neuronIndex();
-
-  if (auto mach_neuron_index =
-          std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
-    mach_neuron_index->setNewIndex(index);
-  }
 
   updateSamplingStrategy();
 }

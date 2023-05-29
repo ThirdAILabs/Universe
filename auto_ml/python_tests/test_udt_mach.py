@@ -504,3 +504,16 @@ def test_mach_sparse_inference():
 
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 40, 50])
+
+    # This is above the threshold for mach index sampling, so it should revert back to LSH
+    model.set_index(
+        dataset.MachIndex(
+            {i: [i * 10] for i in range(OUTPUT_DIM // 2)},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    model._get_model().summary()
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
