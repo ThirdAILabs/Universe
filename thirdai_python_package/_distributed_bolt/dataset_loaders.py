@@ -69,11 +69,11 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
-        self.callback = callback
+        self.callback = lambda: callback(self)
 
     def load(self):
         if self.callback:
-            self.callback(self)
+            self.callback()
 
         data_source = self.data_source_factory(*self.args, **self.kwargs)
         self.generator = dataset.DatasetLoader(
@@ -138,11 +138,11 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
         self.min_vecs_in_buffer = min_vecs_in_buffer
-        self.callback = callback
+        self.callback = lambda: callback(self)
 
     def load(self, shuffle: bool = True):
         if self.callback:
-            self.callback(self)
+            self.callback()
 
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
@@ -196,11 +196,11 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
         self.min_vecs_in_buffer = min_vecs_in_buffer
-        self.callback = callback
+        self.callback = lambda: callback(self)
 
     def load(self, shuffle: bool = True):
         if self.callback:
-            self.callback(self)
+            self.callback()
 
         original_data_source = _create_data_source(self.train_file)
         cold_start_data_source = (

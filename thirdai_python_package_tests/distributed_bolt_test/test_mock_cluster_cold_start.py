@@ -27,15 +27,6 @@ def download_scifact_dataset():
 pytestmark = [pytest.mark.distributed]
 
 
-def training_data_loader_callback(distributed_data_loader):
-    relative_path = os.path.relpath(
-        distributed_data_loader.train_file, start=os.getcwd()
-    )
-    assert (
-        relative_path == "amazon_product_catalog/part1"
-    ), "File names are not the same!"
-
-
 def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
     import os
 
@@ -183,6 +174,11 @@ def test_distributed_mach_cold_start(
 def test_distributed_cold_start(
     ray_two_node_cluster_config, download_amazon_kaggle_product_catalog_sampled
 ):
+    def training_data_loader_callback(distributed_data_loader):
+        assert (
+            distributed_data_loader.train_file[-28:-1] == "amazon_product_catalog/part"
+        ), "File names are not the same!"
+
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
     )
