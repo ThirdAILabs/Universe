@@ -115,7 +115,7 @@ void defineTrainer(py::module_& train) {
        * checks must be added to the train method.
        * ==============================================================
        */
-      
+
       .def("train", &Trainer::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = metrics::InputMetrics(),
@@ -128,7 +128,7 @@ void defineTrainer(py::module_& train) {
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
-     .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
+      .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = std::vector<std::string>(),
            py::arg("validation_data") = std::nullopt,
