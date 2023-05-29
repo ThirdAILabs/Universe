@@ -48,6 +48,7 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self,
         batch_size,
         data_source_factory,
+        callback=None,
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
@@ -68,8 +69,12 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
+        self.callback = callback
 
     def load(self):
+        if self.callback:
+            self.callback(self)
+
         data_source = self.data_source_factory(*self.args, **self.kwargs)
         self.generator = dataset.DatasetLoader(
             data_source=data_source,
@@ -122,6 +127,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         train_file: str,
         batch_size: int,
         data_processor,
+        callback=None,
         min_vecs_in_buffer=None,
         max_in_memory_batches: int = None,
     ):
@@ -132,8 +138,12 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
         self.min_vecs_in_buffer = min_vecs_in_buffer
+        self.callback = callback
 
     def load(self, shuffle: bool = True):
+        if self.callback:
+            self.callback(self)
+
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
             training=shuffle,
@@ -173,6 +183,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         weak_column_names: List[str],
         data_processor,
         cold_start_meta_data,
+        callback=None,
         min_vecs_in_buffer=None,
     ):
         self.generator = None
@@ -185,8 +196,12 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
         self.min_vecs_in_buffer = min_vecs_in_buffer
+        self.callback = callback
 
     def load(self, shuffle: bool = True):
+        if self.callback:
+            self.callback(self)
+
         original_data_source = _create_data_source(self.train_file)
         cold_start_data_source = (
             bolt.distributed_preprocessing.preprocess_cold_start_train_source(
