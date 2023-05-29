@@ -69,7 +69,7 @@ class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
-        self.callback = lambda: callback(self)
+        self.callback = lambda: callback(self) if callback else None
 
     def load(self):
         if self.callback:
@@ -138,7 +138,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
         self.min_vecs_in_buffer = min_vecs_in_buffer
-        self.callback = lambda: callback(self)
+        self.callback = lambda: callback(self) if callback else None
 
     def load(self, shuffle: bool = True):
         if self.callback:
@@ -196,7 +196,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
         self.min_vecs_in_buffer = min_vecs_in_buffer
-        self.callback = lambda: callback(self)
+        self.callback = lambda: callback(self) if callback else None
 
     def load(self, shuffle: bool = True):
         if self.callback:
