@@ -21,7 +21,7 @@ class LshIndex final : public NeuronIndex {
   }
 
   void query(const BoltVector& input, BoltVector& output,
-             const BoltVector* labels, uint32_t sparse_dim) const final;
+             const BoltVector* labels) const final;
 
   void buildIndex(const std::vector<float>& weights, uint32_t dim,
                   bool use_new_seed) final;

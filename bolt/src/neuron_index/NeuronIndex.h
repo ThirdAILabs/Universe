@@ -10,7 +10,7 @@ namespace thirdai::bolt::nn {
 class NeuronIndex {
  public:
   virtual void query(const BoltVector& input, BoltVector& output,
-                     const BoltVector* labels, uint32_t sparse_dim) const = 0;
+                     const BoltVector* labels) const = 0;
 
   virtual void buildIndex(const std::vector<float>& weights, uint32_t dim,
                           bool use_new_seed) = 0;
