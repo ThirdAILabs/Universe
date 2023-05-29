@@ -27,6 +27,10 @@ def download_scifact_dataset():
 pytestmark = [pytest.mark.distributed]
 
 
+def training_data_loader_callback(distributed_data_loader):
+    print("Printing from callback: ", distributed_data_loader.train_file)
+
+
 def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
     import os
 
@@ -192,6 +196,7 @@ def test_distributed_cold_start(
         learning_rate=0.001,
         epochs=5,
         metrics=["categorical_accuracy"],
+        training_data_loader_callback=training_data_loader_callback,
     )
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 
