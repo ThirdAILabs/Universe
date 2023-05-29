@@ -8,14 +8,13 @@
 namespace thirdai::bolt::nn {
 
 void MachNeuronIndex::query(const BoltVector& input, BoltVector& output,
-                            const BoltVector* labels,
-                            uint32_t sparse_dim) const {
+                            const BoltVector* labels) const {
   (void)input;
   (void)labels;
 
   auto nonempty_buckets = _mach_index->nonemptyBuckets();
 
-  if (nonempty_buckets.size() < sparse_dim) {
+  if (nonempty_buckets.size() < output.len) {
     // Hack to intepret the float as an integer without doing a conversion.
     uint32_t seed = *reinterpret_cast<uint32_t*>(&input.activations[0]);
 
