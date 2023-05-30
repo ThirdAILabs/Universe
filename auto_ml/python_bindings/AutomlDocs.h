@@ -1535,6 +1535,7 @@ Args:
 
 const char* const UDT_SET_OUTPUT_SPARSITY = R"pbdoc(
 Modifies the sparsity of the output layer for UDT Classifier. 
+Note: Only works with UDT Classifier (without extreme classification enabled)
 
 Args:
     sparsity (float): Sets the sparsity of the output layer to this value.
