@@ -4,11 +4,18 @@
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
 std::pair<std::vector<BoltVector>, std::vector<BoltVector>>
 RLHFSampler::balancingSamples(size_t num_samples) {
+  if (_samples_per_doc.empty()) {
+    throw std::runtime_error(
+        "Cannot call associate before training, coldstarting, or introducing "
+        "documents.");
+  }
+
   std::vector<std::pair<BoltVector, BoltVector>> samples;
 
   uint32_t full_rounds = num_samples / _samples_per_doc.size();
