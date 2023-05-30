@@ -5,11 +5,11 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
-#include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/featurization/TemporalContext.h>
+#include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -41,10 +41,13 @@ class TabularDatasetFactory {
         label_blocks, std::move(label_col_names), options, force_parallel);
   }
 
-  dataset::DatasetLoaderPtr getDatasetLoader(
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle,
       std::optional<dataset::DatasetShuffleConfig> shuffle_config =
           std::nullopt);
+
+  dataset::DatasetLoaderPtr getUnLabeledDatasetLoader(
+      const dataset::DataSourcePtr& data_source);
 
   TensorList featurizeInput(const MapInput& input) {
     for (const auto& [column_name, _] : input) {

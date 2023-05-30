@@ -59,8 +59,13 @@ Model::Model(autograd::ComputationList inputs,
 std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
                                    autograd::ComputationList outputs,
                                    std::vector<loss::LossPtr> losses) {
-  return std::make_shared<Model>(std::move(inputs), std::move(outputs),
-                                 std::move(losses));
+  auto model = std::shared_ptr<Model>(
+      new Model(std::move(inputs), std::move(outputs), std::move(losses)));
+
+  // This has to be done here because we need the model to be allocated using a
+  // shared_ptr in order to use shared_from_this() to get a valid reference.
+  model->registerWithOps();
+  return model;
 }
 
 tensor::TensorList Model::forward(const tensor::TensorList& inputs,
@@ -119,6 +124,10 @@ void Model::updateParameters(float learning_rate) {
   for (auto& op : _ops) {
     op->updateParameters(learning_rate, _train_steps);
   }
+}
+
+void Model::forceStateReallocation() {
+  _allocation_manager.forceReallocation();
 }
 
 std::vector<ops::OpPtr> Model::opExecutionOrder() const {
@@ -234,7 +243,7 @@ uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
   return total_dim;
 }
 
-std::pair<const float*, uint64_t> getValues(
+std::pair<const float*, uint64_t> concatenateValues(
     const std::vector<std::vector<float>*>& values) {
   uint64_t total_dim = sumFlattenedDims(values);
 
@@ -250,7 +259,7 @@ std::pair<const float*, uint64_t> getValues(
 }
 
 void setValues(const std::vector<std::vector<float>*>& values,
-               const float* new_value, uint64_t flattened_dim) {
+               const float* concatenated_values, uint64_t flattened_dim) {
   uint64_t total_dim = sumFlattenedDims(values);
 
   if (total_dim != flattened_dim) {
@@ -263,34 +272,34 @@ void setValues(const std::vector<std::vector<float>*>& values,
 
   uint64_t offset = 0;
   for (auto* value : values) {
-    std::copy(new_value + offset, new_value + offset + value->size(),
-              value->data());
+    std::copy(concatenated_values + offset,
+              concatenated_values + offset + value->size(), value->data());
     offset += value->size();
   }
 }
 
 std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
-  return getValues(gradients());
+  return concatenateValues(gradients());
 }
 
 std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
-  return getValues(parameters());
+  return concatenateValues(parameters());
 }
 
-void Model::setFlattenedGradients(const float* new_value,
+void Model::setFlattenedGradients(const float* concatenated_values,
                                   uint64_t flattened_dim) const {
-  setValues(gradients(), new_value, flattened_dim);
+  setValues(gradients(), concatenated_values, flattened_dim);
 }
 
-void Model::setFlattenedParameters(const float* new_value,
+void Model::setFlattenedParameters(const float* concatenated_values,
                                    uint64_t flattened_dim) const {
-  setValues(parameters(), new_value, flattened_dim);
+  setValues(parameters(), concatenated_values, flattened_dim);
   /*
    * Here, we are re-building the hash tables again, as the older weights
    * seems to be redundant, when we all-reduce the weights while using
    * distributed.
    */
-  for (auto& op : _ops) {
+  for (const auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
       fc->forceBuildHashTables();
     }
@@ -448,6 +457,12 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
   }
 }
 
+void Model::registerWithOps() {
+  for (auto& op : _ops) {
+    op->registerModel(weak_from_this());
+  }
+}
+
 void Model::saveMetadata(const std::string& save_path) const {
   auto file = dataset::SafeFileIO::ofstream(save_path + ".metadata");
 
@@ -497,6 +512,8 @@ void Model::serialize(Archive& archive, const uint32_t version) {
           _total_training_samples);
 
   verifyAllowedOutputDim();
+
+  registerWithOps();
 }
 
 }  // namespace thirdai::bolt::nn::model

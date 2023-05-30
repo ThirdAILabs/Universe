@@ -1,163 +1,169 @@
 #include "MachIndex.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
+#include <hashing/src/HashUtils.h>
+#include <dataset/src/utils/SafeFileIO.h>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset::mach {
 
-MachIndex::MachIndex(uint32_t output_range, uint32_t num_hashes)
-    : _output_range(output_range), _num_hashes(num_hashes) {}
-
-NumericCategoricalMachIndex::NumericCategoricalMachIndex(uint32_t output_range,
-                                                         uint32_t num_hashes,
-                                                         uint32_t num_elements)
-    : MachIndex(output_range, num_hashes) {
+MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
+                     uint32_t num_elements)
+    : _buckets(num_buckets), _num_hashes(num_hashes) {
   for (uint32_t element = 0; element < num_elements; element++) {
-    std::string element_string = std::to_string(element);
+    insert(element,
+           hashing::hashNTimesToOutputRange(element, num_hashes, num_buckets));
+  }
+}
 
-    auto hashes = hashing::hashNTimesToOutputRange(element_string, _num_hashes,
-                                                   _output_range);
+MachIndex::MachIndex(
+    std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes,
+    uint32_t num_buckets, uint32_t num_hashes)
+    : _entity_to_hashes(std::move(entity_to_hashes)),
+      _buckets(num_buckets),
+      _num_hashes(num_hashes) {
+  for (auto [entity, hashes] : _entity_to_hashes) {
+    if (hashes.size() != num_hashes) {
+      throw std::invalid_argument("Num hashes for entity " +
+                                  std::to_string(entity) +
+                                  " is not equal to num_hashes.");
+    }
 
-    _entity_to_hashes[element] = hashes;
-
-    for (auto& hash : hashes) {
-      _hash_to_entities[hash].push_back(element);
+    for (const uint32_t hash : hashes) {
+      verifyHash(hash);
+      _buckets[hash].push_back(entity);
     }
   }
 }
 
-std::vector<uint32_t> NumericCategoricalMachIndex::hashEntity(
-    const std::string& string) {
-  uint32_t id = std::strtoul(string.data(), nullptr, 10);
-
-  if (!_entity_to_hashes.count(id)) {
-    throw std::invalid_argument(
-        "Received unexpected label: " + std::to_string(id) + ".");
-  }
-
-  return _entity_to_hashes[id];
-}
-
-std::vector<std::string> NumericCategoricalMachIndex::entitiesByHash(
-    uint32_t hash_val) const {
-  if (!_hash_to_entities.count(hash_val)) {
-    return {};
-  }
-
-  // We only return strings because it makes the code much easier to
-  // read/maintain, since we share an interface with the
-  // StringCategoricalMachIndex which returns strings.
-  // TODO(david): theres a todo in the interface to change this to return ids
-  std::vector<std::string> string_entities;
-  for (const uint32_t entity : _hash_to_entities.at(hash_val)) {
-    string_entities.push_back(std::to_string(entity));
-  }
-  return string_entities;
-}
-
-void NumericCategoricalMachIndex::manualAdd(
-    const std::string& string, const std::vector<uint32_t>& hashes) {
+void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
   if (hashes.size() != _num_hashes) {
     throw std::invalid_argument("Wrong number of hashes for index.");
   }
 
-  uint32_t id = std::strtoul(string.data(), nullptr, 10);
-
-  if (_entity_to_hashes.count(id)) {
+  if (_entity_to_hashes.count(entity)) {
     throw std::invalid_argument(
-        "Manually adding a previously seen label: " + string +
+        "Manually adding a previously seen label: " + std::to_string(entity) +
         ". Please use a new label for any new insertions.");
   }
 
   for (const auto& hash : hashes) {
-    _hash_to_entities[hash].push_back(id);
+    verifyHash(hash);
+    _buckets[hash].push_back(entity);
   }
 
-  _entity_to_hashes[id] = hashes;
+  _entity_to_hashes[entity] = hashes;
 }
 
-void NumericCategoricalMachIndex::erase(const std::string& string) {
-  uint32_t id = std::strtoul(string.data(), nullptr, 10);
-  if (!_entity_to_hashes.count(id)) {
-    throw std::invalid_argument("Tried to forget label " + string +
-                                " which does not exist.");
-  }
+std::vector<std::pair<uint32_t, double>> MachIndex::decode(
+    const BoltVector& output, uint32_t min_num_eval_results,
+    uint32_t top_k_per_eval_aggregation) const {
+  auto top_K = topKNonEmptyBuckets(output, top_k_per_eval_aggregation);
 
-  std::vector<uint32_t> hashes = _entity_to_hashes[id];
-  _entity_to_hashes.erase(id);
-
-  for (const auto& hash : hashes) {
-    auto new_end_itr = std::remove(_hash_to_entities[hash].begin(),
-                                   _hash_to_entities[hash].end(), id);
-    _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
-  }
-}
-
-StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
-                                                       uint32_t num_hashes)
-    : MachIndex(output_range, num_hashes) {}
-
-std::vector<uint32_t> StringCategoricalMachIndex::hashEntity(
-    const std::string& string) {
-  std::vector<uint32_t> hashes;
-#pragma omp critical(string_mach_index_update)
-  {
-    if (!_entity_to_hashes.count(string)) {
-      auto hashes =
-          hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
-      _entity_to_hashes[string] = hashes;
-
-      for (const auto& hash : hashes) {
-        _hash_to_entities[hash].push_back(string);
+  std::unordered_map<uint32_t, double> entity_to_scores;
+  while (!top_K.empty()) {
+    auto [activation, active_neuron] = top_K.top();
+    const std::vector<uint32_t>& entities = _buckets.at(active_neuron);
+    for (const auto& entity : entities) {
+      if (!entity_to_scores.count(entity)) {
+        auto hashes = getHashes(entity);
+        float score = 0;
+        for (const auto& hash : hashes) {
+          score += output.activations[hash];
+        }
+        entity_to_scores[entity] = score;
       }
     }
-    hashes = _entity_to_hashes.at(string);
+    top_K.pop();
   }
 
-  return hashes;
+  std::vector<std::pair<uint32_t, double>> entity_scores(
+      entity_to_scores.begin(), entity_to_scores.end());
+
+  std::sort(entity_scores.begin(), entity_scores.end(),
+            [](auto& left, auto& right) { return left.second > right.second; });
+
+  // TODO(david) if entity_scores.size() < min_num_eval_results rerun the decode
+  // until we can return min_num_eval_results entities.
+  uint32_t num_to_return =
+      std::min<uint32_t>(min_num_eval_results, entity_scores.size());
+
+  while (entity_scores.size() > num_to_return) {
+    entity_scores.pop_back();
+  }
+
+  return entity_scores;
 }
 
-std::vector<std::string> StringCategoricalMachIndex::entitiesByHash(
-    uint32_t hash_val) const {
-  if (!_hash_to_entities.count(hash_val)) {
-    return {};
-  }
-  return _hash_to_entities.at(hash_val);
-}
+void MachIndex::erase(uint32_t entity) {
+  auto hashes = getHashes(entity);
 
-void StringCategoricalMachIndex::manualAdd(
-    const std::string& string, const std::vector<uint32_t>& hashes) {
-  if (hashes.size() != _num_hashes) {
-    throw std::invalid_argument("Wrong number of hashes for index.");
-  }
-
-  if (_entity_to_hashes.count(string)) {
-    throw std::invalid_argument(
-        "Manually adding a previously seen label: " + string +
-        ". Please use a new label for any new insertions.");
-  }
+  _entity_to_hashes.erase(entity);
 
   for (const auto& hash : hashes) {
-    _hash_to_entities[hash].push_back(string);
+    auto new_end_itr =
+        std::remove(_buckets[hash].begin(), _buckets[hash].end(), entity);
+    _buckets[hash].erase(new_end_itr, _buckets[hash].end());
   }
-
-  _entity_to_hashes[string] = hashes;
 }
 
-void StringCategoricalMachIndex::erase(const std::string& string) {
-  if (!_entity_to_hashes.count(string)) {
-    throw std::invalid_argument("Tried to forget label " + string +
-                                " which does not exist.");
+TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
+                                                    uint32_t k) const {
+  TopKActivationsQueue top_k;
+  uint32_t pos = 0;
+  for (; top_k.size() < k && pos < output.len; pos++) {
+    uint32_t idx = output.isDense() ? pos : output.active_neurons[pos];
+    if (!_buckets.at(idx).empty()) {
+      top_k.push({output.activations[pos], idx});
+    }
   }
 
-  std::vector<uint32_t> hashes = _entity_to_hashes[string];
-  _entity_to_hashes.erase(string);
-
-  for (const auto& hash : hashes) {
-    auto new_end_itr = std::remove(_hash_to_entities[hash].begin(),
-                                   _hash_to_entities[hash].end(), string);
-    _hash_to_entities[hash].erase(new_end_itr, _hash_to_entities[hash].end());
+  for (; pos < output.len; pos++) {
+    uint32_t idx = output.isDense() ? pos : output.active_neurons[pos];
+    if (!_buckets.at(idx).empty()) {
+      ValueIndexPair val_idx_pair = {output.activations[pos], idx};
+      // top_k.top() is minimum element.
+      if (val_idx_pair > top_k.top()) {
+        top_k.pop();
+        top_k.push(val_idx_pair);
+      }
+    }
   }
+  return top_k;
+}
+
+void MachIndex::verifyHash(uint32_t hash) const {
+  if (hash >= numBuckets()) {
+    throw std::invalid_argument("Invalid hash " + std::to_string(hash) +
+                                " for index with range " +
+                                std::to_string(numBuckets()) + ".");
+  }
+}
+
+template void MachIndex::serialize(cereal::BinaryInputArchive&);
+template void MachIndex::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void MachIndex::serialize(Archive& archive) {
+  archive(_entity_to_hashes, _buckets, _num_hashes);
+}
+
+void MachIndex::save(const std::string& filename) const {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<MachIndex> MachIndex::load(const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<MachIndex> deserialize_into(new MachIndex());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
 }
 
 }  // namespace thirdai::dataset::mach
-
-CEREAL_REGISTER_TYPE(thirdai::dataset::mach::StringCategoricalMachIndex)
-CEREAL_REGISTER_TYPE(thirdai::dataset::mach::NumericCategoricalMachIndex)

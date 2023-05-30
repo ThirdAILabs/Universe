@@ -1,5 +1,6 @@
 #include "Classifier.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/train/metrics/Metric.h>
@@ -42,7 +43,8 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     freeze_hash_tables_epoch = 1;
   }
 
-  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch);
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
 
   const auto& [val_data, val_args] = validation;
 
@@ -80,7 +82,8 @@ py::object thirdai::automl::udt::utils::Classifier::train(
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
                                 bool sparse_inference, bool verbose) {
-  bolt::train::Trainer trainer(_model);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);

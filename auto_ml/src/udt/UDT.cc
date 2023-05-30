@@ -2,11 +2,12 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/utils/Timer.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
@@ -98,6 +99,15 @@ UDT::UDT(data::ColumnDataTypes data_types,
   }
 }
 
+UDT::UDT(std::optional<std::string> incorrect_column_name,
+         std::string correct_column_name, const std::string& dataset_size,
+         char delimiter, const std::optional<std::string>& model_config,
+         const config::ArgumentMap& user_args) {
+  _backend = std::make_unique<UDTQueryReformulation>(
+      std::move(incorrect_column_name), std::move(correct_column_name),
+      dataset_size, delimiter, model_config, user_args);
+}
+
 UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
          uint32_t input_dim, const std::optional<std::string>& model_config,
          const config::ArgumentMap& user_args) {
@@ -151,10 +161,12 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
 
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
-                         bool sparse_inference, bool verbose) {
+                         bool sparse_inference, bool verbose,
+                         std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;
 
-  auto result = _backend->evaluate(data, metrics, sparse_inference, verbose);
+  auto result =
+      _backend->evaluate(data, metrics, sparse_inference, verbose, top_k);
 
   timer.stop();
   telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
@@ -163,11 +175,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 }
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
-                        bool return_predicted_class) {
+                        bool return_predicted_class,
+                        std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->predict(sample, sparse_inference, return_predicted_class);
+  auto result = _backend->predict(sample, sparse_inference,
+                                  return_predicted_class, top_k);
 
   timer.stop();
   telemetry::client.trackPrediction(
@@ -177,11 +190,12 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 }
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                             bool return_predicted_class) {
+                             bool return_predicted_class,
+                             std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->predictBatch(sample, sparse_inference, return_predicted_class);
+  auto result = _backend->predictBatch(sample, sparse_inference,
+                                       return_predicted_class, top_k);
 
   timer.stop();
   telemetry::client.trackBatchPredictions(
@@ -224,6 +238,11 @@ void UDT::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
+}
+
+void UDT::checkpoint(const std::string& filename) const {
+  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ true);
+  save(filename);
 }
 
 void UDT::save_stream(std::ostream& output_stream) const {

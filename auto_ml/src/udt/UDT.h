@@ -2,7 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
 #include <stdexcept>
@@ -31,6 +31,11 @@ class UDT {
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  UDT(std::optional<std::string> incorrect_column_name,
+      std::string correct_column_name, const std::string& dataset_size,
+      char delimiter, const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
+
   UDT(const std::string& file_format, uint32_t n_target_classes,
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
@@ -49,13 +54,16 @@ class UDT {
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool verbose);
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k);
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class);
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k);
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class);
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k);
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
@@ -136,21 +144,27 @@ class UDT {
 
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names) {
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names);
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample) {
+    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
+                                 num_buckets_to_sample);
   }
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const std::variant<uint32_t, std::string>& new_label) {
+                         const std::variant<uint32_t, std::string>& new_label,
+
+                         std::optional<uint32_t> num_buckets_to_sample) {
     _backend->introduceDocument(document, strong_column_names,
-                                weak_column_names, new_label);
+                                weak_column_names, new_label,
+                                num_buckets_to_sample);
   }
 
   void introduceLabel(const MapInputBatch& sample,
-                      const std::variant<uint32_t, std::string>& new_label) {
-    _backend->introduceLabel(sample, new_label);
+                      const std::variant<uint32_t, std::string>& new_label,
+                      std::optional<uint32_t> num_buckets_to_sample) {
+    _backend->introduceLabel(sample, new_label, num_buckets_to_sample);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {
@@ -168,6 +182,12 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference);
   }
 
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
+
+  void setIndex(const dataset::mach::MachIndexPtr& index) {
+    return _backend->setIndex(index);
+  }
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }
@@ -179,6 +199,8 @@ class UDT {
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
+
+  void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 

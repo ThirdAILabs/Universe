@@ -10,6 +10,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
@@ -63,7 +64,8 @@ class UDTBackend {
    */
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,
-                              bool sparse_inference, bool verbose) = 0;
+                              bool sparse_inference, bool verbose,
+                              std::optional<uint32_t> top_k) = 0;
 
   /**
    * Performs inference on a single sample and returns the resulting
@@ -71,7 +73,8 @@ class UDTBackend {
    * predicted classes if its a classification task instead of the activations.
    */
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
-                             bool return_predicted_class) = 0;
+                             bool return_predicted_class,
+                             std::optional<uint32_t> top_k) = 0;
 
   /**
    * Performs inference on a batch of samples in parallel and returns the
@@ -81,7 +84,8 @@ class UDTBackend {
    */
   virtual py::object predictBatch(const MapInputBatch& sample,
                                   bool sparse_inference,
-                                  bool return_predicted_class) = 0;
+                                  bool return_predicted_class,
+                                  std::optional<uint32_t> top_k) = 0;
 
   /**
    * Returns the model used.
@@ -215,10 +219,12 @@ class UDTBackend {
   virtual void introduceDocuments(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names) {
+      const std::vector<std::string>& weak_column_names,
+      std::optional<uint32_t> num_buckets_to_sample) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
+    (void)num_buckets_to_sample;
     throw notSupported("introduce_documents");
   }
 
@@ -230,11 +236,13 @@ class UDTBackend {
       const MapInput& document,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::variant<uint32_t, std::string>& new_label) {
+      const std::variant<uint32_t, std::string>& new_label,
+      std::optional<uint32_t> num_buckets_to_sample) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
+    (void)num_buckets_to_sample;
     throw notSupported("introduce_document");
   }
 
@@ -244,9 +252,11 @@ class UDTBackend {
    */
   virtual void introduceLabel(
       const MapInputBatch& sample,
-      const std::variant<uint32_t, std::string>& new_label) {
+      const std::variant<uint32_t, std::string>& new_label,
+      std::optional<uint32_t> num_buckets_to_sample) {
     (void)sample;
     (void)new_label;
+    (void)num_buckets_to_sample;
     throw notSupported("introduce_label");
   }
 
@@ -258,8 +268,16 @@ class UDTBackend {
     throw notSupported("forget");
   }
 
+  /**
+   * Clears the internal index for Mach.
+   */
   virtual void clearIndex() { throw notSupported("clear_index"); }
 
+  /**
+   * Used in UDTMachClassifier, assumes each of the samples in the input batch
+   * has the target column mapping to space separated strings representing the
+   * actual output metaclasses to predict in mach.
+   */
   virtual py::object trainWithHashes(const MapInputBatch& batch,
                                      float learning_rate,
                                      const std::vector<std::string>& metrics) {
@@ -269,11 +287,30 @@ class UDTBackend {
     throw notSupported("train_with_hashes");
   }
 
+  /**
+   * Used in UDTMachClassifier, returns the predicted hashes from the input
+   * sample.
+   */
   virtual py::object predictHashes(const MapInput& sample,
                                    bool sparse_inference) {
     (void)sample;
     (void)sparse_inference;
     throw notSupported("predict_hashes");
+  }
+
+  /**
+   * Gets the internal index for UDTMachClassifier.
+   */
+  virtual dataset::mach::MachIndexPtr getIndex() {
+    throw notSupported("get_index");
+  }
+
+  /**
+   * Sets the internal index for UDTMachClassifier.
+   */
+  virtual void setIndex(const dataset::mach::MachIndexPtr& index) {
+    (void)index;
+    throw notSupported("set_index");
   }
 
   /*

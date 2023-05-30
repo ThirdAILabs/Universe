@@ -327,6 +327,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -396,7 +397,6 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
-    dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
@@ -409,12 +409,13 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/featurization/DataTypes.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
@@ -482,6 +483,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc

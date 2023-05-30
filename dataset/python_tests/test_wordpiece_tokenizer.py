@@ -15,6 +15,7 @@ BERT_TOKENIZED_SAMPLES = [
     "during the first years of japanese occupation following the first sino - japanese war , the political divisions of the island were changed frequently .",
     "october 27 – martin mu ##llen , 63 , right fielder in one game for the 1872 cleveland forest city ##s of the national association .",
     "mora ##ta de ta ##jun ##a is a municipality of the community of madrid , spain .",
+    "from the hebrew name × [UNK] na om ##iy meaning pleasant ##ness in the old testament this is the name of the mother in law of ruth after",
 ]
 
 BERT_RAW_SAMPLES = [
@@ -28,6 +29,7 @@ BERT_RAW_SAMPLES = [
     "during the first years of japanese occupation following the first sino-japanese war, the political divisions of the island were changed frequently.",
     "october 27 – martin mullen, 63, right fielder in one game for the 1872 cleveland forest citys of the national association.",
     "morata de tajuna is a municipality of the community of madrid, spain.",
+    "from the hebrew name × ö¸×¢ö³×ö´× na omiy meaning pleasantness in the old testament this is the name of the mother in law of ruth after",
 ]
 
 

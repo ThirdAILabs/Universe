@@ -1,6 +1,7 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
@@ -17,7 +18,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool disable_sparse_parameter_updates)
+    bool disable_sparse_parameter_updates, bool use_bias)
     : _dim(config.getDim()),
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
@@ -32,6 +33,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _biases(config.getDim()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
+      _use_bias(use_bias),
       _sampling_mode(BoltSamplingMode::LSH),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
@@ -40,8 +42,12 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::normal_distribution<float> dist(0.0, 0.01);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
-  std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
+  if (_use_bias) {
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
+  } else {
+    _biases.assign(_biases.size(), 0.0);
+  }
   if (_sparsity < 1.0) {
     initSamplingDatastructures(config.getSamplingConfig(), rd);
   }
@@ -581,6 +587,9 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
   assert(_bias_optimizer.has_value());
+  if (!_use_bias) {
+    return;
+  }
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
@@ -773,21 +782,50 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
   return embedding;
 }
 
-void FullyConnectedLayer::forceBuildHashTables() { buildHashTablesImpl(true); }
+void FullyConnectedLayer::forceBuildHashTables(bool experimental_autotune) {
+  if (_sparsity < 1) {
+    deinitSamplingDatastructures();
 
-void FullyConnectedLayer::setSparsity(float sparsity) {
-  deinitSamplingDatastructures();
-  _sparsity = sparsity;
+    auto sampling_config =
+        DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
+    std::random_device rd;
+    initSamplingDatastructures(sampling_config, rd);
+  }
+}
 
-  _sparse_dim = _sparsity * _dim;
-
+void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
+                                      bool experimental_autotune) {
   // TODO(Nick): Right now we always switch to DWTA after setting sparsity
   // instead of autotuning for whatever the existing hash function was. We
   // should instead autotune the original hash function.
-  if (_sparsity < 1.0) {
-    auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+
+  thirdai::bolt::checkSparsity(sparsity);
+
+  if (_sparsity == 1 && sparsity < 1) {
+    _sparsity = sparsity;
+    _sparse_dim = _sparsity * _dim;
+    auto sampling_config =
+        DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
     std::random_device rd;
     initSamplingDatastructures(sampling_config, rd);
+    return;
+  }
+
+  if (_sparsity < 1 && sparsity == 1) {
+    _sparsity = 1;
+    _sparse_dim = _sparsity * _dim;
+    deinitSamplingDatastructures();
+    return;
+  }
+
+  if (_sparsity < 1 && sparsity < 1) {
+    _sparsity = sparsity;
+    _sparse_dim = _sparsity * _dim;
+
+    if (rebuild_hash_tables) {
+      forceBuildHashTables(experimental_autotune);
+    }
+    return;
   }
 }
 
@@ -857,9 +895,17 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
       summary << "random";
     } else {
       summary << "hash_function=" << _hasher->getName() << ", ";
+
+      if (_hasher->getName() == "DWTA") {
+        auto dwta_hasher =
+            std::dynamic_pointer_cast<hashing::DWTAHashFunction>(_hasher);
+        summary << "permutations= " << dwta_hasher->getNumPermutations() << ", "
+                << "binsize= " << dwta_hasher->getBinsize() << ", "
+                << "hashes_per_table= " << dwta_hasher->getHashesPerTable()
+                << ", ";
+      }
       _hash_table->summarize(summary);
     }
   }
 }
-
 }  // namespace thirdai::bolt

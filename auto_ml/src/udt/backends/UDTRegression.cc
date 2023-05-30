@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -11,6 +12,7 @@
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <optional>
 
 namespace thirdai::automl::udt {
 
@@ -61,16 +63,17 @@ py::object UDTRegression::train(
 
   ValidationDatasetLoader validation_dataset;
   if (validation) {
-    validation_dataset =
-        std::make_pair(_dataset_factory->getDatasetLoader(validation->first,
-                                                          /* shuffle= */ false),
-                       validation->second);
+    validation_dataset = std::make_pair(
+        _dataset_factory->getLabeledDatasetLoader(validation->first,
+                                                  /* shuffle= */ false),
+        validation->second);
   }
 
   auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
 
-  bolt::train::Trainer trainer(_model);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
       train_dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
@@ -84,10 +87,15 @@ py::object UDTRegression::train(
 
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
-                                   bool sparse_inference, bool verbose) {
-  bolt::train::Trainer trainer(_model);
+                                   bool sparse_inference, bool verbose,
+                                   std::optional<uint32_t> top_k) {
+  (void)top_k;
 
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
+
+  auto dataset =
+      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);
@@ -96,8 +104,10 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 }
 
 py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
-                                  bool return_predicted_class) {
+                                  bool return_predicted_class,
+                                  std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   auto output = _model->forward(_dataset_factory->featurizeInput(sample),
                                 sparse_inference);
@@ -107,8 +117,10 @@ py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDTRegression::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
-                                       bool return_predicted_class) {
+                                       bool return_predicted_class,
+                                       std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   auto outputs = _model->forward(_dataset_factory->featurizeInputBatch(samples),
                                  sparse_inference);

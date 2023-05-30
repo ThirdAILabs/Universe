@@ -7,6 +7,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -59,11 +60,8 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
-NumpyArray<float> getValues(const nn::model::ModelPtr& _model,
-                            std::string type) {
-  auto [grads, flattened_dim] = (type == "gradients")
-                                    ? _model->getFlattenedGradients()
-                                    : _model->getFlattenedParameters();
+NumpyArray<float> getGradientValues(const nn::model::ModelPtr& _model) {
+  auto [grads, flattened_dim] = _model->getFlattenedGradients();
 
   py::capsule free_when_done(
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -71,20 +69,33 @@ NumpyArray<float> getValues(const nn::model::ModelPtr& _model,
   return NumpyArray<float>(flattened_dim, grads, free_when_done);
 }
 
-void setValues(const nn::model::ModelPtr& _model, NumpyArray<float>& new_values,
-               std::string type) {
+NumpyArray<float> getParameterValues(const nn::model::ModelPtr& _model) {
+  auto [grads, flattened_dim] = _model->getFlattenedParameters();
+
+  py::capsule free_when_done(
+      grads, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+}
+
+void setGradientValues(const nn::model::ModelPtr& _model,
+                       NumpyArray<float>& new_values) {
   if (new_values.ndim() != 1) {
     throw std::invalid_argument("Expected grads to be flattened.");
   }
 
   uint64_t flattened_dim = new_values.shape(0);
-  if (type == "gradients") {
-    _model->setFlattenedGradients(new_values.data(), flattened_dim);
-  } else if (type == "parameters") {
-    _model->setFlattenedParameters(new_values.data(), flattened_dim);
-  } else {
-    throw std::invalid_argument("Expected gradients or parameters");
+  _model->setFlattenedGradients(new_values.data(), flattened_dim);
+}
+
+void setParameterValues(const nn::model::ModelPtr& _model,
+                        NumpyArray<float>& new_values) {
+  if (new_values.ndim() != 1) {
+    throw std::invalid_argument("Expected grads to be flattened.");
   }
+
+  uint64_t flattened_dim = new_values.shape(0);
+  _model->setFlattenedParameters(new_values.data(), flattened_dim);
 }
 
 void defineTensor(py::module_& nn);
@@ -95,6 +106,7 @@ void defineLosses(py::module_& nn);
 
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
+
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**
@@ -121,24 +133,26 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("summary", &model::Model::summary, py::arg("print") = true)
       .def("get_gradients",
            [](const nn::model::ModelPtr& model) {
-             return getValues(model, "gradients");
+             return getGradientValues(model);
            })
       .def("set_gradients",
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
-             setValues(model, new_values, "gradients");
+             setGradientValues(model, new_values);
            })
       .def("get_parameters",
            [](const nn::model::ModelPtr& model) {
-             return getValues(model, "parameters");
+             return getParameterValues(model);
            })
       .def("set_parameters",
            [](const nn::model::ModelPtr& model, NumpyArray<float>& new_values) {
-             setValues(model, new_values, "parameters");
+             setParameterValues(model, new_values);
            })
       .def("disable_sparse_parameter_updates",
            &model::Model::disableSparseParameterUpdates)
 
 #endif
+      .def("freeze_hash_tables", &model::Model::freezeHashTables,
+           py::arg("insert_labels_if_not_found") = true)
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def("checkpoint", &model::Model::checkpoint, py::arg("filename"),
@@ -196,9 +210,14 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
-           py::arg("rebuild_hash_tables") = 10,
+           py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnected::apply)
+      .def("dim", &ops::FullyConnected::dim)
+      .def("get_sparsity", &ops::FullyConnected::getSparsity)
+      .def("set_sparsity", &ops::FullyConnected::setSparsity,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
       .def_property_readonly(
           "weights",
           [](const ops::FullyConnected& op) {
@@ -254,6 +273,11 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
+      nn, "DlrmAttention")
+      .def(py::init(&ops::DlrmAttention::make))
+      .def("__call__", &ops::DlrmAttention::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 }

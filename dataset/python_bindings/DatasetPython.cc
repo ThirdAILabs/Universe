@@ -20,6 +20,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -101,6 +102,20 @@ void createDatasetSubmodule(py::module_& module) {
                     R"pbdoc(
      Identifies the responsible input column.
       )pbdoc");
+
+  py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
+      dataset_submodule, "MachIndex")
+      .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
+                    uint32_t, uint32_t>(),
+           py::arg("entity_to_hashes"), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
+      .def("get_hash_to_entities", &mach::MachIndex::getEntities,
+           py::arg("hash"))
+      .def("num_hashes", &mach::MachIndex::numHashes)
+      .def("output_range", &mach::MachIndex::numBuckets)
+      .def("save", &mach::MachIndex::save, py::arg("filename"))
+      .def_static("load", &mach::MachIndex::load);
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",

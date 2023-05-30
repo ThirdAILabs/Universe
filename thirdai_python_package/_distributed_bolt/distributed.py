@@ -171,7 +171,7 @@ def add_distributed_to_udt():
             validation_context,
         )
 
-    setattr(bolt.UDT, "train_distributed", train_distributed)
+    setattr(bolt.UniversalDeepTransformer, "train_distributed", train_distributed)
 
     def cold_start_distributed(
         self,
@@ -302,7 +302,9 @@ def add_distributed_to_udt():
             validation_context,
         )
 
-    setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
+    setattr(
+        bolt.UniversalDeepTransformer, "cold_start_distributed", cold_start_distributed
+    )
 
 
 class RayTrainingClusterConfig:

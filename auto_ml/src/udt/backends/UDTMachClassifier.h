@@ -3,7 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -42,16 +42,19 @@ class UDTMachClassifier final : public UDTBackend {
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool verbose) final;
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final;
 
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) final;
@@ -81,18 +84,19 @@ class UDTMachClassifier final : public UDTBackend {
    */
   py::object entityEmbedding(const Label& label) final;
 
-  void introduceDocuments(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names) final;
+  void introduceDocuments(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         const Label& new_label) final;
+                         const Label& new_label,
+                         std::optional<uint32_t> num_buckets_to_sample) final;
 
-  void introduceLabel(const MapInputBatch& samples,
-                      const Label& new_label) final;
+  void introduceLabel(const MapInputBatch& samples, const Label& new_label,
+                      std::optional<uint32_t> num_buckets_to_sample) final;
 
   void forget(const Label& label) final;
 
@@ -109,29 +113,27 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  dataset::mach::MachIndexPtr getIndex() final {
+    return _mach_label_block->index();
+  }
+
+  void setIndex(const dataset::mach::MachIndexPtr& index) final;
+
   TextEmbeddingModelPtr getTextEmbeddingModel(
       float distance_cutoff) const final;
 
  private:
-  bool integerTarget() const {
-    return static_cast<bool>(
-        dataset::mach::asNumericIndex(_mach_label_block->index()));
-  }
-
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName());
   }
 
-  std::string variantToString(const Label& variant);
-
   std::string textColumnForDocumentIntroduction();
 
-  std::unordered_map<Label, MapInputBatch> aggregateSamplesByDoc(
-      const thirdai::data::ColumnMap& augmented_data,
-      const std::string& text_column_name,
-      const std::string& label_column_name);
+  std::vector<uint32_t> topHashesForDoc(
+      const std::vector<BoltVector>& output_samples,
+      std::optional<uint32_t> num_buckets_to_sample_opt) const;
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this

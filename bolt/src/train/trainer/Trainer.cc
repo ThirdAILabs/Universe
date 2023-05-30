@@ -16,10 +16,12 @@ namespace thirdai::bolt::train {
 constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
 Trainer::Trainer(nn::model::ModelPtr model,
-                 std::optional<uint32_t> freeze_hash_tables_epoch)
+                 std::optional<uint32_t> freeze_hash_tables_epoch,
+                 InterruptCheck interrupt_check)
     : _model(std::move(model)),
       _epoch(0),
-      _freeze_hash_tables_epoch(freeze_hash_tables_epoch) {
+      _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
+      _interrupt_check(std::move(interrupt_check)) {
   _history = std::make_shared<metrics::History>();
 }
 
@@ -102,6 +104,7 @@ metrics::History Trainer::train(
         // TODO(Nicholas): Print stuff and have more graceful termination
         return *_history;
       }
+      checkInterrupt();
     }
 
     epoch_timer.stop();
@@ -130,6 +133,11 @@ metrics::History Trainer::train(
     }
 
     callbacks.onEpochEnd();
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return *_history;
+    }
   }
 
   callbacks.onTrainEnd();
@@ -236,6 +244,8 @@ metrics::History Trainer::validate(const LabeledDataset& data,
     if (bar) {
       bar->increment();
     }
+
+    checkInterrupt();
   }
 
   val_timer.stop();

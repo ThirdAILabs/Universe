@@ -2,7 +2,7 @@
 #include "TabularBlockComposer.h"
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/blocks/BlockInterface.h>

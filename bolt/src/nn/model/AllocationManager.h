@@ -33,6 +33,12 @@ class AllocationManager {
    */
   void resetOutputGradients(uint32_t index_in_batch);
 
+  /**
+   * Reallocates all of the state for the current batch size. Used when sparsity
+   * is changed in the model.
+   */
+  void forceReallocation();
+
  private:
   autograd::ComputationList _computations;
 

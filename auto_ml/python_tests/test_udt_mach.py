@@ -1,17 +1,20 @@
 import os
+from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
 
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
+OUTPUT_DIM = 100
 
 
-def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_dim=256):
+def make_simple_test_file(invalid_data=False):
     with open(SIMPLE_TEST_FILE, "w") as f:
         f.write("text,label\n")
         f.write("haha one time,0\n")
@@ -20,6 +23,10 @@ def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_di
         if invalid_data:
             f.write("haha,3\n")
 
+
+def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=True):
+    make_simple_test_file(invalid_data=invalid_data)
+
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
@@ -27,11 +34,12 @@ def train_simple_mach_udt(integer_target=False, invalid_data=False, embedding_di
         },
         target="label",
         n_target_classes=3,
-        integer_target=integer_target,
+        integer_target=True,
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
-            "extreme_output_dim": 100,
+            "extreme_output_dim": OUTPUT_DIM,
+            "use_bias": use_bias,
         },
     )
 
@@ -88,7 +96,7 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
+def train_on_scifact(download_scifact_dataset, coldstart):
     (
         unsupervised_file,
         supervised_trn,
@@ -103,7 +111,7 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
         },
         target="DOC_ID",
         n_target_classes=n_target_classes,
-        integer_target=integer_target,
+        integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
 
@@ -142,9 +150,7 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
 
 def test_mach_udt_on_scifact(download_scifact_dataset):
     model, metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset,
-        integer_target=True,
-        coldstart=True,
+        download_scifact_dataset, coldstart=True
     )
 
     assert metrics["train_precision@1"][-1] > 0.45
@@ -164,36 +170,18 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     os.remove(save_loc)
 
 
-# We can't coldstart without integer target but we can still train on the
-# supervised data. Asserting an accuracy threshold seems to be very flaky so we
-# just assert that we don't run into any failures with string target. The remaining behaviours should be covered by the remaining python and c++ tests
-def test_mach_udt_string_target(download_scifact_dataset):
-    _, string_metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset, integer_target=False, coldstart=False
-    )
-
-    _, integer_metrics, _ = train_on_scifact(
-        download_scifact_dataset, integer_target=True, coldstart=False
-    )
-
-
-def test_mach_udt_integer_target_label_too_large():
+def test_mach_udt_label_too_large():
     with pytest.raises(
         ValueError,
-        match=r"Received unexpected label: 3.",
+        match=r"Invalid entity in index: 3.",
     ):
-        train_simple_mach_udt(integer_target=True, invalid_data=True)
+        train_simple_mach_udt(invalid_data=True)
 
 
-@pytest.mark.parametrize(
-    "embedding_dim, integer_label",
-    [(128, True), (128, False), (256, True), (256, False)],
-)
-def test_mach_udt_entity_embedding(embedding_dim, integer_label):
-    model = train_simple_mach_udt(
-        integer_target=integer_label, embedding_dim=embedding_dim
-    )
-    output_labels = [0, 1] if integer_label else ["0", "1"]
+@pytest.mark.parametrize("embedding_dim", [128, 256])
+def test_mach_udt_entity_embedding(embedding_dim):
+    model = train_simple_mach_udt(embedding_dim=embedding_dim)
+    output_labels = [0, 1]
     for output_id, output_label in enumerate(output_labels):
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
@@ -228,110 +216,79 @@ def test_mach_udt_decode_params():
     ):
         model.set_decode_params(5, 2)
 
-    model.set_decode_params(1, 100)
+    model.set_decode_params(1, OUTPUT_DIM)
 
     assert len(model.predict({"text": "something"})) == 1
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_invalid_class_type(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_introduce_and_forget():
+    model = train_simple_mach_udt()
 
-    label = "1" if integer_target else 1
-
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
-    ):
-        model.get_entity_embedding(label)
-
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid class type. If integer_target=True please use integers as classes, otherwise use strings.",
-    ):
-        model.introduce_label([{"text": "something"}], label)
-
-
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_introduce_and_forget(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
-
-    label = 4 if integer_target else "4"
+    label = 4
 
     sample = {"text": "something or another with lots of words"}
-    assert model.predict(sample)[0][0] != str(label)
+    assert model.predict(sample)[0][0] != label
     model.introduce_label([sample], label)
-    assert model.predict(sample)[0][0] == str(label)
+    assert model.predict(sample)[0][0] == label
     model.forget(label)
-    assert model.predict(sample)[0][0] != str(label)
+    assert model.predict(sample)[0][0] != label
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_introduce_existing_class(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_introduce_existing_class():
+    model = train_simple_mach_udt()
 
     with pytest.raises(
         ValueError,
         match=r"Manually adding a previously seen label: 0. Please use a new label for any new insertions.",
     ):
-        model.introduce_label([{"text": "something"}], 0 if integer_target else "0")
+        model.introduce_label([{"text": "something"}], 0)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_forget_non_existing_class(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_forget_non_existing_class():
+    model = train_simple_mach_udt()
 
     with pytest.raises(
         ValueError,
-        match=r"Tried to forget label 1000 which does not exist.",
+        match=r"Invalid entity in index: 1000.",
     ):
-        model.forget(1000 if integer_target else "1000")
+        model.forget(1000)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_forgetting_everything(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_forgetting_everything():
+    model = train_simple_mach_udt()
 
-    if integer_target:
-        model.forget(0)
-        model.forget(1)
-        model.forget(2)
-    else:
-        model.forget("0")
-        model.forget("1")
-        model.forget("2")
+    model.forget(0)
+    model.forget(1)
+    model.forget(2)
 
     assert len(model.predict({"text": "something"})) == 0
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_forgetting_everything_with_clear_index(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_forgetting_everything_with_clear_index():
+    model = train_simple_mach_udt()
 
     model.clear_index()
 
     assert len(model.predict({"text": "something"})) == 0
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_cant_predict_forgotten(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_cant_predict_forgotten():
+    model = train_simple_mach_udt()
 
-    model.set_decode_params(3, 100)
-    assert "0" in [class_name for class_name, _ in model.predict({"text": "something"})]
-    model.forget(0 if integer_target else "0")
-    assert "0" not in [
+    model.set_decode_params(3, OUTPUT_DIM)
+    assert 0 in [class_name for class_name, _ in model.predict({"text": "something"})]
+    model.forget(0)
+    assert 0 not in [
         class_name for class_name, _ in model.predict({"text": "something"})
     ]
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_mach_udt_min_num_eval_results_adjusts_on_forget(integer_target):
-    model = train_simple_mach_udt(integer_target=integer_target)
+def test_mach_udt_min_num_eval_results_adjusts_on_forget():
+    model = train_simple_mach_udt()
 
-    model.set_decode_params(3, 100)
+    model.set_decode_params(3, OUTPUT_DIM)
     assert len(model.predict({"text": "something"})) == 3
-    model.forget(2 if integer_target else "2")
+    model.forget(2)
     assert len(model.predict({"text": "something"})) == 2
 
 
@@ -342,12 +299,12 @@ def test_mach_udt_introduce_document():
         {"title": "this is a title", "description": "this is a description"},
         strong_column_names=["title"],
         weak_column_names=["description"],
-        label="1000",
+        label=1000,
     )
 
 
 def test_mach_udt_introduce_documents():
-    model = train_simple_mach_udt(integer_target=True)
+    model = train_simple_mach_udt()
 
     new_docs = "NEW_DOCS.csv"
     with open(new_docs, "w") as f:
@@ -365,7 +322,7 @@ def test_mach_udt_introduce_documents():
 
 
 def test_mach_udt_hash_based_methods():
-    model = train_simple_mach_udt(integer_target=True)
+    model = train_simple_mach_udt()
 
     hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert len(hashes) == 7
@@ -381,3 +338,134 @@ def test_mach_udt_hash_based_methods():
 
     new_hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert set(new_hashes) == new_hash_set
+
+
+def test_mach_save_load_get_set_index():
+    model = train_simple_mach_udt()
+
+    make_simple_test_file()
+    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+
+    index = model.get_index()
+    save_loc = "index.mach"
+    index.save(save_loc)
+    index = dataset.MachIndex.load(save_loc)
+
+    model.clear_index()
+    model.set_index(index)
+
+    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+
+    assert (
+        metrics_before["val_categorical_accuracy"]
+        == metrics_after["val_categorical_accuracy"]
+    )
+
+    os.remove(save_loc)
+
+
+def test_mach_manual_index_creation():
+    model = train_simple_mach_udt()
+
+    model.set_decode_params(3, OUTPUT_DIM)
+
+    samples = {
+        0: "haha one time",
+        1: "haha two times",
+        2: "haha thrice occurances",
+    }
+
+    entity_to_hashes = {
+        0: [0, 1, 2, 3, 4, 5, 6],
+        1: [7, 8, 9, 10, 11, 12, 13],
+        2: [14, 15, 16, 17, 18, 19, 20],
+    }
+
+    index = dataset.MachIndex(
+        entity_to_hashes=entity_to_hashes,
+        output_range=OUTPUT_DIM,
+        num_hashes=7,
+    )
+
+    model.set_index(index)
+
+    make_simple_test_file()
+    model.train(SIMPLE_TEST_FILE, learning_rate=0.01, epochs=10)
+
+    for label, sample in samples.items():
+        new_hashes = model.predict_hashes({"text": sample})
+        assert set(new_hashes) == set(entity_to_hashes[label])
+
+
+def test_mach_without_bias():
+    model = train_simple_mach_udt(use_bias=False)
+
+    bolt_model = model._get_model()
+
+    ops = bolt_model.ops()
+
+    hidden_layer = ops[0]  # hidden layer
+    output_layer = ops[1]  # output layer
+
+    hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
+    output_bias_all_zeros = np.all(output_layer.biases == 0)
+
+    assert hidden_bias_all_zeros, "Error: Hidden layer biases should be all zeros."
+    assert not output_bias_all_zeros, "Error: All output layer biases are zeros."
+
+
+def test_load_balancing():
+    model = train_simple_mach_udt()
+    num_hashes = 8
+    half_num_hashes = 4
+    sample = {"text": "tomato"}
+
+    # Set the index so that we know that the number of hashes is 8.
+    model.set_index(
+        dataset.MachIndex({}, output_range=OUTPUT_DIM, num_hashes=num_hashes)
+    )
+
+    # This gives the top 8 locations where the new sample will end up.
+    hash_locs = model.predict_hashes(sample)
+
+    # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
+    # for the new element.
+    new_index = dataset.MachIndex(
+        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[:half_num_hashes])},
+        output_range=OUTPUT_DIM,
+        num_hashes=half_num_hashes,
+    )
+    model.set_index(new_index)
+
+    # Insert an id for the same sample without load balancing to ensure that
+    # it goes to different locations than with load balancing
+    label_without_load_balancing = 9999
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_without_load_balancing,
+    )
+
+    # We are sampling 8 locations, this should be the top 8 locations we determined
+    # earlier. However since we have inserted elements in the index in 4 of these
+    # top 8 locations it should insert the new element in the other 4 locations
+    # due to the load balancing constraint.
+    label_with_load_balancing = 10000
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_with_load_balancing,
+        num_buckets_to_sample=num_hashes,
+    )
+
+    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+        label_with_load_balancing
+    )
+    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+        label_without_load_balancing
+    )
+
+    # Check that it inserts into the empty buckets without load balancing.
+    assert set(hashes_with_load_balancing) == set(hash_locs[half_num_hashes:])
+
+    # Check that the buckets it inserts into with load balancing is different
+    # than the buckets it inserts into without load balancing
+    assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
