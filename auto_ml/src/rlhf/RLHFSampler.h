@@ -19,7 +19,7 @@ class RLHFSampler {
         _max_samples_per_doc(max_samples_per_doc),
         _rng(7240924) {}
 
-  std::pair<std::vector<BoltVector>, std::vector<BoltVector>> balancingSamples(
+  std::vector<std::pair<BoltVector, BoltVector>> balancingSamples(
       size_t num_samples);
 
   void addSample(uint32_t doc_id, const BoltVector& input,

@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -26,6 +27,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace thirdai::automl::udt {
 
@@ -598,34 +600,57 @@ BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
                                       std::vector<float>(indices.size(), 1.0));
 }
 
-void UDTMachClassifier::associate(const MapInput& source,
-                                  const MapInput& target, uint32_t n_buckets,
-                                  uint32_t n_association_samples,
-                                  uint32_t n_balancing_samples,
-                                  float learning_rate, uint32_t epochs) {
+void UDTMachClassifier::associate(
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
   requireRLHFSampler();
 
-  auto target_hashes = predictHashesImpl(target, false);
+  auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
+                                                 source_target_samples.size());
 
-  BoltVector source_vec =
-      _dataset_factory->featurizeInput(source).at(0)->getVector(0);
-
-  auto [inputs, labels] = _rlhf_sampler->balancingSamples(n_balancing_samples);
-
-  for (uint32_t i = 0; i < n_association_samples; i++) {
-    inputs.push_back(source_vec);
-    labels.push_back(makeLabelFromHashes(target_hashes, n_buckets));
+  for (const auto& [source, target] : source_target_samples) {
+    auto target_hashes = predictHashesImpl(target, false);
+    BoltVector source_vec =
+        _dataset_factory->featurizeInput(source).at(0)->getVector(0);
+    for (uint32_t i = 0; i < n_association_samples; i++) {
+      samples.emplace_back(source_vec,
+                           makeLabelFromHashes(target_hashes, n_buckets));
+    }
   }
 
-  auto input_tensor = bolt::nn::tensor::Tensor::convert(
-      BoltBatch(std::move(inputs)), _classifier->model()->inputDims().at(0));
+  std::shuffle(samples.begin(), samples.end(), std::random_device{});
 
-  auto label_tensor = bolt::nn::tensor::Tensor::convert(
-      BoltBatch(std::move(labels)), _classifier->model()->labelDims().at(0));
+  std::vector<
+      std::pair<bolt::nn::tensor::TensorList, bolt::nn::tensor::TensorList>>
+      batches;
+
+  uint32_t input_dim = _classifier->model()->inputDims().at(0);
+  uint32_t label_dim = _classifier->model()->labelDims().at(0);
+
+  for (size_t i = 0; i < samples.size(); i += 200) {
+    std::vector<BoltVector> inputs;
+    std::vector<BoltVector> labels;
+
+    for (size_t j = i; j < std::min((i + 1) * 200, samples.size()); j++) {
+      inputs.emplace_back(std::move(samples[j].first));
+      labels.emplace_back(std::move(samples[j].second));
+    }
+
+    auto input_tensor = bolt::nn::tensor::Tensor::convert(
+        BoltBatch(std::move(inputs)), input_dim);
+
+    auto label_tensor = bolt::nn::tensor::Tensor::convert(
+        BoltBatch(std::move(labels)), label_dim);
+
+    batches.push_back({{input_tensor}, {label_tensor}});
+  }
 
   for (uint32_t i = 0; i < epochs; i++) {
-    _classifier->model()->trainOnBatch({input_tensor}, {label_tensor});
-    _classifier->model()->updateParameters(learning_rate);
+    for (const auto& [x, y] : batches) {
+      _classifier->model()->trainOnBatch(x, y);
+      _classifier->model()->updateParameters(learning_rate);
+    }
   }
 }
 

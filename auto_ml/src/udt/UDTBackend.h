@@ -301,12 +301,11 @@ class UDTBackend {
   /**
    * Used for fine tuning in UDTMachClassifier.
    */
-  virtual void associate(const MapInput& source, const MapInput& target,
-                         uint32_t n_buckets, uint32_t n_association_samples,
-                         uint32_t n_balancing_samples, float learning_rate,
-                         uint32_t epochs) {
-    (void)source;
-    (void)target;
+  virtual void associate(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples,
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    (void)source_target_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
