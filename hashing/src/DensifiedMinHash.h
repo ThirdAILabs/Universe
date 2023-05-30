@@ -3,8 +3,8 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
 #include "MurmurHash.h"
-#include <cstdint>
 #include <utils/Random.h>
+#include <cstdint>
 
 namespace thirdai::hashing {
 
