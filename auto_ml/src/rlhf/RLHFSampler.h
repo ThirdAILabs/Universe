@@ -12,6 +12,8 @@ namespace thirdai::automl::udt {
 
 class RLHFSampler {
  public:
+  RLHFSampler() : RLHFSampler(0, 0) {}  // Required for serializing optional.
+
   RLHFSampler(size_t max_docs, size_t max_samples_per_doc)
       : _max_docs(max_docs),
         _max_samples_per_doc(max_samples_per_doc),
@@ -42,8 +44,6 @@ class RLHFSampler {
   size_t _max_samples_per_doc;
 
   std::mt19937 _rng{7240924};
-
-  RLHFSampler() {}
 
   friend class cereal::access;
   template <class Archive>
