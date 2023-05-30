@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
@@ -10,6 +11,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -37,6 +39,8 @@ class UDTClassifier final : public UDTBackend {
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
+
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables) override;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,

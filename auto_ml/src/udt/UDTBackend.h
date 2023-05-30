@@ -56,6 +56,17 @@ class UDTBackend {
   }
 
   /**
+   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
+   * then we also rebuild the hash tables. Note that, model should be finetuned
+   * if rebuild_hash_tables is set to true.
+   */
+  virtual void setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
+    (void)sparsity;
+    (void)rebuild_hash_tables;
+    throw std::logic_error("Method not supported for the model");
+  }
+
+  /**
    * Performs evaluate of the model on the given dataset and returns the
    * activations produced by the model by default. If return_predicted_class is
    * specified it should return the predicted classes if its a classification

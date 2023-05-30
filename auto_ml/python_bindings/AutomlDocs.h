@@ -1533,4 +1533,16 @@ Args:
     filename (str): The location to save the model.
 )pbdoc";
 
+const char* const UDT_SET_OUTPUT_SPARSITY = R"pbdoc(
+Modifies the sparsity of the output layer for UDT Classifier. 
+
+Args:
+    sparsity (float): Sets the sparsity of the output layer to this value.
+    rebuild_hash_tables (sparsity): Rebuilds the hash tables of the model if true. Note 
+    that, model should be finetuned if rebuild_hash_tables is set to true.
+
+Example:
+    >>> model.set_output_sparsity(sparsity = 0.2, rebuild_hash_tables = False)
+)pbdoc";
+
 }  // namespace thirdai::automl::python::docs
