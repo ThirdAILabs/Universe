@@ -55,11 +55,6 @@ class UDTBackend {
     throw notSupported("train_batch");
   }
 
-  /**
-   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
-   * then we also rebuild the hash tables. Note that, model should be finetuned
-   * if rebuild_hash_tables is set to true.
-   */
   virtual void setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
     (void)sparsity;
     (void)rebuild_hash_tables;

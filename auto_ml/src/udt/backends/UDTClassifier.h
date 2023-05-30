@@ -40,6 +40,11 @@ class UDTClassifier final : public UDTBackend {
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
 
+  /**
+   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
+   * then the hash tables and functions are rebuilt. Note that, model should be
+   * finetuned if rebuild_hash_tables is set to true.
+   */
   void setOutputSparsity(float sparsity, bool rebuild_hash_tables) override;
 
   py::object evaluate(const dataset::DataSourcePtr& data,

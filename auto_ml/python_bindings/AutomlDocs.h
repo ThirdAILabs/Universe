@@ -1539,7 +1539,7 @@ Note: Only works with UDT Classifier (without extreme classification enabled)
 
 Args:
     sparsity (float): Sets the sparsity of the output layer to this value.
-    rebuild_hash_tables (sparsity): Rebuilds the hash tables of the model if true. Note 
+    rebuild_hash_tables (bool): Rebuilds the hash tables of the model if true. Note 
     that, model should be finetuned if rebuild_hash_tables is set to true.
 
 Example:

@@ -129,6 +129,9 @@ def test_invalid_column_name_in_udt_predict():
 
 
 def test_set_output_sparsity_throws_error_on_unsupported_backend():
+    """
+    set_output_sparsity is enabled only for UDTClassifier Backend hence, this should throw an error.
+    """
     model = bolt.UniversalDeepTransformer(
         source_column="source",
         target_column="target",

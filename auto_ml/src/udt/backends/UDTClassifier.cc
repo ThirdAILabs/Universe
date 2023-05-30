@@ -103,7 +103,7 @@ void UDTClassifier::setOutputSparsity(float sparsity,
                                       bool rebuild_hash_tables) {
   bolt::nn::autograd::ComputationList output_computations =
       _classifier->model()->outputs();
-  // TODO(SHUBH) : This resets the sparsity of all output hidden layers as
+  // TODO(SHUBH) : This sets the sparsity of all output hidden layers to
   // sparsity. This is not ideal. Either we can add index option to the API so
   // that we reset the ith fully connected layer or we need to remove this
   // method altogether.
