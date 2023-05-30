@@ -373,7 +373,7 @@ def prepare_query_reformulation_data(seed=42):
         )
         inference_batch_as_list = []
         for _, row in inference_batch.iterrows():
-            inference_batch_as_list.append(row.to_dict()[0])
+            inference_batch_as_list.append({"phrase": row.to_dict()[0]})
 
         return inference_batch_as_list
 
