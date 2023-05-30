@@ -11,14 +11,12 @@ std::pair<std::vector<BoltVector>, std::vector<BoltVector>>
 RLHFSampler::balancingSamples(size_t num_samples) {
   std::vector<std::pair<BoltVector, BoltVector>> samples;
 
-  while (num_samples > _samples_per_doc.size()) {
+  uint32_t full_rounds = num_samples / _samples_per_doc.size();
+  for (uint32_t round = 0; round < full_rounds; round++) {
     for (const auto& [_, doc_samples] : _samples_per_doc) {
       std::sample(doc_samples.begin(), doc_samples.end(),
                   std::back_inserter(samples), 1, _rng);
       num_samples--;
-      if (num_samples < _samples_per_doc.size()) {
-        break;
-      }
     }
   }
 

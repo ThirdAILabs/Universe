@@ -1,4 +1,5 @@
 #include "UDTMachClassifier.h"
+#include <cereal/types/optional.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -682,7 +683,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _min_num_eval_results, _top_k_per_eval_aggregation);
+          _hashes_and_doc_id_factory, _min_num_eval_results,
+          _top_k_per_eval_aggregation, _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt
