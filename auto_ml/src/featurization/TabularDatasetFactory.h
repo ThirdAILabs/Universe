@@ -13,6 +13,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <optional>
@@ -26,14 +27,14 @@ class TabularDatasetFactory {
   TabularDatasetFactory(
       ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
-      const std::vector<dataset::BlockPtr>& label_blocks,
+      const std::vector<dataset::BlockList>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel);
 
   static auto make(
       ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
-      const std::vector<dataset::BlockPtr>& label_blocks,
+      const std::vector<dataset::BlockList>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel) {
     return std::make_shared<TabularDatasetFactory>(
@@ -136,8 +137,7 @@ class TabularDatasetFactory {
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
       bool should_update_history, const TabularOptions& options,
-      std::optional<std::vector<dataset::BlockPtr>> label_blocks,
-      bool parallel);
+      const std::vector<dataset::BlockList>& label_blocks, bool parallel);
 
   PreprocessedVectorsMap processAllMetadata(
       const ColumnDataTypes& input_data_types, const TabularOptions& options);
