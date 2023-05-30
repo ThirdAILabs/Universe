@@ -26,7 +26,7 @@ import thirdai.search as search
 import thirdai.telemetry as telemetry
 
 # Relay __version__ from C++
-from thirdai._thirdai import __version__, logging
+from thirdai._thirdai import __version__, logging, set_seed
 
 try:
     from thirdai._thirdai import set_global_num_threads

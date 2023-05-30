@@ -4,6 +4,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
+#include <utils/Random.h>
 #include <limits>
 #include <string>
 #include <vector>
@@ -16,7 +17,8 @@ class CountMinSketch {
   friend QuantityHistoryTracker;
 
  public:
-  CountMinSketch(uint32_t n_rows, uint32_t range, uint32_t seed)
+  CountMinSketch(uint32_t n_rows, uint32_t range,
+                 uint32_t seed = global_random::nextSeed())
       : _n_rows(n_rows),
         _range(range),
         _sketch(_n_rows * _range),

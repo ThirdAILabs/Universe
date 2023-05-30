@@ -2,6 +2,7 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <utils/Random.h>
 #include <cmath>
 #include <cstdlib>
 #include <exception>
@@ -51,7 +52,7 @@ TabularHashFeatures::TabularHashFeatures(
     const std::vector<TabularColumn>& columns, uint32_t output_range,
     bool with_pairgrams)
     : _output_range(output_range), _with_pairgrams(with_pairgrams) {
-  std::mt19937 gen(time(nullptr));
+  std::mt19937 gen(global_random::nextSeed());
   std::uniform_int_distribution<uint32_t> dist(
       0, std::numeric_limits<uint32_t>::max());
 
