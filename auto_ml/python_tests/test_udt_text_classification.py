@@ -8,8 +8,6 @@ from model_test_utils import (
 )
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
-
 ACCURACY_THRESHOLD = 0.8
 
 
@@ -32,6 +30,8 @@ def train_udt_text_classification(download_clinc_dataset):
     return model
 
 
+@pytest.mark.release
+@pytest.mark.unit
 def test_udt_text_classification_accuarcy(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -41,6 +41,8 @@ def test_udt_text_classification_accuarcy(
     assert compute_evaluate_accuracy(model, test_filename) >= ACCURACY_THRESHOLD
 
 
+@pytest.mark.release
+@pytest.mark.unit
 def test_udt_text_classification_save_load(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -52,6 +54,8 @@ def test_udt_text_classification_save_load(
     )
 
 
+@pytest.mark.release
+@pytest.mark.unit
 def test_udt_text_classification_predict_single(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -62,6 +66,8 @@ def test_udt_text_classification_predict_single(
     assert acc >= ACCURACY_THRESHOLD
 
 
+@pytest.mark.release
+@pytest.mark.unit
 def test_udt_text_classification_predict_batch(
     train_udt_text_classification, download_clinc_dataset
 ):
