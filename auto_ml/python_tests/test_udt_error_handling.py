@@ -128,6 +128,7 @@ def test_invalid_column_name_in_udt_predict():
         model.predict({"HAHAHA": "some text"})
 
 
+@pytest.mark.unit
 def test_set_output_sparsity_throws_error_on_unsupported_backend():
     """
     set_output_sparsity is enabled only for UDTClassifier Backend hence, this should throw an error.

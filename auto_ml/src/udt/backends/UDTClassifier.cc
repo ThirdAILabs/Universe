@@ -103,17 +103,27 @@ void UDTClassifier::setOutputSparsity(float sparsity,
                                       bool rebuild_hash_tables) {
   bolt::nn::autograd::ComputationList output_computations =
       _classifier->model()->outputs();
-  // TODO(SHUBH) : This sets the sparsity of all output hidden layers to
-  // sparsity. This is not ideal. Either we can add index option to the API so
-  // that we reset the ith fully connected layer or we need to remove this
-  // method altogether.
-  for (auto& computation : output_computations) {
-    if (auto computation_reference =
-            std::dynamic_pointer_cast<bolt::nn::ops::FullyConnected>(
-                computation->op())) {
-      computation_reference->setSparsity(sparsity, rebuild_hash_tables,
-                                         /*experimental_autotune=*/false);
-    }
+
+  /**
+   * The method is supported only for models that have a single output
+   * computation with the computation being a fully connected layer.
+   */
+  if (output_computations.size() != 1) {
+    throw std::logic_error(
+        "The method is only supported for classifiers that have a single "
+        "fully "
+        "connected layer output.");
+  }
+
+  auto fc_computation =
+      bolt::nn::ops::FullyConnected::cast(output_computations[0]->op());
+  if (fc_computation) {
+    fc_computation->setSparsity(sparsity, rebuild_hash_tables,
+                                /*experimental_autotune=*/false);
+  } else {
+    throw std::logic_error(
+        "The method is only supported for classifiers that have a single "
+        "fully connected layer output.");
   }
 }
 

@@ -72,12 +72,12 @@ def test_udt_text_classification_predict_batch(
     assert acc >= ACCURACY_THRESHOLD
 
 
+@pytest.mark.unit
 def test_udt_text_classification_set_output_sparsity(train_udt_text_classification):
     model = train_udt_text_classification
 
     # We divide by 2 so that we know that final_output_sparsity is always valid as x \in [0,1] -> x/2 is also \in [0,1]
-    final_output_sparsity = model._get_model().__getitem__("fc_2").get_sparsity() / 2
+    output_fc_computation = model._get_model().ops()[-1]
+    final_output_sparsity = output_fc_computation.get_sparsity() / 2
     model.set_output_sparsity(sparsity=final_output_sparsity)
-    assert (
-        final_output_sparsity == model._get_model().__getitem__("fc_2").get_sparsity()
-    )
+    assert final_output_sparsity == output_fc_computation.get_sparsity()
