@@ -11,7 +11,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
-#include <memory>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {

@@ -58,7 +58,7 @@ class UDTBackend {
   virtual void setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
     (void)sparsity;
     (void)rebuild_hash_tables;
-    throw std::logic_error("Method not supported for the model");
+    throw notSupported("Method not supported for the model");
   }
 
   /**

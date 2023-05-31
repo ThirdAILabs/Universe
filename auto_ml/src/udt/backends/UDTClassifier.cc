@@ -109,7 +109,7 @@ void UDTClassifier::setOutputSparsity(float sparsity,
    * computation with the computation being a fully connected layer.
    */
   if (output_computations.size() != 1) {
-    throw std::logic_error(
+    throw notSupported(
         "The method is only supported for classifiers that have a single "
         "fully "
         "connected layer output.");
@@ -121,7 +121,7 @@ void UDTClassifier::setOutputSparsity(float sparsity,
     fc_computation->setSparsity(sparsity, rebuild_hash_tables,
                                 /*experimental_autotune=*/false);
   } else {
-    throw std::logic_error(
+    throw notSupported(
         "The method is only supported for classifiers that have a single "
         "fully connected layer output.");
   }
