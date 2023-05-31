@@ -358,6 +358,13 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       args.insert(name, value);
+    } else if (py::isinstance<py::list>(v)) {
+      try {
+        std::vector<uint32_t> value = v.cast<std::vector<uint32_t>>();
+        args.insert(name, value);
+      } catch (...) {
+        throw std::logic_error("Give a list of integers as input");
+      }
     } else {
       throw std::invalid_argument("Invalid type '" +
                                   py::str(v.get_type()).cast<std::string>() +

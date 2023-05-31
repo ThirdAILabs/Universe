@@ -48,8 +48,12 @@ UDTQueryReformulation::UDTQueryReformulation(
 
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
+  if (user_args.contains("n_grams")) {
+    _n_grams = user_args.get<std::vector<uint32_t>>("n_grams",
+                                                    "std::vector<uint32_t>");
+  }
   _inference_featurizer =
-      dataset::TabularFeaturizer::make({ngramBlockList("phrase")});
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
 }
 
 py::object UDTQueryReformulation::train(
@@ -245,7 +249,7 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
   }
 
   auto featurizer = dataset::TabularFeaturizer::make(
-      {ngramBlockList(col_to_hash),
+      {ngramBlockList(col_to_hash, _n_grams),
        dataset::BlockList(std::move(label_blocks))},
       /* has_header= */ true,
       /* delimiter= */ _delimiter);
@@ -323,8 +327,12 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
 }
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
-    const std::string& column_name) {
-  std::vector<uint32_t> n_grams = {3, 4};
+    const std::string& column_name, const std::vector<uint32_t>& n_grams) {
+  std::cout << "Using the following n-grams" << std::endl;
+  for (const auto& x : n_grams) {
+    std::cout << x << "-gram, ";
+  }
+  std::cout << std::endl;
 
   std::vector<dataset::BlockPtr> input_blocks;
   input_blocks.reserve(n_grams.size());
