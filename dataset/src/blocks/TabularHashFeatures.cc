@@ -52,15 +52,13 @@ TabularHashFeatures::TabularHashFeatures(
     const std::vector<TabularColumn>& columns, uint32_t output_range,
     bool with_pairgrams)
     : _output_range(output_range), _with_pairgrams(with_pairgrams) {
-  std::mt19937 gen(global_random::nextSeed());
-  std::uniform_int_distribution<uint32_t> dist(
-      0, std::numeric_limits<uint32_t>::max());
+  std::mt19937 rng(2948);
 
   // we precompute a random salt value for each column so when we call
   // combineHashes with those values we don't bias the output distribution to
   // have more higher order bits set to zero
   for (const auto& column : columns) {
-    uint32_t salt = dist(gen);
+    uint32_t salt = rng();
     _columns.push_back(std::make_pair(column, salt));
   }
 }
