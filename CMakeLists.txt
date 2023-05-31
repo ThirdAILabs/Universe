@@ -422,6 +422,7 @@ set(THIRDAI_SOURCES
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
+    utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)

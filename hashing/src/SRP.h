@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashFunction.h"
+#include <utils/Random.h>
 #include <cstdint>
 #include <vector>
 
@@ -14,7 +15,8 @@ class SignedRandomProjection final : public HashFunction {
 
  public:
   SignedRandomProjection(uint32_t input_dim, uint32_t srps_per_table,
-                         uint32_t num_tables, uint32_t seed = time(nullptr));
+                         uint32_t num_tables,
+                         uint32_t seed = global_random::nextSeed());
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
