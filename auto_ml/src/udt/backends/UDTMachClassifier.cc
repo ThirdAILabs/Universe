@@ -16,6 +16,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/stl.h>
+#include <utils/Random.h>
 #include <utils/StringManipulation.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -591,10 +592,10 @@ void UDTMachClassifier::requireRLHFSampler() {
 }
 
 BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
-                               uint32_t n_buckets) {
+                               uint32_t n_buckets, std::mt19937& rng) {
   std::vector<uint32_t> indices;
   std::sample(hashes.begin(), hashes.end(), std::back_inserter(indices),
-              n_buckets, std::random_device());
+              n_buckets, rng);
 
   return BoltVector::makeSparseVector(indices,
                                       std::vector<float>(indices.size(), 1.0));
@@ -609,17 +610,19 @@ void UDTMachClassifier::associate(
   auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
                                                  source_target_samples.size());
 
+  std::mt19937 rng(global_random::nextSeed());
+
   for (const auto& [source, target] : source_target_samples) {
     auto target_hashes = predictHashesImpl(target, false);
     BoltVector source_vec =
         _dataset_factory->featurizeInput(source).at(0)->getVector(0);
     for (uint32_t i = 0; i < n_association_samples; i++) {
       samples.emplace_back(source_vec,
-                           makeLabelFromHashes(target_hashes, n_buckets));
+                           makeLabelFromHashes(target_hashes, n_buckets, rng));
     }
   }
 
-  std::shuffle(samples.begin(), samples.end(), std::random_device{});
+  std::shuffle(samples.begin(), samples.end(), rng);
 
   std::vector<
       std::pair<bolt::nn::tensor::TensorList, bolt::nn::tensor::TensorList>>

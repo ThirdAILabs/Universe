@@ -261,7 +261,7 @@ class FullyConnectedLayer final {
   inline void cleanupWithinBatchVars();
 
   inline void initSamplingDatastructures(
-      const SamplingConfigPtr& sampling_config, std::random_device& rd);
+      const SamplingConfigPtr& sampling_config, std::mt19937& rd);
 
   inline void deinitSamplingDatastructures();
 

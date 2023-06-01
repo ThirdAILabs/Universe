@@ -12,6 +12,7 @@
 #include <search/python_bindings/DocSearchPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
+#include <utils/Random.h>
 #include <utils/Version.h>
 
 // Pybind11 library
@@ -104,6 +105,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 #endif
 
   m.attr("__version__") = thirdai::version();
+
+  m.def("set_seed", &thirdai::global_random::setBaseSeed, py::arg("seed"));
 
   createLoggingSubmodule(m);
 

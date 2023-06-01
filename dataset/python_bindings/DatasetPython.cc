@@ -31,6 +31,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <sys/types.h>
+#include <utils/Random.h>
 #include <chrono>
 #include <limits>
 #include <optional>
@@ -287,7 +288,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
-           py::arg("seed") = time(NULL));
+           py::arg("seed") = global_random::nextSeed());
 
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")

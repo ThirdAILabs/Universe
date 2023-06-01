@@ -55,6 +55,12 @@ class UDTBackend {
     throw notSupported("train_batch");
   }
 
+  virtual void setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
+    (void)sparsity;
+    (void)rebuild_hash_tables;
+    throw notSupported("Method not supported for the model");
+  }
+
   /**
    * Performs evaluate of the model on the given dataset and returns the
    * activations produced by the model by default. If return_predicted_class is
