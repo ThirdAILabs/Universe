@@ -627,12 +627,14 @@ void UDTMachClassifier::associate(
 
   uint32_t input_dim = _classifier->model()->inputDims().at(0);
   uint32_t label_dim = _classifier->model()->labelDims().at(0);
+  uint32_t batch_size = defaults::ASSOCIATE_BATCH_SIZE;
 
-  for (size_t i = 0; i < samples.size(); i += 200) {
+  for (size_t i = 0; i < samples.size(); i += batch_size) {
     std::vector<BoltVector> inputs;
     std::vector<BoltVector> labels;
 
-    for (size_t j = i; j < std::min((i + 1) * 200, samples.size()); j++) {
+    size_t batch_end = std::min((i + 1) * batch_size, samples.size());
+    for (size_t j = i; j < batch_end; j++) {
       inputs.emplace_back(std::move(samples[j].first));
       labels.emplace_back(std::move(samples[j].second));
     }
