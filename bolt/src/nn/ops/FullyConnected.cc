@@ -193,6 +193,8 @@ void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
   _kernel->freezeHashTables(insert_labels_if_not_found);
 }
 
+void FullyConnected::unfreezeHashTables() { _kernel->unfreezeHashTables(); }
+
 void FullyConnected::setWeights(const float* weights) {
   _kernel->setWeights(weights);
 }

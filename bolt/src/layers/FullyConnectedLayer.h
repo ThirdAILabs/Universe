@@ -81,6 +81,14 @@ class FullyConnectedLayer final {
     }
   }
 
+  void unfreezeHashTables() {
+    if (useRandomSampling()) {
+      return;
+    }
+
+    _sampling_mode = BoltSamplingMode::LSH;
+  }
+
   bool hashTablesFrozen() const {
     return _sampling_mode == BoltSamplingMode::FreezeHashTables ||
            _sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions;
