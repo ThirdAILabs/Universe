@@ -420,9 +420,11 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
+    auto_ml/src/rlhf/RLHFSampler.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
+    utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)

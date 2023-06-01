@@ -4,14 +4,15 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <utils/Random.h>
 #include <random>
 
 namespace thirdai::bolt::nn {
 
-RandomSampler::RandomSampler(uint32_t layer_dim, std::random_device& rd)
-    : _rand_neurons(layer_dim) {
+RandomSampler::RandomSampler(uint32_t layer_dim) : _rand_neurons(layer_dim) {
+  std::mt19937 rng(global_random::nextSeed());
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rng);
 }
 
 static void wrapAroundCopy(const uint32_t* const src, uint64_t src_len,

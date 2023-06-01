@@ -2,12 +2,15 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
@@ -104,7 +107,16 @@ class UDTMachClassifier final : public UDTBackend {
     _mach_label_block->index()->clear();
 
     updateSamplingStrategy();
+
+    if (_rlhf_sampler) {
+      _rlhf_sampler->clear();
+    }
   }
+
+  void associate(const MapInput& source, const MapInput& target,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
+                 uint32_t epochs) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -127,6 +139,12 @@ class UDTMachClassifier final : public UDTBackend {
       float distance_cutoff) const final;
 
  private:
+  std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
+                                                       bool sparse_inference);
+
+  std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
+                                          bool sparse_inference);
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
@@ -137,9 +155,13 @@ class UDTMachClassifier final : public UDTBackend {
 
   void updateSamplingStrategy();
 
+  void addBalancingSamples(const dataset::DataSourcePtr& data);
+
+  void requireRLHFSampler();
+
   std::vector<uint32_t> topHashesForDoc(
-      const std::vector<BoltVector>& output_samples,
-      std::optional<uint32_t> num_buckets_to_sample_opt) const;
+      std::vector<TopKActivationsQueue>&& top_k_per_sample,
+      uint32_t num_buckets_to_sample) const;
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
@@ -169,9 +191,12 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
+  data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
   float _sparse_inference_threshold;
+
+  std::optional<RLHFSampler> _rlhf_sampler;
 };
 
 }  // namespace thirdai::automl::udt

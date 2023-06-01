@@ -55,6 +55,12 @@ class UDTBackend {
     throw notSupported("train_batch");
   }
 
+  virtual void setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
+    (void)sparsity;
+    (void)rebuild_hash_tables;
+    throw notSupported("Method not supported for the model");
+  }
+
   /**
    * Performs evaluate of the model on the given dataset and returns the
    * activations produced by the model by default. If return_predicted_class is
@@ -296,6 +302,23 @@ class UDTBackend {
     (void)sample;
     (void)sparse_inference;
     throw notSupported("predict_hashes");
+  }
+
+  /**
+   * Used for fine tuning in UDTMachClassifier.
+   */
+  virtual void associate(const MapInput& source, const MapInput& target,
+                         uint32_t n_buckets, uint32_t n_association_samples,
+                         uint32_t n_balancing_samples, float learning_rate,
+                         uint32_t epochs) {
+    (void)source;
+    (void)target;
+    (void)n_association_samples;
+    (void)n_balancing_samples;
+    (void)n_buckets;
+    (void)learning_rate;
+    (void)epochs;
+    throw notSupported("associate");
   }
 
   /**

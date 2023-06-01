@@ -5,19 +5,20 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <hashing/src/HashUtils.h>
+#include <utils/Random.h>
 #include <algorithm>
 #include <random>
 
 namespace thirdai::bolt::nn {
 
 LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
-                   hashtable::SampledHashTablePtr hash_table,
-                   std::random_device& rd)
+                   hashtable::SampledHashTablePtr hash_table)
     : _hash_fn(std::move(hash_fn)),
       _hash_table(std::move(hash_table)),
       _rand_neurons(layer_dim) {
+  std::mt19937 rng(global_random::nextSeed());
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rng);
 }
 
 void LshIndex::query(const BoltVector& input, BoltVector& output,

@@ -1,4 +1,5 @@
 import os
+import random
 from collections import defaultdict
 
 import numpy as np
@@ -24,7 +25,9 @@ def make_simple_test_file(invalid_data=False):
             f.write("haha,3\n")
 
 
-def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=True):
+def train_simple_mach_udt(
+    invalid_data=False, embedding_dim=256, use_bias=True, rlhf_args={}
+):
     make_simple_test_file(invalid_data=invalid_data)
 
     model = bolt.UniversalDeepTransformer(
@@ -40,6 +43,7 @@ def train_simple_mach_udt(invalid_data=False, embedding_dim=256, use_bias=True):
             "embedding_dimension": embedding_dim,
             "extreme_output_dim": OUTPUT_DIM,
             "use_bias": use_bias,
+            **rlhf_args,
         },
     )
 
@@ -525,3 +529,45 @@ def test_mach_sparse_inference():
     # so the output should be dense.
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert output.active_neurons == None
+    assert output.activations.shape == (1, OUTPUT_DIM)
+
+
+def test_associate():
+    model = train_simple_mach_udt(
+        rlhf_args={
+            "rlhf": True,
+            "rlhf_balancing_docs": 100,
+            "rlhf_balancing_samples_per_doc": 10,
+        }
+    )
+
+    target_sample = {"text": "random sample text"}
+    model.introduce_label([target_sample], label=200)
+    target_hashes = set(model.predict_hashes(target_sample))
+
+    different_hashes = list(set(range(OUTPUT_DIM)).difference(target_hashes))
+    different_hashes = random.choices(different_hashes, k=7)
+    different_hashes = " ".join([str(x) for x in different_hashes])
+
+    source_sample = {"text": "tomato", "label": different_hashes}
+    target_sample["label"] = " ".join([str(x) for x in target_hashes])
+    for _ in range(100):
+        model.train_with_hashes([source_sample, target_sample], 0.001)
+    del source_sample["label"]
+
+    target_hashes = set(model.predict_hashes(target_sample))
+
+    model.introduce_label([source_sample], label=100)
+    source_hashes = set(model.predict_hashes(source_sample))
+
+    original_intersection = len(target_hashes.intersection(source_hashes))
+
+    for _ in range(100):
+        model.associate(source=source_sample, target=target_sample, n_buckets=7)
+
+    new_target_hashes = set(model.predict_hashes(target_sample))
+    new_source_hashes = set(model.predict_hashes(source_sample))
+
+    new_intersection = len(new_target_hashes.intersection(new_source_hashes))
+
+    assert new_intersection > original_intersection

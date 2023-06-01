@@ -8,10 +8,10 @@ namespace thirdai::bolt::nn {
 
 class RandomSampler final : public NeuronIndex {
  public:
-  explicit RandomSampler(uint32_t layer_dim, std::random_device& rd);
+  explicit RandomSampler(uint32_t layer_dim);
 
-  static auto make(uint32_t layer_dim, std::random_device& rd) {
-    return std::make_shared<RandomSampler>(layer_dim, rd);
+  static auto make(uint32_t layer_dim) {
+    return std::make_shared<RandomSampler>(layer_dim);
   }
 
   void query(const BoltVector& input, BoltVector& output,

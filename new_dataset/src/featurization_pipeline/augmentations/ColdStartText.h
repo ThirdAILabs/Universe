@@ -7,6 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include <new_dataset/src/featurization_pipeline/Augmentation.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
+#include <utils/Random.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -132,7 +133,7 @@ class ColdStartTextAugmentation final : public Augmentation {
       std::vector<std::string> weak_column_names, std::string label_column_name,
       std::string output_column_name,
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
-      uint32_t seed = time(nullptr));
+      uint32_t seed = global_random::nextSeed());
 
   ColumnMap apply(const ColumnMap& columns) final;
 
@@ -240,7 +241,7 @@ class ColdStartTextAugmentation final : public Augmentation {
         _weak_sample_reps(1),
         _strong_max_len(std::nullopt),
         _strong_sample_num_words(std::nullopt),
-        _seed(time(nullptr)) {}
+        _seed(0) {}
 
   friend class cereal::access;
   template <class Archive>
