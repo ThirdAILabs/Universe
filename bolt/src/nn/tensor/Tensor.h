@@ -45,8 +45,6 @@ class Tensor {
    */
   BoltVector& getVector(uint32_t index);
 
-  const auto& vectors() const { return _vectors; }
-
   /**
    * Returns the number of vectors in the tensor.
    */
