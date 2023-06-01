@@ -52,6 +52,8 @@ class UDT {
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
 
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables);
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,

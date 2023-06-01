@@ -113,6 +113,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
            bolt::python::OutputRedirect())
+      .def("set_output_sparsity", &udt::UDT::setOutputSparsity,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = false,
+           docs::UDT_SET_OUTPUT_SPARSITY, bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
