@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 
@@ -55,3 +56,5 @@ void MachNeuronIndex::serialize(Archive& archive) {
 }
 
 }  // namespace thirdai::bolt::nn
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::MachNeuronIndex)
