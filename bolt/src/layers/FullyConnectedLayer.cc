@@ -5,6 +5,7 @@
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -32,20 +33,18 @@ FullyConnectedLayer::FullyConnectedLayer(
       _use_bias(use_bias),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
-  std::random_device rd;
-  std::default_random_engine eng(rd());
+  std::mt19937 rng(global_random::nextSeed());
   std::normal_distribution<float> dist(0.0, 0.01);
 
-  std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
+  std::generate(_weights.begin(), _weights.end(), [&]() { return dist(rng); });
 
   if (_use_bias) {
-    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(rng); });
   } else {
     _biases.assign(_biases.size(), 0.0);
   }
   if (_sparsity < 1.0) {
-    _neuron_index =
-        config.getSamplingConfig()->getNeuronIndex(_dim, _prev_dim, rd);
+    _neuron_index = config.getSamplingConfig()->getNeuronIndex(_dim, _prev_dim);
 
     buildHashTables();
   }
@@ -628,10 +627,10 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
     _sparsity = sparsity;
     _sparse_dim = _sparsity * _dim;
 
-    std::random_device rd;
+    std::mt19937 rng(global_random::nextSeed());
     _neuron_index =
         DWTASamplingConfig::autotune(_dim, sparsity, experimental_autotune)
-            ->getNeuronIndex(_dim, _prev_dim, rd);
+            ->getNeuronIndex(_dim, _prev_dim);
     return;
   }
 
@@ -689,9 +688,8 @@ void FullyConnectedLayer::setHashTable(
         std::to_string(_dim) + ".");
   }
 
-  std::random_device rd;
   _neuron_index =
-      nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table), rd);
+      nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
 }
 
 void FullyConnectedLayer::initOptimizer() {

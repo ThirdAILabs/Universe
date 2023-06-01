@@ -10,10 +10,10 @@
 namespace thirdai::bolt {
 
 nn::NeuronIndexPtr DWTASamplingConfig::getNeuronIndex(
-    uint32_t layer_dim, uint32_t input_dim, std::random_device& rd) const {
+    uint32_t layer_dim, uint32_t input_dim) const {
   auto hash_fn = getHashFunction(input_dim);
   auto hash_table = getHashTable();
-  return nn::LshIndex::make(layer_dim, hash_fn, hash_table, rd);
+  return nn::LshIndex::make(layer_dim, hash_fn, hash_table);
 }
 
 hashing::HashFunctionPtr DWTASamplingConfig::getHashFunction(
@@ -178,10 +178,10 @@ std::shared_ptr<DWTASamplingConfig> DWTASamplingConfig::autotune(
 }
 
 nn::NeuronIndexPtr FastSRPSamplingConfig::getNeuronIndex(
-    uint32_t layer_dim, uint32_t input_dim, std::random_device& rd) const {
+    uint32_t layer_dim, uint32_t input_dim) const {
   auto hash_fn = getHashFunction(input_dim);
   auto hash_table = getHashTable();
-  return nn::LshIndex::make(layer_dim, hash_fn, hash_table, rd);
+  return nn::LshIndex::make(layer_dim, hash_fn, hash_table);
 }
 
 hashing::HashFunctionPtr FastSRPSamplingConfig::getHashFunction(

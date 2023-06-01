@@ -4,13 +4,14 @@
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <utils/Random.h>
 #include <stdexcept>
 
 namespace thirdai::dataset {
 
 struct DatasetShuffleConfig {
   explicit DatasetShuffleConfig(size_t min_vecs_in_buffer = 64000,
-                                uint32_t seed = time(NULL))
+                                uint32_t seed = global_random::nextSeed())
       : min_buffer_size(min_vecs_in_buffer), seed(seed) {}
 
   size_t min_buffer_size;

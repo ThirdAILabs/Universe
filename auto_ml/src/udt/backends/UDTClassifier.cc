@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
@@ -51,10 +52,10 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
-  _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
+  _dataset_factory = data::TabularDatasetFactory::make(
       input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{_label_block},
-      std::set<std::string>{target_name}, tabular_options, force_parallel);
+      {dataset::BlockList({_label_block})}, std::set<std::string>{target_name},
+      tabular_options, force_parallel);
 }
 
 py::object UDTClassifier::train(
@@ -96,6 +97,34 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
   (void)metrics;
 
   return py::none();
+}
+
+void UDTClassifier::setOutputSparsity(float sparsity,
+                                      bool rebuild_hash_tables) {
+  bolt::nn::autograd::ComputationList output_computations =
+      _classifier->model()->outputs();
+
+  /**
+   * The method is supported only for models that have a single output
+   * computation with the computation being a fully connected layer.
+   */
+  if (output_computations.size() != 1) {
+    throw notSupported(
+        "The method is only supported for classifiers that have a single "
+        "fully "
+        "connected layer output.");
+  }
+
+  auto fc_computation =
+      bolt::nn::ops::FullyConnected::cast(output_computations[0]->op());
+  if (fc_computation) {
+    fc_computation->setSparsity(sparsity, rebuild_hash_tables,
+                                /*experimental_autotune=*/false);
+  } else {
+    throw notSupported(
+        "The method is only supported for classifiers that have a single "
+        "fully connected layer output.");
+  }
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,

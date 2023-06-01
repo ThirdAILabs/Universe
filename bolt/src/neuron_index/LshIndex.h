@@ -11,13 +11,12 @@ namespace thirdai::bolt::nn {
 class LshIndex final : public NeuronIndex {
  public:
   LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
-           hashtable::SampledHashTablePtr hash_table, std::random_device& rd);
+           hashtable::SampledHashTablePtr hash_table);
 
   static auto make(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
-                   hashtable::SampledHashTablePtr hash_table,
-                   std::random_device& rd) {
+                   hashtable::SampledHashTablePtr hash_table) {
     return std::make_shared<LshIndex>(layer_dim, std::move(hash_fn),
-                                      std::move(hash_table), rd);
+                                      std::move(hash_table));
   }
 
   void query(const BoltVector& input, BoltVector& output,

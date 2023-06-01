@@ -77,8 +77,9 @@ void createBoltV2TrainSubmodule(py::module_& module) {
    */
   defineTrainer(train);
   defineMetrics(train);
-  defineCallbacks(train);
 #endif
+
+  defineCallbacks(train);
 
   defineDistributedTrainer(train);
 }
