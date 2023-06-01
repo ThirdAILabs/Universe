@@ -29,10 +29,12 @@ static void wrapAroundCopy(const uint32_t* const src, uint64_t src_len,
 }
 
 void RandomSampler::query(const BoltVector& input, BoltVector& output,
-                          const BoltVector* labels, uint32_t sparse_dim) const {
+                          const BoltVector* labels) const {
+  assert(!output.isDense());
+
   uint32_t label_len = 0;
   if (labels) {
-    label_len = std::min<uint64_t>(labels->len, sparse_dim);
+    label_len = std::min<uint64_t>(labels->len, output.len);
     std::copy(labels->active_neurons, labels->active_neurons + label_len,
               output.active_neurons);
   }
@@ -45,7 +47,7 @@ void RandomSampler::query(const BoltVector& input, BoltVector& output,
   uint64_t random_offset =
       hashing::simpleIntegerHash(seed) % _rand_neurons.size();
 
-  uint64_t neurons_to_sample = sparse_dim - label_len;
+  uint64_t neurons_to_sample = output.len - label_len;
 
   wrapAroundCopy(/* src= */ _rand_neurons.data(),
                  /* src_len= */ _rand_neurons.size(),

@@ -76,6 +76,8 @@ class MachIndex {
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
+  float sparsity() const;
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<MachIndex> load(const std::string& filename);

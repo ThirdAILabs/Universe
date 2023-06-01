@@ -20,13 +20,6 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-enum class BoltSamplingMode {
-  LSH,
-  FreezeHashTables,
-  FreezeHashTablesWithInsertions,
-  RandomSampling
-};
-
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 

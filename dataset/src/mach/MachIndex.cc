@@ -107,6 +107,18 @@ void MachIndex::erase(uint32_t entity) {
   }
 }
 
+float MachIndex::sparsity() const {
+  float guess;
+  uint32_t tries = 0;
+  do {
+    guess = static_cast<float>(nonemptyBuckets().size() + tries) / numBuckets();
+    tries++;
+  } while (static_cast<uint32_t>(guess * numBuckets()) <
+           nonemptyBuckets().size());
+
+  return guess;
+}
+
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
                                                     uint32_t k) const {
   TopKActivationsQueue top_k;

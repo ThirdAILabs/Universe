@@ -2,31 +2,39 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 
 namespace thirdai::bolt::nn {
 
+MachNeuronIndex::MachNeuronIndex(dataset::mach::MachIndexPtr mach_index)
+    : _mach_index(std::move(mach_index)) {}
+
 void MachNeuronIndex::query(const BoltVector& input, BoltVector& output,
-                            const BoltVector* labels,
-                            uint32_t sparse_dim) const {
+                            const BoltVector* labels) const {
   (void)input;
   (void)labels;
 
   auto nonempty_buckets = _mach_index->nonemptyBuckets();
 
-  if (nonempty_buckets.size() < sparse_dim) {
+  assert(nonempty_buckets.size() <= output.len);
+
+  if (nonempty_buckets.size() < output.len) {
     // Hack to intepret the float as an integer without doing a conversion.
     uint32_t seed = *reinterpret_cast<uint32_t*>(&input.activations[0]);
 
-    // This is because rand() is not threadsafe and because we want to make the
-    // output more deterministic.
-    uint64_t random_offset =
-        hashing::simpleIntegerHash(seed) % _rand_neurons.size();
+    // Since the sparsity is set based off of the number of nonempty buckets, we
+    // should never have more than one random neuron thus, we can avoid storing
+    // a precomputed random neurons set like in the LSH neuron index.
+    while (nonempty_buckets.size() < output.len) {
+      // This is because rand() is not threadsafe and because we want to make
+      // the output more deterministic.
+      uint64_t random_neuron =
+          hashing::simpleIntegerHash(seed) % _mach_index->numBuckets();
 
-    while (nonempty_buckets.size() < sparse_dim) {
-      nonempty_buckets.insert(_rand_neurons[random_offset]);
-      random_offset = (random_offset + 1) % _rand_neurons.size();
+      nonempty_buckets.insert(random_neuron);
+      seed = random_neuron;
     }
   }
 
@@ -44,7 +52,9 @@ template void MachNeuronIndex::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachNeuronIndex::serialize(Archive& archive) {
-  archive(cereal::base_class<NeuronIndex>(this), _mach_index, _rand_neurons);
+  archive(cereal::base_class<NeuronIndex>(this), _mach_index);
 }
 
 }  // namespace thirdai::bolt::nn
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::MachNeuronIndex)

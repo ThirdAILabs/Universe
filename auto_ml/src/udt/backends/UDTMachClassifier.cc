@@ -400,55 +400,32 @@ void UDTMachClassifier::updateSamplingStrategy() {
 
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
-  float index_sparsity =
-      static_cast<float>(mach_index->nonemptyBuckets().size()) /
-      mach_index->numBuckets();
+  float index_sparsity = mach_index->sparsity();
   if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
+    auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
+    output_layer->kernel()->setNeuronIndex(new_index);
 
-    if (!std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
-      auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
-      output_layer->kernel()->setNeuronIndex(new_index);
-    }
   } else {
     if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
       std::random_device rd;
-      auto new_index =
-          bolt::DWTASamplingConfig::autotune(mach_index->numBuckets(), sparsity,
-                                             /* experimental_autotune= */ false)
-              ->getNeuronIndex(output_layer->dim(), output_layer->inputDim(),
-                               rd);
+
+      auto sampling_config = bolt::DWTASamplingConfig::autotune(
+          mach_index->numBuckets(), sparsity,
+          /* experimental_autotune= */ false);
 
       output_layer->setSparsity(sparsity, false, false);
-      output_layer->kernel()->setNeuronIndex(new_index);
+
+      if (sampling_config) {
+        auto new_index = sampling_config->getNeuronIndex(
+            output_layer->dim(), output_layer->inputDim(), rd);
+        output_layer->kernel()->setNeuronIndex(new_index);
+      }
     }
   }
-}
-
-std::unordered_map<uint32_t, MapInputBatch>
-UDTMachClassifier::aggregateSamplesByDoc(
-    const thirdai::data::ColumnMap& augmented_data,
-    const std::string& text_column_name, const std::string& label_column_name) {
-  auto text_column = augmented_data.getStringColumn(text_column_name);
-  auto label_column = augmented_data.getStringColumn(label_column_name);
-
-  assert(label_column->numRows() == text_column->numRows());
-
-  std::unordered_map<uint32_t, MapInputBatch> samples_by_doc;
-  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
-    std::string string_label = (*label_column)[row_id];
-    std::string text = (*text_column)[row_id];
-
-    MapInput input = {{text_column_name, text}};
-
-    uint32_t integer_label = std::stoi(string_label);
-    samples_by_doc[integer_label].push_back(input);
-  }
-
-  return samples_by_doc;
 }
 
 void UDTMachClassifier::introduceDocuments(
@@ -474,6 +451,9 @@ void UDTMachClassifier::introduceDocuments(
   std::unordered_map<uint32_t, std::vector<BoltVector>> outputs_per_doc;
 
   for (const auto& batch : doc_samples_tensors) {
+    // Note: using sparse inference here could cause issues because the mach
+    // index sampler will only return nonempty buckets, which could cause new
+    // docs to only be mapped to buckets already containing entities.
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
@@ -604,6 +584,9 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt) {
+  // Note: using sparse inference here could cause issues because the mach index
+  // sampler will only return nonempty buckets, which could cause new docs to
+  // only be mapped to buckets already containing entities.
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
@@ -733,16 +716,6 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   // block allows indexes with different number of hashes but not output
   // ranges
   _mach_label_block->setIndex(index);
-
-  auto output_layer = bolt::nn::ops::FullyConnected::cast(
-      _classifier->model()->opExecutionOrder().back());
-
-  const auto& neuron_index = output_layer->kernel()->neuronIndex();
-
-  if (auto mach_neuron_index =
-          std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
-    mach_neuron_index->setNewIndex(index);
-  }
 
   updateSamplingStrategy();
 }

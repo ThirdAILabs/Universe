@@ -21,7 +21,7 @@ class LshIndex final : public NeuronIndex {
   }
 
   void query(const BoltVector& input, BoltVector& output,
-             const BoltVector* labels, uint32_t sparse_dim) const final;
+             const BoltVector* labels) const final;
 
   void buildIndex(const std::vector<float>& weights, uint32_t dim,
                   bool use_new_seed) final;
@@ -35,7 +35,7 @@ class LshIndex final : public NeuronIndex {
 
   const auto& hashTable() const { return _hash_table; }
 
-  void insertLabelsIfNotFound() { _insert_labels_when_not_found = true; }
+  void insertLabelsIfNotFound() final { _insert_labels_when_not_found = true; }
 
   static auto cast(const NeuronIndexPtr& index) {
     return std::dynamic_pointer_cast<LshIndex>(index);

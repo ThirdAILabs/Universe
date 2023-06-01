@@ -86,7 +86,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   assert(labels == nullptr || labels->len > 0);
 
   if constexpr (!DENSE) {
-    _neuron_index->query(input, output, labels, _sparse_dim);
+    assert(_neuron_index);
+    _neuron_index->query(input, output, labels);
   } else {
     (void)labels;
   }
@@ -526,6 +527,7 @@ void FullyConnectedLayer::buildHashTables() {
     return;
   }
 
+  assert(_neuron_index);
   _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ false);
 }
 
@@ -534,21 +536,22 @@ void FullyConnectedLayer::reBuildHashFunction() {
     return;
   }
 
+  assert(_neuron_index);
   _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ true);
 }
 
 void FullyConnectedLayer::setNeuronIndex(nn::NeuronIndexPtr index) {
   _neuron_index = std::move(index);
-  _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ false);
+  if (_neuron_index) {
+    _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ false);
+  }
 }
 
 void FullyConnectedLayer::freezeHashTables(bool insert_labels_if_not_found) {
   _index_frozen = true;
 
-  if (insert_labels_if_not_found) {
-    if (auto index = nn::LshIndex::cast(_neuron_index)) {
-      index->insertLabelsIfNotFound();
-    }
+  if (insert_labels_if_not_found && _neuron_index) {
+    _neuron_index->insertLabelsIfNotFound();
   }
 }
 
@@ -645,6 +648,7 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
     _sparsity = sparsity;
     _sparse_dim = _sparsity * _dim;
 
+    assert(_neuron_index);
     if (rebuild_hash_tables) {
       _neuron_index->autotuneForNewSparsity(_dim, _prev_dim, sparsity,
                                             experimental_autotune);
