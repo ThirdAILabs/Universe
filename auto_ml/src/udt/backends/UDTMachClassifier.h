@@ -110,10 +110,10 @@ class UDTMachClassifier final : public UDTBackend {
     }
   }
 
-  void associate(const MapInput& source, const MapInput& target,
-                 uint32_t n_buckets, uint32_t n_association_samples,
-                 uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+  void associate(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples,
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -155,8 +155,8 @@ class UDTMachClassifier final : public UDTBackend {
   void requireRLHFSampler();
 
   std::vector<uint32_t> topHashesForDoc(
-      const std::vector<BoltVector>& output_samples,
-      std::optional<uint32_t> num_buckets_to_sample_opt) const;
+      std::vector<TopKActivationsQueue>&& top_k_per_sample,
+      uint32_t num_buckets_to_sample) const;
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this

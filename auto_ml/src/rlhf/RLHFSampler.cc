@@ -8,8 +8,8 @@
 
 namespace thirdai::automl::udt {
 
-std::pair<std::vector<BoltVector>, std::vector<BoltVector>>
-RLHFSampler::balancingSamples(size_t num_samples) {
+std::vector<std::pair<BoltVector, BoltVector>> RLHFSampler::balancingSamples(
+    size_t num_samples) {
   if (_samples_per_doc.empty()) {
     throw std::runtime_error(
         "Cannot call associate before training, coldstarting, or introducing "
@@ -36,16 +36,7 @@ RLHFSampler::balancingSamples(size_t num_samples) {
                 1, _rng);
   }
 
-  std::vector<BoltVector> inputs;
-  inputs.reserve(samples.size());
-  std::vector<BoltVector> labels;
-  inputs.reserve(samples.size());
-  for (auto& sample : samples) {
-    inputs.emplace_back(std::move(sample.first));
-    labels.emplace_back(std::move(sample.second));
-  }
-
-  return {std::move(inputs), std::move(labels)};
+  return samples;
 }
 
 void RLHFSampler::addSample(uint32_t doc_id, const BoltVector& input,
