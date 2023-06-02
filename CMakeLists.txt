@@ -335,6 +335,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
+    bolt/src/neuron_index/MachNeuronIndex.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc

@@ -1,5 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
+#include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -22,6 +24,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <random>
 #include <stdexcept>
@@ -111,6 +114,10 @@ UDTMachClassifier::UDTMachClassifier(
       /* label_blocks = */ {dataset::BlockList({hash_processing_block})},
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+
+  _sparse_inference_threshold =
+      user_args.get<float>("sparse_inference_threshold", "float",
+                           defaults::MACH_SPARSE_INFERENCE_THRESHOLD);
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
@@ -373,7 +380,8 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured with a "
+        "Introducing documents can only be used when UDT is configured with "
+        "a "
         "single text input column and target column. The current model is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
@@ -381,6 +389,42 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   }
 
   return _dataset_factory->inputDataTypes().begin()->first;
+}
+
+void UDTMachClassifier::updateSamplingStrategy() {
+  auto mach_index = _mach_label_block->index();
+
+  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  float index_sparsity = mach_index->sparsity();
+  if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
+    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
+    output_layer->setSparsity(index_sparsity, false, false);
+    auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
+    output_layer->kernel()->setNeuronIndex(new_index);
+
+  } else {
+    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
+
+      std::random_device rd;
+
+      auto sampling_config = bolt::DWTASamplingConfig::autotune(
+          mach_index->numBuckets(), sparsity,
+          /* experimental_autotune= */ false);
+
+      output_layer->setSparsity(sparsity, false, false);
+
+      if (sampling_config) {
+        auto new_index = sampling_config->getNeuronIndex(
+            output_layer->dim(), output_layer->inputDim());
+        output_layer->kernel()->setNeuronIndex(new_index);
+      }
+    }
+  }
 }
 
 void UDTMachClassifier::introduceDocuments(
@@ -410,6 +454,9 @@ void UDTMachClassifier::introduceDocuments(
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
   for (const auto& batch : doc_samples_tensors) {
+    // Note: using sparse inference here could cause issues because the mach
+    // index sampler will only return nonempty buckets, which could cause new
+    // docs to only be mapped to buckets already containing entities.
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
@@ -535,6 +582,9 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt) {
+  // Note: using sparse inference here could cause issues because the mach
+  // index sampler will only return nonempty buckets, which could cause new
+  // docs to only be mapped to buckets already containing entities.
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
@@ -552,6 +602,8 @@ void UDTMachClassifier::introduceLabel(
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::forget(const Label& label) {
@@ -563,6 +615,8 @@ void UDTMachClassifier::forget(const Label& label) {
                  "predict, or predictBatch."
               << std::endl;
   }
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::addBalancingSamples(
@@ -671,6 +725,8 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   // block allows indexes with different number of hashes but not output
   // ranges
   _mach_label_block->setIndex(index);
+
+  updateSamplingStrategy();
 }
 
 TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
@@ -697,7 +753,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
           _hashes_and_doc_id_factory, _min_num_eval_results,
-          _top_k_per_eval_aggregation, _rlhf_sampler);
+          _top_k_per_eval_aggregation, _sparse_inference_threshold,
+          _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt
