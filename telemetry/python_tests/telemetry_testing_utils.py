@@ -1,5 +1,5 @@
 from typing import Tuple
-from urllib.parse import urlparse
+# from urllib.parse import urlparse
 
 import boto3
 import requests

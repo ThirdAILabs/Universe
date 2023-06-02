@@ -4,7 +4,7 @@ import platform
 import socket
 import sys
 from typing import Any, Dict
-from urllib.request import urlopen
+# from urllib.request import urlopen
 
 import mlflow
 import numpy as np

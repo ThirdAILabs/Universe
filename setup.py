@@ -206,7 +206,7 @@ setup(
             "mock",
             "scikit-learn",
             "beir",
-            "pyOpenSSL>22.1.0",
+            # "pyOpenSSL>22.1.0",
             "ray",
         ],
         "benchmark": [
