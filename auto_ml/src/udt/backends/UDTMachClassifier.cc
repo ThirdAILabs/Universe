@@ -615,6 +615,35 @@ void UDTMachClassifier::associate(
     const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
+  teaching_samples.reserve(source_target_samples.size());
+  for (const auto& [source, target] : source_target_samples) {
+    teaching_samples.emplace_back(source, predictHashesImpl(target, false));
+  }
+  teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
+        learning_rate, epochs);
+}
+
+void UDTMachClassifier::upvote(
+    const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+    uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+    float learning_rate, uint32_t epochs) {
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
+  teaching_samples.reserve(source_target_samples.size());
+  for (const auto& [source, target] : source_target_samples) {
+    teaching_samples.emplace_back(
+        source, _mach_label_block->index()->getHashes(target));
+  }
+  uint32_t n_buckets = _mach_label_block->index()->numHashes();
+  teach(teaching_samples, n_buckets, n_upvote_samples, n_balancing_samples,
+        learning_rate, epochs);
+}
+
+void UDTMachClassifier::teach(
+    const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
+        source_target_samples,
+    uint32_t n_buckets, uint32_t n_teaching_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
   requireRLHFSampler();
 
   auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
@@ -622,11 +651,10 @@ void UDTMachClassifier::associate(
 
   std::mt19937 rng(global_random::nextSeed());
 
-  for (const auto& [source, target] : source_target_samples) {
-    auto target_hashes = predictHashesImpl(target, false);
+  for (const auto& [source, target_hashes] : source_target_samples) {
     BoltVector source_vec =
         _dataset_factory->featurizeInput(source).at(0)->getVector(0);
-    for (uint32_t i = 0; i < n_association_samples; i++) {
+    for (uint32_t i = 0; i < n_teaching_samples; i++) {
       samples.emplace_back(source_vec,
                            makeLabelFromHashes(target_hashes, n_buckets, rng));
     }

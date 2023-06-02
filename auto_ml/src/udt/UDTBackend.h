@@ -321,6 +321,21 @@ class UDTBackend {
   }
 
   /**
+   * Used for fine tuning in UDTMachClassifier.
+   */
+  virtual void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) {
+    (void)source_target_samples;
+    (void)n_upvote_samples;
+    (void)n_balancing_samples;
+    (void)learning_rate;
+    (void)epochs;
+    throw notSupported("upvote");
+  }
+
+  /**
    * Gets the internal index for UDTMachClassifier.
    */
   virtual dataset::mach::MachIndexPtr getIndex() {

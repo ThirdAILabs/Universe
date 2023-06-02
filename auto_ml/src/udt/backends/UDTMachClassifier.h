@@ -115,6 +115,11 @@ class UDTMachClassifier final : public UDTBackend {
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
 
+  void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) final;
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
@@ -141,6 +146,12 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
                                           bool sparse_inference);
+
+  void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
+                 source_target_samples,
+             uint32_t n_buckets, uint32_t n_teaching_samples,
+             uint32_t n_balancing_samples, float learning_rate,
+             uint32_t epochs);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
