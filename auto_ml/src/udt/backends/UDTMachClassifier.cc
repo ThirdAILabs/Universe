@@ -382,8 +382,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured with "
-        "a "
+        "Introducing documents can only be used when UDT is configured with a "
         "single text input column and target column. The current model is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
