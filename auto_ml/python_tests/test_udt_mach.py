@@ -594,7 +594,7 @@ def test_upvote():
         predicted_label = model.predict(source_sample)[0][0]
         if predicted_label != 200:
             break
-        
+
     assert predicted_label != 200
 
     for _ in range(10):
