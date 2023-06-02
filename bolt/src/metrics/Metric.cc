@@ -1,4 +1,9 @@
 #include "Metric.h"
+#include <atomic>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -564,4 +569,93 @@ std::shared_ptr<Metric> makeMetric(const std::string& name) {
   }
   throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }
+
+// AUC score implementations
+void AUC::record(const BoltVector& output, const BoltVector& labels) {
+  std::vector<uint32_t> thresholded_prediction;
+  std::vector<uint32_t> ids(label.len);
+  std::iota(ids.begin(), ids.end(), 0);
+  std::stable_sort(ids.begin(), ids.end(), [this](uint32_t i1, uint32_t i2) {
+    return label.activations[i1] > label.activations[i2];
+  });
+
+  const float gap = 1.0 / static_cast<float>(_num_thresholds - 1);
+  bool caseFound;
+  for (uint32_t threshold = 0, uint32_t threshold_idx = 0; threshold <= 1;
+       threshold += gap, threshold_idx++) {
+    // Same functionality as BoltVector::getThresholdedNeurons
+    caseFound = false;
+    thresholded_prediction.clear();
+    for (unsigned int& id : ids) {
+      if (label.activations[id] < threshold) break;
+
+      uint32_t neuron = label.isDense() ? id : label.active_neurons[id];
+      thresholded_prediction.push_back(neuron);
+
+      caseFound = true;
+    }
+
+    if (!caseFound) {
+      uint32_t max_act_neuron =
+          label.isDense() ? ids[0] : label.active_neurons[ids[0]];
+      thresholded_prediction.push_back(max_act_neuron);
+    }
+
+    // finding the true positive and false positive
+    for (uint32_t pred : thresholded_prediction) {
+      if (labels.findActiveNeuronNoTemplate(pred).activation > 0)
+        _true_positive[threshold_idx]++;
+      else
+        _false_positive[threshold_idx]++;
+    }
+
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t label_active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation >
+          0) {
+        if (std::find(predictions.begin(), predictions.end(),
+                      label_active_neuron) == predictions.end()) {
+          _false_negative[threshold_idx]++;
+        }
+      }
+    }
+  }
+  _num_samples++;
+}
+
+double AUC::value() {
+  // calculating the tpr and fpr
+  std::vector<float> tpr(_num_thresholds, 0), fpr(_num_thresholds, 0);
+  for (uint32_t itr = 0; itr < _num_thresholds; itr++) {
+    // calcuating the true positive rate
+    float false_negative_at_itr =
+        _num_samples - (_true_positive.at(itr) + _true_negative.at(itr) +
+                        _false_positive.at(itr));
+    tpr.at(itr) =
+        static_cast<float>(_true_positive.at(itr)) /
+        static_cast<float>(_true_positive.at(itr) + false_negative_at_itr);
+
+    // calculating the false positive rate
+    fpr.at(itr) =
+        static_cast<float>(_false_positive.at(itr)) /
+        static_cast<float>(_true_negative.at(itr) + _false_positive.at(itr));
+  }
+
+  return calculateArea();
+}
+
+double AUC::calculateArea(std::vector<float>& tpr, std::vector<float>& fpr) {
+  const float gap = 1.0 / static_cast<float>(_num_thresholds - 1);
+}
+
+void AUC::reset() {
+  _num_samples = 0;
+  _true_positive.clear();
+  _false_positive.clear();
+  _true_negative.clear();
+}
+
 }  // namespace thirdai::bolt
+double AUC::value() {}
+// namespace thirdai::bolt

@@ -5,6 +5,7 @@
 #include <utils/Logging.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <iomanip>
@@ -287,7 +288,38 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _false_negative;
 };
 
-std::shared_ptr<Metric> makeMetric(const std::string& name);
+/*
+AUC score: Calculation of the Area under curve score from the predicted and
+actual output
+*/
+class AUC final : Metric {
+ public:
+  AUC() : _num_thresholds(5001), _num_samples(0) {}
+
+  void record(const BoltVector& output, const BoltVector& labels) final;
+
+  double value() final;
+
+  void reset() final;
+
+  static constexpr const char* NAME = "AUC";
+
+  std::string name() final { return NAME; }
+
+  bool betterThan(double x, double y) { return x >= y; }
+
+  double worst() const final { return 0.0; }
+
+ private:
+  const uint32_t _num_thresholds;
+  std::atomic<uint32_t> _num_samples;
+  std::vector<float> _true_positive(_num_thresholds, 0),
+      _false_positive(_num_thresholds, 0), _true_negative(_num_thresholds, 0),
+
+}
+
+std::shared_ptr<Metric>
+makeMetric(const std::string& name);
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;
