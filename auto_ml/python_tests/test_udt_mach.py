@@ -534,7 +534,7 @@ def test_upvote():
     predicted_label = model.predict(source_sample)[0][0]
     assert predicted_label != 200
 
-    for _ in range(10):
+    for _ in range(100):
         model.upvote([(source_sample, 200)])
         predicted_label = model.predict(source_sample)[0][0]
 
