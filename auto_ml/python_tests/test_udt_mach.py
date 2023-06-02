@@ -527,7 +527,7 @@ def test_upvote():
 
     target_sample = {"text": "random sample text"}
     model.introduce_label([target_sample], label=200)
-    
+
     source_sample = {"text": "tomato"}
     model.introduce_label([source_sample], label=300)
 
@@ -537,5 +537,5 @@ def test_upvote():
     for _ in range(10):
         model.upvote([(source_sample, 200)])
         predicted_label = model.predict(source_sample)[0][0]
-    
+
     assert predicted_label == 200
