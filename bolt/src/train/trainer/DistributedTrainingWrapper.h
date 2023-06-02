@@ -62,8 +62,8 @@ class DistributedTrainingWrapper {
     _learning_rate = learning_rate;
   }
 
-  // Increment epoch after each training pass
-  void updateEpochStatus() { _trainer.incrementEpochCounter(); }
+  // Ensures epoch count is in sync with epoch count we maintain inside bolt
+  void incrementEpochCount() { _trainer.incrementEpochCount(); }
 
  private:
   std::optional<LabeledDataset> convertLabeldData(

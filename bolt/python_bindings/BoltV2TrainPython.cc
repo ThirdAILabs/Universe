@@ -247,8 +247,8 @@ void defineDistributedTrainer(py::module_& train) {
       .def("update_learning_rate",
            &DistributedTrainingWrapper::updateLearningRate,
            py::arg("learning_rate"))
-      .def("move_to_next_epoch", &DistributedTrainingWrapper::updateEpochStatus,
-           bolt::python::OutputRedirect());
+      .def("increment_epoch_count",
+           &DistributedTrainingWrapper::incrementEpochCount);
 }
 
 }  // namespace thirdai::bolt::train::python

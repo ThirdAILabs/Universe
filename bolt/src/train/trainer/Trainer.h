@@ -99,8 +99,8 @@ class Trainer {
       const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
-  // Added function to increment epoch counter.
-  void incrementEpochCounter() { _epoch++; }
+  // Incrementing epoch counter for worker to sync with bolt epoch count
+  void incrementEpochCount() { _epoch++; }
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
