@@ -62,6 +62,11 @@ class DistributedTrainingWrapper {
     _learning_rate = learning_rate;
   }
 
+  // Increment epoch after each training pass
+  void updateEpochStatus() {
+    _trainer.incrementEpochCounter();
+  }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
@@ -89,6 +94,7 @@ class DistributedTrainingWrapper {
 
   std::optional<LabeledDataset> _train_data;
   std::optional<LabeledDataset> _validation_data;
+  Trainer _trainer;
 };
 
 using DistributedTrainingWrapperPtr =

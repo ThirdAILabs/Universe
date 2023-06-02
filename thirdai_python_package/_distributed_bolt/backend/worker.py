@@ -192,6 +192,8 @@ class Worker:
     def move_to_next_epoch(self):
         self.train_source.restart()
         self._try_load_new_datasets_into_model()
+        #Adding new functionality to update epochs.
+        self.model.move_to_next_epoch()
 
     @timed
     def get_calculated_gradients(self):

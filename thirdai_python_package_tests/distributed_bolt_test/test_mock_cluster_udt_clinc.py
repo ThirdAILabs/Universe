@@ -57,7 +57,7 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
         batch_size=256,
-        epochs=1,
+        epochs=2,
         learning_rate=0.02,
         verbose=True,
         max_in_memory_batches=10,
