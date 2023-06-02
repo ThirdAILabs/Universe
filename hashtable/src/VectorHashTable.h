@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/vector.hpp>
 #include "HashTable.h"
+#include <utils/Random.h>
 #include <atomic>
 #include <random>
 #include <unordered_set>
@@ -31,7 +32,8 @@ class VectorHashTable final : public HashTable<LABEL_T> {
   template <bool b = USE_RESERVOIR,
             std::enable_if_t<b>* = nullptr>  // when USE_RESERVOIR is true
   VectorHashTable(uint32_t num_tables, uint64_t max_reservoir_size,
-                  uint64_t table_range, uint64_t seed = time(nullptr),
+                  uint64_t table_range,
+                  uint64_t seed = global_random::nextSeed(),
                   uint64_t max_rand = HashTable<LABEL_T>::DEFAULT_MAX_RAND)
       : _num_tables(num_tables),
         _table_range(table_range),

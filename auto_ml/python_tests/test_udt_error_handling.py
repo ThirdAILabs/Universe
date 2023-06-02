@@ -126,3 +126,21 @@ def test_invalid_column_name_in_udt_predict():
         match=re.escape(f"Input column name 'HAHAHA' not found in data_types."),
     ):
         model.predict({"HAHAHA": "some text"})
+
+
+@pytest.mark.unit
+def test_set_output_sparsity_throws_error_on_unsupported_backend():
+    """
+    set_output_sparsity is enabled only for UDTClassifier Backend hence, this should throw an error.
+    """
+    model = bolt.UniversalDeepTransformer(
+        source_column="source",
+        target_column="target",
+        dataset_size="medium",
+        delimiter="\t",
+    )
+
+    with pytest.raises(
+        RuntimeError, match=re.escape(f"Method not supported for the model")
+    ):
+        model.set_output_sparsity(sparsity=0.2, rebuild_hash_tables=False)

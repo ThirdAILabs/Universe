@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashTable.h"
+#include <utils/Random.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -68,7 +69,7 @@ class SampledHashTable final : public HashTable<uint32_t> {
    * are created for reservoir sampling
    */
   SampledHashTable(uint64_t num_tables, uint64_t reservoir_size, uint64_t range,
-                   uint32_t seed = time(nullptr),
+                   uint32_t seed = global_random::nextSeed(),
                    uint64_t max_rand = HashTable<uint32_t>::DEFAULT_MAX_RAND);
 
   SampledHashTable(const SampledHashTable& other) = delete;
