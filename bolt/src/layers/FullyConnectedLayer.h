@@ -5,6 +5,7 @@
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/neuron_index/NeuronIndex.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
@@ -18,13 +19,6 @@ namespace thirdai::bolt {
 namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
-
-enum class BoltSamplingMode {
-  LSH,
-  FreezeHashTables,
-  FreezeHashTablesWithInsertions,
-  RandomSampling
-};
 
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
@@ -69,26 +63,17 @@ class FullyConnectedLayer final {
                      /* is_dense= */ !is_sparse);
   }
 
-  void freezeHashTables(bool insert_labels_if_not_found) {
-    if (useRandomSampling()) {
-      return;
-    }
+  void freezeHashTables(bool insert_labels_if_not_found);
 
-    if (insert_labels_if_not_found) {
-      _sampling_mode = BoltSamplingMode::FreezeHashTablesWithInsertions;
-    } else {
-      _sampling_mode = BoltSamplingMode::FreezeHashTables;
-    }
-  }
-
-  bool hashTablesFrozen() const {
-    return _sampling_mode == BoltSamplingMode::FreezeHashTables ||
-           _sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions;
-  }
+  void unfreezeHashTables() { _index_frozen = false; }
 
   void buildHashTables();
 
   void reBuildHashFunction();
+
+  const nn::NeuronIndexPtr& neuronIndex() const { return _neuron_index; }
+
+  void setNeuronIndex(nn::NeuronIndexPtr index);
 
   uint32_t getDim() const { return _dim; }
 
@@ -111,10 +96,6 @@ class FullyConnectedLayer final {
   float* getWeights() const;
 
   float* getBiases() const;
-
-  void setTrainable(bool trainable);
-
-  bool getTrainable() const;
 
   bool useBias() const { return _use_bias; }
 
@@ -156,7 +137,7 @@ class FullyConnectedLayer final {
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
-  bool _trainable;
+
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -165,9 +146,8 @@ class FullyConnectedLayer final {
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
-  hashing::HashFunctionPtr _hasher;
-  hashtable::SampledHashTablePtr _hash_table;
-  std::vector<uint32_t> _rand_neurons;
+  nn::NeuronIndexPtr _neuron_index;
+  bool _index_frozen = false;
 
   template <bool DENSE>
   constexpr uint32_t nonzerosInOutput() const {
@@ -187,8 +167,6 @@ class FullyConnectedLayer final {
   bool _should_save_optimizer;
 
   bool _use_bias;
-
-  BoltSamplingMode _sampling_mode;
 
   /* --------------- Within-batch variables ------------------------------
    * These variables are set while we are processing a batch (usually during
@@ -225,10 +203,6 @@ class FullyConnectedLayer final {
 
   void initActiveNeuronsTrackers();
 
-  bool useRandomSampling() const {
-    return _sampling_mode == BoltSamplingMode::RandomSampling;
-  }
-
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
                                                  float B1_bias_corrected,
@@ -260,11 +234,6 @@ class FullyConnectedLayer final {
 
   inline void cleanupWithinBatchVars();
 
-  inline void initSamplingDatastructures(
-      const SamplingConfigPtr& sampling_config, std::mt19937& rd);
-
-  inline void deinitSamplingDatastructures();
-
   template <bool DENSE, bool PREV_DENSE>
   void markActiveNeuronsForUpdate(const BoltVector& input,
                                   const BoltVector& output, uint32_t len_out);
@@ -281,26 +250,15 @@ class FullyConnectedLayer final {
   template <bool FIRST_LAYER>
   void eigenDenseDenseBackpropagate(BoltVector& input, BoltVector& output);
 
-  template <bool DENSE, bool PREV_DENSE>
-  void selectActiveNeurons(const BoltVector& input, BoltVector& output,
-                           const BoltVector* labels);
-
-  void randomNeuronSampling(const BoltVector& input, const BoltVector& output,
-                            const BoltVector* labels);
-
-  template <bool PREV_DENSE>
-  void lshNeuronSampling(const BoltVector& input, BoltVector& output,
-                         const BoltVector* labels);
-
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 
   template <class Archive>
   void save(Archive& archive) const {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
-            _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _disable_sparse_parameter_updates, _sampling_mode,
-            _should_save_optimizer, _use_bias);
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+            _biases, _neuron_index, _index_frozen,
+            _disable_sparse_parameter_updates, _should_save_optimizer,
+            _use_bias);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
@@ -323,10 +281,10 @@ class FullyConnectedLayer final {
    */
   template <class Archive>
   void load(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
-            _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _disable_sparse_parameter_updates, _sampling_mode,
-            _should_save_optimizer, _use_bias);
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+            _biases, _neuron_index, _index_frozen,
+            _disable_sparse_parameter_updates, _should_save_optimizer,
+            _use_bias);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
@@ -334,15 +292,6 @@ class FullyConnectedLayer final {
     // in addition to the optimizer as mentioned above
     initActiveNeuronsTrackers();
   }
-
-  /**
-   * If force_build=true build hash tables, return if false.
-   * For non-trainable layers, buildHashTablesImpl is called with
-   * force_build=false except during initialization and setting weights.
-   * For trainable layers, buildHashTablesImpl is always called with
-   * force_build=true.
-   */
-  void buildHashTablesImpl(bool force_build);
 };
 
 }  // namespace thirdai::bolt

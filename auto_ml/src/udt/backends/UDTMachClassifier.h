@@ -105,6 +105,9 @@ class UDTMachClassifier final : public UDTBackend {
 
   void clearIndex() final {
     _mach_label_block->index()->clear();
+
+    updateSamplingStrategy();
+
     if (_rlhf_sampler) {
       _rlhf_sampler->clear();
     }
@@ -161,6 +164,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::string textColumnForDocumentIntroduction();
 
+  void updateSamplingStrategy();
+
   void addBalancingSamples(const dataset::DataSourcePtr& data);
 
   void requireRLHFSampler();
@@ -200,6 +205,7 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
+  float _sparse_inference_threshold;
 
   std::optional<RLHFSampler> _rlhf_sampler;
 };
