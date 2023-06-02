@@ -563,7 +563,7 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate(source=source_sample, target=target_sample, n_buckets=7)
+        model.associate([(source_sample, target_sample)], n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
