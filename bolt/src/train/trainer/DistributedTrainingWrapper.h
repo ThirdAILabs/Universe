@@ -63,9 +63,7 @@ class DistributedTrainingWrapper {
   }
 
   // Increment epoch after each training pass
-  void updateEpochStatus() {
-    _trainer.incrementEpochCounter();
-  }
+  void updateEpochStatus() { _trainer.incrementEpochCounter(); }
 
  private:
   std::optional<LabeledDataset> convertLabeldData(

@@ -15,7 +15,7 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
       _train_metrics(metrics::fromMetricNames(model, train_config.metrics())),
       _logging_interval(train_config.logLossFrequency()),
       _use_sparsity_in_validation(false),
-      _trainer(model){
+      _trainer(model) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
         "Distributed training is currently only supported for models with a "

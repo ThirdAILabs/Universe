@@ -99,10 +99,8 @@ class Trainer {
       const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
-	// Added function to increment epoch counter.
-  void incrementEpochCounter(){
-    _epoch++;
-  }
+  // Added function to increment epoch counter.
+  void incrementEpochCounter() { _epoch++; }
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
