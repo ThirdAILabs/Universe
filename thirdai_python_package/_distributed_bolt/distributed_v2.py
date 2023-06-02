@@ -34,6 +34,12 @@ class DistributedTrainer(bolt.train.Trainer):
         num_workers = session.get_world_size()
 
         self.model.train_on_batch(inputs, labels)
+
+        # Until each of the worker calls this barrier function, we won't be calling all-reduce. We
+        # need this since we need all worker to be at gloo's rendezvous before we start
+        # communicating, else gloo might timeou waiting for all the workers.
+        col.barrier(group_name="default")
+
         gradients = np.array(self.model.get_gradients())
         col.allreduce(
             tensor=gradients,
