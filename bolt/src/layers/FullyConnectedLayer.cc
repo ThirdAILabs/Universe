@@ -471,6 +471,9 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     active_set.erase(labels->active_neurons[i]);
   }
 
+  // TODO(Nicholas): This may not be deterministic because std::unordered_set
+  // does not make guarentees about the ordering of items. We could fix this by
+  // specifying a custom hash function.
   for (auto x : active_set) {
     if (cnt == _sparse_dim) {
       break;
