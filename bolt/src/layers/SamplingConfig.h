@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bolt/src/neuron_index/NeuronIndex.h>
+#include <bolt/src/neuron_index/RandomSampler.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
@@ -7,6 +9,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -15,12 +18,8 @@ class SamplingConfig {
  public:
   SamplingConfig() {}
 
-  virtual hashing::HashFunctionPtr getHashFunction(
-      uint32_t input_dim) const = 0;
-
-  virtual hashtable::SampledHashTablePtr getHashTable() const = 0;
-
-  virtual bool isRandomSampling() const { return false; }
+  virtual nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                            uint32_t input_dim) const = 0;
 
   virtual ~SamplingConfig() = default;
 
@@ -48,16 +47,21 @@ class DWTASamplingConfig final : public SamplingConfig {
         _reservoir_size(reservoir_size),
         _permutes(permutations) {}
 
-  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const final;
+  nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                    uint32_t input_dim) const final;
 
-  hashtable::SampledHashTablePtr getHashTable() const final;
+  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const;
 
-  static SamplingConfigPtr newAutotune(uint32_t layer_dim, float sparsity);
+  hashtable::SampledHashTablePtr getHashTable() const;
 
-  static SamplingConfigPtr oldAutotune(uint32_t layer_dim, float sparsity);
+  static std::shared_ptr<DWTASamplingConfig> newAutotune(uint32_t layer_dim,
+                                                         float sparsity);
 
-  static SamplingConfigPtr autotune(uint32_t layer_dim, float sparsity,
-                                    bool experimental_autotune);
+  static std::shared_ptr<DWTASamplingConfig> oldAutotune(uint32_t layer_dim,
+                                                         float sparsity);
+
+  static std::shared_ptr<DWTASamplingConfig> autotune(
+      uint32_t layer_dim, float sparsity, bool experimental_autotune);
 
  private:
   uint32_t _num_tables, _hashes_per_table, _range_pow, _binsize,
@@ -79,9 +83,12 @@ class FastSRPSamplingConfig final : public SamplingConfig {
         _hashes_per_table(hashes_per_table),
         _reservoir_size(reservoir_size) {}
 
-  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const final;
+  nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                    uint32_t input_dim) const final;
 
-  hashtable::SampledHashTablePtr getHashTable() const final;
+  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const;
+
+  hashtable::SampledHashTablePtr getHashTable() const;
 
  private:
   uint32_t _num_tables, _hashes_per_table, _reservoir_size;
@@ -98,14 +105,11 @@ class RandomSamplingConfig final : public SamplingConfig {
  public:
   RandomSamplingConfig() {}
 
-  hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const final {
+  nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                    uint32_t input_dim) const final {
     (void)input_dim;
-    return nullptr;
+    return nn::RandomSampler::make(layer_dim);
   }
-
-  hashtable::SampledHashTablePtr getHashTable() const final { return nullptr; }
-
-  bool isRandomSampling() const final { return true; }
 
  private:
   friend class cereal::access;
