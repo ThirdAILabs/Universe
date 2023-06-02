@@ -236,7 +236,7 @@ void Model::freezeHashTables(bool insert_labels_if_not_found) {
 
 void Model::unfreezeHashTables() {
   for (auto& op : _ops) {
-    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+    if (auto fc = ops::FullyConnected::cast(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->unfreezeHashTables();
