@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
+#include <utils/Random.h>
 #include <vector>
 
 namespace thirdai::hashing {
@@ -27,7 +28,7 @@ class DWTAHashFunction final : public HashFunction {
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
                    uint32_t _num_tables, uint32_t range_pow, uint32_t binsize,
                    std::optional<uint32_t> permutations,
-                   uint32_t seed = time(nullptr));
+                   uint32_t seed = global_random::nextSeed());
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;

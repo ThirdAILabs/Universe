@@ -15,8 +15,8 @@ DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 def get_notebook_paths(temp_dir):
     # Collect all of the jupyter notebooks in the Demos repo
     subprocess.call(["git", "clone", DEMO_URL], cwd=temp_dir)
-    notebook_dir = os.path.join(temp_dir, "Demos", "*.ipynb")
-    notebook_paths = glob.glob(notebook_dir)
+    notebook_dir = os.path.join(temp_dir, "Demos", "**", "*.ipynb")
+    notebook_paths = glob.glob(notebook_dir, recursive=True)
     return notebook_paths
 
 

@@ -4,6 +4,7 @@
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -37,8 +38,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_mode(BoltSamplingMode::LSH),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
-  std::random_device rd;
-  std::default_random_engine eng(rd());
+  std::mt19937 eng(global_random::nextSeed());
   std::normal_distribution<float> dist(0.0, 0.01);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
@@ -49,7 +49,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     _biases.assign(_biases.size(), 0.0);
   }
   if (_sparsity < 1.0) {
-    initSamplingDatastructures(config.getSamplingConfig(), rd);
+    initSamplingDatastructures(config.getSamplingConfig(), eng);
   }
 
   initOptimizer();
@@ -649,7 +649,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 void FullyConnectedLayer::initSamplingDatastructures(
-    const SamplingConfigPtr& sampling_config, std::random_device& rd) {
+    const SamplingConfigPtr& sampling_config, std::mt19937& rd) {
   if (sampling_config->isRandomSampling()) {
     _sampling_mode = BoltSamplingMode::RandomSampling;
   } else {
@@ -784,12 +784,11 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
 
 void FullyConnectedLayer::forceBuildHashTables(bool experimental_autotune) {
   if (_sparsity < 1) {
-    deinitSamplingDatastructures();
-
-    auto sampling_config =
-        DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
-    std::random_device rd;
-    initSamplingDatastructures(sampling_config, rd);
+      deinitSamplingDatastructures();
+      auto sampling_config =
+          DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
+      std::mt19937 rd(global_random::nextSeed());
+      initSamplingDatastructures(sampling_config, rd);
   }
 }
 
@@ -806,7 +805,7 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
     _sparse_dim = _sparsity * _dim;
     auto sampling_config =
         DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
-    std::random_device rd;
+    std::mt19937 rd(global_random::nextSeed());
     initSamplingDatastructures(sampling_config, rd);
     return;
   }

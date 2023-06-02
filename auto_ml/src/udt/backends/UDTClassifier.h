@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
@@ -37,6 +38,13 @@ class UDTClassifier final : public UDTBackend {
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
+
+  /**
+   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
+   * then the hash tables and functions are rebuilt. Note that, model should be
+   * finetuned if rebuild_hash_tables is set to true.
+   */
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables) override;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,

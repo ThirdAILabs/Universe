@@ -113,6 +113,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
            bolt::python::OutputRedirect())
+      .def("set_output_sparsity", &udt::UDT::setOutputSparsity,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = false,
+           docs::UDT_SET_OUTPUT_SPARSITY, bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
@@ -160,6 +163,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{})
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
            py::arg("sparse_inference") = false)
+      .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
+           py::arg("n_buckets"), py::arg("n_association_samples") = 16,
+           py::arg("n_balancing_samples") = 50,
+           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
