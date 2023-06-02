@@ -411,8 +411,6 @@ void UDTMachClassifier::updateSamplingStrategy() {
     if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
-      std::random_device rd;
-
       auto sampling_config = bolt::DWTASamplingConfig::autotune(
           mach_index->numBuckets(), sparsity,
           /* experimental_autotune= */ false);
@@ -473,6 +471,8 @@ void UDTMachClassifier::introduceDocuments(
   }
 
   addBalancingSamples(cold_start_data);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::introduceDocument(
