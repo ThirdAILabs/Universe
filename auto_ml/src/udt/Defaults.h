@@ -90,4 +90,7 @@ constexpr uint32_t MAX_BALANCING_DOCS = 1000;
 // Max samples to store per doc for rlhf balancing.
 constexpr uint32_t MAX_BALANCING_SAMPLES_PER_DOC = 10;
 
+// Batch size to use during associate.
+constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
+
 }  // namespace thirdai::automl::udt::defaults

@@ -184,11 +184,11 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference);
   }
 
-  void associate(const MapInput& source, const MapInput& target,
-                 uint32_t n_buckets, uint32_t n_association_samples,
-                 uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) {
-    _backend->associate(source, target, n_buckets, n_association_samples,
+  void associate(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples,
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    _backend->associate(source_target_samples, n_buckets, n_association_samples,
                         n_balancing_samples, learning_rate, epochs);
   }
 

@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -27,6 +28,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace thirdai::automl::udt {
 
@@ -387,7 +389,7 @@ void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    std::optional<uint32_t> num_buckets_to_sample) {
+    std::optional<uint32_t> num_buckets_to_sample_opt) {
   auto metadata = getColdStartMetaData();
 
   auto cold_start_data = cold_start::preprocessColdStartTrainSource(
@@ -403,19 +405,24 @@ void UDTMachClassifier::introduceDocuments(
 
   const auto& labels = cold_start_data->labelColumn();
   uint32_t row_idx = 0;
-  std::unordered_map<uint32_t, std::vector<BoltVector>> outputs_per_doc;
+
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
   for (const auto& batch : doc_samples_tensors) {
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi((*labels)[row_idx++]);
-      outputs_per_doc[label].push_back(scores->getVector(i));
+      top_k_per_doc[label].push_back(
+          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
   }
 
-  for (const auto& [doc, outputs] : outputs_per_doc) {
-    auto hashes = topHashesForDoc(outputs, num_buckets_to_sample);
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
     _mach_label_block->index()->insert(doc, hashes);
   }
 
@@ -461,13 +468,11 @@ struct CompareBuckets {
 };
 
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
-    const std::vector<BoltVector>& output_samples,
-    std::optional<uint32_t> num_buckets_to_sample_opt) const {
+    std::vector<TopKActivationsQueue>&& top_k_per_sample,
+    uint32_t num_buckets_to_sample) const {
   const auto& mach_index = _mach_label_block->index();
 
   uint32_t num_hashes = mach_index->numHashes();
-  uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(num_hashes);
 
   if (num_buckets_to_sample < mach_index->numHashes()) {
     std::cout << "Warning. Sampling from fewer buckets than num_hashes. "
@@ -479,18 +484,16 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   }
 
   std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
-  for (const auto& output : output_samples) {
-    auto top_K = output.findKLargestActivations(num_buckets_to_sample);
-
-    while (!top_K.empty()) {
-      auto [activation, active_neuron] = top_K.top();
+  for (auto& top_k : top_k_per_sample) {
+    while (!top_k.empty()) {
+      auto [activation, active_neuron] = top_k.top();
       if (!hash_freq_and_scores.count(active_neuron)) {
         hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
       } else {
         hash_freq_and_scores[active_neuron].frequency += 1;
         hash_freq_and_scores[active_neuron].score += activation;
       }
-      top_K.pop();
+      top_k.pop();
     }
   }
 
@@ -539,7 +542,16 @@ void UDTMachClassifier::introduceLabel(
                               /* use_sparsity = */ false)
                     .at(0);
 
-  auto hashes = topHashesForDoc(output->vectors(), num_buckets_to_sample_opt);
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  std::vector<TopKActivationsQueue> top_ks;
+  for (uint32_t i = 0; i < output->batchSize(); i++) {
+    top_ks.push_back(
+        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
+  }
+
+  auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 }
@@ -599,36 +611,61 @@ BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
                                       std::vector<float>(indices.size(), 1.0));
 }
 
-void UDTMachClassifier::associate(const MapInput& source,
-                                  const MapInput& target, uint32_t n_buckets,
-                                  uint32_t n_association_samples,
-                                  uint32_t n_balancing_samples,
-                                  float learning_rate, uint32_t epochs) {
+void UDTMachClassifier::associate(
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
   requireRLHFSampler();
 
-  auto target_hashes = predictHashesImpl(target, false);
-
-  BoltVector source_vec =
-      _dataset_factory->featurizeInput(source).at(0)->getVector(0);
-
-  auto [inputs, labels] = _rlhf_sampler->balancingSamples(n_balancing_samples);
+  auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
+                                                 source_target_samples.size());
 
   std::mt19937 rng(global_random::nextSeed());
 
-  for (uint32_t i = 0; i < n_association_samples; i++) {
-    inputs.push_back(source_vec);
-    labels.push_back(makeLabelFromHashes(target_hashes, n_buckets, rng));
+  for (const auto& [source, target] : source_target_samples) {
+    auto target_hashes = predictHashesImpl(target, false);
+    BoltVector source_vec =
+        _dataset_factory->featurizeInput(source).at(0)->getVector(0);
+    for (uint32_t i = 0; i < n_association_samples; i++) {
+      samples.emplace_back(source_vec,
+                           makeLabelFromHashes(target_hashes, n_buckets, rng));
+    }
   }
 
-  auto input_tensor = bolt::nn::tensor::Tensor::convert(
-      BoltBatch(std::move(inputs)), _classifier->model()->inputDims().at(0));
+  std::shuffle(samples.begin(), samples.end(), rng);
 
-  auto label_tensor = bolt::nn::tensor::Tensor::convert(
-      BoltBatch(std::move(labels)), _classifier->model()->labelDims().at(0));
+  std::vector<
+      std::pair<bolt::nn::tensor::TensorList, bolt::nn::tensor::TensorList>>
+      batches;
+
+  uint32_t input_dim = _classifier->model()->inputDims().at(0);
+  uint32_t label_dim = _classifier->model()->labelDims().at(0);
+  uint32_t batch_size = defaults::ASSOCIATE_BATCH_SIZE;
+
+  for (size_t i = 0; i < samples.size(); i += batch_size) {
+    std::vector<BoltVector> inputs;
+    std::vector<BoltVector> labels;
+
+    size_t batch_end = std::min((i + 1) * batch_size, samples.size());
+    for (size_t j = i; j < batch_end; j++) {
+      inputs.emplace_back(std::move(samples[j].first));
+      labels.emplace_back(std::move(samples[j].second));
+    }
+
+    auto input_tensor = bolt::nn::tensor::Tensor::convert(
+        BoltBatch(std::move(inputs)), input_dim);
+
+    auto label_tensor = bolt::nn::tensor::Tensor::convert(
+        BoltBatch(std::move(labels)), label_dim);
+
+    batches.push_back({{input_tensor}, {label_tensor}});
+  }
 
   for (uint32_t i = 0; i < epochs; i++) {
-    _classifier->model()->trainOnBatch({input_tensor}, {label_tensor});
-    _classifier->model()->updateParameters(learning_rate);
+    for (const auto& [x, y] : batches) {
+      _classifier->model()->trainOnBatch(x, y);
+      _classifier->model()->updateParameters(learning_rate);
+    }
   }
 }
 
