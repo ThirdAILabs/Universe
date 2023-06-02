@@ -76,6 +76,9 @@ constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 
+// When to switch to using the mach index for sparse inference
+constexpr float MACH_SPARSE_INFERENCE_THRESHOLD = 0.2;
+
 // Whether to use the experimental autotune for fully connected layer hash
 // tables
 constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
@@ -89,5 +92,8 @@ constexpr uint32_t MAX_BALANCING_DOCS = 1000;
 
 // Max samples to store per doc for rlhf balancing.
 constexpr uint32_t MAX_BALANCING_SAMPLES_PER_DOC = 10;
+
+// Batch size to use during associate.
+constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
 
 }  // namespace thirdai::automl::udt::defaults

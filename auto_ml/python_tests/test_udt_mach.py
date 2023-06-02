@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, dataset
+from thirdai import bolt, bolt_v2, dataset
 
 pytestmark = [pytest.mark.unit]
 
@@ -475,6 +475,63 @@ def test_load_balancing():
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
 
 
+def test_mach_sparse_inference():
+    """
+    This test checks that if we create a mach index that with a number of non
+    empty buckets that puts it under the theshold for mach index sampling, only the
+    non empty buckets are returned by sparse inference. It then checks that the
+    returned buckets are updated as the index is modified, and then finally
+    checks that it no longer uses mach sampling after the index sufficient non
+    empty buckets.
+    """
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30]}, output_range=OUTPUT_DIM, num_hashes=1
+        )
+    )
+
+    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30])
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30], 4: [40]},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30, 40])
+
+    model.forget(label=3)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 40])
+
+    # This is above the threshold for mach index sampling, so it should revert back to LSH
+    model.set_index(
+        dataset.MachIndex(
+            {i * 10: [i] for i in range(OUTPUT_DIM // 2)},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    # When we set an index with 50% sparsity it will autotune the sampling, it
+    # will decide to not use any sort of sampling for this level of sparsity and
+    # so the output should be dense.
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert output.active_neurons == None
+    assert output.activations.shape == (1, OUTPUT_DIM)
+
+
 def test_associate():
     model = train_simple_mach_udt(
         rlhf_args={
@@ -506,7 +563,7 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate(source=source_sample, target=target_sample, n_buckets=7)
+        model.associate([(source_sample, target_sample)], n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
