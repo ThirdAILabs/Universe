@@ -13,7 +13,6 @@
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
-#include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <cstddef>
@@ -137,7 +136,7 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                                 callbacks, verbose, logging_interval);
 
   timer.stop();
-  telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
+  // telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
 
   return output;
 }
@@ -152,9 +151,9 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
 
   timer.stop();
 
-  telemetry::client.trackTraining(
-      /* training_time_seconds = */ timer.elapsed<std::chrono::nanoseconds>() /
-      1000000000.0);
+  // telemetry::client.trackTraining(
+  //     /* training_time_seconds = */ timer.elapsed<std::chrono::nanoseconds>() /
+  //     1000000000.0);
 
   return output;
 }
@@ -173,7 +172,7 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
       _backend->evaluate(data, metrics, sparse_inference, verbose, top_k);
 
   timer.stop();
-  telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
+  // telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
 
   return result;
 }
@@ -187,8 +186,8 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                                   return_predicted_class, top_k);
 
   timer.stop();
-  telemetry::client.trackPrediction(
-      /* inference_time_seconds= */ timer.seconds());
+  // telemetry::client.trackPrediction(
+  //     /* inference_time_seconds= */ timer.seconds());
 
   return result;
 }
@@ -202,8 +201,8 @@ py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
                                        return_predicted_class, top_k);
 
   timer.stop();
-  telemetry::client.trackBatchPredictions(
-      /* inference_time_seconds= */ timer.seconds(), sample.size());
+  // telemetry::client.trackBatchPredictions(
+  //     /* inference_time_seconds= */ timer.seconds(), sample.size());
 
   return result;
 }
@@ -216,8 +215,8 @@ std::vector<dataset::Explanation> UDT::explain(
   auto result = _backend->explain(sample, target_class);
 
   timer.stop();
-  telemetry::client.trackExplanation(
-      /* explain_time_seconds= */ timer.seconds());
+  // telemetry::client.trackExplanation(
+  //     /* explain_time_seconds= */ timer.seconds());
 
   return result;
 }

@@ -65,7 +65,7 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
-  add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
+  # add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
   # if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
   #   # This path is meant to be activated only for M1 cross-compile on MacOS. Any
   #   # other paths are potentially untested.
@@ -271,7 +271,7 @@ add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 # copies of gmock
 set(ENABLE_TESTING OFF)
 set(ENABLE_PUSH OFF)
-add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
+# add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
@@ -400,7 +400,7 @@ set(THIRDAI_SOURCES
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
-    telemetry/src/PrometheusClient.cc
+    # telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
@@ -432,11 +432,11 @@ set(THIRDAI_SOURCES
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES}
-      licensing/src/methods/keygen/KeygenCommunication.cc
-      licensing/src/methods/heartbeat/Heartbeat.cc
+      # licensing/src/methods/keygen/KeygenCommunication.cc
+      # licensing/src/methods/heartbeat/Heartbeat.cc
       licensing/src/CheckLicenseEnabled.cc
-      licensing/src/methods/keygen/KeyMethod.cc
-      licensing/src/methods/heartbeat/LocalServerMethod.cc
+      # licensing/src/methods/keygen/KeyMethod.cc
+      # licensing/src/methods/heartbeat/LocalServerMethod.cc
       licensing/src/methods/file/FileMethod.cc)
 else()
   set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
@@ -445,8 +445,7 @@ endif()
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
-  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal utf8proc)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)

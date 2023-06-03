@@ -8,10 +8,10 @@
 #include <licensing/src/methods/LicenseMethod.h>
 #include <licensing/src/methods/file/FileMethod.h>
 #include <licensing/src/methods/file/SignedLicense.h>
-#include <licensing/src/methods/heartbeat/Heartbeat.h>
-#include <licensing/src/methods/heartbeat/LocalServerMethod.h>
-#include <licensing/src/methods/keygen/KeyMethod.h>
-#include <licensing/src/methods/keygen/KeygenCommunication.h>
+// #include <licensing/src/methods/heartbeat/Heartbeat.h>
+// #include <licensing/src/methods/heartbeat/LocalServerMethod.h>
+// #include <licensing/src/methods/keygen/KeyMethod.h>
+// #include <licensing/src/methods/keygen/KeygenCommunication.h>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -55,14 +55,18 @@ void checkExistingLicense() {
 
 void activate(std::string api_key) {
   checkExistingLicense();
-  _licensing_method = std::make_unique<keygen::KeyMethod>(std::move(api_key));
+  // _licensing_method =
+  // std::make_unique<keygen::KeyMethod>(std::move(api_key));
+  (void)api_key;
 }
 
 void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout) {
   checkExistingLicense();
-  _licensing_method = std::make_unique<heartbeat::LocalServerMethod>(
-      std::move(heartbeat_url), heartbeat_timeout);
+  (void)heartbeat_timeout;
+  (void)heartbeat_url;
+  // _licensing_method = std::make_unique<heartbeat::LocalServerMethod>(
+  //     std::move(heartbeat_url), heartbeat_timeout);
 }
 
 void setLicensePath(std::string license_path, bool verbose) {
