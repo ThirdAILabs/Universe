@@ -15,6 +15,7 @@
 #include <pybind11/stl.h>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::automl::python {
 
@@ -363,13 +364,14 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
         std::vector<uint32_t> value = v.cast<std::vector<uint32_t>>();
         args.insert(name, value);
       } catch (...) {
-        throw std::logic_error("Give a list of integers as input");
+        throw std::invalid_argument(
+            "List argument must contain only positive integers.");
       }
     } else {
-      throw std::invalid_argument("Invalid type '" +
-                                  py::str(v.get_type()).cast<std::string>() +
-                                  "'. Values of parameters dictionary must be "
-                                  "bool, int, float, str, or UDTConfig.");
+      throw std::invalid_argument(
+          "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
+          "'. Values of parameters dictionary must be "
+          "bool, int, float, str, list of integers or UDTConfig.");
     }
   }
 

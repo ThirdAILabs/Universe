@@ -49,8 +49,17 @@ UDTQueryReformulation::UDTQueryReformulation(
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
   if (user_args.contains("n_grams")) {
-    _n_grams = user_args.get<std::vector<uint32_t>>("n_grams",
-                                                    "std::vector<uint32_t>");
+    auto temp_ngrams =
+        user_args.get<std::vector<uint32_t>>("n_grams", "list(int)");
+    _n_grams.clear();
+    for (unsigned int temp_ngram : temp_ngrams) {
+      // This check makes sure that we do not insert a 0 in the _n_grams vector
+      if (temp_ngram <= 0) {
+        throw std::logic_error(
+            "n_grams argument must contain only positive integers");
+      }
+      _n_grams.push_back(temp_ngram);
+    }
   }
   _inference_featurizer =
       dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
@@ -328,6 +337,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
     const std::string& column_name, const std::vector<uint32_t>& n_grams) {
+  // TODO(Shubh) : Remove this before merging.
   std::cout << "Using the following n-grams" << std::endl;
   for (const auto& x : n_grams) {
     std::cout << x << "-gram, ";
