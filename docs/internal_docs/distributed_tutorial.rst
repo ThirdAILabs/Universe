@@ -20,8 +20,8 @@ To use Bolt for distributed training, you need to initialize a Ray cluster to ma
     
     The `ray.init()` function initializes Ray and sets up the necessary infrastructure for distributed training. By default, it starts a Ray cluster on your local machine using available resources.
 
-.. code-block:: python
-    ray.init()
+    .. code-block:: python
+        ray.init()
 
 
 
@@ -29,8 +29,8 @@ To use Bolt for distributed training, you need to initialize a Ray cluster to ma
     
     You can configure the resources allocated to Ray workers using the `num_cpus` and `num_gpus` arguments in `ray.init()`. For example:
 
-.. code-block:: python
-    ray.init(num_cpus=4, num_gpus=2)
+    .. code-block:: python
+        ray.init(num_cpus=4, num_gpus=2)
 
 
 This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
@@ -39,13 +39,13 @@ This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
     
     You can provide additional configuration options to `ray.init()` as per your requirements. For example, you can specify the working directory or set environment variables. Here's an example:
 
-.. code-block:: python
-    ray.init(
-        runtime_env={
-            "working_dir": "/path/to/working/directory",
-            "env_vars": {"OMP_NUM_THREADS": "4"},
-        }
-    )
+    .. code-block:: python
+        ray.init(
+            runtime_env={
+                "working_dir": "/path/to/working/directory",
+                "env_vars": {"OMP_NUM_THREADS": "4"},
+            }
+        )
 
 
 In the example above, the working directory is set to `/path/to/working/directory`, and the environment variable `OMP_NUM_THREADS` is set to `4`.
