@@ -1,5 +1,3 @@
-Apologies for the oversight. Here's the updated documentation with an example usage for the Bolt distributed module:
-
 Distributed Training with Bolt
 ==============================
 
