@@ -1,73 +1,138 @@
-Distributed training
-====================
+Distributed Training with Bolt
+==============================
 
+Introduction
+------------
 
+The Bolt library provides a distributed training framework for bolt models. It enables you to train your models efficiently across multiple workers in a data parallel distributed environment. This document will guide you on how to use the Bolt distributed module for training your models.
 
-Starting a Ray Cluster
-----------------------
-Below Cluster Initialization would only work for Custom Clusters. For standard clusters like AWS, GCP, Azure and Aliyun, see https://docs.ray.io/en/latest/cluster/cloud.html.
+Initializing a Ray Cluster
+--------------------------
 
+To use Bolt for distributed training, you need to initialize a Ray cluster to manage the distributed computations. Ray provides a convenient way to set up and manage the cluster. Here are the steps to initialize a Ray cluster:
 
+1. Import the necessary modules:
+```python
+import ray
+from thirdai import bolt_v2 as bolt
+```
 
+2. Initialize Ray:
+```python
+ray.init()
+```
+The `ray.init()` function initializes Ray and sets up the necessary infrastructure for distributed training. By default, it starts a Ray cluster on your local machine using available resources.
 
-Installations
---------------------
-- First, install all the required modules by running the following command(to be done on all the nodes):
-- Have the Distributed bolt module built on those nodes 
-- Run the command: ``pip install -r requirements.txt``
-- Check if ray path is included in system path by printing (run 'echo $PATH' on the terminal)
-- Ray's default path is ``/home/$USER/.local/bin``
-- If not included, run the command: ``export PATH=$PATH:/home/$USER/.local/bin``
+3. Configure Ray resources:
+You can configure the resources allocated to Ray workers using the `num_cpus` and `num_gpus` arguments in `ray.init()`. For example:
+```python
+ray.init(num_cpus=4, num_gpus=2)
+```
+This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
 
+4. Optional: Additional Ray configuration:
+You can provide additional configuration options to `ray.init()` as per your requirements. For example, you can specify the working directory or set environment variables. Here's an example:
+```python
+ray.init(
+    runtime_env={
+        "working_dir": "/path/to/working/directory",
+        "env_vars": {"OMP_NUM_THREADS": "4"},
+    }
+)
+```
+In the example above, the working directory is set to `/path/to/working/directory`, and the environment variable `OMP_NUM_THREADS` is set to `4`.
 
-Automatic Cluster Initialization
-----------------------------------
-- Fill in the cluster configuration YAML file(cluster_configuration.YAML in cluster_configuration_files): 
-- Edit all the required fields in the cluster_configuration.YAML
-- head_ip: Add the IP for the head node 
-- workers_ip: Add the IP for all the worker nodes
-- ssh_private_key: Uncomment if ssh passwordless logging is not there on the nodes 
-- min_workers, max_workers: By default make them min_workers == max_workers == len(worker_ips)
-- For starting the ray cluster automatically, run the command: python3 start_cluster.py cluster_configuration.yaml
-- For stopping the ray cluster automatically, run the command: python3 stop_cluster.py cluster_configuration.yaml
-                
-                
-Manual Cluster Initialization
-------------------------------
-- On the head node, run the command ``ray start --head --port=6379``
-- On worker nodes, run the command ``ray start --address=<head_node_ip>:6379	``
-               
+By following these steps, you can connect to a Ray cluster to support distributed training with Bolt. Once the cluster is initialized, you can proceed with creating a Bolt trainer and starting the distributed training process.
 
+Please note that the exact configuration and initialization steps may vary depending on your specific use case and cluster setup. It is recommended to refer to the Ray documentation for detailed instructions on cluster initialization and configuration.
 
-Validating Cluster
----------------------
-- Type ``ray status`` on terminal
-- See Node Status and Resources
-- If it throws an error, it implies cluster has not started
+Installation
+------------
 
-Starting Training
--------------------
-Make sure to divide the training data equally(almost) for all nodes. Otherwise, some batches might be dropped as the training will occur only on a minimum of the number of batches across nodes. 
+To use the Bolt distributed module, you need to install the ThirdAI library, which includes the Bolt library. You can install it using pip:
 
+```shell
+pip3 install thirdai
+```
 
-Importing the library:
+Import Statements
+----------------
 
->>> from thirdai.distributed_bolt import db
+To use the distributed Bolt module, you need to import the necessary modules from the ThirdAI library. Here are the import statements you need:
 
-The current APIs supported:
+```python
+import thirdai.distributed_bolt as dist
+from thirdai import bolt_v2 as bolt
+```
 
->>> head = db.FullyConnectedNetwork(
-        num_workers=num_worker,
-        config_filename=config_filename,
-        num_cpus_per_node=num_cpus,
-        communication_type="circular"/"linear",
-    ) 
->>> head.train() 
->>> head.predict() #returns predict on the model trained
+Distributed Training Workflow
+----------------------------
 
-Look at examples folder for sample code.
+The general workflow for distributed training with Bolt consists of the following steps:
 
-IMPORTANT
-------------------
-1. Set up passwordless ssh between nodes(for easier usage)
-2. If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of CPUs available on the current and initialize the worker node with that count.
+1. Define your model: Create a Bolt model that represents your machine learning model architecture.
+
+2. Prepare your data: Prepare your training and validation datasets. Bolt supports various data formats, such as NumPy arrays and PyTorch tensors.
+
+3. Define the training loop: Define a training loop function that takes in a configuration and performs the training logic. This function will be executed by each worker in parallel.
+
+4. Initialize the Bolt trainer: Create an instance of the `dist.BoltTrainer` class, passing the necessary arguments such as the training loop function, model, and scaling configuration.
+
+5. Start distributed training: Call the `fit()` method on the Bolt trainer instance to start the distributed training process. This method will automatically distribute the training workload across the available workers.
+
+6. Monitor training progress: You can monitor the training progress by accessing the training history and checkpoints returned by the `fit()` method. You can also use the `validate()` method to evaluate your model's performance on validation data during training.
+
+7. Save and load checkpoints: You can save and load checkpoints during training using the `dist.BoltCheckPoint` class. Checkpoints allow you to resume training from a specific point or perform inference with a trained model.
+
+Example Usage
+-------------
+
+Here's an example usage of the Bolt distributed module:
+
+```python
+import thirdai.distributed_bolt as dist
+from thirdai import bolt_v2 as bolt
+
+def train_loop_per_worker(config):
+    # Training logic goes here
+    pass
+
+# Define your model
+model = ...
+
+# Prepare your data
+train_x, train_y = ...
+test_x, test_y = ...
+
+# Create a Bolt trainer
+scaling_config = bolt.ScalingConfig(num_workers=4, use_gpu=True)
+trainer = dist.BoltTrainer(
+    train_loop_per_worker=train_loop_per_worker,
+    train_loop_config={...},
+    scaling_config=scaling_config,
+)
+
+# Start distributed training
+result_checkpoint_and_history = trainer.fit()
+
+# Perform validation
+model = result_checkpoint_and_history.checkpoint.get_model()
+trainer = bolt.train.Trainer(model)
+history = trainer.validate(...)
+
+# Save and load checkpoints
+checkpoint = dist.BoltCheckPoint.from_model(model)
+checkpoint.save("checkpoint.pth")
+loaded_checkpoint = dist.BoltCheckPoint.load("checkpoint.pth")
+loaded_model = loaded_checkpoint.get_model()
+```
+
+Documentation Reference
+-----------------------
+
+For detailed API reference and usage examples, please refer to the Bolt documentation: [Bolt Documentation](https://bolt-python.readthedocs.io/)
+
+Conclusion
+----------
+
+The Bolt distributed module, available through the ThirdAI library, provides a powerful framework for training machine learning models in a distributed environment. By following the steps outlined in this documentation, you can leverage the Bolt library to scale your training process and achieve faster convergence.
