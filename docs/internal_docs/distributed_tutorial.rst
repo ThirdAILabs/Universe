@@ -130,9 +130,4 @@ loaded_model = loaded_checkpoint.get_model()
 Documentation Reference
 -----------------------
 
-For detailed API reference and usage examples, please refer to the Bolt documentation: [Bolt Documentation](https://bolt-python.readthedocs.io/)
-
-Conclusion
-----------
-
-The Bolt distributed module, available through the ThirdAI library, provides a powerful framework for training machine learning models in a distributed environment. By following the steps outlined in this documentation, you can leverage the Bolt library to scale your training process and achieve faster convergence.
+For detailed API reference and usage examples, please refer to the Bolt documentation.
