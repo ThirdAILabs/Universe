@@ -9,6 +9,11 @@ from ray.train.backend import Backend, BackendConfig
 class BoltBackendConfig(BackendConfig):
     """
     Configuration for Bolt Backend Config
+
+    This class initializes the gloo's collective group with
+    world-size, rank and with a group name of "default". Each
+    of worker in worker-group connects to this communication
+    group as done in `on_start` function.
     """
 
     @property

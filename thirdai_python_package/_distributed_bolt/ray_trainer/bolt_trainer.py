@@ -57,7 +57,8 @@ class BoltTrainer(DataParallelTrainer):
             by the ``preprocessor`` if one is provided.
         preprocessor: A ``ray.data.Preprocessor`` to preprocess the
             provided datasets.
-        resume_from_checkpoint: A checkpoint to resume training from.
+        resume_from_checkpoint: A checkpoint to resume training from. It can be read in the
+            training-loop with `session.get_checkpoint`.
     """
 
     def __init__(
