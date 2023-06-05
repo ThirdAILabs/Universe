@@ -62,7 +62,8 @@ class DistributedTrainingWrapper {
     _learning_rate = learning_rate;
   }
 
-  // Ensures epoch count is in sync with epoch count we maintain inside bolt
+  // Synchronizes the outer epoch count maintained by the distributed framework 
+  // with the epoch count maintained within Bolt.
   void incrementEpochCount() { _trainer.incrementEpochCount(); }
 
  private:
