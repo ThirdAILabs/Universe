@@ -7,48 +7,52 @@ The Bolt library provides a distributed training framework for Bolt models. It e
 
 Initializing a Ray Cluster
 --------------------------
-To use Bolt for distributed training, you need to initialize a Ray cluster to manage the distributed computations. Ray provides a convenient way to set up and manage the cluster. Here are the steps to initialize a Ray cluster:
+
+To use Bolt for distributed training, you need to initialize a Ray cluster to manage the distributed computations. Ray provides a convenient way to set up and manage the cluster. Here are the steps to connect to a Ray cluster:
 
 1. Import the necessary modules:
 
 .. code-block:: python
+
     import ray
     from thirdai import bolt_v2 as bolt
 
 
 2. Initialize Ray:
-    
-    The `ray.init()` function initializes Ray and sets up the necessary infrastructure for distributed training. By default, it starts a Ray cluster on your local machine using available resources.
 
-    .. code-block:: python
-        ray.init()
+The `ray.init()` function initializes Ray and sets up the necessary infrastructure for distributed training. By default, it starts a Ray cluster on your local machine using available resources.
 
+.. code-block:: python
+
+    ray.init()
 
 
 3. Configure Ray resources:
-    
-    You can configure the resources allocated to Ray workers using the `num_cpus` and `num_gpus` arguments in `ray.init()`. For example:
 
-    .. code-block:: python
-        ray.init(num_cpus=4, num_gpus=2)
+You can configure the resources allocated to Ray workers using the `num_cpus` and `num_gpus` arguments in `ray.init()`. For example:
+
+.. code-block:: python
+
+    ray.init(num_cpus=4, num_gpus=2)
 
 
-This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
+   This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
+
 
 4. Optional: Additional Ray configuration:
-    
-    You can provide additional configuration options to `ray.init()` as per your requirements. For example, you can specify the working directory or set environment variables. Here's an example:
 
-    .. code-block:: python
-        ray.init(
-            runtime_env={
-                "working_dir": "/path/to/working/directory",
-                "env_vars": {"OMP_NUM_THREADS": "4"},
-            }
-        )
+You can provide additional configuration options to `ray.init()` as per your requirements. For example, you can specify the working directory or set environment variables. Here's an example:
 
+.. code-block:: python
 
-In the example above, the working directory is set to `/path/to/working/directory`, and the environment variable `OMP_NUM_THREADS` is set to `4`.
+    ray.init(
+        runtime_env={
+            "working_dir": "/path/to/working/directory",
+            "env_vars": {"OMP_NUM_THREADS": "4"},
+        }
+    )
+
+    In the example above, the working directory is set to `/path/to/working/directory`, and the environment variable `OMP_NUM_THREADS` is set to `4`.
 
 By following these steps, you can connect to a Ray cluster to support distributed training with Bolt. Once the cluster is initialized, you can proceed with creating a Bolt trainer and starting the distributed training process.
 
