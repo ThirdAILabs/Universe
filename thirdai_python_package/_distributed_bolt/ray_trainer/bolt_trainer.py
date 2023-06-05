@@ -17,16 +17,15 @@ class BoltTrainer(DataParallelTrainer):
     Ex:
         def train_loop_per_worker(config):
             mnist_model = config.get('model')
-            trainer = bolt.train.Trainer(mnist_model)
+            trainer = bolt.train.DistributedTrainer(mnist_model)
 
-            trainer.distribute(2)
 
             train_y, train_y, test_x, test_y = data
 
             epochs = 1
             for _ in range(epochs):
                 for x, y in zip(train_x, train_y):
-                    trainer.step(x, y, 2)
+                    trainer.train_on_batch(x, y, 0.001)
 
             history = new_trainer.validate(
                 validation_data=(test_x, test_y),

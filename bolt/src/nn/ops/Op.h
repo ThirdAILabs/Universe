@@ -113,7 +113,6 @@ class Op {
    * Returns references to all of the weights of the op. Used for distributed
    * training.
    */
-
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
   /**

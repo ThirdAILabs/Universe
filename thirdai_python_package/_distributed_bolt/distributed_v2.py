@@ -10,8 +10,8 @@ class DistributedTrainer(bolt.train.Trainer):
         # during sparse training, we only update the parameters selected by hash tables, rather we
         # need to update all the parameters, since during all-reduce some other neuron could be non-zero
         # too.
-
         self.model.disable_sparse_parameter_updates()
+
         import ray
 
         if not ray.is_initialized():
@@ -28,7 +28,7 @@ class DistributedTrainer(bolt.train.Trainer):
 
         if not col.is_group_initialized("default"):
             raise RuntimeError(
-                "Gloo group not initialized. Call trainer.distribute() before calling step"
+                "Gloo group not initialized. Make sure to pass in BoltBackendConfig as backend_config to BoltTrainer"
             )
 
         num_workers = session.get_world_size()
@@ -37,7 +37,7 @@ class DistributedTrainer(bolt.train.Trainer):
 
         # Until each of the worker calls this barrier function, we won't be calling all-reduce. We
         # need this since we need all worker to be at gloo's rendezvous before we start
-        # communicating, else gloo might timeou waiting for all the workers.
+        # communicating, else gloo might timeout waiting for all the workers.
         col.barrier(group_name="default")
 
         gradients = np.array(self.model.get_gradients())
