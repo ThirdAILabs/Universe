@@ -99,7 +99,7 @@ class Trainer {
       const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
-  // Synchronizes the outer epoch count maintained by the distributed framework 
+  // Synchronizes the outer epoch count maintained by the distributed framework
   // with the epoch count maintained within Bolt.
   void incrementEpochCount() { _epoch++; }
 
