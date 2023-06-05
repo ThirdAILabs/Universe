@@ -80,12 +80,7 @@ class FullyConnectedLayer final {
       _sampling_mode = BoltSamplingMode::FreezeHashTables;
     }
   }
-  /*
-   * This functions is used by distributed to reinitialize Sampling
-   * Datastructure once, model is re-initialized after all-reduce, as it changes
-   * its weight, which makes the already stored data-structure redundant.
-   */
-  void forceBuildHashTables(bool experimental_autotune = false);
+
 
   bool hashTablesFrozen() const {
     return _sampling_mode == BoltSamplingMode::FreezeHashTables ||

@@ -782,15 +782,6 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
   return embedding;
 }
 
-void FullyConnectedLayer::forceBuildHashTables(bool experimental_autotune) {
-  if (_sparsity < 1) {
-    deinitSamplingDatastructures();
-    auto sampling_config =
-        DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
-    std::mt19937 rd(global_random::nextSeed());
-    initSamplingDatastructures(sampling_config, rd);
-  }
-}
 
 void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
                                       bool experimental_autotune) {
@@ -822,7 +813,11 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
     _sparse_dim = _sparsity * _dim;
 
     if (rebuild_hash_tables) {
-      forceBuildHashTables(experimental_autotune);
+      deinitSamplingDatastructures();
+      auto sampling_config =
+          DWTASamplingConfig::autotune(_dim, _sparsity, experimental_autotune);
+      std::mt19937 rd(global_random::nextSeed());
+      initSamplingDatastructures(sampling_config, rd);
     }
     return;
   }

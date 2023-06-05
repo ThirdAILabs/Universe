@@ -301,7 +301,7 @@ void Model::setFlattenedParameters(const float* concatenated_values,
    */
   for (const auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
-      fc->forceBuildHashTables();
+      fc->reBuildHashFunction();
     }
   }
 }
