@@ -333,6 +333,9 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/neuron_index/LshIndex.cc
+    bolt/src/neuron_index/RandomSampler.cc
+    bolt/src/neuron_index/MachNeuronIndex.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
@@ -359,7 +362,6 @@ set(THIRDAI_SOURCES
     bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/loss_functions/LossFunctions.cc
