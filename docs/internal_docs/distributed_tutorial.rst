@@ -17,15 +17,17 @@ To use Bolt for distributed training, you need to initialize a Ray cluster to ma
 
 
 2. Initialize Ray:
+    
+    The `ray.init()` function initializes Ray and sets up the necessary infrastructure for distributed training. By default, it starts a Ray cluster on your local machine using available resources.
 
 .. code-block:: python
     ray.init()
 
 
-The `ray.init()` function initializes Ray and sets up the necessary infrastructure for distributed training. By default, it starts a Ray cluster on your local machine using available resources.
 
 3. Configure Ray resources:
-You can configure the resources allocated to Ray workers using the `num_cpus` and `num_gpus` arguments in `ray.init()`. For example:
+    
+    You can configure the resources allocated to Ray workers using the `num_cpus` and `num_gpus` arguments in `ray.init()`. For example:
 
 .. code-block:: python
     ray.init(num_cpus=4, num_gpus=2)
@@ -34,7 +36,8 @@ You can configure the resources allocated to Ray workers using the `num_cpus` an
 This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
 
 4. Optional: Additional Ray configuration:
-You can provide additional configuration options to `ray.init()` as per your requirements. For example, you can specify the working directory or set environment variables. Here's an example:
+    
+    You can provide additional configuration options to `ray.init()` as per your requirements. For example, you can specify the working directory or set environment variables. Here's an example:
 
 .. code-block:: python
     ray.init(
