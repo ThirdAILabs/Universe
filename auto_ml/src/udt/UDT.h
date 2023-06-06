@@ -52,6 +52,8 @@ class UDT {
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
 
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables);
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
@@ -182,12 +184,20 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference);
   }
 
-  void associate(const MapInput& source, const MapInput& target,
-                 uint32_t n_buckets, uint32_t n_association_samples,
-                 uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) {
-    _backend->associate(source, target, n_buckets, n_association_samples,
+  void associate(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples,
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    _backend->associate(source_target_samples, n_buckets, n_association_samples,
                         n_balancing_samples, learning_rate, epochs);
+  }
+
+  void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) {
+    _backend->upvote(source_target_samples, n_upvote_samples,
+                     n_balancing_samples, learning_rate, epochs);
   }
 
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }

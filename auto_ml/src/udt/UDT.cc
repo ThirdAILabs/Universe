@@ -159,6 +159,10 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
   return output;
 }
 
+void UDT::setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
+  _backend->setOutputSparsity(sparsity, rebuild_hash_tables);
+}
+
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool verbose,

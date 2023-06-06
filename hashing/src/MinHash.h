@@ -3,13 +3,14 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
 #include "UniversalHash.h"
+#include <utils/Random.h>
 
 namespace thirdai::hashing {
 
 class MinHash final : public HashFunction {
  public:
   MinHash(uint32_t hashes_per_table, uint32_t num_tables, uint32_t range,
-          uint32_t seed = time(nullptr));
+          uint32_t seed = global_random::nextSeed());
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;

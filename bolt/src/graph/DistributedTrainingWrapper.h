@@ -95,6 +95,9 @@ class DistributedTrainingWrapper {
   void updateLearningRate(float learning_rate) {
     _learning_rate = learning_rate;
   }
+
+  void incrementEpochCount() { _bolt_graph->incrementEpochCount(); }
+
   void freezeHashTables(bool insert_labels_if_not_found) {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);
   }
