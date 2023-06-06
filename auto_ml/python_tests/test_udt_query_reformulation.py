@@ -185,6 +185,8 @@ def test_query_reformulation_n_grams(query_reformulation_dataset):
     old_metrics = model.evaluate(filename, top_k=1)
     assert old_metrics["val_recall"][-1] >= 0.85
 
+    os.remove(filename)
+
 
 @pytest.mark.unit
 def test_query_reformulation_throws_error_wrong_argument():
