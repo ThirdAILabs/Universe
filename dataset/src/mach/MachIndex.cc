@@ -65,7 +65,7 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
         auto hashes = getHashes(entity);
         float score = 0;
         for (const auto& hash : hashes) {
-          score += output.activations[hash];
+          score += output.findActiveNeuronNoTemplate(hash).activation;
         }
         entity_to_scores[entity] = score;
       }
