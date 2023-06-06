@@ -727,7 +727,7 @@ void UDTMachClassifier::teach(
     std::vector<BoltVector> inputs;
     std::vector<BoltVector> labels;
 
-    size_t batch_end = std::min((i + 1) * batch_size, samples.size());
+    size_t batch_end = std::min(i + batch_size, samples.size());
     for (size_t j = i; j < batch_end; j++) {
       inputs.emplace_back(std::move(samples[j].first));
       labels.emplace_back(std::move(samples[j].second));
