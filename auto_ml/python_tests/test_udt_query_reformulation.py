@@ -196,7 +196,7 @@ def test_query_reformulation_throws_error_wrong_argument():
 
     with pytest.raises(
         ValueError,
-        match=re.escape(f"Expected parameter 'n_grams' to have type list(int)."),
+        match=re.escape(f"Expected parameter 'n_grams' to have type List[int]."),
     ):
         model = bolt.UniversalDeepTransformer(
             source_column="incorrect_query",
