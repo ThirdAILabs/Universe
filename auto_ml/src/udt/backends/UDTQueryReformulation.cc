@@ -337,7 +337,6 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
     const std::string& column_name, const std::vector<uint32_t>& n_grams) {
-
   std::vector<dataset::BlockPtr> input_blocks;
   input_blocks.reserve(n_grams.size());
 
