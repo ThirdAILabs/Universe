@@ -142,6 +142,9 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
         source_column="incorrect_query",
         target_column="correct_query",
         dataset_size="small",
+        options={
+            "n_grams": [2, 3, 4]
+        },  # using n_grams option to make sure that archive function is correct
     )
 
     model.train(filename)
@@ -155,6 +158,8 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
 
     new_metrics = model.evaluate(filename, top_k=1)
     assert new_metrics["val_recall"][-1] >= 0.9
+
+    assert new_metrics["val_recall"][-1] == old_metrics["val_recall"][-1]
 
     model.train(filename)
     newer_metrics = model.evaluate(filename, top_k=1)
@@ -185,7 +190,7 @@ def test_query_reformulation_n_grams(query_reformulation_dataset):
 def test_query_reformulation_throws_error_wrong_argument():
     with pytest.raises(
         ValueError,
-        match=re.escape(f"List argument must contain only positive integers."),
+        match=re.escape(f"n_grams argument must contain only positive integers"),
     ):
         model = bolt.UniversalDeepTransformer(
             source_column="incorrect_query",

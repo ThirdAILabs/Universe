@@ -50,13 +50,14 @@ UDTQueryReformulation::UDTQueryReformulation(
 
   if (user_args.contains("n_grams")) {
     auto temp_ngrams =
-        user_args.get<std::vector<uint32_t>>("n_grams", "List[int]");
+        user_args.get<std::vector<int32_t>>("n_grams", "List[int]");
     _n_grams.clear();
-    for (uint32_t temp_ngram : temp_ngrams) {
-      // This check makes sure that we do not insert a 0 in the _n_grams vector
+    for (int32_t temp_ngram : temp_ngrams) {
+      // This check makes sure that we do not insert a negative number in the
+      // _n_grams vector
       if (temp_ngram <= 0) {
-        throw std::logic_error(
-            "n_grams argument must contain only positive integers");
+        throw std::invalid_argument(
+            "n_grams argument must contain only positive integers.");
       }
       _n_grams.push_back(temp_ngram);
     }
@@ -376,7 +377,7 @@ template <class Archive>
 void UDTQueryReformulation::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _flash_index,
           _inference_featurizer, _phrase_id_map, _incorrect_column_name,
-          _correct_column_name, _delimiter);
+          _correct_column_name, _delimiter, _n_grams);
 }
 
 }  // namespace thirdai::automl::udt

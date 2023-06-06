@@ -367,11 +367,11 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
       args.insert(name, value);
     } else if (py::isinstance<py::list>(v)) {
       try {
-        std::vector<uint32_t> value = v.cast<std::vector<uint32_t>>();
+        std::vector<int32_t> value = v.cast<std::vector<int32_t>>();
         args.insert(name, value);
       } catch (...) {
         throw std::invalid_argument(
-            "List argument must contain only positive integers.");
+            "List argument must contain only integers.");
       }
     } else {
       throw std::invalid_argument(
