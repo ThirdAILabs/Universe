@@ -24,6 +24,8 @@ def equal_model_paramters(trainers):
     return np.allclose(params[0], params[1])
 
 
+# When training in distributed, sparse parameters updates might not update all
+# the gradients updated by all-reduce
 def disable_sparse_updates(trainers):
     for trainer in trainers:
         trainer.model.disable_sparse_parameter_updates()
