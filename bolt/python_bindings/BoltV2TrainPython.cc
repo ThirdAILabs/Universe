@@ -266,7 +266,9 @@ void defineDistributedTrainer(py::module_& train) {
            py::arg("should_save_optimizer"))
       .def("update_learning_rate",
            &DistributedTrainingWrapper::updateLearningRate,
-           py::arg("learning_rate"));
+           py::arg("learning_rate"))
+      .def("increment_epoch_count",
+           &DistributedTrainingWrapper::incrementEpochCount);
 }
 
 }  // namespace thirdai::bolt::train::python

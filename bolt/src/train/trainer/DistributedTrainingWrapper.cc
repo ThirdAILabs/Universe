@@ -14,7 +14,8 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
       _learning_rate(train_config.learningRate()),
       _train_metrics(metrics::fromMetricNames(model, train_config.metrics())),
       _logging_interval(train_config.logLossFrequency()),
-      _use_sparsity_in_validation(false) {
+      _use_sparsity_in_validation(false),
+      _trainer(model) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
         "Distributed training is currently only supported for models with a "
@@ -72,8 +73,7 @@ DistributedTrainingWrapper::validationAndSaveBest() {
     return {};
   }
 
-  Trainer trainer(_model);
-  auto history = trainer.validate_with_metric_names(
+  auto history = _trainer.validate_with_metric_names(
       *_validation_data, _validation_metrics, _use_sparsity_in_validation);
 
   std::unordered_map<std::string, float> last_metrics;

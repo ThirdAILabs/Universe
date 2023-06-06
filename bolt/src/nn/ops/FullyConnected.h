@@ -89,6 +89,11 @@ class FullyConnected final
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
+  /**
+   * Unfreezes all hash tables in the model.
+   */
+  void unfreezeHashTables();
+
   void setWeights(const float* new_weights);
 
   void setBiases(const float* new_biases);

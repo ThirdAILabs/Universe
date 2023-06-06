@@ -105,6 +105,9 @@ class UDTMachClassifier final : public UDTBackend {
 
   void clearIndex() final {
     _mach_label_block->index()->clear();
+
+    updateSamplingStrategy();
+
     if (_rlhf_sampler) {
       _rlhf_sampler->clear();
     }
@@ -114,6 +117,11 @@ class UDTMachClassifier final : public UDTBackend {
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
+
+  void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -142,6 +150,12 @@ class UDTMachClassifier final : public UDTBackend {
   std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
                                           bool sparse_inference);
 
+  void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
+                 source_target_samples,
+             uint32_t n_buckets, uint32_t n_teaching_samples,
+             uint32_t n_balancing_samples, float learning_rate,
+             uint32_t epochs);
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
@@ -149,6 +163,8 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   std::string textColumnForDocumentIntroduction();
+
+  void updateSamplingStrategy();
 
   void addBalancingSamples(const dataset::DataSourcePtr& data);
 
@@ -189,6 +205,7 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
+  float _sparse_inference_threshold;
 
   std::optional<RLHFSampler> _rlhf_sampler;
 };

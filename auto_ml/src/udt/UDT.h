@@ -192,6 +192,14 @@ class UDT {
                         n_balancing_samples, learning_rate, epochs);
   }
 
+  void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) {
+    _backend->upvote(source_target_samples, n_upvote_samples,
+                     n_balancing_samples, learning_rate, epochs);
+  }
+
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {

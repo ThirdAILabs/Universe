@@ -172,6 +172,11 @@ class Model : public std::enable_shared_from_this<Model> {
   void freezeHashTables(bool insert_labels_if_not_found);
 
   /**
+   * Unfreezes all hash tables in the model.
+   */
+  void unfreezeHashTables();
+
+  /**
    * Saves the model without optimizer state. Save metadata indicates if a
    * metadata file should also be created which gives the thirdai version, model
    * uuid, the date saved, number of train steps before the save, and the model

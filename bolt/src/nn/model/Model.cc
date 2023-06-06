@@ -322,6 +322,16 @@ void Model::freezeHashTables(bool insert_labels_if_not_found) {
   }
 }
 
+void Model::unfreezeHashTables() {
+  for (auto& op : _ops) {
+    if (auto fc = ops::FullyConnected::cast(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->unfreezeHashTables();
+    }
+  }
+}
+
 std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
 Model::outputLabelPairs() const {
   std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>

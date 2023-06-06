@@ -100,6 +100,9 @@ class Trainer {
       bool verbose = true);
 
   nn::model::ModelPtr getModel() { return _model; }
+  // Synchronizes the outer epoch count maintained by the distributed framework
+  // with the epoch count maintained within Bolt.
+  void incrementEpochCount() { _epoch++; }
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
