@@ -151,6 +151,18 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   std::vector<std::vector<float>*> gradients() const;
 
+  std::vector<std::vector<float>*> parameters() const;
+
+  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+
+  void setFlattenedGradients(const float* concatenated_values,
+                             uint64_t flattened_dim) const;
+
+  std::pair<const float*, uint64_t> getFlattenedParameters() const;
+
+  void setFlattenedParameters(const float* concatenated_values,
+                              uint64_t flattened_dim) const;
+
   /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted
@@ -180,6 +192,7 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   void checkpoint(const std::string& filename, bool save_metadata = true);
 
+  void disableSparseParameterUpdates();
   /**
    * Helper function to save the model to a stream.
    */

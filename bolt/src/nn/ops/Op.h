@@ -109,6 +109,11 @@ class Op {
    * training.
    */
   virtual std::vector<std::vector<float>*> gradients() = 0;
+  /**
+   * Returns references to all of the weights of the op. Used for distributed
+   * training.
+   */
+  virtual std::vector<std::vector<float>*> parameters() = 0;
 
   /**
    * Appends a line to the summary to describe the op when applied to the given

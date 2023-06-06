@@ -60,6 +60,44 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
+NumpyArray<float> getGradient(const nn::model::ModelPtr& model) {
+  auto [grads, flattened_dim] = model->getFlattenedGradients();
+
+  py::capsule free_when_done(
+      grads, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+}
+
+NumpyArray<float> getParameter(const nn::model::ModelPtr& model) {
+  auto [grads, flattened_dim] = model->getFlattenedParameters();
+
+  py::capsule free_when_done(
+      grads, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+}
+
+void setGradient(const nn::model::ModelPtr& model,
+                 NumpyArray<float>& new_values) {
+  if (new_values.ndim() != 1) {
+    throw std::invalid_argument("Expected grads to be flattened.");
+  }
+
+  uint64_t flattened_dim = new_values.shape(0);
+  model->setFlattenedGradients(new_values.data(), flattened_dim);
+}
+
+void setParameter(const nn::model::ModelPtr& model,
+                  NumpyArray<float>& new_values) {
+  if (new_values.ndim() != 1) {
+    throw std::invalid_argument("Expected grads to be flattened.");
+  }
+
+  uint64_t flattened_dim = new_values.shape(0);
+  model->setFlattenedParameters(new_values.data(), flattened_dim);
+}
+
 void defineTensor(py::module_& nn);
 
 void defineOps(py::module_& nn);
@@ -93,6 +131,15 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("get_gradients", &getGradient,
+           py::return_value_policy::reference_internal)
+      .def("set_gradients", &setGradient, py::arg("new_values"))
+      .def("get_parameters", &getParameter,
+           py::return_value_policy::reference_internal)
+      .def("set_parameters", &setParameter, py::arg("new_values"))
+      .def("disable_sparse_parameter_updates",
+           &model::Model::disableSparseParameterUpdates)
+
 #endif
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)

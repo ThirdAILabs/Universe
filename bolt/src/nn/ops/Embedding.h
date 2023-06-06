@@ -33,6 +33,8 @@ class Embedding final : public Op,
 
   std::vector<std::vector<float>*> gradients() final;
 
+  std::vector<std::vector<float>*> parameters() final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 

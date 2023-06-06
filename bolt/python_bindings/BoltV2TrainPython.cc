@@ -68,6 +68,8 @@ void defineDistributedTrainer(py::module_& train);
 void createBoltV2TrainSubmodule(py::module_& module) {
   auto train = module.def_submodule("train");
 
+  defineTrainer(train);
+
 #if THIRDAI_EXPOSE_ALL
   /**
    * ==============================================================
@@ -75,7 +77,6 @@ void createBoltV2TrainSubmodule(py::module_& module) {
    * checks must be added to the train method.
    * ==============================================================
    */
-  defineTrainer(train);
   defineMetrics(train);
 #endif
 
@@ -92,15 +93,30 @@ Trainer makeTrainer(nn::model::ModelPtr model,
 void defineTrainer(py::module_& train) {
   // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
   // this.
+
+#if THIRDAI_EXPOSE_ALL
   train.def("convert_dataset", convertDataset, py::arg("dataset"),
             py::arg("dim"), py::arg("copy") = true);
 
   train.def("convert_datasets", convertDatasets, py::arg("datasets"),
             py::arg("dims"), py::arg("copy") = true);
+#endif
 
+  /*
+   * DistributedTrainer inherits Trainer objects. Hence, we need to expose
+   * constructor for Trainer class.
+   */
   py::class_<Trainer>(train, "Trainer")
       .def(py::init(&makeTrainer), py::arg("model"),
            py::arg("freeze_hash_tables_epoch") = std::nullopt)
+#if THIRDAI_EXPOSE_ALL
+      /**
+       * ==============================================================
+       * WARNING: If this THIRDAI_EXPOSE_ALL is removed then license
+       * checks must be added to the train method.
+       * ==============================================================
+       */
+
       .def("train", &Trainer::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = metrics::InputMetrics(),
@@ -133,7 +149,11 @@ void defineTrainer(py::module_& train) {
            py::arg("validation_data"),
            py::arg("validation_metrics") = std::vector<std::string>(),
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect());
+           bolt::python::OutputRedirect())
+      .def_property_readonly("model", &Trainer::getModel,
+                             py::return_value_policy::reference_internal)
+#endif
+      ;
 }
 
 void defineMetrics(py::module_& train) {

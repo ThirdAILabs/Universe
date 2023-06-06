@@ -115,6 +115,10 @@ std::vector<std::vector<float>*> FullyConnected::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }
 
+std::vector<std::vector<float>*> FullyConnected::parameters() {
+  return {&_kernel->weights(), &_kernel->biases()};
+}
+
 void FullyConnected::summary(std::ostream& summary,
                              const autograd::ComputationList& inputs,
                              const autograd::Computation* output) const {
@@ -140,6 +144,7 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
+void FullyConnected::reBuildHashFunction() { _kernel->reBuildHashFunction(); }
 void FullyConnected::registerModel(
     const std::weak_ptr<model::Model>& new_model) {
   bool found = false;
