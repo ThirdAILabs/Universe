@@ -192,6 +192,7 @@ class Worker:
     def move_to_next_epoch(self):
         self.train_source.restart()
         self._try_load_new_datasets_into_model()
+        self.model.increment_epoch_count()
 
     @timed
     def get_calculated_gradients(self):
