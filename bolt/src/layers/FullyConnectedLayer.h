@@ -64,7 +64,7 @@ class FullyConnectedLayer final {
   }
 
   void freezeHashTables(bool insert_labels_if_not_found);
-  
+
   void unfreezeHashTables() { _index_frozen = false; }
 
   void buildHashTables();

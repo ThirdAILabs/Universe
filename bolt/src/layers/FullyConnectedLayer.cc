@@ -617,7 +617,6 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
   return embedding;
 }
 
-
 void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
                                       bool experimental_autotune) {
   // TODO(Nick): Right now we always switch to DWTA after setting sparsity
