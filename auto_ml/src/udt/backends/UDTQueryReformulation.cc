@@ -48,8 +48,22 @@ UDTQueryReformulation::UDTQueryReformulation(
 
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
+  if (user_args.contains("n_grams")) {
+    auto temp_ngrams =
+        user_args.get<std::vector<int32_t>>("n_grams", "List[int]");
+    _n_grams.clear();
+    for (int32_t temp_ngram : temp_ngrams) {
+      // This check makes sure that we do not insert a negative number in the
+      // _n_grams vector
+      if (temp_ngram <= 0) {
+        throw std::invalid_argument(
+            "n_grams argument must contain only positive integers.");
+      }
+      _n_grams.push_back(temp_ngram);
+    }
+  }
   _inference_featurizer =
-      dataset::TabularFeaturizer::make({ngramBlockList("phrase")});
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
 }
 
 py::object UDTQueryReformulation::train(
@@ -245,7 +259,7 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
   }
 
   auto featurizer = dataset::TabularFeaturizer::make(
-      {ngramBlockList(col_to_hash),
+      {ngramBlockList(col_to_hash, _n_grams),
        dataset::BlockList(std::move(label_blocks))},
       /* has_header= */ true,
       /* delimiter= */ _delimiter);
@@ -323,9 +337,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
 }
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
-    const std::string& column_name) {
-  std::vector<uint32_t> n_grams = {3, 4};
-
+    const std::string& column_name, const std::vector<uint32_t>& n_grams) {
   std::vector<dataset::BlockPtr> input_blocks;
   input_blocks.reserve(n_grams.size());
 
@@ -365,7 +377,7 @@ template <class Archive>
 void UDTQueryReformulation::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _flash_index,
           _inference_featurizer, _phrase_id_map, _incorrect_column_name,
-          _correct_column_name, _delimiter);
+          _correct_column_name, _delimiter, _n_grams);
 }
 
 }  // namespace thirdai::automl::udt

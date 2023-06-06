@@ -1,6 +1,7 @@
 #pragma once
 
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -70,7 +71,8 @@ class UDTQueryReformulation final : public UDTBackend {
   static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
       const std::string& dataset_size);
 
-  static dataset::BlockList ngramBlockList(const std::string& column_name);
+  static dataset::BlockList ngramBlockList(
+      const std::string& column_name, const std::vector<uint32_t>& n_grams);
 
   static uint32_t recall(
       const std::vector<std::vector<uint32_t>>& retrieved_ids,
@@ -97,6 +99,8 @@ class UDTQueryReformulation final : public UDTBackend {
 
   std::optional<std::string> _incorrect_column_name;
   std::string _correct_column_name;
+
+  std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
   char _delimiter;
 };

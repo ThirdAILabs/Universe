@@ -1,5 +1,6 @@
 import os
 import random
+import re
 
 import numpy as np
 import pandas as pd
@@ -141,6 +142,9 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
         source_column="incorrect_query",
         target_column="correct_query",
         dataset_size="small",
+        options={
+            "n_grams": [2, 3, 4]
+        },  # using n_grams option to make sure that archive function is correct
     )
 
     model.train(filename)
@@ -155,9 +159,55 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
     new_metrics = model.evaluate(filename, top_k=1)
     assert new_metrics["val_recall"][-1] >= 0.9
 
+    assert new_metrics["val_recall"][-1] == old_metrics["val_recall"][-1]
+
     model.train(filename)
     newer_metrics = model.evaluate(filename, top_k=1)
     assert newer_metrics["val_recall"][-1] >= 0.9
 
     os.remove(filename)
     os.remove(model_path)
+
+
+@pytest.mark.unit
+def test_query_reformulation_n_grams(query_reformulation_dataset):
+    filename = "./query_reformluation.csv"
+    query_reformulation_dataset[0].to_csv(filename, columns=ALL_COLUMNS, index=False)
+
+    model = bolt.UniversalDeepTransformer(
+        source_column="incorrect_query",
+        target_column="correct_query",
+        dataset_size="small",
+        options={"n_grams": [2, 3]},
+    )
+    model.train(filename)
+
+    old_metrics = model.evaluate(filename, top_k=1)
+    assert old_metrics["val_recall"][-1] >= 0.85
+
+    os.remove(filename)
+
+
+@pytest.mark.unit
+def test_query_reformulation_throws_error_wrong_argument():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"n_grams argument must contain only positive integers"),
+    ):
+        model = bolt.UniversalDeepTransformer(
+            source_column="incorrect_query",
+            target_column="correct_query",
+            dataset_size="small",
+            options={"n_grams": [-1, 3]},
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"Expected parameter 'n_grams' to have type List[int]."),
+    ):
+        model = bolt.UniversalDeepTransformer(
+            source_column="incorrect_query",
+            target_column="correct_query",
+            dataset_size="small",
+            options={"n_grams": 1},
+        )

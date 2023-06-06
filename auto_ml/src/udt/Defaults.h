@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace thirdai::automl::udt::defaults {
 
@@ -92,6 +93,9 @@ constexpr uint32_t MAX_BALANCING_DOCS = 1000;
 
 // Max samples to store per doc for rlhf balancing.
 constexpr uint32_t MAX_BALANCING_SAMPLES_PER_DOC = 10;
+
+// n-grams to use for query reformulation
+const std::vector<uint32_t> N_GRAMS_FOR_GENERATOR = {3, 4};
 
 // Batch size to use during associate.
 constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
