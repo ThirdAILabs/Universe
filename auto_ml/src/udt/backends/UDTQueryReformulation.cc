@@ -337,12 +337,6 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
     const std::string& column_name, const std::vector<uint32_t>& n_grams) {
-  // TODO(Shubh) : Remove this before merging.
-  std::cout << "Using the following n-grams" << std::endl;
-  for (const auto& x : n_grams) {
-    std::cout << x << "-gram, ";
-  }
-  std::cout << std::endl;
 
   std::vector<dataset::BlockPtr> input_blocks;
   input_blocks.reserve(n_grams.size());
