@@ -71,6 +71,15 @@ void createCallbacksSubmodule(py::module_& module) {
            "the learning rate by a factor of gamma for every milestone"
            "specified in the vector of milestones. \n");
 
+  py::class_<LinearSchedule, LinearSchedulePtr, LRSchedule>(callbacks_submodule,
+                                                            "LinearLR")
+      .def(py::init<float, float, uint32_t>(),
+           py::arg("start_factor") = 1.0 / 3.0, py::arg("end_factor") = 1.0,
+           py::arg("total_iters") = 5,
+           "LinearLR scheduler changes the learning rate linearly by a small "
+           "multiplicative factor until the number of epochs reaches the total "
+           "iterations.\n");
+
   py::class_<LambdaSchedule, LambdaSchedulePtr, LRSchedule>(callbacks_submodule,
                                                             "LambdaSchedule")
       .def(py::init<const std::function<float(float, uint32_t)>&>(),
