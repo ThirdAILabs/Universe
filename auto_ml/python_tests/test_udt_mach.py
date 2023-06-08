@@ -604,3 +604,7 @@ def test_upvote():
             break
 
     assert predicted_label == 200
+
+
+def test_introduce_hash_regularization():
+    pass

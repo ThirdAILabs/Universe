@@ -573,7 +573,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
               });
   }
 
-  std::vector<uint32_t> new_hashes(num_hashes);
+  std::vector<uint32_t> new_hashes;
 
   // We can optionally specify the number of hashes we'd like to be random for
   // normalization and to use even distribution of buckets on reindex
@@ -582,17 +582,18 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
         "num_random_hashes cannot be greater than num hashes.");
   }
 
+  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
+  for (uint32_t i = 0; i < num_informed_hashes; i++) {
+    auto [hash, freq_score_pair] = sorted_hashes[i];
+    new_hashes.push_back(hash);
+  }
+
   uint32_t num_buckets = _mach_label_block->index()->numBuckets();
   std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
   std::mt19937 rand(global_random::nextSeed());
 
   for (uint32_t i = 0; i < num_random_hashes; i++) {
-    new_hashes[i] = int_dist(rand);
-  }
-
-  for (uint32_t i = 0; i < num_hashes - num_random_hashes; i++) {
-    auto [hash, freq_score_pair] = sorted_hashes[i];
-    new_hashes[i] = hash;
+    new_hashes.push_back(int_dist(rand));
   }
 
   return new_hashes;
