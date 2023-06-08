@@ -633,11 +633,11 @@ def test_introduce_hash_regularization():
     model.clear_index()
 
     # without any regularization or balancing, introducing 3 labels with the
-    # same representative sample should 3 sets of yield identical hashes
+    # same representative sample should yield 3 sets of identical hashes
     load = regularized_introduce_helper(model, num_random_hashes=0)
     assert np.sum(load > 0) == NUM_HASHES
 
-    # when 2 of the 7 hashes in a new doc are random there should be more than
-    # NUM_HASHES non-zeroes in the index's load
+    # when 2 of the 7 hashes in every new doc are random there should be more 
+    # than NUM_HASHES non-zeroes in the index's load
     load = regularized_introduce_helper(model, num_random_hashes=2)
     assert np.sum(load > 0) > NUM_HASHES
