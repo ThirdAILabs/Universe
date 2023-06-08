@@ -13,6 +13,7 @@ pytestmark = [pytest.mark.unit]
 
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
 OUTPUT_DIM = 100
+NUM_HASHES = 7
 
 
 def make_simple_test_file(invalid_data=False):
@@ -606,5 +607,37 @@ def test_upvote():
     assert predicted_label == 200
 
 
+def regularized_introduce_helper(model, num_random_hashes):
+    """Returns an array counting the number of hashes in each bucket after
+    introducing three identical samples"""
+
+    for label in range(3):
+        model.introduce_label(
+            [{"text": "some text"}],
+            label,
+            num_buckets_to_sample=None,
+            num_random_hashes=num_random_hashes,
+        )
+
+    index = model.get_index()
+    load = np.zeros(OUTPUT_DIM, dtype=np.int32)
+    for i in range(len(load)):
+        load[i] = len(index.get_hash_to_entities(i))
+
+    return load
+
+
 def test_introduce_hash_regularization():
-    pass
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    # without any regularization or balancing, introducing 3 labels with the
+    # same representative sample should 3 sets of yield identical hashes
+    load = regularized_introduce_helper(model, num_random_hashes=0)
+    assert np.sum(load > 0) == NUM_HASHES
+
+    # when 2 of the 7 hashes in a new doc are random there should be more than
+    # NUM_HASHES non-zeroes in the index's load
+    load = regularized_introduce_helper(model, num_random_hashes=2)
+    assert np.sum(load > 0) > NUM_HASHES
