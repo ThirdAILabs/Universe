@@ -575,8 +575,8 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 
   std::vector<uint32_t> new_hashes;
 
-  // We can optionally specify the number of hashes we'd like to be random for
-  // normalization and to use even distribution of buckets on reindex
+  // We can optionally specify the number of hashes we'd like to be random for a
+  // new document. This is to encourage an even distribution among buckets.
   if (num_random_hashes > num_hashes) {
     throw std::invalid_argument(
         "num_random_hashes cannot be greater than num hashes.");
