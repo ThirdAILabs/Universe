@@ -150,13 +150,16 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
-           py::arg("num_buckets_to_sample") = std::nullopt)
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),
-           py::arg("num_buckets_to_sample") = std::nullopt)
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
-           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt)
+           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
       .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),

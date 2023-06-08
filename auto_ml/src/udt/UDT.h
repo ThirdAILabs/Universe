@@ -147,9 +147,10 @@ class UDT {
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) {
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          uint32_t num_random_hashes) {
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample);
+                                 num_buckets_to_sample, num_random_hashes);
   }
 
   void introduceDocument(const MapInput& document,
@@ -157,16 +158,19 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
 
-                         std::optional<uint32_t> num_buckets_to_sample) {
+                         std::optional<uint32_t> num_buckets_to_sample,
+                         uint32_t num_random_hashes) {
     _backend->introduceDocument(document, strong_column_names,
                                 weak_column_names, new_label,
-                                num_buckets_to_sample);
+                                num_buckets_to_sample, num_random_hashes);
   }
 
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample) {
-    _backend->introduceLabel(sample, new_label, num_buckets_to_sample);
+                      std::optional<uint32_t> num_buckets_to_sample,
+                      uint32_t num_random_hashes) {
+    _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
+                             num_random_hashes);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {
