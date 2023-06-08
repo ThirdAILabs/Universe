@@ -84,14 +84,12 @@ def test_multistep_lr_scheduler():
     )
     assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)
 
-##TODO: Gautam Sharma. Complete the test script for the LinearLR
+
 @pytest.mark.unit
 def test_linear_lr_scheduler():
     lr_schedule = bolt.callbacks.LinearLR()
     ending_lr = train_model_with_scheduler(
-        base_learning_rate=0.001,
-        epochs = 2,
-        schedule=lr_schedule
+        base_learning_rate=0.001, epochs=2, schedule=lr_schedule
     )
     assert math.isclose(ending_lr, 0.0004666666, rel_tol=1e-06)
 
