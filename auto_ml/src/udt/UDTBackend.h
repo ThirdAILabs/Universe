@@ -137,7 +137,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, std::optional<size_t> batch_size_opt,
+      uint32_t epochs, std::optional<size_t> batch_size,
       const std::vector<std::string>& metrics,
       const std::optional<ValidationDataSource>& validation,
       const std::vector<CallbackPtr>& callbacks,
@@ -147,7 +147,7 @@ class UDTBackend {
     (void)weak_column_names;
     (void)learning_rate;
     (void)epochs;
-    (void)batch_size_opt;
+    (void)batch_size;
     (void)metrics;
     (void)validation;
     (void)callbacks;
