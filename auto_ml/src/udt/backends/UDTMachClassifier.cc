@@ -588,13 +588,11 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 
   for (uint32_t i = 0; i < num_random_hashes; i++) {
     new_hashes[i] = int_dist(rand);
-    std::cout << "selected random hash " << new_hashes[i] << std::endl;
   }
 
   for (uint32_t i = 0; i < num_hashes - num_random_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes[i] = hash;
-    std::cout << "selected non random hash " << new_hashes[i] << std::endl;
   }
 
   return new_hashes;
