@@ -142,6 +142,7 @@ def modify_mach_udt():
         strong_column_names: List[str],
         weak_column_names: List[str],
         num_buckets_to_sample: Optional[int] = None,
+        num_random_hashes: int = 0
     ):
         data_source = _create_data_source(filename)
 
@@ -151,6 +152,7 @@ def modify_mach_udt():
             strong_column_names,
             weak_column_names,
             num_buckets_to_sample,
+            num_random_hashes,
         )
 
     delattr(bolt.UniversalDeepTransformer, "introduce_documents")
