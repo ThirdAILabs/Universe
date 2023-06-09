@@ -196,11 +196,11 @@ void defineAutomlInModule(py::module_& module) {
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def("get_parameters",
-           [](udt::UDT &udt) {
+           [](udt::UDT& udt) {
              return thirdai::bolt::python::getParameter(udt.model());
            })
       .def("set_parameters",
-           [](udt::UDT &udt, NumpyArray<float>& new_parameters) {
+           [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              return thirdai::bolt::python::setParameter(udt.model(),
                                                         new_parameters);
            })
