@@ -127,6 +127,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         train_file: str,
         batch_size: int,
         data_processor,
+        batches_to_skip=0,
         callback=None,
         min_vecs_in_buffer=None,
         max_in_memory_batches: int = None,
@@ -138,6 +139,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
         self.min_vecs_in_buffer = min_vecs_in_buffer
+        self.batches_to_skip = batches_to_skip
         self.callback = lambda: callback(self) if callback else None
 
     def load(self, shuffle: bool = True):
@@ -153,6 +155,15 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
                 else None
             ),
         )
+
+        # Note(pratik): This would still be approximate. Since, seed for buffer
+        # shuffling would be different for each run.
+        while self.batches_to_skip > 0:
+            num_batches_to_load = min(self.batches_to_skip, self.max_in_memory_batches)
+            self.generator.load_some(
+                num_batches=num_batches_to_load, batch_size=self.batch_size
+            )
+            self.batches_to_skip -= num_batches_to_load
 
     def next(self):
         if self.dataset_finished:
@@ -183,6 +194,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         weak_column_names: List[str],
         data_processor,
         cold_start_meta_data,
+        batches_to_skip=0,
         callback=None,
         min_vecs_in_buffer=None,
     ):
@@ -196,6 +208,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
         self.min_vecs_in_buffer = min_vecs_in_buffer
+        self.batches_to_skip = batches_to_skip
         self.callback = lambda: callback(self) if callback else None
 
     def load(self, shuffle: bool = True):
@@ -221,6 +234,15 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
                 else None
             ),
         )
+
+        # Note(pratik): This would still be approximate. Since, seed for buffer
+        # shuffling would be different for each run.
+        while self.batches_to_skip > 0:
+            num_batches_to_load = min(self.batches_to_skip, self.max_in_memory_batches)
+            self.generator.load_some(
+                num_batches=num_batches_to_load, batch_size=self.batch_size
+            )
+            self.batches_to_skip -= num_batches_to_load
 
 
 class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
