@@ -37,9 +37,9 @@ def remap_query_answers(qrels, doc_ids_to_integers):
 def write_supervised_file(queries, answers, data_path, filename):
     sup_train_file = data_path + "/" + filename
     with open(sup_train_file, "w") as fw:
-        fw.write("DOC_ID,QUERY\n")
+        fw.write("QUERY,DOC_ID\n")
 
         for key in queries:
             query = queries[key].replace(",", " ")
             doc_ids = ":".join(list(answers[key].keys()))
-            fw.write(doc_ids + "," + query + "\n")
+            fw.write(query + "," + doc_ids + "\n")
