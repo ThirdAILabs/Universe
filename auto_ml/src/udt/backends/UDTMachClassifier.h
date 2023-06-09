@@ -72,6 +72,7 @@ class UDTMachClassifier final : public UDTBackend {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
+                       std::optional<size_t> batch_size_opt,
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
                        const std::vector<CallbackPtr>& callbacks,
