@@ -8,11 +8,9 @@ def write_unsupervised_file(corpus, data_path):
             title = corpus[key]["title"].replace(",", " ")
             title = title.replace("\r", " ")
             title = title.replace("\n", " ")
-            title = title.lower()
             text = corpus[key]["text"].replace(",", " ")
             text = text.replace("\r", " ")
             text = text.replace("\n", " ")
-            text = text.lower()
             fw.write(str(count) + "," + title + "," + text + "\n")
             count += 1
 
@@ -39,10 +37,9 @@ def remap_query_answers(qrels, doc_ids_to_integers):
 def write_supervised_file(queries, answers, data_path, filename):
     sup_train_file = data_path + "/" + filename
     with open(sup_train_file, "w") as fw:
-        fw.write("QUERY,DOC_ID\n")
+        fw.write("DOC_ID,QUERY\n")
 
         for key in queries:
             query = queries[key].replace(",", " ")
-            query = query.lower()
             doc_ids = ":".join(list(answers[key].keys()))
-            fw.write(query + "," + doc_ids + "\n")
+            fw.write(doc_ids + "," + query + "\n")
