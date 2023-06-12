@@ -98,11 +98,11 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
   }
 
   std::vector<uint32_t> target_tokens =
-      token_encoding::tokens(getStringField(line_content, "target"));
+      token_encoding::tokensIds(getStringField(line_content, "target"));
 
   if (line_content.contains("context")) {
     std::vector<uint32_t> context_tokens =
-        token_encoding::tokens(getStringField(line_content, "context"));
+        token_encoding::tokensIds(getStringField(line_content, "context"));
 
     // The predict start is 1 after the end of the context because there will be
     // a [CLS] token.
@@ -120,7 +120,7 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
 std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(
     const json& line_content) {
   if (line_content.contains("prompt")) {
-    return token_encoding::tokens(getStringField(line_content, "prompt"));
+    return token_encoding::tokensIds(getStringField(line_content, "prompt"));
   }
   return {};
 }

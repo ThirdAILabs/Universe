@@ -29,7 +29,7 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
   return tokens;
 }
 
-std::vector<uint32_t> tokens(const std::string& line) {
+std::vector<uint32_t> tokensIds(const std::string& line) {
   std::vector<uint32_t> tokens;
 
   const char* start = line.data();

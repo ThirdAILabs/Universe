@@ -4,10 +4,10 @@
 namespace thirdai::dataset {
 
 BoltVector TextContextFeaturizer::lrcContext(
-    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
-  uint32_t lrc_len = std::min(label_index, _lrc_len);
+    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
+  uint32_t lrc_len = std::min(end_index, _lrc_len);
 
-  const uint32_t* context_start = tokens.data() + label_index - lrc_len;
+  const uint32_t* context_start = tokens.data() + end_index - lrc_len;
 
   BoltVector vector(/* l= */ lrc_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
@@ -18,12 +18,12 @@ BoltVector TextContextFeaturizer::lrcContext(
 }
 
 BoltVector TextContextFeaturizer::ircContext(
-    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
-  uint32_t irc_len = std::min(label_index, _irc_len);
+    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
+  uint32_t irc_len = std::min(end_index, _irc_len);
 
   std::vector<uint32_t> irc_context =
       token_encoding::unigramPreservingPairgrams(
-          tokens.data() + label_index - irc_len, irc_len, _vocab_size);
+          tokens.data() + end_index - irc_len, irc_len, _vocab_size);
 
   BoltVector vector(/* l= */ irc_context.size(), /* is_dense= */ false,
                     /* has_gradient= */ false);
@@ -34,11 +34,11 @@ BoltVector TextContextFeaturizer::ircContext(
 }
 
 BoltVector TextContextFeaturizer::srcContext(
-    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
-  uint32_t src_len = std::min(label_index, _src_len);
+    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
+  uint32_t src_len = std::min(end_index, _src_len);
   uint32_t padding_len = _src_len - src_len;
 
-  const uint32_t* context_start = tokens.data() + label_index - src_len;
+  const uint32_t* context_start = tokens.data() + end_index - src_len;
 
   BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
