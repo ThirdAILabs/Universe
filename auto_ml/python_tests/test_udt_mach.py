@@ -26,7 +26,11 @@ def make_simple_test_file(invalid_data=False):
 
 
 def train_simple_mach_udt(
-    invalid_data=False, embedding_dim=256, use_bias=True, rlhf_args={}
+    invalid_data=False,
+    embedding_dim=256,
+    use_bias=True,
+    reservoir_size=64000,
+    rlhf_args={},
 ):
     make_simple_test_file(invalid_data=invalid_data)
 
@@ -43,6 +47,7 @@ def train_simple_mach_udt(
             "embedding_dimension": embedding_dim,
             "extreme_output_dim": OUTPUT_DIM,
             "use_bias": use_bias,
+            "reservoir_size": reservoir_size,
             **rlhf_args,
         },
     )

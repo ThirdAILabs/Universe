@@ -3,6 +3,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <utils/Logging.h>
+#include <iostream>
 #include <limits>
 #include <utility>
 
@@ -30,6 +31,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
       throw std::invalid_argument("Cannot read empty file.");
     }
   }
+  // Uncomment to see the buffer size.
+  // std::cout << "The reservoir size is : " << _buffer_size << '\n';
 }
 
 std::vector<BoltDatasetPtr> DatasetLoader::loadAll(size_t batch_size,

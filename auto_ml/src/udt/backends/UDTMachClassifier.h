@@ -206,6 +206,8 @@ class UDTMachClassifier final : public UDTBackend {
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
   float _sparse_inference_threshold;
+  // Stores buffer size used in shuffling.
+  uint32_t _reservoir_size;
 
   std::optional<RLHFSampler> _rlhf_sampler;
 };

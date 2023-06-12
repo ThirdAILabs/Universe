@@ -52,6 +52,8 @@ UDTMachClassifier::UDTMachClassifier(
   uint32_t num_hashes = user_args.get<uint32_t>(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, num_buckets));
+  _reservoir_size = user_args.get<uint32_t>("reservoir_size", "integer",
+                                            defaults::RESERVOIR_SIZE);
 
   _classifier = utils::Classifier::make(
       utils::buildModel(
@@ -151,8 +153,11 @@ py::object UDTMachClassifier::train(
 
   addBalancingSamples(data);
 
-  auto train_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
+  // Passes the user given reservoir size to dataset loader.
+  dataset::DatasetShuffleConfig _shuffle_config =
+      dataset::DatasetShuffleConfig(_reservoir_size);
+  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+      data, /* shuffle= */ true, _shuffle_config);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             validation_dataset_loader, batch_size_opt,

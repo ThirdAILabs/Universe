@@ -64,6 +64,9 @@ constexpr bool USE_MACH = false;
 // How many times we hash each entity in UDT Mach Classifier.
 constexpr uint32_t MACH_DEFAULT_NUM_REPETITIONS = 7;
 
+// Minimum number of vectors in reservoir buffer.
+constexpr uint32_t RESERVOIR_SIZE = 64000;
+
 // Scaledown factor for output range in UDT Mach Classifier.
 constexpr uint32_t MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN = 25;
 
