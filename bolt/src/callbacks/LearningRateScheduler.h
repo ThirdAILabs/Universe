@@ -107,44 +107,6 @@ class LambdaSchedule : public LRSchedule {
 using LambdaSchedulePtr = std::shared_ptr<LambdaSchedule>;
 
 /**
- * @brief Schedules per-step learning rate linearly
- * @param start_factor: The multiplicative factor in the first epoch
- * @param end_factor: TThe multiplicative factor at the end of the linear
- * changing process
- * @param total_iters: The number of iterations in which multiplicative factor
- * reaches to 1
- */
-class LinearSchedule : public LRSchedule {
- public:
-  explicit LinearSchedule(float start_factor, float end_factor,
-                          uint32_t total_iters)
-      : _start_factor(start_factor),
-        _end_factor(end_factor),
-        _total_iters(total_iters) {}
-
-  float getNextLR(float current_learning_rate, uint32_t step) final {
-    if (step == 0) {
-      return current_learning_rate * _start_factor;
-    }
-
-    if (step > _total_iters) {
-      return current_learning_rate;
-    }
-
-    return current_learning_rate *
-           (1. + (_end_factor - _start_factor) /
-                     (_start_factor * _total_iters +
-                      (step - 1) * (_end_factor - _start_factor)));
-  }
-
- private:
-  float _start_factor, _end_factor;
-  uint32_t _total_iters;
-};
-
-using LinearSchedulePtr = std::shared_ptr<LinearSchedule>;
-
-/**
  * @brief This callback is intended to schedule learning rate changes during
  * training.
  * @param schedule: a LRSchedule pointer for scheduling the learning rate. The

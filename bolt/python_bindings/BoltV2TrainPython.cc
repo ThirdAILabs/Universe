@@ -5,6 +5,7 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/callbacks/LearningRateScheduler.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
@@ -221,6 +222,22 @@ void defineCallbacks(py::module_& train) {
              callbacks::Callback>(callbacks, "Overfitting")
       .def(py::init<std::string, float, bool>(), py::arg("metric"),
            py::arg("threshold") = 0.97, py::arg("maximize") = true);
+
+  py::class_<LRSchedule, LRSchedulePtr>(callbacks, "LRSchedule");
+
+  py::class_<LearningRateScheduler, LearningRateSchedulerPtr,
+             callbacks::Callback>(callbacks, "LearningRateScheduler")
+      .def(py::init<LRSchedulePtr, bool>(), py::arg("schedule"),
+           py::arg("batch_level_steps") = false);
+
+  py::class_<LinearSchedule, LinearSchedulePtr, LRSchedule>(callbacks,
+                                                            "LinearLR")
+      .def(py::init<float, float, uint32_t>(),
+           py::arg("start_factor") = 1.0 / 3.0, py::arg("end_factor") = 1.0,
+           py::arg("total_iters") = 5,
+           "LinearLR scheduler changes the learning rate linearly by a small "
+           "multiplicative factor until the number of epochs reaches the total "
+           "iterations.\n");
 }
 
 void defineDistributedTrainer(py::module_& train) {
