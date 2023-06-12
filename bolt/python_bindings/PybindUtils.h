@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/nn/model/Model.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
@@ -13,12 +14,24 @@
 
 namespace thirdai::bolt::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 //  Checks that the dimensions of the given numpy array match the expected
 //  dimensions.
 void checkNumpyArrayDimensions(
     const std::vector<uint32_t>& expected_dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         numpy_array);
+
+NumpyArray<float> getGradients(const nn::model::ModelPtr& model);
+
+NumpyArray<float> getParameters(const nn::model::ModelPtr& model);
+
+void setGradients(const nn::model::ModelPtr& model,
+                  NumpyArray<float>& new_values);
+
+void setParameters(const nn::model::ModelPtr& model,
+                   NumpyArray<float>& new_values);
 
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations
@@ -79,11 +92,29 @@ pybind11::detail::initimpl::pickle_factory<
       });
 }
 
-// This redirects std::out and std::err to pythons output and error streams,
-// respectively, so that prints followed by a flush are immediately visible,
-// even in notebooks. See the following link for more details:
-// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+/**
+ * OutputRedirect redirects std::out and std::err to pythons output and error
+ * streams, respectively, so that prints followed by a flush are immediately
+ *  visible, even in notebooks. See the following link for more details:
+ * https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+ * We disable this for windows by using a call guard with a NOOP type, since
+ * using py::print (which this redirects to) on windows without a console causes
+ * an error (see https://github.com/pybind/pybind11/issues/4088). See
+ * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#call-guard
+ * for more details on what a call guard is and why UselessWindowsType is safely
+ * a NOOP; in short, the call guard just constructs an instance of the empty
+ * UselessWindowsType struct before calling the function.
+ **/
+
+#if _WIN32
+
+struct UselessWindowsType {};
+using OutputRedirect = py::call_guard<UselessWindowsType>;
+
+#else
+
 using OutputRedirect =
     py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>;
 
+#endif
 }  // namespace thirdai::bolt::python

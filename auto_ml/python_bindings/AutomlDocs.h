@@ -1108,7 +1108,7 @@ Args:
         Column type is one of:
         - `bolt.types.categorical()`
         - `bolt.types.numerical(range: tuple(float, float))`
-        - `bolt.types.text(average_n_words: float=None)`
+        - `bolt.types.text()`
         - `bolt.types.date()`
         See bolt.types for details.
 
@@ -1394,18 +1394,15 @@ Text column type. Use this object if a column contains text data
 search queries, and user bios.
 
 Args:
-    average_n_words (float): Optional. Average number of words in the 
-        text column in each row. If provided, UDT may make 
-        optimizations as appropriate.
-    contextual_encoding (int): Optional. Either "local", "global", "char-k" (k 
-        is a number, e.g. "char-5"), or "none", defaults to "none". If not "none",
-        udt is guaranteed to use this encoding type when processing this text 
-        column. Otherwise, udt will determine the appropriate encoding type.
+    tokenizer (str): Optional. Either "words", "words-punct" or 
+        "char-k" (k is a number, e.g. "char-5"). Defaults to "words". 
+    contextual_encoding (str): Optional. Either "local", "global", "ngram-N", or
+        "none", defaults to "none". 
 
 Example:
     >>> bolt.UniversalDeepTransformer(
             data_types: {
-                "user_motto": bolt.types.text(average_n_words=10),
+                "user_motto": bolt.types.text(),
                 "user_bio": bolt.types.text(contextual_encoding="local")
             }
             ...
@@ -1534,6 +1531,19 @@ Saves the model in a binary archive with the given filename.
 
 Args:
     filename (str): The location to save the model.
+)pbdoc";
+
+const char* const UDT_SET_OUTPUT_SPARSITY = R"pbdoc(
+Modifies the sparsity of the output layer for UDT Classifier. 
+Note: Only works with UDT Classifier (without extreme classification enabled)
+
+Args:
+    sparsity (float): Sets the sparsity of the output layer to this value.
+    rebuild_hash_tables (bool): Rebuilds the hash tables of the model if true. Note 
+    that, model should be finetuned if rebuild_hash_tables is set to true.
+
+Example:
+    >>> model.set_output_sparsity(sparsity = 0.2, rebuild_hash_tables = False)
 )pbdoc";
 
 }  // namespace thirdai::automl::python::docs

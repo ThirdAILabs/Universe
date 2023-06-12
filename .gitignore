@@ -14,9 +14,6 @@ thirdai.egg-info
 # Ignore .serialized files
 *.serialized 
 
-# Ignore this binary server file. TODO(Josh): prevent it from being generated
-licensing/src/methods/server/data.pqt 
-
 # Ignore zipped files
 *.bz2
 *.gz
@@ -61,6 +58,9 @@ clang_tidy_logs
 # Licensing server binaries
 licensing/src/methods/server/license-server
 licensing/src/methods/server/license-server-max-*
+
+# Versioning serialized archives
+versioning/python_tests/serialized_classes/
 
 # -- Begin vim .gitignore
 # Swap

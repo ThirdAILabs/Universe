@@ -11,16 +11,16 @@
 
 namespace thirdai::hashing {
 
-static std::vector<uint32_t> hashNTimesToOutputRange(const std::string& string,
+static std::vector<uint32_t> hashNTimesToOutputRange(uint32_t entity,
                                                      uint32_t num_hashes,
                                                      uint32_t output_range) {
   std::vector<uint32_t> hashes;
   uint32_t starting_hash_seed = 341;
   for (uint32_t hash_seed = starting_hash_seed;
        hash_seed < starting_hash_seed + num_hashes; hash_seed++) {
-    hashes.push_back(
-        hashing::MurmurHash(string.data(), string.size(), hash_seed) %
-        output_range);
+    hashes.push_back(hashing::MurmurHash(reinterpret_cast<const char*>(&entity),
+                                         sizeof(decltype(entity)), hash_seed) %
+                     output_range);
   }
 
   return hashes;
@@ -148,9 +148,6 @@ inline void densifyHashes(uint32_t* hashes, uint32_t num_hashes,
     return;
   }
 
-  // TODO(josh): Make this a util log method. __builtin_clz returns
-  // the number of zeros before the first set bit, so the log is 32 - 1 -
-  // this number.
   const uint32_t log_2_floored = log_2_floor(num_hashes);
   const uint32_t densify_hashes_block_length = 1 << log_2_floored;
   const uint32_t num_hashes_in_overlap =

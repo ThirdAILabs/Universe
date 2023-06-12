@@ -3,6 +3,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
 #include "MurmurHash.h"
+#include <utils/Random.h>
 #include <cstdint>
 
 namespace thirdai::hashing {
@@ -10,9 +11,8 @@ namespace thirdai::hashing {
 /** Based off of the paper https://arxiv.org/pdf/1703.04664.pdf */
 class DensifiedMinHash final : public HashFunction {
  public:
-  // TODO(josh): Remove range when we have the hash function wrappers done
   DensifiedMinHash(uint32_t hashes_per_table, uint32_t num_tables,
-                   uint32_t range, uint32_t seed = time(nullptr));
+                   uint32_t range, uint32_t seed = global_random::nextSeed());
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;

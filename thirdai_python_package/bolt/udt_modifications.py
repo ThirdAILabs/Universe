@@ -34,9 +34,9 @@ def _create_data_source(path):
 
 
 def modify_udt():
-    original_train = bolt.UDT.train
-    original_evaluate = bolt.UDT.evaluate
-    original_cold_start = bolt.UDT.cold_start
+    original_train = bolt.UniversalDeepTransformer.train
+    original_evaluate = bolt.UniversalDeepTransformer.evaluate
+    original_cold_start = bolt.UniversalDeepTransformer.cold_start
 
     def _convert_validation(validation: Optional[bolt.Validation]) -> None:
         if validation is not None:
@@ -79,9 +79,8 @@ def modify_udt():
         filename: str,
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
-        return_predicted_class: bool = False,
-        return_metrics: bool = False,
         verbose: bool = True,
+        top_k: int = None,
     ):
         data_source = _create_data_source(filename)
 
@@ -90,9 +89,8 @@ def modify_udt():
             data=data_source,
             metrics=metrics,
             sparse_inference=use_sparse_inference,
-            return_predicted_class=return_predicted_class,
             verbose=verbose,
-            return_metrics=return_metrics,
+            top_k=top_k,
         )
 
     def wrapped_cold_start(
@@ -102,6 +100,7 @@ def modify_udt():
         weak_column_names: List[str],
         learning_rate: float = 0.001,
         epochs: int = 5,
+        batch_size: int = None,
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
@@ -119,6 +118,7 @@ def modify_udt():
             weak_column_names=weak_column_names,
             learning_rate=learning_rate,
             epochs=epochs,
+            batch_size=batch_size,
             metrics=metrics,
             validation=validation,
             callbacks=callbacks,
@@ -126,26 +126,48 @@ def modify_udt():
             verbose=verbose,
         )
 
-    delattr(bolt.UDT, "train")
-    delattr(bolt.UDT, "evaluate")
-    delattr(bolt.UDT, "cold_start")
+    delattr(bolt.UniversalDeepTransformer, "train")
+    delattr(bolt.UniversalDeepTransformer, "evaluate")
+    delattr(bolt.UniversalDeepTransformer, "cold_start")
 
-    bolt.UDT.train = wrapped_train
-    bolt.UDT.evaluate = wrapped_evaluate
-    bolt.UDT.cold_start = wrapped_cold_start
+    bolt.UniversalDeepTransformer.train = wrapped_train
+    bolt.UniversalDeepTransformer.evaluate = wrapped_evaluate
+    bolt.UniversalDeepTransformer.cold_start = wrapped_cold_start
+
+
+def modify_mach_udt():
+    original_introduce_documents = bolt.UniversalDeepTransformer.introduce_documents
+
+    def wrapped_introduce_documents(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        num_buckets_to_sample: Optional[int] = None,
+    ):
+        data_source = _create_data_source(filename)
+
+        return original_introduce_documents(
+            self,
+            data_source,
+            strong_column_names,
+            weak_column_names,
+            num_buckets_to_sample,
+        )
+
+    delattr(bolt.UniversalDeepTransformer, "introduce_documents")
+
+    bolt.UniversalDeepTransformer.introduce_documents = wrapped_introduce_documents
 
 
 def modify_graph_udt():
-    original_index_nodes_method = bolt.UDT.index_nodes
+    original_index_nodes_method = bolt.UniversalDeepTransformer.index_nodes
 
     def wrapped_index_nodes(self, filename: str):
         data_source = _create_data_source(filename)
 
         original_index_nodes_method(self, data_source)
 
-    # TODO(Josh)
-    # wrapped_index.__doc__ = udt_graph_index_doc
+    delattr(bolt.UniversalDeepTransformer, "index_nodes")
 
-    delattr(bolt.UDT, "index_nodes")
-
-    bolt.UDT.index_nodes = wrapped_index_nodes
+    bolt.UniversalDeepTransformer.index_nodes = wrapped_index_nodes

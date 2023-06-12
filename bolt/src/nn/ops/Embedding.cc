@@ -79,8 +79,12 @@ void Embedding::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
-std::vector<std::vector<float>*> Embedding::gradients() const {
+std::vector<std::vector<float>*> Embedding::gradients() {
   return {&_kernel->getRawEmbeddingBlockGradient()};
+}
+
+std::vector<std::vector<float>*> Embedding::parameters() {
+  return {&_kernel->getRawEmbeddingBlock()};
 }
 
 void Embedding::summary(std::ostream& summary,
@@ -90,6 +94,10 @@ void Embedding::summary(std::ostream& summary,
           << output->name() << " [";
   _kernel->buildLayerSummary(summary);
   summary << "]";
+}
+
+void Embedding::setSerializeOptimizer(bool should_serialize_optimizer) {
+  _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
 autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {

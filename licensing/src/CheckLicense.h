@@ -2,6 +2,7 @@
 #include <dataset/src/DataSource.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/entitlements/Entitlements.h>
+#include <licensing/src/methods/LicenseMethod.h>
 #include <optional>
 #include <string>
 
@@ -21,37 +22,20 @@ Entitlements entitlements();
 // ------ Methods to activate and deactivate licenses:
 
 // License verification method 1: Keygen api key
-void activate(const std::string& api_key);
-void deactivate();
+void activate(std::string api_key);
 
 // License verification method 2: heartbeat
-void startHeartbeat(const std::string& heartbeat_url,
-                    const std::optional<uint32_t>& heartbeat_timeout);
-void endHeartbeat();
+void startHeartbeat(std::string heartbeat_url,
+                    std::optional<uint32_t> heartbeat_timeout);
 
 // License verification method 3: license file
-void setLicensePath(const std::string& license_path);
+void setLicensePath(std::string license_path, bool verbose = false);
 
-struct LicenseState {
-  std::optional<std::string> api_key_state;
-  std::optional<std::pair<std::string, std::optional<uint32_t>>>
-      heartbeat_state;
-  std::optional<std::string> license_path_state;
-};
+// Deactivate any license method
+void deactivate();
 
 LicenseState getLicenseState();
 
-inline void setLicenseState(const LicenseState& state) {
-  if (state.api_key_state) {
-    activate(state.api_key_state.value());
-  }
-  if (state.heartbeat_state) {
-    auto heartbeat_state_value = state.heartbeat_state.value();
-    startHeartbeat(heartbeat_state_value.first, heartbeat_state_value.second);
-  }
-  if (state.license_path_state) {
-    setLicensePath(state.license_path_state.value());
-  }
-}
+void setLicenseState(const LicenseState& state);
 
 }  // namespace thirdai::licensing

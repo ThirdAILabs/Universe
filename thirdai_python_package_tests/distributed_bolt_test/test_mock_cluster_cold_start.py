@@ -7,7 +7,7 @@ from distributed_utils import (
     ray_two_node_cluster_config,
     split_into_2,
 )
-from thirdai import bolt
+from thirdai import bolt, dataset
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
@@ -134,6 +134,7 @@ def test_distributed_mach_cold_start(
             "precision@1",
             "recall@10",
         ],
+        min_vecs_in_buffer=5000,
     )
 
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
@@ -166,13 +167,18 @@ def test_distributed_mach_cold_start(
     # metrics_aggregation_from_workers just returns metrics for last update
     assert overall_metrics["precision@1"] > 0.45
 
-    assert metrics["validation_metrics"][-1]["precision@1"] > 0.45
+    assert metrics["validation_metrics"][-1]["val_precision@1"] > 0.45
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_distributed_cold_start(
     ray_two_node_cluster_config, download_amazon_kaggle_product_catalog_sampled
 ):
+    def training_data_loader_callback(distributed_data_loader):
+        assert (
+            distributed_data_loader.train_file[-28:-1] == "amazon_product_catalog/part"
+        ), "File names are not the same!"
+
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
     )
@@ -191,6 +197,7 @@ def test_distributed_cold_start(
         learning_rate=0.001,
         epochs=5,
         metrics=["categorical_accuracy"],
+        training_data_loader_callback=training_data_loader_callback,
     )
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
 

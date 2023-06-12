@@ -19,7 +19,9 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     python3-dev \
     pip \
     # Install sudo
-    && apt-get update && apt-get -y install sudo
+    && apt-get update && apt-get -y install sudo \
+    #  The following is needed for building some pip packages (notably pytrec-eval, which is needed by beir)
+    && sudo apt-get -y install build-essential
 
 COPY $KAGGLE_CREDS $HOME/.kaggle/kaggle.json
 ADD bin/run_demo_notebooks.py run_demo_notebooks.py  

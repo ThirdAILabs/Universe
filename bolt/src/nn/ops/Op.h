@@ -13,6 +13,12 @@ using ComputationList = std::vector<ComputationPtr>;
 
 }  // namespace thirdai::bolt::nn::autograd
 
+namespace thirdai::bolt::nn::model {
+
+class Model;
+
+}  // namespace thirdai::bolt::nn::model
+
 namespace thirdai::bolt::nn::ops {
 
 /**
@@ -70,6 +76,10 @@ class Op {
    */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
+  /**
+   * Returns the output dimension of the op. Does not include batch size. For
+   * instance a fully connected layer op will return its number of neurons.
+   */
   virtual uint32_t dim() const = 0;
 
   /**
@@ -98,7 +108,12 @@ class Op {
    * Returns references to all of the gradients of the op. Used for distributed
    * training.
    */
-  virtual std::vector<std::vector<float>*> gradients() const = 0;
+  virtual std::vector<std::vector<float>*> gradients() = 0;
+  /**
+   * Returns references to all of the weights of the op. Used for distributed
+   * training.
+   */
+  virtual std::vector<std::vector<float>*> parameters() = 0;
 
   /**
    * Appends a line to the summary to describe the op when applied to the given
@@ -110,8 +125,19 @@ class Op {
                        const autograd::Computation* output) const = 0;
 
   /**
-   * Returns the name of the op. All of the ops in a model must have a unique
-   * name.
+   * Controls if the op should save the optimizer along with the parameters.
+   */
+  virtual void setSerializeOptimizer(bool setSerializeOptimizer) {
+    (void)setSerializeOptimizer;
+  }
+
+  virtual void registerModel(const std::weak_ptr<model::Model>& model) {
+    (void)model;
+  }
+
+  /**
+   * Returns the name of the op. All of the ops in a model must have a
+   * unique name.
    */
   const std::string& name() const { return _name; }
 

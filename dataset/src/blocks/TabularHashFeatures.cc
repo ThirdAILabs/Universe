@@ -2,6 +2,7 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <utils/Random.h>
 #include <cmath>
 #include <cstdlib>
 #include <exception>
@@ -51,15 +52,13 @@ TabularHashFeatures::TabularHashFeatures(
     const std::vector<TabularColumn>& columns, uint32_t output_range,
     bool with_pairgrams)
     : _output_range(output_range), _with_pairgrams(with_pairgrams) {
-  std::mt19937 gen(time(nullptr));
-  std::uniform_int_distribution<uint32_t> dist(
-      0, std::numeric_limits<uint32_t>::max());
+  std::mt19937 rng(2948);
 
   // we precompute a random salt value for each column so when we call
   // combineHashes with those values we don't bias the output distribution to
   // have more higher order bits set to zero
   for (const auto& column : columns) {
-    uint32_t salt = dist(gen);
+    uint32_t salt = rng();
     _columns.push_back(std::make_pair(column, salt));
   }
 }
@@ -77,12 +76,11 @@ Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
   });
 
   if (first_column == second_column) {
-    return {first_column.name(), std::string(input.column(first_column))};
+    return {first_column.name(), input.column(first_column)};
   }
 
   auto column_name = first_column.name() + "," + second_column.name();
-  auto keyword = std::string(input.column(first_column)) + "," +
-                 std::string(input.column(second_column));
+  auto keyword = input.column(first_column) + "," + input.column(second_column);
 
   return {column_name, keyword};
 }

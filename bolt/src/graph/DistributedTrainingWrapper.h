@@ -19,7 +19,8 @@ class DistributedTrainingWrapper {
  public:
   DistributedTrainingWrapper(BoltGraphPtr bolt_graph, TrainConfig train_config,
                              uint32_t worker_id)
-      : _bolt_graph(std::move(bolt_graph)),
+      : _learning_rate(train_config.learningRate()),
+        _bolt_graph(std::move(bolt_graph)),
         _train_context(std::nullopt),
         _train_config(std::move(train_config)),
         _metric_aggregator(_train_config.getMetricAggregator()),
@@ -41,7 +42,7 @@ class DistributedTrainingWrapper {
   void updateParameters() {
     requireTrainContext();
     _bolt_graph->updateParametersAndSampling(
-        /* learning_rate = */ _train_config.learningRate(),
+        /* learning_rate = */ _learning_rate,
         /* rebuild_hash_tables_batch = */
         _train_config.getRebuildHashTablesBatchInterval(
             _train_context->batchSize(), _train_context->len()),
@@ -91,6 +92,12 @@ class DistributedTrainingWrapper {
     _train_context = new_context;
   }
 
+  void updateLearningRate(float learning_rate) {
+    _learning_rate = learning_rate;
+  }
+
+  void incrementEpochCount() { _bolt_graph->incrementEpochCount(); }
+
   void freezeHashTables(bool insert_labels_if_not_found) {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);
   }
@@ -110,6 +117,7 @@ class DistributedTrainingWrapper {
     }
   }
 
+  float _learning_rate;
   BoltGraphPtr _bolt_graph;
   std::optional<DatasetContext> _train_context;
   TrainConfig _train_config;

@@ -4,13 +4,14 @@
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <utils/Random.h>
 #include <stdexcept>
 
 namespace thirdai::dataset {
 
 struct DatasetShuffleConfig {
   explicit DatasetShuffleConfig(size_t min_vecs_in_buffer = 64000,
-                                uint32_t seed = time(NULL))
+                                uint32_t seed = global_random::nextSeed())
       : min_buffer_size(min_vecs_in_buffer), seed(seed) {}
 
   size_t min_buffer_size;
@@ -37,16 +38,11 @@ class DatasetLoader final {
   void restart();
 
   uint32_t getInputDim() {
-    // TODO(Josh): This is assuming we have one input and one label
-    // dataset
+    // TODO(Nick/Geordie): Replace this with a getInputDims() call.
     return _featurizer->getDimensions().at(0);
   }
 
-  uint32_t getLabelDim() {
-    // TODO(Josh): Again, this is assuming we have one input and one label
-    // dataset
-    return _featurizer->getDimensions().at(1);
-  }
+  uint32_t getLabelDim() { return _featurizer->getDimensions().at(1); }
 
  private:
   // Adds batches to the buffer until the data source is finished or the buffer

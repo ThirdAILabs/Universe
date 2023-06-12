@@ -111,39 +111,36 @@ def test_target_not_in_data_types():
         )
 
 
-def test_contextual_text_encodings():
-    invalid_encoding = "INVALID"
+def test_invalid_column_name_in_udt_predict():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text_col": bolt.types.text(contextual_encoding="local"),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=2,
+    )
+
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. 'char-5'), or 'global'."
-        ),
+        match=re.escape(f"Input column name 'HAHAHA' not found in data_types."),
     ):
-        bolt.UniversalDeepTransformer(
-            data_types={
-                "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
-                "some_random_name": bolt.types.categorical(),
-            },
-            target="target",
-            n_target_classes=2,
-        )
+        model.predict({"HAHAHA": "some text"})
 
 
-@pytest.mark.parametrize(
-    "invalid_encoding", ["char-3p", "char-0", "char-10-0", "char0"]
-)
-def test_invalid_char_k_contextual_text_encoding(invalid_encoding):
+@pytest.mark.unit
+def test_set_output_sparsity_throws_error_on_unsupported_backend():
+    """
+    set_output_sparsity is enabled only for UDTClassifier Backend hence, this should throw an error.
+    """
+    model = bolt.UniversalDeepTransformer(
+        source_column="source",
+        target_column="target",
+        dataset_size="medium",
+        delimiter="\t",
+    )
+
     with pytest.raises(
-        ValueError,
-        match=re.escape(
-            f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. 'char-5'), or 'global'."
-        ),
+        RuntimeError, match=re.escape(f"Method not supported for the model")
     ):
-        bolt.UniversalDeepTransformer(
-            data_types={
-                "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
-                "some_random_name": bolt.types.categorical(),
-            },
-            target="target",
-            n_target_classes=2,
-        )
+        model.set_output_sparsity(sparsity=0.2, rebuild_hash_tables=False)

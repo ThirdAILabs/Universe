@@ -26,9 +26,10 @@ class FullyConnectedLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation)
-      : FullyConnectedLayerConfig(dim, sparsity, activation,
-                                  DWTASamplingConfig::autotune(dim, sparsity)) {
-  }
+      : FullyConnectedLayerConfig(
+            dim, sparsity, activation,
+            DWTASamplingConfig::autotune(dim, sparsity,
+                                         /* experimental_autotune=*/false)) {}
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,

@@ -1,12 +1,13 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
-#include <bolt/src/graph/Graph.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -26,28 +27,37 @@ class UDTClassifier final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::optional<ValidationDataSource>& validation,
+                   std::optional<size_t> batch_size,
+                   std::optional<size_t> max_in_memory_batches,
+                   const std::vector<std::string>& metrics,
+                   const std::vector<CallbackPtr>& callbacks, bool verbose,
+                   std::optional<uint32_t> logging_interval) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
 
+  /**
+   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
+   * then the hash tables and functions are rebuilt. Note that, model should be
+   * finetuned if rebuild_hash_tables is set to true.
+   */
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables) override;
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final;
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
@@ -58,9 +68,10 @@ class UDTClassifier final : public UDTBackend {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
+                       std::optional<size_t> batch_size_opt,
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
-                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       const std::vector<CallbackPtr>& callbacks,
                        std::optional<size_t> max_in_memory_batches,
                        bool verbose) final;
 
@@ -76,13 +87,13 @@ class UDTClassifier final : public UDTBackend {
     return std::to_string(class_id);
   }
 
-  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
+  ModelPtr model() const final { return _classifier->model(); }
 
-  void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier->model();
-    if (curr_model->outputDim() != curr_model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
+  void setModel(const ModelPtr& model) final {
+    ModelPtr& curr_model = _classifier->model();
+
+    utils::verifyCanSetModel(curr_model, model);
+
     curr_model = model;
   }
 
@@ -104,8 +115,11 @@ class UDTClassifier final : public UDTBackend {
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
-        _label_block->delimiter(), _label_block->columnName(), integerTarget());
+        _label_block->delimiter(), _label_block->columnName());
   }
+
+  TextEmbeddingModelPtr getTextEmbeddingModel(
+      float distance_cutoff) const final;
 
  private:
   dataset::CategoricalBlockPtr labelBlock(
@@ -123,7 +137,7 @@ class UDTClassifier final : public UDTBackend {
   friend cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;

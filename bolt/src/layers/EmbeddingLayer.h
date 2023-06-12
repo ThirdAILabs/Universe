@@ -8,6 +8,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <utils/Random.h>
 #include <cmath>
 #include <ctime>
 #include <optional>
@@ -25,7 +26,7 @@ class EmbeddingLayer {
 
  public:
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
-                          uint32_t seed = time(nullptr));
+                          uint32_t seed = global_random::nextSeed());
 
   void forward(const BoltVector& tokens, BoltVector& output);
 
@@ -69,9 +70,6 @@ class EmbeddingLayer {
  private:
   void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,
                               float eps);
-
-  void updateParametersDense(float lr, uint32_t iter, float B1, float B2,
-                             float eps);
 
   inline uint64_t getEmbeddingBlockOffset(uint32_t token,
                                           uint64_t lookup_index) {

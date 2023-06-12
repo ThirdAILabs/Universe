@@ -1,130 +1,166 @@
 #include "Classifier.h"
 #include <cereal/archives/binary.hpp>
-#include "Train.h"
+#include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/python_bindings/NumpyConversions.h>
+#include <bolt/src/metrics/Metric.h>
+#include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
+#include <optional>
 
 namespace thirdai::automl::udt::utils {
 
+Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
+    : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {
+  if (_model->outputs().size() != 1) {
+    throw std::invalid_argument(
+        "Classifier utility is intended for single output models.");
+  }
+
+  auto computations = _model->computationOrder();
+
+  // This defines the embedding as the second to last computatation in the
+  // computation graph.
+  // TODO(Nicholas): should this be configurable using the model config, and
+  // have a default for the default model.
+  _emb = computations.at(computations.size() - 2);
+}
+
 py::object thirdai::automl::udt::utils::Classifier::train(
     dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDatasetLoader>& validation,
+    const ValidationDatasetLoader& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    licensing::TrainPermissionsToken token) {
+    const std::vector<bolt::train::callbacks::CallbackPtr>& callbacks,
+    bool verbose, std::optional<uint32_t> logging_interval) {
   uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  bolt::TrainConfig train_config =
-      getTrainConfig(epochs, learning_rate, validation, metrics, callbacks,
-                     verbose, logging_interval);
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
 
-  auto output = utils::train(
-      _model, dataset, train_config, batch_size, max_in_memory_batches,
-      /* freeze_hash_tables= */ _freeze_hash_tables, token);
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
+
+  const auto& [val_data, val_args] = validation;
+
+  auto history = trainer.train_with_dataset_loader(
+      dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
+      metrics, val_data, val_args.metrics(), val_args.stepsPerValidation(),
+      val_args.sparseInference(), callbacks,
+      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
-   * some metric. This can improve performance particularly on datasets with a
-   * class imbalance.
+   * some metric. This can improve performance particularly on datasets with
+   * a class imbalance.
    */
-  if (_model->outputDim() == 2) {
-    if (validation && !validation->second.metrics().empty()) {
-      validation->first->restart();
+  if (_model->outputs().at(0)->dim() == 2) {
+    if (!val_args.metrics().empty()) {
+      val_data->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ validation->first,
-              /* metric_name= */ validation->second.metrics().at(0));
+              /* dataset= */ val_data,
+              /* metric_name= */ val_args.metrics().at(0));
 
-    } else if (!train_config.metrics().empty()) {
+    } else if (!metrics.empty()) {
       dataset->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* dataset= */ dataset,
-              /* metric_name= */ train_config.metrics().at(0));
+              /* metric_name= */ metrics.at(0));
     }
   }
 
-  return py::cast(output);
+  return py::cast(history);
 }
 
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
-                                bool sparse_inference,
-                                bool return_predicted_class, bool verbose,
-                                bool return_metrics) {
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose,
-                           /* return_activations = */ !return_metrics);
+                                bool sparse_inference, bool verbose) {
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
 
-  auto loaded_data =
-      dataset->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] =
-      utils::splitDataLabels(std::move(loaded_data));
+  auto history = trainer.validate_with_dataset_loader(
+      dataset, metrics, sparse_inference, verbose);
 
-  auto [output_metrics, output] =
-      _model->evaluate(test_data, test_labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
-
-  if (return_predicted_class) {
-    return predictedClasses(output);
-  }
-
-  return utils::convertInferenceTrackerToNumpy(output);
+  return py::cast(history);
 }
 
-py::object Classifier::predict(std::vector<BoltVector>&& inputs,
+py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
                                bool sparse_inference,
-                               bool return_predicted_class) {
-  BoltVector output =
-      _model->predictSingle(std::move(inputs), sparse_inference);
+                               bool return_predicted_class, bool single) {
+  auto output = _model->forward(inputs, sparse_inference).at(0);
 
   if (return_predicted_class) {
-    return py::cast(predictedClass(output));
+    return predictedClasses(output, single);
   }
 
-  return utils::convertBoltVectorToNumpy(output);
+  return bolt::nn::python::tensorToNumpy(output,
+                                         /* single_row_to_vector= */ single);
 }
 
-py::object Classifier::predictBatch(std::vector<BoltBatch>&& batches,
-                                    bool sparse_inference,
-                                    bool return_predicted_class) {
-  BoltBatch outputs =
-      _model->predictSingleBatch(std::move(batches), sparse_inference);
+py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {
+  // TODO(Nicholas): Sparsity could speed this up, and wouldn't affect the
+  // embeddings if the sparsity is in the output layer and the embeddings are
+  // from the hidden layer.
+  _model->forward(inputs, /* use_sparsity= */ false);
 
-  if (return_predicted_class) {
-    return predictedClasses(outputs);
-  }
-
-  return utils::convertBoltBatchToNumpy(outputs);
+  return bolt::nn::python::tensorToNumpy(_emb->tensor());
 }
 
-uint32_t Classifier::predictedClass(const BoltVector& activation_vec) {
+uint32_t Classifier::predictedClass(const BoltVector& output) {
   if (_binary_prediction_threshold) {
-    return activation_vec.activations[1] >= *_binary_prediction_threshold;
+    return output.activations[1] >= *_binary_prediction_threshold;
   }
-  return activation_vec.getHighestActivationId();
+  return output.getHighestActivationId();
 }
 
-py::object Classifier::predictedClasses(bolt::InferenceOutputTracker& output) {
-  utils::NumpyArray<uint32_t> predictions(output.numSamples());
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
-    predictions.mutable_at(i) = predictedClass(activation_vec);
+py::object Classifier::predictedClasses(
+    const bolt::nn::tensor::TensorPtr& output, bool single) {
+  if (output->batchSize() == 1 && single) {
+    return py::cast(predictedClass(output->getVector(0)));
+  }
+
+  NumpyArray<uint32_t> predictions(output->batchSize());
+  for (uint32_t i = 0; i < output->batchSize(); i++) {
+    predictions.mutable_at(i) = predictedClass(output->getVector(i));
   }
   return py::object(std::move(predictions));
 }
 
-py::object Classifier::predictedClasses(const BoltBatch& outputs) {
-  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
-  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-    predictions.mutable_at(i) = predictedClass(outputs[i]);
+std::vector<std::vector<float>> Classifier::getBinaryClassificationScores(
+    const dataset::BoltDatasetList& dataset) {
+  auto tensor_batches =
+      bolt::train::convertDatasets(dataset, _model->inputDims());
+
+  std::vector<std::vector<float>> scores;
+  scores.reserve(tensor_batches.size());
+
+  for (const auto& batch : tensor_batches) {
+    auto output = _model->forward(batch, /* use_sparsity= */ false).at(0);
+
+    std::vector<float> batch_scores;
+    for (uint32_t i = 0; i < output->batchSize(); i++) {
+      batch_scores.push_back(output->getVector(i).activations[1]);
+    }
+    scores.push_back(std::move(batch_scores));
   }
-  return py::object(std::move(predictions));
+
+  return scores;
+}
+
+// Splits a vector of datasets as returned by a dataset loader (where the labels
+// are the last dataset in the list)
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
+    dataset::BoltDatasetList&& datasets) {
+  auto labels = datasets.back();
+  datasets.pop_back();
+  return {datasets, labels};
 }
 
 std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
@@ -144,29 +180,28 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   // Did this instead of structured binding auto [data, labels] = ...
   // since Clang-Tidy would throw this error around pragma omp parallel:
   // "reference to local binding 'labels' declared in enclosing function"
-  auto split_data = utils::splitDataLabels(std::move(*loaded_data_opt));
-  auto data = std::move(split_data.first);
+  auto split_data = splitDataLabels(std::move(*loaded_data_opt));
   auto labels = std::move(split_data.second);
 
-  auto eval_config =
-      bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = _model->evaluate({data}, labels, eval_config);
-  auto& activations = output.second;
+  auto scores = getBinaryClassificationScores(split_data.first);
 
   double best_metric_value = bolt::makeMetric(metric_name)->worst();
   std::optional<float> best_threshold = std::nullopt;
 
-#pragma omp parallel for default(none) shared( \
-    labels, best_metric_value, best_threshold, metric_name, activations)
+#pragma omp parallel for default(none) \
+    shared(labels, best_metric_value, best_threshold, metric_name, scores)
   for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
+    // TODO(Nicholas): This is still using the old metric from bolt v1. The bolt
+    // v2 metrics are more intertwined with the computation graph and would be
+    // harder to use in this way.
     auto metric = bolt::makeMetric(metric_name);
 
     float threshold =
         static_cast<float>(t_idx) / defaults::NUM_THRESHOLDS_TO_CHECK;
 
-    uint32_t sample_idx = 0;
-    for (const auto& label_batch : *labels) {
-      for (const auto& label_vec : label_batch) {
+    for (uint32_t batch_idx = 0; batch_idx < scores.size(); batch_idx++) {
+      for (uint32_t vec_idx = 0; vec_idx < scores.at(batch_idx).size();
+           vec_idx++) {
         /**
          * The output bolt vector from activations cannot be passed in
          * directly because it doesn't incorporate the threshold, and
@@ -183,14 +218,14 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
          * thresholds anyway and so we can ignore the effect of this
          * modification on them.
          */
-        if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
+        if (scores.at(batch_idx).at(vec_idx) >= threshold) {
           metric->record(
               /* output= */ BoltVector::makeDenseVector({0, 1.0}),
-              /* labels= */ label_vec);
+              /* labels= */ labels->at(batch_idx)[vec_idx]);
         } else {
           metric->record(
               /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
-              /* labels= */ label_vec);
+              /* labels= */ labels->at(batch_idx)[vec_idx]);
         }
       }
     }
@@ -210,7 +245,7 @@ template void Classifier::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Classifier::serialize(Archive& archive) {
-  archive(_model, _freeze_hash_tables, _binary_prediction_threshold);
+  archive(_model, _emb, _freeze_hash_tables, _binary_prediction_threshold);
 }
 
 }  // namespace thirdai::automl::udt::utils

@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
+#include <utils/Random.h>
 #include <vector>
 
 namespace thirdai::hashing {
@@ -25,8 +26,9 @@ class DWTAHashFunction final : public HashFunction {
 
  public:
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
-                   uint32_t _num_tables, uint32_t range_pow,
-                   uint32_t seed = time(nullptr));
+                   uint32_t _num_tables, uint32_t range_pow, uint32_t binsize,
+                   std::optional<uint32_t> permutations,
+                   uint32_t seed = global_random::nextSeed());
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
@@ -38,10 +40,22 @@ class DWTAHashFunction final : public HashFunction {
     return std::make_unique<DWTAHashFunction>(
         /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
         /* num_tables= */ _num_tables,
-        /* range_pow= */ _log_binsize * _hashes_per_table);
+        /* range_pow= */ _log_binsize * _hashes_per_table,
+        /* binsize=*/_binsize, /* permutations=*/
+        _permute);
   }
 
   std::string getName() const final { return "DWTA"; }
+
+  uint32_t getNumPermutations() const { return _permute; }
+
+  uint32_t getBinsize() const { return _binsize; }
+
+  uint32_t getHashesPerTable() const { return _hashes_per_table; }
+
+  void save(const std::string& filename);
+
+  static std::shared_ptr<HashFunction> load(const std::string& filename);
 };
 
 }  // namespace thirdai::hashing

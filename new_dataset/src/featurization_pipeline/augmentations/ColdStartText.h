@@ -7,6 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include <new_dataset/src/featurization_pipeline/Augmentation.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
+#include <utils/Random.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -132,9 +133,11 @@ class ColdStartTextAugmentation final : public Augmentation {
       std::vector<std::string> weak_column_names, std::string label_column_name,
       std::string output_column_name,
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
-      uint32_t seed = time(nullptr));
+      uint32_t seed = global_random::nextSeed());
 
   ColumnMap apply(const ColumnMap& columns) final;
+
+  std::vector<std::string> augmentMapInput(const dataset::MapInput& document);
 
  private:
   typedef std::vector<std::string> Phrase;
@@ -153,67 +156,75 @@ class ColdStartTextAugmentation final : public Augmentation {
   std::optional<uint32_t> _strong_sample_num_words;
   uint32_t _seed;
 
-  /*
-  Creates a phrase by splitting an input string s into whitespace-separated
-  words. Leading and tailing whitespaces are stripped off and ignored.
-  */
+  /**
+   * Helper method to perform the augmentation of a single row in the input.
+   * Returns the augmented phrases from that input row as strings.
+   */
+  std::vector<std::string> augmentSingleRow(std::string& strong_text,
+                                            std::string& weak_text);
+
+  /**
+   * Creates a phrase by splitting an input string s into whitespace-separated
+   * words. Leading and tailing whitespaces are stripped off and ignored.
+   */
   static Phrase splitByWhitespace(std::string& s);
 
-  /*
-  Replaces punctuation characters in s with whitespace.
-  */
+  /**
+   * Replaces punctuation characters in s with whitespace.
+   */
   static void replacePunctuationWithSpaces(std::string& s);
 
-  /*
-  Strips leading and tailing whitespace.
-  */
+  /**
+   *Strips leading and tailing whitespace.
+   */
   static void stripWhitespace(std::string& s);
 
-  /*
-  For each column name, gets the string at the specified row in the column.
-  Appends the delimiter to the string. Returns a concatenation of all strings.
-  */
+  /**
+   * For each column name, gets the string at the specified row in the column.
+   * Appends the delimiter to the string. Returns a concatenation of all
+   * strings.
+   */
   static std::string concatenateStringColumnEntries(
       const ColumnMap& columns, uint64_t row_num,
       const std::vector<std::string>& column_names,
       const std::string& delimiter);
 
-  /*
-  Returns a single phrase that takes in the concatenated string of strong
-  columns and returns a strong phrase (this will just be a cleaned version of
-  the input string, possibly length restricted).
-  */
+  /**
+   * Returns a single phrase that takes in the concatenated string of strong
+   * columns and returns a strong phrase (this will just be a cleaned version of
+   * the input string, possibly length restricted).
+   */
   Phrase getStrongPhrase(std::string& s);
 
-  /*
-  Returns a set of natural and chunked phrases from s, according to the weak
-  phrase options selected by the user.
-  */
+  /**
+   * Returns a set of natural and chunked phrases from s, according to the weak
+   * phrase options selected by the user.
+   */
   PhraseCollection getWeakPhrases(std::string& s);
 
-  /*
-  Randomly deletes elements from each phrase, resulting in new phrases.
-  Repeats the process num_reps times for each phrase, resulting in (roughly)
-  num_reps * phrases.size() new phrases. Note that if a phrase is not long
-  enough to choose num_to_sample words, then it is kept but only represented
-  once in the output (not num_reps times).
-  */
+  /**
+   * Randomly deletes elements from each phrase, resulting in new phrases.
+   * Repeats the process num_reps times for each phrase, resulting in (roughly)
+   * num_reps * phrases.size() new phrases. Note that if a phrase is not long
+   * enough to choose num_to_sample words, then it is kept but only represented
+   * once in the output (not num_reps times).
+   */
   PhraseCollection sampleFromPhrases(PhraseCollection& phrases,
                                      uint32_t num_to_sample,
                                      uint32_t num_reps) const;
 
-  /*
-  Concatenates each element from the weak phrases with the strong phrase.
-  If _strong_sample_num_words was provided in the constructor, this also
-  independently samples from the strong phrase for every weak phrase.
-  */
+  /**
+   * Concatenates each element from the weak phrases with the strong phrase.
+   * If _strong_sample_num_words was provided in the constructor, this also
+   * independently samples from the strong phrase for every weak phrase.
+   */
   void mergeStrongWithWeak(PhraseCollection& weak_phrases,
                            Phrase& strong_phrase) const;
 
-  /*
-  Throws an error message if the parameter has a value <= 0. The error message
-  displays parameter_name.
-  */
+  /**
+   * Throws an error message if the parameter has a value <= 0. The error
+   * message displays parameter_name.
+   */
   static void validateGreaterThanZero(std::optional<uint32_t> parameter,
                                       const std::string& parameter_name);
 
@@ -230,7 +241,7 @@ class ColdStartTextAugmentation final : public Augmentation {
         _weak_sample_reps(1),
         _strong_max_len(std::nullopt),
         _strong_sample_num_words(std::nullopt),
-        _seed(time(nullptr)) {}
+        _seed(0) {}
 
   friend class cereal::access;
   template <class Archive>

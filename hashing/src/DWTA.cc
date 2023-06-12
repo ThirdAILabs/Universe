@@ -2,33 +2,38 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <algorithm>
 #include <limits>
+#include <optional>
 #include <random>
 
 namespace thirdai::hashing {
 
-constexpr uint32_t DEFAULT_BINSIZE = 8;
-
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
+                                   uint32_t binsize,
+                                   std::optional<uint32_t> permutations,
                                    uint32_t seed)
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE),
-      _log_binsize(floor(log2(_binsize))),
-      _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
+      _binsize(binsize),
+      _log_binsize(floor(log2(_binsize))) {
+  _permute = permutations.value_or(
+      ceil((static_cast<double>(_num_hashes) * _binsize) / _dim));
+
   std::mt19937 gen(seed);
-  uint32_t* n_array = new uint32_t[_dim];
   _bin_map = std::vector<uint32_t>(_dim * _permute);
   _positions = std::vector<uint32_t>(_dim * _permute);
 
+  uint32_t* n_array = new uint32_t[_dim];
   for (uint32_t i = 0; i < _dim; i++) {
     n_array[i] = i;
   }
+
   for (uint32_t p = 0; p < _permute; p++) {
     std::shuffle(n_array, n_array + _dim, gen);
     for (uint32_t j = 0; j < _dim; j++) {
@@ -36,7 +41,6 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;
     }
   }
-
   delete[] n_array;
 
   std::uniform_int_distribution<uint32_t> dis(
@@ -124,6 +128,23 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     }
     final_hashes[i] = index;
   }
+}
+
+void DWTAHashFunction::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<HashFunction> DWTAHashFunction::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<DWTAHashFunction> deserialize_into(new DWTAHashFunction());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
 }
 
 template <class Archive>

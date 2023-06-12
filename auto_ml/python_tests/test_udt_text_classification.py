@@ -8,9 +8,9 @@ from model_test_utils import (
 )
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
-
 ACCURACY_THRESHOLD = 0.8
+
+pytestmark = [pytest.mark.unit]
 
 
 @pytest.fixture(scope="module")
@@ -32,18 +32,17 @@ def train_udt_text_classification(download_clinc_dataset):
     return model
 
 
+@pytest.mark.release
 def test_udt_text_classification_accuarcy(
     train_udt_text_classification, download_clinc_dataset
 ):
     model = train_udt_text_classification
-    _, test_filename, inference_samples = download_clinc_dataset
+    _, test_filename, _ = download_clinc_dataset
 
-    acc = compute_evaluate_accuracy(
-        model, test_filename, inference_samples, use_class_name=False
-    )
-    assert acc >= ACCURACY_THRESHOLD
+    assert compute_evaluate_accuracy(model, test_filename) >= ACCURACY_THRESHOLD
 
 
+@pytest.mark.release
 def test_udt_text_classification_save_load(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -51,15 +50,11 @@ def test_udt_text_classification_save_load(
     train_filename, test_filename, inference_samples = download_clinc_dataset
 
     check_saved_and_retrained_accuarcy(
-        model,
-        train_filename,
-        test_filename,
-        inference_samples,
-        use_class_name=False,
-        accuracy=ACCURACY_THRESHOLD,
+        model, train_filename, test_filename, accuracy=ACCURACY_THRESHOLD
     )
 
 
+@pytest.mark.release
 def test_udt_text_classification_predict_single(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -70,6 +65,7 @@ def test_udt_text_classification_predict_single(
     assert acc >= ACCURACY_THRESHOLD
 
 
+@pytest.mark.release
 def test_udt_text_classification_predict_batch(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -78,3 +74,13 @@ def test_udt_text_classification_predict_batch(
 
     acc = compute_predict_batch_accuracy(model, inference_samples, use_class_name=False)
     assert acc >= ACCURACY_THRESHOLD
+
+
+def test_udt_text_classification_set_output_sparsity(train_udt_text_classification):
+    model = train_udt_text_classification
+
+    # We divide by 2 so that we know that final_output_sparsity is always valid as x \in [0,1] -> x/2 is also \in [0,1]
+    output_fc_computation = model._get_model().ops()[-1]
+    final_output_sparsity = output_fc_computation.get_sparsity() / 2
+    model.set_output_sparsity(sparsity=final_output_sparsity)
+    assert final_output_sparsity == output_fc_computation.get_sparsity()

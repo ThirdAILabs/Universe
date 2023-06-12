@@ -11,8 +11,8 @@
 namespace thirdai::dataset {
 
 namespace special_tokens {
-constexpr std::string_view UNK = "[UNK]";
-constexpr std::string_view MASK = "[MASK]";
+constexpr const char* UNK = "[UNK]";
+constexpr const char* MASK = "[MASK]";
 }  // namespace special_tokens
 
 /*

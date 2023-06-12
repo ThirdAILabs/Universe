@@ -39,10 +39,8 @@ class DistributedTrainingWrapper {
     _train_data = convertLabeldData(train_data, train_labels);
   }
 
-  void freezeHashTables(bool insert_labels_if_not_found) {  // NOLINT
-    (void)insert_labels_if_not_found;
-    throw exceptions::NotImplemented(
-        "Bolt V2 Distributed Trainer: freezeHashTables.");
+  void freezeHashTables(bool insert_labels_if_not_found) {
+    _model->freezeHashTables(insert_labels_if_not_found);
   }
 
   std::unordered_map<std::string, std::vector<float>> getTrainingMetrics() {
@@ -56,13 +54,22 @@ class DistributedTrainingWrapper {
 
   void setGradients(const float* new_grad, uint64_t flattened_dim);
 
+  void setSerializeOptimizer(bool should_serialize_optimizer) {
+    _model->setSerializeOptimizer(should_serialize_optimizer);
+  }
+
+  void updateLearningRate(float learning_rate) {
+    _learning_rate = learning_rate;
+  }
+
+  // Synchronizes the outer epoch count maintained by the distributed framework
+  // with the epoch count maintained within Bolt.
+  void incrementEpochCount() { _trainer.incrementEpochCount(); }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
       const dataset::BoltDatasetPtr& labels);
-
-  static uint64_t sumFlattenedDims(
-      const std::vector<std::vector<float>*>& grads);
 
   bool shouldLogMetrics() const {
     return _worker_id == 0 && _logging_interval &&
@@ -83,6 +90,7 @@ class DistributedTrainingWrapper {
 
   std::optional<LabeledDataset> _train_data;
   std::optional<LabeledDataset> _validation_data;
+  Trainer _trainer;
 };
 
 using DistributedTrainingWrapperPtr =

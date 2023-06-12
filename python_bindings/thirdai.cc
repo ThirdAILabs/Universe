@@ -8,11 +8,11 @@
 #include <auto_ml/python_bindings/AutomlPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
-#include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
+#include <utils/Random.h>
 #include <utils/Version.h>
 
 // Pybind11 library
@@ -106,13 +106,14 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   m.attr("__version__") = thirdai::version();
 
+  m.def("set_seed", &thirdai::global_random::setBaseSeed, py::arg("seed"));
+
   createLoggingSubmodule(m);
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
   // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-reduce-the-build-time
-  // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
-  // Dataset/dataset everyone in the codebase.
+
   thirdai::dataset::python::createDatasetSubmodule(m);
 
   // Licensing Submodule
@@ -125,7 +126,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");
-  thirdai::dataset::python::createDataSubmodule(data_submodule);
   thirdai::data::python::createFeaturizationSubmodule(data_submodule);
 
   // Hashing Submodule
@@ -153,8 +153,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Bolt V2
   auto bolt_v2_submodule = m.def_submodule("bolt_v2");
-#if THIRDAI_EXPOSE_ALL
   thirdai::bolt::nn::python::createBoltV2NNSubmodule(bolt_v2_submodule);
   thirdai::bolt::train::python::createBoltV2TrainSubmodule(bolt_v2_submodule);
-#endif
 }

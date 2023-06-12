@@ -39,6 +39,8 @@ class ColdStartDataSource final : public dataset::DataSource {
     _row_idx = 0;
   }
 
+  const auto& labelColumn() const { return _label_column; }
+
  private:
   // Helper method which concatenates the columns of the next row in the column
   // map and returns it as a string.
@@ -64,4 +66,5 @@ class ColdStartDataSource final : public dataset::DataSource {
 };
 
 using ColdStartDataSourcePtr = std::shared_ptr<ColdStartDataSource>;
+
 }  // namespace thirdai::dataset::cold_start

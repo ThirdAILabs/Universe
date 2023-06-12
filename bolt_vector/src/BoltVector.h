@@ -25,6 +25,9 @@ using TopKActivationsQueue =
                         std::greater<ValueIndexPair>>;
 
 struct FoundActiveNeuron {
+  // If pos is nullopt, then it means that we searched through a sparse
+  // BoltVector and the neuron was not found (the activation in this case will
+  // be 0).
   std::optional<size_t> pos;
   float activation;
 };
@@ -67,8 +70,6 @@ struct BoltVector {
 
   BoltVector copy() const;
 
-  // TODO(Josh): Delete copy constructor and copy assignment (will help when
-  // we've moved to new Dataset and removed BoltBatches)
   BoltVector(const BoltVector& other);
 
   BoltVector(BoltVector&& other) noexcept;
@@ -108,6 +109,8 @@ struct BoltVector {
   TopKActivationsQueue findKLargestActivations(uint32_t k) const;
 
   bool hasGradients() const;
+
+  bool ownsMemory() const { return _owns_data; }
 
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& vec);
 
@@ -174,6 +177,8 @@ class BoltBatch {
   auto begin() { return _vectors.begin(); }
 
   auto end() { return _vectors.end(); }
+
+  auto& vectors() { return _vectors; }
 
   uint32_t getBatchSize() const { return _vectors.size(); }
 

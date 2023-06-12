@@ -8,12 +8,15 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
 #include <utils/Version.h>
+#include <versioning/src/Versions.h>
 #include <algorithm>
 #include <chrono>
 #include <ctime>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
@@ -49,13 +52,20 @@ Model::Model(autograd::ComputationList inputs,
   _ops.assign(ops.begin(), ops.end());
 
   matchOutputFullyConnectedLayersWithLabels();
+
+  verifyAllowedOutputDim();
 }
 
 std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
                                    autograd::ComputationList outputs,
                                    std::vector<loss::LossPtr> losses) {
-  return std::make_shared<Model>(std::move(inputs), std::move(outputs),
-                                 std::move(losses));
+  auto model = std::shared_ptr<Model>(
+      new Model(std::move(inputs), std::move(outputs), std::move(losses)));
+
+  // This has to be done here because we need the model to be allocated using a
+  // shared_ptr in order to use shared_from_this() to get a valid reference.
+  model->registerWithOps();
+  return model;
 }
 
 tensor::TensorList Model::forward(const tensor::TensorList& inputs,
@@ -82,6 +92,10 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
                          const tensor::TensorList& labels) {
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
+
+  _total_training_samples += input_batch_size;
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_training_samples);
 
   if (input_batch_size != label_batch_size) {
     throw std::invalid_argument(
@@ -110,6 +124,10 @@ void Model::updateParameters(float learning_rate) {
   for (auto& op : _ops) {
     op->updateParameters(learning_rate, _train_steps);
   }
+}
+
+void Model::forceStateReallocation() {
+  _allocation_manager.forceReallocation();
 }
 
 std::vector<ops::OpPtr> Model::opExecutionOrder() const {
@@ -187,6 +205,14 @@ std::vector<uint32_t> Model::inputDims() const {
   return dims;
 }
 
+std::vector<uint32_t> Model::labelDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& label : _labels) {
+    dims.push_back(label->dim());
+  }
+  return dims;
+}
+
 std::vector<std::vector<float>*> Model::gradients() const {
   std::vector<std::vector<float>*> grads;
 
@@ -196,6 +222,114 @@ std::vector<std::vector<float>*> Model::gradients() const {
   }
 
   return grads;
+}
+
+std::vector<std::vector<float>*> Model::parameters() const {
+  std::vector<std::vector<float>*> params;
+
+  for (const auto& op : _ops) {
+    auto op_params = op->parameters();
+    params.insert(params.end(), op_params.begin(), op_params.end());
+  }
+
+  return params;
+}
+
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = 0;
+  for (const auto* value : values) {
+    total_dim += value->size();
+  }
+  return total_dim;
+}
+
+std::pair<const float*, uint64_t> concatenateValues(
+    const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  float* combined_values = new float[total_dim];
+  uint64_t offset = 0;
+  for (const auto* value : values) {
+    std::copy(value->data(), value->data() + value->size(),
+              combined_values + offset);
+    offset += value->size();
+  }
+
+  return {combined_values, total_dim};
+}
+
+void setValues(const std::vector<std::vector<float>*>& values,
+               const float* concatenated_values, uint64_t flattened_dim) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  if (total_dim != flattened_dim) {
+    std::stringstream error;
+    error << "Expected " << total_dim
+          << " parameters in setValues, but received " << flattened_dim
+          << " parameters.";
+    throw std::invalid_argument(error.str());
+  }
+
+  uint64_t offset = 0;
+  for (auto* value : values) {
+    std::copy(concatenated_values + offset,
+              concatenated_values + offset + value->size(), value->data());
+    offset += value->size();
+  }
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+  return concatenateValues(gradients());
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
+  return concatenateValues(parameters());
+}
+
+void Model::setFlattenedGradients(const float* concatenated_values,
+                                  uint64_t flattened_dim) const {
+  setValues(gradients(), concatenated_values, flattened_dim);
+}
+
+void Model::setFlattenedParameters(const float* concatenated_values,
+                                   uint64_t flattened_dim) const {
+  setValues(parameters(), concatenated_values, flattened_dim);
+  /*
+   * Here, we are re-building the hash tables again, as the older weights
+   * seems to be redundant, when we all-reduce the weights while using
+   * distributed.
+   */
+  for (const auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      fc->reBuildHashFunction();
+    }
+  }
+}
+
+void Model::disableSparseParameterUpdates() {
+  for (const auto& op : _ops) {
+    op->disableSparseParameterUpdates();
+  }
+}
+
+void Model::freezeHashTables(bool insert_labels_if_not_found) {
+  for (auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->freezeHashTables(insert_labels_if_not_found);
+    }
+  }
+}
+
+void Model::unfreezeHashTables() {
+  for (auto& op : _ops) {
+    if (auto fc = ops::FullyConnected::cast(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->unfreezeHashTables();
+    }
+  }
 }
 
 std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
@@ -216,9 +350,25 @@ Model::outputLabelPairs() const {
   return output_label_pairs;
 }
 
-void Model::save(const std::string& filename, bool save_metadata) const {
+void Model::save(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
+  setSerializeOptimizer(false);
+
+  save_stream(output_stream);
+
+  if (save_metadata) {
+    saveMetadata(filename);
+  }
+}
+
+void Model::checkpoint(const std::string& filename, bool save_metadata) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
+  setSerializeOptimizer(true);
+
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -229,6 +379,12 @@ void Model::save(const std::string& filename, bool save_metadata) const {
 void Model::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
+}
+
+void Model::setSerializeOptimizer(bool should_save_optimizer) {
+  for (auto& op : _ops) {
+    op->setSerializeOptimizer(should_save_optimizer);
+  }
 }
 
 std::shared_ptr<Model> Model::load(const std::string& filename) {
@@ -268,8 +424,9 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
                                const std::string& type) {
   if (batches.size() != inputs.size()) {
     std::stringstream error;
-    error << "Expected " << inputs.size() << " " << type << " but received "
-          << batches.size() << ".";
+    error << "When preparing the model for the next batch, expected "
+          << inputs.size() << " " << type << " but received " << batches.size()
+          << ".";
     throw std::invalid_argument(error.str());
   }
 
@@ -293,21 +450,26 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
 }
 
 uint32_t Model::setInput(const tensor::TensorList& input_batches) {
-  return setBatchHelper(_inputs, input_batches, "inputs");
+  return setBatchHelper(_inputs, input_batches, "input batches");
 }
 
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
-  return setBatchHelper(_labels, label_batches, "labels");
+  return setBatchHelper(_labels, label_batches, "label batches");
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
-    auto fully_connected =
-        std::dynamic_pointer_cast<ops::FullyConnected>(output->op());
+    auto fully_connected = ops::FullyConnected::cast(output->op());
 
     if (fully_connected) {
       output->addInput(label);
     }
+  }
+}
+
+void Model::registerWithOps() {
+  for (auto& op : _ops) {
+    op->registerModel(weak_from_this());
   }
 }
 
@@ -330,13 +492,41 @@ void Model::saveMetadata(const std::string& save_path) const {
 #endif
 }
 
-template void Model::serialize(cereal::BinaryInputArchive&);
-template void Model::serialize(cereal::BinaryOutputArchive&);
+void Model::verifyAllowedOutputDim() const {
+  uint64_t total_output_dim = std::transform_reduce(
+      _outputs.begin(), _outputs.end(), 0UL, std::plus(),
+      [](const auto& output) { return output->op()->dim(); });
+
+  licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
+}
+
+template void Model::serialize(cereal::BinaryInputArchive&,
+                               const uint32_t version);
+template void Model::serialize(cereal::BinaryOutputArchive&,
+                               const uint32_t version);
 
 template <class Archive>
-void Model::serialize(Archive& archive) {
+void Model::serialize(Archive& archive, const uint32_t version) {
+  licensing::entitlements().verifySaveLoad();
+
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+
+  std::string class_name = "BOLT_MODEL";
+  versions::checkVersion(version, versions::BOLT_MODEL_VERSION, thirdai_version,
+                         thirdai::version(), class_name);
+
+  // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _allocation_manager, _train_steps, _model_uuid);
+          _allocation_manager, _train_steps, _model_uuid,
+          _total_training_samples);
+
+  verifyAllowedOutputDim();
+
+  registerWithOps();
 }
 
 }  // namespace thirdai::bolt::nn::model
+
+CEREAL_CLASS_VERSION(thirdai::bolt::nn::model::Model,
+                     thirdai::versions::BOLT_MODEL_VERSION)
