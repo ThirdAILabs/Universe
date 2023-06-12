@@ -1,10 +1,10 @@
 #include "UDTRecurrentClassifier.h"
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
@@ -17,6 +17,8 @@
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
+
+using bolt::train::metrics::fromMetricNames;
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -57,20 +59,16 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
 
 py::object UDTRecurrentClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+  size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   dataset::DatasetLoaderPtr val_dataset = nullptr;
-  ValidationArgs val_args;
-  if (validation) {
-    val_dataset = _dataset_factory->getDatasetLoader(validation->first,
+  if (val_data) {
+    val_dataset = _dataset_factory->getDatasetLoader(val_data,
                                                      /* shuffle= */ false);
-    val_args = validation->second;
   }
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
@@ -85,10 +83,13 @@ py::object UDTRecurrentClassifier::train(
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
   auto history = trainer.train_with_dataset_loader(
-      train_dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
-      metrics, val_dataset, val_args.metrics(), val_args.stepsPerValidation(),
-      val_args.sparseInference(), callbacks,
-      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+      train_dataset, learning_rate, epochs, batch_size,
+      options.max_in_memory_batches,
+      fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
+      val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
+      options.steps_per_validation, options.sparse_validation, callbacks,
+      /* autotune_rehash_rebuild= */ true, options.verbose,
+      options.logging_interval);
 
   return py::cast(history);
 }
@@ -106,7 +107,8 @@ py::object UDTRecurrentClassifier::evaluate(
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
   auto history = trainer.validate_with_dataset_loader(
-      dataset, metrics, sparse_inference, verbose);
+      dataset, fromMetricNames(_model, metrics, /* prefix= */ "val_"),
+      sparse_inference, verbose);
 
   return py::cast(history);
 }

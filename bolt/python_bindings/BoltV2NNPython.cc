@@ -79,7 +79,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
        * ==============================================================
        */
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"))
+           py::arg("losses"),
+           py::arg("additional_labels") = autograd::ComputationList{})
       .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",

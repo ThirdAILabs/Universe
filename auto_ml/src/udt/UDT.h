@@ -42,12 +42,11 @@ class UDT {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval);
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
@@ -75,12 +74,11 @@ class UDT {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
-                       std::optional<size_t> batch_size,
-                       const std::vector<std::string>& metrics,
-                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       std::optional<size_t> max_in_memory_batches,
-                       bool verbose);
+                       TrainOptions options);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();

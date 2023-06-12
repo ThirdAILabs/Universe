@@ -26,12 +26,14 @@ namespace thirdai::bolt::nn::model {
 class Model : public std::enable_shared_from_this<Model> {
  private:
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
-        std::vector<loss::LossPtr> losses);
+        std::vector<loss::LossPtr> losses,
+        autograd::ComputationList additional_labels = {});
 
  public:
-  static std::shared_ptr<Model> make(autograd::ComputationList inputs,
-                                     autograd::ComputationList outputs,
-                                     std::vector<loss::LossPtr> losses);
+  static std::shared_ptr<Model> make(
+      autograd::ComputationList inputs, autograd::ComputationList outputs,
+      std::vector<loss::LossPtr> losses,
+      autograd::ComputationList additional_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.

@@ -12,7 +12,8 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
     : _model(model),
       _worker_id(worker_id),
       _learning_rate(train_config.learningRate()),
-      _train_metrics(metrics::fromMetricNames(model, train_config.metrics())),
+      _train_metrics(metrics::fromMetricNames(model, train_config.metrics(),
+                                              /* prefix= */ "")),
       _logging_interval(train_config.logLossFrequency()),
       _use_sparsity_in_validation(false),
       _trainer(model) {

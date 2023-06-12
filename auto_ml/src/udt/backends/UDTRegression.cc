@@ -4,18 +4,22 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/blocks/BlockList.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <optional>
 
 namespace thirdai::automl::udt {
+
+using bolt::train::metrics::fromMetricNames;
 
 UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                              const data::UserProvidedTemporalRelationships&
@@ -52,22 +56,19 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                                             defaults::FREEZE_HASH_TABLES);
 }
 
-py::object UDTRegression::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
+py::object UDTRegression::train(const dataset::DataSourcePtr& data,
+                                float learning_rate, uint32_t epochs,
+                                const std::vector<std::string>& train_metrics,
+                                const dataset::DataSourcePtr& val_data,
+                                const std::vector<std::string>& val_metrics,
+                                const std::vector<CallbackPtr>& callbacks,
+                                TrainOptions options) {
+  size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
-  ValidationDatasetLoader validation_dataset;
-  if (validation) {
-    validation_dataset = std::make_pair(
-        _dataset_factory->getLabeledDatasetLoader(validation->first,
-                                                  /* shuffle= */ false),
-        validation->second);
+  dataset::DatasetLoaderPtr val_dataset;
+  if (val_data) {
+    val_dataset = _dataset_factory->getLabeledDatasetLoader(
+        val_data, /* shuffle= */ false);
   }
 
   auto train_dataset =
@@ -77,11 +78,13 @@ py::object UDTRegression::train(
                                bolt::train::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
-      train_dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
-      metrics, validation_dataset.first, validation_dataset.second.metrics(),
-      validation->second.stepsPerValidation(),
-      validation->second.sparseInference(), callbacks,
-      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+      train_dataset, learning_rate, epochs, batch_size,
+      options.max_in_memory_batches,
+      fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
+      val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
+      options.steps_per_validation, options.sparse_validation, callbacks,
+      /* autotune_rehash_rebuild= */ true, options.verbose,
+      options.logging_interval);
 
   return py::cast(history);
 }
@@ -99,7 +102,8 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
 
   auto history = trainer.validate_with_dataset_loader(
-      dataset, metrics, sparse_inference, verbose);
+      dataset, fromMetricNames(_model, metrics, /* prefix= */ "val_"),
+      sparse_inference, verbose);
 
   return py::cast(history);
 }
