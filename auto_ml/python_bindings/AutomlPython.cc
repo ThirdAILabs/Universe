@@ -197,11 +197,11 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def("get_parameters",
            [](udt::UDT& udt) {
-             return thirdai::bolt::python::getParameter(udt.model());
+             return thirdai::bolt::python::getParameters(udt.model());
            })
       .def("set_parameters",
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
-             thirdai::bolt::python::setParameter(udt.model(), new_parameters);
+             thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
       .def(bolt::python::getPickleFunction<udt::UDT>());
 

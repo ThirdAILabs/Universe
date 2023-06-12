@@ -35,13 +35,16 @@ def test_utd_tabular_accuracy(train_udt_tabular, download_census_income):
 
 def test_udt_tabular_get_set_parameters(download_census_income):
     model = get_udt_census_income_model()
-    untrained_model = copy.deepcopy(model)
+
+    save_file_name = "udt_census_income.model"
+    model.save(save_file_name)
+    untrained_model = bolt.UniversalDeepTransformer.load(save_file_name)
 
     train_filename, test_filename, _ = download_census_income
 
     model.train(train_filename, epochs=1, learning_rate=0.01)
 
-    untrained_model.set_parameters(model.get_paramters())
+    untrained_model.set_parameters(model.get_parameters())
 
     assert compute_evaluate_accuracy(model, test_filename) == compute_evaluate_accuracy(
         untrained_model, test_filename
