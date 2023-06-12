@@ -226,6 +226,7 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           float learning_rate, uint32_t epochs,
+                          std::optional<size_t> batch_size,
                           const std::vector<std::string>& metrics,
                           const std::optional<ValidationDataSource>& validation,
                           const std::vector<CallbackPtr>& callbacks,
@@ -234,8 +235,9 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
-                             learning_rate, epochs, metrics, validation,
-                             callbacks, max_in_memory_batches, verbose);
+                             learning_rate, epochs, batch_size, metrics,
+                             validation, callbacks, max_in_memory_batches,
+                             verbose);
 }
 
 void UDT::save(const std::string& filename) const {

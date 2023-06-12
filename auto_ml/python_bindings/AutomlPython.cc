@@ -19,6 +19,9 @@
 
 namespace thirdai::automl::python {
 
+template <typename T>
+using NumpyArray = thirdai::bolt::python::NumpyArray<T>;
+
 class ValidationOptions {
  public:
   ValidationOptions(std::string filename, std::vector<std::string> metrics,
@@ -131,8 +134,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("validation"), py::arg("callbacks"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("batch_size"),
+           py::arg("metrics"), py::arg("validation"), py::arg("callbacks"),
            py::arg("max_in_memory_batches") = std::nullopt, py::arg("verbose"),
            bolt::python::OutputRedirect())
       .def("embedding_representation", &udt::UDT::embedding,
@@ -192,6 +195,14 @@ void defineAutomlInModule(py::module_& module) {
       .def("save", &udt::UDT::save, py::arg("filename"))
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
+      .def("get_parameters",
+           [](udt::UDT& udt) {
+             return thirdai::bolt::python::getParameters(udt.model());
+           })
+      .def("set_parameters",
+           [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
+             thirdai::bolt::python::setParameters(udt.model(), new_parameters);
+           })
       .def(bolt::python::getPickleFunction<udt::UDT>());
 
   py::class_<udt::TextEmbeddingModel, udt::TextEmbeddingModelPtr>(

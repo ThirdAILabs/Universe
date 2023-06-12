@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/nn/model/Model.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
@@ -13,12 +14,24 @@
 
 namespace thirdai::bolt::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 //  Checks that the dimensions of the given numpy array match the expected
 //  dimensions.
 void checkNumpyArrayDimensions(
     const std::vector<uint32_t>& expected_dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         numpy_array);
+
+NumpyArray<float> getGradients(const nn::model::ModelPtr& model);
+
+NumpyArray<float> getParameters(const nn::model::ModelPtr& model);
+
+void setGradients(const nn::model::ModelPtr& model,
+                  NumpyArray<float>& new_values);
+
+void setParameters(const nn::model::ModelPtr& model,
+                   NumpyArray<float>& new_values);
 
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations
