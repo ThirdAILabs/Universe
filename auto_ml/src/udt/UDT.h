@@ -148,9 +148,10 @@ class UDT {
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) {
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          bool fast_approximation) {
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample);
+                                 num_buckets_to_sample, fast_approximation);
   }
 
   void introduceDocument(const MapInput& document,

@@ -91,7 +91,8 @@ class UDTMachClassifier final : public UDTBackend {
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) final;
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          bool fast_approximation) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,

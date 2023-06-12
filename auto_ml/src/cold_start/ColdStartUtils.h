@@ -70,4 +70,15 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     data::TabularDatasetFactoryPtr& dataset_factory,
     ColdStartMetaDataPtr& metadata);
 
+/**
+ * This function concatenates the values from the strong and weak columns into a
+ * single string and creates a data source that returns those strings.
+ */
+dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    data::TabularDatasetFactoryPtr& dataset_factory,
+    ColdStartMetaDataPtr& metadata);
+
 }  // namespace thirdai::automl::cold_start
