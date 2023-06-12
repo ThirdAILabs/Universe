@@ -20,7 +20,7 @@ inline uint32_t seededMurmurHash(const char* key, uint32_t len) {
   return hashing::MurmurHash(key, len, HASH_SEED);
 }
 
-std::vector<uint32_t> tokensIds(const std::string& line);
+std::vector<uint32_t> tokenIds(const std::string& line);
 
 /**
  * Hash each input word and return a list of tokens. Commonly called unigrams.

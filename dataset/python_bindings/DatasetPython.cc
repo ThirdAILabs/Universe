@@ -19,7 +19,6 @@
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
-#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
