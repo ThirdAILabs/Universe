@@ -18,11 +18,6 @@ void MachPrecision::record(uint32_t index_in_batch) {
   const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
   const BoltVector& label = _labels->tensor()->getVector(index_in_batch);
 
-  assert(!label.isDense());
-  assert(label.len == _mach_index->numBuckets());
-  std::vector<uint32_t> label_buckets(label.active_neurons,
-                                      label.active_neurons + label.len);
-
   auto predictions =
       _mach_index->decode(output, _k, _top_k_per_eval_aggregation);
 

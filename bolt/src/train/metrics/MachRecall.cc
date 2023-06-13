@@ -18,11 +18,6 @@ void MachRecall::record(uint32_t index_in_batch) {
   const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
   const BoltVector& label = _labels->tensor()->getVector(index_in_batch);
 
-  assert(!label.isDense());
-  assert(label.len == _mach_index->numBuckets());
-  std::vector<uint32_t> label_buckets(label.active_neurons,
-                                      label.active_neurons + label.len);
-
   auto predictions =
       _mach_index->decode(output, _k, _top_k_per_eval_aggregation);
 
@@ -30,6 +25,9 @@ void MachRecall::record(uint32_t index_in_batch) {
   for (const auto& [pred, score] : predictions) {
     if (label.findActiveNeuronNoTemplate(pred).activation > 0) {
       true_positives++;
+      std::cerr << "True positive: " << pred << std::endl;
+    } else {
+      std::cerr << "False positive: " << pred << std::endl;
     }
   }
   _num_correct_predicted += true_positives;
@@ -38,6 +36,7 @@ void MachRecall::record(uint32_t index_in_batch) {
   for (uint32_t i = 0; i < label.len; i++) {
     if (label.activations[i] > 0) {
       num_ground_truth++;
+      std::cerr << "ground truth: " << i << std::endl;
     }
   }
   _num_ground_truth += num_ground_truth;
