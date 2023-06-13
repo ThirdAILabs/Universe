@@ -178,6 +178,8 @@ class UDTMachClassifier final : public UDTBackend {
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
 
+  static bolt::nn::tensor::TensorPtr placeholderDocIds(uint32_t batch_size);
+
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
     if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {

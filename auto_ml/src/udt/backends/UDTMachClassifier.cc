@@ -207,6 +207,8 @@ py::object UDTMachClassifier::trainBatch(
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
 
+  labels.push_back(placeholderDocIds(batch.size()));
+
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
 
@@ -254,6 +256,7 @@ py::object UDTMachClassifier::trainWithHashes(
 
   auto [inputs, labels] =
       _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
+  labels.push_back(placeholderDocIds(batch.size()));
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -731,7 +734,9 @@ void UDTMachClassifier::teach(
     auto label_tensor = bolt::nn::tensor::Tensor::convert(
         BoltBatch(std::move(labels)), label_dim);
 
-    batches.push_back({{input_tensor}, {label_tensor}});
+    batches.push_back(
+        {{input_tensor},
+         {label_tensor, placeholderDocIds(label_tensor->batchSize())}});
   }
 
   for (uint32_t i = 0; i < epochs; i++) {
@@ -816,6 +821,12 @@ InputMetrics UDTMachClassifier::getMetrics(
   }
 
   return metrics;
+}
+
+bolt::nn::tensor::TensorPtr UDTMachClassifier::placeholderDocIds(
+    uint32_t batch_size) {
+  return bolt::nn::tensor::Tensor::sparse(
+      batch_size, std::numeric_limits<uint32_t>::max(), /* nonzeros= */ 1);
 }
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
