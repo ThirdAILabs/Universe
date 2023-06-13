@@ -4,8 +4,8 @@
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
-#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 
@@ -35,27 +35,22 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
 
 py::object UDTGraphClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
       data, /* shuffle = */ true);
 
-  ValidationDatasetLoader validation_dataset_loader;
-  if (validation) {
-    validation_dataset_loader = ValidationDatasetLoader(
-        _dataset_manager->indexAndGetLabeledDatasetLoader(
-            validation->first, /* shuffle = */ false),
-        validation->second);
+  dataset::DatasetLoaderPtr val_dataset_loader;
+  if (val_data) {
+    val_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+        val_data, /* shuffle = */ false);
   }
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
-                            validation_dataset_loader, batch_size_opt,
-                            max_in_memory_batches, metrics, callbacks, verbose,
-                            logging_interval);
+                            train_metrics, val_dataset_loader, val_metrics,
+                            callbacks, options);
 }
 
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
