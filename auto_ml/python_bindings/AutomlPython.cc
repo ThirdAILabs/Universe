@@ -77,7 +77,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("filename"), py::arg("metrics"),
            py::arg("interval") = std::nullopt,
            py::arg("use_sparse_inference") = false, docs::VALIDATION)
-      .def("filename", &ValidationOptions::filename)
+      .def_property_readonly("filename", &ValidationOptions::filename)
       .def_property_readonly("metrics", &ValidationOptions::metrics)
       .def_property_readonly("steps_per_validation",
                              &ValidationOptions::stepsPerValidation)
