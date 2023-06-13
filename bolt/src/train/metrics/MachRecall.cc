@@ -25,9 +25,6 @@ void MachRecall::record(uint32_t index_in_batch) {
   for (const auto& [pred, score] : predictions) {
     if (label.findActiveNeuronNoTemplate(pred).activation > 0) {
       true_positives++;
-      std::cerr << "True positive: " << pred << std::endl;
-    } else {
-      std::cerr << "False positive: " << pred << std::endl;
     }
   }
   _num_correct_predicted += true_positives;
@@ -36,7 +33,6 @@ void MachRecall::record(uint32_t index_in_batch) {
   for (uint32_t i = 0; i < label.len; i++) {
     if (label.activations[i] > 0) {
       num_ground_truth++;
-      std::cerr << "ground truth: " << i << std::endl;
     }
   }
   _num_ground_truth += num_ground_truth;
