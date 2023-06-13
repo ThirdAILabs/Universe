@@ -32,7 +32,6 @@ void MachRecall::record(uint32_t index_in_batch) {
       true_positives++;
     }
   }
-
   _num_correct_predicted += true_positives;
 
   uint32_t num_ground_truth = 0;

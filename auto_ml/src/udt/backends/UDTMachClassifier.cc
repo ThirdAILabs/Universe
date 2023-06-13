@@ -803,12 +803,16 @@ InputMetrics UDTMachClassifier::getMetrics(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
           labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
-      uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
+      uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachRecall>(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
           labels, k);
     } else if (name == "loss") {
       metrics[prefix + name] = std::make_shared<LossMetric>(loss);
+    } else {
+      throw std::invalid_argument(
+          "Invalid metric '" + name +
+          "'. Please use precision@k, recall@k, or loss.");
     }
   }
 

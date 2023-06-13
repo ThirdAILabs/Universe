@@ -38,8 +38,8 @@ class MachRecall final : public Metric {
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;
 
-  std::atomic_uint64_t _num_correct_predicted;
-  std::atomic_uint64_t _num_ground_truth;
+  std::atomic_uint64_t _num_correct_predicted = 0;
+  std::atomic_uint64_t _num_ground_truth = 0;
   uint32_t _k;
 };
 
