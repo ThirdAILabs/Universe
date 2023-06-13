@@ -223,18 +223,15 @@ void defineCallbacks(py::module_& train) {
       .def(py::init<std::string, float, bool>(), py::arg("metric"),
            py::arg("threshold") = 0.97, py::arg("maximize") = true);
 
-  py::class_<LRSchedule, LRSchedulePtr>(callbacks, "LRSchedule");
-
-  py::class_<LearningRateScheduler, LearningRateSchedulerPtr,
+  py::class_<callbacks::LearningRateScheduler,
+             std::shared_ptr<callbacks::LearningRateScheduler>,
              callbacks::Callback>(callbacks, "LearningRateScheduler")
-      .def(py::init<LRSchedulePtr, bool>(), py::arg("schedule"),
-           py::arg("batch_level_steps") = false);
+      .def(py::init<bool>(), py::arg("batch_level_steps") = false);
 
-  py::class_<LinearSchedule, LinearSchedulePtr, LRSchedule>(callbacks,
-                                                            "LinearLR")
-      .def(py::init<float, float, uint32_t>(),
-           py::arg("start_factor") = 1.0 / 3.0, py::arg("end_factor") = 1.0,
-           py::arg("total_iters") = 5,
+  py::class_<callbacks::LinearSchedule, std::shared_ptr<LinearSchedule>,
+             callbacks::LearningRateScheduler>(callbacks, "LinearLR")
+      .def(py::init<float, float, uint32_t>(), py::arg("start_factor") = 1.0,
+           py::arg("end_factor") = 1.0 / 3.0, py::arg("total_iters") = 5,
            "LinearLR scheduler changes the learning rate linearly by a small "
            "multiplicative factor until the number of epochs reaches the total "
            "iterations.\n");

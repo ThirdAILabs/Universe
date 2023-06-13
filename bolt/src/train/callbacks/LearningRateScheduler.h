@@ -4,16 +4,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace thirdai::bolt::train {
-
-class LRSchedule {
- public:
-  virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
-
-  virtual ~LRSchedule() = default;
-};
-
-using LRSchedulePtr = std::shared_ptr<LRSchedule>;
+namespace thirdai::bolt::train::callbacks {
 
 /**
  * @brief Schedules per-step learning rate linearly
@@ -23,7 +14,7 @@ using LRSchedulePtr = std::shared_ptr<LRSchedule>;
  * @param total_iters: The number of iterations in which multiplicative factor
  * reaches to 1
  */
-class LinearSchedule : public LRSchedule {
+class LinearSchedule : public LearningRateScheduler {
  public:
   explicit LinearSchedule(float start_factor, float end_factor,
                           uint32_t total_iters)
@@ -36,8 +27,9 @@ class LinearSchedule : public LRSchedule {
       // At the begining of step (or epoch) 0, we will have current learning
       // rate as the base learning rate
 
-      // calculation of the common difference(d)
-      d = current_learning_rate * (_end_factor - _start_factor) / _total_iters;
+      // calculation of the lr change per step
+      lr_change_per_step =
+          current_learning_rate * (_end_factor - _start_factor) / _total_iters;
 
       return current_learning_rate * _start_factor;
     }
@@ -45,15 +37,13 @@ class LinearSchedule : public LRSchedule {
       return current_learning_rate;
     }
 
-    return current_learning_rate + d;
+    return current_learning_rate + lr_change_per_step;
   }
 
  private:
-  float _start_factor, _end_factor, d;
+  float _start_factor, _end_factor, lr_change_per_step;
   uint32_t _total_iters;
 };
-
-using LinearSchedulePtr = std::shared_ptr<LinearSchedule>;
 
 /**
  * @brief This callback is intended to schedule learning rate changes during
@@ -63,31 +53,35 @@ using LinearSchedulePtr = std::shared_ptr<LinearSchedule>;
  * @param batch_level_steps: If true then we'll adjust the learning rate using
  * batches as steps instead of epochs. Defaults to false.
  */
-class LearningRateScheduler final : public Callback {
+class LearningRateScheduler : public Callback {
  public:
-  explicit LearningRateScheduler(LRSchedulePtr schedule,
-                                 bool batch_level_steps = false)
-      : _schedule(std::move(schedule)), _batch_level_steps(batch_level_steps) {}
+  explicit LearningRateScheduler(bool batch_level_steps = false)
+      : _epoch(0), _batch_cnt(0), _batch_level_steps(batch_level_steps) {}
+
+  virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
+
+  void onEpochBegin() final {
+    // reseting the batch count
+    _batch_cnt = 0;
+
+    if (!_batch_level_steps) {
+      train_state->updateLearningRate(
+          getNextLR(train_state->learningRate(), _epoch));
+    }
+    _epoch++;
+  }
 
   void onBatchBegin() final {
     if (_batch_level_steps) {
-      train_state.learning_rate = _schedule->getNextLR(
-          train_state.learning_rate, train_state.batch_cnt);
+      train_state->updateLearningRate(
+          getNextLR(train_state->learningRate(), _batch_cnt));
     }
-  }
-
-  void onEpochBegin() final {
-    if (!_batch_level_steps) {
-      train_state.learning_rate =
-          _schedule->getNextLR(train_state.learning_rate, train_state.epoch);
-    }
+    _batch_cnt++;
   }
 
  private:
-  LRSchedulePtr _schedule;
   bool _batch_level_steps;
+  uint32_t _epoch, _batch_cnt;
 };
 
-using LearningRateSchedulerPtr = std::shared_ptr<LearningRateScheduler>;
-
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt::train::callbacks

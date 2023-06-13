@@ -27,25 +27,27 @@ def train_model_with_scheduler(
     model = get_simple_dag_model(
         input_dim=N_CLASSES,
         hidden_layer_dim=2000,
-        hidden_layer_sparsity=1.0,
+        hidden_layer_sparsity=1.0, 
         output_dim=N_CLASSES,
         output_activation="softmax",
         loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
-    learning_rate_scheduler = bolt.callbacks.LearningRateScheduler(
-        schedule=schedule, batch_level_steps=batch_level_steps
-    )
+    _callbacks = [bolt.callbacks.LinearSchedule(
+        batch_level_steps=batch_level_steps
+    )]
 
     ending_lr_callback = GetEndingLearningRate()
 
-    train_config = (
-        bolt.TrainConfig(learning_rate=base_learning_rate, epochs=epochs)
-        .with_metrics(["categorical_accuracy"])
-        .with_callbacks([learning_rate_scheduler, ending_lr_callback])
-    )
+    # train_config = (
+    #     bolt.TrainConfig(learning_rate=base_learning_rate, epochs=epochs)
+    #     .with_metrics(["categorical_accuracy"])
+    #     .with_callbacks([learning_rate_scheduler, ending_lr_callback])
+    # )
 
-    model.train(train_data, train_labels, train_config)
+    # model.train(train_data, train_labels, train_config)
+
+    model.train(train_data, base_learning_rate, epochs, train_metrics = "categorical_accuracy", callbacks = _callbacks)
 
     return ending_lr_callback.ending_lr
 
