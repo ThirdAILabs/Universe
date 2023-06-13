@@ -5,6 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
+#include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
 #include <json/include/nlohmann/json.hpp>
 #include <limits>
 #include <stdexcept>
@@ -64,10 +65,7 @@ class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
                            uint32_t vocab_size)
-      : _lrc_len(lrc_len),
-        _irc_len(irc_len),
-        _src_len(src_len),
-        _vocab_size(vocab_size) {}
+      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size) {}
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& lines) final;
@@ -101,21 +99,12 @@ class TextGenerationFeaturizer final : public Featurizer {
   // Private Constructor for Cereal
   TextGenerationFeaturizer() {}
 
-  BoltVector lrcContext(const std::vector<uint32_t>& tokens,
-                        uint32_t label_index) const;
-
-  BoltVector ircContext(const std::vector<uint32_t>& tokens,
-                        uint32_t label_index) const;
-
-  BoltVector srcContext(const std::vector<uint32_t>& tokens,
-                        uint32_t label_index) const;
-
   static BoltVector promptContext(const std::vector<uint32_t>& prompt_tokens);
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _lrc_len, _irc_len, _src_len);
+    archive(cereal::base_class<Featurizer>(this), _context_featurizer);
   }
 
   /**
@@ -134,12 +123,7 @@ class TextGenerationFeaturizer final : public Featurizer {
 
   static std::vector<uint32_t> getPrompt(const json& line_content);
 
-  static std::vector<uint32_t> parseTokens(const std::string& line);
-
-  uint32_t _lrc_len;
-  uint32_t _irc_len;
-  uint32_t _src_len;
-  uint32_t _vocab_size;
+  TextContextFeaturizer _context_featurizer;
 };
 
 }  // namespace thirdai::dataset
