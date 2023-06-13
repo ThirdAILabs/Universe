@@ -88,18 +88,11 @@ UDTMachClassifier::UDTMachClassifier(
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
-  _dataset_factory = data::TabularDatasetFactory::make(
-      /* input_data_types = */ input_data_types,
-      /* provided_temporal_relationships = */ temporal_tracking_relationships,
-      /* label_blocks = */ {dataset::BlockList({_mach_label_block})},
-      /* label_col_names = */ std::set<std::string>{target_name},
-      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
-
   // No limit on the number of classes.
   auto doc_id_block = dataset::NumericalCategoricalBlock::make(
       target_name, std::numeric_limits<uint32_t>::max());
 
-  _hashes_and_doc_id_factory = data::TabularDatasetFactory::make(
+  _dataset_factory = data::TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
       /* provided_temporal_relationships = */ temporal_tracking_relationships,
       /* label_blocks = */
@@ -625,8 +618,7 @@ void UDTMachClassifier::addBalancingSamples(
   if (_rlhf_sampler) {
     data->restart();
     auto samples =
-        _hashes_and_doc_id_factory
-            ->getLabeledDatasetLoader(data, /* shuffle= */ true)
+        _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
             ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
                        /* num_batches= */ 1, /* verbose= */ false)
             .value();
@@ -843,9 +835,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _hashes_and_doc_id_factory, _min_num_eval_results,
-          _top_k_per_eval_aggregation, _sparse_inference_threshold,
-          _rlhf_sampler);
+          _min_num_eval_results, _top_k_per_eval_aggregation,
+          _sparse_inference_threshold, _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt
