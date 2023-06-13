@@ -27,8 +27,7 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
 
   std::exception_ptr err;
 
-#pragma omp parallel for default(none) \
-    shared(rows, feature_columns, err)
+#pragma omp parallel for default(none) shared(rows, feature_columns, err)
   for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
     try {
       const std::string& row = rows[row_id];
