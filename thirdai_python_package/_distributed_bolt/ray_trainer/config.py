@@ -21,6 +21,8 @@ class BoltBackendConfig(BackendConfig):
         return _BoltBackend
 
 
+
+
 def _init_gloo_group(rank, world_size, group_name):
     import ray.util.collective as col
     from ray.util.collective.types import Backend

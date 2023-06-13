@@ -9,6 +9,8 @@ from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
 
+from ray.train.torch import TorchConfig
+
 pytestmark = [pytest.mark.distributed]
 
 
@@ -36,25 +38,20 @@ def get_mnist_model():
 
 def train_loop_per_worker(config):
     mnist_model = config.get("model")
-    trainer = dist.DistributedTrainer(mnist_model)
+    trainer = dist.DistributedTrainerTorchBackend(mnist_model)
 
     train_x, train_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist", 250)
     train_x = bolt.train.convert_dataset(train_x, dim=784)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
-
-    history = trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
 
     epochs = 3
     for _ in range(epochs):
         for x, y in zip(train_x, train_y):
             trainer.train_on_batch(x, y, 0.005)
 
+    # session report should always have a metrics stored, hence added a demo_metric
     session.report(
-        history,
+        {"demo_metric": 1},
         checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
     )
 
@@ -63,7 +60,6 @@ reason = """We don't have working pygloo wheels on PyPI. So, we can only run it 
 Wheels can be downloaded from: https://github.com/pratkpranav/pygloo/releases/tag/0.2.0"""
 
 
-@pytest.mark.skip(reason=reason)
 def test_distributed_v2_skip():
     # this test is configured to run on blade
     working_dir = os.path.dirname(os.path.realpath(__file__))
@@ -85,7 +81,7 @@ def test_distributed_v2_skip():
         train_loop_per_worker=train_loop_per_worker,
         train_loop_config={"model": get_mnist_model()},
         scaling_config=scaling_config,
-        bolt_config=dist.BoltBackendConfig(),
+        bolt_config=TorchConfig(backend="gloo"),
     )
     result = trainer.fit()
 
