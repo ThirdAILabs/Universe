@@ -203,6 +203,7 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
+  data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
 
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;

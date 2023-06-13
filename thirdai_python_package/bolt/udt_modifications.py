@@ -48,7 +48,7 @@ def _process_validation_and_options(
     train_options.logging_interval = logging_interval
 
     if validation:
-        val_data = _create_data_source(validation.filename())
+        val_data = _create_data_source(validation.filename)
         train_options.steps_per_validation = validation.steps_per_validation
         train_options.sparse_validation = validation.sparse_validation
 
