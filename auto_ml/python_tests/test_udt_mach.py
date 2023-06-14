@@ -308,7 +308,8 @@ def test_mach_udt_introduce_document():
     )
 
 
-def test_mach_udt_introduce_documents():
+@pytest.mark.parametrize("fast_approximation", [True, False])
+def test_mach_udt_introduce_documents(fast_approximation):
     model = train_simple_mach_udt()
 
     new_docs = "NEW_DOCS.csv"
@@ -321,6 +322,7 @@ def test_mach_udt_introduce_documents():
         new_docs,
         strong_column_names=["title"],
         weak_column_names=["description"],
+        fast_approximation=fast_approximation,
     )
 
     os.remove(new_docs)
