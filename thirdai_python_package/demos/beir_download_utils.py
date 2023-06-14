@@ -29,7 +29,8 @@ def remap_query_answers(qrels, doc_ids_to_integers):
     for key in qrels:
         output = {}
         for doc_id in qrels[key]:
-            output[str(doc_ids_to_integers[doc_id])] = qrels[key][doc_id]
+            if qrels[key][doc_id] > 0:
+                output[str(doc_ids_to_integers[doc_id])] = qrels[key][doc_id]
         new_qrels[key] = output
     return new_qrels
 
