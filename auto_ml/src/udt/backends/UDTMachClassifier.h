@@ -20,6 +20,8 @@
 
 namespace thirdai::automl::udt {
 
+using bolt::train::metrics::InputMetrics;
+
 using Label = std::variant<uint32_t, std::string>;
 
 class UDTMachClassifier final : public UDTBackend {
@@ -36,12 +38,11 @@ class UDTMachClassifier final : public UDTBackend {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size_opt,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval) final;
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -72,11 +73,11 @@ class UDTMachClassifier final : public UDTBackend {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& metrics,
-                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       std::optional<size_t> max_in_memory_batches,
-                       bool verbose) final;
+                       TrainOptions options) final;
 
   py::object embedding(const MapInput& sample) final;
 
@@ -203,6 +204,7 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
   data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
+
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
   float _sparse_inference_threshold;

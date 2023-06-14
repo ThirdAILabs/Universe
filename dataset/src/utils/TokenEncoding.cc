@@ -28,6 +28,21 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
   return tokens;
 }
 
+std::vector<uint32_t> tokenIds(const std::string& line) {
+  std::vector<uint32_t> tokens;
+
+  const char* start = line.data();
+  const char* line_end = line.data() + line.size();
+
+  while (start != line_end) {
+    char* end;
+    tokens.push_back(std::strtoul(start, &end, /* base= */ 10));
+    start = end;
+  }
+
+  return tokens;
+}
+
 std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings) {
   std::vector<uint32_t> hashes;
   hashes.reserve(strings.size());

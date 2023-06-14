@@ -15,12 +15,11 @@ class UDTGraphClassifier final : public UDTBackend {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval) final;
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,

@@ -29,14 +29,12 @@ Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
 }
 
 py::object thirdai::automl::udt::utils::Classifier::train(
-    dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
-    const ValidationDatasetLoader& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<bolt::train::callbacks::CallbackPtr>& callbacks,
-    bool verbose, std::optional<uint32_t> logging_interval) {
-  uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
+    const dataset::DatasetLoaderPtr& dataset, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DatasetLoaderPtr& val_dataset,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+  uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
   if (_freeze_hash_tables) {
@@ -46,13 +44,12 @@ py::object thirdai::automl::udt::utils::Classifier::train(
   bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
                                bolt::train::python::CtrlCCheck{});
 
-  const auto& [val_data, val_args] = validation;
-
   auto history = trainer.train_with_dataset_loader(
-      dataset, learning_rate, epochs, batch_size, max_in_memory_batches,
-      metrics, val_data, val_args.metrics(), val_args.stepsPerValidation(),
-      val_args.sparseInference(), callbacks,
-      /* autotune_rehash_rebuild= */ true, verbose, logging_interval);
+      dataset, learning_rate, epochs, batch_size, options.max_in_memory_batches,
+      train_metrics, val_dataset, val_metrics, options.steps_per_validation,
+      options.sparse_validation, callbacks,
+      /* autotune_rehash_rebuild= */ true, options.verbose,
+      options.logging_interval);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
@@ -60,19 +57,19 @@ py::object thirdai::automl::udt::utils::Classifier::train(
    * a class imbalance.
    */
   if (_model->outputs().at(0)->dim() == 2) {
-    if (!val_args.metrics().empty()) {
-      val_data->restart();
+    if (!val_metrics.empty()) {
+      val_dataset->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ val_data,
-              /* metric_name= */ val_args.metrics().at(0));
+              /* dataset= */ val_dataset,
+              /* metric_name= */ val_metrics.at(0));
 
-    } else if (!metrics.empty()) {
+    } else if (!train_metrics.empty()) {
       dataset->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* dataset= */ dataset,
-              /* metric_name= */ metrics.at(0));
+              /* metric_name= */ train_metrics.at(0));
     }
   }
 
