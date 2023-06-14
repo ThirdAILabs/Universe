@@ -84,6 +84,7 @@ def test_multistep_lr_scheduler():
     )
     assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)
 
+
 @pytest.mark.unit
 def test_custom_lr_scheduler():
     lr_schedule = bolt.callbacks.LambdaSchedule(

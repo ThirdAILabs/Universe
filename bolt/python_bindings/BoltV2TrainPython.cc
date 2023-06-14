@@ -225,13 +225,14 @@ void defineCallbacks(py::module_& train) {
 
   py::class_<callbacks::LearningRateScheduler,
              std::shared_ptr<callbacks::LearningRateScheduler>,
-             callbacks::Callback>(callbacks, "LearningRateScheduler")
-      .def(py::init<bool>(), py::arg("batch_level_steps") = false);
+             callbacks::Callback>(callbacks, "LearningRateScheduler");
 
-  py::class_<callbacks::LinearSchedule, std::shared_ptr<LinearSchedule>,
+  py::class_<callbacks::LinearSchedule,
+             std::shared_ptr<callbacks::LinearSchedule>,
              callbacks::LearningRateScheduler>(callbacks, "LinearLR")
-      .def(py::init<float, float, uint32_t>(), py::arg("start_factor") = 1.0,
-           py::arg("end_factor") = 1.0 / 3.0, py::arg("total_iters") = 5,
+      .def(py::init<float, float, uint32_t, bool>(),
+           py::arg("start_factor") = 1.0, py::arg("end_factor") = 1.0 / 3.0,
+           py::arg("total_iters") = 5, py::arg("batch_level_steps") = false,
            "LinearLR scheduler changes the learning rate linearly by a small "
            "multiplicative factor until the number of epochs reaches the total "
            "iterations.\n");
