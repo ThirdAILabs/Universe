@@ -56,7 +56,7 @@ class LearningRateScheduler : public Callback {
 class LinearSchedule : public LearningRateScheduler {
  public:
   explicit LinearSchedule(float start_factor, float end_factor,
-                          uint32_t total_iters, uint32_t batch_level_steps)
+                          uint32_t total_iters, bool batch_level_steps)
       : LearningRateScheduler(batch_level_steps),
         _start_factor(start_factor),
         _end_factor(end_factor),
