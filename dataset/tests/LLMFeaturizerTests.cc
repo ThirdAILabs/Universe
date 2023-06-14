@@ -2,16 +2,18 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <hashing/src/HashUtils.h>
-#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_set>
 
 namespace thirdai::dataset::tests {
 
-constexpr uint32_t VOCAB_SIZE = 8;
+constexpr uint32_t LRC_LEN = 4, IRC_LEN = 3, SRC_LEN = 2, VOCAB_SIZE = 8;
 
 void verifyGeneratedSamples(
     const std::vector<std::vector<thirdai::BoltVector>>& data,
@@ -29,8 +31,6 @@ void verifyGeneratedSamples(
       const auto& expected_vec_indices =
           expected_indices.at(input_id).at(sample_id);
 
-      std::cout << "sample=" << sample_id << ",input=" << input_id << std::endl;
-
       ASSERT_EQ(expected_vec_indices.size(), vec.len);
 
       for (uint32_t i = 0; i < expected_vec_indices.size(); i++) {
@@ -44,8 +44,9 @@ void verifyGeneratedSamples(
 void checkDataFeaturization(
     const std::vector<std::string>& phrases,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
-  TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
-                                     /* src_len= */ 2,
+  TextGenerationFeaturizer processor(/* lrc_len= */ LRC_LEN,
+                                     /* irc_len= */ IRC_LEN,
+                                     /* src_len= */ SRC_LEN,
                                      /* vocab_size= */ VOCAB_SIZE);
 
   auto data = processor.featurize(phrases);
@@ -56,8 +57,9 @@ void checkDataFeaturization(
 void checkInferenceFeaturization(
     const std::vector<uint32_t>& prompt, const std::vector<uint32_t>& tokens,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
-  TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
-                                     /* src_len= */ 2,
+  TextGenerationFeaturizer processor(/* lrc_len= */ LRC_LEN,
+                                     /* irc_len= */ IRC_LEN,
+                                     /* src_len= */ SRC_LEN,
                                      /* vocab_size= */ VOCAB_SIZE);
 
   auto vectors = processor.featurizeInferenceSample(prompt, tokens);
@@ -171,6 +173,36 @@ TEST(TextGenerationFeaturizerTest, InferenceFeaturizationWithPrompt) {
       {{1, 2}}};
 
   checkInferenceFeaturization({7, 8, 9}, {1, 2}, expected_indices);
+}
+
+TEST(TextClassifierFeaturizerTest, Featurization) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      //  LRC context input
+      {{1, 2}, {1, 2, 3}, {1, 2, 3, 4}},
+      // IRC context input
+      {expectedPairgrams({1, 2}), expectedPairgrams({1, 2, 3}),
+       expectedPairgrams({2, 3, 4})},
+      // SRC context input
+      {{1, 2}, {2, 3}, {3, 4}},
+      // Label
+      {{0}, {1}, {2}}};
+
+  TextClassificationFeaturizer featurizer(
+      /* text_column= */ "text",
+      /* label_column= */ "label",
+      /* lrc_len= */ LRC_LEN,
+      /* irc_len= */ IRC_LEN,
+      /* src_len= */ SRC_LEN,
+      /* vocab_size= */ VOCAB_SIZE,
+      /* n_labels= */ 3, /* delimiter= */ ',',
+      /* label_delimiter= */ std::nullopt, /* integer_labels= */ true,
+      /* normalize_categories= */ true);
+
+  featurizer.processHeader("text,label");
+
+  auto data = featurizer.featurize({"1 2,0", "1 2 3,1", "1 2 3 4,2"});
+
+  verifyGeneratedSamples(data, expected_indices);
 }
 
 }  // namespace thirdai::dataset::tests

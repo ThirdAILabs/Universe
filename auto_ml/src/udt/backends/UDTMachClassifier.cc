@@ -10,12 +10,12 @@
 #include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
@@ -135,18 +135,14 @@ UDTMachClassifier::UDTMachClassifier(
 
 py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
-  ValidationDatasetLoader validation_dataset_loader;
-  if (validation) {
-    validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_factory->getLabeledDatasetLoader(
-                                    validation->first, /* shuffle= */ false),
-                                validation->second);
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+  dataset::DatasetLoaderPtr val_dataset_loader;
+  if (val_data) {
+    val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+        val_data, /* shuffle= */ false);
   }
 
   addBalancingSamples(data);
@@ -155,9 +151,8 @@ py::object UDTMachClassifier::train(
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
-                            validation_dataset_loader, batch_size_opt,
-                            max_in_memory_batches, metrics, callbacks, verbose,
-                            logging_interval);
+                            train_metrics, val_dataset_loader, val_metrics,
+                            callbacks, options);
 }
 
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -307,21 +302,17 @@ py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, std::optional<size_t> batch_size_opt,
-    const std::vector<std::string>& metrics,
-    const std::optional<ValidationDataSource>& validation,
-    const std::vector<CallbackPtr>& callbacks,
-    std::optional<size_t> max_in_memory_batches, bool verbose) {
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
-  return train(data_source, learning_rate, epochs, validation,
-               /* batch_size_opt = */ batch_size_opt,
-               /* max_in_memory_batches= */ max_in_memory_batches, metrics,
-               /* callbacks= */ callbacks, /* verbose= */ verbose,
-               /* logging_interval= */ std::nullopt);
+  return train(data_source, learning_rate, epochs, train_metrics, val_data,
+               val_metrics, callbacks, options);
 }
 
 py::object UDTMachClassifier::embedding(const MapInput& sample) {
@@ -432,7 +423,7 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    bool fast_approximation) {
+    uint32_t num_random_hashes, bool fast_approximation) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -476,7 +467,8 @@ void UDTMachClassifier::introduceDocuments(
   }
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
-    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
     _mach_label_block->index()->insert(doc, hashes);
   }
 
@@ -489,7 +481,7 @@ void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample) {
+    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   thirdai::data::ColdStartTextAugmentation augmentation(
@@ -505,7 +497,7 @@ void UDTMachClassifier::introduceDocument(
     batch.push_back(input);
   }
 
-  introduceLabel(batch, new_label, num_buckets_to_sample);
+  introduceLabel(batch, new_label, num_buckets_to_sample, num_random_hashes);
 }
 
 struct BucketScore {
@@ -525,7 +517,7 @@ struct CompareBuckets {
 
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample) const {
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) const {
   const auto& mach_index = _mach_label_block->index();
 
   uint32_t num_hashes = mach_index->numHashes();
@@ -581,10 +573,27 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
               });
   }
 
-  std::vector<uint32_t> new_hashes(num_hashes);
-  for (uint32_t i = 0; i < num_hashes; i++) {
+  std::vector<uint32_t> new_hashes;
+
+  // We can optionally specify the number of hashes we'd like to be random for a
+  // new document. This is to encourage an even distribution among buckets.
+  if (num_random_hashes > num_hashes) {
+    throw std::invalid_argument(
+        "num_random_hashes cannot be greater than num hashes.");
+  }
+
+  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
+  for (uint32_t i = 0; i < num_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
-    new_hashes[i] = hash;
+    new_hashes.push_back(hash);
+  }
+
+  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  std::mt19937 rand(global_random::nextSeed());
+
+  for (uint32_t i = 0; i < num_random_hashes; i++) {
+    new_hashes.push_back(int_dist(rand));
   }
 
   return new_hashes;
@@ -592,7 +601,8 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample_opt) {
+    std::optional<uint32_t> num_buckets_to_sample_opt,
+    uint32_t num_random_hashes) {
   // Note: using sparse inference here could cause issues because the mach
   // index sampler will only return nonempty buckets, which could cause new
   // docs to only be mapped to buckets already containing entities.
@@ -610,7 +620,8 @@ void UDTMachClassifier::introduceLabel(
         output->getVector(i).findKLargestActivations(num_buckets_to_sample));
   }
 
-  auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample);
+  auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                num_random_hashes);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 
