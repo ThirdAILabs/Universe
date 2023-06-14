@@ -258,7 +258,7 @@ void defineDistributedTrainer(py::module_& train) {
       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"))
+           py::arg("all_datasets"))
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",

@@ -1,8 +1,10 @@
 #include "DistributedTrainingWrapper.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
 #include <utils/Logging.h>
+#include <stdexcept>
 
 namespace thirdai::bolt::train {
 
@@ -26,8 +28,10 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
   model->disableSparseParameterUpdates();
 
   if (auto validation = train_config.getValidationContext()) {
-    _validation_data =
-        convertLabeldData(validation->data(), validation->labels());
+    dataset::BoltDatasetList all_val_datasets = validation->data();
+    all_val_datasets.push_back(validation->labels());
+
+    _validation_data = convertLabeledData(all_val_datasets);
     _validation_metrics = validation->config().getMetricNames();
     _use_sparsity_in_validation =
         validation->config().shouldReturnActivations();
@@ -102,11 +106,25 @@ void DistributedTrainingWrapper::setGradients(const float* new_grad,
   _model->setFlattenedGradients(new_grad, flattened_dim);
 }
 
-std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
-    const dataset::BoltDatasetList& data,
-    const dataset::BoltDatasetPtr& labels) {
+std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeledData(
+    const dataset::BoltDatasetList& all_datasets) {
+  size_t n_inputs = _model->inputDims().size();
+  size_t n_labels = _model->labelDims().size();
+
+  if (n_inputs + n_labels != all_datasets.size()) {
+    throw std::invalid_argument(
+        "Cannot pass " + std::to_string(all_datasets.size()) +
+        " datasets to a model expecting " + std::to_string(n_inputs) +
+        " inputs and " + std::to_string(n_labels) + " labels.");
+  }
+
+  dataset::BoltDatasetList data(all_datasets.begin(),
+                                all_datasets.begin() + n_inputs);
+  dataset::BoltDatasetList labels(all_datasets.begin() + n_inputs,
+                                  all_datasets.end());
+
   auto data_tensors = convertDatasets(data, _model->inputDims());
-  auto label_tensors = convertDataset(labels, _model->outputs().at(0)->dim());
+  auto label_tensors = convertDatasets(labels, _model->labelDims());
 
   return std::make_optional<LabeledDataset>(std::move(data_tensors),
                                             std::move(label_tensors));
