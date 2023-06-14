@@ -16,7 +16,8 @@ namespace thirdai::bolt::train::callbacks {
  */
 class LearningRateScheduler : public Callback {
  public:
-  explicit LearningRateScheduler() : _epoch(0), _batch_cnt(0) {}
+  explicit LearningRateScheduler(bool batch_level_steps)
+      : _epoch(0), _batch_cnt(0), _batch_level_steps(batch_level_steps) {}
 
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
 
@@ -41,8 +42,6 @@ class LearningRateScheduler : public Callback {
 
  private:
   uint32_t _epoch, _batch_cnt;
-
- protected:
   bool _batch_level_steps;
 };
 
@@ -58,11 +57,10 @@ class LinearSchedule : public LearningRateScheduler {
  public:
   explicit LinearSchedule(float start_factor, float end_factor,
                           uint32_t total_iters, uint32_t batch_level_steps)
-      : _start_factor(start_factor),
+      : LearningRateScheduler(batch_level_steps),
+        _start_factor(start_factor),
         _end_factor(end_factor),
-        _total_iters(total_iters) {
-    _batch_level_steps = batch_level_steps;
-  }
+        _total_iters(total_iters) {}
 
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (step == 0) {
