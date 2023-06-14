@@ -39,12 +39,14 @@ dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
           {"none", dataset::NGramEncoder::make(/* n = */ 1)},
           {"local", dataset::NGramEncoder::make(/* n = */ 2)},
           {"global", dataset::PairGramEncoder::make()},
+          {"fixed", dataset::NoOpEncoder::make()},
       };
 
   if (contextual_encodings.count(string) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + string +
-        "', please choose one of 'none', 'local', 'ngram-N', or 'global'.");
+        "', please choose one of 'none', 'fixed', 'local', 'ngram-N', or "
+        "'global'.");
   };
 
   return contextual_encodings[string];

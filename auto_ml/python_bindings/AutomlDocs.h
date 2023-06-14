@@ -1396,8 +1396,8 @@ search queries, and user bios.
 Args:
     tokenizer (str): Optional. Either "words", "words-punct" or 
         "char-k" (k is a number, e.g. "char-5"). Defaults to "words". 
-    contextual_encoding (str): Optional. Either "local", "global", "ngram-N", or
-        "none", defaults to "none". 
+    contextual_encoding (str): Optional. Either "local", "global", "ngram-N", 
+        "fixed" or "none", defaults to "none". 
 
 Example:
     >>> bolt.UniversalDeepTransformer(

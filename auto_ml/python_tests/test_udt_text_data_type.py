@@ -150,7 +150,7 @@ def test_contextual_text_encodings():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Created text column with invalid contextual_encoding '{invalid_encoding}', please choose one of 'none', 'local', 'ngram-N', or 'global'."
+            f"Created text column with invalid contextual_encoding '{invalid_encoding}', please choose one of 'none', 'fixed', 'local', 'ngram-N', or 'global'."
         ),
     ):
         bolt.UniversalDeepTransformer(
@@ -188,7 +188,7 @@ def test_invalid_ngram_encoder(invalid_ngram):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Created text column with invalid contextual_encoding '{invalid_ngram}', please choose one of 'none', 'local', 'ngram-N', or 'global'."
+            f"Created text column with invalid contextual_encoding '{invalid_ngram}', please choose one of 'none', 'fixed', 'local', 'ngram-N', or 'global'."
         ),
     ):
         bolt.UniversalDeepTransformer(

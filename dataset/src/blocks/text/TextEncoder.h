@@ -96,6 +96,24 @@ class PairGramEncoder : public TextEncoder {
   }
 };
 
+class NoOpEncoder : public TextEncoder {
+ public:
+  NoOpEncoder() {}
+
+  static auto make() { return std::make_shared<NoOpEncoder>(); }
+
+  std::vector<uint32_t> encode(const std::vector<uint32_t>& tokens) final {
+    return tokens;
+  }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextEncoder>(this));
+  }
+};
+
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::PairGramEncoder)
