@@ -9,8 +9,6 @@ namespace thirdai::bolt::train::callbacks {
 /**
  * @brief This callback is intended to schedule learning rate changes during
  * training.
- * @param schedule: a LRSchedule pointer for scheduling the learning rate. The
- * schedule is either pre-set or is a custom lambda function.
  * @param batch_level_steps: If true then we'll adjust the learning rate using
  * batches as steps instead of epochs. Defaults to false.
  */
@@ -52,6 +50,8 @@ class LearningRateScheduler : public Callback {
  * changing process
  * @param total_iters: The number of iterations in which multiplicative factor
  * reaches to 1
+ * @param batch_level_steps: If true then we'll adjust the learning rate using
+ * batches as steps instead of epochs. Defaults to false.
  */
 class LinearSchedule : public LearningRateScheduler {
  public:
