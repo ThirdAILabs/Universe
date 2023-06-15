@@ -48,7 +48,7 @@ class LearningRateScheduler : public Callback {
 /**
  * @brief Schedules per-step learning rate linearly
  * @param start_factor: The multiplicative factor in the first epoch or batch
- * @param end_factor: TThe multiplicative factor at the end of the linear
+ * @param end_factor: The multiplicative factor at the end of the linear
  * changing process
  * @param total_iters: The number of iterations in which multiplicative factor
  * reaches to 1
