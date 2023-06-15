@@ -252,10 +252,10 @@ metrics::History Trainer::validate(const LabeledDataset& data,
 
   validation_metrics.updateHistory(*_history);
 
-  (*_history)["val_times"].push_back(val_timer.seconds());
+  (*_history)["val_times"].push_back(val_timer.milliseconds());
 
   std::string log_line = formatValidateLogLine(
-      validation_metrics.summarizeLastStep(), num_batches, val_timer.seconds());
+      validation_metrics.summarizeLastStep(), num_batches, val_timer.milliseconds());
   logging::info(log_line);
 
   if (bar) {
@@ -314,7 +314,7 @@ std::string Trainer::formatIntermediateLogLine(
 std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
-      "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}s",
+      "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}ms",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;

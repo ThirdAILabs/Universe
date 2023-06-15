@@ -71,6 +71,16 @@ std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
 tensor::TensorList Model::forward(const tensor::TensorList& inputs,
                                   bool use_sparsity) {
   uint32_t input_batch_size = setInput(inputs);
+  // getting vectors for the input number 0
+  uint32_t total_active_neurons = 0;
+  for(uint32_t index_in_batch =0; index_in_batch < input_batch_size; index_in_batch++){
+    auto bolt_vector_of_0_index = inputs[0]->getVector(index_in_batch);
+    total_active_neurons += bolt_vector_of_0_index.len;
+  }
+  float average_active_neurons = static_cast<float>(total_active_neurons) / input_batch_size;
+  std::cout << "{'average_active_neurons':"<< average_active_neurons <<
+    ",'total_active_neurons':"<< total_active_neurons <<
+    ",'batch_size':"<<input_batch_size << "}";
 
   _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
 
