@@ -1,6 +1,5 @@
 #include "BeamSearch.h"
 #include "DocSearchPython.h"
-#include <_types/_uint32_t.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/stl.h>
 #include <search/src/HNSW.h>
