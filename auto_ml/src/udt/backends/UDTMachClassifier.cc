@@ -423,11 +423,19 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes) {
+    uint32_t num_random_hashes, bool fast_approximation) {
   auto metadata = getColdStartMetaData();
 
-  auto cold_start_data = cold_start::preprocessColdStartTrainSource(
-      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
+  dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
+  if (fast_approximation) {
+    cold_start_data = cold_start::concatenatedDocumentDataSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata);
+  } else {
+    cold_start_data = cold_start::preprocessColdStartTrainSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata);
+  }
 
   auto dataset_loader =
       _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);

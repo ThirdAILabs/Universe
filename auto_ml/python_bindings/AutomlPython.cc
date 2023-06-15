@@ -167,7 +167,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
            py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0)
+           py::arg("num_random_hashes") = 0,
+           py::arg("fast_approximation") = false)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),

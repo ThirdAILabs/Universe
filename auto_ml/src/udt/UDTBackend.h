@@ -233,13 +233,14 @@ class UDTBackend {
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      std::optional<uint32_t> num_buckets_to_sample,
-      uint32_t num_random_hashes) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool fast_approximation) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)fast_approximation;
     throw notSupported("introduce_documents");
   }
 
