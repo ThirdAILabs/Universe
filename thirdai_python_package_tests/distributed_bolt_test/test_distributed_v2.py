@@ -64,7 +64,7 @@ def test_distributed_v2_skip():
     # this test is configured to run on blade
     working_dir = os.path.dirname(os.path.realpath(__file__))
     ray.init(
-        runtime_env={"working_dir": working_dir, "env_vars": {"OMP_NUM_THREADS": "23"}}
+        runtime_env={"working_dir": working_dir, "env_vars": {"OMP_NUM_THREADS": "46", "GLOO_SOCKET_IFNAME":"eno1"}}
     )
     scaling_config = ScalingConfig(
         # Number of distributed workers.
@@ -72,9 +72,10 @@ def test_distributed_v2_skip():
         # Turn on/off GPU.
         use_gpu=False,
         # Specify resources used for trainer.
-        trainer_resources={"CPU": 23},
+        resources_per_worker={"CPU": 46},
+        trainer_resources={"CPU": 0},
         # Try to schedule workers on different nodes.
-        placement_strategy="SPREAD",
+        placement_strategy="STRICT_SPREAD",
     )
 
     trainer = dist.BoltTrainer(
@@ -82,6 +83,7 @@ def test_distributed_v2_skip():
         train_loop_config={"model": get_mnist_model()},
         scaling_config=scaling_config,
         bolt_config=TorchConfig(backend="gloo"),
+
     )
     result = trainer.fit()
 
