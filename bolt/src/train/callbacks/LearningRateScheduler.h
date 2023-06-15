@@ -83,7 +83,7 @@ class LinearSchedule final : public LearningRateScheduler {
   }
 
  private:
-  float _start_factor, _end_factor, lr_change_per_step;
+  float _start_factor, _end_factor, _lr_change_per_step;
   uint32_t _total_iters;
 };
 
