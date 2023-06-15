@@ -68,7 +68,9 @@ def train_model_with_scheduler(epochs, base_learning_rate, schedule):
 
 @pytest.mark.unit
 def test_linear_lr_scheduler():
-    lr_schedule = bolt.train.callbacks.LinearLR(start_factor = 0.2, end_factor = 1, total_iters = 4)
+    lr_schedule = bolt.train.callbacks.LinearLR(
+        start_factor=0.2, end_factor=1, total_iters=4
+    )
     ending_lr = train_model_with_scheduler(
         epochs=2, base_learning_rate=1.0, schedule=lr_schedule
     )
