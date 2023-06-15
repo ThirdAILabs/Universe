@@ -3,7 +3,6 @@
 #include "Callback.h"
 #include <bolt/src/graph/Graph.h>
 #include <cmath>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>

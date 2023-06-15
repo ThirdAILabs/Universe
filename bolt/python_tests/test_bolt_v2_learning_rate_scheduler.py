@@ -26,9 +26,7 @@ def build_model():
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
 
-    metric = bolt.train.metrics.CategoricalAccuracy(outputs=output_layer, labels=labels)
-
-    return model, metric
+    return model
 
 
 def get_data(n_classes):
@@ -50,10 +48,9 @@ class GetEndingLearningRate(bolt.train.callbacks.Callback):
 
 
 def train_model_with_scheduler(epochs, base_learning_rate, schedule):
-    model, metric = build_model()
+    model = build_model()
 
     train_data = get_data(N_CLASSES)
-    test_data = get_data(N_CLASSES)
 
     ending_lr_callback = GetEndingLearningRate()
 
@@ -63,8 +60,6 @@ def train_model_with_scheduler(epochs, base_learning_rate, schedule):
         train_data=train_data,
         learning_rate=base_learning_rate,
         epochs=epochs,
-        validation_data=test_data,
-        validation_metrics={"acc": metric},
         callbacks=[schedule, ending_lr_callback],
     )
 
@@ -73,11 +68,11 @@ def train_model_with_scheduler(epochs, base_learning_rate, schedule):
 
 @pytest.mark.unit
 def test_linear_lr_scheduler():
-    lr_schedule = bolt.train.callbacks.LinearLR()
+    lr_schedule = bolt.train.callbacks.LinearLR(start_factor = 0.2, end_factor = 1, total_iters = 4)
     ending_lr = train_model_with_scheduler(
-        epochs=2, base_learning_rate=0.001, schedule=lr_schedule
+        epochs=2, base_learning_rate=1.0, schedule=lr_schedule
     )
-    assert math.isclose(ending_lr, 0.00086666666, rel_tol=1e-06)
+    assert math.isclose(ending_lr, 0.4, rel_tol=1e-06)
 
 
 @pytest.mark.unit

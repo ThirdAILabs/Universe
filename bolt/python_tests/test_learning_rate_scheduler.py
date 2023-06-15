@@ -82,6 +82,7 @@ def test_multistep_lr_scheduler():
         epochs=4,
         schedule=lr_schedule,
     )
+
     assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)
 
 
@@ -96,6 +97,7 @@ def test_custom_lr_scheduler():
         epochs=5,
         schedule=lr_schedule,
     )
+
     assert math.isclose(ending_lr, 1e-08, rel_tol=1e-06)
 
 
