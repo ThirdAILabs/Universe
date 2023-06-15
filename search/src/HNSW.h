@@ -68,8 +68,8 @@ class HNSW {
   void connectNeighbors(ClosestQueue& neighbors, uint32_t new_node);
 
   float distance(const float* a, const float* b) const {
-    // return l2Distance(a, b, _dim);
-    return cosineDistance(a, b, _dim);
+    return l2Distance(a, b, _dim);
+    // return cosineDistance(a, b, _dim);
     // return innerProductDistance(a, b, _dim);
   }
 
