@@ -51,7 +51,7 @@ class LearningRateScheduler : public Callback {
  * @param end_factor: The multiplicative factor at the end of the linear
  * changing process
  * @param total_iters: The number of iterations in which multiplicative factor
- * reaches to 1
+ * reaches to end_factor
  * @param batch_level_steps: If true then we'll adjust the learning rate using
  * batches as steps instead of epochs. Defaults to false.
  */
