@@ -78,3 +78,13 @@ def test_linear_lr_scheduler():
         epochs=2, base_learning_rate=0.001, schedule=lr_schedule
     )
     assert math.isclose(ending_lr, 0.00086666666, rel_tol=1e-06)
+
+
+@pytest.mark.unit
+def test_multi_step_lr():
+    lr_schedule = bolt.train.callbacks.MultiStepLR(gamma=0.2, milestones=[1, 3])
+    ending_lr = train_model_with_scheduler(
+        epochs=4, base_learning_rate=0.001, schedule=lr_schedule
+    )
+
+    assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)

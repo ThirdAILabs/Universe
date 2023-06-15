@@ -237,6 +237,14 @@ void defineCallbacks(py::module_& train) {
            "LinearLR scheduler changes the learning rate linearly by a small "
            "multiplicative factor until the number of epochs reaches the total "
            "iterations.\n");
+
+  py::class_<callbacks::MultiStepLR, std::shared_ptr<callbacks::MultiStepLR>,
+             callbacks::LearningRateScheduler>(callbacks, "MultiStepLR")
+      .def(py::init<float, std::vector<uint32_t>, float>(), py::arg("gamma"),
+           py::arg("milestones"), py::arg("batch_level_steps") = false,
+           "The Multi-step learning rate scheduler changes"
+           "the learning rate by a factor of gamma for every milestone"
+           "specified in the vector of milestones. \n");
 }
 
 void defineDistributedTrainer(py::module_& train) {

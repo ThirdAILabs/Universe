@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Callback.h"
+#include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace thirdai::bolt::train::callbacks {
 
@@ -20,7 +22,7 @@ class LearningRateScheduler : public Callback {
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
 
   void onEpochBegin() final {
-    // reseting the batch count
+    // resetting the batch count
     _batch_cnt = 0;
 
     if (!_batch_level_steps) {
@@ -53,7 +55,7 @@ class LearningRateScheduler : public Callback {
  * @param batch_level_steps: If true then we'll adjust the learning rate using
  * batches as steps instead of epochs. Defaults to false.
  */
-class LinearSchedule : public LearningRateScheduler {
+class LinearSchedule final : public LearningRateScheduler {
  public:
   explicit LinearSchedule(float start_factor, float end_factor,
                           uint32_t total_iters, bool batch_level_steps)
@@ -83,6 +85,36 @@ class LinearSchedule : public LearningRateScheduler {
  private:
   float _start_factor, _end_factor, lr_change_per_step;
   uint32_t _total_iters;
+};
+
+/**
+ * @brief Decays the learning rate by a factor of gamma once the number of steps
+ * reaches one of the specified milestones.
+ * @param gamma: multiplicative factor
+ * @param milestones: step milestones
+ * @param batch_level_steps: If true then we'll adjust the learning rate using
+ * batches as steps instead of epochs. Defaults to false.
+ */
+
+class MultiStepLR final : public LearningRateScheduler {
+ public:
+  MultiStepLR(float gamma, std::vector<uint32_t> milestones,
+              bool batch_level_steps)
+      : LearningRateScheduler(batch_level_steps),
+        _gamma(gamma),
+        _milestones(std::move(milestones)) {}
+
+  float getNextLR(float current_learning_rate, uint32_t step) final {
+    if (std::find(_milestones.begin(), _milestones.end(), step + 1) !=
+        _milestones.end()) {
+      return current_learning_rate * _gamma;
+    }
+    return current_learning_rate;
+  }
+
+ private:
+  float _gamma;
+  std::vector<uint32_t> _milestones;
 };
 
 }  // namespace thirdai::bolt::train::callbacks
