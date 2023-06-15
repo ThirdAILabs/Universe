@@ -40,7 +40,7 @@ def _process_validation_and_options(
     max_in_memory_batches: Optional[int],
     verbose: bool,
     logging_interval: Optional[int],
-    reservoir_size: int,
+    reservoir_size: int = 64000,
 ):
     train_options = bolt.TrainOptions()
 
