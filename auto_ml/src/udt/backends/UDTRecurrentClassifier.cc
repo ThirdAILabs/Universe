@@ -76,8 +76,8 @@ py::object UDTRecurrentClassifier::train(
   bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
                                bolt::train::python::CtrlCCheck{});
 
-  auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset = _dataset_factory->getDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   auto history = trainer.train_with_dataset_loader(
       train_dataset, learning_rate, epochs, batch_size,

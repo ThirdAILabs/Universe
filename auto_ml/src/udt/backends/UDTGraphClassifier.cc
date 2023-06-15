@@ -40,7 +40,7 @@ py::object UDTGraphClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
-      data, /* shuffle = */ true);
+      data, /* shuffle = */ true, /* shuffle_config= */ options.shuffle_config);
 
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {

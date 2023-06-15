@@ -93,7 +93,8 @@ void defineAutomlInModule(py::module_& module) {
                      &udt::TrainOptions::steps_per_validation)
       .def_readwrite("sparse_validation", &udt::TrainOptions::sparse_validation)
       .def_readwrite("verbose", &udt::TrainOptions::verbose)
-      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval);
+      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval)
+      .def_readwrite("shuffle_config", &udt::TrainOptions::shuffle_config);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")

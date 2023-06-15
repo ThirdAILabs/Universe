@@ -3,6 +3,7 @@ from typing import List, Optional
 import pandas as pd
 import thirdai
 import thirdai._thirdai.bolt as bolt
+import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
 
@@ -39,6 +40,7 @@ def _process_validation_and_options(
     max_in_memory_batches: Optional[int],
     verbose: bool,
     logging_interval: Optional[int],
+    reservoir_size: int,
 ):
     train_options = bolt.TrainOptions()
 
@@ -46,6 +48,7 @@ def _process_validation_and_options(
     train_options.max_in_memory_batches = max_in_memory_batches
     train_options.verbose = verbose
     train_options.logging_interval = logging_interval
+    train_options.shuffle_config = dataset.ShuffleConfig(reservoir_size)
 
     if validation:
         val_data = _create_data_source(validation.filename)
@@ -74,6 +77,7 @@ def modify_udt():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
+        reservoir_size: int = 64000,
     ):
         data_source = _create_data_source(filename)
 
@@ -83,6 +87,7 @@ def modify_udt():
             max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
             logging_interval=logging_interval,
+            reservoir_size=reservoir_size,
         )
 
         return original_train(
