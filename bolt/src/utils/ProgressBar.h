@@ -111,5 +111,3 @@ class ProgressBar {
     std::cout << '\n' << std::endl;
   }
 };
-
-using ProgressBarPtr = std::shared_ptr<ProgressBar>;

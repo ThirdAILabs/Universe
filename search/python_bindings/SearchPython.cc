@@ -1,8 +1,50 @@
 #include "BeamSearch.h"
 #include "DocSearchPython.h"
+#include <_types/_uint32_t.h>
+#include <pybind11/buffer_info.h>
 #include <pybind11/stl.h>
+#include <search/src/HNSW.h>
+#include <memory>
+#include <stdexcept>
 
 namespace thirdai::search::python {
+
+using NumpyArray =
+    py::array_t<float, py::array::forcecast | py::array::c_style>;
+
+class PyHNSW {
+ public:
+  PyHNSW(size_t max_nbrs, NumpyArray data, size_t construction_buffer_size,
+         size_t num_initializations = 100)
+      : _data(std::move(data)) {
+    if (_data.ndim() != 2) {
+      throw std::invalid_argument("Expected data to be 2D numpy array.");
+    }
+
+    size_t n_nodes = _data.shape(0);
+    size_t dim = _data.shape(1);
+
+    _index = std::make_unique<hnsw::HNSW>(max_nbrs, dim, n_nodes, _data.data(),
+                                          construction_buffer_size,
+                                          num_initializations);
+  }
+
+  std::vector<uint32_t> query(const NumpyArray& query, size_t k,
+                              size_t search_buffer_size,
+                              size_t num_initializations = 100) {
+    if (query.ndim() != 1 || query.shape(0) != _data.shape(1)) {
+      throw std::invalid_argument("Expected query to have shape (" +
+                                  std::to_string(_data.shape(1)) + ",)");
+    }
+
+    return _index->query(query.data(), k, search_buffer_size,
+                         num_initializations);
+  }
+
+ private:
+  std::unique_ptr<hnsw::HNSW> _index;
+  NumpyArray _data;
+};
 
 void createSearchSubmodule(py::module_& module) {
   auto search_submodule = module.def_submodule("search");
@@ -68,6 +110,13 @@ void createSearchSubmodule(py::module_& module) {
   search_submodule.def("beam_search", &beamSearchBatch,
                        py::arg("probabilities"), py::arg("transition_matrix"),
                        py::arg("beam_size"));
+
+  py::class_<PyHNSW>(search_submodule, "HNSW")
+      .def(py::init<size_t, NumpyArray, size_t, size_t>(), py::arg("max_nbrs"),
+           py::arg("data"), py::arg("construction_buffer_size"),
+           py::arg("num_initializations") = 100)
+      .def("query", &PyHNSW::query, py::arg("query"), py::arg("k"),
+           py::arg("search_buffer_size"), py::arg("num_initializations") = 100);
 }
 
 }  // namespace thirdai::search::python

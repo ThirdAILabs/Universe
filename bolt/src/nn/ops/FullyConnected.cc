@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/neuron_index/HNSWIndex.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -245,6 +246,14 @@ void FullyConnected::setSparsity(float sparsity, bool rebuild_hash_tables,
       model->forceStateReallocation();
     }
   }
+}
+
+void FullyConnected::switchToHNSWSampler(size_t max_nbrs,
+                                         size_t construction_buf_size,
+                                         size_t search_buf_size) {
+  auto new_index = std::make_shared<HNSWIndex>(max_nbrs, construction_buf_size,
+                                               search_buf_size);
+  _kernel->setNeuronIndex(new_index);
 }
 
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;

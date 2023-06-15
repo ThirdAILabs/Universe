@@ -121,6 +121,9 @@ class FullyConnected final
   void setSparsity(float sparsity, bool rebuild_hash_tables,
                    bool experimental_autotune);
 
+  void switchToHNSWSampler(size_t max_nbrs, size_t construction_buf_size,
+                           size_t search_buf_size);
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,
