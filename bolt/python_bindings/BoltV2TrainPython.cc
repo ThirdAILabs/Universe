@@ -240,7 +240,7 @@ void defineCallbacks(py::module_& train) {
 
   py::class_<callbacks::MultiStepLR, std::shared_ptr<callbacks::MultiStepLR>,
              callbacks::LearningRateScheduler>(callbacks, "MultiStepLR")
-      .def(py::init<float, std::vector<uint32_t>, float>(), py::arg("gamma"),
+      .def(py::init<float, std::vector<uint32_t>, bool>(), py::arg("gamma"),
            py::arg("milestones"), py::arg("batch_level_steps") = false,
            "The Multi-step learning rate scheduler changes"
            "the learning rate by a factor of gamma for every milestone"
