@@ -245,6 +245,18 @@ void defineCallbacks(py::module_& train) {
            "The Multi-step learning rate scheduler changes"
            "the learning rate by a factor of gamma for every milestone"
            "specified in the vector of milestones. \n");
+
+  py::class_<callbacks::CosineAnnealingWarmRestart,
+             std::shared_ptr<callbacks::CosineAnnealingWarmRestart>,
+             callbacks::LearningRateScheduler>(callbacks,
+                                               "CosineAnnealingWarmRestart")
+      .def(
+          py::init<uint32_t, uint32_t, float, bool>(), py::arg("T_0"),
+          py::arg("T_mul") = 1, py::arg("eta_min") = 0.0,
+          py::arg("batch_per_step") = false,
+          "The cosine annealing warm restart LR scheduler decays the learning "
+          "rate until the specified number of epochs( T_0 ) following a cosine "
+          "schedule and restarts the learning rate to T_i * T_mul.");
 }
 
 void defineDistributedTrainer(py::module_& train) {

@@ -2,6 +2,8 @@
 
 #include "Callback.h"
 #include <algorithm>
+#include <assert.h>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -114,4 +116,51 @@ class MultiStepLR final : public LearningRateScheduler {
   std::vector<uint32_t> _milestones;
 };
 
+/**
+ * @brief Schedules per-step learning rate using a cosine annealing schedule
+ * @param T_0: Number of iterations before the first restart.
+ * @param T_mul: Factor by which T_i increases after a restart. Default: 1
+ * @param eta_min: Minimum learnign rate. Default: 0.0
+ * @param batch_level_steps: If true then we'll adjust the learning rate using
+ * batches as steps instead of epochs. Defaults to false.
+ */
+
+class CosineAnnealingWarmRestart final : public LearningRateScheduler {
+ public:
+  explicit CosineAnnealingWarmRestart(uint32_t T_0, uint32_t T_mul = 1,
+                                      float eta_min = 0.0,
+                                      bool batch_per_step = false)
+      : LearningRateScheduler(batch_per_step),
+        T_i_(T_0),
+        T_mul_(T_mul),
+        T_curr_(0),
+        eta_min_(eta_min) {
+    assert(T_0 > 0 && T_mul >= 1 && eta_min >= 0);
+  }
+
+  float getNextLR(float current_learning_rate, uint32_t step) final {
+    if (step == 0) {
+      // base learning rate will be the maximum learning rate.
+      base_learning_rate_ = current_learning_rate;
+    }
+
+    float cosine_factor =
+        1 + std::cos((static_cast<float>(T_curr_) / T_i_) * M_PI);
+
+    float nextLR =
+        eta_min_ + (base_learning_rate_ - eta_min_) * cosine_factor / 2;
+
+    T_curr_++;
+    if (T_curr_ >= T_i_) {
+      T_curr_ -= T_i_;
+      T_i_ *= T_mul_;
+    }
+
+    return nextLR;
+  }
+
+ private:
+  uint32_t T_i_, T_mul_, T_curr_;
+  float eta_min_, base_learning_rate_;
+};
 }  // namespace thirdai::bolt::train::callbacks
