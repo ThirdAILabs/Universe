@@ -1,4 +1,8 @@
 #include "RegularEmbedding.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
@@ -15,14 +19,17 @@ std::string nextRegularEmbeddingOpName() {
 }
 
 RegularEmbedding::RegularEmbedding(size_t dim, size_t input_dim,
-                                   const std::string& activation)
+                                   const std::string& activation, bool bias)
     : Op(nextRegularEmbeddingOpName()),
       _dim(dim),
       _input_dim(input_dim),
+      _bias(bias),
+      _act_func(getActivationFunction(activation)),
       _embeddings(dim * input_dim),
       _biases(dim),
-      _embeddings_used(input_dim, false),
-      _act_func(getActivationFunction(activation)) {
+      _disable_sparse_parameter_updates(false),
+      _should_serialize_optimizer(false),
+      _embeddings_used(input_dim, false) {
   std::mt19937 rng(global_random::nextSeed());
   std::normal_distribution<float> dist(0.0, 0.01);
 
@@ -45,7 +52,11 @@ void RegularEmbedding::forward(const autograd::ComputationList& inputs,
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
-  std::copy(_biases.begin(), _biases.end(), output_vec.activations);
+  if (_bias) {
+    std::copy(_biases.begin(), _biases.end(), output_vec.activations);
+  } else {
+    std::fill_n(output_vec.activations, output_vec.len, 0.F);
+  }
 
   for (size_t n = 0; n < indices.len; n++) {
     uint32_t index = indices.active_neurons[n];
@@ -119,8 +130,10 @@ void RegularEmbedding::backpropagate(autograd::ComputationList& inputs,
     _embeddings_used[index] = true;
   }
 
-  for (size_t i = 0; i < _dim; i++) {
-    _bias_optimizer->gradients[i] += output_vec.gradients[i];
+  if (_bias) {
+    for (size_t i = 0; i < _dim; i++) {
+      _bias_optimizer->gradients[i] += output_vec.gradients[i];
+    }
   }
 }
 
@@ -140,6 +153,19 @@ constexpr float adam(float momentum, float velocity, float learning_rate,
 
 void RegularEmbedding::updateParameters(float learning_rate,
                                         uint32_t train_steps) {
+  if (_disable_sparse_parameter_updates) {
+    _embedding_optimizer->applyUpdate(_embeddings, learning_rate, train_steps);
+  } else {
+    sparseEmbeddingUpdate(learning_rate, train_steps);
+  }
+
+  if (_bias) {
+    _bias_optimizer->applyUpdate(_biases, learning_rate, train_steps);
+  }
+}
+
+void RegularEmbedding::sparseEmbeddingUpdate(float learning_rate,
+                                             uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
   float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
@@ -173,26 +199,6 @@ void RegularEmbedding::updateParameters(float learning_rate,
       _embedding_optimizer->gradients[index] = 0;
     }
   }
-
-  for (size_t i = 0; i < _dim; i++) {
-    float grad = _bias_optimizer->gradients[i];
-
-    _bias_optimizer->momentum[i] =
-        momentumUpdate(_bias_optimizer->momentum[i], grad);
-
-    _bias_optimizer->velocity[i] =
-        velocityUpdate(_bias_optimizer->velocity[i], grad);
-
-    assert(!std::isnan(_bias_optimizer->momentum[i]));
-    assert(!std::isnan(_bias_optimizer->velocity[i]));
-
-    _biases[i] +=
-        adam(_bias_optimizer->momentum[i], _bias_optimizer->velocity[i],
-             learning_rate, B1_bias_corrected, B2_bias_corrected);
-    assert(!std::isnan(_biases[i]));
-
-    _bias_optimizer->gradients[i] = 0;
-  }
 }
 
 void RegularEmbedding::summary(std::ostream& summary,
@@ -214,4 +220,50 @@ autograd::ComputationPtr RegularEmbedding::apply(
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
+template void RegularEmbedding::save(cereal::BinaryOutputArchive&) const;
+
+template <class Archive>
+void RegularEmbedding::save(Archive& archive) const {
+  archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
+          _embeddings, _biases, _disable_sparse_parameter_updates,
+          _should_serialize_optimizer);
+
+  if (_should_serialize_optimizer) {
+    archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
+  }
+}
+
+template void RegularEmbedding::load(cereal::BinaryInputArchive&);
+
+template <class Archive>
+void RegularEmbedding::load(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
+          _embeddings, _biases, _disable_sparse_parameter_updates,
+          _should_serialize_optimizer);
+
+  if (_should_serialize_optimizer) {
+    archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
+  } else {
+    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+    _embeddings_used.assign(_input_dim, false);
+  }
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::nn::ops::RegularEmbedding,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::RegularEmbedding)
