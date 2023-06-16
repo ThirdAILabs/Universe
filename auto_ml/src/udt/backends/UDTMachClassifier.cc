@@ -7,7 +7,6 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -813,12 +812,6 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   _mach_label_block->setIndex(index);
 
   updateSamplingStrategy();
-}
-
-TextEmbeddingModelPtr UDTMachClassifier::getTextEmbeddingModel(
-    float distance_cutoff) const {
-  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
-                                  distance_cutoff);
 }
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
