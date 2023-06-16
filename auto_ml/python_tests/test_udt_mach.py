@@ -48,7 +48,9 @@ def train_simple_mach_udt(
         },
     )
 
-    model.train(SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000)
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
 
     os.remove(SIMPLE_TEST_FILE)
 
