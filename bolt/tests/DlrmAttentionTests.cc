@@ -4,9 +4,9 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
-#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <gtest/gtest.h>
@@ -35,7 +35,7 @@ TEST(DlrmAttentionTests, TestSetMembership) {
 
   auto token_input = ops::Input::make(/* dim= */ n_ids);
 
-  auto embedding = ops::Embedding::make(
+  auto embedding = ops::RobeZ::make(
                        /* num_embedding_lookups */ 4, /* lookup_size= */ 5,
                        /* log_embedding_block_size= */ 14,
                        /* reduction= */ "concatenation",

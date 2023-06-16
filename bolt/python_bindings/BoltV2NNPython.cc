@@ -8,11 +8,11 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
-#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -207,14 +207,14 @@ void defineOps(py::module_& nn) {
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
            py::arg("hash_fn"), py::arg("hash_table"));
 
-  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
-      .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
+  py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
+      .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
-      .def("__call__", &ops::Embedding::apply)
+      .def("__call__", &ops::RobeZ::apply)
       .def("duplicate_with_new_reduction",
-           &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
+           &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
