@@ -44,9 +44,21 @@ UDTMachClassifier::UDTMachClassifier(
     uint32_t n_target_classes, bool integer_target,
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
-    const config::ArgumentMap& user_args)
+    config::ArgumentMap user_args)
     : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
       _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
+  uint32_t input_dim = tabular_options.feature_hash_range;
+
+  if (user_args.get<bool>("neural_db", "boolean", /* default_val= */ false)) {
+    input_dim = 50000;
+    user_args.insert<uint32_t>("embedding_dimension", 2048);
+    user_args.insert<uint32_t>("extreme_output_dim", 50000);
+    user_args.insert<uint32_t>("extreme_num_hashes", 8);
+    user_args.insert<bool>("use_bias", false);
+    user_args.insert<bool>("use_tanh", true);
+    user_args.insert<bool>("rlhf", true);
+  }
+
   uint32_t num_buckets = user_args.get<uint32_t>(
       "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
   uint32_t num_hashes = user_args.get<uint32_t>(
@@ -55,8 +67,7 @@ UDTMachClassifier::UDTMachClassifier(
 
   _classifier = utils::Classifier::make(
       utils::buildModel(
-          /* input_dim= */ tabular_options.feature_hash_range,
-          /* output_dim= */ num_buckets,
+          /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
           /* use_sigmoid_bce = */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
