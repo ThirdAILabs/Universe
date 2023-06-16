@@ -48,9 +48,11 @@ void RegularEmbedding::forward(const autograd::ComputationList& inputs,
   std::copy(_biases.begin(), _biases.end(), output_vec.activations);
 
   for (size_t n = 0; n < indices.len; n++) {
-    const float* emb = _embeddings.data() + indices.active_neurons[n] * _dim;
+    uint32_t index = indices.active_neurons[n];
+    float value = indices.activations[n];
+    const float* emb = _embeddings.data() + index * _dim;
     for (size_t i = 0; i < _dim; i++) {
-      output_vec.activations[i] += emb[i];
+      output_vec.activations[i] += value * emb[i];
     }
   }
 
@@ -102,11 +104,17 @@ void RegularEmbedding::backpropagate(autograd::ComputationList& inputs,
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
+  for (size_t i = 0; i < _dim; i++) {
+    float act = output_vec.activations[i];
+    output_vec.gradients[i] *= actFuncDerivative(act, _act_func);
+  }
+
   for (size_t n = 0; n < indices.len; n++) {
     uint32_t index = indices.active_neurons[n];
+    float value = indices.activations[n];
     float* emb_grad = _embedding_optimizer->gradients.data() + index * _dim;
     for (size_t i = 0; i < _dim; i++) {
-      emb_grad[i] += output_vec.gradients[i];
+      emb_grad[i] += value * output_vec.gradients[i];
     }
     _embeddings_used[index] = true;
   }
