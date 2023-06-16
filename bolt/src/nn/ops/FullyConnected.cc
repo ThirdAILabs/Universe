@@ -256,6 +256,15 @@ void FullyConnected::switchToHNSWSampler(size_t max_nbrs,
   _kernel->setNeuronIndex(new_index);
 }
 
+double FullyConnected::avgVisited() const {
+  if (auto hnsw =
+          std::dynamic_pointer_cast<HNSWIndex>(_kernel->neuronIndex())) {
+    return hnsw->avgVisited();
+  }
+
+  return 0.0;
+}
+
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>

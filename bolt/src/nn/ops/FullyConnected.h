@@ -124,6 +124,8 @@ class FullyConnected final
   void switchToHNSWSampler(size_t max_nbrs, size_t construction_buf_size,
                            size_t search_buf_size);
 
+  double avgVisited() const;
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,

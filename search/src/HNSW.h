@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -47,11 +48,15 @@ class HNSW {
 
   std::vector<uint32_t> query(const float* query, uint32_t k,
                               size_t search_buffer_size,
-                              size_t num_initializations = 100) const;
+                              size_t num_initializations = 100);
 
   std::unordered_set<uint32_t> querySet(const float* query, uint32_t k,
                                         size_t search_buffer_size,
-                                        size_t num_initializations = 100) const;
+                                        size_t num_initializations = 100);
+
+  double avgVisited() const {
+    return static_cast<double>(_visited_count.load()) / _n_queries.load();
+  }
 
  private:
   void insert(const float* data, size_t search_buffer_size,
@@ -60,8 +65,9 @@ class HNSW {
   uint32_t searchInitialization(const float* query,
                                 size_t num_initializations) const;
 
-  ClosestQueue beamSearch(const float* query, uint32_t entry_node,
-                          size_t buffer_size) const;
+  std::pair<ClosestQueue, size_t> beamSearch(const float* query,
+                                             uint32_t entry_node,
+                                             size_t buffer_size);
 
   ClosestQueue selectNeighbors(ClosestQueue& candidates) const;
 
@@ -112,41 +118,26 @@ class HNSW {
 
   uint32_t* nbrStart(size_t node) {
     assert(node < _max_nodes);
-    if (node >= _max_nodes) {
-      throw std::runtime_error("nbr access :(");
-    }
     return _edges.data() + node * _max_nbrs;
   }
 
   const uint32_t* nbrStart(size_t node) const {
     assert(node < _max_nodes);
-    if (node >= _max_nodes) {
-      throw std::runtime_error("nbr access :(");
-    }
     return _edges.data() + node * _max_nbrs;
   }
 
   uint32_t* nbrEnd(size_t node) {
     assert(node < _max_nodes);
-    if (node >= _max_nodes) {
-      throw std::runtime_error("nbr access :(");
-    }
     return _edges.data() + (node + 1) * _max_nbrs;
   }
 
   const uint32_t* nbrEnd(size_t node) const {
     assert(node < _max_nodes);
-    if (node >= _max_nodes) {
-      throw std::runtime_error("nbr access :(");
-    }
     return _edges.data() + (node + 1) * _max_nbrs;
   }
 
   const float* data(size_t node) const {
     assert(node < _max_nodes);
-    if (node >= _max_nodes) {
-      throw std::runtime_error("data access :(");
-    }
     return _data + node * _dim;
   }
 
@@ -156,6 +147,9 @@ class HNSW {
   size_t _dim;
   size_t _max_nodes;
   const float* _data;
+
+  std::atomic_size_t _visited_count;
+  std::atomic_size_t _n_queries;
 };
 
 }  // namespace thirdai::search::hnsw

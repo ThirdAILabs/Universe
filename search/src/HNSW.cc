@@ -34,10 +34,10 @@ HNSW::HNSW(size_t max_nbrs, size_t dim, size_t n_nodes, const float* data,
 
 std::vector<uint32_t> HNSW::query(const float* query, uint32_t k,
                                   size_t search_buffer_size,
-                                  size_t num_initializations) const {
+                                  size_t num_initializations) {
   uint32_t entry = searchInitialization(query, num_initializations);
 
-  auto candidates = beamSearch(query, entry, search_buffer_size);
+  auto [candidates, n_visited] = beamSearch(query, entry, search_buffer_size);
 
   uint32_t n_outputs = std::min<uint32_t>(k, candidates.size());
   std::vector<uint32_t> results;
@@ -52,10 +52,13 @@ std::vector<uint32_t> HNSW::query(const float* query, uint32_t k,
 
 std::unordered_set<uint32_t> HNSW::querySet(const float* query, uint32_t k,
                                             size_t search_buffer_size,
-                                            size_t num_initializations) const {
+                                            size_t num_initializations) {
   uint32_t entry = searchInitialization(query, num_initializations);
 
-  auto candidates = beamSearch(query, entry, search_buffer_size);
+  auto [candidates, n_visited] = beamSearch(query, entry, search_buffer_size);
+
+  _visited_count += n_visited;
+  _n_queries++;
 
   uint32_t n_outputs = std::min<uint32_t>(k, candidates.size());
   std::unordered_set<uint32_t> results;
@@ -79,7 +82,7 @@ void HNSW::insert(const float* data, size_t search_buffer_size,
 
   uint32_t entry = searchInitialization(data, num_initializations);
 
-  auto candidates = beamSearch(data, entry, search_buffer_size);
+  auto [candidates, _] = beamSearch(data, entry, search_buffer_size);
 
   auto neighbors = selectNeighbors(candidates);
 
@@ -106,8 +109,9 @@ uint32_t HNSW::searchInitialization(const float* query,
   return entry_node;
 }
 
-ClosestQueue HNSW::beamSearch(const float* query, uint32_t entry_node,
-                              size_t buffer_size) const {
+std::pair<ClosestQueue, size_t> HNSW::beamSearch(const float* query,
+                                                 uint32_t entry_node,
+                                                 size_t buffer_size) {
   std::unordered_set<uint32_t> visited;
   ClosestQueue candidates;
   FurthestQueue worklist;
@@ -147,7 +151,7 @@ ClosestQueue HNSW::beamSearch(const float* query, uint32_t entry_node,
     output.push(worklist.top());
     worklist.pop();
   }
-  return output;
+  return {std::move(output), visited.size()};
 }
 
 ClosestQueue HNSW::selectNeighbors(ClosestQueue& candidates) const {

@@ -38,6 +38,8 @@ class HNSWIndex final : public NeuronIndex {
             << " search_buf_size=" << _search_buffer_size << ")";
   }
 
+  auto avgVisited() const { return _index->avgVisited(); }
+
  private:
   size_t _max_nbrs;
   size_t _construction_buffer_size;

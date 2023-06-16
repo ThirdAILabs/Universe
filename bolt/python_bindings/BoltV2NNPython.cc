@@ -208,7 +208,8 @@ void defineOps(py::module_& nn) {
            py::arg("hash_fn"), py::arg("hash_table"))
       .def("switch_to_hnsw", &ops::FullyConnected::switchToHNSWSampler,
            py::arg("max_nbrs"), py::arg("construction_buffer_size"),
-           py::arg("search_buffer_size"));
+           py::arg("search_buffer_size"))
+      .def("avg_visited", &ops::FullyConnected::avgVisited);
 
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
       .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
