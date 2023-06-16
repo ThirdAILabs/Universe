@@ -127,13 +127,13 @@ def test_load_model_from_config():
 
 
 @pytest.mark.unit
-def test_embedding_layer_config():
+def test_robez_layer_config():
     config = {
         "inputs": ["input"],
         "nodes": [
             {
                 "name": "emb",
-                "type": "embedding",
+                "type": "robez",
                 "num_embedding_lookups": 4,
                 "lookup_size": 8,
                 "log_embedding_block_size": 10,
@@ -157,7 +157,7 @@ def test_embedding_layer_config():
     expected_summary = """
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
-    Embedding(emb_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5]
+    RobeZ(robez_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax]
     =================================================
     """
