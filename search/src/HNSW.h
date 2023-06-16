@@ -148,8 +148,8 @@ class HNSW {
   size_t _max_nodes;
   const float* _data;
 
-  std::atomic_size_t _visited_count;
-  std::atomic_size_t _n_queries;
+  std::atomic_size_t _visited_count = 0;
+  std::atomic_size_t _n_queries = 0;
 };
 
 }  // namespace thirdai::search::hnsw
