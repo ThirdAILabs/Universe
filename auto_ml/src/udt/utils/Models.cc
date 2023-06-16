@@ -4,10 +4,10 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
-#include <bolt/src/nn/ops/RegularEmbedding.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <stdexcept>
@@ -50,8 +50,8 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 
-  auto hidden = bolt::nn::ops::RegularEmbedding::make(
-                    hidden_dim, input_dim, hidden_activation, use_bias)
+  auto hidden = bolt::nn::ops::Embedding::make(hidden_dim, input_dim,
+                                               hidden_activation, use_bias)
                     ->apply(input);
 
   auto sparsity = autotuneSparsity(output_dim);

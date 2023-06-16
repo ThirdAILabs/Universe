@@ -8,18 +8,17 @@
 
 namespace thirdai::bolt::nn::ops {
 
-class RegularEmbedding final
-    : public Op,
-      public std::enable_shared_from_this<RegularEmbedding> {
+class Embedding final : public Op,
+                        public std::enable_shared_from_this<Embedding> {
  private:
-  RegularEmbedding(size_t dim, size_t input_dim, const std::string& activation,
-                   bool bias);
+  Embedding(size_t dim, size_t input_dim, const std::string& activation,
+            bool bias);
 
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
                    bool bias = true) {
-    return std::shared_ptr<RegularEmbedding>(
-        new RegularEmbedding(dim, input_dim, activation, bias));
+    return std::shared_ptr<Embedding>(
+        new Embedding(dim, input_dim, activation, bias));
   }
 
   void forward(const autograd::ComputationList& inputs,
@@ -78,7 +77,7 @@ class RegularEmbedding final
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
   std::vector<bool> _embeddings_used;
 
-  RegularEmbedding() {}
+  Embedding() {}
 
   friend class cereal::access;
 

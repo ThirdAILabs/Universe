@@ -1,4 +1,4 @@
-#include "RegularEmbedding.h"
+#include "Embedding.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/optional.hpp>
@@ -13,14 +13,14 @@
 
 namespace thirdai::bolt::nn::ops {
 
-std::string nextRegularEmbeddingOpName() {
+std::string nextEmbeddingOpName() {
   static uint32_t constructed = 0;
-  return "reg_emb" + std::to_string(++constructed);
+  return "emb" + std::to_string(++constructed);
 }
 
-RegularEmbedding::RegularEmbedding(size_t dim, size_t input_dim,
-                                   const std::string& activation, bool bias)
-    : Op(nextRegularEmbeddingOpName()),
+Embedding::Embedding(size_t dim, size_t input_dim,
+                     const std::string& activation, bool bias)
+    : Op(nextEmbeddingOpName()),
       _dim(dim),
       _input_dim(input_dim),
       _bias(bias),
@@ -41,9 +41,9 @@ RegularEmbedding::RegularEmbedding(size_t dim, size_t input_dim,
   _bias_optimizer = AdamOptimizer(_dim);
 }
 
-void RegularEmbedding::forward(const autograd::ComputationList& inputs,
-                               tensor::TensorPtr& output,
-                               uint32_t index_in_batch, bool training) {
+void Embedding::forward(const autograd::ComputationList& inputs,
+                        tensor::TensorPtr& output, uint32_t index_in_batch,
+                        bool training) {
   (void)training;
 
   assert(inputs.size() == 2);
@@ -106,9 +106,9 @@ void RegularEmbedding::forward(const autograd::ComputationList& inputs,
   }
 }
 
-void RegularEmbedding::backpropagate(autograd::ComputationList& inputs,
-                                     tensor::TensorPtr& output,
-                                     uint32_t index_in_batch) {
+void Embedding::backpropagate(autograd::ComputationList& inputs,
+                              tensor::TensorPtr& output,
+                              uint32_t index_in_batch) {
   assert(inputs.size() == 2);
 
   const BoltVector& indices = inputs.at(0)->tensor()->getVector(index_in_batch);
@@ -151,8 +151,7 @@ constexpr float adam(float momentum, float velocity, float learning_rate,
          (std::sqrt(velocity / b2_corrected) + EPS);
 }
 
-void RegularEmbedding::updateParameters(float learning_rate,
-                                        uint32_t train_steps) {
+void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   if (_disable_sparse_parameter_updates) {
     _embedding_optimizer->applyUpdate(_embeddings, learning_rate, train_steps);
   } else {
@@ -164,8 +163,8 @@ void RegularEmbedding::updateParameters(float learning_rate,
   }
 }
 
-void RegularEmbedding::sparseEmbeddingUpdate(float learning_rate,
-                                             uint32_t train_steps) {
+void Embedding::sparseEmbeddingUpdate(float learning_rate,
+                                      uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
   float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
@@ -201,17 +200,16 @@ void RegularEmbedding::sparseEmbeddingUpdate(float learning_rate,
   }
 }
 
-void RegularEmbedding::summary(std::ostream& summary,
-                               const autograd::ComputationList& inputs,
-                               const autograd::Computation* output) const {
+void Embedding::summary(std::ostream& summary,
+                        const autograd::ComputationList& inputs,
+                        const autograd::Computation* output) const {
   summary << "RegularEmbedding(" << name() << "): " << inputs.at(0)->name()
           << " -> " << output->name() << " [dim=" << _dim
           << " input_dim=" << _input_dim
           << " activation=" << activationFunctionToStr(_act_func) << "]";
 }
 
-autograd::ComputationPtr RegularEmbedding::apply(
-    autograd::ComputationPtr input) {
+autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(
         "Input has too large of a dimension for embedding.");
@@ -220,10 +218,10 @@ autograd::ComputationPtr RegularEmbedding::apply(
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-template void RegularEmbedding::save(cereal::BinaryOutputArchive&) const;
+template void Embedding::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
-void RegularEmbedding::save(Archive& archive) const {
+void Embedding::save(Archive& archive) const {
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
           _should_serialize_optimizer);
@@ -233,10 +231,10 @@ void RegularEmbedding::save(Archive& archive) const {
   }
 }
 
-template void RegularEmbedding::load(cereal::BinaryInputArchive&);
+template void Embedding::load(cereal::BinaryInputArchive&);
 
 template <class Archive>
-void RegularEmbedding::load(Archive& archive) {
+void Embedding::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
           _should_serialize_optimizer);
@@ -261,9 +259,9 @@ namespace cereal {
  * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
  */
 template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::RegularEmbedding,
+struct specialize<Archive, thirdai::bolt::nn::ops::Embedding,
                   cereal::specialization::member_load_save> {};
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::RegularEmbedding)
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)
