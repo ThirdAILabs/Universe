@@ -23,6 +23,7 @@ def download_mnist_ann_benchmark():
     return train, test, gtruth
 
 
+@pytest.mark.unit
 def test_hnsw(download_mnist_ann_benchmark):
     train, test, gtruth = download_mnist_ann_benchmark
 
