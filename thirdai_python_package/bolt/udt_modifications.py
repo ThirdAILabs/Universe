@@ -40,7 +40,7 @@ def _process_validation_and_options(
     max_in_memory_batches: Optional[int],
     verbose: bool,
     logging_interval: Optional[int],
-    reservoir_size: int = 64000,
+    shuffle_reservoir_size: int = 64000,
 ):
     train_options = bolt.TrainOptions()
 
@@ -48,7 +48,9 @@ def _process_validation_and_options(
     train_options.max_in_memory_batches = max_in_memory_batches
     train_options.verbose = verbose
     train_options.logging_interval = logging_interval
-    train_options.shuffle_config = dataset.ShuffleConfig(reservoir_size)
+    train_options.shuffle_config = dataset.ShuffleConfig(
+        min_vecs_in_buffer=shuffle_reservoir_size
+    )
 
     if validation:
         val_data = _create_data_source(validation.filename)
@@ -77,7 +79,7 @@ def modify_udt():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
-        reservoir_size: int = 64000,
+        shuffle_reservoir_size: int = 64000,
     ):
         data_source = _create_data_source(filename)
 
@@ -87,7 +89,7 @@ def modify_udt():
             max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
             logging_interval=logging_interval,
-            reservoir_size=reservoir_size,
+            shuffle_reservoir_size=shuffle_reservoir_size,
         )
 
         return original_train(

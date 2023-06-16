@@ -48,8 +48,8 @@ class UDTSVMClassifier final : public UDTBackend {
  private:
   static dataset::DatasetLoaderPtr svmDatasetLoader(
       dataset::DataSourcePtr data_source, bool shuffle,
-      std::optional<dataset::DatasetShuffleConfig> shuffle_config =
-          std::nullopt);
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig());
 
   UDTSVMClassifier() {}
 

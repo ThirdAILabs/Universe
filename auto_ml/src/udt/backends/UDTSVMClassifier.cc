@@ -104,15 +104,11 @@ void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {
 
 dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
     dataset::DataSourcePtr data_source, bool shuffle,
-    std::optional<dataset::DatasetShuffleConfig> shuffle_config) {
+    dataset::DatasetShuffleConfig shuffle_config) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
 
-  if (!shuffle_config.has_value()) {
-    shuffle_config = dataset::DatasetShuffleConfig();
-  }
-
   auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
-      std::move(data_source), featurizer, shuffle, shuffle_config.value());
+      std::move(data_source), featurizer, shuffle, shuffle_config);
 
   return dataset_loader;
 }
