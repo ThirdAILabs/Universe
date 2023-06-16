@@ -34,7 +34,7 @@ class UDTMachClassifier final : public UDTBackend {
                     uint32_t n_target_classes, bool integer_target,
                     const data::TabularOptions& tabular_options,
                     const std::optional<std::string>& model_config,
-                    const config::ArgumentMap& user_args);
+                    config::ArgumentMap user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -144,9 +144,6 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
-
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const final;
 
  private:
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,

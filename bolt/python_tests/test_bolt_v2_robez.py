@@ -9,21 +9,21 @@ def get_sum_model(input_dim):
 
     input_2 = bolt.nn.Input(dim=input_dim)
 
-    embedding_bottom = bolt.nn.Embedding(
+    robez_bottom = bolt.nn.RobeZ(
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
         reduction="sum",
     )(input_1)
 
-    embedding_top = bolt.nn.Embedding(
+    robez_top = bolt.nn.RobeZ(
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
         reduction="sum",
     )(input_2)
 
-    concat_layer = bolt.nn.Concatenate()([embedding_bottom, embedding_top])
+    concat_layer = bolt.nn.Concatenate()([robez_bottom, robez_top])
 
     output_layer = bolt.nn.FullyConnected(
         dim=input_dim * 2, input_dim=concat_layer.dim(), activation="softmax"
@@ -72,7 +72,7 @@ def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
 # This test ensures we can learn how to add (almost certainly by memorizing)
 # The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
 @pytest.mark.unit
-def test_embedding_op():
+def test_robez_op():
     input_dim = 10
     num_train = 10000
     num_test = 100

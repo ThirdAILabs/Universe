@@ -1,4 +1,4 @@
-#include "Embedding.h"
+#include "RobeZ.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/specialize.hpp>
 #include <cereal/types/base_class.hpp>
@@ -8,17 +8,16 @@
 
 namespace thirdai::bolt::nn::ops {
 
-std::string nextEmbeddingOpName() {
+std::string nextRobeZOpName() {
   static uint32_t constructed = 0;
-  return "emb_" + std::to_string(++constructed);
+  return "robez_" + std::to_string(++constructed);
 }
 
-Embedding::Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
-                     uint64_t log_embedding_block_size,
-                     const std::string& reduction,
-                     std::optional<uint64_t> num_tokens_per_input,
-                     uint64_t update_chunk_size)
-    : Op(nextEmbeddingOpName()) {
+RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
+             uint64_t log_embedding_block_size, const std::string& reduction,
+             std::optional<uint64_t> num_tokens_per_input,
+             uint64_t update_chunk_size)
+    : Op(nextRobeZOpName()) {
   EmbeddingLayerConfig config(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
@@ -29,11 +28,13 @@ Embedding::Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
   _kernel = std::make_unique<EmbeddingLayer>(config);
 }
 
-std::shared_ptr<Embedding> Embedding::make(
-    uint64_t num_embedding_lookups, uint64_t lookup_size,
-    uint64_t log_embedding_block_size, const std::string& reduction,
-    std::optional<uint64_t> num_tokens_per_input, uint64_t update_chunk_size) {
-  return std::shared_ptr<Embedding>(new Embedding(
+std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
+                                   uint64_t lookup_size,
+                                   uint64_t log_embedding_block_size,
+                                   const std::string& reduction,
+                                   std::optional<uint64_t> num_tokens_per_input,
+                                   uint64_t update_chunk_size) {
+  return std::shared_ptr<RobeZ>(new RobeZ(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
       /* log_embedding_block_size= */ log_embedding_block_size,
@@ -42,9 +43,9 @@ std::shared_ptr<Embedding> Embedding::make(
       /* update_chunk_size= */ update_chunk_size));
 }
 
-void Embedding::forward(const autograd::ComputationList& inputs,
-                        tensor::TensorPtr& output, uint32_t index_in_batch,
-                        bool training) {
+void RobeZ::forward(const autograd::ComputationList& inputs,
+                    tensor::TensorPtr& output, uint32_t index_in_batch,
+                    bool training) {
   (void)training;
   assert(inputs.size() == 1);
 
@@ -52,83 +53,81 @@ void Embedding::forward(const autograd::ComputationList& inputs,
                    output->getVector(index_in_batch));
 }
 
-void Embedding::backpropagate(autograd::ComputationList& inputs,
-                              tensor::TensorPtr& output,
-                              uint32_t index_in_batch) {
+void RobeZ::backpropagate(autograd::ComputationList& inputs,
+                          tensor::TensorPtr& output, uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
   _kernel->backpropagate(inputs[0]->tensor()->getVector(index_in_batch),
                          output->getVector(index_in_batch));
 }
 
-void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
+void RobeZ::updateParameters(float learning_rate, uint32_t train_steps) {
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
 }
 
-uint32_t Embedding::dim() const { return _kernel->getOutputDim(); }
+uint32_t RobeZ::dim() const { return _kernel->getOutputDim(); }
 
-std::optional<uint32_t> Embedding::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> RobeZ::nonzeros(const autograd::ComputationList& inputs,
+                                        bool use_sparsity) const {
   (void)inputs;
   (void)use_sparsity;
 
   return dim();
 }
 
-void Embedding::disableSparseParameterUpdates() {
+void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
-std::vector<std::vector<float>*> Embedding::gradients() {
+std::vector<std::vector<float>*> RobeZ::gradients() {
   return {&_kernel->getRawEmbeddingBlockGradient()};
 }
 
-std::vector<std::vector<float>*> Embedding::parameters() {
+std::vector<std::vector<float>*> RobeZ::parameters() {
   return {&_kernel->getRawEmbeddingBlock()};
 }
 
-void Embedding::summary(std::ostream& summary,
-                        const autograd::ComputationList& inputs,
-                        const autograd::Computation* output) const {
-  summary << "Embedding(" << name() << "): " << inputs[0]->name() << " -> "
+void RobeZ::summary(std::ostream& summary,
+                    const autograd::ComputationList& inputs,
+                    const autograd::Computation* output) const {
+  summary << "RobeZ(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name() << " [";
   _kernel->buildLayerSummary(summary);
   summary << "]";
 }
 
-void Embedding::setSerializeOptimizer(bool should_serialize_optimizer) {
+void RobeZ::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
-autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
+autograd::ComputationPtr RobeZ::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-template void Embedding::save(cereal::BinaryOutputArchive&) const;
+template void RobeZ::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
-void Embedding::save(Archive& archive) const {
+void RobeZ::save(Archive& archive) const {
   archive(cereal::base_class<Op>(this), _kernel);
 }
 
-template void Embedding::load(cereal::BinaryInputArchive&);
+template void RobeZ::load(cereal::BinaryInputArchive&);
 
 template <class Archive>
-void Embedding::load(Archive& archive) {
+void RobeZ::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
 
   _kernel->initOptimizer();
 }
 
-std::shared_ptr<Embedding> Embedding::duplicateWithNewReduction(
+std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(
     const std::string& reduction,
     std::optional<uint64_t> num_tokens_per_input) {
   auto new_kernel =
       _kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
 
-  std::string new_name = nextEmbeddingOpName() + "_shared_" + name();
-  return std::shared_ptr<Embedding>(
-      new Embedding(std::move(new_kernel), new_name));
+  std::string new_name = nextRobeZOpName() + "_shared_" + name();
+  return std::shared_ptr<RobeZ>(new RobeZ(std::move(new_kernel), new_name));
 }
 
 }  // namespace thirdai::bolt::nn::ops
@@ -142,9 +141,9 @@ namespace cereal {
  * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
  */
 template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::Embedding,
+struct specialize<Archive, thirdai::bolt::nn::ops::RobeZ,
                   cereal::specialization::member_load_save> {};
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::RobeZ)
