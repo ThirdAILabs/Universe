@@ -26,7 +26,7 @@ Embedding::Embedding(size_t dim, size_t input_dim,
       _bias(bias),
       _act_func(getActivationFunction(activation)),
       _embeddings(dim * input_dim),
-      _biases(dim),
+      _biases(dim, 0.0),
       _disable_sparse_parameter_updates(false),
       _should_serialize_optimizer(false),
       _embeddings_used(input_dim, false) {
@@ -35,7 +35,9 @@ Embedding::Embedding(size_t dim, size_t input_dim,
 
   auto gen = [&]() { return dist(rng); };
   std::generate(_embeddings.begin(), _embeddings.end(), gen);
-  std::generate(_biases.begin(), _biases.end(), gen);
+  if (_bias) {
+    std::generate(_biases.begin(), _biases.end(), gen);
+  }
 
   _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
   _bias_optimizer = AdamOptimizer(_dim);

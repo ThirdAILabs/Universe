@@ -60,6 +60,12 @@ class Embedding final : public Op,
 
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
+  uint32_t inputDim() const { return _input_dim; }
+
+  const float* embeddingsPtr() const { return _embeddings.data(); }
+
+  const float* biasesPtr() const { return _biases.data(); }
+
  private:
   void sparseEmbeddingUpdate(float learning_rate, uint32_t train_steps);
 
@@ -87,5 +93,7 @@ class Embedding final : public Op,
   template <class Archive>
   void load(Archive& archive);
 };
+
+using EmbeddingPtr = std::shared_ptr<Embedding>;
 
 }  // namespace thirdai::bolt::nn::ops
