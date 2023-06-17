@@ -65,6 +65,14 @@ void Embedding::forward(const autograd::ComputationList& inputs,
     float value = indices.activations[n];
     const float* emb = _embeddings.data() + index * _dim;
 
+    // #if __GNUC__
+    if (n < indices.len - 1) {
+      float* nxt_emb =
+          _embeddings.data() + indices.active_neurons[n + 1] * _dim;
+      __builtin_prefetch(nxt_emb);
+    }
+    // #endif
+
 #pragma omp simd
     for (size_t i = 0; i < _dim; i++) {
       output_vec.activations[i] += value * emb[i];
@@ -128,6 +136,14 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
     uint32_t index = indices.active_neurons[n];
     float value = indices.activations[n];
     float* emb_grad = _embedding_optimizer->gradients.data() + index * _dim;
+
+    // #if __GNUC__
+    if (n < indices.len - 1) {
+      float* nxt_grad = _embedding_optimizer->gradients.data() +
+                        indices.active_neurons[n + 1] * _dim;
+      __builtin_prefetch(nxt_grad);
+    }
+    // #endif
 
 #pragma omp simd
     for (size_t i = 0; i < _dim; i++) {
