@@ -128,6 +128,15 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
       emb_grad[i] += value * output_vec.gradients[i];
     }
     _embeddings_used[index] = true;
+
+    if (indices.hasGradients()) {
+      const float* emb = _embeddings.data() + index * _dim;
+      float grad = 0.0;
+      for (size_t i = 0; i < _dim; i++) {
+        grad += output_vec.gradients[i] * emb[i];
+      }
+      indices.gradients[n] = grad;
+    }
   }
 
   if (_bias) {
