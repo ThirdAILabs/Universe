@@ -251,9 +251,10 @@ void defineCallbacks(py::module_& train) {
              callbacks::LearningRateScheduler>(callbacks,
                                                "CosineAnnealingWarmRestart")
       .def(
-          py::init<uint32_t, uint32_t, float, bool>(), py::arg("T_0"),
-          py::arg("T_mul") = 1, py::arg("eta_min") = 0.0,
-          py::arg("batch_per_step") = false,
+          py::init<uint32_t, uint32_t, float, bool>(),
+          py::arg("Initial_restart_iter") = 4,
+          py::arg("iter_restart_multiplicative_factor") = 1,
+          py::arg("min_lr") = 0.0, py::arg("batch_per_step") = false,
           "The cosine annealing warm restart LR scheduler decays the learning "
           "rate until the specified number of epochs( T_0 ) following a cosine "
           "schedule and restarts the learning rate to T_i * T_mul.");

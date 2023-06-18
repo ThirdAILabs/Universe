@@ -89,7 +89,7 @@ def test_multi_step_lr():
 
 @pytest.mark.unit
 def test_cosineAnnealingWarmRestart_lr():
-    lr_schedule = bolt.train.callbacks.CosineAnnealingWarmRestart(T_0=3, T_mul=2)
+    lr_schedule = bolt.train.callbacks.CosineAnnealingWarmRestart(Initial_restart_iter=3, iter_restart_multiplicative_factor=2)
     ending_lr = train_model_with_scheduler(
         epochs=5, base_learning_rate=0.001, schedule=lr_schedule
     )

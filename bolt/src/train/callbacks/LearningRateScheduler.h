@@ -118,24 +118,27 @@ class MultiStepLR final : public LearningRateScheduler {
 
 /**
  * @brief Schedules per-step learning rate using a cosine annealing schedule
- * @param T_0: Number of iterations before the first restart.
- * @param T_mul: Factor by which T_i increases after a restart. Default: 1
- * @param eta_min: Minimum learnign rate. Default: 0.0
+ * @param Initial_restart_iter: Number of iterations before the first restart.
+ * @param iter_restart_multiplicative_factor: Factor by which
+ * current_restart_iter_ gets multiplied after a restart. Default: 1
+ * @param min_lr: Minimum learnign rate. Default: 0.0
  * @param batch_level_steps: If true then we'll adjust the learning rate using
  * batches as steps instead of epochs. Defaults to false.
  */
 
 class CosineAnnealingWarmRestart final : public LearningRateScheduler {
  public:
-  explicit CosineAnnealingWarmRestart(uint32_t T_0, uint32_t T_mul = 1,
-                                      float eta_min = 0.0,
-                                      bool batch_per_step = false)
+  explicit CosineAnnealingWarmRestart(
+      uint32_t Initial_restart_iter = 4,
+      uint32_t iter_restart_multiplicative_factor = 1, float min_lr = 0.0,
+      bool batch_per_step = false)
       : LearningRateScheduler(batch_per_step),
-        T_i_(T_0),
-        T_mul_(T_mul),
-        T_curr_(0),
-        eta_min_(eta_min) {
-    assert(T_0 > 0 && T_mul >= 1 && eta_min >= 0);
+        current_restart_iter_(Initial_restart_iter),
+        current_iter_(0),
+        iter_restart_multiplicative_factor_(iter_restart_multiplicative_factor),
+        min_lr_(min_lr) {
+    assert(Initial_restart_iter > 0 &&
+           iter_restart_multiplicative_factor >= 1 && min_lr >= 0);
   }
 
   float getNextLR(float current_learning_rate, uint32_t step) final {
@@ -144,23 +147,25 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
       base_learning_rate_ = current_learning_rate;
     }
 
-    float cosine_factor =
-        1 + std::cos((static_cast<float>(T_curr_) / T_i_) * M_PI);
+    float cosine_factor = std::pow(
+        std::cos((static_cast<float>(current_iter_) / current_restart_iter_) *
+                 M_PI / 2),
+        2);
 
-    float nextLR =
-        eta_min_ + (base_learning_rate_ - eta_min_) * cosine_factor / 2;
+    float nextLR = min_lr_ + (base_learning_rate_ - min_lr_) * cosine_factor;
 
-    T_curr_++;
-    if (T_curr_ >= T_i_) {
-      T_curr_ -= T_i_;
-      T_i_ *= T_mul_;
+    current_iter_++;
+    if (current_iter_ == current_restart_iter_) {
+      current_iter_ = 0;
+      current_restart_iter_ *= iter_restart_multiplicative_factor_;
     }
 
     return nextLR;
   }
 
  private:
-  uint32_t T_i_, T_mul_, T_curr_;
-  float eta_min_, base_learning_rate_;
+  uint32_t current_restart_iter_, current_iter_,
+      iter_restart_multiplicative_factor_;
+  float min_lr_, base_learning_rate_;
 };
 }  // namespace thirdai::bolt::train::callbacks
