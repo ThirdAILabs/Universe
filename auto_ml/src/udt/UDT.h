@@ -214,10 +214,6 @@ class UDT {
     return _backend->tabularDatasetFactory();
   }
 
-  TextEmbeddingModelPtr getTextEmbeddingModel(float distance_cutoff) const {
-    return _backend->getTextEmbeddingModel(distance_cutoff);
-  }
-
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
