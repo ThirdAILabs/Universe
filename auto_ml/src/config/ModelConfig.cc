@@ -4,6 +4,7 @@
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -141,6 +142,26 @@ bolt::nn::autograd::ComputationPtr buildRobeZ(
   return layer->apply(getPredecessor(config, created_comps));
 }
 
+bolt::nn::autograd::ComputationPtr buildEmbedding(
+    const json& config, const ArgumentMap& args,
+    const CreatedComputations& created_comps) {
+  uint32_t dim = integerParameter(config, "dim", args);
+
+  std::string activation = stringParameter(config, "activation", args);
+
+  auto predecessor = getPredecessor(config, created_comps);
+
+  bool use_bias = true;
+  if (config.contains("use_bias")) {
+    use_bias = booleanParameter(config, "use_bias", args);
+  }
+
+  auto layer = bolt::nn::ops::Embedding::make(dim, predecessor->dim(),
+                                              activation, use_bias);
+
+  return layer->apply(predecessor);
+}
+
 /**
  * Helper function to construct the inputs. Matches the input dims to the
  * input names provided in the config. Updates created nodes to contain the
@@ -188,6 +209,8 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
           buildFullyConnected(node_config, args, created_comps);
     } else if (type == "robez") {
       created_comps[name] = buildRobeZ(node_config, args, created_comps);
+    } else if (type == "embedding") {
+      created_comps[name] = buildEmbedding(node_config, args, created_comps);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");
