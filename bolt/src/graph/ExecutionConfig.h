@@ -112,6 +112,19 @@ class ValidationContext {
     }
   }
 
+  explicit ValidationContext(dataset::BoltDatasetList all_datasets,
+                             EvalConfig eval_config, uint32_t frequency,
+                             std::string save_best_per_metric = "")
+      : _all_datasets(std::move(all_datasets)),
+        _config(std::move(eval_config)),
+        _frequency(frequency),
+        _save_best_per_metric(std::move(save_best_per_metric)) {
+    if (_all_datasets.size() < 2) {
+      throw std::invalid_argument(
+          "Expected at least 1 validation input and 1 label.");
+    }
+  }
+
   std::vector<dataset::BoltDatasetPtr> data() const {
     return {_all_datasets.begin(), _all_datasets.end() - 1};
   }
@@ -184,6 +197,16 @@ class TrainConfig {
     _validation_context = ValidationContext(
         validation_data, validation_labels, eval_config, validation_frequency,
         std::move(validation_save_best_per_metric));
+    return *this;
+  }
+
+  TrainConfig& withValidationAllDatasets(
+      const dataset::BoltDatasetList& all_val_datasets,
+      const EvalConfig& eval_config, uint32_t validation_frequency = 0,
+      std::string validation_save_best_per_metric = "") {
+    _validation_context =
+        ValidationContext(all_val_datasets, eval_config, validation_frequency,
+                          std::move(validation_save_best_per_metric));
     return *this;
   }
 
