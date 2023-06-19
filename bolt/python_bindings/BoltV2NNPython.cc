@@ -8,6 +8,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
@@ -217,6 +218,19 @@ void defineOps(py::module_& nn) {
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
+
+  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
+      .def(py::init(&ops::Embedding::make), py::arg("dim"),
+           py::arg("input_dim"), py::arg("activation"), py::arg("bias") = true)
+      .def("__call__", &ops::Embedding::apply)
+      .def_property_readonly(
+          "weights",
+          [](const ops::EmbeddingPtr& op) {
+            return toNumpy(op->embeddingsPtr(), {op->inputDim(), op->dim()});
+          })
+      .def_property_readonly("biases", [](const ops::EmbeddingPtr& op) {
+        return toNumpy(op->biasesPtr(), {op->dim()});
+      });
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
