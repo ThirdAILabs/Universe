@@ -25,11 +25,15 @@ namespace thirdai::bolt::nn::model {
  */
 class Model : public std::enable_shared_from_this<Model> {
  private:
-  // The additional_labels allow for passing in a placeholder for labels that
-  // are not used in any loss function. This is useful because there could be a
-  // case (particularly in Mach) where metrics need to have access to labels
-  // that are not used in the loss function. Adding those labels here ensures
-  // that they are part of the model and can be accessed by the metrics.
+  /**
+   * The additional_labels allow for passing in a placeholder for labels that
+   * are not used in any loss function. This is useful because there could be a
+   * case (particularly in Mach) where metrics need to have access to labels
+   * that are not used in the loss function. Adding those labels here ensures
+   * that they are part of the model and can be accessed by the metrics. Note
+   * that the model does not require any relationship between the number of
+   * outputs, loss functions, and labels so it is ok to add additonal labels.
+   */
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
         std::vector<loss::LossPtr> losses,
         autograd::ComputationList additional_labels = {});
