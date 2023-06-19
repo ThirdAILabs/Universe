@@ -79,15 +79,16 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
 }
 
 dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetLabeledDatasetLoader(
-    const dataset::DataSourcePtr& data_source, bool shuffle) {
+    const dataset::DataSourcePtr& data_source, bool shuffle,
+    dataset::DatasetShuffleConfig shuffle_config) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
   index(csv_data_source);
 
   csv_data_source->restart();
 
-  return std::make_unique<dataset::DatasetLoader>(csv_data_source,
-                                                  _labeled_featurizer, shuffle);
+  return std::make_unique<dataset::DatasetLoader>(
+      csv_data_source, _labeled_featurizer, shuffle, shuffle_config);
 }
 
 void GraphDatasetManager::index(const dataset::DataSourcePtr& data_source) {

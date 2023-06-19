@@ -72,8 +72,8 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                                   /* shuffle= */ false);
   }
 
-  auto train_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             train_metrics, val_dataset_loader, val_metrics,
@@ -222,12 +222,6 @@ py::object UDTClassifier::entityEmbedding(
   std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
 
   return std::move(np_weights);
-}
-
-TextEmbeddingModelPtr UDTClassifier::getTextEmbeddingModel(
-    float distance_cutoff) const {
-  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
-                                  distance_cutoff);
 }
 
 dataset::CategoricalBlockPtr UDTClassifier::labelBlock(

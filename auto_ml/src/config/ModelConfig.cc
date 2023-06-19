@@ -8,6 +8,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
@@ -118,7 +119,7 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
  * 'num_tokens_per_input' can be specified to indicate the number of tokens in
  * each sample. This field is only required for concatenation reductions.
  */
-bolt::nn::autograd::ComputationPtr buildEmbedding(
+bolt::nn::autograd::ComputationPtr buildRobeZ(
     const json& config, const ArgumentMap& args,
     const CreatedComputations& created_comps) {
   uint32_t num_lookups =
@@ -135,10 +136,30 @@ bolt::nn::autograd::ComputationPtr buildEmbedding(
   }
 
   auto layer =
-      bolt::nn::ops::Embedding::make(num_lookups, lookup_size, log_block_size,
-                                     reduction, num_tokens_per_input);
+      bolt::nn::ops::RobeZ::make(num_lookups, lookup_size, log_block_size,
+                                 reduction, num_tokens_per_input);
 
   return layer->apply(getPredecessor(config, created_comps));
+}
+
+bolt::nn::autograd::ComputationPtr buildEmbedding(
+    const json& config, const ArgumentMap& args,
+    const CreatedComputations& created_comps) {
+  uint32_t dim = integerParameter(config, "dim", args);
+
+  std::string activation = stringParameter(config, "activation", args);
+
+  auto predecessor = getPredecessor(config, created_comps);
+
+  bool use_bias = true;
+  if (config.contains("use_bias")) {
+    use_bias = booleanParameter(config, "use_bias", args);
+  }
+
+  auto layer = bolt::nn::ops::Embedding::make(dim, predecessor->dim(),
+                                              activation, use_bias);
+
+  return layer->apply(predecessor);
 }
 
 /**
@@ -186,6 +207,8 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
     if (type == "fully_connected") {
       created_comps[name] =
           buildFullyConnected(node_config, args, created_comps);
+    } else if (type == "robez") {
+      created_comps[name] = buildRobeZ(node_config, args, created_comps);
     } else if (type == "embedding") {
       created_comps[name] = buildEmbedding(node_config, args, created_comps);
     } else {

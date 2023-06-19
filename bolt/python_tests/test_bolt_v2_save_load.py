@@ -22,7 +22,7 @@ def build_model(n_classes):
 
     token_input = bolt.nn.Input(dim=n_classes)
 
-    embedding = bolt.nn.Embedding(
+    embedding = bolt.nn.RobeZ(
         num_embedding_lookups=8,
         lookup_size=8,
         log_embedding_block_size=10,

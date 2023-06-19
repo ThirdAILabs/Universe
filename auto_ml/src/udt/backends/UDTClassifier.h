@@ -116,9 +116,6 @@ class UDTClassifier final : public UDTBackend {
         _label_block->delimiter(), _label_block->columnName());
   }
 
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const final;
-
  private:
   dataset::CategoricalBlockPtr labelBlock(
       const std::string& target_name,

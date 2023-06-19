@@ -1,9 +1,9 @@
 #include "UDTGraphClassifier.h"
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/Concatenate.h>
-#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <utils/Version.h>
@@ -40,7 +40,7 @@ py::object UDTGraphClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
-      data, /* shuffle = */ true);
+      data, /* shuffle = */ true, /* shuffle_config= */ options.shuffle_config);
 
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
@@ -92,7 +92,7 @@ ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
   auto neighbor_token_input = bolt::nn::ops::Input::make(input_dims.at(1));
 
   auto embedding_1 =
-      bolt::nn::ops::Embedding::make(
+      bolt::nn::ops::RobeZ::make(
           /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
           /* log_embedding_block_size = */ 20, /* reduction = */ "average")
           ->apply(neighbor_token_input);

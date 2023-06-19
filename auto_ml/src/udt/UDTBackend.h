@@ -4,7 +4,6 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
-#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -13,6 +12,8 @@
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
+
+namespace py = pybind11;
 
 namespace thirdai::automl::udt {
 
@@ -27,6 +28,8 @@ struct TrainOptions {
   bool sparse_validation = false;
   bool verbose = true;
   std::optional<uint32_t> logging_interval = std::nullopt;
+  dataset::DatasetShuffleConfig shuffle_config =
+      dataset::DatasetShuffleConfig();
 };
 
 /**
@@ -362,15 +365,6 @@ class UDTBackend {
   virtual void setIndex(const dataset::mach::MachIndexPtr& index) {
     (void)index;
     throw notSupported("set_index");
-  }
-
-  /*
-   * Returns a model that embeds text using the hidden layer of the UDT model.
-   */
-  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const {
-    (void)distance_cutoff;
-    throw notSupported("get_text_embedding_model");
   }
 
   virtual ~UDTBackend() = default;

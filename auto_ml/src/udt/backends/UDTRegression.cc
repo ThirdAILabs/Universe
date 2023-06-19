@@ -68,8 +68,8 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
         val_data, /* shuffle= */ false);
   }
 
-  auto train_dataset =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset = _dataset_factory->getLabeledDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   bolt::train::Trainer trainer(_model, std::nullopt,
                                bolt::train::python::CtrlCCheck{});
