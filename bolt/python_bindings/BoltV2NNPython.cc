@@ -8,11 +8,11 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
-#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -30,7 +30,7 @@ namespace py = pybind11;
 namespace thirdai::bolt::nn::python {
 
 template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+using NumpyArray = thirdai::bolt::python::NumpyArray<T>;
 
 template <typename T>
 py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
@@ -93,9 +93,21 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("get_gradients", &::thirdai::bolt::python::getGradients,
+           py::return_value_policy::reference_internal)
+      .def("set_gradients", &::thirdai::bolt::python::setGradients,
+           py::arg("new_values"))
+      .def("get_parameters", &::thirdai::bolt::python::getParameters,
+           py::return_value_policy::reference_internal)
+      .def("set_parameters", &::thirdai::bolt::python::setParameters,
+           py::arg("new_values"))
+      .def("disable_sparse_parameter_updates",
+           &model::Model::disableSparseParameterUpdates)
+
 #endif
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
+      .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def("checkpoint", &model::Model::checkpoint, py::arg("filename"),
@@ -195,14 +207,14 @@ void defineOps(py::module_& nn) {
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
            py::arg("hash_fn"), py::arg("hash_table"));
 
-  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
-      .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
+  py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
+      .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
-      .def("__call__", &ops::Embedding::apply)
+      .def("__call__", &ops::RobeZ::apply)
       .def("duplicate_with_new_reduction",
-           &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
+           &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")

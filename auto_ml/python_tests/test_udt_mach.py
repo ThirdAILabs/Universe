@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, dataset
+from thirdai import bolt, bolt_v2, dataset
 
 pytestmark = [pytest.mark.unit]
 
 
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
 OUTPUT_DIM = 100
+NUM_HASHES = 7
 
 
 def make_simple_test_file(invalid_data=False):
@@ -47,7 +48,9 @@ def train_simple_mach_udt(
         },
     )
 
-    model.train(SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001)
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
 
     os.remove(SIMPLE_TEST_FILE)
 
@@ -307,7 +310,8 @@ def test_mach_udt_introduce_document():
     )
 
 
-def test_mach_udt_introduce_documents():
+@pytest.mark.parametrize("fast_approximation", [True, False])
+def test_mach_udt_introduce_documents(fast_approximation):
     model = train_simple_mach_udt()
 
     new_docs = "NEW_DOCS.csv"
@@ -320,6 +324,7 @@ def test_mach_udt_introduce_documents():
         new_docs,
         strong_column_names=["title"],
         weak_column_names=["description"],
+        fast_approximation=fast_approximation,
     )
 
     os.remove(new_docs)
@@ -475,6 +480,63 @@ def test_load_balancing():
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
 
 
+def test_mach_sparse_inference():
+    """
+    This test checks that if we create a mach index that with a number of non
+    empty buckets that puts it under the theshold for mach index sampling, only the
+    non empty buckets are returned by sparse inference. It then checks that the
+    returned buckets are updated as the index is modified, and then finally
+    checks that it no longer uses mach sampling after the index sufficient non
+    empty buckets.
+    """
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30]}, output_range=OUTPUT_DIM, num_hashes=1
+        )
+    )
+
+    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30])
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30], 4: [40]},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30, 40])
+
+    model.forget(label=3)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 40])
+
+    # This is above the threshold for mach index sampling, so it should revert back to LSH
+    model.set_index(
+        dataset.MachIndex(
+            {i * 10: [i] for i in range(OUTPUT_DIM // 2)},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    # When we set an index with 50% sparsity it will autotune the sampling, it
+    # will decide to not use any sort of sampling for this level of sparsity and
+    # so the output should be dense.
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert output.active_neurons == None
+    assert output.activations.shape == (1, OUTPUT_DIM)
+
+
 def test_associate():
     model = train_simple_mach_udt(
         rlhf_args={
@@ -506,7 +568,7 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate(source=source_sample, target=target_sample, n_buckets=7)
+        model.associate([(source_sample, target_sample)], n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
@@ -514,3 +576,74 @@ def test_associate():
     new_intersection = len(new_target_hashes.intersection(new_source_hashes))
 
     assert new_intersection > original_intersection
+
+
+def test_upvote():
+    model = train_simple_mach_udt(
+        rlhf_args={
+            "rlhf": True,
+            "rlhf_balancing_docs": 100,
+            "rlhf_balancing_samples_per_doc": 10,
+        }
+    )
+
+    target_sample = {"text": "random sample text"}
+    model.introduce_label([target_sample], label=200)
+
+    source_sample = {"text": "tomato"}
+    model.introduce_label([source_sample], label=300)
+
+    predicted_label = model.predict(source_sample)[0][0]
+    for _ in range(10):
+        model.upvote([(source_sample, 300)], learning_rate=0.01)
+        predicted_label = model.predict(source_sample)[0][0]
+        if predicted_label != 200:
+            break
+
+    assert predicted_label != 200
+
+    for _ in range(10):
+        model.upvote([(source_sample, 200)], learning_rate=0.01)
+        predicted_label = model.predict(source_sample)[0][0]
+        if predicted_label == 200:
+            break
+
+    assert predicted_label == 200
+
+
+def regularized_introduce_helper(model, num_random_hashes):
+    """Returns an array counting the number of hashes in each bucket after
+    introducing three identical samples"""
+
+    for label in range(3):
+        model.introduce_label(
+            [{"text": "some text"}],
+            label,
+            num_buckets_to_sample=None,
+            num_random_hashes=num_random_hashes,
+        )
+
+    index = model.get_index()
+    load = np.zeros(OUTPUT_DIM, dtype=np.int32)
+    for i in range(len(load)):
+        load[i] = len(index.get_hash_to_entities(i))
+
+    return load
+
+
+def test_introduce_hash_regularization():
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    # without any regularization or balancing, introducing 3 labels with the
+    # same representative sample should yield 3 sets of identical hashes
+    load = regularized_introduce_helper(model, num_random_hashes=0)
+    assert np.sum(load > 0) == NUM_HASHES
+
+    model.clear_index()
+
+    # when 2 of the 7 hashes in every new doc are random there should be more
+    # than NUM_HASHES non-zeroes in the index's load
+    load = regularized_introduce_helper(model, num_random_hashes=2)
+    assert np.sum(load > 0) > NUM_HASHES

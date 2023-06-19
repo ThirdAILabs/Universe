@@ -5,16 +5,17 @@
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <auto_ml/src/udt/Validation.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
@@ -57,29 +58,26 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       tabular_options, force_parallel);
 }
 
-py::object UDTClassifier::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
-  ValidationDatasetLoader validation_dataset_loader;
-  if (validation) {
-    validation_dataset_loader = std::make_pair(
-        _dataset_factory->getLabeledDatasetLoader(validation->first,
-                                                  /* shuffle= */ false),
-        validation->second);
+py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
+                                float learning_rate, uint32_t epochs,
+                                const std::vector<std::string>& train_metrics,
+                                const dataset::DataSourcePtr& val_data,
+                                const std::vector<std::string>& val_metrics,
+                                const std::vector<CallbackPtr>& callbacks,
+                                TrainOptions options) {
+  dataset::DatasetLoaderPtr val_dataset_loader;
+  if (val_data) {
+    val_dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(val_data,
+                                                  /* shuffle= */ false);
   }
 
-  auto train_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
-                            validation_dataset_loader, batch_size_opt,
-                            max_in_memory_batches, metrics, callbacks, verbose,
-                            logging_interval);
+                            train_metrics, val_dataset_loader, val_metrics,
+                            callbacks, options);
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
@@ -96,6 +94,34 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
   (void)metrics;
 
   return py::none();
+}
+
+void UDTClassifier::setOutputSparsity(float sparsity,
+                                      bool rebuild_hash_tables) {
+  bolt::nn::autograd::ComputationList output_computations =
+      _classifier->model()->outputs();
+
+  /**
+   * The method is supported only for models that have a single output
+   * computation with the computation being a fully connected layer.
+   */
+  if (output_computations.size() != 1) {
+    throw notSupported(
+        "The method is only supported for classifiers that have a single "
+        "fully "
+        "connected layer output.");
+  }
+
+  auto fc_computation =
+      bolt::nn::ops::FullyConnected::cast(output_computations[0]->op());
+  if (fc_computation) {
+    fc_computation->setSparsity(sparsity, rebuild_hash_tables,
+                                /*experimental_autotune=*/false);
+  } else {
+    throw notSupported(
+        "The method is only supported for classifiers that have a single "
+        "fully connected layer output.");
+  }
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -154,20 +180,17 @@ py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    const std::optional<ValidationDataSource>& validation,
-    const std::vector<CallbackPtr>& callbacks,
-    std::optional<size_t> max_in_memory_batches, bool verbose) {
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
-  return train(data_source, learning_rate, epochs, validation,
-               /* batch_size = */ std::nullopt,
-               /* max_in_memory_batches= */ max_in_memory_batches, metrics,
-               /* callbacks= */ callbacks, /* verbose= */ verbose,
-               /* logging_interval= */ std::nullopt);
+  return train(data_source, learning_rate, epochs, train_metrics, val_data,
+               val_metrics, callbacks, options);
 }
 
 py::object UDTClassifier::embedding(const MapInput& sample) {
@@ -199,12 +222,6 @@ py::object UDTClassifier::entityEmbedding(
   std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
 
   return std::move(np_weights);
-}
-
-TextEmbeddingModelPtr UDTClassifier::getTextEmbeddingModel(
-    float distance_cutoff) const {
-  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
-                                  distance_cutoff);
 }
 
 dataset::CategoricalBlockPtr UDTClassifier::labelBlock(

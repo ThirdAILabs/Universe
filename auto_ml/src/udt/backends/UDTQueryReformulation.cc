@@ -48,25 +48,37 @@ UDTQueryReformulation::UDTQueryReformulation(
 
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
+  if (user_args.contains("n_grams")) {
+    auto temp_ngrams =
+        user_args.get<std::vector<int32_t>>("n_grams", "List[int]");
+    _n_grams.clear();
+    for (int32_t temp_ngram : temp_ngrams) {
+      // This check makes sure that we do not insert a negative number in the
+      // _n_grams vector
+      if (temp_ngram <= 0) {
+        throw std::invalid_argument(
+            "n_grams argument must contain only positive integers.");
+      }
+      _n_grams.push_back(temp_ngram);
+    }
+  }
   _inference_featurizer =
-      dataset::TabularFeaturizer::make({ngramBlockList("phrase")});
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
 }
 
 py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   (void)learning_rate;
   (void)epochs;
-  (void)validation;
-  (void)max_in_memory_batches;
-  (void)metrics;
+  (void)train_metrics;
+  (void)val_data;
+  (void)val_metrics;
   (void)callbacks;
-  (void)logging_interval;
+  (void)options;
 
   licensing::TrainPermissionsToken token(data);
 
@@ -76,11 +88,11 @@ py::object UDTQueryReformulation::train(
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
 
   uint32_t batch_size =
-      batch_size_opt.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
+      options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
   auto [unsupervised_data, labels] =
       loadData(data, /* col_to_hash= */ _correct_column_name,
-               /* include_labels= */ true, batch_size, verbose);
+               /* include_labels= */ true, batch_size, options.verbose);
 
   // If we are using supervised training then we have twice as much data to
   // insert because index each sample once using itself as the input, and once
@@ -89,7 +101,7 @@ py::object UDTQueryReformulation::train(
                                     ? unsupervised_data->numBatches() * 2
                                     : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-      /* verbose = */ verbose,
+      /* verbose = */ options.verbose,
       /* description = */ fmt::format("train"),
       /* max_steps = */ progress_bar_steps);
 
@@ -245,7 +257,7 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
   }
 
   auto featurizer = dataset::TabularFeaturizer::make(
-      {ngramBlockList(col_to_hash),
+      {ngramBlockList(col_to_hash, _n_grams),
        dataset::BlockList(std::move(label_blocks))},
       /* has_header= */ true,
       /* delimiter= */ _delimiter);
@@ -323,9 +335,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
 }
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
-    const std::string& column_name) {
-  std::vector<uint32_t> n_grams = {3, 4};
-
+    const std::string& column_name, const std::vector<uint32_t>& n_grams) {
   std::vector<dataset::BlockPtr> input_blocks;
   input_blocks.reserve(n_grams.size());
 
@@ -347,7 +357,8 @@ uint32_t UDTQueryReformulation::recall(
     const BoltBatch& labels) {
   uint32_t correct = 0;
 
-#pragma omp parallel for default(none) shared(retrieved_ids, labels) reduction(+:correct)
+#pragma omp parallel for default(none) shared(retrieved_ids, labels) \
+    reduction(+ : correct)
   for (uint32_t i = 0; i < retrieved_ids.size(); i++) {
     if (std::find(retrieved_ids[i].begin(), retrieved_ids[i].end(),
                   labels[i].active_neurons[0]) != retrieved_ids[i].end()) {
@@ -365,7 +376,7 @@ template <class Archive>
 void UDTQueryReformulation::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _flash_index,
           _inference_featurizer, _phrase_id_map, _incorrect_column_name,
-          _correct_column_name, _delimiter);
+          _correct_column_name, _delimiter, _n_grams);
 }
 
 }  // namespace thirdai::automl::udt

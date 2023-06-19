@@ -14,16 +14,15 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
       _learning_rate(train_config.learningRate()),
       _train_metrics(metrics::fromMetricNames(model, train_config.metrics())),
       _logging_interval(train_config.logLossFrequency()),
-      _use_sparsity_in_validation(false) {
+      _use_sparsity_in_validation(false),
+      _trainer(model) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
         "Distributed training is currently only supported for models with a "
         "single output.");
   }
 
-  for (const auto& op : model->ops()) {
-    op->disableSparseParameterUpdates();
-  }
+  model->disableSparseParameterUpdates();
 
   if (auto validation = train_config.getValidationContext()) {
     _validation_data =
@@ -74,8 +73,7 @@ DistributedTrainingWrapper::validationAndSaveBest() {
     return {};
   }
 
-  Trainer trainer(_model);
-  auto history = trainer.validate_with_metric_names(
+  auto history = _trainer.validate_with_metric_names(
       *_validation_data, _validation_metrics, _use_sparsity_in_validation);
 
   std::unordered_map<std::string, float> last_metrics;
@@ -95,41 +93,12 @@ uint64_t DistributedTrainingWrapper::numBatches() {
 
 std::pair<const float*, uint64_t> DistributedTrainingWrapper::getGradients()
     const {
-  auto grads = _model->gradients();
-
-  uint64_t total_dim = sumFlattenedDims(grads);
-
-  float* combined_grads = new float[total_dim];
-  uint64_t offset = 0;
-  for (const auto* grad : grads) {
-    std::copy(grad->data(), grad->data() + grad->size(),
-              combined_grads + offset);
-    offset += grad->size();
-  }
-
-  return {combined_grads, total_dim};
+  return _model->getFlattenedGradients();
 }
 
 void DistributedTrainingWrapper::setGradients(const float* new_grad,
                                               uint64_t flattened_dim) {
-  auto grads = _model->gradients();
-
-  uint64_t total_dim = sumFlattenedDims(grads);
-
-  if (total_dim != flattened_dim) {
-    std::stringstream error;
-    error << "Expected " << total_dim
-          << " parameters in setGradients, but received " << flattened_dim
-          << " parameters.";
-    throw std::invalid_argument(error.str());
-  }
-
-  uint64_t offset = 0;
-  for (auto* grad : grads) {
-    std::copy(new_grad + offset, new_grad + offset + grad->size(),
-              grad->data());
-    offset += grad->size();
-  }
+  _model->setFlattenedGradients(new_grad, flattened_dim);
 }
 
 std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
@@ -140,15 +109,6 @@ std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
 
   return std::make_optional<LabeledDataset>(std::move(data_tensors),
                                             std::move(label_tensors));
-}
-
-uint64_t DistributedTrainingWrapper::sumFlattenedDims(
-    const std::vector<std::vector<float>*>& grads) {
-  uint64_t total_dim = 0;
-  for (const auto* grad : grads) {
-    total_dim += grad->size();
-  }
-  return total_dim;
 }
 
 }  // namespace thirdai::bolt::train

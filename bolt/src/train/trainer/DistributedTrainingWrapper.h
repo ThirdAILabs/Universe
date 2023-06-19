@@ -62,13 +62,14 @@ class DistributedTrainingWrapper {
     _learning_rate = learning_rate;
   }
 
+  // Synchronizes the outer epoch count maintained by the distributed framework
+  // with the epoch count maintained within Bolt.
+  void incrementEpochCount() { _trainer.incrementEpochCount(); }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
       const dataset::BoltDatasetPtr& labels);
-
-  static uint64_t sumFlattenedDims(
-      const std::vector<std::vector<float>*>& grads);
 
   bool shouldLogMetrics() const {
     return _worker_id == 0 && _logging_interval &&
@@ -89,6 +90,7 @@ class DistributedTrainingWrapper {
 
   std::optional<LabeledDataset> _train_data;
   std::optional<LabeledDataset> _validation_data;
+  Trainer _trainer;
 };
 
 using DistributedTrainingWrapperPtr =

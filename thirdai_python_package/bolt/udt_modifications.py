@@ -3,6 +3,7 @@ from typing import List, Optional
 import pandas as pd
 import thirdai
 import thirdai._thirdai.bolt as bolt
+import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
 
@@ -33,15 +34,38 @@ def _create_data_source(path):
     return thirdai.dataset.FileDataSource(path)
 
 
+def _process_validation_and_options(
+    validation: Optional[bolt.Validation],
+    batch_size: Optional[int],
+    max_in_memory_batches: Optional[int],
+    verbose: bool,
+    logging_interval: Optional[int],
+    shuffle_reservoir_size: int = 64000,
+):
+    train_options = bolt.TrainOptions()
+
+    train_options.batch_size = batch_size
+    train_options.max_in_memory_batches = max_in_memory_batches
+    train_options.verbose = verbose
+    train_options.logging_interval = logging_interval
+    train_options.shuffle_config = dataset.ShuffleConfig(
+        min_vecs_in_buffer=shuffle_reservoir_size
+    )
+
+    if validation:
+        val_data = _create_data_source(validation.filename)
+        train_options.steps_per_validation = validation.steps_per_validation
+        train_options.sparse_validation = validation.sparse_validation
+
+        return val_data, validation.metrics, train_options
+
+    return None, [], train_options
+
+
 def modify_udt():
     original_train = bolt.UniversalDeepTransformer.train
     original_evaluate = bolt.UniversalDeepTransformer.evaluate
     original_cold_start = bolt.UniversalDeepTransformer.cold_start
-
-    def _convert_validation(validation: Optional[bolt.Validation]) -> None:
-        if validation is not None:
-            return (_create_data_source(validation.filename()), validation.args())
-        return None
 
     def wrapped_train(
         self,
@@ -55,23 +79,29 @@ def modify_udt():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
+        shuffle_reservoir_size: int = 64000,
     ):
         data_source = _create_data_source(filename)
 
-        validation = _convert_validation(validation)
+        val_data, val_metrics, train_options = _process_validation_and_options(
+            validation=validation,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            verbose=verbose,
+            logging_interval=logging_interval,
+            shuffle_reservoir_size=shuffle_reservoir_size,
+        )
 
         return original_train(
             self,
             data=data_source,
             learning_rate=learning_rate,
             epochs=epochs,
-            validation=validation,
-            batch_size=batch_size,
-            max_in_memory_batches=max_in_memory_batches,
-            metrics=metrics,
+            train_metrics=metrics,
+            val_data=val_data,
+            val_metrics=val_metrics,
             callbacks=callbacks,
-            verbose=verbose,
-            logging_interval=logging_interval,
+            options=train_options,
         )
 
     def wrapped_evaluate(
@@ -100,15 +130,23 @@ def modify_udt():
         weak_column_names: List[str],
         learning_rate: float = 0.001,
         epochs: int = 5,
+        batch_size: int = None,
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
+        logging_interval: Optional[int] = None,
     ):
         data_source = _create_data_source(filename)
 
-        validation = _convert_validation(validation)
+        val_data, val_metrics, train_options = _process_validation_and_options(
+            validation=validation,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            verbose=verbose,
+            logging_interval=logging_interval,
+        )
 
         return original_cold_start(
             self,
@@ -117,11 +155,11 @@ def modify_udt():
             weak_column_names=weak_column_names,
             learning_rate=learning_rate,
             epochs=epochs,
-            metrics=metrics,
-            validation=validation,
+            train_metrics=metrics,
+            val_data=val_data,
+            val_metrics=val_metrics,
             callbacks=callbacks,
-            max_in_memory_batches=max_in_memory_batches,
-            verbose=verbose,
+            options=train_options,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")
@@ -142,6 +180,8 @@ def modify_mach_udt():
         strong_column_names: List[str],
         weak_column_names: List[str],
         num_buckets_to_sample: Optional[int] = None,
+        num_random_hashes: int = 0,
+        fast_approximation: bool = False,
     ):
         data_source = _create_data_source(filename)
 
@@ -151,6 +191,8 @@ def modify_mach_udt():
             strong_column_names,
             weak_column_names,
             num_buckets_to_sample,
+            num_random_hashes,
+            fast_approximation,
         )
 
     delattr(bolt.UniversalDeepTransformer, "introduce_documents")
@@ -169,3 +211,16 @@ def modify_graph_udt():
     delattr(bolt.UniversalDeepTransformer, "index_nodes")
 
     bolt.UniversalDeepTransformer.index_nodes = wrapped_index_nodes
+
+
+def add_neural_index_aliases():
+    udt = bolt.UniversalDeepTransformer
+    udt.train_neural_database = udt.train
+    udt.pretrain_neural_database = udt.cold_start
+    udt.query = udt.predict
+    udt.save_neural_database = udt.save
+    udt.load_neural_database = udt.load
+    udt.insert_into_neural_database = udt.introduce_document
+    udt.insert_into_neural_database_batch = udt.introduce_documents
+    udt.reset_neural_database = udt.clear_index
+    udt.teach_concept_association = udt.associate

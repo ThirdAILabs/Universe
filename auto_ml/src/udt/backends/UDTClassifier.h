@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
@@ -28,15 +29,21 @@ class UDTClassifier final : public UDTBackend {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval) final;
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
+
+  /**
+   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
+   * then the hash tables and functions are rebuilt. Note that, model should be
+   * finetuned if rebuild_hash_tables is set to true.
+   */
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables) override;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -60,11 +67,11 @@ class UDTClassifier final : public UDTBackend {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& metrics,
-                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       std::optional<size_t> max_in_memory_batches,
-                       bool verbose) final;
+                       TrainOptions options) final;
 
   py::object embedding(const MapInput& sample) final;
 
@@ -108,9 +115,6 @@ class UDTClassifier final : public UDTBackend {
     return std::make_shared<cold_start::ColdStartMetaData>(
         _label_block->delimiter(), _label_block->columnName());
   }
-
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const final;
 
  private:
   dataset::CategoricalBlockPtr labelBlock(

@@ -78,6 +78,7 @@ def add_distributed_to_udt():
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
         min_vecs_in_buffer: Optional[int] = None,
+        training_data_loader_callback=None,
     ):
         """
         This function trains UDT in the distributed setting. ThirdAI uses Ray
@@ -138,6 +139,7 @@ def add_distributed_to_udt():
                 batch_size=batch_size_per_node(batch_size, cluster_config),
                 max_in_memory_batches=max_in_memory_batches,
                 data_processor=self.get_data_processor(),
+                callback=training_data_loader_callback,
                 min_vecs_in_buffer=min_vecs_in_buffer,
             )
             for file in filenames
@@ -146,18 +148,16 @@ def add_distributed_to_udt():
         validation_context = None
         if validation != None:
             validation_source = DistributedUDTDatasetLoader(
-                train_file=validation.filename(),
+                train_file=validation.filename,
                 batch_size=batch_size_per_node(batch_size, cluster_config),
                 data_processor=self.get_data_processor(),
             )
 
-            validation_args = validation.args()
-
             validation_context = ValidationContext(
                 validation_source,
-                validation_args.metrics,
-                validation_args.sparse_inference,
-                validation_args.steps_per_validation,
+                validation.metrics,
+                validation.sparse_validation,
+                validation.steps_per_validation,
             )
 
         return train_with_data_sources(
@@ -187,6 +187,7 @@ def add_distributed_to_udt():
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
         min_vecs_in_buffer: Optional[int] = None,
+        training_data_loader_callback=None,
     ):
         """
         This function does cold-start pretraining for UDT in the distributed setting.
@@ -269,6 +270,7 @@ def add_distributed_to_udt():
                 weak_column_names=weak_column_names,
                 data_processor=self.get_data_processor(),
                 cold_start_meta_data=self.get_cold_start_meta_data(),
+                callback=training_data_loader_callback,
                 min_vecs_in_buffer=min_vecs_in_buffer,
             )
             for file in filenames

@@ -224,12 +224,110 @@ std::vector<std::vector<float>*> Model::gradients() const {
   return grads;
 }
 
+std::vector<std::vector<float>*> Model::parameters() const {
+  std::vector<std::vector<float>*> params;
+
+  for (const auto& op : _ops) {
+    auto op_params = op->parameters();
+    params.insert(params.end(), op_params.begin(), op_params.end());
+  }
+
+  return params;
+}
+
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = 0;
+  for (const auto* value : values) {
+    total_dim += value->size();
+  }
+  return total_dim;
+}
+
+std::pair<const float*, uint64_t> concatenateValues(
+    const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  float* combined_values = new float[total_dim];
+  uint64_t offset = 0;
+  for (const auto* value : values) {
+    std::copy(value->data(), value->data() + value->size(),
+              combined_values + offset);
+    offset += value->size();
+  }
+
+  return {combined_values, total_dim};
+}
+
+void setValues(const std::vector<std::vector<float>*>& values,
+               const float* concatenated_values, uint64_t flattened_dim) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  if (total_dim != flattened_dim) {
+    std::stringstream error;
+    error << "Expected " << total_dim
+          << " parameters in setValues, but received " << flattened_dim
+          << " parameters.";
+    throw std::invalid_argument(error.str());
+  }
+
+  uint64_t offset = 0;
+  for (auto* value : values) {
+    std::copy(concatenated_values + offset,
+              concatenated_values + offset + value->size(), value->data());
+    offset += value->size();
+  }
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+  return concatenateValues(gradients());
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
+  return concatenateValues(parameters());
+}
+
+void Model::setFlattenedGradients(const float* concatenated_values,
+                                  uint64_t flattened_dim) const {
+  setValues(gradients(), concatenated_values, flattened_dim);
+}
+
+void Model::setFlattenedParameters(const float* concatenated_values,
+                                   uint64_t flattened_dim) const {
+  setValues(parameters(), concatenated_values, flattened_dim);
+  /*
+   * Here, we are re-building the hash tables again, as the older weights
+   * seems to be redundant, when we all-reduce the weights while using
+   * distributed.
+   */
+  for (const auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      fc->reBuildHashFunction();
+    }
+  }
+}
+
+void Model::disableSparseParameterUpdates() {
+  for (const auto& op : _ops) {
+    op->disableSparseParameterUpdates();
+  }
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->freezeHashTables(insert_labels_if_not_found);
+    }
+  }
+}
+
+void Model::unfreezeHashTables() {
+  for (auto& op : _ops) {
+    if (auto fc = ops::FullyConnected::cast(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->unfreezeHashTables();
     }
   }
 }

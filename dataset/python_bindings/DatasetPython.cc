@@ -19,7 +19,8 @@
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
-#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
@@ -31,6 +32,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <sys/types.h>
+#include <utils/Random.h>
 #include <chrono>
 #include <limits>
 #include <optional>
@@ -283,11 +285,24 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("prompt"), py::arg("context"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
 
+  py::class_<TextClassificationFeaturizer, Featurizer,
+             TextClassificationFeaturizerPtr>(dataset_submodule,
+                                              "TextClassificationFeaturizer")
+      .def(py::init<const std::string&, const std::string&, uint32_t, uint32_t,
+                    uint32_t, uint32_t, uint32_t, char, std::optional<char>,
+                    bool, bool>(),
+           py::arg("text_column"), py::arg("label_column"), py::arg("lrc_len"),
+           py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
+           py::arg("n_labels"), py::arg("delimiter") = ',',
+           py::arg("label_delimiter") = std::nullopt,
+           py::arg("integer_labels") = false,
+           py::arg("normalize_categories") = true);
+
 #endif
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
-           py::arg("seed") = time(NULL));
+           py::arg("seed") = global_random::nextSeed());
 
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")

@@ -42,15 +42,16 @@ class UDT {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval);
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
+
+  void setOutputSparsity(float sparsity, bool rebuild_hash_tables);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -73,11 +74,11 @@ class UDT {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& metrics,
-                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       std::optional<size_t> max_in_memory_batches,
-                       bool verbose);
+                       TrainOptions options);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
@@ -145,9 +146,11 @@ class UDT {
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) {
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          uint32_t num_random_hashes, bool fast_approximation) {
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample);
+                                 num_buckets_to_sample, num_random_hashes,
+                                 fast_approximation);
   }
 
   void introduceDocument(const MapInput& document,
@@ -155,16 +158,19 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
 
-                         std::optional<uint32_t> num_buckets_to_sample) {
+                         std::optional<uint32_t> num_buckets_to_sample,
+                         uint32_t num_random_hashes) {
     _backend->introduceDocument(document, strong_column_names,
                                 weak_column_names, new_label,
-                                num_buckets_to_sample);
+                                num_buckets_to_sample, num_random_hashes);
   }
 
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample) {
-    _backend->introduceLabel(sample, new_label, num_buckets_to_sample);
+                      std::optional<uint32_t> num_buckets_to_sample,
+                      uint32_t num_random_hashes) {
+    _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
+                             num_random_hashes);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {
@@ -182,12 +188,20 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference);
   }
 
-  void associate(const MapInput& source, const MapInput& target,
-                 uint32_t n_buckets, uint32_t n_association_samples,
-                 uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) {
-    _backend->associate(source, target, n_buckets, n_association_samples,
+  void associate(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples,
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    _backend->associate(source_target_samples, n_buckets, n_association_samples,
                         n_balancing_samples, learning_rate, epochs);
+  }
+
+  void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) {
+    _backend->upvote(source_target_samples, n_upvote_samples,
+                     n_balancing_samples, learning_rate, epochs);
   }
 
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
@@ -198,10 +212,6 @@ class UDT {
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
-  }
-
-  TextEmbeddingModelPtr getTextEmbeddingModel(float distance_cutoff) const {
-    return _backend->getTextEmbeddingModel(distance_cutoff);
   }
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
