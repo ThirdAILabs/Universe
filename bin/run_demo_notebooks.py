@@ -11,7 +11,11 @@ from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
-IGNORED_NBS = ["DeployThirdaiwithDatabricks.ipynb", "TrainingDistributedUDT.ipynb"]
+IGNORED_NBS = [
+    "DeployThirdaiwithDatabricks.ipynb",
+    "TrainingDistributedUDT.ipynb",
+    "demo.ipynb",
+]
 
 
 def skip_nb(path):
