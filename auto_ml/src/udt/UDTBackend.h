@@ -4,7 +4,6 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
-#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -13,6 +12,8 @@
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
+
+namespace py = pybind11;
 
 namespace thirdai::automl::udt {
 
@@ -27,6 +28,8 @@ struct TrainOptions {
   bool sparse_validation = false;
   bool verbose = true;
   std::optional<uint32_t> logging_interval = std::nullopt;
+  dataset::DatasetShuffleConfig shuffle_config =
+      dataset::DatasetShuffleConfig();
 };
 
 /**
@@ -233,11 +236,14 @@ class UDTBackend {
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      std::optional<uint32_t> num_buckets_to_sample) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool fast_approximation) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)num_buckets_to_sample;
+    (void)num_random_hashes;
+    (void)fast_approximation;
     throw notSupported("introduce_documents");
   }
 
@@ -250,12 +256,14 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample) {
+      std::optional<uint32_t> num_buckets_to_sample,
+      uint32_t num_random_hashes) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
     (void)num_buckets_to_sample;
+    (void)num_random_hashes;
     throw notSupported("introduce_document");
   }
 
@@ -266,10 +274,12 @@ class UDTBackend {
   virtual void introduceLabel(
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample) {
+      std::optional<uint32_t> num_buckets_to_sample,
+      uint32_t num_random_hashes) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
+    (void)num_random_hashes;
     throw notSupported("introduce_label");
   }
 
@@ -355,15 +365,6 @@ class UDTBackend {
   virtual void setIndex(const dataset::mach::MachIndexPtr& index) {
     (void)index;
     throw notSupported("set_index");
-  }
-
-  /*
-   * Returns a model that embeds text using the hidden layer of the UDT model.
-   */
-  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const {
-    (void)distance_cutoff;
-    throw notSupported("get_text_embedding_model");
   }
 
   virtual ~UDTBackend() = default;

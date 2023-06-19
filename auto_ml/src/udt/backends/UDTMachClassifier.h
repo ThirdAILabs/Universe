@@ -34,7 +34,7 @@ class UDTMachClassifier final : public UDTBackend {
                     uint32_t n_target_classes, bool integer_target,
                     const data::TabularOptions& tabular_options,
                     const std::optional<std::string>& model_config,
-                    const config::ArgumentMap& user_args);
+                    config::ArgumentMap user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -91,16 +91,20 @@ class UDTMachClassifier final : public UDTBackend {
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) final;
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          uint32_t num_random_hashes,
+                          bool fast_approximation) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
-                         std::optional<uint32_t> num_buckets_to_sample) final;
+                         std::optional<uint32_t> num_buckets_to_sample,
+                         uint32_t num_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample) final;
+                      std::optional<uint32_t> num_buckets_to_sample,
+                      uint32_t num_random_hashes) final;
 
   void forget(const Label& label) final;
 
@@ -141,9 +145,6 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const final;
-
  private:
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
@@ -173,7 +174,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample) const;
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);

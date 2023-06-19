@@ -1,0 +1,109 @@
+Without prefetching + simd 
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv' | vectors 3600000 | batches 1758 | time 27s | complete
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv' | vectors 400000 | batches 196 | time 2s | complete
+
+train | epoch 0 | train_steps 1758 |  | train_batches 1758 | time 105s
+
+validate | epoch 0 | train_steps 1758 | val_categorical_accuracy=0.89646  | val_batches 196 | time 2s
+
+train | epoch 1 | train_steps 3516 |  | train_batches 1758 | time 112s
+
+validate | epoch 1 | train_steps 3516 | val_categorical_accuracy=0.889647  | val_batches 196 | time 2s
+
+train | epoch 2 | train_steps 5274 |  | train_batches 1758 | time 105s
+
+validate | epoch 2 | train_steps 5274 | val_categorical_accuracy=0.88438  | val_batches 196 | time 2s
+
+average_predict_time_ms = 0.031ms
+
+
+Without op
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv' | vectors 36
+00000 | batches 1758 | time 26s | complete
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv' | vectors 400
+000 | batches 196 | time 3s | complete 
+
+train | epoch 0 | train_steps 1758 |  | train_batches 1758 | time 387s
+
+validate | epoch 0 | train_steps 1758 | val_categorical_accuracy=0.89739  | val_batches 196 | time 21s
+
+train | epoch 1 | train_steps 3516 |  | train_batches 1758 | time 386s
+
+validate | epoch 1 | train_steps 3516 | val_categorical_accuracy=0.88812  | val_batches 196 | time 20s
+
+train | epoch 2 | train_steps 5274 |  | train_batches 1758 | time 385s
+
+validate | epoch 2 | train_steps 5274 | val_categorical_accuracy=0.88168  | val_batches 196 | time 20s
+
+average_predict_time_ms = 0.605ms
+
+
+With prefetching + simd
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv' | vectors 36
+00000 | batches 1758 | time 35s | complete
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv' | vectors 400
+000 | batches 196 | time 4s | complete 
+
+train | epoch 0 | train_steps 1758 |  | train_batches 1758 | time 81s
+
+validate | epoch 0 | train_steps 1758 | val_categorical_accuracy=0.895375  | val_batches 196 | time 2s
+
+train | epoch 1 | train_steps 3516 |  | train_batches 1758 | time 84s
+
+validate | epoch 1 | train_steps 3516 | val_categorical_accuracy=0.890007  | val_batches 196 | time 2s
+
+train | epoch 2 | train_steps 5274 |  | train_batches 1758 | time 86s
+
+validate | epoch 2 | train_steps 5274 | val_categorical_accuracy=0.881922  | val_batches 196 | time 1s
+
+average_predict_time_ms = 0.024ms
+
+Just simd 
+
+train | epoch 0 | train_steps 1758 |  | train_batches 1758 | time 91s
+
+validate | epoch 0 | train_steps 1758 | val_categorical_accuracy=0.896608  | val_batches 196 | time 2s
+
+train | epoch 1 | train_steps 3516 |  | train_batches 1758 | time 105s
+
+validate | epoch 1 | train_steps 3516 | val_categorical_accuracy=0.88921  | val_batches 196 | time 2s
+
+train | epoch 2 | train_steps 5274 |  | train_batches 1758 | time 113s
+
+validate | epoch 2 | train_steps 5274 | val_categorical_accuracy=0.88182  | val_batches 196 | time 1s
+
+average_predict_time_ms = 0.027ms
+
+Just prefetching
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv' | vectors 3600000 | batches 1758 | time 26s | complete
+
+loading data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv'
+loaded data | source '/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv' | vectors 400000 | batches 196 | time 2s | complete
+
+train | epoch 0 | train_steps 1758 |  | train_batches 1758 | time 83s
+
+validate | epoch 0 | train_steps 1758 | val_categorical_accuracy=0.895953  | val_batches 196 | time 1s
+
+train | epoch 1 | train_steps 3516 |  | train_batches 1758 | time 85s
+
+validate | epoch 1 | train_steps 3516 | val_categorical_accuracy=0.88996  | val_batches 196 | time 2s
+
+train | epoch 2 | train_steps 5274 |  | train_batches 1758 | time 86s
+
+validate | epoch 2 | train_steps 5274 | val_categorical_accuracy=0.88063  | val_batches 196 | time 1s
+
+average_predict_time_ms = 0.032ms

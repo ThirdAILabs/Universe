@@ -4,7 +4,6 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
-#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -93,7 +92,8 @@ void defineAutomlInModule(py::module_& module) {
                      &udt::TrainOptions::steps_per_validation)
       .def_readwrite("sparse_validation", &udt::TrainOptions::sparse_validation)
       .def_readwrite("verbose", &udt::TrainOptions::verbose)
-      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval);
+      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval)
+      .def_readwrite("shuffle_config", &udt::TrainOptions::shuffle_config);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
@@ -166,13 +166,17 @@ void defineAutomlInModule(py::module_& module) {
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
-           py::arg("num_buckets_to_sample") = std::nullopt)
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0,
+           py::arg("fast_approximation") = false)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),
-           py::arg("num_buckets_to_sample") = std::nullopt)
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
-           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt)
+           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
       .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
@@ -202,8 +206,6 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
-      .def("get_text_embedding_model", &udt::UDT::getTextEmbeddingModel,
-           py::arg("distance_cutoff") = 1)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
@@ -217,19 +219,6 @@ void defineAutomlInModule(py::module_& module) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
       .def(bolt::python::getPickleFunction<udt::UDT>());
-
-  py::class_<udt::TextEmbeddingModel, udt::TextEmbeddingModelPtr>(
-      module, "TextEmbeddingModel")
-      .def("supervised_train", &udt::TextEmbeddingModel::supervisedTrain,
-           py::arg("data_source"), py::arg("input_col_1"),
-           py::arg("input_col_2"), py::arg("label_col"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           bolt::python::OutputRedirect())
-      .def("encode", &udt::TextEmbeddingModel::encode, py::arg("string"))
-      .def("encode_batch", &udt::TextEmbeddingModel::encodeBatch,
-           py::arg("strings"))
-      .def("save", &udt::TextEmbeddingModel::save, py::arg("filename"))
-      .def_static("load", &udt::TextEmbeddingModel::load, py::arg("filename"));
 }
 
 void createModelsSubmodule(py::module_& module) {

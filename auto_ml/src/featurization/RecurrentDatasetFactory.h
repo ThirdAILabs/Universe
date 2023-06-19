@@ -29,7 +29,9 @@ class RecurrentDatasetFactory {
   uint32_t outputDim() { return _labeled_featurizer->getDimensions().back(); }
 
   dataset::DatasetLoaderPtr getDatasetLoader(
-      const dataset::DataSourcePtr& data_source, bool shuffle);
+      const dataset::DataSourcePtr& data_source, bool shuffle,
+      std::optional<dataset::DatasetShuffleConfig> shuffle_config =
+          std::nullopt);
 
   TensorList featurizeInput(const MapInput& sample);
 

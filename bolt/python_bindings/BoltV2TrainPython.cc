@@ -6,6 +6,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/callbacks/LearningRateScheduler.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
@@ -240,6 +241,29 @@ void defineCallbacks(py::module_& train) {
              callbacks::Callback>(callbacks, "Overfitting")
       .def(py::init<std::string, float, bool>(), py::arg("metric"),
            py::arg("threshold") = 0.97, py::arg("maximize") = true);
+
+  py::class_<callbacks::LearningRateScheduler,
+             std::shared_ptr<callbacks::LearningRateScheduler>,
+             callbacks::Callback>
+      LearningRateScheduler(callbacks, "LearningRateScheduler");
+
+  py::class_<callbacks::LinearSchedule,
+             std::shared_ptr<callbacks::LinearSchedule>,
+             callbacks::LearningRateScheduler>(callbacks, "LinearLR")
+      .def(py::init<float, float, uint32_t, bool>(),
+           py::arg("start_factor") = 1.0, py::arg("end_factor") = 1.0 / 3.0,
+           py::arg("total_iters") = 5, py::arg("batch_level_steps") = false,
+           "LinearLR scheduler changes the learning rate linearly by a small "
+           "multiplicative factor until the number of epochs reaches the total "
+           "iterations.\n");
+
+  py::class_<callbacks::MultiStepLR, std::shared_ptr<callbacks::MultiStepLR>,
+             callbacks::LearningRateScheduler>(callbacks, "MultiStepLR")
+      .def(py::init<float, std::vector<uint32_t>, bool>(), py::arg("gamma"),
+           py::arg("milestones"), py::arg("batch_level_steps") = false,
+           "The Multi-step learning rate scheduler changes"
+           "the learning rate by a factor of gamma for every milestone"
+           "specified in the vector of milestones. \n");
 }
 
 void defineDistributedTrainer(py::module_& train) {

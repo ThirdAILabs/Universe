@@ -174,7 +174,7 @@ class DLRMV2Runner(Runner):
 
         cat_input = bolt_v2.nn.Input(dim=4294967295)
 
-        embedding = bolt_v2.nn.Embedding(**config.embedding_args)(cat_input)
+        embedding = bolt_v2.nn.RobeZ(**config.embedding_args)(cat_input)
 
         feature_interaction = bolt_v2.nn.DlrmAttention()(hidden1, embedding)
 

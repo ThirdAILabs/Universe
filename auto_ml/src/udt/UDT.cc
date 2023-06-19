@@ -72,8 +72,10 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, target_col, n_target_classes.value(), integer_target,
         tabular_options);
   } else if (as_categorical && !has_graph_inputs) {
-    bool use_mach = user_args.get<bool>("extreme_classification", "boolean",
-                                        defaults::USE_MACH);
+    bool use_mach =
+        user_args.get<bool>("extreme_classification", "boolean",
+                            defaults::USE_MACH) ||
+        user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
       _backend = std::make_unique<UDTMachClassifier>(
           data_types, temporal_tracking_relationships, target_col,

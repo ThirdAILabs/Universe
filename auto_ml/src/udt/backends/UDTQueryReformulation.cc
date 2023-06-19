@@ -357,7 +357,8 @@ uint32_t UDTQueryReformulation::recall(
     const BoltBatch& labels) {
   uint32_t correct = 0;
 
-#pragma omp parallel for default(none) shared(retrieved_ids, labels) reduction(+:correct)
+#pragma omp parallel for default(none) shared(retrieved_ids, labels) \
+    reduction(+ : correct)
   for (uint32_t i = 0; i < retrieved_ids.size(); i++) {
     if (std::find(retrieved_ids[i].begin(), retrieved_ids[i].end(),
                   labels[i].active_neurons[0]) != retrieved_ids[i].end()) {
