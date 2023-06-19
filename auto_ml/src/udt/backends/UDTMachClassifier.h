@@ -179,6 +179,11 @@ class UDTMachClassifier final : public UDTBackend {
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
 
+  // Mach requires two sets of labels. The buckets for each doc/class for
+  // computing losses when training, and also the original doc/class ids for
+  // computing metrics. In some methods like trainWithHashes, or trainOnBatch we
+  // don't have/need the doc/class ids for metrics so we use this method to get
+  // an empty placeholder to pass to the model.
   static bolt::nn::tensor::TensorPtr placeholderDocIds(uint32_t batch_size);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {

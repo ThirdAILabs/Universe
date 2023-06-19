@@ -75,6 +75,9 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   bolt::nn::autograd::ComputationList additional_labels;
   if (mach) {
+    // For mach we need the hash based labels for training, but the actual
+    // document/class ids to compute metrics. Hence we add two labels to the
+    // model.
     additional_labels.push_back(
         bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
   }

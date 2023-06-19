@@ -86,11 +86,18 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
                                bolt::train::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
-      dataset, learning_rate, epochs, batch_size, options.max_in_memory_batches,
-      train_metrics, val_dataset, val_metrics, options.steps_per_validation,
-      options.sparse_validation, callbacks,
-      /* autotune_rehash_rebuild= */ true, options.verbose,
-      options.logging_interval);
+      /* train_data_loader= */ dataset,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* batch_size= */ batch_size,
+      /* max_in_memory_batches= */ options.max_in_memory_batches,
+      /* train_metrics= */ train_metrics,
+      /* validation_data_loader= */ val_dataset,
+      /* validation_metrics= */ val_metrics,
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval);
 
   return py::cast(history);
 }

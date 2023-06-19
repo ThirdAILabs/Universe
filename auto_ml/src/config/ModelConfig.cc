@@ -217,6 +217,9 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
 
   bolt::nn::autograd::ComputationList additional_labels;
   if (mach) {
+    // For mach we need the hash based labels for training, but the actual
+    // document/class ids to compute metrics. Hence we add two labels to the
+    // model.
     additional_labels.push_back(
         bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
   }

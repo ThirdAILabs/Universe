@@ -175,8 +175,6 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   auto eval_dataset_loader =
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
 
-  // TODO(david) eventually we should use backend specific metrics
-
   return _classifier->evaluate(eval_dataset_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
 }
