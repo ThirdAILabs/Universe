@@ -398,7 +398,7 @@ def test_udt_override_input_dim():
         options={"input_dim": 200},
     )
 
-    input_dim = udt_model._get_model().ops()[0].weights.shape[1]
+    input_dim = udt_model._get_model().ops()[0].weights.shape[0]
 
     assert input_dim == 200
 
