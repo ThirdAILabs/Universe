@@ -191,7 +191,8 @@ bolt::nn::autograd::ComputationList getInputs(
 
 bolt::nn::model::ModelPtr buildModel(const json& config,
                                      const ArgumentMap& args,
-                                     const std::vector<uint32_t>& input_dims) {
+                                     const std::vector<uint32_t>& input_dims,
+                                     bool mach) {
   CreatedComputations created_comps;
 
   auto inputs = getInputs(config, input_dims, created_comps);
@@ -237,7 +238,17 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
                                 "' provided in model config.");
   }
 
-  auto model = bolt::nn::model::Model::make(inputs, {output}, {loss});
+  bolt::nn::autograd::ComputationList additional_labels;
+  if (mach) {
+    // For mach we need the hash based labels for training, but the actual
+    // document/class ids to compute metrics. Hence we add two labels to the
+    // model.
+    additional_labels.push_back(
+        bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
+  }
+
+  auto model =
+      bolt::nn::model::Model::make(inputs, {output}, {loss}, additional_labels);
 
   return model;
 }

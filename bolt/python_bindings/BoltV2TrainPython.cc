@@ -4,6 +4,7 @@
 #include "PybindUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/callbacks/LearningRateScheduler.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
@@ -11,6 +12,8 @@
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/FMeasure.h>
 #include <bolt/src/train/metrics/LossMetric.h>
+#include <bolt/src/train/metrics/MachPrecision.h>
+#include <bolt/src/train/metrics/MachRecall.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/metrics/PrecisionAtK.h>
 #include <bolt/src/train/metrics/RecallAtK.h>
@@ -191,6 +194,22 @@ void defineMetrics(py::module_& train) {
                     float, float>(),
            py::arg("outputs"), py::arg("labels"), py::arg("threshold"),
            py::arg("beta") = 1);
+
+  py::class_<metrics::MachPrecision, std::shared_ptr<metrics::MachPrecision>,
+             metrics::Metric>(metrics, "MachPrecision")
+      .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
+                    nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
+
+  py::class_<metrics::MachRecall, std::shared_ptr<metrics::MachRecall>,
+             metrics::Metric>(metrics, "MachRecall")
+      .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
+                    nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
 }
 
 void defineCallbacks(py::module_& train) {
@@ -263,7 +282,7 @@ void defineDistributedTrainer(py::module_& train) {
       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"))
+           py::arg("all_datasets"))
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",
