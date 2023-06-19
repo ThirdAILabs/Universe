@@ -8,6 +8,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
+#include <ios>
 #include <random>
 #include <stdexcept>
 
@@ -15,7 +16,7 @@ namespace thirdai::bolt::nn::ops {
 
 std::string nextEmbeddingOpName() {
   static uint32_t constructed = 0;
-  return "emb" + std::to_string(++constructed);
+  return "emb_" + std::to_string(++constructed);
 }
 
 Embedding::Embedding(size_t dim, size_t input_dim,
@@ -214,10 +215,10 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
 void Embedding::summary(std::ostream& summary,
                         const autograd::ComputationList& inputs,
                         const autograd::Computation* output) const {
-  summary << "RegularEmbedding(" << name() << "): " << inputs.at(0)->name()
-          << " -> " << output->name() << " [dim=" << _dim
-          << " input_dim=" << _input_dim
-          << " activation=" << activationFunctionToStr(_act_func) << "]";
+  summary << "Embedding(" << name() << "): " << inputs.at(0)->name() << " -> "
+          << output->name() << " [dim=" << _dim
+          << ", activation=" << activationFunctionToStr(_act_func)
+          << ", bias=" << std::boolalpha << _bias << "]";
 }
 
 autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {

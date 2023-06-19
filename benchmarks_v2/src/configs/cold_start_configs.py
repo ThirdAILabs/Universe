@@ -62,7 +62,7 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
                 "predecessor": "emb",
             },
         ],
-        "output": "fc_2",
+        "output": "fc",
         "loss": "BinaryCrossEntropyLoss",
     }
 
