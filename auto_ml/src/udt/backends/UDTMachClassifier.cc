@@ -100,7 +100,8 @@ UDTMachClassifier::UDTMachClassifier(
 
   // No limit on the number of classes.
   auto doc_id_block = dataset::NumericalCategoricalBlock::make(
-      target_name, std::numeric_limits<uint32_t>::max());
+      target_name, std::numeric_limits<uint32_t>::max(),
+      /* delimiter= */ target_config->delimiter);
 
   _dataset_factory = data::TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
