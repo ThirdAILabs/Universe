@@ -47,23 +47,22 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
         "inputs": ["input"],
         "nodes": [
             {
-                "name": "fc_1",
-                "type": "fully_connected",
+                "name": "emb",
+                "type": "embedding",
                 "dim": 256,
-                "sparsity": 1.0,
                 "activation": "relu",
                 "predecessor": "input",
             },
             {
-                "name": "fc_2",
+                "name": "fc",
                 "type": "fully_connected",
                 "dim": 26109,
                 "sparsity": 0.02,
                 "activation": "sigmoid",
-                "predecessor": "fc_1",
+                "predecessor": "emb",
             },
         ],
-        "output": "fc_2",
+        "output": "fc",
         "loss": "BinaryCrossEntropyLoss",
     }
 

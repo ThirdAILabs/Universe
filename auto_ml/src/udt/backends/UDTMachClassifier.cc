@@ -157,8 +157,8 @@ py::object UDTMachClassifier::train(
 
   addBalancingSamples(data);
 
-  auto train_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             train_metrics, val_dataset_loader, val_metrics,

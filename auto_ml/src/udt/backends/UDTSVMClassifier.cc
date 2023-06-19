@@ -34,7 +34,8 @@ py::object UDTSVMClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
-  auto train_dataset_loader = svmDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset_loader = svmDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
@@ -102,11 +103,12 @@ void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {
 }
 
 dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
-    dataset::DataSourcePtr data_source, bool shuffle) {
+    dataset::DataSourcePtr data_source, bool shuffle,
+    dataset::DatasetShuffleConfig shuffle_config) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
 
   auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
-      std::move(data_source), featurizer, shuffle);
+      std::move(data_source), featurizer, shuffle, shuffle_config);
 
   return dataset_loader;
 }
