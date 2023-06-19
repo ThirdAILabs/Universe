@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict, Optional
-from thirdai.dataset import PyDataSource
+from thirdai
 import pandas as pd
 
 
@@ -46,9 +46,9 @@ class Document:
         pass
 
 
-class DocumentDataSource(PyDataSource):
+class DocumentDataSource(thirdai.dataset.PyDataSource):
     def __init__(self, id_column, strong_column, weak_column):
-        PyDataSource.__init__(self)
+        thirdai.dataset.PyDataSource.__init__(self)
         self.documents: List[Tuple[Document, int]] = []
         self.id_column = id_column
         self.strong_column = strong_column
