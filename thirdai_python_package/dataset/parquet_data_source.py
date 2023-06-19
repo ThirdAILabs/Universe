@@ -1,11 +1,10 @@
 import io
+from thirdai.dataset import PyDataSource
 
-from thirdai._thirdai.dataset import DataSource
 
-
-class ParquetSource(DataSource):
+class ParquetSource(PyDataSource):
     def __init__(self, parquet_path):
-        DataSource.__init__(self)
+        PyDataSource.__init__(self)
 
         # By importing here, we make it so that pyarrow isn't a dependency.
         # If pyarrow isn't installed and you try to read a parquet, this will
@@ -16,9 +15,6 @@ class ParquetSource(DataSource):
         self._parquet_path = parquet_path
         self._parquet_table = pq.read_table(parquet_path)
         self.restart()
-
-    def restart(self):
-        self._line_iterator = self._get_line_iterator()
 
     def _get_line_iterator(self):
         from pyarrow import csv
@@ -40,21 +36,6 @@ class ParquetSource(DataSource):
                 yield header
                 first = False
             yield data_line
-
-    def next_batch(self, target_batch_size):
-        lines = []
-        while len(lines) < target_batch_size:
-            next_line = self.next_line()
-            if next_line == None:
-                break
-            lines.append(next_line)
-        if lines == []:
-            return None
-        return lines
-
-    def next_line(self):
-        next_line = next(self._line_iterator, None)
-        return next_line
-
+    
     def resource_name(self):
         return self._parquet_path
