@@ -28,10 +28,7 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
   model->disableSparseParameterUpdates();
 
   if (auto validation = train_config.getValidationContext()) {
-    dataset::BoltDatasetList all_val_datasets = validation->data();
-    all_val_datasets.push_back(validation->labels());
-
-    _validation_data = convertLabeledData(all_val_datasets);
+    _validation_data = convertLabeledData(validation->allDatasets());
     _validation_metrics = validation->config().getMetricNames();
     _use_sparsity_in_validation =
         validation->config().shouldReturnActivations();
