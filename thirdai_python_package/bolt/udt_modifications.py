@@ -71,7 +71,7 @@ def modify_udt():
         self,
         filename: str,
         learning_rate: float = 0.001,
-        epochs: int = 3,
+        epochs: int = 5,
         validation: Optional[bolt.Validation] = None,
         batch_size: Optional[int] = None,
         max_in_memory_batches: Optional[int] = None,
