@@ -225,7 +225,7 @@ void defineOps(py::module_& nn) {
       .def_property_readonly(
           "weights",
           [](const ops::EmbeddingPtr& op) {
-            return toNumpy(op->embeddingsPtr(), {op->dim(), op->inputDim()});
+            return toNumpy(op->embeddingsPtr(), {op->inputDim(), op->dim()});
           })
       .def_property_readonly("biases", [](const ops::EmbeddingPtr& op) {
         return toNumpy(op->biasesPtr(), {op->dim()});

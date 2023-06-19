@@ -67,6 +67,18 @@ class Embedding final : public Op,
   const float* biasesPtr() const { return _biases.data(); }
 
  private:
+  void applyActivationFunction(float* activations);
+
+  void applyActivationFunctionGrad(const float* activations, float* gradients);
+
+  inline const float* embedding(size_t token) {
+    return _embeddings.data() + token * _dim;
+  }
+
+  inline float* gradients(size_t token) {
+    return _embedding_optimizer->gradients.data() + token * _dim;
+  }
+
   void sparseEmbeddingUpdate(float learning_rate, uint32_t train_steps);
 
   size_t _dim, _input_dim;

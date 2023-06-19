@@ -51,7 +51,7 @@ void Embedding::forward(const autograd::ComputationList& inputs,
 
   assert(inputs.size() == 2);
 
-  const BoltVector& indices = inputs.at(0)->tensor()->getVector(index_in_batch);
+  const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
@@ -61,52 +61,15 @@ void Embedding::forward(const autograd::ComputationList& inputs,
     std::fill_n(output_vec.activations, output_vec.len, 0.F);
   }
 
-  for (size_t n = 0; n < indices.len; n++) {
-    uint32_t index = indices.active_neurons[n];
-    float value = indices.activations[n];
-    const float* emb = _embeddings.data() + index * _dim;
+  for (size_t n = 0; n < tokens.len; n++) {
+    float weight = tokens.activations[n];
+    const float* emb = embedding(tokens.active_neurons[n]);
     for (size_t i = 0; i < _dim; i++) {
-      output_vec.activations[i] += value * emb[i];
+      output_vec.activations[i] += weight * emb[i];
     }
   }
 
-  float max_act = 0.0;
-  for (size_t i = 0; i < _dim; i++) {
-    float act = output_vec.activations[i];
-    switch (_act_func) {
-      case ActivationFunction::ReLU:
-        if (act < 0) {
-          act = 0;
-        }
-        break;
-      case ActivationFunction::Softmax:
-        if (max_act < act) {
-          max_act = act;
-        }
-        break;
-      case ActivationFunction::Sigmoid:
-        act = 1 / (1 + std::exp(-act));
-        break;
-      case ActivationFunction::Linear:
-        break;
-      case ActivationFunction::Tanh:
-        act = static_cast<float>(std::tanh(act));
-        break;
-    }
-    output_vec.activations[i] = act;
-  }
-
-  if (_act_func == ActivationFunction::Softmax) {
-    float total = 0;
-    for (size_t n = 0; n < _dim; n++) {
-      output_vec.activations[n] = std::exp(output_vec.activations[n] - max_act);
-      total += output_vec.activations[n];
-    }
-    for (size_t n = 0; n < _dim; n++) {
-      output_vec.activations[n] /= (total + EPS);
-      assert(!std::isnan(output_vec.activations[n]));
-    }
-  }
+  applyActivationFunction(output_vec.activations);
 }
 
 void Embedding::backpropagate(autograd::ComputationList& inputs,
@@ -114,31 +77,28 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
                               uint32_t index_in_batch) {
   assert(inputs.size() == 2);
 
-  const BoltVector& indices = inputs.at(0)->tensor()->getVector(index_in_batch);
+  const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
-  for (size_t i = 0; i < _dim; i++) {
-    float act = output_vec.activations[i];
-    output_vec.gradients[i] *= actFuncDerivative(act, _act_func);
-  }
+  applyActivationFunctionGrad(output_vec.activations, output_vec.gradients);
 
-  for (size_t n = 0; n < indices.len; n++) {
-    uint32_t index = indices.active_neurons[n];
-    float value = indices.activations[n];
-    float* emb_grad = _embedding_optimizer->gradients.data() + index * _dim;
+  for (size_t n = 0; n < tokens.len; n++) {
+    uint32_t token = tokens.active_neurons[n];
+    float weight = tokens.activations[n];
+    float* emb_grad = gradients(token);
     for (size_t i = 0; i < _dim; i++) {
-      emb_grad[i] += value * output_vec.gradients[i];
+      emb_grad[i] += weight * output_vec.gradients[i];
     }
-    _embeddings_used[index] = true;
+    _embeddings_used[token] = true;
 
-    if (indices.hasGradients()) {
-      const float* emb = _embeddings.data() + index * _dim;
-      float grad = 0.0;
+    if (tokens.hasGradients()) {
+      const float* emb = embedding(token);
+      float weight_grad = 0.0;
       for (size_t i = 0; i < _dim; i++) {
-        grad += output_vec.gradients[i] * emb[i];
+        weight_grad += output_vec.gradients[i] * emb[i];
       }
-      indices.gradients[n] = grad;
+      tokens.gradients[n] = weight_grad;
     }
   }
 
@@ -146,6 +106,63 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
     for (size_t i = 0; i < _dim; i++) {
       _bias_optimizer->gradients[i] += output_vec.gradients[i];
     }
+  }
+}
+
+void softmax(float* activations, size_t dim) {
+  float max_act = 0.0;
+  for (size_t i = 0; i < dim; i++) {
+    float act = activations[i];
+    if (max_act < act) {
+      max_act = act;
+    }
+  }
+
+  float total = 0;
+  for (size_t i = 0; i < dim; i++) {
+    float act = activations[i];
+    act = std::exp(act - max_act);
+    activations[i] = act;
+    total += act;
+  }
+  for (size_t i = 0; i < dim; i++) {
+    activations[i] /= (total + EPS);
+    assert(!std::isnan(activations[i]));
+  }
+}
+
+void Embedding::applyActivationFunction(float* activations) {
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      for (size_t i = 0; i < _dim; i++) {
+        if (activations[i] < 0) {
+          activations[i] = 0;
+        }
+      }
+      break;
+    case ActivationFunction::Softmax:
+      softmax(activations, _dim);
+      break;
+    case ActivationFunction::Sigmoid:
+      for (size_t i = 0; i < _dim; i++) {
+        activations[i] = 1 / (1 + std::exp(-activations[i]));
+      }
+      break;
+    case ActivationFunction::Linear:
+      break;
+    case ActivationFunction::Tanh:
+      for (size_t i = 0; i < _dim; i++) {
+        activations[i] = std::tanh(-activations[i]);
+      }
+      break;
+  }
+}
+
+void Embedding::applyActivationFunctionGrad(const float* activations,
+                                            float* gradients) {
+  for (size_t i = 0; i < _dim; i++) {
+    float act = activations[i];
+    gradients[i] *= actFuncDerivative(act, _act_func);
   }
 }
 
