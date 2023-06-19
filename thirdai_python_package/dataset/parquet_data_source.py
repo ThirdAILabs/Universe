@@ -1,10 +1,11 @@
 import io
-import thirdai
+
+from thirdai.dataset.data_source import PyDataSource
 
 
-class ParquetSource(thirdai.dataset.PyDataSource):
+class ParquetSource(PyDataSource):
     def __init__(self, parquet_path):
-        thirdai.dataset.PyDataSource.__init__(self)
+        PyDataSource.__init__(self)
 
         # By importing here, we make it so that pyarrow isn't a dependency.
         # If pyarrow isn't installed and you try to read a parquet, this will
@@ -36,6 +37,6 @@ class ParquetSource(thirdai.dataset.PyDataSource):
                 yield header
                 first = False
             yield data_line
-    
+
     def resource_name(self):
         return self._parquet_path

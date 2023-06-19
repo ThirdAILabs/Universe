@@ -4,10 +4,10 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 import pandas as pd
-import thirdai
+from thirdai.dataset.data_source import PyDataSource
 
 
-class CSVDataSource(thirdai.dataset.PyDataSource):
+class CSVDataSource(PyDataSource):
     """CSV data source that can be used to load from a cloud
     storage instance such as s3 and GCS.
 
@@ -42,7 +42,7 @@ class CSVDataSource(thirdai.dataset.PyDataSource):
         storage_path: str,
         gcs_credentials_path: str = None,
     ) -> None:
-        thirdai.dataset.PyDataSource.__init__(self)
+        PyDataSource.__init__(self)
 
         if gcs_credentials_path:
             # Pandas requires the GCS file system in order
@@ -82,6 +82,6 @@ class CSVDataSource(thirdai.dataset.PyDataSource):
         ):
             for i in range(len(chunk)):
                 yield chunk.iloc[i : i + 1].to_csv(header=None, index=None).strip("\n")
-    
+
     def resource_name(self) -> str:
         return self._storage_path

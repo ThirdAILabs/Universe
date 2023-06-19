@@ -1,6 +1,7 @@
-from typing import List, Tuple, Dict, Optional
-from thirdai
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
+from thirdai.dataset.data_source import PyDataSource
 
 
 class Reference:
@@ -26,10 +27,10 @@ class Reference:
 class Document:
     def hash(self) -> str:
         pass
-    
+
     def size(self) -> int:
         pass
-    
+
     def name(self) -> str:
         pass
 
@@ -38,7 +39,7 @@ class Document:
 
     def weak_text(self, id: int) -> str:
         pass
-    
+
     def reference(self, id: int) -> Reference:
         pass
 
@@ -46,23 +47,25 @@ class Document:
         pass
 
 
-class DocumentDataSource(thirdai.dataset.PyDataSource):
+class DocumentDataSource(PyDataSource):
     def __init__(self, id_column, strong_column, weak_column):
-        thirdai.dataset.PyDataSource.__init__(self)
+        PyDataSource.__init__(self)
         self.documents: List[Tuple[Document, int]] = []
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
-    
+
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
 
     def _csv_line(self, id: str, strong: str, weak: str):
-        df = pd.DataFrame({
-            self.id_column: [id],
-            self.strong_column: [strong],
-            self.weak_column: [weak],
-        })
+        df = pd.DataFrame(
+            {
+                self.id_column: [id],
+                self.strong_column: [strong],
+                self.weak_column: [weak],
+            }
+        )
         return df.to_csv(header=None, index=None).strip("\n")
 
     def _get_line_iterator(self):
@@ -72,10 +75,9 @@ class DocumentDataSource(thirdai.dataset.PyDataSource):
         for doc, start_id in self.documents:
             for i in range(doc.size()):
                 yield self._csv_line(
-                    id=start_id + i,
-                    strong=doc.strong_text(i),
-                    weak=doc.weak_text(i))
-    
+                    id=start_id + i, strong=doc.strong_text(i), weak=doc.weak_text(i)
+                )
+
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name() for doc in self.documents])
 
@@ -91,9 +93,9 @@ class DocumentManager:
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
-        self.registry : Dict[str, Tuple[Document, int]] = {}
-        self.id_sorted_docs : List[Tuple[Document, int]] = []
-    
+        self.registry: Dict[str, Tuple[Document, int]] = {}
+        self.id_sorted_docs: List[Tuple[Document, int]] = []
+
     def _next_id(self):
         if len(self.id_sorted_docs) == 0:
             return 0
@@ -117,7 +119,7 @@ class DocumentManager:
             train.add(doc, start_id)
 
         return IntroAndTrainDocuments(intro=intro, train=train)
-    
+
     def clear(self):
         self.registry = {}
         self.id_sorted_docs = []
@@ -134,4 +136,6 @@ class DocumentManager:
 
     def context(self, id: int, radius: int):
         doc, start_id = self._get_doc_and_start_id(id)
-        return doc.context(id - start_id, radius)
+        return doc.context(
+            id - start_id,
+        )

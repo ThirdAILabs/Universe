@@ -1,19 +1,21 @@
 from typing import List, Optional
+
 from thirdai._thirdai.dataset import DataSource
 
 
 class PyDataSource(DataSource):
     """Base class for DataSources Implemented in Python.
     Implements common methods `next_batch`, `next_line`, and `restart`.
-    Concrete implementations must implement `_get_line_iterator` and 
+    Concrete implementations must implement `_get_line_iterator` and
     `resource_name`.
     """
+
     def __init__(self):
         DataSource.__init__(self)
 
     def _get_line_iterator(self):
         raise NotImplementedError()
-    
+
     def resource_name(self) -> str:
         raise NotImplementedError()
 
