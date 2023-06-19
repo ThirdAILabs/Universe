@@ -211,3 +211,16 @@ def modify_graph_udt():
     delattr(bolt.UniversalDeepTransformer, "index_nodes")
 
     bolt.UniversalDeepTransformer.index_nodes = wrapped_index_nodes
+
+
+def add_neural_index_aliases():
+    udt = bolt.UniversalDeepTransformer
+    udt.train_neural_database = udt.train
+    udt.pretrain_neural_database = udt.cold_start
+    udt.query = udt.predict
+    udt.save_neural_database = udt.save
+    udt.load_neural_database = udt.load
+    udt.insert_into_neural_database = udt.introduce_document
+    udt.insert_into_neural_database_batch = udt.introduce_documents
+    udt.reset_neural_database = udt.clear_index
+    udt.teach_concept_association = udt.associate

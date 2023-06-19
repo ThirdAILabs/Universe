@@ -6,10 +6,9 @@
 
 namespace thirdai::bolt::nn::ops {
 
-class Embedding final : public Op,
-                        public std::enable_shared_from_this<Embedding> {
+class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
  public:
-  static std::shared_ptr<Embedding> make(
+  static std::shared_ptr<RobeZ> make(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
@@ -42,22 +41,22 @@ class Embedding final : public Op,
 
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
-  std::shared_ptr<Embedding> duplicateWithNewReduction(
+  std::shared_ptr<RobeZ> duplicateWithNewReduction(
       const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input);
 
  private:
-  Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
-            uint64_t log_embedding_block_size, const std::string& reduction,
-            std::optional<uint64_t> num_tokens_per_input,
-            uint64_t update_chunk_size);
+  RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
+        uint64_t log_embedding_block_size, const std::string& reduction,
+        std::optional<uint64_t> num_tokens_per_input,
+        uint64_t update_chunk_size);
 
-  Embedding(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
+  RobeZ(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
       : Op(name), _kernel(std::move(kernel)) {}
 
   std::unique_ptr<EmbeddingLayer> _kernel;
 
-  Embedding() {}
+  RobeZ() {}
 
   friend class cereal::access;
 
@@ -70,6 +69,6 @@ class Embedding final : public Op,
   void load(Archive& archive);
 };
 
-using EmbeddingPtr = std::shared_ptr<Embedding>;
+using RobeZPtr = std::shared_ptr<RobeZ>;
 
 }  // namespace thirdai::bolt::nn::ops

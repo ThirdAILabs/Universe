@@ -224,12 +224,6 @@ py::object UDTClassifier::entityEmbedding(
   return std::move(np_weights);
 }
 
-TextEmbeddingModelPtr UDTClassifier::getTextEmbeddingModel(
-    float distance_cutoff) const {
-  return createTextEmbeddingModel(_classifier->model(), _dataset_factory,
-                                  distance_cutoff);
-}
-
 dataset::CategoricalBlockPtr UDTClassifier::labelBlock(
     const std::string& target_name, data::CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
