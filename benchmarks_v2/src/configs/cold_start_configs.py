@@ -1,4 +1,4 @@
-from thirdai import bolt, bolt_v2
+from thirdai import bolt
 
 from .udt_configs import UDTBenchmarkConfig
 
@@ -28,8 +28,6 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
             "QUERY": bolt.types.text(contextual_encoding="local"),
             "DOC_ID": bolt.types.categorical(delimiter=":"),
         }
-
-    callbacks = [bolt_v2.train.callbacks.CosineAnnealingWarmRestart(T_0=3)]
 
 
 class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
@@ -81,5 +79,3 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
             "LABEL_IDS": bolt.types.categorical(delimiter=";"),
             "QUERY": bolt.types.text(contextual_encoding="local"),
         }
-
-    callbacks = [bolt_v2.train.callbacks.CosineAnnealingWarmRestart(T_0=3)]

@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 
-from thirdai import bolt, bolt_v2, dataset
+from thirdai import bolt, dataset
 
 
 class BoltBenchmarkConfig(ABC):
@@ -63,8 +63,6 @@ class Amazon670kConfig(BoltBenchmarkConfig):
         )
         return train_data, train_labels, test_data, test_labels
 
-    callbacks = [bolt_v2.train.callbacks.CosineAnnealingWarmRestart(T_0=3)]
-
 
 class AmazonPolarityConfig(BoltBenchmarkConfig):
     config_name = "bolt_amazon_polarity"
@@ -91,8 +89,6 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
             filename=test_dataset_path, batch_size=AmazonPolarityConfig.batch_size
         )
         return train_data, train_labels, test_data, test_labels
-
-    callbacks = [bolt_v2.train.callbacks.CosineAnnealingWarmRestart(T_0=3)]
 
 
 class WayfairConfig(BoltBenchmarkConfig):
@@ -122,12 +118,11 @@ class WayfairConfig(BoltBenchmarkConfig):
     learning_rate = 1e-04
     num_epochs = 5
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
-    """callbacks = [
+    callbacks = [
         bolt.callbacks.LearningRateScheduler(
             schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
-        ),
-    ]"""
-    callbacks = [bolt_v2.train.callbacks.CosineAnnealingWarmRestart(T_0=3)]
+        )
+    ]
 
     def _load_wayfair_dataset(filename, batch_size, output_dim, shuffle=True):
         featurizer = dataset.TabularFeaturizer(
