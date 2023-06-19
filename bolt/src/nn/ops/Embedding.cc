@@ -74,6 +74,8 @@ void Embedding::forward(const autograd::ComputationList& inputs,
 
     const float* emb = embedding(tokens.active_neurons[n]);
 
+// This tells the compiler that iterations of the loop can be safely executed
+// concurrently with vector instructions.
 #pragma omp simd
     for (size_t i = 0; i < _dim; i++) {
       output_vec.activations[i] += weight * emb[i];
@@ -108,6 +110,8 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
 
     float* emb_grad = gradients(token);
 
+// This tells the compiler that iterations of the loop can be safely executed
+// concurrently with vector instructions.
 #pragma omp simd
     for (size_t i = 0; i < _dim; i++) {
       emb_grad[i] += weight * output_vec.gradients[i];
