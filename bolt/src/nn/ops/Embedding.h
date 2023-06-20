@@ -66,6 +66,14 @@ class Embedding final : public Op,
 
   const float* biasesPtr() const { return _biases.data(); }
 
+  void setEmbeddings(const float* embeddings) {
+    std::copy(embeddings, embeddings + _dim * _input_dim, _embeddings.begin());
+  }
+
+  void setBiases(const float* biases) {
+    std::copy(biases, biases + _dim, _biases.begin());
+  }
+
  private:
   void applyActivationFunction(float* activations);
 
