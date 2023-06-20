@@ -8,6 +8,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <dataset/src/Datasets.h>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -70,8 +71,16 @@ class DistributedTrainingWrapper {
     return _train_context->numBatches();
   }
 
-  void setDatasets(const dataset::BoltDatasetList& train_data,
-                   const dataset::BoltDatasetPtr& train_labels) {
+  void setDatasets(const dataset::BoltDatasetList& all_datasets) {
+    if (all_datasets.size() < 2) {
+      throw std::invalid_argument(
+          "Expected at least two datasets (inputs and labels) for training.");
+    }
+
+    dataset::BoltDatasetList train_data(all_datasets.begin(),
+                                        all_datasets.end() - 1);
+    dataset::BoltDatasetPtr train_labels = all_datasets.back();
+
     DatasetContext new_context(train_data, train_labels);
     _bolt_graph->verifyCanTrain(new_context);
 

@@ -48,7 +48,9 @@ def train_simple_mach_udt(
         },
     )
 
-    model.train(SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001)
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
 
     os.remove(SIMPLE_TEST_FILE)
 
@@ -349,9 +351,10 @@ def test_mach_udt_hash_based_methods():
 
 def test_mach_save_load_get_set_index():
     model = train_simple_mach_udt()
+    metrics = ["recall@5", "precision@5"]
 
     make_simple_test_file()
-    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
     index = model.get_index()
     save_loc = "index.mach"
@@ -361,12 +364,9 @@ def test_mach_save_load_get_set_index():
     model.clear_index()
     model.set_index(index)
 
-    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
-    assert (
-        metrics_before["val_categorical_accuracy"]
-        == metrics_after["val_categorical_accuracy"]
-    )
+    assert metrics_before == metrics_after
 
     os.remove(save_loc)
 

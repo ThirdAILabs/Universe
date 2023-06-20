@@ -92,7 +92,8 @@ void defineAutomlInModule(py::module_& module) {
                      &udt::TrainOptions::steps_per_validation)
       .def_readwrite("sparse_validation", &udt::TrainOptions::sparse_validation)
       .def_readwrite("verbose", &udt::TrainOptions::verbose)
-      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval);
+      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval)
+      .def_readwrite("shuffle_config", &udt::TrainOptions::shuffle_config);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
@@ -347,7 +348,8 @@ void createDeploymentSubmodule(py::module_& module) {
         auto json_config = json::parse(config::loadConfig(config_file));
         auto user_input = createArgumentMap(parameters);
 
-        return config::buildModel(json_config, user_input, input_dims);
+        return config::buildModel(json_config, user_input, input_dims,
+                                  /* mach= */ false);
       },
       py::arg("config_file"), py::arg("parameters"), py::arg("input_dims"));
 

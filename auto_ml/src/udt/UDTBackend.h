@@ -28,6 +28,8 @@ struct TrainOptions {
   bool sparse_validation = false;
   bool verbose = true;
   std::optional<uint32_t> logging_interval = std::nullopt;
+  dataset::DatasetShuffleConfig shuffle_config =
+      dataset::DatasetShuffleConfig();
 };
 
 /**
