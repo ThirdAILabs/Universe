@@ -228,9 +228,31 @@ void defineOps(py::module_& nn) {
           [](const ops::EmbeddingPtr& op) {
             return toNumpy(op->embeddingsPtr(), {op->inputDim(), op->dim()});
           })
-      .def_property_readonly("biases", [](const ops::EmbeddingPtr& op) {
-        return toNumpy(op->biasesPtr(), {op->dim()});
-      });
+      .def_property_readonly("biases",
+                             [](const ops::EmbeddingPtr& op) {
+                               return toNumpy(op->biasesPtr(), {op->dim()});
+                             })
+      .def("set_weights",
+           [](ops::EmbeddingPtr& op, const NumpyArray<float>& weights) {
+             if (weights.ndim() != 2 || weights.shape(0) != op->inputDim() ||
+                 weights.shape(1) != op->dim()) {
+               std::stringstream error;
+               error << "Expected weights to be 2D array with shape ("
+                     << op->inputDim() << ", " << op->dim() << ").";
+               throw std::invalid_argument(error.str());
+             }
+             op->setEmbeddings(weights.data());
+           })
+      .def("set_biases",
+           [](ops::EmbeddingPtr& op, const NumpyArray<float>& biases) {
+             if (biases.ndim() != 1 || biases.shape(0) != op->dim()) {
+               std::stringstream error;
+               error << "Expected biases to be 1D array with shape ("
+                     << op->dim() << ",).";
+               throw std::invalid_argument(error.str());
+             }
+             op->setBiases(biases.data());
+           });
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
