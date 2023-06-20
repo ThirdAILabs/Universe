@@ -71,7 +71,7 @@ def modify_udt():
         self,
         filename: str,
         learning_rate: float = 0.001,
-        epochs: int = 3,
+        epochs: int = 5,
         validation: Optional[bolt.Validation] = None,
         batch_size: Optional[int] = None,
         max_in_memory_batches: Optional[int] = None,
@@ -215,12 +215,12 @@ def modify_graph_udt():
 
 def add_neural_index_aliases():
     udt = bolt.UniversalDeepTransformer
-    udt.train_neural_database = udt.train
-    udt.pretrain_neural_database = udt.cold_start
+    udt.train_neural_db = udt.train
+    udt.pretrain_neural_db = udt.cold_start
     udt.query = udt.predict
-    udt.save_neural_database = udt.save
-    udt.load_neural_database = udt.load
-    udt.insert_into_neural_database = udt.introduce_document
-    udt.insert_into_neural_database_batch = udt.introduce_documents
-    udt.reset_neural_database = udt.clear_index
+    udt.save_neural_db = udt.save
+    udt.load_neural_db = udt.load
+    udt.insert_into_neural_db = udt.introduce_document
+    udt.insert_into_neural_db_batch = udt.introduce_documents
+    udt.reset_neural_db = udt.clear_index
     udt.teach_concept_association = udt.associate

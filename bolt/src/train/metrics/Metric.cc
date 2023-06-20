@@ -60,11 +60,12 @@ void MetricCollection::reset() {
 InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
                              const std::vector<std::string>& metric_names,
                              const std::string& prefix) {
-  if (model->outputs().size() != 1 || model->labels().size() != 1 ||
-      model->losses().size() != 1) {
+  if (model->losses().size() != 1 ||
+      model->losses().at(0)->outputsUsed().size() != 1 ||
+      model->losses().at(0)->labels().size() != 1) {
     throw std::invalid_argument(
         "Can only specify metrics by their name for models with a single "
-        "output, label, and loss.");
+        "loss function which is applied to a single output/label.");
   }
 
   nn::autograd::ComputationPtr output = model->outputs().front();

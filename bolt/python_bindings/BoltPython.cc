@@ -40,6 +40,10 @@ void createBoltSubmodule(py::module_& bolt_submodule) {
            py::arg("save_prefix"), py::arg("save_frequency"))
 #endif
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_validation", &TrainConfig::withValidationAllDatasets,
+           py::arg("all_val_datasets"), py::arg("eval_config"),
+           py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "")
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("eval_config"), py::arg("validation_frequency") = 0,

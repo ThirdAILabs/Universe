@@ -251,3 +251,54 @@ def test_fmeasure():
     ]
 
     evaluate_test_cases(test_cases, model, metrics, metric_name)
+
+
+def mach_metric_test_helper(metric, expected_values):
+    metric_name = "mach_metric"
+
+    entity_to_hashes = {
+        0: [0, 1, 2],
+        1: [0, 1, 4],
+        2: [2, 3, 4],
+        3: [0, 2, 4],
+        4: [1, 3, 4],
+    }
+
+    mach_index = dataset.MachIndex(
+        entity_to_hashes=entity_to_hashes,
+        output_range=LABEL_DIM,
+        num_hashes=3,
+    )
+
+    model, metrics = build_metrics_test_model(
+        metric,
+        metric_name,
+        {"mach_index": mach_index, "top_k_per_eval_aggregation": 3, "k": 2},
+    )
+
+    test_cases = [
+        {
+            "x": [[1.0, 0.0, 1.0, 0.0, 0.0]],
+            "y": [[1.0, 0.0, 0.0, 1.0, 1.0]],
+            "correct_metric_val": expected_values[0],
+        },
+        {
+            "x": [[1.0, 0.0, 1.0, 0.0, 0.0]],
+            "y": [[0.0, 1.0, 0.0, 1.0, 0.0]],
+            "correct_metric_val": expected_values[1],
+        },
+    ]
+
+    evaluate_test_cases(test_cases, model, metrics, metric_name)
+
+
+def test_mach_precision():
+    mach_metric_test_helper(
+        bolt.train.metrics.MachPrecision, expected_values=[1.0, 0.5]
+    )
+
+
+def test_mach_recall():
+    mach_metric_test_helper(
+        bolt.train.metrics.MachRecall, expected_values=[2.0 / 3.0, 0.5]
+    )
