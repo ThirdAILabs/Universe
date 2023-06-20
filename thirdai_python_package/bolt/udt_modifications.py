@@ -162,6 +162,10 @@ def modify_udt():
     bolt.UniversalDeepTransformer.train = wrapped_train
     bolt.UniversalDeepTransformer.evaluate = wrapped_evaluate
     bolt.UniversalDeepTransformer.cold_start = wrapped_cold_start
+    
+    bolt.UniversalDeepTransformer.train_on_data_source = original_train
+    bolt.UniversalDeepTransformer.evaluate_on_data_source = original_evaluate
+    bolt.UniversalDeepTransformer.cold_start_on_data_source = original_cold_start
 
 
 def modify_mach_udt():
@@ -191,6 +195,7 @@ def modify_mach_udt():
     delattr(bolt.UniversalDeepTransformer, "introduce_documents")
 
     bolt.UniversalDeepTransformer.introduce_documents = wrapped_introduce_documents
+    bolt.UniversalDeepTransformer.introduce_documents_on_data_source = original_introduce_documents
 
 
 def modify_graph_udt():
@@ -204,6 +209,7 @@ def modify_graph_udt():
     delattr(bolt.UniversalDeepTransformer, "index_nodes")
 
     bolt.UniversalDeepTransformer.index_nodes = wrapped_index_nodes
+    bolt.UniversalDeepTransformer.index_nodes_on_data_source = original_index_nodes_method
 
 
 def add_neural_index_aliases():
