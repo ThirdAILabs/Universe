@@ -176,6 +176,16 @@ class UDTMachClassifier final : public UDTBackend {
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
       uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
 
+  InputMetrics getMetrics(const std::vector<std::string>& metric_names,
+                          const std::string& prefix);
+
+  // Mach requires two sets of labels. The buckets for each doc/class for
+  // computing losses when training, and also the original doc/class ids for
+  // computing metrics. In some methods like trainWithHashes, or trainOnBatch we
+  // don't have/need the doc/class ids for metrics so we use this method to get
+  // an empty placeholder to pass to the model.
+  static bolt::nn::tensor::TensorPtr placeholderDocIds(uint32_t batch_size);
+
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
     if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {
@@ -204,7 +214,6 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
-  data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
 
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;

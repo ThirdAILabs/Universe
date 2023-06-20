@@ -73,9 +73,9 @@ class Trainer {
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
       uint32_t epochs, uint32_t batch_size,
       std::optional<uint32_t> max_in_memory_batches = std::nullopt,
-      const std::vector<std::string>& train_metrics = {},
+      const metrics::InputMetrics& train_metrics = {},
       const dataset::DatasetLoaderPtr& validation_data_loader = nullptr,
-      const std::vector<std::string>& validation_metrics = {},
+      const metrics::InputMetrics& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
@@ -96,7 +96,7 @@ class Trainer {
 
   metrics::History validate_with_dataset_loader(
       const dataset::DatasetLoaderPtr& data,
-      const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
+      const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
   nn::model::ModelPtr getModel() { return _model; }

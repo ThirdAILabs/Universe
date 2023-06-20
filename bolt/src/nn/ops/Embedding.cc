@@ -200,8 +200,8 @@ constexpr float velocityUpdate(float curr_velocity, float grad) {
   return BETA2 * curr_velocity + (1 - BETA2) * grad * grad;
 }
 
-constexpr float adam(float momentum, float velocity, float learning_rate,
-                     float b1_corrected, float b2_corrected) {
+inline float adam(float momentum, float velocity, float learning_rate,
+                  float b1_corrected, float b2_corrected) {
   return learning_rate * (momentum / b1_corrected) /
          (std::sqrt(velocity / b2_corrected) + EPS);
 }

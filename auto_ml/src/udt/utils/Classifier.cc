@@ -12,6 +12,8 @@
 
 namespace thirdai::automl::udt::utils {
 
+using bolt::train::metrics::fromMetricNames;
+
 Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
     : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {
   if (_model->outputs().size() != 1) {
@@ -34,27 +36,17 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     const dataset::DatasetLoaderPtr& val_dataset,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
-  uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
-
-  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
-  if (_freeze_hash_tables) {
-    freeze_hash_tables_epoch = 1;
-  }
-
-  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
-                               bolt::train::python::CtrlCCheck{});
-
-  auto history = trainer.train_with_dataset_loader(
-      dataset, learning_rate, epochs, batch_size, options.max_in_memory_batches,
-      train_metrics, val_dataset, val_metrics, options.steps_per_validation,
-      options.sparse_validation, callbacks,
-      /* autotune_rehash_rebuild= */ true, options.verbose,
-      options.logging_interval);
+  auto history = train(
+      dataset, learning_rate, epochs,
+      fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
+      val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
+      callbacks, options);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
    * some metric. This can improve performance particularly on datasets with
-   * a class imbalance.
+   * a class imbalance. We don't tune the threshold in the other method due to
+   * how the metrics are passed in.
    */
   if (_model->outputs().at(0)->dim() == 2) {
     if (!val_metrics.empty()) {
@@ -73,11 +65,53 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     }
   }
 
+  return history;
+}
+
+py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
+                             float learning_rate, uint32_t epochs,
+                             const InputMetrics& train_metrics,
+                             const dataset::DatasetLoaderPtr& val_dataset,
+                             const InputMetrics& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options) {
+  uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
+
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
+
+  auto history = trainer.train_with_dataset_loader(
+      /* train_data_loader= */ dataset,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* batch_size= */ batch_size,
+      /* max_in_memory_batches= */ options.max_in_memory_batches,
+      /* train_metrics= */ train_metrics,
+      /* validation_data_loader= */ val_dataset,
+      /* validation_metrics= */ val_metrics,
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval);
+
   return py::cast(history);
 }
 
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
+                                bool sparse_inference, bool verbose) {
+  return evaluate(dataset,
+                  fromMetricNames(_model, metrics, /* prefix= */ "val_"),
+                  sparse_inference, verbose);
+}
+
+py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
+                                const InputMetrics& metrics,
                                 bool sparse_inference, bool verbose) {
   bolt::train::Trainer trainer(_model, std::nullopt,
                                bolt::train::python::CtrlCCheck{});

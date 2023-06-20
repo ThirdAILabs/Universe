@@ -348,7 +348,8 @@ void createDeploymentSubmodule(py::module_& module) {
         auto json_config = json::parse(config::loadConfig(config_file));
         auto user_input = createArgumentMap(parameters);
 
-        return config::buildModel(json_config, user_input, input_dims);
+        return config::buildModel(json_config, user_input, input_dims,
+                                  /* mach= */ false);
       },
       py::arg("config_file"), py::arg("parameters"), py::arg("input_dims"));
 
