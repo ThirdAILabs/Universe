@@ -152,7 +152,7 @@ void Embedding::applyActivationFunction(float* activations) {
       break;
     case ActivationFunction::Tanh:
       for (size_t i = 0; i < _dim; i++) {
-        activations[i] = std::tanh(-activations[i]);
+        activations[i] = std::tanh(activations[i]);
       }
       break;
   }
