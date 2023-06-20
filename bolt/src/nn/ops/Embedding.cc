@@ -64,13 +64,13 @@ void Embedding::forward(const autograd::ComputationList& inputs,
   for (size_t n = 0; n < tokens.len; n++) {
     float weight = tokens.activations[n];
 
-#ifdef _GNUC_
+    // #ifdef _GNUC_
     if (n < tokens.len - 1) {
       // Prefetch embeddings for next token.
       const float* nxt_emb = embedding(tokens.active_neurons[n + 1]);
       __builtin_prefetch(nxt_emb);
     }
-#endif
+    // #endif
 
     const float* emb = embedding(tokens.active_neurons[n]);
 
@@ -100,13 +100,13 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
     uint32_t token = tokens.active_neurons[n];
     float weight = tokens.activations[n];
 
-#ifdef _GNUC_
+    // #ifdef _GNUC_
     if (n < tokens.len - 1) {
       // Prefetch gradients for next token embedding.
       const float* nxt_emb = gradients(tokens.active_neurons[n + 1]);
       __builtin_prefetch(nxt_emb);
     }
-#endif
+    // #endif
 
     float* emb_grad = gradients(token);
 
