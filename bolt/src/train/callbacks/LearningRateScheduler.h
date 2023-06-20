@@ -2,11 +2,15 @@
 
 #include "Callback.h"
 #include <algorithm>
-#include <assert.h>
-#include <cmath>
+#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <vector>
+
+// There are issues including <cmath> to get M_PI on visual studio.
+// https://stackoverflow.com/questions/6563810/m-pi-works-with-math-h-but-not-with-cmath-in-visual-studio
+#define _USE_MATH_DEFINES
+#include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
 namespace thirdai::bolt::train::callbacks {
 
