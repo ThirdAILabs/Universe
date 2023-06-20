@@ -118,9 +118,9 @@ class MultiStepLR final : public LearningRateScheduler {
 
 /**
  * @brief Schedules per-step learning rate using a cosine annealing schedule
- * @param Initial_restart_iter: Number of iterations before the first restart.
+ * @param initial_restart_iter: Number of iterations before the first restart.
  * @param iter_restart_multiplicative_factor: Factor by which
- * current_restart_iter_ gets multiplied after a restart. Default: 1
+ * _current_restart_iter gets multiplied after a restart. Default: 1
  * @param min_lr: Minimum learnign rate. Default: 0.0
  * @param batch_level_steps: If true then we'll adjust the learning rate using
  * batches as steps instead of epochs. Defaults to false.
@@ -133,10 +133,10 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
       uint32_t iter_restart_multiplicative_factor = 1, float min_lr = 0.0,
       bool batch_per_step = false)
       : LearningRateScheduler(batch_per_step),
-        current_restart_iter_(initial_restart_iter),
-        current_iter_(0),
-        iter_restart_multiplicative_factor_(iter_restart_multiplicative_factor),
-        min_lr_(min_lr) {
+        _current_restart_iter(initial_restart_iter),
+        _current_iter(0),
+        _iter_restart_multiplicative_factor(iter_restart_multiplicative_factor),
+        _min_lr(min_lr) {
     assert(initial_restart_iter > 0 &&
            iter_restart_multiplicative_factor >= 1 && min_lr >= 0);
   }
@@ -144,28 +144,28 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (step == 0) {
       // base learning rate will be the maximum learning rate.
-      base_learning_rate_ = current_learning_rate;
+      _base_learning_rate = current_learning_rate;
     }
 
     float cosine_factor = std::pow(
-        std::cos((static_cast<float>(current_iter_) / current_restart_iter_) *
+        std::cos((static_cast<float>(_current_iter) / _current_restart_iter) *
                  M_PI / 2),
         2);
 
-    float nextLR = min_lr_ + (base_learning_rate_ - min_lr_) * cosine_factor;
+    float nextLR = _min_lr + (_base_learning_rate - _min_lr) * cosine_factor;
 
-    current_iter_++;
-    if (current_iter_ == current_restart_iter_) {
-      current_iter_ = 0;
-      current_restart_iter_ *= iter_restart_multiplicative_factor_;
+    _current_iter++;
+    if (_current_iter == _current_restart_iter) {
+      _current_iter = 0;
+      _current_restart_iter *= _iter_restart_multiplicative_factor;
     }
 
     return nextLR;
   }
 
  private:
-  uint32_t current_restart_iter_, current_iter_,
-      iter_restart_multiplicative_factor_;
-  float min_lr_, base_learning_rate_;
+  uint32_t _current_restart_iter, _current_iter,
+      _iter_restart_multiplicative_factor;
+  float _min_lr, _base_learning_rate;
 };
 }  // namespace thirdai::bolt::train::callbacks

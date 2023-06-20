@@ -275,7 +275,7 @@ void defineCallbacks(py::module_& train) {
            py::arg("min_lr") = 0.0, py::arg("batch_per_step") = false,
            "The cosine annealing warm restart LR scheduler decays the learning "
            "rate until the specified number of epochs (current_restart_iter) "
-           "following a cosine schedule and next restarts occurs at "
+           "following a cosine schedule and next restarts occurs after "
            "current_restart_iter * iter_restart_multiplicative_factor");
 }
 
