@@ -129,15 +129,15 @@ class MultiStepLR final : public LearningRateScheduler {
 class CosineAnnealingWarmRestart final : public LearningRateScheduler {
  public:
   explicit CosineAnnealingWarmRestart(
-      uint32_t Initial_restart_iter = 4,
+      uint32_t initial_restart_iter = 4,
       uint32_t iter_restart_multiplicative_factor = 1, float min_lr = 0.0,
       bool batch_per_step = false)
       : LearningRateScheduler(batch_per_step),
-        current_restart_iter_(Initial_restart_iter),
+        current_restart_iter_(initial_restart_iter),
         current_iter_(0),
         iter_restart_multiplicative_factor_(iter_restart_multiplicative_factor),
         min_lr_(min_lr) {
-    assert(Initial_restart_iter > 0 &&
+    assert(initial_restart_iter > 0 &&
            iter_restart_multiplicative_factor >= 1 && min_lr >= 0);
   }
 
