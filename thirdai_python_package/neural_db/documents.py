@@ -1,4 +1,6 @@
 from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+import os
 
 import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
@@ -26,25 +28,31 @@ class Reference:
 
 class Document:
     def hash(self) -> str:
-        pass
+        raise NotImplementedError()
 
     def size(self) -> int:
-        pass
+        raise NotImplementedError()
 
     def name(self) -> str:
-        pass
+        raise NotImplementedError()
 
     def strong_text(self, id: int) -> str:
-        pass
+        raise NotImplementedError()
 
     def weak_text(self, id: int) -> str:
-        pass
+        raise NotImplementedError()
 
     def reference(self, id: int) -> Reference:
-        pass
+        raise NotImplementedError()
 
     def context(self, id: int, radius) -> str:
-        pass
+        raise NotImplementedError()
+
+    def save_meta(self, directory: Path):
+        raise NotImplementedError()
+
+    def load_meta(self, directory: Path):
+        raise NotImplementedError()
 
 
 class DocumentDataSource(PyDataSource):
@@ -139,3 +147,14 @@ class DocumentManager:
         return doc.context(
             id - start_id,
         )
+    
+    def save_meta(self, directory: Path):
+        for i, doc in enumerate(self.docs):
+            subdir = directory / str(i)
+            os.mkdir(subdir)
+            doc.save_meta(subdir)
+
+    def load_meta(self, directory: Path):
+        for i, doc in enumerate(self.docs):
+            subdir = directory / str(i)
+            doc.load_meta(subdir)
