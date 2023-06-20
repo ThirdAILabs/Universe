@@ -13,8 +13,7 @@ ACCURACY_THRESHOLD = 0.8
 pytestmark = [pytest.mark.unit]
 
 
-@pytest.fixture(scope="module")
-def train_udt_text_classification(download_clinc_dataset):
+def clinc_model():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "category": bolt.types.categorical(),
@@ -24,6 +23,13 @@ def train_udt_text_classification(download_clinc_dataset):
         n_target_classes=150,
         integer_target=True,
     )
+
+    return model
+
+
+@pytest.fixture(scope="module")
+def train_udt_text_classification(download_clinc_dataset):
+    model = clinc_model()
 
     train_filename, _, _ = download_clinc_dataset
 
@@ -84,3 +90,24 @@ def test_udt_text_classification_set_output_sparsity(train_udt_text_classificati
     final_output_sparsity = output_fc_computation.get_sparsity() / 2
     model.set_output_sparsity(sparsity=final_output_sparsity)
     assert final_output_sparsity == output_fc_computation.get_sparsity()
+
+
+def test_udt_text_classification_model_migration(
+    train_udt_text_classification, download_clinc_dataset
+):
+    trained_model = train_udt_text_classification
+    _, _, inference_samples = download_clinc_dataset
+
+    new_model = clinc_model()
+
+    for new_op, old_op in zip(
+        new_model._get_model().ops(), trained_model._get_model().ops()
+    ):
+        new_op.set_weights(old_op.weights)
+        new_op.set_biases(old_op.biases)
+
+    acc = compute_predict_batch_accuracy(
+        new_model, inference_samples, use_class_name=False
+    )
+
+    assert acc > ACCURACY_THRESHOLD
