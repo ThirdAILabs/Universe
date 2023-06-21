@@ -277,7 +277,7 @@ py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
         _mach_label_block->index()->topKNonEmptyBucketsIndices(vector, top_k);
   }
 
-  std::vector<uint32_t> bucket_freq(_mach_label_block->index()->numBuckets());
+  std::unordered_map<uint32_t, uint32_t> bucket_freq;
 
   for (const auto& top_bucket : top_buckets) {
     for (unsigned int j : top_bucket) {
