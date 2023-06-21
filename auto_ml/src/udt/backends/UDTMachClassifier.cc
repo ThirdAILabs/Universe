@@ -832,7 +832,7 @@ InputMetrics UDTMachClassifier::getMetrics(
   }
 
   bolt::nn::autograd::ComputationPtr output = model->outputs().front();
-  bolt::nn::autograd::ComputationPtr hash_labels = model->labels().back();
+  bolt::nn::autograd::ComputationPtr hash_labels = model->labels().front();
   bolt::nn::autograd::ComputationPtr true_class_labels = model->labels().back();
   bolt::nn::loss::LossPtr loss = model->losses().front();
 
