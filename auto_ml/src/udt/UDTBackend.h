@@ -352,6 +352,8 @@ class UDTBackend {
     throw notSupported("upvote");
   }
 
+  virtual void enableRlhf() { throw notSupported("enable_rlhf"); }
+
   /**
    * Gets the internal index for UDTMachClassifier.
    */

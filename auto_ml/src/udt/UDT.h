@@ -204,6 +204,10 @@ class UDT {
                      n_balancing_samples, learning_rate, epochs);
   }
 
+  void enableRlhf() {
+    _backend->enableRlhf();
+  }
+
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {
