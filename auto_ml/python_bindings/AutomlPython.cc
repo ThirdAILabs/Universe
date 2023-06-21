@@ -192,6 +192,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+      .def("enable_rlhf", &udt::UDT::enableRlhf,
+           py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
+           py::arg("num_balancing_samples_per_doc") =
+               udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
