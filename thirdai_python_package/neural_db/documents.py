@@ -6,12 +6,15 @@ import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
 
 
+
+
 class Reference:
-    def __init__(self, id: int, text: str, source: str, page: Optional[int]):
+    def __init__(self, id: int, text: str, source: str, metadata: dict, show_fn):
         self._id = id
         self._text = text
         self._source = source
-        self._page = page
+        self._metadata = metadata
+        self._show_fn = show_fn
 
     def id(self):
         return self._id
@@ -22,8 +25,17 @@ class Reference:
     def source(self):
         return self._source
 
-    def page(self):
-        return self._page
+    def metadata(self):
+        return self._metadata
+    
+    def show(self):
+        return self._show_fn(
+            id=self._id,
+            text=self._text,
+            source=self._source,
+            **self._metadata,
+        )
+
 
 
 class Document:
@@ -55,6 +67,13 @@ class Document:
         raise NotImplementedError()
 
 
+class DocumentRow:
+    def __init__(self, id: str, strong: str, weak: str):
+        self.id = id
+        self.strong = strong
+        self.weak = weak
+
+
 class DocumentDataSource(PyDataSource):
     def __init__(self, id_column, strong_column, weak_column):
         PyDataSource.__init__(self)
@@ -62,9 +81,22 @@ class DocumentDataSource(PyDataSource):
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
+        self._size = 0
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
+        self._size += document.size()
+
+    def row_iterator(self):
+        for doc, start_id in self.documents:
+            for i in range(doc.size()):
+                yield DocumentRow(
+                    id=start_id + i, 
+                    strong=doc.strong_text(i), 
+                    weak=doc.weak_text(i))
+                
+    def size(self):
+        return self._size
 
     def _csv_line(self, id: str, strong: str, weak: str):
         df = pd.DataFrame(
@@ -80,11 +112,8 @@ class DocumentDataSource(PyDataSource):
         # First yield the header
         yield self._csv_line(self.id_column, self.strong_column, self.weak_column)
         # Then yield rows
-        for doc, start_id in self.documents:
-            for i in range(doc.size()):
-                yield self._csv_line(
-                    id=start_id + i, strong=doc.strong_text(i), weak=doc.weak_text(i)
-                )
+        for row in self.row_iterator():
+            yield self._csv_line(id=row.id, strong=row.strong, weak=row.weak)
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name() for doc in self.documents])
@@ -127,6 +156,9 @@ class DocumentManager:
             train.add(doc, start_id)
 
         return IntroAndTrainDocuments(intro=intro, train=train)
+    
+    def sources(self):
+        return [doc.name() for doc, _ in self.id_sorted_docs]
 
     def clear(self):
         self.registry = {}
@@ -140,8 +172,10 @@ class DocumentManager:
 
     def reference(self, id: int):
         doc, start_id = self._get_doc_and_start_id(id)
-        return doc.reference(id - start_id)
-
+        doc_ref = doc.reference(id - start_id)
+        doc_ref.id = id
+        return doc_ref
+        
     def context(self, id: int, radius: int):
         doc, start_id = self._get_doc_and_start_id(id)
         return doc.context(
