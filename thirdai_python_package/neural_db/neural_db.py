@@ -111,7 +111,7 @@ class NeuralDB:
                 train_documents=intro_and_train.train,
                 on_progress=on_progress,
             )
-
+            
             self._savable_state.logger.log(
                 session_id=self._user_id,
                 action="Train",
@@ -157,7 +157,7 @@ class NeuralDB:
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query=self._search_state._query,
-            liked_passage_id=self._search_state.result(idx).id,
+            liked_passage_id=self._search_state.references()[idx].id(),
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):

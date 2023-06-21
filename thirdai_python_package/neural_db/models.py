@@ -54,7 +54,7 @@ class Model:
         id_delimiter = self.get_id_delimiter()
         return [
             {
-                query_col: utils.clean_text(text),
+                query_col: clean_text(text),
                 id_col: id_delimiter.join(map(str, labels)),
             }
             for text, labels in samples
@@ -68,7 +68,7 @@ class Model:
 
     def infer_samples_to_infer_batch(self, samples: InferSamples):
         query_col = self.get_query_col()
-        return [{query_col: utils.clean_text(text)} for text in samples]
+        return [{query_col: clean_text(text)} for text in samples]
 
     def train_buckets(
         self, samples: TrainSamples, learning_rate: float, **kwargs
@@ -109,10 +109,11 @@ def unsupervised_train_on_docs(
     on_freeze_hash_tables: Callable,
 ):
     for i in range(max_epochs):
-        metrics = model.cold_start(
+        documents.restart()
+        metrics = model.cold_start_on_data_source(
             data_source=documents,
-            strong_column_names=documents.strong_column,
-            weak_column_names=documents.weak_column,
+            strong_column_names=[documents.strong_column],
+            weak_column_names=[documents.weak_column],
             learning_rate=learning_rate,
             epochs=1,
             metrics=[metric],
@@ -187,7 +188,7 @@ class Mach(Model):
     ) -> None:
         if intro_documents.id_column != self.id_col:
             raise ValueError(
-                f"Model configured to use id_col={self.id_col}, received document with id_col={config.id_col}"
+                f"Model configured to use id_col={self.id_col}, received document with id_col={intro_documents.id_column}"
             )
 
         if self.model is None:
@@ -223,7 +224,7 @@ class Mach(Model):
             on_progress=on_progress,
             on_freeze_hash_tables=on_freeze_hash_tables,
         )
-
+        
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)
         self.balancing_samples += samples
@@ -298,7 +299,7 @@ class Mach(Model):
         return balanced_samples
 
     def balance_train_bucket_samples(self, samples: List, n_samples: int):
-        balancers = utils.random_sample(self.balancing_samples, k=n_samples)
+        balancers = random_sample(self.balancing_samples, k=n_samples)
         balancers = [(query, self.get_bucket(labels[0])) for query, labels in balancers]
         balanced_samples = samples + balancers
         random.shuffle(balanced_samples)

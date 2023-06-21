@@ -30,7 +30,8 @@ class PyDataSource(DataSource):
         return lines if len(lines) else None
 
     def next_line(self) -> Optional[str]:
-        return next(self._line_iterator, None)
+        next_line = next(self._line_iterator, None)
+        return next_line
 
     def restart(self) -> None:
         self._line_iterator = self._get_line_iterator()

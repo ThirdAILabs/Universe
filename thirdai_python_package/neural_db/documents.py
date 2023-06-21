@@ -179,7 +179,6 @@ class DocumentManager:
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
-        print("ELEM ID", element_id, "START ID", start_id)
         doc_ref = doc.reference(element_id - start_id)
         doc_ref._id = element_id
         return doc_ref
