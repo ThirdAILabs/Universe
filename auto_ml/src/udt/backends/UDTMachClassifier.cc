@@ -848,11 +848,11 @@ InputMetrics UDTMachClassifier::getMetrics(
       metrics[prefix + name] = std::make_shared<MachRecall>(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
           true_class_labels, k);
-    } else if (std::regex_match(name, std::regex("hash precision@[1-9]\\d*"))) {
+    } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
       metrics[prefix + name] =
           std::make_shared<PrecisionAtK>(output, hash_labels, k);
-    } else if (std::regex_match(name, std::regex("hash recall@[1-9]\\d*"))) {
+    } else if (std::regex_match(name, std::regex("hash_recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 12, nullptr, 10);
       metrics[prefix + name] =
           std::make_shared<RecallAtK>(output, hash_labels, k);
