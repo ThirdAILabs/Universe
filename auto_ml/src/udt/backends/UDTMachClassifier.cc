@@ -7,6 +7,8 @@
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
 #include <bolt/src/train/metrics/MachRecall.h>
+#include <bolt/src/train/metrics/PrecisionAtK.h>
+#include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -40,6 +42,8 @@ namespace thirdai::automl::udt {
 using bolt::train::metrics::LossMetric;
 using bolt::train::metrics::MachPrecision;
 using bolt::train::metrics::MachRecall;
+using bolt::train::metrics::PrecisionAtK;
+using bolt::train::metrics::RecallAtK;
 
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -828,7 +832,8 @@ InputMetrics UDTMachClassifier::getMetrics(
   }
 
   bolt::nn::autograd::ComputationPtr output = model->outputs().front();
-  bolt::nn::autograd::ComputationPtr labels = model->labels().back();
+  bolt::nn::autograd::ComputationPtr hash_labels = model->labels().front();
+  bolt::nn::autograd::ComputationPtr true_class_labels = model->labels().back();
   bolt::nn::loss::LossPtr loss = model->losses().front();
 
   InputMetrics metrics;
@@ -837,12 +842,20 @@ InputMetrics UDTMachClassifier::getMetrics(
       uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachPrecision>(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
-          labels, k);
+          true_class_labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachRecall>(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
-          labels, k);
+          true_class_labels, k);
+    } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
+      uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
+      metrics[prefix + name] =
+          std::make_shared<PrecisionAtK>(output, hash_labels, k);
+    } else if (std::regex_match(name, std::regex("hash_recall@[1-9]\\d*"))) {
+      uint32_t k = std::strtoul(name.data() + 12, nullptr, 10);
+      metrics[prefix + name] =
+          std::make_shared<RecallAtK>(output, hash_labels, k);
     } else if (name == "loss") {
       metrics[prefix + name] = std::make_shared<LossMetric>(loss);
     } else {
