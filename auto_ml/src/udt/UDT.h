@@ -173,6 +173,8 @@ class UDT {
                              num_random_hashes);
   }
 
+  uint32_t numBuckets() { return _backend->numBuckets(); }
+
   void forget(const std::variant<uint32_t, std::string>& label) {
     _backend->forget(label);
   }

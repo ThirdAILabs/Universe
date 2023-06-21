@@ -106,6 +106,10 @@ class UDTMachClassifier final : public UDTBackend {
                       std::optional<uint32_t> num_buckets_to_sample,
                       uint32_t num_random_hashes) final;
 
+  uint32_t numBuckets() final {
+    return _mach_label_block->index()->numBuckets();
+  }
+
   void forget(const Label& label) final;
 
   void clearIndex() final {

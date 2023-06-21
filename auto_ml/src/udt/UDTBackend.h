@@ -283,6 +283,8 @@ class UDTBackend {
     throw notSupported("introduce_label");
   }
 
+  virtual uint32_t numBuckets() { throw notSupported("num_buckets"); }
+
   /**
    * Forget a given label such that it is impossible to predict in the future.
    */
