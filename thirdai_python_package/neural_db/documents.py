@@ -7,7 +7,9 @@ from thirdai.dataset.data_source import PyDataSource
 
 
 class Reference:
-    def __init__(self, element_id: int, text: str, source: str, metadata: dict, show_fn):
+    def __init__(
+        self, element_id: int, text: str, source: str, metadata: dict, show_fn
+    ):
         self._id = element_id
         self._text = text
         self._source = source
@@ -88,7 +90,9 @@ class DocumentDataSource(PyDataSource):
         for doc, start_id in self.documents:
             for i in range(doc.size()):
                 yield DocumentRow(
-                    element_id=start_id + i, strong=doc.strong_text(i), weak=doc.weak_text(i)
+                    element_id=start_id + i,
+                    strong=doc.strong_text(i),
+                    weak=doc.weak_text(i),
                 )
 
     def size(self):
