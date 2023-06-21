@@ -731,7 +731,7 @@ void UDTMachClassifier::teach(
     uint32_t n_buckets, uint32_t n_teaching_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
   requireRLHFSampler();
-
+ 
   auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
                                                  source_target_samples.size());
 
