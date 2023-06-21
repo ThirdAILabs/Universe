@@ -119,6 +119,21 @@ float MachIndex::sparsity() const {
   return guess;
 }
 
+std::vector<uint32_t> MachIndex::topKNonEmptyBucketsIndices(
+    const BoltVector& output, uint32_t k) const {
+  TopKActivationsQueue top_buckets = topKNonEmptyBuckets(output, k);
+
+  std::vector<uint32_t> buckets;
+
+  while (!top_buckets.empty()) {
+    std::pair<float, uint32_t> element = top_buckets.top();
+    buckets.push_back(element.second);
+    top_buckets.pop();
+  }
+
+  return buckets;
+}
+
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
                                                     uint32_t k) const {
   TopKActivationsQueue top_k;

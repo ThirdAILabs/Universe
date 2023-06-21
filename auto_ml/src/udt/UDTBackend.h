@@ -103,6 +103,14 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual py::object outputFreq(const MapInputBatch& sample,
+                                bool sparse_inference, uint32_t top_k) {
+    (void)sample;
+    (void)sparse_inference;
+    (void)top_k;
+    throw notSupported("output frequency");
+  }
+
   /**
    * Returns the model used.
    */

@@ -66,6 +66,11 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
+  py::object outputFreq(const MapInputBatch& sample, bool sparse_inference,
+                        uint32_t top_k) {
+    return _backend->outputFreq(sample, sparse_inference, top_k);
+  }
+
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class);

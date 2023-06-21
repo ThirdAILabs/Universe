@@ -60,6 +60,9 @@ class UDTMachClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  py::object outputFreq(const MapInputBatch& samples, bool sparse_inference,
+                        uint32_t top_k) final;
+
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) final;
 

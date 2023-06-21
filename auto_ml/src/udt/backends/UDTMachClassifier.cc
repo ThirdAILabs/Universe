@@ -19,6 +19,8 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
+#include <pybind11/cast.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
 #include <utils/StringManipulation.h>
@@ -256,6 +258,34 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return py::cast(predicted_entities);
+}
+
+py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
+                                         bool sparse_inference,
+                                         uint32_t top_k) {
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               sparse_inference)
+                     .at(0);
+
+  std::vector<std::vector<uint32_t>> top_buckets(outputs->batchSize());
+
+#pragma omp parallel for default(none) shared(outputs, top_buckets, top_k)
+  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    top_buckets[i] =
+        _mach_label_block->index()->topKNonEmptyBucketsIndices(vector, top_k);
+  }
+
+  std::vector<uint32_t> bucket_freq(_mach_label_block->index()->numBuckets());
+
+  for (const auto& top_bucket : top_buckets) {
+    for (unsigned int j : top_bucket) {
+      bucket_freq[j]++;
+    }
+  }
+
+  return py::cast(bucket_freq);
 }
 
 py::object UDTMachClassifier::trainWithHashes(
