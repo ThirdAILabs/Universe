@@ -609,6 +609,18 @@ def test_upvote():
     assert predicted_label == 200
 
 
+def test_enable_rlhf():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(ValueError, match=""):
+        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+    model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
+
+    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+
+
 def regularized_introduce_helper(model, num_random_hashes):
     """Returns an array counting the number of hashes in each bucket after
     introducing three identical samples"""

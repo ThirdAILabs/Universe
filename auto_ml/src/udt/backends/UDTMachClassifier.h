@@ -172,9 +172,10 @@ class UDTMachClassifier final : public UDTBackend {
 
   void requireRLHFSampler();
 
-  void enableRlhf() final {
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) final {
     _rlhf_sampler = std::make_optional<RLHFSampler>(
-        defaults::MAX_BALANCING_DOCS, defaults::MAX_BALANCING_SAMPLES_PER_DOC);
+        num_balancing_docs, num_balancing_samples_per_doc);
   }
 
   std::vector<uint32_t> topHashesForDoc(
