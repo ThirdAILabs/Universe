@@ -7,8 +7,8 @@ from thirdai.dataset.data_source import PyDataSource
 
 
 class Reference:
-    def __init__(self, id: int, text: str, source: str, metadata: dict, show_fn):
-        self._id = id
+    def __init__(self, element_id: int, text: str, source: str, metadata: dict, show_fn):
+        self._id = element_id
         self._text = text
         self._source = source
         self._metadata = metadata
@@ -28,7 +28,6 @@ class Reference:
 
     def show(self):
         return self._show_fn(
-            id=self._id,
             text=self._text,
             source=self._source,
             **self._metadata,
@@ -45,16 +44,16 @@ class Document:
     def name(self) -> str:
         raise NotImplementedError()
 
-    def strong_text(self, id: int) -> str:
+    def strong_text(self, element_id: int) -> str:
         raise NotImplementedError()
 
-    def weak_text(self, id: int) -> str:
+    def weak_text(self, element_id: int) -> str:
         raise NotImplementedError()
 
-    def reference(self, id: int) -> Reference:
+    def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def context(self, id: int, radius) -> str:
+    def context(self, element_id: int, radius) -> str:
         raise NotImplementedError()
 
     def save_meta(self, directory: Path):
@@ -65,8 +64,8 @@ class Document:
 
 
 class DocumentRow:
-    def __init__(self, id: str, strong: str, weak: str):
-        self.id = id
+    def __init__(self, element_id: int, strong: str, weak: str):
+        self.id = element_id
         self.strong = strong
         self.weak = weak
 
@@ -89,16 +88,16 @@ class DocumentDataSource(PyDataSource):
         for doc, start_id in self.documents:
             for i in range(doc.size()):
                 yield DocumentRow(
-                    id=start_id + i, strong=doc.strong_text(i), weak=doc.weak_text(i)
+                    element_id=start_id + i, strong=doc.strong_text(i), weak=doc.weak_text(i)
                 )
 
     def size(self):
         return self._size
 
-    def _csv_line(self, id: str, strong: str, weak: str):
+    def _csv_line(self, element_id: str, strong: str, weak: str):
         df = pd.DataFrame(
             {
-                self.id_column: [id],
+                self.id_column: [element_id],
                 self.strong_column: [strong],
                 self.weak_column: [weak],
             }
@@ -110,7 +109,7 @@ class DocumentDataSource(PyDataSource):
         yield self._csv_line(self.id_column, self.strong_column, self.weak_column)
         # Then yield rows
         for row in self.row_iterator():
-            yield self._csv_line(id=row.id, strong=row.strong, weak=row.weak)
+            yield self._csv_line(element_id=row.id, strong=row.strong, weak=row.weak)
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name() for doc, _ in self.documents])
@@ -161,23 +160,24 @@ class DocumentManager:
         self.registry = {}
         self.id_sorted_docs = []
 
-    def _get_doc_and_start_id(self, id: int):
+    def _get_doc_and_start_id(self, element_id: int):
         # Iterate through docs in reverse order
         for i in range(len(self.id_sorted_docs) - 1, -1, -1):
-            return self.id_sorted_docs[i]
+            doc, start_id = self.id_sorted_docs[i]
+            if start_id <= element_id:
+                return self.id_sorted_docs[i]
         raise ValueError(f"Unable to find document that has id {id}.")
 
-    def reference(self, id: int):
-        doc, start_id = self._get_doc_and_start_id(id)
-        doc_ref = doc.reference(id - start_id)
-        doc_ref.id = id
+    def reference(self, element_id: int):
+        doc, start_id = self._get_doc_and_start_id(element_id)
+        print("ELEM ID", element_id, "START ID", start_id)
+        doc_ref = doc.reference(element_id - start_id)
+        doc_ref._id = element_id
         return doc_ref
 
-    def context(self, id: int, radius: int):
-        doc, start_id = self._get_doc_and_start_id(id)
-        return doc.context(
-            id - start_id,
-        )
+    def context(self, element_id: int, radius: int):
+        doc, start_id = self._get_doc_and_start_id(element_id)
+        return doc.context(element_id - start_id, radius)
 
     def save_meta(self, directory: Path):
         for i, (doc, _) in enumerate(self.id_sorted_docs):

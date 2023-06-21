@@ -3,6 +3,7 @@ import shutil
 from io import StringIO
 from pathlib import Path
 
+import pytest
 import pandas as pd
 from thirdai import bolt, demos
 from thirdai.neural_db import Document, Reference
@@ -20,6 +21,7 @@ class MockDocument(Document):
         self._save_meta_dir = None
         self._load_meta_called = 0
         self._load_meta_dir = None
+        self._last_shown = None
 
     def hash(self) -> str:
         return self._identifier
@@ -58,7 +60,16 @@ class MockDocument(Document):
 
     def reference(self, element_id: int) -> Reference:
         self.check_id(element_id)
-        return MockDocument.expected_reference_text_for_id(self._identifier, element_id)
+        def show_fn(text, *args, **kwargs):
+            self._last_shown = text
+
+        return Reference(
+            element_id=element_id,
+            text=MockDocument.expected_reference_text_for_id(self._identifier, element_id),
+            source=self._identifier,
+            metadata={},
+            show_fn=show_fn,
+        )
 
     def context(self, element_id: int, radius) -> str:
         self.check_id(element_id)
@@ -78,7 +89,6 @@ class MockDocument(Document):
 id_column = "id"
 strong_column = "strong"
 weak_column = "weak"
-data_source = docs.DocumentDataSource(id_column, strong_column, weak_column)
 first_id = "first"
 second_id = "second"
 first_size = 5
@@ -117,7 +127,10 @@ def check_second_doc(df, position_offset, id_offset):
         ] == MockDocument.expected_weak_text_for_id(second_id, i)
 
 
+@pytest.mark.unit
 def test_document_data_source():
+    data_source = docs.DocumentDataSource(id_column, strong_column, weak_column)
+    
     data_source.add(first_doc, start_id=0)
     data_source.add(second_doc, start_id=first_size)
 
@@ -129,18 +142,9 @@ def test_document_data_source():
     check_second_doc(df, position_offset=first_size, id_offset=first_size)
 
 
-def test_document_manager():
-    id_column = "id"
-    strong_column = "strong"
-    weak_column = "weak"
+@pytest.mark.unit
+def test_document_manager_splits_intro_and_train():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
-    first_id = "first"
-    second_id = "second"
-    first_size = 5
-    second_size = 10
-    first_doc = MockDocument(first_id, first_size)
-    second_doc = MockDocument(second_id, second_size)
-
     data_sources = doc_manager.add([first_doc])
 
     assert data_sources.train.size() == first_size
@@ -163,6 +167,12 @@ def test_document_manager():
         data_source_to_df(data_sources.intro), position_offset=0, id_offset=first_size
     )
 
+
+@pytest.mark.unit
+def test_document_manager_save_load():
+    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager.add([first_doc, second_doc])
+    
     save_path = Path(os.getcwd()) / "neural_db_docs_test"
     os.mkdir(save_path)
     doc_manager.save_meta(save_path)
@@ -181,6 +191,40 @@ def test_document_manager():
     shutil.rmtree(save_path)
 
 
+def test_document_manager_sources():
+    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager.add([first_doc, second_doc])
+    assert first_doc.name() in doc_manager.sources()
+    assert second_doc.name() in doc_manager.sources()
+    
+
+def test_document_manager_reference():
+    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager.add([first_doc, second_doc])
+    
+    reference_3 = doc_manager.reference(3)
+    assert reference_3.id() == 3
+    assert reference_3.text() == MockDocument.expected_reference_text_for_id(first_id, 3)
+    assert reference_3.source() == first_id
+    reference_3.show()
+    assert first_doc._last_shown == reference_3.text()
+
+    reference_10 = doc_manager.reference(10)
+    assert reference_10.id() == 10
+    assert reference_10.text() == MockDocument.expected_reference_text_for_id(second_id, 10 - first_size)
+    assert reference_10.source() == second_id
+    reference_10.show()
+    assert second_doc._last_shown == reference_10.text()
+    
+
+def test_document_manager_context():
+    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager.add([first_doc, second_doc])    
+    assert doc_manager.context(3, 10) == MockDocument.expected_context_for_id_and_radius(first_id, element_id=3, radius=10)
+    assert doc_manager.context(10, 3) == MockDocument.expected_context_for_id_and_radius(second_id, element_id=10 - first_size, radius=3)
+
+
+@pytest.mark.release
 def test_udt_cold_start_on_csv_document():
     class CSV(Document):
         def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
