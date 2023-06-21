@@ -1,6 +1,6 @@
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
 import os
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
@@ -25,7 +25,7 @@ class Reference:
 
     def metadata(self):
         return self._metadata
-    
+
     def show(self):
         return self._show_fn(
             id=self._id,
@@ -33,7 +33,6 @@ class Reference:
             source=self._source,
             **self._metadata,
         )
-
 
 
 class Document:
@@ -80,6 +79,7 @@ class DocumentDataSource(PyDataSource):
         self.strong_column = strong_column
         self.weak_column = weak_column
         self._size = 0
+        self.restart()
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
@@ -89,10 +89,9 @@ class DocumentDataSource(PyDataSource):
         for doc, start_id in self.documents:
             for i in range(doc.size()):
                 yield DocumentRow(
-                    id=start_id + i, 
-                    strong=doc.strong_text(i), 
-                    weak=doc.weak_text(i))
-                
+                    id=start_id + i, strong=doc.strong_text(i), weak=doc.weak_text(i)
+                )
+
     def size(self):
         return self._size
 
@@ -114,7 +113,7 @@ class DocumentDataSource(PyDataSource):
             yield self._csv_line(id=row.id, strong=row.strong, weak=row.weak)
 
     def resource_name(self) -> str:
-        return "Documents:\n" + "\n".join([doc.name() for doc in self.documents])
+        return "Documents:\n" + "\n".join([doc.name() for doc, _ in self.documents])
 
 
 class IntroAndTrainDocuments:
@@ -154,7 +153,7 @@ class DocumentManager:
             train.add(doc, start_id)
 
         return IntroAndTrainDocuments(intro=intro, train=train)
-    
+
     def sources(self):
         return [doc.name() for doc, _ in self.id_sorted_docs]
 
@@ -173,20 +172,20 @@ class DocumentManager:
         doc_ref = doc.reference(id - start_id)
         doc_ref.id = id
         return doc_ref
-        
+
     def context(self, id: int, radius: int):
         doc, start_id = self._get_doc_and_start_id(id)
         return doc.context(
             id - start_id,
         )
-    
+
     def save_meta(self, directory: Path):
-        for i, doc in enumerate(self.docs):
+        for i, (doc, _) in enumerate(self.id_sorted_docs):
             subdir = directory / str(i)
             os.mkdir(subdir)
             doc.save_meta(subdir)
 
     def load_meta(self, directory: Path):
-        for i, doc in enumerate(self.docs):
+        for i, (doc, _) in enumerate(self.id_sorted_docs):
             subdir = directory / str(i)
             doc.load_meta(subdir)
