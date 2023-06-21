@@ -3,6 +3,7 @@ from typing import List, Optional
 import pandas as pd
 import thirdai
 import thirdai._thirdai.bolt as bolt
+import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
 
@@ -97,6 +98,38 @@ def modify_udt():
             options=train_options,
         )
 
+    def wrapped_train_on_data_source(
+        self,
+        data_source: dataset.DataSource,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        verbose: bool = True,
+        callbacks: List[bolt.callbacks.Callback] = [],
+        metrics: List[str] = [],
+        logging_interval: Optional[int] = None,
+    ):
+        val_data, val_metrics, train_options = _process_validation_and_options(
+            validation=None,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            verbose=verbose,
+            logging_interval=logging_interval,
+        )
+
+        return original_train(
+            self,
+            data=data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            train_metrics=metrics,
+            val_data=val_data,
+            val_metrics=val_metrics,
+            callbacks=callbacks,
+            options=train_options,
+        )
+
     def wrapped_evaluate(
         self,
         filename: str,
@@ -107,6 +140,23 @@ def modify_udt():
     ):
         data_source = _create_data_source(filename)
 
+        return original_evaluate(
+            self,
+            data=data_source,
+            metrics=metrics,
+            sparse_inference=use_sparse_inference,
+            verbose=verbose,
+            top_k=top_k,
+        )
+
+    def wrapped_evaluate_on_data_source(
+        self,
+        data_source: dataset.DataSource,
+        metrics: List[str] = [],
+        use_sparse_inference: bool = False,
+        verbose: bool = True,
+        top_k: int = None,
+    ):
         return original_evaluate(
             self,
             data=data_source,
@@ -155,6 +205,42 @@ def modify_udt():
             options=train_options,
         )
 
+    def wrapped_cold_start_on_data_source(
+        self,
+        data_source: dataset.DataSource,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        batch_size: int = None,
+        metrics: List[str] = [],
+        callbacks: List[bolt.callbacks.Callback] = [],
+        max_in_memory_batches: Optional[int] = None,
+        verbose: bool = True,
+        logging_interval: Optional[int] = None,
+    ):
+        val_data, val_metrics, train_options = _process_validation_and_options(
+            validation=None,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            verbose=verbose,
+            logging_interval=logging_interval,
+        )
+
+        return original_cold_start(
+            self,
+            data=data_source,
+            strong_column_names=strong_column_names,
+            weak_column_names=weak_column_names,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            train_metrics=metrics,
+            val_data=val_data,
+            val_metrics=val_metrics,
+            callbacks=callbacks,
+            options=train_options,
+        )
+
     delattr(bolt.UniversalDeepTransformer, "train")
     delattr(bolt.UniversalDeepTransformer, "evaluate")
     delattr(bolt.UniversalDeepTransformer, "cold_start")
@@ -162,10 +248,14 @@ def modify_udt():
     bolt.UniversalDeepTransformer.train = wrapped_train
     bolt.UniversalDeepTransformer.evaluate = wrapped_evaluate
     bolt.UniversalDeepTransformer.cold_start = wrapped_cold_start
-    
-    bolt.UniversalDeepTransformer.train_on_data_source = original_train
-    bolt.UniversalDeepTransformer.evaluate_on_data_source = original_evaluate
-    bolt.UniversalDeepTransformer.cold_start_on_data_source = original_cold_start
+
+    bolt.UniversalDeepTransformer.train_on_data_source = wrapped_train_on_data_source
+    bolt.UniversalDeepTransformer.evaluate_on_data_source = (
+        wrapped_evaluate_on_data_source
+    )
+    bolt.UniversalDeepTransformer.cold_start_on_data_source = (
+        wrapped_cold_start_on_data_source
+    )
 
 
 def modify_mach_udt():
@@ -195,7 +285,9 @@ def modify_mach_udt():
     delattr(bolt.UniversalDeepTransformer, "introduce_documents")
 
     bolt.UniversalDeepTransformer.introduce_documents = wrapped_introduce_documents
-    bolt.UniversalDeepTransformer.introduce_documents_on_data_source = original_introduce_documents
+    bolt.UniversalDeepTransformer.introduce_documents_on_data_source = (
+        original_introduce_documents
+    )
 
 
 def modify_graph_udt():
@@ -209,7 +301,9 @@ def modify_graph_udt():
     delattr(bolt.UniversalDeepTransformer, "index_nodes")
 
     bolt.UniversalDeepTransformer.index_nodes = wrapped_index_nodes
-    bolt.UniversalDeepTransformer.index_nodes_on_data_source = original_index_nodes_method
+    bolt.UniversalDeepTransformer.index_nodes_on_data_source = (
+        original_index_nodes_method
+    )
 
 
 def add_neural_index_aliases():
