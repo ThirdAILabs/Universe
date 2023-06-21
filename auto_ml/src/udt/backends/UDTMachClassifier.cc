@@ -683,7 +683,7 @@ void UDTMachClassifier::requireRLHFSampler() {
   if (!_rlhf_sampler) {
     throw std::runtime_error(
         "This model was not configured to support rlhf. Please pass {'rlhf': "
-        "True} in the model options.");
+        "True} in the model options or call enable_rlhf().");
   }
 }
 
