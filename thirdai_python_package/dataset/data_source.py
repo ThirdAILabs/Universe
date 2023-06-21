@@ -27,7 +27,7 @@ class PyDataSource(DataSource):
                 break
             lines.append(next_line)
 
-        return lines if len(lines) else None
+        return lines or None
 
     def next_line(self) -> Optional[str]:
         next_line = next(self._line_iterator, None)
