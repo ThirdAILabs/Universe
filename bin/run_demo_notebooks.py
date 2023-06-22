@@ -32,7 +32,7 @@ def get_notebook_paths(temp_dir):
     return notebook_paths
 
 
-def run_demo_notebooks(notebook_paths, temp_dir):
+def run_demo_notebooks(notebook_paths):
     errors = []
     for notebook_path in notebook_paths:
         with open(notebook_path) as notebook_file:
@@ -62,7 +62,7 @@ def run_demo_notebooks(notebook_paths, temp_dir):
 def main():
     temp_dir = tempfile.mkdtemp()
     demo_notebook_paths = get_notebook_paths(temp_dir)
-    run_demo_notebooks(demo_notebook_paths, temp_dir)
+    run_demo_notebooks(demo_notebook_paths)
     shutil.rmtree(temp_dir)  # Clean up the files used for the test
 
 
