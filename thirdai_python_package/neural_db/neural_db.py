@@ -123,10 +123,11 @@ class NeuralDB:
 
     def from_checkpoint(
         self,
-        checkpoint_path: Path,
+        checkpoint_path: str,
         on_progress: Callable = no_op,
-        on_error: Callable = no_op,
+        on_error: Callable = None,
     ):
+        checkpoint_path = Path(checkpoint_path)
         try:
             self._savable_state = State.load(checkpoint_path, on_progress)
             if not isinstance(self._savable_state.logger, loggers.LoggerList):
@@ -176,8 +177,8 @@ class NeuralDB:
     def sources(self) -> List[str]:
         return self._savable_state.documents.sources()
 
-    def save(self, save_to: Path, on_progress: Callable = no_op) -> None:
-        return self._savable_state.save(save_to, on_progress)
+    def save(self, save_to: str, on_progress: Callable = no_op) -> None:
+        return self._savable_state.save(Path(save_to), on_progress)
 
     def insert(
         self,

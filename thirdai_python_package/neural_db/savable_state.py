@@ -100,21 +100,21 @@ class State:
         return str(directory)
 
     def load(location: Path, on_progress: Callable = lambda **kwargs: None):
-        state = State(model=None, logger=None)
-
         total_steps = 6
 
         # load model
-        state.model = unpickle_from(State.model_pkl_path(location))
+        model = unpickle_from(State.model_pkl_path(location))
         on_progress(fraction=1 / total_steps)
-        state.model.load_meta(State.model_meta_path(location))
+        model.load_meta(State.model_meta_path(location))
         on_progress(fraction=2 / total_steps)
 
         # load logger
-        state.logger = unpickle_from(State.logger_pkl_path(location))
+        logger = unpickle_from(State.logger_pkl_path(location))
         on_progress(fraction=3 / total_steps)
-        state.logger.load_meta(State.logger_meta_path(location))
+        logger.load_meta(State.logger_meta_path(location))
         on_progress(fraction=4 / total_steps)
+
+        state = State(model=model, logger=logger)
 
         # load documents
         state.documents = unpickle_from(State.documents_pkl_path(location))
