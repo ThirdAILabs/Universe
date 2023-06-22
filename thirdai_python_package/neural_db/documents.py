@@ -4,8 +4,9 @@ from typing import Dict, List, Optional, Tuple
 from requests.models import Response
 
 import pandas as pd
-from parsing_utils import doc_parse, pdf_parse, url_parse
-import utils
+from .parsing_utils import doc_parse, pdf_parse, url_parse
+from .qa import ContextArgs
+from .utils import hash_string, hash_file
 from thirdai.dataset.data_source import PyDataSource
 
 
@@ -15,7 +16,7 @@ class Reference:
     def __init__(
         self, element_id: int, text: str, source: str, metadata: dict, show_fn
     ):
-        self._id = element_id
+        self._element_id = element_id
         self._text = text
         self._source = source
         self._metadata = metadata
@@ -39,16 +40,6 @@ class Reference:
             source=self._source,
             **self._metadata,
         )
-    
-
-class ContextArgs:
-    def __init__(self, **kwargs):
-        # Set default context arguments
-        setattr(self, "num_references", 1)
-
-        # Set input context args
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
 
 
 class Document:
@@ -132,6 +123,12 @@ class DocumentDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name() for doc, _ in self.documents])
+    
+
+class IntroAndTrainDocuments:
+    def __init__(self, intro: DocumentDataSource, train: DocumentDataSource) -> None:
+        self.intro = intro
+        self.train = train
 
 
 class DocumentManager:
@@ -163,7 +160,7 @@ class DocumentManager:
                 intro_dds.add(doc, start_id)
             doc, start_id = self.registry[doc_hash]
             train_dds.add(doc, start_id)
-        return intro_dds, train_dds
+        return IntroAndTrainDocuments(intro=intro_dds, train=train_dds)
     
     def sources(self):
         return [doc.name() for doc, _ in self.id_sorted_docs]
@@ -182,15 +179,11 @@ class DocumentManager:
             if start_id <= element_id:
                 return self.id_sorted_docs[i]
 
-    # def reference(self, element_id: int):
-    #     doc, start_id = self._get_doc_and_start_id(element_id)
-    #     doc_ref = doc.reference(element_id - start_id)
-    #     doc_ref._id = element_id
-    #     return doc_ref
-
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
-        return doc.reference(element_id - start_id)
+        doc_ref = doc.reference(element_id - start_id)
+        doc_ref._element_id = element_id
+        return doc_ref
 
     def context(self, element_id: int, context_args: ContextArgs):
         doc, start_id = self._get_doc_and_start_id(element_id)
@@ -219,7 +212,7 @@ class Extracted(Document):
         
         self.filename = filename
         self.df = self.process_data(filename)
-        self.hash_val = utils.hash_file(filename)
+        self.hash_val = hash_file(filename)
 
     def process_data(
         self,
@@ -241,13 +234,17 @@ class Extracted(Document):
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
+    
+    def show_fn(text, source, **kwargs):
+        return text
 
     def reference(self, element_id: int) -> Reference:
         return Reference(
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.filename,
-            metadata={"page": self.df["page"].iloc[element_id]}
+            metadata={"page": self.df["page"].iloc[element_id]},
+            show_fn=self.show_fn
         )
 
     def get_context(self, element_id, context_args) -> str:
@@ -331,7 +328,7 @@ class URL(Document):
     ):
         self.url = url
         self.df = self.process_data(url, url_response)
-        self.hash_val = utils.hash_string(url)
+        self.hash_val = hash_string(url)
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -358,12 +355,17 @@ class URL(Document):
 
     def weak_text(self, element_id: int) -> str:
         return self.df["text"].iloc[element_id]
+    
+    def show_fn(text, source, **kwargs):
+        return text
 
     def reference(self, element_id: int) -> Reference:
         return Reference(
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
+            metadata={},
+            show_fn=self.show_fn
         )
 
     def get_context(self, element_id, context_args) -> str:
@@ -392,15 +394,15 @@ class URL(Document):
 
 
 class CSV(Document):
-    def __init__(self, filename, strong_cols, weak_cols, display_cols):
-
+    def __init__(self, filename, strong_cols, weak_cols):
         self.filename = filename
         self.strong_cols = strong_cols
         self.weak_cols = weak_cols
-        self.display_cols = display_cols
-        self.df = pd.read_csv(self.path)
-        self.hash_val = utils.hash_file(filename)
+        self.df = pd.read_csv(self.filename)
+        self.hash_val = hash_file(filename)
 
+        for col in strong_cols + weak_cols:
+            self.df[col] = self.df[col].fillna("")
 
     def hash(self) -> str:
         return self.hash_val
@@ -416,13 +418,15 @@ class CSV(Document):
        
     def weak_text(self, element_id: int) -> str:
         return " ".join(self.df[self.weak_cols].iloc[element_id].tolist())
+    
+    def show_fn(text, source, **kwargs):
+        return text
 
     def reference(self, element_id: int) -> Reference:
         return Reference(
             element_id=element_id,
             text=self.weak_text(element_id),
-            source=self.filename
+            source=self.filename,
+            metadata={},
+            show_fn=self.show_fn
         )
-
-    def get_context(self, element_id, context_args) -> str:
-        return ""

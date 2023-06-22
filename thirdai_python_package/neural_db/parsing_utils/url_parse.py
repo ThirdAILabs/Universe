@@ -10,7 +10,7 @@ from trafilatura import extract
 from trafilatura.settings import use_config
 from url_normalize import url_normalize
 
-import parsing_utils.utils as utils
+from .utils import ensure_valid_encoding
 
 # Set headers of request to mimic a browser to retrieve the same html rendered in a browser
 # https://stackoverflow.com/questions/27652543/how-to-use-python-requests-to-fake-a-browser-visit-a-k-a-and-generate-user-agent
@@ -118,5 +118,5 @@ def create_train_df(elements):
             elem[1],
         ]
     for column in ["text", "display"]:
-        df[column] = df[column].apply(utils.ensure_valid_encoding)
+        df[column] = df[column].apply(ensure_valid_encoding)
     return df

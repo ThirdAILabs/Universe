@@ -6,11 +6,10 @@ import fitz
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 
-import parsing_utils.utils as utils
+from .utils import ensure_valid_encoding, chunk_text, ATTACH_N_WORD_THRESHOLD
 
 # TODO: Remove senttokenize
 # TODO: Limit paragraph length
-
 
 def para_is_complete(para):
     endings = [".", "?", "!", '."', ".'"]
@@ -44,7 +43,7 @@ def process_pdf_file(filename):
                         and prev != ""
                         and (
                             not para_is_complete(paras[-1][0])
-                            or prev_n_words < utils.ATTACH_N_WORD_THRESHOLD
+                            or prev_n_words < ATTACH_N_WORD_THRESHOLD
                         )
                     ):
                         attach = True
@@ -75,7 +74,7 @@ def process_pdf_file(filename):
         paras = [
             (chunk, page_no, docname, temp)
             for passage, page_no, docname, temp in paras
-            for chunk in utils.chunk_text(passage)
+            for chunk in chunk_text(passage)
         ]
         for para in paras:
             if len(para) > 0:
@@ -111,7 +110,7 @@ def create_train_df(elements):
         # elem[-1] is id
         df.iloc[i] = [passage, passage, elem[3], elem[2], elem[1], elem[4]]
     for column in ["passage", "para", "display"]:
-        df[column] = df[column].apply(utils.ensure_valid_encoding)
+        df[column] = df[column].apply(ensure_valid_encoding)
     return df
 
 
