@@ -204,6 +204,11 @@ class UDT {
                      n_balancing_samples, learning_rate, epochs);
   }
 
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) {
+    _backend->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
+  }
+
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {

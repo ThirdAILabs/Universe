@@ -1,5 +1,6 @@
 #include "UDTRecurrentClassifier.h"
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -16,6 +17,8 @@
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
+
+using bolt::train::metrics::fromMetricNames;
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -76,15 +79,24 @@ py::object UDTRecurrentClassifier::train(
   bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
                                bolt::train::python::CtrlCCheck{});
 
-  auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset = _dataset_factory->getDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
   auto history = trainer.train_with_dataset_loader(
-      train_dataset, learning_rate, epochs, batch_size,
-      options.max_in_memory_batches, train_metrics, val_dataset, val_metrics,
-      options.steps_per_validation, options.sparse_validation, callbacks,
-      /* autotune_rehash_rebuild= */ true, options.verbose,
-      options.logging_interval);
+      /* train_data_loader= */ train_dataset,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* batch_size= */ batch_size,
+      /* max_in_memory_batches= */ options.max_in_memory_batches,
+      /* train_metrics= */
+      fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
+      /* validation_data_loader= */ val_dataset,
+      /* validation_metrics= */
+      fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks,
+      /* autotune_rehash_rebuild= */ true, /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval);
 
   return py::cast(history);
 }
@@ -102,7 +114,8 @@ py::object UDTRecurrentClassifier::evaluate(
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
   auto history = trainer.validate_with_dataset_loader(
-      dataset, metrics, sparse_inference, verbose);
+      dataset, fromMetricNames(_model, metrics, /* prefix= */ "val_"),
+      sparse_inference, verbose);
 
   return py::cast(history);
 }

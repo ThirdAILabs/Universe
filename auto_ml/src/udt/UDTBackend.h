@@ -28,6 +28,8 @@ struct TrainOptions {
   bool sparse_validation = false;
   bool verbose = true;
   std::optional<uint32_t> logging_interval = std::nullopt;
+  dataset::DatasetShuffleConfig shuffle_config =
+      dataset::DatasetShuffleConfig();
 };
 
 /**
@@ -348,6 +350,13 @@ class UDTBackend {
     (void)learning_rate;
     (void)epochs;
     throw notSupported("upvote");
+  }
+
+  virtual void enableRlhf(uint32_t num_balancing_docs,
+                          uint32_t num_balancing_samples_per_doc) {
+    (void)num_balancing_docs;
+    (void)num_balancing_samples_per_doc;
+    throw notSupported("enable_rlhf");
   }
 
   /**
