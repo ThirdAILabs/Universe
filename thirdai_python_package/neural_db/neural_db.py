@@ -67,6 +67,7 @@ class Sup:
                 )
             self.queries = queries
             self.labels = labels
+        # elif csv is None and 
         else:
             raise ValueError(
                 "Sup must be initialized with csv, query_column and id_column, or queries and labels."
@@ -96,7 +97,7 @@ class SupDataSource(PyDataSource):
         yield self._csv_line(self.query_col, self.doc_manager.id_column)
         # Then yield rows
         for sup in self.data:
-            source_ids = self.doc_manager.match_source_by_id_prefix(sup.source_id)
+            source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
             if len(source_ids) == 0:
                 raise ValueError(f"Cannot find source with id {sup.source_id}")
             if len(source_ids) > 1:
