@@ -322,6 +322,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
@@ -343,6 +344,8 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
     bolt/src/train/metrics/FMeasure.cc
+    bolt/src/train/metrics/MachPrecision.cc
+    bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc

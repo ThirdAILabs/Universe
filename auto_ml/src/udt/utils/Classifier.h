@@ -15,6 +15,8 @@
 
 namespace thirdai::automl::udt::utils {
 
+using bolt::train::metrics::InputMetrics;
+
 class Classifier {
  public:
   Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables);
@@ -32,9 +34,20 @@ class Classifier {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options);
 
+  py::object train(const dataset::DatasetLoaderPtr& data, float learning_rate,
+                   uint32_t epochs, const InputMetrics& train_metrics,
+                   const dataset::DatasetLoaderPtr& val_data,
+                   const InputMetrics& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options);
+
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose);
+
+  py::object evaluate(dataset::DatasetLoaderPtr& dataset,
+                      const InputMetrics& metrics, bool sparse_inference,
+                      bool verbose);
 
   py::object predict(const bolt::nn::tensor::TensorList& inputs,
                      bool sparse_inference, bool return_predicted_class,

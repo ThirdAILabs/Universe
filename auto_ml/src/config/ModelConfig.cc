@@ -4,6 +4,7 @@
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -141,6 +142,26 @@ bolt::nn::autograd::ComputationPtr buildRobeZ(
   return layer->apply(getPredecessor(config, created_comps));
 }
 
+bolt::nn::autograd::ComputationPtr buildEmbedding(
+    const json& config, const ArgumentMap& args,
+    const CreatedComputations& created_comps) {
+  uint32_t dim = integerParameter(config, "dim", args);
+
+  std::string activation = stringParameter(config, "activation", args);
+
+  auto predecessor = getPredecessor(config, created_comps);
+
+  bool use_bias = true;
+  if (config.contains("use_bias")) {
+    use_bias = booleanParameter(config, "use_bias", args);
+  }
+
+  auto layer = bolt::nn::ops::Embedding::make(dim, predecessor->dim(),
+                                              activation, use_bias);
+
+  return layer->apply(predecessor);
+}
+
 /**
  * Helper function to construct the inputs. Matches the input dims to the
  * input names provided in the config. Updates created nodes to contain the
@@ -170,7 +191,8 @@ bolt::nn::autograd::ComputationList getInputs(
 
 bolt::nn::model::ModelPtr buildModel(const json& config,
                                      const ArgumentMap& args,
-                                     const std::vector<uint32_t>& input_dims) {
+                                     const std::vector<uint32_t>& input_dims,
+                                     bool mach) {
   CreatedComputations created_comps;
 
   auto inputs = getInputs(config, input_dims, created_comps);
@@ -188,6 +210,8 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
           buildFullyConnected(node_config, args, created_comps);
     } else if (type == "robez") {
       created_comps[name] = buildRobeZ(node_config, args, created_comps);
+    } else if (type == "embedding") {
+      created_comps[name] = buildEmbedding(node_config, args, created_comps);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");
@@ -214,7 +238,17 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
                                 "' provided in model config.");
   }
 
-  auto model = bolt::nn::model::Model::make(inputs, {output}, {loss});
+  bolt::nn::autograd::ComputationList additional_labels;
+  if (mach) {
+    // For mach we need the hash based labels for training, but the actual
+    // document/class ids to compute metrics. Hence we add two labels to the
+    // model.
+    additional_labels.push_back(
+        bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
+  }
+
+  auto model =
+      bolt::nn::model::Model::make(inputs, {output}, {loss}, additional_labels);
 
   return model;
 }

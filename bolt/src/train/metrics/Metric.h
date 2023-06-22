@@ -119,7 +119,7 @@ class MetricCollection {
  */
 InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
                              const std::vector<std::string>& metric_names,
-                             const std::string& prefix = "");
+                             const std::string& prefix);
 
 float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
                               const std::atomic_uint64_t& denominator);
