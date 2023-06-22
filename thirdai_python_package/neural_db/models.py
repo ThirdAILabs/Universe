@@ -354,8 +354,18 @@ class Mach(Model):
         n_upvote_samples: int = 16, n_balancing_samples: int = 50,
         learning_rate: float = 0.001, epochs: int = 3):
         
+        query_col = self.get_query_col()
+        id_col = self.get_id_col()
+        samples =  [
+            {
+                query_col: clean_text(text),
+                id_col: str(label),
+            }
+            for text, label in pairs
+        ]
+
         self.model.upvote(
-            source_target_samples=self.train_samples_to_train_batch(pairs),
+            source_target_samples=samples,
             n_upvote_samples=n_upvote_samples, 
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
