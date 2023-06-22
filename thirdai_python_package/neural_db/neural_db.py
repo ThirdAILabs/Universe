@@ -205,7 +205,7 @@ class NeuralDB:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
                 train_documents=intro_and_train.train,
-                train_if_not_from_scratch=train,
+                should_train=train,
                 on_progress=on_progress,
             )
 
