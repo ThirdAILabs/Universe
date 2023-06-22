@@ -1,5 +1,6 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -470,6 +471,8 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
+  bolt::train::python::CtrlCCheck ctrl_c_check;
+
   for (const auto& batch : doc_samples_tensors) {
     // Note: using sparse inference here could cause issues because the mach
     // index sampler will only return nonempty buckets, which could cause new
@@ -481,12 +484,16 @@ void UDTMachClassifier::introduceDocuments(
       top_k_per_doc[label].push_back(
           scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
+
+    ctrl_c_check();
   }
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
                                   num_random_hashes);
     _mach_label_block->index()->insert(doc, hashes);
+
+    ctrl_c_check();
   }
 
   addBalancingSamples(cold_start_data);
