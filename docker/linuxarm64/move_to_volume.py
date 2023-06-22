@@ -1,6 +1,6 @@
-import shutil
-import os
 import argparse
+import os
+import shutil
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -16,4 +16,3 @@ for f in allfiles:
     src_path = os.path.join(args.src, f)
     dst_path = os.path.join(args.dest, f)
     shutil.move(src_path, dst_path)
-
