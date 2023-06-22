@@ -39,12 +39,12 @@ def run_demo_notebooks(notebook_paths, temp_dir):
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
             # The resources argument is needed to execute the notebook in the temporary directory
-            temp_path = os.path.join(temp_dir, "Demos")
+            working_dir = str(Path(notebook_path).parent)
             try:
                 ep = ExecutePreprocessor(
                     timeout=None,
                     kernel_name="python3",
-                    resources={"metadata": {"path": temp_path}},
+                    resources={"metadata": {"path": working_dir}},
                 )
                 nb_out = ep.preprocess(nb_in)
             except Exception as error:
