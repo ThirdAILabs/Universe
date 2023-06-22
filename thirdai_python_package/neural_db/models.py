@@ -24,7 +24,7 @@ class Model:
         self,
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
-        train_if_not_from_scratch: bool,
+        should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
         on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
@@ -196,7 +196,7 @@ class Mach(Model):
         self,
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
-        train_if_not_from_scratch: bool,
+        should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
         on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
@@ -204,8 +204,6 @@ class Mach(Model):
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with id_col={intro_documents.id_column}"
             )
-
-        do_unsupervised_training = self.model is None or train_if_not_from_scratch
 
         if self.model is None:
             self.id_col = intro_documents.id_column
@@ -229,7 +227,7 @@ class Mach(Model):
         self.n_ids += intro_documents.size()
         self.add_balancing_samples(intro_documents)
 
-        if do_unsupervised_training:
+        if should_train:
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
