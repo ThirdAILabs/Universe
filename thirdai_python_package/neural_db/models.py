@@ -355,12 +355,9 @@ class Mach(Model):
         learning_rate: float = 0.001, epochs: int = 3):
         
         query_col = self.get_query_col()
-        id_col = self.get_id_col()
+        query_col = self.get_query_col()
         samples =  [
-            {
-                query_col: clean_text(text),
-                id_col: str(label),
-            }
+            ({query_col: clean_text(text)}, label)
             for text, label in pairs
         ]
 
