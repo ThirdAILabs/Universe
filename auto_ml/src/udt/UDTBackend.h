@@ -111,6 +111,16 @@ class UDTBackend {
     throw notSupported("output frequency");
   }
 
+  virtual py::object outputCorrectness(const MapInputBatch& sample,
+                                       const std::vector<uint32_t>& labels,
+                                       bool sparse_inference, uint32_t top_k) {
+    (void)sample;
+    (void)labels;
+    (void)sparse_inference;
+    (void)top_k;
+    throw notSupported("output correctness");
+  }
+
   /**
    * Returns the model used.
    */

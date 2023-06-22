@@ -6,6 +6,7 @@
 #include <dataset/src/utils/SafeFileIO.h>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 
 namespace thirdai::dataset::mach {
 
@@ -119,15 +120,15 @@ float MachIndex::sparsity() const {
   return guess;
 }
 
-std::vector<uint32_t> MachIndex::topKNonEmptyBucketsIndices(
+std::unordered_set<uint32_t> MachIndex::topKNonEmptyBucketsIndices(
     const BoltVector& output, uint32_t k) const {
   TopKActivationsQueue top_buckets = topKNonEmptyBuckets(output, k);
 
-  std::vector<uint32_t> buckets;
+  std::unordered_set<uint32_t> buckets;
 
   while (!top_buckets.empty()) {
     std::pair<float, uint32_t> element = top_buckets.top();
-    buckets.push_back(element.second);
+    buckets.insert(element.second);
     top_buckets.pop();
   }
 

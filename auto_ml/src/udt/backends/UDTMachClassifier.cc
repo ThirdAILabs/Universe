@@ -260,15 +260,14 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predicted_entities);
 }
 
-py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
-                                         bool sparse_inference,
-                                         uint32_t top_k) {
+std::vector<std::unordered_set<uint32_t>> UDTMachClassifier::outputBuckets(
+    const MapInputBatch& samples, bool sparse_inference, uint32_t top_k) {
   auto outputs = _classifier->model()
                      ->forward(_dataset_factory->featurizeInputBatch(samples),
                                sparse_inference)
                      .at(0);
 
-  std::vector<std::vector<uint32_t>> top_buckets(outputs->batchSize());
+  std::vector<std::unordered_set<uint32_t>> top_buckets(outputs->batchSize());
 
 #pragma omp parallel for default(none) shared(outputs, top_buckets, top_k)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
@@ -276,6 +275,15 @@ py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
     top_buckets[i] =
         _mach_label_block->index()->topKNonEmptyBucketsIndices(vector, top_k);
   }
+
+  return top_buckets;
+}
+
+py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
+                                         bool sparse_inference,
+                                         uint32_t top_k) {
+  std::vector<std::unordered_set<uint32_t>> top_buckets =
+      outputBuckets(samples, sparse_inference, top_k);
 
   std::unordered_map<uint32_t, uint32_t> bucket_freq;
 
@@ -286,6 +294,31 @@ py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
   }
 
   return py::cast(bucket_freq);
+}
+
+py::object UDTMachClassifier::outputCorrectness(
+    const MapInputBatch& samples, const std::vector<uint32_t>& labels,
+    bool sparse_inference, uint32_t top_k) {
+  std::vector<std::unordered_set<uint32_t>> top_buckets =
+      outputBuckets(samples, sparse_inference, top_k);
+
+  std::vector<uint32_t> matching_buckets(labels.size());
+
+#pragma omp parallel for default(none) \
+    shared(labels, top_buckets, matching_buckets)
+  for (uint32_t i = 0; i < labels.size(); i++) {
+    std::vector<uint32_t> hashes =
+        _mach_label_block->index()->getHashes(labels[i]);
+    uint32_t count = 0;
+    for (auto hash : hashes) {
+      if (top_buckets[i].count(hash) > 0) {
+        count++;
+      }
+    }
+    matching_buckets[i] = count;
+  }
+
+  return py::cast(matching_buckets);
 }
 
 py::object UDTMachClassifier::trainWithHashes(

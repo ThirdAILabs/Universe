@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -69,6 +70,12 @@ class UDT {
   py::object outputFreq(const MapInputBatch& sample, bool sparse_inference,
                         uint32_t top_k) {
     return _backend->outputFreq(sample, sparse_inference, top_k);
+  }
+
+  py::object outputCorrectness(const MapInputBatch& sample,
+                               const std::vector<uint32_t>& labels,
+                               bool sparse_inference, uint32_t top_k) {
+    return _backend->outputCorrectness(sample, labels, sparse_inference, top_k);
   }
 
   std::vector<dataset::Explanation> explain(
