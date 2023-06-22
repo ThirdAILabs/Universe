@@ -55,3 +55,5 @@ for result in db.search("STRONK", 2, on_error=lambda error_msg: print(error_msg)
     print(result.text())
 
 db.upvote(0)
+
+db.clear_documents()

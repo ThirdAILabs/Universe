@@ -89,9 +89,9 @@ class NeuralDB:
     def save(self, save_to: Path, on_progress: Callable = no_op) -> None:
         return self._savable_state.save(save_to, on_progress)
 
-    def add_documents(
+    def insert(
         self,
-        documents: Document,
+        sources: List[Document],
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = no_op,
@@ -99,7 +99,7 @@ class NeuralDB:
     ) -> None:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
-            intro_and_train = self._savable_state.documents.add(documents)
+            intro_and_train = self._savable_state.documents.add(sources)
         except Exception as e:
             self._savable_state.documents = documents_copy
             on_error(error_msg=f"Failed to add files. {e.__str__()}")
@@ -133,7 +133,7 @@ class NeuralDB:
                 error_msg=f"Failed to train model on added files. {e.__str__()}"
             )
         
-    def clear_documents(self) -> None:
+    def clear_sources(self) -> None:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
@@ -151,13 +151,13 @@ class NeuralDB:
             on_error(e.__str__())
             return []
 
-    def upvote(self, idx) -> None:
+    def text_to_result(self, text: str, result_id: int) -> None:
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query=self._search_state._query,
-            liked_passage_id=self._search_state.references()[idx].id(),
+            query=text,
+            liked_passage_id=result_id,
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
