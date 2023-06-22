@@ -7,11 +7,13 @@ bazaar.list_model_names()
 
 ndb = neural_db.NeuralDB(user_id="global")
 ndb.from_checkpoint(bazaar.get_model_dir("ms_marco"))
-ndb.add_documents([
-    documents.CSV(...),
-    documents.PDF(...),
-    documents.DOCX(...),
-])
+ndb.add_documents(
+    [
+        documents.CSV(...),
+        documents.PDF(...),
+        documents.DOCX(...),
+    ]
+)
 
 references = ndb.search("query")
 
@@ -25,5 +27,6 @@ ndb.set_answerer_state(
     AnswererState(
         qa.OpenAI(key=""),
         qa.modules["Open AI for Question Answering"],
-    ))
+    )
+)
 ndb.answer()

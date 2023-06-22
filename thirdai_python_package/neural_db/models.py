@@ -7,9 +7,8 @@ import pandas as pd
 from nltk.tokenize import sent_tokenize
 from thirdai import bolt, bolt_v2
 
-from .utils import clean_text, random_sample
 from .documents import DocumentDataSource
-
+from .utils import clean_text, random_sample
 
 InferSamples = List
 Predictions = Sequence
@@ -110,7 +109,7 @@ def unsupervised_train_on_docs(
     on_freeze_hash_tables: Callable,
 ):
     model._get_model().freeze_hash_tables()
-    
+
     for i in range(max_epochs):
         documents.restart()
         metrics = model.cold_start_on_data_source(
@@ -121,7 +120,7 @@ def unsupervised_train_on_docs(
             epochs=1,
             metrics=[metric],
         )
-        
+
         val = metrics["train_" + metric][0]
         on_progress(fraction=val)
         if i >= min_epochs - 1 and val > acc_to_stop:
@@ -228,7 +227,7 @@ class Mach(Model):
                 on_progress=on_progress,
                 on_freeze_hash_tables=on_freeze_hash_tables,
             )
-        
+
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)
         self.balancing_samples += samples

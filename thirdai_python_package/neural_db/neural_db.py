@@ -1,16 +1,16 @@
-from pathlib import Path
-from enum import Enum
-from typing import Callable, List, Optional, Sequence
 import copy
-import pandas as pd
+from enum import Enum
+from pathlib import Path
+from typing import Callable, List, Optional, Sequence
 
-from .documents import Reference, Document, DocumentManager
-from .savable_state import State
-from .models import Mach
-from . import qa, teachers, loggers
+import pandas as pd
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
+from . import loggers, qa, teachers
+from .documents import Document, DocumentManager, Reference
+from .models import Mach
+from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -47,12 +47,31 @@ def no_op(*args, **kwargs):
 
 
 class Sup:
-    def __init__(self, queries: Sequence[str], labels: Sequence[int], source_id: str=""):
+    def __init__(
+        self,
+        csv: str = None,
+        query_column: str = None,
+        id_column: str = None,
+        queries: Sequence[str] = None,
+        labels: Sequence[int] = None,
+        source_id: str = "",
+    ):
+        if csv is not None and query_column is not None and id_column is not None:
+            df = pd.read_csv(csv)
+            self.queries = df[query_column]
+            self.labels = df[id_column]
+        elif queries is not None and labels is not None:
+            if len(queries) != len(labels):
+                raise ValueError(
+                    "Queries and labels sequences must be the same length."
+                )
+            self.queries = queries
+            self.labels = labels
+        else:
+            raise ValueError(
+                "Sup must be initialized with csv, query_column and id_column, or queries and labels."
+            )
         self.source_id = source_id
-        if len(queries) != len(labels):
-            raise ValueError("Queries and labels sequences must be the same length.")
-        self.queries = queries
-        self.labels = labels
 
 
 class SupDataSource(PyDataSource):
@@ -101,9 +120,12 @@ class NeuralDB:
             model=Mach(id_col="id", query_col="query"),
             logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
-        
+
     def from_checkpoint(
-        self, checkpoint_path: Path, on_progress: Callable = no_op, on_error: Callable = no_op
+        self,
+        checkpoint_path: Path,
+        on_progress: Callable = no_op,
+        on_error: Callable = no_op,
     ):
         try:
             self._savable_state = State.load(checkpoint_path, on_progress)
@@ -117,21 +139,25 @@ class NeuralDB:
             on_error(error_msg=e.__str__())
 
     def from_udt(
-        self, 
+        self,
         udt: bolt.UniversalDeepTransformer,
-        id_col: str, id_delimiter: str, query_col: str, 
-        input_dim: int, hidden_dim: int, extreme_output_dim: int
+        id_col: str,
+        id_delimiter: str,
+        query_col: str,
+        input_dim: int,
+        hidden_dim: int,
+        extreme_output_dim: int,
     ):
         model = Mach(
-            id_col=id_col, 
-            id_delimiter=id_delimiter, 
-            query_col=query_col, 
-            input_dim=input_dim, 
-            hidden_dim=hidden_dim, 
-            extreme_output_dim=extreme_output_dim)
+            id_col=id_col,
+            id_delimiter=id_delimiter,
+            query_col=query_col,
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            extreme_output_dim=extreme_output_dim,
+        )
         model.model = udt
-        logger = loggers.LoggerList([
-            loggers.InMemoryLogger()])
+        logger = loggers.LoggerList([loggers.InMemoryLogger()])
         self._savable_state = State(model=model, logger=logger)
 
     def in_session(self) -> bool:
@@ -165,7 +191,7 @@ class NeuralDB:
             self._savable_state.documents = documents_copy
             on_error(error_msg=f"Failed to add files. {e.__str__()}")
             return []
-        
+
         try:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
@@ -173,13 +199,13 @@ class NeuralDB:
                 train_if_not_from_scratch=train,
                 on_progress=on_progress,
             )
-            
+
             self._savable_state.logger.log(
                 session_id=self._user_id,
                 action="Train",
                 args={"files": intro_and_train.intro.resource_name()},
             )
-        
+
             on_success()
             return ids
 
@@ -196,17 +222,19 @@ class NeuralDB:
                 error_msg=f"Failed to train model on added files. {e.__str__()}"
             )
             return []
-        
+
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
-    def search(self, query: str, top_k: int, on_error: Callable = no_op) -> List[Reference]:
+    def search(
+        self, query: str, top_k: int, on_error: Callable = no_op
+    ) -> List[Reference]:
         try:
-            result_ids = self._savable_state.model.infer_labels(samples=[query], n_results=top_k)[0]
-            return [
-                self._savable_state.documents.reference(rid) for rid in result_ids
-            ]
+            result_ids = self._savable_state.model.infer_labels(
+                samples=[query], n_results=top_k
+            )[0]
+            return [self._savable_state.documents.reference(rid) for rid in result_ids]
         except Exception as e:
             on_error(e.__str__())
             return []
@@ -239,7 +267,7 @@ class NeuralDB:
         )
 
     def supervised_train(
-        self, 
+        self,
         data: List[Sup],
         learning_rate=0.0001,
         epochs=3,
@@ -249,4 +277,5 @@ class NeuralDB:
         self._savable_state.model.get_model().train_on_data_source(
             data_source=SupDataSource(doc_manager, query_col, data),
             learning_rate=learning_rate,
-            epochs=epochs)
+            epochs=epochs,
+        )

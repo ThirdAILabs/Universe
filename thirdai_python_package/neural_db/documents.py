@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Callable
-from pytrie import StringTrie
+from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
+from pytrie import StringTrie
 from thirdai.dataset.data_source import PyDataSource
 
 
@@ -42,12 +42,12 @@ class Document:
 
 class Reference:
     def __init__(
-        self, 
+        self,
         document: Document,
-        element_id: int, 
-        text: str, 
-        source: str, 
-        metadata: dict, 
+        element_id: int,
+        text: str,
+        source: str,
+        metadata: dict,
         show_fn: Callable = lambda *args, **kwargs: None,
     ):
         self._id = element_id
@@ -62,7 +62,7 @@ class Reference:
 
     def text(self):
         return self._text
-    
+
     def context(self, radius: int):
         return self._context_fn(radius)
 
@@ -172,18 +172,18 @@ class DocumentManager:
             doc, start_id = self.registry[doc_hash]
             train.add(doc, start_id)
 
-        return IntroAndTrainDocuments(intro=intro, train=train), [doc.hash() for doc in documents]
-    
+        return IntroAndTrainDocuments(intro=intro, train=train), [
+            doc.hash() for doc in documents
+        ]
+
     def sources(self):
-        return {
-            doc_hash: doc.name() for doc_hash, (doc, _) in self.registry.items()
-        }
-    
+        return {doc_hash: doc.name() for doc_hash, (doc, _) in self.registry.items()}
+
     def match_source_id_by_prefix(self, prefix: str) -> Document:
         if prefix in self.registry:
             return [prefix]
         return self.source_id_prefix_trie.values(prefix)
-    
+
     def source_by_id(self, source_id: str):
         return self.registry[source_id]
 
