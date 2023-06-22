@@ -154,6 +154,7 @@ class NeuralDB:
         extreme_output_dim: int,
     ):
         udt.clear_index()
+        udt.enable_rlhf()
         model = Mach(
             id_col=id_col,
             id_delimiter=id_delimiter,
