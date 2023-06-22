@@ -63,10 +63,8 @@ class PrimaryWorker(Worker):
         if validation_context.sparse_inference:
             validation_eval_config.enable_sparse_inference()
 
-        validation_data, validation_label = load
         train_config.with_validation(
-            validation_data=[validation_data],
-            validation_labels=validation_label,
+            all_val_datasets=load,
             eval_config=validation_eval_config,
             validation_frequency=validation_context.validation_frequency,
             # We are just using the first metrics for save best model

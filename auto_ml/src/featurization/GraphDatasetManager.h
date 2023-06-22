@@ -18,7 +18,9 @@ class GraphDatasetManager {
                       uint32_t n_target_classes, const TabularOptions& options);
 
   dataset::DatasetLoaderPtr indexAndGetLabeledDatasetLoader(
-      const dataset::DataSourcePtr& data_source, bool shuffle);
+      const dataset::DataSourcePtr& data_source, bool shuffle,
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig());
 
   void index(const dataset::DataSourcePtr& data_source);
 
