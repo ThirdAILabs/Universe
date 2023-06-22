@@ -58,7 +58,7 @@ def run_demo_notebooks(notebook_paths):
     else:
         print("Successfully ran the following notebooks:")
         for nb in notebook_paths:
-            print(f"\t{nb}")
+            print(f"\t{Path(nb).stem}")
 
 
 def main():
