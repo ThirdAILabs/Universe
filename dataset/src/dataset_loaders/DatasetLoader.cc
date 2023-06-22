@@ -12,7 +12,8 @@ namespace thirdai::dataset {
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              dataset::FeaturizerPtr featurizer, bool shuffle,
                              DatasetShuffleConfig shuffle_config,
-                             size_t internal_featurization_batch_size)
+                             size_t internal_featurization_batch_size,
+                             bool ignore_empty_samples)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
       _shuffle(shuffle),
@@ -20,7 +21,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
       _buffer(/* should_shuffle = */ _shuffle,
               /* shuffle_seed = */ shuffle_config.seed,
               /* num_datasets = */ _featurizer->getNumDatasets()),
-      _featurization_batch_size(internal_featurization_batch_size) {
+      _featurization_batch_size(internal_featurization_batch_size),
+      _ignore_empty_samples(ignore_empty_samples) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
   // needed. The first row is interpreted as the header. The featurizer
@@ -149,10 +151,14 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
     for (size_t i = 0; i < batch.at(0).size(); i++) {
       std::vector<BoltVector> temp_vector;
       temp_vector.reserve(batch.size());
+      bool all_nonempty = true;
       for (auto& j : batch) {
+        all_nonempty = all_nonempty && (j[i].len > 0);
         temp_vector.push_back(std::move(j[i]));
       }
-      _buffer.insert(std::move(temp_vector));
+      if (all_nonempty) {
+        _buffer.insert(std::move(temp_vector));
+      }
     }
   }
 }

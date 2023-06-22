@@ -27,7 +27,8 @@ class DatasetLoader final {
                 dataset::FeaturizerPtr featurizer, bool shuffle,
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
                 size_t internal_featurization_batch_size =
-                    DEFAULT_FEATURIZATION_BATCH_SIZE);
+                    DEFAULT_FEATURIZATION_BATCH_SIZE,
+                bool ignore_empty_samples = true);
 
   std::vector<BoltDatasetPtr> loadAll(size_t batch_size, bool verbose = true);
 
@@ -69,6 +70,7 @@ class DatasetLoader final {
   // Batch size we use for loading from the data source and passing to the
   // Featurizer
   size_t _featurization_batch_size;
+  bool _ignore_empty_samples;
 };
 
 using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
