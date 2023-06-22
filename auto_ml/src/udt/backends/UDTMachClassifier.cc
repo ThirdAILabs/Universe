@@ -220,8 +220,6 @@ py::object UDTMachClassifier::trainBatch(
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
 
-  labels.push_back(placeholderDocIds(batch.size()));
-
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
 
