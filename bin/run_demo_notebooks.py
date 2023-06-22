@@ -38,8 +38,8 @@ def run_demo_notebooks(notebook_paths):
         with open(notebook_path) as notebook_file:
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-            # The resources argument is needed to execute the notebook in a specific 
-            # directory. We run the notebooks in the directory they are located in 
+            # The resources argument is needed to execute the notebook in a specific
+            # directory. We run the notebooks in the directory they are located in
             # to ensure that paths work correctly to configs (or anything else).
             working_dir = str(Path(notebook_path).parent)
             try:
