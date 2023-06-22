@@ -204,9 +204,9 @@ class Mach(Model):
                     raise ValueError(
                         f"Document has a different id column ({doc_id}) than the model configuration ({self.id_col})."
                     )
-                self.model.introduce_documents(
+                self.model.introduce_documents_on_data_source(
                     data_source=intro_documents,
-                    strong_column_names=intro_documents.strong_cols,
+                    strong_column_names=[intro_documents.strong_column],
                     weak_column_names=[],
                     num_buckets_to_sample=16,
                 )

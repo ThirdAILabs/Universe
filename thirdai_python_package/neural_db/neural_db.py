@@ -136,7 +136,10 @@ class NeuralDB:
                 )
         except Exception as e:
             self._savable_state = None
-            on_error(error_msg=e.__str__())
+            if on_error is not None:
+                on_error(error_msg=e.__str__())
+            else:
+                raise e
 
     def from_udt(
         self,
@@ -148,6 +151,7 @@ class NeuralDB:
         hidden_dim: int,
         extreme_output_dim: int,
     ):
+        udt.clear_index()
         model = Mach(
             id_col=id_col,
             id_delimiter=id_delimiter,
@@ -181,16 +185,18 @@ class NeuralDB:
         train: bool = True,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
-        on_error: Callable = no_op,
-        on_irrecoverable_error: Callable = no_op,
+        on_error: Callable = None,
+        on_irrecoverable_error: Callable = None,
     ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)
         except Exception as e:
             self._savable_state.documents = documents_copy
-            on_error(error_msg=f"Failed to add files. {e.__str__()}")
-            return []
+            if on_error is not None:
+                on_error(error_msg=f"Failed to add files. {e.__str__()}")
+                return []
+            raise e
 
         try:
             self._savable_state.model.index_documents(
@@ -218,17 +224,19 @@ class NeuralDB:
             # wrong with the model, not how we used it, so it should be very
             # rare and probably not worth saving.
             self.clear_session()
-            on_irrecoverable_error(
-                error_msg=f"Failed to train model on added files. {e.__str__()}"
-            )
-            return []
+            if on_irrecoverable_error is not None:
+                on_irrecoverable_error(
+                    error_msg=f"Failed to train model on added files. {e.__str__()}"
+                )
+                return []
+            raise e
 
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, on_error: Callable = no_op
+        self, query: str, top_k: int, on_error: Callable = None
     ) -> List[Reference]:
         try:
             result_ids = self._savable_state.model.infer_labels(
@@ -236,8 +244,10 @@ class NeuralDB:
             )[0]
             return [self._savable_state.documents.reference(rid) for rid in result_ids]
         except Exception as e:
-            on_error(e.__str__())
-            return []
+            if on_error is not None:
+                on_error(e.__str__())
+                return []
+            raise e
 
     def text_to_result(self, text: str, result_id: int) -> None:
         teachers.upvote(
