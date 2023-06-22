@@ -38,7 +38,10 @@ def associate(
 
 
 def upvote(
-    model: Model, logger: Logger, user_id: str, query_id_pairs: List[Tuple[str, int]],
+    model: Model,
+    logger: Logger,
+    user_id: str,
+    query_id_pairs: List[Tuple[str, int]],
 ):
     model.upvote(query_id_pairs)
     logger.log(
