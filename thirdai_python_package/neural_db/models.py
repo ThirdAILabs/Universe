@@ -25,6 +25,7 @@ class Model:
         self,
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
+        train_if_not_from_scratch: bool,
         on_progress: Callable = lambda **kwargs: None,
         on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
@@ -108,6 +109,8 @@ def unsupervised_train_on_docs(
     on_progress: Callable,
     on_freeze_hash_tables: Callable,
 ):
+    model._get_model().freeze_hash_tables()
+    
     for i in range(max_epochs):
         documents.restart()
         metrics = model.cold_start_on_data_source(
@@ -118,10 +121,7 @@ def unsupervised_train_on_docs(
             epochs=1,
             metrics=[metric],
         )
-        if i == 0:
-            model._get_model().freeze_hash_tables()
-            on_freeze_hash_tables()
-
+        
         val = metrics["train_" + metric][0]
         on_progress(fraction=val)
         if i >= min_epochs - 1 and val > acc_to_stop:
@@ -183,6 +183,7 @@ class Mach(Model):
         self,
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
+        train_if_not_from_scratch: bool,
         on_progress: Callable = lambda **kwargs: None,
         on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
@@ -190,6 +191,8 @@ class Mach(Model):
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with id_col={intro_documents.id_column}"
             )
+
+        do_unsupervised_training = self.model is None or train_if_not_from_scratch
 
         if self.model is None:
             self.id_col = intro_documents.id_column
@@ -213,17 +216,18 @@ class Mach(Model):
         self.n_ids += intro_documents.size()
         self.add_balancing_samples(intro_documents)
 
-        unsupervised_train_on_docs(
-            model=self.model,
-            documents=train_documents,
-            min_epochs=10,
-            max_epochs=20,
-            metric="precision@5",
-            learning_rate=learning_rate,
-            acc_to_stop=0.95,
-            on_progress=on_progress,
-            on_freeze_hash_tables=on_freeze_hash_tables,
-        )
+        if do_unsupervised_training:
+            unsupervised_train_on_docs(
+                model=self.model,
+                documents=train_documents,
+                min_epochs=10,
+                max_epochs=20,
+                metric="hash_precision@5",
+                learning_rate=learning_rate,
+                acc_to_stop=0.95,
+                on_progress=on_progress,
+                on_freeze_hash_tables=on_freeze_hash_tables,
+            )
         
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)

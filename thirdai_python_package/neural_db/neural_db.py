@@ -106,6 +106,7 @@ class NeuralDB:
     def insert(
         self,
         sources: List[Document],
+        train: bool = True,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = no_op,
@@ -123,6 +124,7 @@ class NeuralDB:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
                 train_documents=intro_and_train.train,
+                train_if_not_from_scratch=train,
                 on_progress=on_progress,
             )
             
