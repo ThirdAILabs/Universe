@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Sequence
+from typing import List, Tuple
 
 import pandas as pd
 from nltk.tokenize import sent_tokenize
@@ -23,41 +23,26 @@ def associate(
     model: Model,
     logger: Logger,
     user_id: str,
-    text_a: str,
-    text_b: str,
+    text_pairs: List[Tuple[str, str]],
     top_k: int,
 ):
-    train_samples = association_training_samples(
-        model, text_a, text_b, top_k, n_samples=16
-    )
-    for _ in range(3):
-        balanced_train_samples = model.balance_train_bucket_samples(
-            train_samples, n_samples=50
-        )
-        model.train_buckets(balanced_train_samples, learning_rate=0.001)
-
+    model.associate(text_pairs, top_k)
     logger.log(
         session_id=user_id,
         action="associate",
         args={
-            "text_a": text_a,
-            "text_b": text_b,
+            "pairs": text_pairs,
             "top_k": top_k,
         },
     )
 
 
 def upvote(
-    model: Model, logger: Logger, user_id: str, query: str, liked_passage_id: int
+    model: Model, logger: Logger, user_id: str, query_id_pairs: List[Tuple[str, int]],
 ):
-    train_samples = [(query, [liked_passage_id])] * 16
-    for _ in range(3):
-        balanced_samples = model.balance_train_label_samples(
-            train_samples, n_samples=50
-        )
-        model.train_labels(balanced_samples, learning_rate=0.001)
+    model.upvote(query_id_pairs)
     logger.log(
         session_id=user_id,
         action="upvote",
-        args={"query": query, "liked_passage_id": liked_passage_id},
+        args={"query_id_pairs": query_id_pairs},
     )

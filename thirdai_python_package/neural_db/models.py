@@ -1,6 +1,6 @@
 import random
 from pathlib import Path
-from typing import Callable, List, Sequence
+from typing import Callable, List, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -94,6 +94,20 @@ class Model:
         raise NotImplementedError()
 
     def load_meta(self, directory: Path):
+        raise NotImplementedError()
+
+    def associate(
+        self, 
+        pairs: List[Tuple[str, str]], n_buckets: int, 
+        n_association_samples: int = 16, n_balancing_samples: int = 50, 
+        learning_rate: float = 0.001, epochs: int = 3):
+        raise NotImplementedError()
+
+    def upvote(
+        self,
+        pairs: List[Tuple[str, int]], 
+        n_upvote_samples: int = 16, n_balancing_samples: int = 50,
+        learning_rate: float = 0.001, epochs: int = 3):
         raise NotImplementedError()
 
 
@@ -310,3 +324,42 @@ class Mach(Model):
 
     def get_bucket(self, entity: int):
         return self.model.get_index().get_entity_hashes(entity)
+
+    def associate(
+        self, 
+        pairs: List[Tuple[str, str]], n_buckets: int, 
+        n_association_samples: int = 16, n_balancing_samples: int = 50, 
+        learning_rate: float = 0.001, epochs: int = 3):
+        
+        query_col = self.get_query_col()
+
+        source_target_samples = [
+            (
+                {query_col: clean_text(source)},
+                {query_col: clean_text(target)},
+            )
+            for source, target in pairs
+        ]
+
+        self.model.associate(
+            source_target_samples=source_target_samples,
+            n_buckets=n_buckets, 
+            n_association_samples=n_association_samples,
+            n_balancing_samples=n_balancing_samples,
+            learning_rate=learning_rate, 
+            epochs=epochs,
+        )
+    
+    def upvote(
+        self,
+        pairs: List[Tuple[str, int]], 
+        n_upvote_samples: int = 16, n_balancing_samples: int = 50,
+        learning_rate: float = 0.001, epochs: int = 3):
+        
+        self.model.upvote(
+            source_target_samples=self.train_samples_to_train_batch(pairs),
+            n_upvote_samples=n_upvote_samples, 
+            n_balancing_samples=n_balancing_samples,
+            learning_rate=learning_rate,
+            epochs=epochs
+        )

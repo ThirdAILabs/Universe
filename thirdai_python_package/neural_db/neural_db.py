@@ -1,7 +1,7 @@
 import copy
 from enum import Enum
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from thirdai._thirdai import bolt
@@ -257,8 +257,15 @@ class NeuralDB:
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query=text,
-            liked_passage_id=result_id,
+            query_id_pairs=[(text, result_id)],
+        )
+    
+    def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
+        teachers.upvote(
+            model=self._savable_state.model,
+            logger=self._savable_state.logger,
+            user_id=self._user_id,
+            query_id_pairs=text_id_pairs,
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
@@ -274,8 +281,24 @@ class NeuralDB:
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            text_a=source,
-            text_b=target,
+            text_pairs=[(source, target)],
+            top_k=top_k,
+        )
+
+    def associate_batch(self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong):
+        if strength == Strength.Weak:
+            top_k = 3
+        elif strength == Strength.Medium:
+            top_k = 5
+        elif strength == Strength.Strong:
+            top_k = 7
+        else:
+            top_k = 7
+        teachers.associate(
+            model=self._savable_state.model,
+            logger=self._savable_state.logger,
+            user_id=self._user_id,
+            text_pairs=text_pairs,
             top_k=top_k,
         )
 
