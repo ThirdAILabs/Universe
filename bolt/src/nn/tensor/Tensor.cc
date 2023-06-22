@@ -142,9 +142,6 @@ void Tensor::checkBatchContents(const BoltBatch& batch, uint32_t dim) {
   bool is_dense = batch.begin()->isDense();
 
   for (const auto& vec : batch) {
-    if (vec.len == 0) {
-      throw std::invalid_argument("Cannot convert empty vector to tensor.");
-    }
     if (vec.isDense() != is_dense) {
       throw std::invalid_argument(
           "All vectors in batch must have same sparsity to convert to tensor.");
