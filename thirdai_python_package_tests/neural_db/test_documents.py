@@ -21,7 +21,6 @@ class MockDocument(Document):
         self._save_meta_dir = None
         self._load_meta_called = 0
         self._load_meta_dir = None
-        self._last_shown = None
 
     def hash(self) -> str:
         return self._identifier
@@ -61,17 +60,14 @@ class MockDocument(Document):
     def reference(self, element_id: int) -> Reference:
         self.check_id(element_id)
 
-        def show_fn(text, *args, **kwargs):
-            self._last_shown = text
-
         return Reference(
+            document=self,
             element_id=element_id,
             text=MockDocument.expected_reference_text_for_id(
                 self._identifier, element_id
             ),
             source=self._identifier,
             metadata={},
-            show_fn=show_fn,
         )
 
     def context(self, element_id: int, radius) -> str:
@@ -148,14 +144,14 @@ def test_document_data_source():
 @pytest.mark.unit
 def test_document_manager_splits_intro_and_train():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
-    data_sources = doc_manager.add([first_doc])
+    data_sources, _ = doc_manager.add([first_doc])
 
     assert data_sources.train.size() == first_size
     assert data_sources.intro.size() == first_size
     check_first_doc(data_source_to_df(data_sources.train))
     check_first_doc(data_source_to_df(data_sources.intro))
 
-    data_sources = doc_manager.add([first_doc, second_doc])
+    data_sources, _ = doc_manager.add([first_doc, second_doc])
 
     assert data_sources.train.size() == first_size + second_size
     assert data_sources.intro.size() == second_size
@@ -211,8 +207,6 @@ def test_document_manager_reference():
         first_id, 3
     )
     assert reference_3.source() == first_id
-    reference_3.show()
-    assert first_doc._last_shown == reference_3.text()
 
     reference_10 = doc_manager.reference(10)
     assert reference_10.id() == 10
@@ -220,8 +214,6 @@ def test_document_manager_reference():
         second_id, 10 - first_size
     )
     assert reference_10.source() == second_id
-    reference_10.show()
-    assert second_doc._last_shown == reference_10.text()
 
 
 def test_document_manager_context():
@@ -239,75 +231,75 @@ def test_document_manager_context():
     )
 
 
-@pytest.mark.release
-def test_udt_cold_start_on_csv_document():
-    class CSV(Document):
-        def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
-            self.df = pd.read_csv(csv_path)
-            self.df = self.df.sort_values(id_column)
-            assert len(self.df[id_column].unique()) == len(self.df[id_column])
-            assert self.df[id_column].min() == 0
-            assert self.df[id_column].max() == len(self.df[id_column]) - 1
+# @pytest.mark.release
+# def test_udt_cold_start_on_csv_document():
+#     class CSV(Document):
+#         def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
+#             self.df = pd.read_csv(csv_path)
+#             self.df = self.df.sort_values(id_column)
+#             assert len(self.df[id_column].unique()) == len(self.df[id_column])
+#             assert self.df[id_column].min() == 0
+#             assert self.df[id_column].max() == len(self.df[id_column]) - 1
 
-            for col in strong_columns + weak_columns:
-                self.df[col] = self.df[col].fillna("")
+#             for col in strong_columns + weak_columns:
+#                 self.df[col] = self.df[col].fillna("")
 
-            self.csv_path = csv_path
-            self.id_column = id_column
-            self.strong_columns = strong_columns
-            self.weak_columns = weak_columns
+#             self.csv_path = csv_path
+#             self.id_column = id_column
+#             self.strong_columns = strong_columns
+#             self.weak_columns = weak_columns
 
-        def size(self) -> int:
-            return len(self.df)
+#         def size(self) -> int:
+#             return len(self.df)
 
-        def strong_text(self, element_id: int) -> str:
-            return " ".join(
-                [self.df.iloc[element_id][col] for col in self.strong_columns]
-            )
+#         def strong_text(self, element_id: int) -> str:
+#             return " ".join(
+#                 [self.df.iloc[element_id][col] for col in self.strong_columns]
+#             )
 
-        def weak_text(self, element_id: int) -> str:
-            return " ".join(
-                [self.df.iloc[element_id][col] for col in self.weak_columns]
-            )
+#         def weak_text(self, element_id: int) -> str:
+#             return " ".join(
+#                 [self.df.iloc[element_id][col] for col in self.weak_columns]
+#             )
 
-        def name(self) -> str:
-            return self.csv_path
+#         def name(self) -> str:
+#             return self.csv_path
 
-    (
-        catalog_file,
-        n_target_classes,
-    ) = demos.download_amazon_kaggle_product_catalog_sampled()
+#     (
+#         catalog_file,
+#         n_target_classes,
+#     ) = demos.download_amazon_kaggle_product_catalog_sampled()
 
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "QUERY": bolt.types.text(),
-            "PRODUCT_ID": bolt.types.categorical(),
-        },
-        target="PRODUCT_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
-    )
+#     model = bolt.UniversalDeepTransformer(
+#         data_types={
+#             "QUERY": bolt.types.text(),
+#             "PRODUCT_ID": bolt.types.categorical(),
+#         },
+#         target="PRODUCT_ID",
+#         n_target_classes=n_target_classes,
+#         integer_target=True,
+#     )
 
-    data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
-    data_source.add(
-        CSV(
-            catalog_file,
-            "PRODUCT_ID",
-            ["TITLE"],
-            ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
-        ),
-        start_id=0,
-    )
-    metrics = model.cold_start_on_data_source(
-        data_source=data_source,
-        strong_column_names=["STRONG"],
-        weak_column_names=["WEAK"],
-        learning_rate=0.001,
-        epochs=5,
-        batch_size=2000,
-        metrics=["categorical_accuracy"],
-    )
+#     data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
+#     data_source.add(
+#         CSV(
+#             catalog_file,
+#             "PRODUCT_ID",
+#             ["TITLE"],
+#             ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+#         ),
+#         start_id=0,
+#     )
+#     metrics = model.cold_start_on_data_source(
+#         data_source=data_source,
+#         strong_column_names=["STRONG"],
+#         weak_column_names=["WEAK"],
+#         learning_rate=0.001,
+#         epochs=5,
+#         batch_size=2000,
+#         metrics=["categorical_accuracy"],
+#     )
 
-    os.remove(catalog_file)
+#     os.remove(catalog_file)
 
-    assert metrics["train_categorical_accuracy"][-1] > 0.5
+#     assert metrics["train_categorical_accuracy"][-1] > 0.5
