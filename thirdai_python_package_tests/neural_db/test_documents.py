@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from thirdai import bolt, demos
-from thirdai.neural_db import Document, Reference
+from thirdai.neural_db import Document, Reference, ContextArgs, CSV
 from thirdai.neural_db import documents as docs
 
 # We don't have a test on just the Document interface since it is just an
@@ -43,8 +43,9 @@ class MockDocument(Document):
     def expected_reference_text_for_id(doc_id: str, element_id: int):
         return f"Reference text from {doc_id}, with id {element_id}"
 
-    def expected_context_for_id_and_radius(doc_id: str, element_id: int, radius: int):
-        return f"Context from {doc_id}, with id {element_id} and radius {radius}"
+    def expected_context_for_id_and_radius(doc_id: str, element_id: int, context_args: ContextArgs):
+        print(context_args)
+        return f"Context from {doc_id}, with id {element_id} and context args {vars(context_args)}"
 
     def check_id(self, element_id: int):
         if element_id >= self._size:
@@ -74,10 +75,10 @@ class MockDocument(Document):
             show_fn=show_fn,
         )
 
-    def context(self, element_id: int, radius) -> str:
+    def context(self, element_id: int, context_args: ContextArgs) -> str:
         self.check_id(element_id)
         return MockDocument.expected_context_for_id_and_radius(
-            self._identifier, element_id, radius
+            self._identifier, element_id, context_args
         )
 
     def save_meta(self, directory: Path):
@@ -206,7 +207,7 @@ def test_document_manager_reference():
     doc_manager.add([first_doc, second_doc])
 
     reference_3 = doc_manager.reference(3)
-    assert reference_3.id() == 3
+    assert reference_3.element_id() == 3
     assert reference_3.text() == MockDocument.expected_reference_text_for_id(
         first_id, 3
     )
@@ -215,7 +216,7 @@ def test_document_manager_reference():
     assert first_doc._last_shown == reference_3.text()
 
     reference_10 = doc_manager.reference(10)
-    assert reference_10.id() == 10
+    assert reference_10.element_id() == 10
     assert reference_10.text() == MockDocument.expected_reference_text_for_id(
         second_id, 10 - first_size
     )
@@ -228,50 +229,19 @@ def test_document_manager_context():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
     assert doc_manager.context(
-        3, 10
+        3, context_args=ContextArgs(chunk_radius=3)
     ) == MockDocument.expected_context_for_id_and_radius(
-        first_id, element_id=3, radius=10
+        first_id, element_id=3, context_args=ContextArgs(chunk_radius=3)
     )
     assert doc_manager.context(
-        10, 3
+        10, context_args=ContextArgs(chunk_radius=3)
     ) == MockDocument.expected_context_for_id_and_radius(
-        second_id, element_id=10 - first_size, radius=3
+        second_id, element_id=10 - first_size, context_args=ContextArgs(chunk_radius=3)
     )
 
 
 @pytest.mark.release
 def test_udt_cold_start_on_csv_document():
-    class CSV(Document):
-        def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
-            self.df = pd.read_csv(csv_path)
-            self.df = self.df.sort_values(id_column)
-            assert len(self.df[id_column].unique()) == len(self.df[id_column])
-            assert self.df[id_column].min() == 0
-            assert self.df[id_column].max() == len(self.df[id_column]) - 1
-
-            for col in strong_columns + weak_columns:
-                self.df[col] = self.df[col].fillna("")
-
-            self.csv_path = csv_path
-            self.id_column = id_column
-            self.strong_columns = strong_columns
-            self.weak_columns = weak_columns
-
-        def size(self) -> int:
-            return len(self.df)
-
-        def strong_text(self, element_id: int) -> str:
-            return " ".join(
-                [self.df.iloc[element_id][col] for col in self.strong_columns]
-            )
-
-        def weak_text(self, element_id: int) -> str:
-            return " ".join(
-                [self.df.iloc[element_id][col] for col in self.weak_columns]
-            )
-
-        def name(self) -> str:
-            return self.csv_path
 
     (
         catalog_file,
@@ -292,7 +262,6 @@ def test_udt_cold_start_on_csv_document():
     data_source.add(
         CSV(
             catalog_file,
-            "PRODUCT_ID",
             ["TITLE"],
             ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
         ),

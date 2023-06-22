@@ -1,14 +1,44 @@
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
+from requests.models import Response
 
 import pandas as pd
 from pytrie import StringTrie
+from .parsing_utils import doc_parse, pdf_parse, url_parse
+from .qa import ContextArgs
+from .utils import hash_string, hash_file
 from thirdai.dataset.data_source import PyDataSource
 
 
 class Reference:
-    pass
+    def __init__(
+        self, element_id: int, text: str, source: str, metadata: dict, show_fn
+    ):
+        self._element_id = element_id
+        self._text = text
+        self._source = source
+        self._metadata = metadata
+        self._show_fn = show_fn
+
+    def element_id(self):
+        return self._element_id
+
+    def text(self):
+        return self._text
+
+    def source(self):
+        return self._source
+
+    def metadata(self):
+        return self._metadata
+
+    def show(self):
+        return self._show_fn(
+            text=self._text,
+            source=self._source,
+            **self._metadata,
+        )
 
 
 class Document:
@@ -30,7 +60,7 @@ class Document:
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def context(self, element_id: int, radius) -> str:
+    def context(self, element_id: int, context_args: ContextArgs) -> str:
         raise NotImplementedError()
 
     def save_meta(self, directory: Path):
@@ -132,7 +162,7 @@ class DocumentDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name() for doc, _ in self.documents])
-
+    
 
 class IntroAndTrainDocuments:
     def __init__(self, intro: DocumentDataSource, train: DocumentDataSource) -> None:
@@ -156,8 +186,8 @@ class DocumentManager:
         return start_id + doc.size()
 
     def add(self, documents: List[Document]):
-        intro = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
-        train = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
+        intro_dds = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
+        train_dds = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
         for doc in documents:
             doc_hash = doc.hash()
             if doc_hash not in self.registry:
@@ -168,11 +198,11 @@ class DocumentManager:
                 self.registry[doc_hash] = doc_and_id
                 self.id_sorted_docs.append(doc_and_id)
                 self.source_id_prefix_trie[doc_hash] = doc_hash
-                intro.add(doc, start_id)
+                intro_dds.add(doc, start_id)
             doc, start_id = self.registry[doc_hash]
-            train.add(doc, start_id)
+            train_dds.add(doc, start_id)
 
-        return IntroAndTrainDocuments(intro=intro, train=train), [
+        return IntroAndTrainDocuments(intro=intro_dds, train=train_dds), [
             doc.hash() for doc in documents
         ]
 
@@ -193,22 +223,26 @@ class DocumentManager:
         self.source_id_prefix_trie = StringTrie()
 
     def _get_doc_and_start_id(self, element_id: int):
+        # check if element_id is valid
+        if not self.id_sorted_docs or (not 0 <= element_id < self.id_sorted_docs[-1][1] + self.id_sorted_docs[-1][0].size()):
+            raise ValueError(f"Unable to find element that has id {element_id}.")
         # Iterate through docs in reverse order
         for i in range(len(self.id_sorted_docs) - 1, -1, -1):
             doc, start_id = self.id_sorted_docs[i]
             if start_id <= element_id:
                 return self.id_sorted_docs[i]
-        raise ValueError(f"Unable to find document that has id {id}.")
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
         doc_ref = doc.reference(element_id - start_id)
-        doc_ref._id = element_id
+        doc_ref._element_id = element_id
         return doc_ref
 
-    def context(self, element_id: int, radius: int):
+    def context(self, element_id: int, context_args: ContextArgs):
         doc, start_id = self._get_doc_and_start_id(element_id)
-        return doc.context(element_id - start_id, radius)
+        return doc.context(
+            element_id - start_id, context_args
+        )
 
     def save_meta(self, directory: Path):
         for i, (doc, _) in enumerate(self.id_sorted_docs):
@@ -220,3 +254,232 @@ class DocumentManager:
         for i, (doc, _) in enumerate(self.id_sorted_docs):
             subdir = directory / str(i)
             doc.load_meta(subdir)
+
+
+# Base class for PDF and DOCX classes because they share the same logic.
+class Extracted(Document):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        
+        self.filename = filename
+        self.df = self.process_data(filename)
+        self.hash_val = hash_file(filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def hash(self) -> str:
+        return self.hash_val
+
+    def size(self) -> int:
+        return len(self.df)
+
+    def name(self) -> str:
+        return self.filename
+
+    def strong_text(self, element_id: int) -> str:
+        return self.df["passage"].iloc[element_id]
+
+    def weak_text(self, element_id: int) -> str:
+        return self.df["para"].iloc[element_id]
+    
+    def show_fn(text, source, **kwargs):
+        return text
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            element_id=element_id,
+            text=self.df["display"].iloc[element_id],
+            source=self.filename,
+            metadata={"page": self.df["page"].iloc[element_id]},
+            show_fn=self.show_fn
+        )
+
+    def get_context(self, element_id, context_args) -> str:
+        if not 0 <= element_id < self.size():
+            raise ("Element id not in document.")
+
+        if hasattr(context_args, "chunk_radius"):
+            chunk_radius = context_args.chunk_radius
+
+            center_chunk_idx = element_id
+
+            window_start = center_chunk_idx - chunk_radius // 2
+            window_end = window_start + chunk_radius
+
+            if window_start < 0:
+                window_start = 0
+                window_end = min(chunk_radius, self.size())
+            elif window_end > self.size():
+                window_end = self.size()
+                window_start = max(0, self.size() - chunk_radius)
+
+            window_chunks = self.df.iloc[window_start:window_end]["passage"].tolist()
+            return "\n".join(window_chunks)
+
+        return ""
+
+
+class PDF(Extracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(
+            filename=filename
+        )
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        elements, success = pdf_parse.process_pdf_file(filename)
+
+        if not success:
+            print(f"Could not read PDF file {filename}")
+            return pd.DataFrame()
+
+        elements_df = pdf_parse.create_train_df(elements)
+
+        return elements_df
+
+
+class DOCX(Extracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(
+            filename=filename
+        )
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        elements, success = doc_parse.get_elements(filename)
+
+        if not success:
+            print(f"Could not read DOCX file {filename}")
+            return pd.DataFrame()
+
+        elements_df = doc_parse.create_train_df(elements)
+
+        return elements_df
+
+
+class URL(Document):
+    def __init__(
+        self,
+        url: str,
+        url_response: Response = None
+    ):
+        self.url = url
+        self.df = self.process_data(url, url_response)
+        self.hash_val = hash_string(url)
+
+    def process_data(self, url, url_response=None) -> pd.DataFrame:
+        # Extract elements from each file
+        elements, success = url_parse.process_url(url, url_response)
+
+        if not success or not elements:
+            return pd.DataFrame()
+
+        elements_df = url_parse.create_train_df(elements)
+
+        return elements_df
+
+    def hash(self) -> str:
+        return self.hash_val
+
+    def size(self) -> int:
+        return len(self.df)
+
+    def name(self) -> str:
+        return self.url
+
+    def strong_text(self, element_id: int) -> str:
+        return self.df["text"].iloc[element_id]
+
+    def weak_text(self, element_id: int) -> str:
+        return self.df["text"].iloc[element_id]
+    
+    def show_fn(text, source, **kwargs):
+        return text
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            element_id=element_id,
+            text=self.df["display"].iloc[element_id],
+            source=self.url,
+            metadata={},
+            show_fn=self.show_fn
+        )
+
+    def get_context(self, element_id, context_args) -> str:
+        if not 0 <= element_id < self.size():
+            raise ("Element id not in document.")
+
+        if hasattr(context_args, "chunk_radius"):
+            chunk_radius = context_args.chunk_radius
+
+            center_chunk_idx = element_id
+
+            window_start = center_chunk_idx - chunk_radius // 2
+            window_end = window_start + chunk_radius
+
+            if window_start < 0:
+                window_start = 0
+                window_end = min(chunk_radius, self.size())
+            elif window_end > self.size():
+                window_end = self.size()
+                window_start = max(0, self.size() - chunk_radius)
+
+            window_chunks = self.df.iloc[window_start:window_end]["text"].tolist()
+            return "\n".join(window_chunks)
+
+        return ""
+
+
+class CSV(Document):
+    def __init__(self, filename, strong_cols, weak_cols):
+        self.filename = filename
+        self.strong_cols = strong_cols
+        self.weak_cols = weak_cols
+        self.df = pd.read_csv(self.filename)
+        self.hash_val = hash_file(filename)
+
+        for col in strong_cols + weak_cols:
+            self.df[col] = self.df[col].fillna("")
+
+    def hash(self) -> str:
+        return self.hash_val
+
+    def size(self) -> int:
+        return len(self.df)
+
+    def name(self) -> str:
+        return self.filename
+
+    def strong_text(self, element_id: int) -> str:
+        return " ".join(self.df[self.strong_cols].iloc[element_id].tolist())
+       
+    def weak_text(self, element_id: int) -> str:
+        return " ".join(self.df[self.weak_cols].iloc[element_id].tolist())
+    
+    def show_fn(text, source, **kwargs):
+        return text
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            element_id=element_id,
+            text=self.weak_text(element_id),
+            source=self.filename,
+            metadata={},
+            show_fn=self.show_fn
+        )
