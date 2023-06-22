@@ -56,7 +56,9 @@ def run_demo_notebooks(notebook_paths):
             print(f"Failure in notebook: {failed_notebook}: \n {error}")
         sys.exit(1)
     else:
-        print("All notebooks ran successfully")
+        print("Successfully ran the following notebooks:")
+        for nb in notebook_paths:
+            print(f"\t{nb}")
 
 
 def main():
