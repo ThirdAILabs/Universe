@@ -92,7 +92,8 @@ void defineAutomlInModule(py::module_& module) {
                      &udt::TrainOptions::steps_per_validation)
       .def_readwrite("sparse_validation", &udt::TrainOptions::sparse_validation)
       .def_readwrite("verbose", &udt::TrainOptions::verbose)
-      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval);
+      .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval)
+      .def_readwrite("shuffle_config", &udt::TrainOptions::shuffle_config);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
@@ -191,6 +192,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+      .def("enable_rlhf", &udt::UDT::enableRlhf,
+           py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
+           py::arg("num_balancing_samples_per_doc") =
+               udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
@@ -293,8 +298,8 @@ void createUDTTypesSubmodule(py::module_& module) {
       // TODO(any): run benchmarks to improve the defaults
       .def(py::init<std::string, std::string, bool>(),
            py::arg("tokenizer") = "words",
-           py::arg("contextual_encoding") = "none",
-           py::arg("lowercase") = false, docs::UDT_TEXT_TYPE)
+           py::arg("contextual_encoding") = "none", py::arg("lowercase") = true,
+           docs::UDT_TEXT_TYPE)
       .def(py::init<dataset::WordpieceTokenizerPtr, std::string>(),
            py::arg("tokenizer"), py::arg("contextual_encoding") = "none",
            docs::UDT_TEXT_TYPE);
@@ -347,7 +352,8 @@ void createDeploymentSubmodule(py::module_& module) {
         auto json_config = json::parse(config::loadConfig(config_file));
         auto user_input = createArgumentMap(parameters);
 
-        return config::buildModel(json_config, user_input, input_dims);
+        return config::buildModel(json_config, user_input, input_dims,
+                                  /* mach= */ false);
       },
       py::arg("config_file"), py::arg("parameters"), py::arg("input_dims"));
 

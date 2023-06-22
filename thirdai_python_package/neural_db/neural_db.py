@@ -7,6 +7,7 @@ from .documents import Reference, Document
 from .savable_state import State
 from .models import Mach
 from . import qa, teachers, loggers
+from thirdai._thirdai import bolt
 
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -47,22 +48,14 @@ class NeuralDB:
     def __init__(self, user_id: str) -> None:
         self._user_id = user_id
         self._savable_state: Optional[State] = None
-        self._search_state: Optional[SearchState] = None
         self._answerer_state: Optional[AnswererState] = None
 
     def from_scratch(self) -> None:
         self._savable_state = State(
             model=Mach(id_col="id", query_col="query"),
-            logger=loggers.LoggerList([]),
+            logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
-        self._search_state = None
-
-    def in_session(self) -> bool:
-        return self._savable_state is not None
-
-    def ready_to_search(self) -> bool:
-        return self.in_session() and self._savable_state.ready()
-
+        
     def from_checkpoint(
         self, checkpoint_path: Path, on_progress: Callable = no_op, on_error: Callable = no_op
     ):
@@ -77,11 +70,32 @@ class NeuralDB:
             self._savable_state = None
             on_error(error_msg=e.__str__())
 
-        self._search_state = None
+    def from_udt(
+        self, 
+        udt: bolt.UniversalDeepTransformer,
+        id_col: str, id_delimiter: str, query_col: str, 
+        input_dim: int, hidden_dim: int, extreme_output_dim: int
+    ):
+        model = Mach(
+            id_col=id_col, 
+            id_delimiter=id_delimiter, 
+            query_col=query_col, 
+            input_dim=input_dim, 
+            hidden_dim=hidden_dim, 
+            extreme_output_dim=extreme_output_dim)
+        model.model = udt
+        logger =loggers.LoggerList([
+            loggers.InMemoryLogger()])
+        self._savable_state = State(model=model, logger=logger)
+
+    def in_session(self) -> bool:
+        return self._savable_state is not None
+
+    def ready_to_search(self) -> bool:
+        return self.in_session() and self._savable_state.ready()
 
     def clear_session(self) -> None:
         self._savable_state = None
-        self._search_state = None
 
     def sources(self) -> List[str]:
         return self._savable_state.documents.sources()
@@ -89,9 +103,10 @@ class NeuralDB:
     def save(self, save_to: Path, on_progress: Callable = no_op) -> None:
         return self._savable_state.save(save_to, on_progress)
 
-    def add_documents(
+    def insert(
         self,
-        documents: Document,
+        sources: List[Document],
+        train: bool = True,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = no_op,
@@ -99,7 +114,7 @@ class NeuralDB:
     ) -> None:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
-            intro_and_train = self._savable_state.documents.add(documents)
+            intro_and_train = self._savable_state.documents.add(sources)
         except Exception as e:
             self._savable_state.documents = documents_copy
             on_error(error_msg=f"Failed to add files. {e.__str__()}")
@@ -109,6 +124,7 @@ class NeuralDB:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
                 train_documents=intro_and_train.train,
+                train_if_not_from_scratch=train,
                 on_progress=on_progress,
             )
             
@@ -133,31 +149,27 @@ class NeuralDB:
                 error_msg=f"Failed to train model on added files. {e.__str__()}"
             )
         
-    def clear_documents(self) -> None:
+    def clear_sources(self) -> None:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
     def search(self, query: str, top_k: int, on_error: Callable = no_op) -> List[Reference]:
         try:
             result_ids = self._savable_state.model.infer_labels(samples=[query], n_results=top_k)[0]
-            self._search_state = SearchState(
-                query=query,
-                references=[
-                    self._savable_state.documents.reference(id) for id in result_ids
-                ],
-            )
-            return self._search_state.references()
+            return [
+                self._savable_state.documents.reference(rid) for rid in result_ids
+            ]
         except Exception as e:
             on_error(e.__str__())
             return []
 
-    def upvote(self, idx) -> None:
+    def text_to_result(self, text: str, result_id: int) -> None:
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query=self._search_state._query,
-            liked_passage_id=self._search_state.references()[idx].id(),
+            query=text,
+            liked_passage_id=result_id,
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
@@ -177,32 +189,3 @@ class NeuralDB:
             text_b=target,
             top_k=top_k,
         )
-
-    def set_answerer_state(self, answerer_state: AnswererState):
-        self._answerer_state = answerer_state
-
-    def can_answer(self) -> bool:
-        return self._answerer_state is not None
-
-    def answer(self, on_error: Callable = no_op):
-        num_references = self._answerer_state.context_args().num_references
-        references = self._search_state.references()[:num_references]
-
-        # Check if "num_references" is the only context arg defined.
-        # If not, we retrieve custom context for each document.
-        if len(vars(self._answerer_state.context_args())) == 1:
-            answers = [reference.text() for reference in references]
-        else:
-            answers = [
-                self._savable_state.documents.context(
-                    reference.id(), self._answerer_state.context_args()["chunk_radius"]
-                )
-                for reference in references
-            ]
-
-        return self._answerer_state.answerer().answer(
-            question=self._search_state._query,
-            answers=answers,
-            on_error=on_error,
-        )
-

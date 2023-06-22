@@ -167,11 +167,7 @@ class Worker:
         all nodes are ready to communicate gradients. Returns whether this
         worker has another batch.
         """
-        if (
-            self.train_data == None
-            or self.train_labels == None
-            or self.model.num_batches() == 0
-        ):
+        if self.datasets == None or self.model.num_batches() == 0:
             raise ValueError(
                 "Cannot call train when we have run out of training data (this function has previously returned False without a subsequent call to move_to_next_epoch())"
             )
@@ -236,16 +232,12 @@ class Worker:
         then this will fail until we call restart on it).
         """
 
-        load = self.train_source.next()
+        self.datasets = self.train_source.next()
 
-        if load == None:
-            self.train_data = None
-            self.train_labels = None
+        if self.datasets == None:
             return False
 
-        self.train_labels = load[-1]
-        self.train_data = load[:-1]
-        self.model.set_datasets(self.train_data, self.train_labels)
+        self.model.set_datasets(self.datasets)
         self.batch_id_within_dataset = 0
 
         # This case should not be true since we currently require datasets

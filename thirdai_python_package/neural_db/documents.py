@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from requests.models import Response
 
+
 import pandas as pd
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .qa import ContextArgs
 from .utils import hash_string, hash_file
 from thirdai.dataset.data_source import PyDataSource
-
-
 
 
 class Reference:
@@ -69,6 +68,46 @@ class Document:
 
     def load_meta(self, directory: Path):
         raise NotImplementedError()
+
+
+class Reference:
+    def __init__(
+        self, 
+        document: Document,
+        element_id: int, 
+        text: str, 
+        source: str, 
+        metadata: dict, 
+        show_fn: Callable = lambda *args, **kwargs: None,
+    ):
+        self._id = element_id
+        self._text = text
+        self._source = source
+        self._metadata = metadata
+        self._show_fn = show_fn
+        self._context_fn = lambda radius: document.context(element_id, radius)
+
+    def id(self):
+        return self._id
+
+    def text(self):
+        return self._text
+    
+    def context(self, radius: int):
+        return self._context_fn(radius)
+
+    def source(self):
+        return self._source
+
+    def metadata(self):
+        return self._metadata
+
+    def show(self):
+        return self._show_fn(
+            text=self._text,
+            source=self._source,
+            **self._metadata,
+        )
 
 
 class DocumentRow:

@@ -8,6 +8,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
@@ -79,7 +80,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
        * ==============================================================
        */
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"))
+           py::arg("losses"),
+           py::arg("additional_labels") = autograd::ComputationList{})
       .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",
@@ -216,6 +218,41 @@ void defineOps(py::module_& nn) {
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
+
+  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
+      .def(py::init(&ops::Embedding::make), py::arg("dim"),
+           py::arg("input_dim"), py::arg("activation"), py::arg("bias") = true)
+      .def("__call__", &ops::Embedding::apply)
+      .def_property_readonly(
+          "weights",
+          [](const ops::EmbeddingPtr& op) {
+            return toNumpy(op->embeddingsPtr(), {op->inputDim(), op->dim()});
+          })
+      .def_property_readonly("biases",
+                             [](const ops::EmbeddingPtr& op) {
+                               return toNumpy(op->biasesPtr(), {op->dim()});
+                             })
+      .def("set_weights",
+           [](ops::EmbeddingPtr& op, const NumpyArray<float>& weights) {
+             if (weights.ndim() != 2 || weights.shape(0) != op->inputDim() ||
+                 weights.shape(1) != op->dim()) {
+               std::stringstream error;
+               error << "Expected weights to be 2D array with shape ("
+                     << op->inputDim() << ", " << op->dim() << ").";
+               throw std::invalid_argument(error.str());
+             }
+             op->setEmbeddings(weights.data());
+           })
+      .def("set_biases",
+           [](ops::EmbeddingPtr& op, const NumpyArray<float>& biases) {
+             if (biases.ndim() != 1 || biases.shape(0) != op->dim()) {
+               std::stringstream error;
+               error << "Expected biases to be 1D array with shape ("
+                     << op->dim() << ",).";
+               throw std::invalid_argument(error.str());
+             }
+             op->setBiases(biases.data());
+           });
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
