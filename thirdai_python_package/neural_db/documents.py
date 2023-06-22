@@ -1,41 +1,13 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple, Callable
 
 import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
 
 
-
-
 class Reference:
-    def __init__(
-        self, element_id: int, text: str, source: str, metadata: dict, show_fn
-    ):
-        self._id = element_id
-        self._text = text
-        self._source = source
-        self._metadata = metadata
-        self._show_fn = show_fn
-
-    def id(self):
-        return self._id
-
-    def text(self):
-        return self._text
-
-    def source(self):
-        return self._source
-
-    def metadata(self):
-        return self._metadata
-
-    def show(self):
-        return self._show_fn(
-            text=self._text,
-            source=self._source,
-            **self._metadata,
-        )
+    pass
 
 
 class Document:
@@ -65,6 +37,46 @@ class Document:
 
     def load_meta(self, directory: Path):
         raise NotImplementedError()
+
+
+class Reference:
+    def __init__(
+        self, 
+        document: Document,
+        element_id: int, 
+        text: str, 
+        source: str, 
+        metadata: dict, 
+        show_fn: Callable = lambda *args, **kwargs: None,
+    ):
+        self._id = element_id
+        self._text = text
+        self._source = source
+        self._metadata = metadata
+        self._show_fn = show_fn
+        self._context_fn = lambda radius: document.context(element_id, radius)
+
+    def id(self):
+        return self._id
+
+    def text(self):
+        return self._text
+    
+    def context(self, radius: int):
+        return self._context_fn(radius)
+
+    def source(self):
+        return self._source
+
+    def metadata(self):
+        return self._metadata
+
+    def show(self):
+        return self._show_fn(
+            text=self._text,
+            source=self._source,
+            **self._metadata,
+        )
 
 
 class DocumentRow:
