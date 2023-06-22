@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Dict, List, Tuple, Callable
+from pytrie import StringTrie
 
 import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
@@ -146,6 +147,7 @@ class DocumentManager:
         self.weak_column = weak_column
         self.registry: Dict[str, Tuple[Document, int]] = {}
         self.id_sorted_docs: List[Tuple[Document, int]] = []
+        self.source_id_prefix_trie = StringTrie()
 
     def _next_id(self):
         if len(self.id_sorted_docs) == 0:
@@ -165,21 +167,30 @@ class DocumentManager:
                 doc_and_id = (doc, start_id)
                 self.registry[doc_hash] = doc_and_id
                 self.id_sorted_docs.append(doc_and_id)
+                self.source_id_prefix_trie[doc_hash] = doc_hash
                 intro.add(doc, start_id)
             doc, start_id = self.registry[doc_hash]
             train.add(doc, start_id)
 
-        return IntroAndTrainDocuments(intro=intro, train=train)
+        return IntroAndTrainDocuments(intro=intro, train=train), [doc.hash() for doc in documents]
     
     def sources(self):
-        return [doc.name() for doc, _ in self.id_sorted_docs]
-
-    def sources(self):
-        return [doc.name() for doc, _ in self.id_sorted_docs]
+        return {
+            doc_hash: doc.name() for doc_hash, (doc, _) in self.registry.items()
+        }
+    
+    def match_source_id_by_prefix(self, prefix: str) -> Document:
+        if prefix in self.registry:
+            return [prefix]
+        return self.source_id_prefix_trie.values(prefix)
+    
+    def source_by_id(self, source_id: str):
+        return self.registry[source_id]
 
     def clear(self):
         self.registry = {}
         self.id_sorted_docs = []
+        self.source_id_prefix_trie = StringTrie()
 
     def _get_doc_and_start_id(self, element_id: int):
         # Iterate through docs in reverse order

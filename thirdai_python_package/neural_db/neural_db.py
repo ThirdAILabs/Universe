@@ -1,13 +1,15 @@
 from pathlib import Path
 from enum import Enum
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Sequence
 import copy
+import pandas as pd
 
-from .documents import Reference, Document
+from .documents import Reference, Document, DocumentManager
 from .savable_state import State
 from .models import Mach
 from . import qa, teachers, loggers
 from thirdai._thirdai import bolt
+from thirdai.dataset.data_source import PyDataSource
 
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -42,6 +44,50 @@ class AnswererState:
 
 def no_op(*args, **kwargs):
     pass
+
+
+class Sup:
+    def __init__(self, queries: Sequence[str], labels: Sequence[int], source_id: str=""):
+        self.source_id = source_id
+        if len(queries) != len(labels):
+            raise ValueError("Queries and labels sequences must be the same length.")
+        self.queries = queries
+        self.labels = labels
+
+
+class SupDataSource(PyDataSource):
+    def __init__(self, doc_manager: DocumentManager, query_col: str, data: List[Sup]):
+        PyDataSource.__init__(self)
+        self.doc_manager = doc_manager
+        self.query_col = query_col
+        self.data = data
+        self.restart()
+
+    def _csv_line(self, query: str, label: str):
+        df = pd.DataFrame(
+            {
+                self.query_col: [query],
+                self.doc_manager.id_column: [label],
+            }
+        )
+        return df.to_csv(header=None, index=None).strip("\n")
+
+    def _get_line_iterator(self):
+        # First yield the header
+        yield self._csv_line(self.query_col, self.doc_manager.id_column)
+        # Then yield rows
+        for sup in self.data:
+            source_ids = self.doc_manager.match_source_by_id_prefix(sup.source_id)
+            if len(source_ids) == 0:
+                raise ValueError(f"Cannot find source with id {sup.source_id}")
+            if len(source_ids) > 1:
+                raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
+            _, start_id = self.doc_manager.source_by_id(source_ids[0])
+            for query, label in zip(sup.queries, sup.labels):
+                yield self._csv_line(query, str(label + start_id))
+
+    def resource_name(self) -> str:
+        return "Supervised training samples"
 
 
 class NeuralDB:
@@ -84,7 +130,7 @@ class NeuralDB:
             hidden_dim=hidden_dim, 
             extreme_output_dim=extreme_output_dim)
         model.model = udt
-        logger =loggers.LoggerList([
+        logger = loggers.LoggerList([
             loggers.InMemoryLogger()])
         self._savable_state = State(model=model, logger=logger)
 
@@ -111,14 +157,14 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = no_op,
         on_irrecoverable_error: Callable = no_op,
-    ) -> None:
+    ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
-            intro_and_train = self._savable_state.documents.add(sources)
+            intro_and_train, ids = self._savable_state.documents.add(sources)
         except Exception as e:
             self._savable_state.documents = documents_copy
             on_error(error_msg=f"Failed to add files. {e.__str__()}")
-            return
+            return []
         
         try:
             self._savable_state.model.index_documents(
@@ -135,6 +181,7 @@ class NeuralDB:
             )
         
             on_success()
+            return ids
 
         except Exception as e:
             # If we fail during training here it's hard to guarantee that we
@@ -148,6 +195,7 @@ class NeuralDB:
             on_irrecoverable_error(
                 error_msg=f"Failed to train model on added files. {e.__str__()}"
             )
+            return []
         
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()
@@ -189,3 +237,16 @@ class NeuralDB:
             text_b=target,
             top_k=top_k,
         )
+
+    def supervised_train(
+        self, 
+        data: List[Sup],
+        learning_rate=0.0001,
+        epochs=3,
+    ):
+        doc_manager = self._savable_state.documents
+        query_col = self._savable_state.model.get_query_col()
+        self._savable_state.model.get_model().train_on_data_source(
+            data_source=SupDataSource(doc_manager, query_col, data),
+            learning_rate=learning_rate,
+            epochs=epochs)
