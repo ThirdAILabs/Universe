@@ -665,3 +665,9 @@ def test_introduce_hash_regularization():
     # than NUM_HASHES non-zeroes in the index's load
     load = regularized_introduce_helper(model, num_random_hashes=2)
     assert np.sum(load > 0) > NUM_HASHES
+
+
+def test_udt_mach_train_batch():
+    model = train_simple_mach_udt()
+
+    model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)
