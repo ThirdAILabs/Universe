@@ -190,6 +190,7 @@ def test_document_manager_save_load():
     shutil.rmtree(save_path)
 
 
+@pytest.mark.unit
 def test_document_manager_sources():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
@@ -197,6 +198,7 @@ def test_document_manager_sources():
     assert second_doc.name() in doc_manager.sources()
 
 
+@pytest.mark.unit
 def test_document_manager_reference():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
@@ -231,75 +233,75 @@ def test_document_manager_context():
     )
 
 
-# @pytest.mark.release
-# def test_udt_cold_start_on_csv_document():
-#     class CSV(Document):
-#         def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
-#             self.df = pd.read_csv(csv_path)
-#             self.df = self.df.sort_values(id_column)
-#             assert len(self.df[id_column].unique()) == len(self.df[id_column])
-#             assert self.df[id_column].min() == 0
-#             assert self.df[id_column].max() == len(self.df[id_column]) - 1
+@pytest.mark.unit
+def test_udt_cold_start_on_csv_document():
+    class CSV(Document):
+        def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
+            self.df = pd.read_csv(csv_path)
+            self.df = self.df.sort_values(id_column)
+            assert len(self.df[id_column].unique()) == len(self.df[id_column])
+            assert self.df[id_column].min() == 0
+            assert self.df[id_column].max() == len(self.df[id_column]) - 1
 
-#             for col in strong_columns + weak_columns:
-#                 self.df[col] = self.df[col].fillna("")
+            for col in strong_columns + weak_columns:
+                self.df[col] = self.df[col].fillna("")
 
-#             self.csv_path = csv_path
-#             self.id_column = id_column
-#             self.strong_columns = strong_columns
-#             self.weak_columns = weak_columns
+            self.csv_path = csv_path
+            self.id_column = id_column
+            self.strong_columns = strong_columns
+            self.weak_columns = weak_columns
 
-#         def size(self) -> int:
-#             return len(self.df)
+        def size(self) -> int:
+            return len(self.df)
 
-#         def strong_text(self, element_id: int) -> str:
-#             return " ".join(
-#                 [self.df.iloc[element_id][col] for col in self.strong_columns]
-#             )
+        def strong_text(self, element_id: int) -> str:
+            return " ".join(
+                [self.df.iloc[element_id][col] for col in self.strong_columns]
+            )
 
-#         def weak_text(self, element_id: int) -> str:
-#             return " ".join(
-#                 [self.df.iloc[element_id][col] for col in self.weak_columns]
-#             )
+        def weak_text(self, element_id: int) -> str:
+            return " ".join(
+                [self.df.iloc[element_id][col] for col in self.weak_columns]
+            )
 
-#         def name(self) -> str:
-#             return self.csv_path
+        def name(self) -> str:
+            return self.csv_path
 
-#     (
-#         catalog_file,
-#         n_target_classes,
-#     ) = demos.download_amazon_kaggle_product_catalog_sampled()
+    (
+        catalog_file,
+        n_target_classes,
+    ) = demos.download_amazon_kaggle_product_catalog_sampled()
 
-#     model = bolt.UniversalDeepTransformer(
-#         data_types={
-#             "QUERY": bolt.types.text(),
-#             "PRODUCT_ID": bolt.types.categorical(),
-#         },
-#         target="PRODUCT_ID",
-#         n_target_classes=n_target_classes,
-#         integer_target=True,
-#     )
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "QUERY": bolt.types.text(),
+            "PRODUCT_ID": bolt.types.categorical(),
+        },
+        target="PRODUCT_ID",
+        n_target_classes=n_target_classes,
+        integer_target=True,
+    )
 
-#     data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
-#     data_source.add(
-#         CSV(
-#             catalog_file,
-#             "PRODUCT_ID",
-#             ["TITLE"],
-#             ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
-#         ),
-#         start_id=0,
-#     )
-#     metrics = model.cold_start_on_data_source(
-#         data_source=data_source,
-#         strong_column_names=["STRONG"],
-#         weak_column_names=["WEAK"],
-#         learning_rate=0.001,
-#         epochs=5,
-#         batch_size=2000,
-#         metrics=["categorical_accuracy"],
-#     )
+    data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
+    data_source.add(
+        CSV(
+            catalog_file,
+            "PRODUCT_ID",
+            ["TITLE"],
+            ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+        ),
+        start_id=0,
+    )
+    metrics = model.cold_start_on_data_source(
+        data_source=data_source,
+        strong_column_names=["STRONG"],
+        weak_column_names=["WEAK"],
+        learning_rate=0.001,
+        epochs=5,
+        batch_size=2000,
+        metrics=["categorical_accuracy"],
+    )
 
-#     os.remove(catalog_file)
+    os.remove(catalog_file)
 
-#     assert metrics["train_categorical_accuracy"][-1] > 0.5
+    assert metrics["train_categorical_accuracy"][-1] > 0.5
