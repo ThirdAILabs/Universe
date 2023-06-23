@@ -218,6 +218,7 @@ def test_document_manager_reference():
     assert reference_10.source() == second_id
 
 
+@pytest.mark.unit
 def test_document_manager_context():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
