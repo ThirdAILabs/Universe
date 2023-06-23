@@ -45,6 +45,10 @@ class UDTRegression final : public UDTBackend {
 
   ModelPtr model() const final { return _model; }
 
+  data::ColumnDataTypes dataTypes() const final {
+    return _dataset_factory->dataTypes();
+  }
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }

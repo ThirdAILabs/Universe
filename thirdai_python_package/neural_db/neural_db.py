@@ -146,13 +146,34 @@ class NeuralDB:
     def from_udt(
         self,
         udt: bolt.UniversalDeepTransformer,
-        id_col: str,
-        id_delimiter: str,
-        query_col: str,
     ):
         udt.clear_index()
         udt.enable_rlhf()
         input_dim, emb_dim, out_dim = udt.model_dims()
+        data_types = udt.data_types()
+
+        if len(data_types) != 2:
+            raise ValueError(
+                f"Incompatible UDT model. Expected two data types but found {len(data_types)}."
+            )
+        query_col = None
+        id_col = None
+        id_delimiter = None
+        for column, dtype in data_types.items():
+            if isinstance(dtype, bolt.types.text):
+                query_col = column
+            if isinstance(dtype, bolt.types.categorical):
+                id_col = column
+                id_delimiter = dtype.delimiter
+        if query_col is None:
+            raise ValueError(f"Incompatible UDT model. Cannot find a query column.")
+        if id_col is None:
+            raise ValueError(f"Incompatible UDT model. Cannot find an id column.")
+        if id_delimiter is None:
+            raise ValueError(
+                f"Incompatible UDT model. Id column must have a delimiter."
+            )
+
         model = Mach(
             id_col=id_col,
             id_delimiter=id_delimiter,

@@ -99,6 +99,10 @@ class UDTClassifier final : public UDTBackend {
     return _dataset_factory;
   }
 
+  data::ColumnDataTypes dataTypes() const final {
+    return _dataset_factory->dataTypes();
+  }
+
   void verifyCanDistribute() const final {
     if (!integerTarget()) {
       throw std::invalid_argument(
