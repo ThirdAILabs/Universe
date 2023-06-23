@@ -8,6 +8,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
@@ -31,23 +32,38 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
   if (config.contains("sampling_config")) {
     const auto& sampling_json = config["sampling_config"];
 
-    if (sampling_json.is_string() &&
-        sampling_json.get<std::string>() == "random") {
-      return std::make_shared<bolt::RandomSamplingConfig>();
+    if (sampling_json.is_string()) {
+      if (sampling_json.get<std::string>() == "random") {
+        return std::make_shared<bolt::RandomSamplingConfig>();
+      }
+
+      if (sampling_json.get<std::string>() == "experimental_autotune") {
+        uint32_t dim = integerParameter(config, "dim", args);
+        float sparsity = floatParameter(config, "sparsity", args);
+        return bolt::DWTASamplingConfig::newAutotune(dim, sparsity);
+      }
     }
+
     if (sampling_json.is_object()) {
       uint32_t num_tables = integerParameter(sampling_json, "num_tables", args);
       uint32_t hashes_per_table =
           integerParameter(sampling_json, "hashes_per_table", args);
+      uint32_t range_pow = integerParameter(sampling_json, "range_pow", args);
+      uint32_t binsize = integerParameter(sampling_json, "binsize", args);
       uint32_t reservoir_size =
           integerParameter(sampling_json, "reservoir_size", args);
+      uint32_t permutations =
+          integerParameter(sampling_json, "permutations", args);
 
       return std::make_shared<bolt::DWTASamplingConfig>(
-          num_tables, hashes_per_table, reservoir_size);
+          num_tables, hashes_per_table, range_pow, binsize, reservoir_size,
+          permutations);
     }
     throw std::invalid_argument(
         "Parameter 'sampling_config' must be a string 'random' indicating "
-        "random sampling is used or an object providing sampling parameters.");
+        "random sampling is used, or a string 'experimental_autotune' "
+        "indicating experimental DWTA autotuner is used, or an object "
+        "providing sampling parameters.");
   }
 
   return nullptr;
@@ -85,8 +101,13 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
 
   auto predecessor = getPredecessor(config, created_comps);
 
+  bool use_bias = true;
+  if (config.contains("use_bias")) {
+    use_bias = booleanParameter(config, "use_bias", args);
+  }
+
   auto layer = bolt::nn::ops::FullyConnected::make(
-      dim, predecessor->dim(), sparsity, activation, sampling_config);
+      dim, predecessor->dim(), sparsity, activation, sampling_config, use_bias);
 
   return layer->apply(predecessor);
 }
@@ -98,7 +119,7 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
  * 'num_tokens_per_input' can be specified to indicate the number of tokens in
  * each sample. This field is only required for concatenation reductions.
  */
-bolt::nn::autograd::ComputationPtr buildEmbedding(
+bolt::nn::autograd::ComputationPtr buildRobeZ(
     const json& config, const ArgumentMap& args,
     const CreatedComputations& created_comps) {
   uint32_t num_lookups =
@@ -115,10 +136,30 @@ bolt::nn::autograd::ComputationPtr buildEmbedding(
   }
 
   auto layer =
-      bolt::nn::ops::Embedding::make(num_lookups, lookup_size, log_block_size,
-                                     reduction, num_tokens_per_input);
+      bolt::nn::ops::RobeZ::make(num_lookups, lookup_size, log_block_size,
+                                 reduction, num_tokens_per_input);
 
   return layer->apply(getPredecessor(config, created_comps));
+}
+
+bolt::nn::autograd::ComputationPtr buildEmbedding(
+    const json& config, const ArgumentMap& args,
+    const CreatedComputations& created_comps) {
+  uint32_t dim = integerParameter(config, "dim", args);
+
+  std::string activation = stringParameter(config, "activation", args);
+
+  auto predecessor = getPredecessor(config, created_comps);
+
+  bool use_bias = true;
+  if (config.contains("use_bias")) {
+    use_bias = booleanParameter(config, "use_bias", args);
+  }
+
+  auto layer = bolt::nn::ops::Embedding::make(dim, predecessor->dim(),
+                                              activation, use_bias);
+
+  return layer->apply(predecessor);
 }
 
 /**
@@ -150,7 +191,8 @@ bolt::nn::autograd::ComputationList getInputs(
 
 bolt::nn::model::ModelPtr buildModel(const json& config,
                                      const ArgumentMap& args,
-                                     const std::vector<uint32_t>& input_dims) {
+                                     const std::vector<uint32_t>& input_dims,
+                                     bool mach) {
   CreatedComputations created_comps;
 
   auto inputs = getInputs(config, input_dims, created_comps);
@@ -166,6 +208,8 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
     if (type == "fully_connected") {
       created_comps[name] =
           buildFullyConnected(node_config, args, created_comps);
+    } else if (type == "robez") {
+      created_comps[name] = buildRobeZ(node_config, args, created_comps);
     } else if (type == "embedding") {
       created_comps[name] = buildEmbedding(node_config, args, created_comps);
     } else {
@@ -194,7 +238,17 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
                                 "' provided in model config.");
   }
 
-  auto model = bolt::nn::model::Model::make(inputs, {output}, {loss});
+  bolt::nn::autograd::ComputationList additional_labels;
+  if (mach) {
+    // For mach we need the hash based labels for training, but the actual
+    // document/class ids to compute metrics. Hence we add two labels to the
+    // model.
+    additional_labels.push_back(
+        bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
+  }
+
+  auto model =
+      bolt::nn::model::Model::make(inputs, {output}, {loss}, additional_labels);
 
   return model;
 }

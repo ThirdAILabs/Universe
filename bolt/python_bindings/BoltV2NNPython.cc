@@ -7,11 +7,13 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -29,7 +31,7 @@ namespace py = pybind11;
 namespace thirdai::bolt::nn::python {
 
 template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+using NumpyArray = thirdai::bolt::python::NumpyArray<T>;
 
 template <typename T>
 py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
@@ -78,7 +80,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
        * ==============================================================
        */
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"))
+           py::arg("losses"),
+           py::arg("additional_labels") = autograd::ComputationList{})
       .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",
@@ -92,7 +95,21 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("get_gradients", &::thirdai::bolt::python::getGradients,
+           py::return_value_policy::reference_internal)
+      .def("set_gradients", &::thirdai::bolt::python::setGradients,
+           py::arg("new_values"))
+      .def("get_parameters", &::thirdai::bolt::python::getParameters,
+           py::return_value_policy::reference_internal)
+      .def("set_parameters", &::thirdai::bolt::python::setParameters,
+           py::arg("new_values"))
+      .def("disable_sparse_parameter_updates",
+           &model::Model::disableSparseParameterUpdates)
+
 #endif
+      .def("freeze_hash_tables", &model::Model::freezeHashTables,
+           py::arg("insert_labels_if_not_found") = true)
+      .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def("checkpoint", &model::Model::checkpoint, py::arg("filename"),
@@ -150,9 +167,14 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
-           py::arg("rebuild_hash_tables") = 10,
+           py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnected::apply)
+      .def("dim", &ops::FullyConnected::dim)
+      .def("get_sparsity", &ops::FullyConnected::getSparsity)
+      .def("set_sparsity", &ops::FullyConnected::setSparsity,
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
       .def_property_readonly(
           "weights",
           [](const ops::FullyConnected& op) {
@@ -187,15 +209,50 @@ void defineOps(py::module_& nn) {
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
            py::arg("hash_fn"), py::arg("hash_table"));
 
-  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
-      .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
+  py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
+      .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
-      .def("__call__", &ops::Embedding::apply)
+      .def("__call__", &ops::RobeZ::apply)
       .def("duplicate_with_new_reduction",
-           &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
+           &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
+
+  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
+      .def(py::init(&ops::Embedding::make), py::arg("dim"),
+           py::arg("input_dim"), py::arg("activation"), py::arg("bias") = true)
+      .def("__call__", &ops::Embedding::apply)
+      .def_property_readonly(
+          "weights",
+          [](const ops::EmbeddingPtr& op) {
+            return toNumpy(op->embeddingsPtr(), {op->inputDim(), op->dim()});
+          })
+      .def_property_readonly("biases",
+                             [](const ops::EmbeddingPtr& op) {
+                               return toNumpy(op->biasesPtr(), {op->dim()});
+                             })
+      .def("set_weights",
+           [](ops::EmbeddingPtr& op, const NumpyArray<float>& weights) {
+             if (weights.ndim() != 2 || weights.shape(0) != op->inputDim() ||
+                 weights.shape(1) != op->dim()) {
+               std::stringstream error;
+               error << "Expected weights to be 2D array with shape ("
+                     << op->inputDim() << ", " << op->dim() << ").";
+               throw std::invalid_argument(error.str());
+             }
+             op->setEmbeddings(weights.data());
+           })
+      .def("set_biases",
+           [](ops::EmbeddingPtr& op, const NumpyArray<float>& biases) {
+             if (biases.ndim() != 1 || biases.shape(0) != op->dim()) {
+               std::stringstream error;
+               error << "Expected biases to be 1D array with shape ("
+                     << op->dim() << ",).";
+               throw std::invalid_argument(error.str());
+             }
+             op->setBiases(biases.data());
+           });
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
@@ -208,6 +265,11 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
+      nn, "DlrmAttention")
+      .def(py::init(&ops::DlrmAttention::make))
+      .def("__call__", &ops::DlrmAttention::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 }

@@ -323,15 +323,20 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
+    bolt/src/nn/ops/RobeZ.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/neuron_index/LshIndex.cc
+    bolt/src/neuron_index/RandomSampler.cc
+    bolt/src/neuron_index/MachNeuronIndex.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
@@ -339,6 +344,8 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
     bolt/src/train/metrics/FMeasure.cc
+    bolt/src/train/metrics/MachPrecision.cc
+    bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc
@@ -358,7 +365,6 @@ set(THIRDAI_SOURCES
     bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/loss_functions/LossFunctions.cc
@@ -382,7 +388,9 @@ set(THIRDAI_SOURCES
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
-    dataset/src/featurizers/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextContextFeaturizer.cc
+    dataset/src/featurizers/llm/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextClassificationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
@@ -396,7 +404,6 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
-    dataset/src/mach/MachDecode.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
@@ -409,17 +416,20 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/featurization/DataTypes.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
+    auto_ml/src/rlhf/RLHFSampler.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
+    utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)
@@ -474,7 +484,6 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
@@ -482,6 +491,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc

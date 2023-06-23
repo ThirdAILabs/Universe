@@ -5,14 +5,15 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
-#include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/featurization/TemporalContext.h>
+#include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <optional>
@@ -26,14 +27,14 @@ class TabularDatasetFactory {
   TabularDatasetFactory(
       ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
-      const std::vector<dataset::BlockPtr>& label_blocks,
+      const std::vector<dataset::BlockList>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel);
 
   static auto make(
       ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
-      const std::vector<dataset::BlockPtr>& label_blocks,
+      const std::vector<dataset::BlockList>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel) {
     return std::make_shared<TabularDatasetFactory>(
@@ -41,10 +42,13 @@ class TabularDatasetFactory {
         label_blocks, std::move(label_col_names), options, force_parallel);
   }
 
-  dataset::DatasetLoaderPtr getDatasetLoader(
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle,
       std::optional<dataset::DatasetShuffleConfig> shuffle_config =
           std::nullopt);
+
+  dataset::DatasetLoaderPtr getUnLabeledDatasetLoader(
+      const dataset::DataSourcePtr& data_source);
 
   TensorList featurizeInput(const MapInput& input) {
     for (const auto& [column_name, _] : input) {
@@ -133,8 +137,7 @@ class TabularDatasetFactory {
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
       bool should_update_history, const TabularOptions& options,
-      std::optional<std::vector<dataset::BlockPtr>> label_blocks,
-      bool parallel);
+      const std::vector<dataset::BlockList>& label_blocks, bool parallel);
 
   PreprocessedVectorsMap processAllMetadata(
       const ColumnDataTypes& input_data_types, const TabularOptions& options);
@@ -180,6 +183,7 @@ class TabularDatasetFactory {
 
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
+  uint32_t _num_label_blocks;
 
   TabularOptions _options;
 };

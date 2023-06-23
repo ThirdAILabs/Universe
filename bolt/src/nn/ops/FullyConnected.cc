@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -21,7 +22,7 @@ std::string nextFullyConnectedOpName() {
 
 FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
-                               SamplingConfigPtr sampling,
+                               SamplingConfigPtr sampling, bool use_bias,
                                uint32_t rebuild_hash_tables,
                                uint32_t reconstruct_hash_functions)
     : Op(nextFullyConnectedOpName()),
@@ -30,20 +31,22 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
       _updates_since_rebuild_hash_tables(0),
       _updates_since_reconstruct_hash_functions(0) {
   if (!sampling) {
-    sampling = DWTASamplingConfig::autotune(dim, sparsity);
+    sampling = DWTASamplingConfig::autotune(dim, sparsity,
+                                            /* experimental_autotune=*/false);
   }
   FullyConnectedLayerConfig config(dim, sparsity, activation,
                                    std::move(sampling));
 
-  _kernel = std::make_shared<FullyConnectedLayer>(config, input_dim);
+  _kernel = std::make_shared<FullyConnectedLayer>(
+      config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
 
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
-    const std::string& activation, SamplingConfigPtr sampling,
+    const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
     uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
-      dim, input_dim, sparsity, activation, std::move(sampling),
+      dim, input_dim, sparsity, activation, std::move(sampling), use_bias,
       rebuild_hash_tables, reconstruct_hash_functions));
 }
 
@@ -82,7 +85,6 @@ void FullyConnected::updateParameters(float learning_rate,
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
     _kernel->reBuildHashFunction();
-    _kernel->buildHashTables();
 
     _updates_since_rebuild_hash_tables = 0;
     _updates_since_reconstruct_hash_functions = 0;
@@ -113,6 +115,10 @@ std::vector<std::vector<float>*> FullyConnected::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }
 
+std::vector<std::vector<float>*> FullyConnected::parameters() {
+  return {&_kernel->weights(), &_kernel->biases()};
+}
+
 void FullyConnected::summary(std::ostream& summary,
                              const autograd::ComputationList& inputs,
                              const autograd::Computation* output) const {
@@ -121,6 +127,9 @@ void FullyConnected::summary(std::ostream& summary,
   summary << " [dim=" << _kernel->getDim()
           << ", sparsity=" << _kernel->getSparsity() << ", activation="
           << activationFunctionToStr(_kernel->getActivationFunction());
+  if (!_kernel->useBias()) {
+    summary << ", bias=" << std::boolalpha << _kernel->useBias();
+  }
   if (_kernel->getSparsity() < 1.0) {
     summary << ", sampling=(";
     _kernel->buildSamplingSummary(summary);
@@ -133,6 +142,29 @@ void FullyConnected::summary(std::ostream& summary,
 
 void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
+}
+
+void FullyConnected::reBuildHashFunction() { _kernel->reBuildHashFunction(); }
+void FullyConnected::registerModel(
+    const std::weak_ptr<model::Model>& new_model) {
+  bool found = false;
+
+  // This adds the new model to the list of models that the fully connected
+  // layer is used in. This is so that if the sparsity of the layer is updated
+  // and the model's internal state needs to be reallocated it can call the
+  // appropriate method on the model to do so.
+  for (const auto& model_wp : _models_using_op) {
+    if (auto model = model_wp.lock()) {
+      if (model == new_model.lock()) {
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    _models_using_op.push_back(new_model);
+  }
 }
 
 autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
@@ -165,6 +197,8 @@ void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
   _kernel->freezeHashTables(insert_labels_if_not_found);
 }
 
+void FullyConnected::unfreezeHashTables() { _kernel->unfreezeHashTables(); }
+
 void FullyConnected::setWeights(const float* weights) {
   _kernel->setWeights(weights);
 }
@@ -194,6 +228,22 @@ void FullyConnected::autotuneRehashRebuild(uint32_t num_batches,
     _rebuild_hash_tables = std::max(num_batches / 100, 1U);
   } else {
     _rebuild_hash_tables = std::max(num_batches / 20, 1U);
+  }
+}
+
+void FullyConnected::setSparsity(float sparsity, bool rebuild_hash_tables,
+                                 bool experimental_autotune) {
+  _kernel->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
+
+  // We need to the state to be reallocated after updating the sparsity. If a
+  // sparsity is increased between processing batches of the same batch size,
+  // both using sparsity. Then there will otherwise be no reallocation of state
+  // for activations, and the existing allocated state will not be large enough
+  // for the increased sparsity.
+  for (auto& model_wp : _models_using_op) {
+    if (auto model = model_wp.lock()) {
+      model->forceStateReallocation();
+    }
   }
 }
 

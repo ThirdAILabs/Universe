@@ -108,8 +108,11 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<thirdai::bolt::DWTASamplingConfig,
              std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
       nn_submodule, "DWTASamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t,
+                    uint32_t>(),
+           py::arg("num_tables"), py::arg("hashes_per_table"),
+           py::arg("range_pow"), py::arg("binsize"), py::arg("reservoir_size"),
+           py::arg("permutations"));
 
   py::class_<thirdai::bolt::FastSRPSamplingConfig,
              std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
@@ -182,7 +185,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
-           py::arg("sparsity"))
+           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
       .def("get_dim", &FullyConnectedNode::outputDim)
       .def_property_readonly(
           "weights",
@@ -611,7 +615,7 @@ That's all for now, folks! More docs coming soon :)
            "this manually after setting the gradients of the wrapped model.")
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"),
+           py::arg("all_datasets"),
            "Sets the current train data and labels the wrapper class uses for "
            "computeAndStoreBatchGradients. We need this method instead of just "
            "passing in a single pair of training data and training labels at "
@@ -648,7 +652,9 @@ That's all for now, folks! More docs coming soon :)
            py::arg("should_save_optimizer"))
       .def("update_learning_rate",
            &thirdai::bolt::DistributedTrainingWrapper::updateLearningRate,
-           py::arg("learning_rate"));
+           py::arg("learning_rate"))
+      .def("increment_epoch_count",
+           &DistributedTrainingWrapper::incrementEpochCount);
 
   createLossesSubmodule(nn_submodule);
 }

@@ -26,6 +26,7 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
         learning_rate=0.001,
         epochs=5,
+        batch_size=2000,
         metrics=["categorical_accuracy"],
     )
 

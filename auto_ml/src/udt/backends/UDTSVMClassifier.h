@@ -18,22 +18,24 @@ class UDTSVMClassifier final : public UDTBackend {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval) final;
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool verbose) final;
+                      bool sparse_inference, bool verbose,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -45,7 +47,9 @@ class UDTSVMClassifier final : public UDTBackend {
 
  private:
   static dataset::DatasetLoaderPtr svmDatasetLoader(
-      dataset::DataSourcePtr data_source, bool shuffle);
+      dataset::DataSourcePtr data_source, bool shuffle,
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig());
 
   UDTSVMClassifier() {}
 

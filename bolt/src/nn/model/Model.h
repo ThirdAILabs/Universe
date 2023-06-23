@@ -8,6 +8,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
+#include <memory>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -22,14 +23,26 @@ namespace thirdai::bolt::nn::model {
  * to write custom training functions and interact with the state of the model
  * after processing batches.
  */
-class Model {
- public:
+class Model : public std::enable_shared_from_this<Model> {
+ private:
+  /**
+   * The additional_labels allow for passing in a placeholder for labels that
+   * are not used in any loss function. This is useful because there could be a
+   * case (particularly in Mach) where metrics need to have access to labels
+   * that are not used in the loss function. Adding those labels here ensures
+   * that they are part of the model and can be accessed by the metrics. Note
+   * that the model does not require any relationship between the number of
+   * outputs, loss functions, and labels so it is ok to add additonal labels.
+   */
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
-        std::vector<loss::LossPtr> losses);
+        std::vector<loss::LossPtr> losses,
+        autograd::ComputationList additional_labels = {});
 
-  static std::shared_ptr<Model> make(autograd::ComputationList inputs,
-                                     autograd::ComputationList outputs,
-                                     std::vector<loss::LossPtr> losses);
+ public:
+  static std::shared_ptr<Model> make(
+      autograd::ComputationList inputs, autograd::ComputationList outputs,
+      std::vector<loss::LossPtr> losses,
+      autograd::ComputationList additional_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -40,7 +53,7 @@ class Model {
    * used.
    */
   tensor::TensorList forward(const tensor::TensorList& inputs,
-                             bool use_sparsity);
+                             bool use_sparsity = false);
 
   /**
    * Performs the foward and backward pass through the model for the given
@@ -68,6 +81,13 @@ class Model {
    * optimizer step on all of its trainable parameters.
    */
   void updateParameters(float learning_rate);
+
+  /**
+   * Forces reallocation of any state for storing activations, gradients, etc
+   * that is used for processing a batch. This does not include gradients for
+   * parameters.
+   */
+  void forceStateReallocation();
 
   /**
    * Returns the list of ops in the model in the order they will be executed
@@ -142,6 +162,18 @@ class Model {
    */
   std::vector<std::vector<float>*> gradients() const;
 
+  std::vector<std::vector<float>*> parameters() const;
+
+  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+
+  void setFlattenedGradients(const float* concatenated_values,
+                             uint64_t flattened_dim) const;
+
+  std::pair<const float*, uint64_t> getFlattenedParameters() const;
+
+  void setFlattenedParameters(const float* concatenated_values,
+                              uint64_t flattened_dim) const;
+
   /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted
@@ -149,6 +181,11 @@ class Model {
    * found during training.
    */
   void freezeHashTables(bool insert_labels_if_not_found);
+
+  /**
+   * Unfreezes all hash tables in the model.
+   */
+  void unfreezeHashTables();
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -166,6 +203,7 @@ class Model {
    */
   void checkpoint(const std::string& filename, bool save_metadata = true);
 
+  void disableSparseParameterUpdates();
   /**
    * Helper function to save the model to a stream.
    */
@@ -222,6 +260,11 @@ class Model {
    * the layer is sparse.
    */
   void matchOutputFullyConnectedLayersWithLabels() const;
+
+  /**
+   * Registers the model with the ops that it uses.
+   */
+  void registerWithOps();
 
   /**
    * Creates a metadata file which gives the thirdai version, model uuid, the

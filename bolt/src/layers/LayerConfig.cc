@@ -5,17 +5,6 @@
 
 namespace thirdai::bolt {
 
-void checkSparsity(float sparsity) {
-  if (sparsity > 1 || sparsity <= 0) {
-    throw std::invalid_argument(
-        "sparsity must be between 0 exclusive and 1 inclusive.");
-  }
-  if (0.2 < sparsity && sparsity < 1.0) {
-    std::cout << "WARNING: Using large sparsity value " << sparsity
-              << " in Layer, consider decreasing sparsity" << std::endl;
-  }
-}
-
 template <class Archive>
 void FullyConnectedLayerConfig::serialize(Archive& archive) {
   archive(_dim, _sparsity, _activation_fn, _sampling_config);
@@ -71,12 +60,13 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
   checkSparsity(sparsity);
   if (sparsity < 1.0) {
     uint32_t rp = (static_cast<uint32_t>(log2(num_filters)) / 3) * 3;
-    uint32_t k = rp / 3;
-    uint32_t rs = (num_filters * 4) / (1 << rp);
-    uint32_t l = sparsity < 0.1 ? 256 : 64;
+    uint32_t hashes_per_table = rp / 3;
+    uint32_t reservoir_size = (num_filters * 4) / (1 << rp);
+    uint32_t num_tables = sparsity < 0.1 ? 256 : 64;
     sampling_config = std::make_unique<DWTASamplingConfig>(
-        /*num_tables= */ l,
-        /* hashes_per_table= */ k, rs);
+        /* num_tables= */ num_tables,
+        /* hashes_per_table= */ hashes_per_table, /* range_pow= */ 3,
+        /* binsize=*/8, reservoir_size, /*permutations=*/4);
   } else {
     sampling_config = nullptr;
   }

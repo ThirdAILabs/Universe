@@ -19,7 +19,8 @@
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
-#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
@@ -31,6 +32,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <sys/types.h>
+#include <utils/Random.h>
 #include <chrono>
 #include <limits>
 #include <optional>
@@ -104,34 +106,18 @@ void createDatasetSubmodule(py::module_& module) {
       )pbdoc");
 
   py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
-      dataset_submodule, "MachIndex");
-
-  py::class_<mach::NumericCategoricalMachIndex, mach::MachIndex,
-             mach::NumericCategoricalMachIndexPtr>(dataset_submodule,
-                                                   "NumericMachIndex")
+      dataset_submodule, "MachIndex")
       .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
                     uint32_t, uint32_t>(),
            py::arg("entity_to_hashes"), py::arg("output_range"),
            py::arg("num_hashes"))
-      .def("get_entity_to_hashes",
-           &mach::NumericCategoricalMachIndex::getEntityToHashes)
-      .def("get_hash_to_entities",
-           &mach::NumericCategoricalMachIndex::getHashToEntities)
-      .def("num_hashes", &mach::NumericCategoricalMachIndex::numHashes)
-      .def("output_range", &mach::NumericCategoricalMachIndex::outputRange)
-      .def("save", &mach::NumericCategoricalMachIndex::save,
-           py::arg("filename"))
-      .def_static("load", &mach::NumericCategoricalMachIndex::load);
-
-  py::class_<mach::StringCategoricalMachIndex, mach::MachIndex,
-             mach::StringCategoricalMachIndexPtr>(dataset_submodule,
-                                                  "StringMachIndex")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
-           py::arg("num_hashes"))
-      .def("num_hashes", &mach::StringCategoricalMachIndex::numHashes)
-      .def("output_range", &mach::StringCategoricalMachIndex::outputRange)
-      .def("save", &mach::StringCategoricalMachIndex::save, py::arg("filename"))
-      .def_static("load", &mach::StringCategoricalMachIndex::load);
+      .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
+      .def("get_hash_to_entities", &mach::MachIndex::getEntities,
+           py::arg("hash"))
+      .def("num_hashes", &mach::MachIndex::numHashes)
+      .def("output_range", &mach::MachIndex::numBuckets)
+      .def("save", &mach::MachIndex::save, py::arg("filename"))
+      .def_static("load", &mach::MachIndex::load);
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
@@ -299,11 +285,24 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("prompt"), py::arg("context"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
 
+  py::class_<TextClassificationFeaturizer, Featurizer,
+             TextClassificationFeaturizerPtr>(dataset_submodule,
+                                              "TextClassificationFeaturizer")
+      .def(py::init<const std::string&, const std::string&, uint32_t, uint32_t,
+                    uint32_t, uint32_t, uint32_t, char, std::optional<char>,
+                    bool, bool>(),
+           py::arg("text_column"), py::arg("label_column"), py::arg("lrc_len"),
+           py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
+           py::arg("n_labels"), py::arg("delimiter") = ',',
+           py::arg("label_delimiter") = std::nullopt,
+           py::arg("integer_labels") = false,
+           py::arg("normalize_categories") = true);
+
 #endif
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
-           py::arg("seed") = time(NULL));
+           py::arg("seed") = global_random::nextSeed());
 
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")

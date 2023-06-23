@@ -7,7 +7,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <dataset/src/DataSource.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -40,6 +40,10 @@ void createBoltSubmodule(py::module_& bolt_submodule) {
            py::arg("save_prefix"), py::arg("save_frequency"))
 #endif
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_validation", &TrainConfig::withValidationAllDatasets,
+           py::arg("all_val_datasets"), py::arg("eval_config"),
+           py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "")
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("eval_config"), py::arg("validation_frequency") = 0,

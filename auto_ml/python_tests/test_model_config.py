@@ -21,32 +21,32 @@ def get_config(have_user_specified_parameters: bool = False):
         "inputs": ["input"],
         "nodes": [
             {
-                "name": "fc_1",
-                "type": "fully_connected",
+                "name": "emb",
+                "type": "embedding",
                 "dim": 10,
-                "sparsity": 1.0,
                 "activation": "tanh",
                 "predecessor": "input",
             },
             {
-                "name": "fc_2",
+                "name": "fc_1",
                 "type": "fully_connected",
                 "dim": 20,
                 "sparsity": layer_2_sparsity,
                 "activation": "relu",
                 "sampling_config": "random",
-                "predecessor": "fc_1",
+                "predecessor": "emb",
+                "use_bias": False,
             },
             {
-                "name": "fc_3",
+                "name": "fc_2",
                 "type": "fully_connected",
                 "dim": 30,
                 "sparsity": 0.3,
                 "activation": layer_3_activation,
-                "predecessor": "fc_2",
+                "predecessor": "fc_1",
             },
             {
-                "name": "fc_4",
+                "name": "fc_3",
                 "type": "fully_connected",
                 "dim": {"param_name": "output_dim"},
                 "sparsity": 0.1,
@@ -54,12 +54,15 @@ def get_config(have_user_specified_parameters: bool = False):
                 "sampling_config": {
                     "num_tables": 4,
                     "hashes_per_table": 2,
+                    "range_pow": 6,
+                    "binsize": 8,
                     "reservoir_size": 10,
+                    "permutations": 8,
                 },
-                "predecessor": "fc_3",
+                "predecessor": "fc_2",
             },
         ],
-        "output": "fc_4",
+        "output": "fc_3",
         "loss": "CategoricalCrossEntropyLoss",
     }
 
@@ -107,10 +110,10 @@ def test_load_model_from_config():
     expected_summary = """
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.25, activation=ReLU, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    Embedding(emb_NUM): tensor_NUM -> tensor_NUM [dim=10, activation=Tanh, bias=true]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.25, activation=ReLU, bias=false, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     =================================================
     """
 
@@ -123,13 +126,13 @@ def test_load_model_from_config():
 
 
 @pytest.mark.unit
-def test_embedding_layer_config():
+def test_robez_layer_config():
     config = {
         "inputs": ["input"],
         "nodes": [
             {
                 "name": "emb",
-                "type": "embedding",
+                "type": "robez",
                 "num_embedding_lookups": 4,
                 "lookup_size": 8,
                 "log_embedding_block_size": 10,
@@ -153,7 +156,7 @@ def test_embedding_layer_config():
     expected_summary = """
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
-    Embedding(emb_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5]
+    RobeZ(robez_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax]
     =================================================
     """
@@ -185,10 +188,10 @@ def test_udt_model_config_override():
     expected_summary = """
     ===================== Model =====================
     Input(input_NUM) -> tensor_NUM
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Tanh]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.5, activation=ReLU, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
-    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    Embedding(emb_NUM): tensor_NUM -> tensor_NUM [dim=10, activation=Tanh, bias=true]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.5, activation=ReLU, bias=false, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     =================================================
     """
 

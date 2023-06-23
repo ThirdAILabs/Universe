@@ -28,6 +28,12 @@ void AllocationManager::resetOutputGradients(uint32_t index_in_batch) {
   }
 }
 
+void AllocationManager::forceReallocation() {
+  for (auto& comp : _computations) {
+    comp->allocate(_allocated_batch_size, _using_sparsity);
+  }
+}
+
 template void AllocationManager::serialize(cereal::BinaryInputArchive&);
 template void AllocationManager::serialize(cereal::BinaryOutputArchive&);
 

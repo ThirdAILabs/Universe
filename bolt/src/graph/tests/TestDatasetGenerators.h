@@ -182,7 +182,8 @@ struct TestDatasetGenerators {
             std::vector<uint32_t>(tokens.begin(), tokens.end()),
             std::vector<float>(tokens.size(), 1.0));
 
-        BoltVector label_vec(/* l= */ 1, /* is_dense= */ false);
+        BoltVector label_vec(/* l= */ 1, /* is_dense= */ false,
+                             /* has_gradient= */ false);
         label_vec.active_neurons[0] = id_in_tokens;
         label_vec.activations[0] = 1.0;
 

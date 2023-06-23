@@ -12,15 +12,10 @@ static uint32_t num_hashes = 10;
 
 class MachBlockTest : public testing::Test {
  public:
-  static mach::StringCategoricalMachIndexPtr stringMachIndex() {
-    return mach::StringCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
-  }
-
-  static mach::NumericCategoricalMachIndexPtr numericMachIndex() {
-    return mach::NumericCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* max_elements = */ 20);
+  static mach::MachIndexPtr machIndex() {
+    return mach::MachIndex::make(
+        /* num_buckets = */ output_range, /* num_hashes = */ num_hashes,
+        /* num_elements = */ 20);
   }
 
   /**
@@ -67,7 +62,7 @@ class MachBlockTest : public testing::Test {
     for (auto& vec : vecs) {
       auto bv = vec.toBoltVector();
       for (uint32_t i = 0; i < bv.len; i++) {
-        ASSERT_LT(bv.active_neurons[i], index->outputRange());
+        ASSERT_LT(bv.active_neurons[i], index->numBuckets());
       }
     }
   }
@@ -89,38 +84,19 @@ class MachBlockTest : public testing::Test {
   }
 };
 
-TEST(MachBlockTest, TestNumericMachBlockNumHashes) {
-  auto index = MachBlockTest::numericMachIndex();
+TEST(MachBlockTest, TestMachBlockNumHashes) {
+  auto index = MachBlockTest::machIndex();
   MachBlockTest::numHashesTest(index);
 }
 
-TEST(MachBlockTest, TestStringMachBlockNumHashes) {
-  auto index = MachBlockTest::stringMachIndex();
-  MachBlockTest::numHashesTest(index);
-}
-
-TEST(MachBlockTest, TestNumericMachBlockOutputRange) {
-  auto index = MachBlockTest::numericMachIndex();
+TEST(MachBlockTest, TestMachBlockOutputRange) {
+  auto index = MachBlockTest::machIndex();
   MachBlockTest::outputRangeTest(index);
 }
 
-TEST(MachBlockTest, TestStringMachBlockOutputRange) {
-  auto index = MachBlockTest::stringMachIndex();
-  MachBlockTest::outputRangeTest(index);
-}
-
-TEST(MachBlockTest, TestNumericMachBlockDeterminism) {
+TEST(MachBlockTest, TestMachBlockDeterminism) {
   auto categories = MachBlockTest::genRandomCategories();
-  auto index = MachBlockTest::numericMachIndex();
-  auto vecs1 = MachBlockTest::makeMachOutputVectors(categories, index);
-  auto vecs2 = MachBlockTest::makeMachOutputVectors(categories, index);
-
-  MachBlockTest::compareSegmentedVecs(vecs1, vecs2);
-}
-
-TEST(MachBlockTest, TestStringMachBlockDeterminism) {
-  auto categories = MachBlockTest::genRandomCategories();
-  auto index = MachBlockTest::stringMachIndex();
+  auto index = MachBlockTest::machIndex();
   auto vecs1 = MachBlockTest::makeMachOutputVectors(categories, index);
   auto vecs2 = MachBlockTest::makeMachOutputVectors(categories, index);
 

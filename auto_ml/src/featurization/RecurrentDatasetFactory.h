@@ -4,7 +4,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
@@ -29,7 +29,9 @@ class RecurrentDatasetFactory {
   uint32_t outputDim() { return _labeled_featurizer->getDimensions().back(); }
 
   dataset::DatasetLoaderPtr getDatasetLoader(
-      const dataset::DataSourcePtr& data_source, bool shuffle);
+      const dataset::DataSourcePtr& data_source, bool shuffle,
+      std::optional<dataset::DatasetShuffleConfig> shuffle_config =
+          std::nullopt);
 
   TensorList featurizeInput(const MapInput& sample);
 

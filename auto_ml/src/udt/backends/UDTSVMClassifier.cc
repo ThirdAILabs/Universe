@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -28,31 +29,30 @@ UDTSVMClassifier::UDTSVMClassifier(
 
 py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
-  auto train_dataset_loader = svmDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset_loader = svmDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
-  ValidationDatasetLoader validation_dataset_loader;
-  if (validation) {
-    validation_dataset_loader = std::make_pair(
-        svmDatasetLoader(validation->first, /* shuffle= */ false),
-        validation->second);
+  dataset::DatasetLoaderPtr val_dataset_loader;
+  if (val_data) {
+    val_dataset_loader = svmDatasetLoader(val_data, /* shuffle= */ false);
   }
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
-                            validation_dataset_loader, batch_size_opt,
-                            max_in_memory_batches, metrics, callbacks, verbose,
-                            logging_interval);
+                            train_metrics, val_dataset_loader, val_metrics,
+                            callbacks, options);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       const std::vector<std::string>& metrics,
-                                      bool sparse_inference, bool verbose) {
+                                      bool sparse_inference, bool verbose,
+                                      std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   auto dataset = svmDatasetLoader(data, /* shuffle= */ false);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
@@ -60,7 +60,10 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
-                                     bool return_predicted_class) {
+                                     bool return_predicted_class,
+                                     std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   auto inputs = bolt::train::convertVectors(
       {dataset::SvmDatasetLoader::toSparseVector(sample)},
       _classifier->model()->inputDims());
@@ -70,7 +73,10 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
 
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
-                                          bool return_predicted_class) {
+                                          bool return_predicted_class,
+                                          std::optional<uint32_t> top_k) {
+  (void)top_k;
+
   auto inputs = bolt::train::convertBatch(
       {dataset::SvmDatasetLoader::toSparseVectors(samples)},
       _classifier->model()->inputDims());
@@ -97,11 +103,12 @@ void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {
 }
 
 dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
-    dataset::DataSourcePtr data_source, bool shuffle) {
+    dataset::DataSourcePtr data_source, bool shuffle,
+    dataset::DatasetShuffleConfig shuffle_config) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
 
   auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
-      std::move(data_source), featurizer, shuffle);
+      std::move(data_source), featurizer, shuffle, shuffle_config);
 
   return dataset_loader;
 }
