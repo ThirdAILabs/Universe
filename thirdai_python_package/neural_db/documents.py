@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
+import hashlib
 
 import pandas as pd
 from pytrie import StringTrie
@@ -24,7 +25,12 @@ class Document:
         raise NotImplementedError()
 
     def hash(self) -> str:
-        return hash_string(self.name())
+        sha1 = hashlib.sha1()
+        sha1.update(self.name())
+        for i in range(self.size()):
+            sha1.update(self.reference(i).text())
+        return sha1.hexdigest()
+        
 
     def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text()
