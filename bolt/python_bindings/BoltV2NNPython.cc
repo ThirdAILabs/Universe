@@ -105,7 +105,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("new_values"))
       .def("disable_sparse_parameter_updates",
            &model::Model::disableSparseParameterUpdates)
-
+      .def("train_steps", &model::Model::trainSteps)
+      .def("override_train_steps", &model::Model::overrideTrainSteps,
+           py::arg("train_steps"))
 #endif
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
