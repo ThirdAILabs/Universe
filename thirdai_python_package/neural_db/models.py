@@ -229,6 +229,8 @@ class Mach(Model):
                     num_buckets_to_sample=16,
                 )
             learning_rate = 0.001
+            # Freezing at the beginning prevents the model from forgetting
+            # things it learned from pretraining.
             freeze_epoch = 0
 
         self.n_ids += intro_documents.size()
