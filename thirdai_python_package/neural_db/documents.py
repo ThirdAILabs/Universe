@@ -6,6 +6,8 @@ import pandas as pd
 from pytrie import StringTrie
 from thirdai.dataset.data_source import PyDataSource
 
+from .utils import hash_string
+
 
 class Reference:
     pass
@@ -22,7 +24,7 @@ class Document:
         raise NotImplementedError()
 
     def hash(self) -> str:
-        return self.name()
+        return hash_string(self.name())
 
     def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text()
