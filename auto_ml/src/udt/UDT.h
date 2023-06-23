@@ -143,6 +143,8 @@ class UDT {
 
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
+  std::vector<uint32_t> modelDims() const;
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,

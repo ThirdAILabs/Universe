@@ -430,3 +430,14 @@ def test_udt_train_batch():
     predictions = np.argmax(scores, axis=0)
 
     assert (predictions == np.array([0, 1, 2])).all()
+
+
+def test_model_dims():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=2,
+        options={"input_dim": 8, "embedding_dimension": 4},
+    )
+
+    assert model.model_dims() == [8, 4, 2]
