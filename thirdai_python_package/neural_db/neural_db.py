@@ -149,19 +149,17 @@ class NeuralDB:
         id_col: str,
         id_delimiter: str,
         query_col: str,
-        input_dim: int,
-        hidden_dim: int,
-        extreme_output_dim: int,
     ):
         udt.clear_index()
         udt.enable_rlhf()
+        input_dim, emb_dim, out_dim = udt.model_dims()
         model = Mach(
             id_col=id_col,
             id_delimiter=id_delimiter,
             query_col=query_col,
             input_dim=input_dim,
-            hidden_dim=hidden_dim,
-            extreme_output_dim=extreme_output_dim,
+            hidden_dim=emb_dim,
+            extreme_output_dim=out_dim,
         )
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
