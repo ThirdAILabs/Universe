@@ -12,32 +12,36 @@ class Reference:
 
 
 class Document:
-    def hash(self) -> str:
-        raise NotImplementedError()
-
     def size(self) -> int:
         raise NotImplementedError()
 
     def name(self) -> str:
         raise NotImplementedError()
 
-    def strong_text(self, element_id: int) -> str:
-        raise NotImplementedError()
-
-    def weak_text(self, element_id: int) -> str:
-        raise NotImplementedError()
-
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def context(self, element_id: int, radius) -> str:
-        raise NotImplementedError()
+    def hash(self) -> str:
+        return self.name()
+
+    def strong_text(self, element_id: int) -> str:
+        return self.reference(element_id).text()
+
+    def weak_text(self, element_id: int) -> str:
+        return self.reference(element_id).text()
+
+    def context(self, element_id: int, radius: int) -> str:
+        window_start = max(0, element_id - radius)
+        window_end = min(self.size(), element_id + radius + 1)
+        return " \n".join(
+            [self.reference(elid).text() for elid in range(window_start, window_end)]
+        )
 
     def save_meta(self, directory: Path):
-        raise NotImplementedError()
+        pass
 
     def load_meta(self, directory: Path):
-        raise NotImplementedError()
+        pass
 
 
 class Reference:
@@ -48,13 +52,11 @@ class Reference:
         text: str,
         source: str,
         metadata: dict,
-        show_fn: Callable = lambda *args, **kwargs: None,
     ):
         self._id = element_id
         self._text = text
         self._source = source
         self._metadata = metadata
-        self._show_fn = show_fn
         self._context_fn = lambda radius: document.context(element_id, radius)
 
     def id(self):
@@ -71,13 +73,6 @@ class Reference:
 
     def metadata(self):
         return self._metadata
-
-    def show(self):
-        return self._show_fn(
-            text=self._text,
-            source=self._source,
-            **self._metadata,
-        )
 
 
 class DocumentRow:
