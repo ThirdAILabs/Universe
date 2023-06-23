@@ -1,7 +1,7 @@
+import hashlib
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
-import hashlib
 
 import pandas as pd
 from pytrie import StringTrie
@@ -26,11 +26,10 @@ class Document:
 
     def hash(self) -> str:
         sha1 = hashlib.sha1()
-        sha1.update(self.name())
+        sha1.update(bytes(self.name(), "utf-8"))
         for i in range(self.size()):
-            sha1.update(self.reference(i).text())
+            sha1.update(bytes(self.reference(i).text(), "utf-8"))
         return sha1.hexdigest()
-        
 
     def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text()
