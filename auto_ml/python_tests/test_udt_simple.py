@@ -432,21 +432,32 @@ def test_udt_train_batch():
     assert (predictions == np.array([0, 1, 2])).all()
 
 
-def test_model_dims():
-    for extreme_classification in [True, False]:
-        model = bolt.UniversalDeepTransformer(
-            data_types={"col": bolt.types.categorical()},
-            target="col",
-            n_target_classes=2,
-            integer_target=True,
-            options={
-                "input_dim": 8,
-                "embedding_dimension": 4,
-                "extreme_classification": extreme_classification,
-            },
-        )
+def test_model_dims_regular_udt():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=2,
+        options={"input_dim": 8, "embedding_dimension": 4},
+    )
 
-        assert model.model_dims() == [8, 4, 2]
+    assert model.model_dims() == [8, 4, 2]
+
+
+def test_model_dims_mach():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=20,
+        integer_target=True,
+        options={
+            "input_dim": 8,
+            "embedding_dimension": 4,
+            "extreme_classification": True,
+            "extreme_output_dim": 2,
+        },
+    )
+
+    assert model.model_dims() == [8, 4, 2]
 
 
 def test_data_types():
