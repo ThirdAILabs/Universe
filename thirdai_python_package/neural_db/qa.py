@@ -87,12 +87,8 @@ class UDTEmbedding(QA):
         summarize.summarize(
                 context, self.get_model(), query_col=self.get_query_col()
             ).strip()
-        
-class ContextArgs:
-    def __init__(self, **kwargs):
-        # Set default context arguments
-        setattr(self, "num_references", 1)
 
-        # Set input context args
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
+class ContextArgs:
+    def __init__(self, chunk_radius: int = 1, num_references: int = 1):
+        self.chunk_radius = chunk_radius
+        self.num_references = num_references
