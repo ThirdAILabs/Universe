@@ -209,6 +209,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("get_data_processor", &udt::UDT::tabularDatasetFactory)
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
+      .def("model_dims", &udt::UDT::modelDims)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
