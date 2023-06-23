@@ -67,7 +67,7 @@ class Sup:
                 )
             self.queries = queries
             self.labels = labels
-        # elif csv is None and 
+        # elif csv is None and
         else:
             raise ValueError(
                 "Sup must be initialized with csv, query_column and id_column, or queries and labels."
@@ -259,7 +259,7 @@ class NeuralDB:
             user_id=self._user_id,
             query_id_pairs=[(text, result_id)],
         )
-    
+
     def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
         teachers.upvote(
             model=self._savable_state.model,
@@ -285,7 +285,9 @@ class NeuralDB:
             top_k=top_k,
         )
 
-    def associate_batch(self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong):
+    def associate_batch(
+        self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
+    ):
         if strength == Strength.Weak:
             top_k = 3
         elif strength == Strength.Medium:

@@ -5,7 +5,13 @@ import pandas as pd
 from docx import Document
 from nltk.tokenize import sent_tokenize, word_tokenize
 
-from .utils import ATTACH_N_WORD_THRESHOLD, chunk_text, clean_text, ensure_valid_encoding
+from .utils import (
+    ATTACH_N_WORD_THRESHOLD,
+    chunk_text,
+    clean_text,
+    ensure_valid_encoding,
+)
+
 
 def get_elements(filename):
     temp = []
@@ -17,13 +23,9 @@ def get_elements(filename):
                 temp[-1] = (temp[-1][0] + " " + p.text.strip(), filename)
             else:
                 temp.append((p.text.strip(), filename))
-            prev_short = (
-                len(word_tokenize(p.text.strip())) < ATTACH_N_WORD_THRESHOLD
-            )
+            prev_short = len(word_tokenize(p.text.strip())) < ATTACH_N_WORD_THRESHOLD
     temp = [
-        (chunk, filename)
-        for passage, filename in temp
-        for chunk in chunk_text(passage)
+        (chunk, filename) for passage, filename in temp for chunk in chunk_text(passage)
     ]
     return temp, True
 

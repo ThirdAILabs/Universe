@@ -1,13 +1,14 @@
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
-from requests.models import Response
 
 import pandas as pd
 from pytrie import StringTrie
-from .qa import ContextArgs
-from .utils import hash_string, hash_file
+from requests.models import Response
 from thirdai.dataset.data_source import PyDataSource
+
+from .qa import ContextArgs
+from .utils import hash_file, hash_string
 
 
 class Reference:
@@ -15,32 +16,36 @@ class Reference:
 
 
 class Document:
-    def hash(self) -> str:
-        raise NotImplementedError()
-
     def size(self) -> int:
         raise NotImplementedError()
 
     def name(self) -> str:
         raise NotImplementedError()
 
-    def strong_text(self, element_id: int) -> str:
-        raise NotImplementedError()
-
-    def weak_text(self, element_id: int) -> str:
-        raise NotImplementedError()
-
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
+    def hash(self) -> str:
+        return self.name()
+
+    def strong_text(self, element_id: int) -> str:
+        return self.reference(element_id).text()
+
+    def weak_text(self, element_id: int) -> str:
+        return self.reference(element_id).text()
+
     def context(self, element_id: int, context_args: ContextArgs) -> str:
-        raise NotImplementedError()
+        window_start = max(0, element_id - context_args.chunk_radius)
+        window_end = min(self.size(), element_id + context_args.chunk_radius + 1)
+        return " \n".join(
+            [self.reference(elid).text() for elid in range(window_start, window_end)]
+        )
 
     def save_meta(self, directory: Path):
-        raise NotImplementedError()
+        pass
 
     def load_meta(self, directory: Path):
-        raise NotImplementedError()
+        pass
 
 
 class Reference:
@@ -56,7 +61,9 @@ class Reference:
         self._text = text
         self._source = source
         self._metadata = metadata
-        self._context_fn = lambda radius: document.context(element_id, ContextArgs(chunk_radius=radius))
+        self._context_fn = lambda radius: document.context(
+            element_id, ContextArgs(chunk_radius=radius)
+        )
 
     def id(self):
         return self._id
@@ -126,7 +133,7 @@ class DocumentDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name() for doc, _ in self.documents])
-    
+
 
 class IntroAndTrainDocuments:
     def __init__(self, intro: DocumentDataSource, train: DocumentDataSource) -> None:
@@ -150,8 +157,12 @@ class DocumentManager:
         return start_id + doc.size()
 
     def add(self, documents: List[Document]):
-        intro_dds = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
-        train_dds = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
+        intro_dds = DocumentDataSource(
+            self.id_column, self.strong_column, self.weak_column
+        )
+        train_dds = DocumentDataSource(
+            self.id_column, self.strong_column, self.weak_column
+        )
         for doc in documents:
             doc_hash = doc.hash()
             if doc_hash not in self.registry:
@@ -188,7 +199,11 @@ class DocumentManager:
 
     def _get_doc_and_start_id(self, element_id: int):
         # check if element_id is valid
-        if not self.id_sorted_docs or (not 0 <= element_id < self.id_sorted_docs[-1][1] + self.id_sorted_docs[-1][0].size()):
+        if not self.id_sorted_docs or (
+            not 0
+            <= element_id
+            < self.id_sorted_docs[-1][1] + self.id_sorted_docs[-1][0].size()
+        ):
             raise ValueError(f"Unable to find element that has id {element_id}.")
         # Iterate through docs in reverse order
         for i in range(len(self.id_sorted_docs) - 1, -1, -1):
@@ -204,9 +219,7 @@ class DocumentManager:
 
     def context(self, element_id: int, context_args: ContextArgs):
         doc, start_id = self._get_doc_and_start_id(element_id)
-        return doc.context(
-            element_id - start_id, context_args
-        )
+        return doc.context(element_id - start_id, context_args)
 
     def save_meta(self, directory: Path):
         for i, (doc, _) in enumerate(self.id_sorted_docs):
@@ -218,4 +231,3 @@ class DocumentManager:
         for i, (doc, _) in enumerate(self.id_sorted_docs):
             subdir = directory / str(i)
             doc.load_meta(subdir)
-

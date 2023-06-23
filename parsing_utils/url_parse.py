@@ -38,7 +38,9 @@ def get_all_urls(base_url, max_crawl_depth):
         try:
             response = requests.get(url, headers=HEADERS)
             if response.status_code != 200:
-                print(f"Skipping {url} (status code {response.status_code})", flush=True)
+                print(
+                    f"Skipping {url} (status code {response.status_code})", flush=True
+                )
                 continue
             else:
                 print(f"Adding {url}", flush=True)
@@ -76,7 +78,7 @@ def process_url(url, response):
             response = requests.get(url, headers=HEADERS)
         except:
             return f"cannot extract text from {url}", False
-        
+
     if response.status_code != 200:
         return f"cannot extract text from {url}", False
 

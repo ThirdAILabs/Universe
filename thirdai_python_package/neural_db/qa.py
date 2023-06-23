@@ -75,6 +75,7 @@ class Dolly(QA):
             instruction="answer from context: " + question, context=context
         ).lstrip()
 
+
 class UDTEmbedding(QA):
     def __init__(self, get_model, get_query_col, **kwargs) -> None:
         self.get_model = get_model
@@ -85,8 +86,9 @@ class UDTEmbedding(QA):
         from parsing_utils import summarize
 
         summarize.summarize(
-                context, self.get_model(), query_col=self.get_query_col()
-            ).strip()
+            context, self.get_model(), query_col=self.get_query_col()
+        ).strip()
+
 
 class ContextArgs:
     def __init__(self, chunk_radius: int = 1, num_references: int = 1):

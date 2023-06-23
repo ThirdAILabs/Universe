@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from thirdai import bolt, demos
-from thirdai.neural_db import Document, Reference, ContextArgs, CSV
+from thirdai.neural_db import CSV, ContextArgs, Document, Reference
 from thirdai.neural_db import documents as docs
 
 # We don't have a test on just the Document interface since it is just an
@@ -43,7 +43,9 @@ class MockDocument(Document):
     def expected_reference_text_for_id(doc_id: str, element_id: int):
         return f"Reference text from {doc_id}, with id {element_id}"
 
-    def expected_context_for_id_and_radius(doc_id: str, element_id: int, context_args: ContextArgs):
+    def expected_context_for_id_and_radius(
+        doc_id: str, element_id: int, context_args: ContextArgs
+    ):
         print(context_args)
         return f"Context from {doc_id}, with id {element_id} and context args {vars(context_args)}"
 
@@ -195,6 +197,7 @@ def test_document_manager_save_load():
     shutil.rmtree(save_path)
 
 
+@pytest.mark.unit
 def test_document_manager_sources():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
@@ -202,6 +205,7 @@ def test_document_manager_sources():
     assert second_doc.name() in doc_manager.sources()
 
 
+@pytest.mark.unit
 def test_document_manager_reference():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
@@ -225,6 +229,7 @@ def test_document_manager_reference():
     assert second_doc._last_shown == reference_10.text()
 
 
+@pytest.mark.unit
 def test_document_manager_context():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
@@ -240,9 +245,8 @@ def test_document_manager_context():
     )
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_udt_cold_start_on_csv_document():
-
     (
         catalog_file,
         n_target_classes,

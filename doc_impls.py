@@ -1,15 +1,14 @@
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
-from requests.models import Response
 
 import pandas as pd
-from parsing_utils import doc_parse, pdf_parse, url_parse
-from thirdai.neural_db.qa import ContextArgs
-from thirdai.neural_db.utils import hash_string, hash_file
+from requests.models import Response
 from thirdai.neural_db import Document, Reference
+from thirdai.neural_db.qa import ContextArgs
+from thirdai.neural_db.utils import hash_file, hash_string
 
-
+from parsing_utils import doc_parse, pdf_parse, url_parse
 
 
 # Base class for PDF and DOCX classes because they share the same logic.
@@ -18,7 +17,6 @@ class Extracted(Document):
         self,
         filename: str,
     ):
-        
         self.filename = filename
         self.df = self.process_data(filename)
         self.hash_val = hash_file(filename)
@@ -43,7 +41,7 @@ class Extracted(Document):
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
-    
+
     def show_fn(text, source, **kwargs):
         return text
 
@@ -59,7 +57,7 @@ class Extracted(Document):
     def context(self, element_id: int, radius: int) -> str:
         if not 0 <= element_id < self.size():
             raise ("Element id not in document.")
-        
+
         window_start = max(0, element_id - radius)
         window_end = min(self.size(), element_id + radius + 1)
         window_chunks = self.df.iloc[window_start:window_end]["passage"].tolist()
@@ -71,9 +69,7 @@ class PDF(Extracted):
         self,
         filename: str,
     ):
-        super().__init__(
-            filename=filename
-        )
+        super().__init__(filename=filename)
 
     def process_data(
         self,
@@ -95,9 +91,7 @@ class DOCX(Extracted):
         self,
         filename: str,
     ):
-        super().__init__(
-            filename=filename
-        )
+        super().__init__(filename=filename)
 
     def process_data(
         self,
@@ -115,11 +109,7 @@ class DOCX(Extracted):
 
 
 class URL(Document):
-    def __init__(
-        self,
-        url: str,
-        url_response: Response = None
-    ):
+    def __init__(self, url: str, url_response: Response = None):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)
@@ -149,7 +139,7 @@ class URL(Document):
 
     def weak_text(self, element_id: int) -> str:
         return self.df["text"].iloc[element_id]
-    
+
     def show_fn(text, source, **kwargs):
         return text
 
@@ -209,10 +199,10 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         return " ".join(self.df[self.strong_cols].iloc[element_id].tolist())
-       
+
     def weak_text(self, element_id: int) -> str:
         return " ".join(self.df[self.weak_cols].iloc[element_id].tolist())
-    
+
     def show_fn(text, source, **kwargs):
         return text
 
