@@ -17,7 +17,7 @@ class MiniBenchmarkUDTRunner(UDTRunner):
 
         # The ROC_AUC additional metric lead to errors in the mini benchmarks because
         # all of the predictions are the same which leads to ROC_AUC being undefined.
-        if config.callbacks: 
+        if config.callbacks:
             config.callbacks = []
 
         UDTRunner.run_benchmark(config, path_prefix, mlflow_logger)
