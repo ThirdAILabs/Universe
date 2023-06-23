@@ -433,14 +433,20 @@ def test_udt_train_batch():
 
 
 def test_model_dims():
-    model = bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()},
-        target="col",
-        n_target_classes=2,
-        options={"input_dim": 8, "embedding_dimension": 4},
-    )
+    for extreme_classification in [True, False]:
+        model = bolt.UniversalDeepTransformer(
+            data_types={"col": bolt.types.categorical()},
+            target="col",
+            n_target_classes=2,
+            integer_target=True,
+            options={
+                "input_dim": 8,
+                "embedding_dimension": 4,
+                "extreme_classification": extreme_classification,
+            },
+        )
 
-    assert model.model_dims() == [8, 4, 2]
+        assert model.model_dims() == [8, 4, 2]
 
 
 def test_data_types():
