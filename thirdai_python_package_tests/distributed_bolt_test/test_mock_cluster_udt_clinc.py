@@ -34,6 +34,7 @@ def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
 # Tests that we can start a distributed job that trains for 0 epochs.
 @pytest.mark.release
 def test_distributed_start(ray_two_node_cluster_config):
+    # smaller embedding dimension works, as we are only checking whether licensing works, or not
     udt_model = get_clinc_udt_model(integer_target=True, embedding_dimension=2)
 
     udt_model.train_distributed(
