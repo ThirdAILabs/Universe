@@ -17,7 +17,7 @@ def setup_module():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
 
-def get_clinc_udt_model(integer_target=False):
+def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
     udt_model = bolt.UniversalDeepTransformer(
         data_types={
             "category": bolt.types.categorical(),
@@ -26,7 +26,7 @@ def get_clinc_udt_model(integer_target=False):
         target="category",
         n_target_classes=151,
         integer_target=integer_target,
-        options={"embedding_dimension": 128},
+        options={"embedding_dimension": embedding_dimension},
     )
     return udt_model
 
@@ -34,7 +34,7 @@ def get_clinc_udt_model(integer_target=False):
 # Tests that we can start a distributed job that trains for 0 epochs.
 @pytest.mark.release
 def test_distributed_start(ray_two_node_cluster_config):
-    udt_model = get_clinc_udt_model(integer_target=True)
+    udt_model = get_clinc_udt_model(integer_target=True, embedding_dimension=2)
 
     udt_model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
