@@ -1,16 +1,12 @@
-
-
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <cstdint>
-#include <stdexcept>
 #include <vector>
 
-#include <gloo/allreduce.h>
-#include <gloo/context.h>
-#include <gloo/math.h>
-#include <gloo/types.h>
+#include <gloo/gloo/allreduce.h>
+#include <gloo/gloo/context.h>
+#include <gloo/gloo/math.h>
+#include <gloo/gloo/types.h>
 
 namespace pygloo {
 
@@ -55,24 +51,5 @@ template <typename T> ReduceFunc toFunction(const ReduceOp &r) {
   throw std::runtime_error("Unhandled ReduceOp");
 }
 
-enum class glooDataType_t : std::uint8_t {
-  glooInt8 = 0,
-  glooUint8,
-  glooInt32,
-  glooUint32,
-  glooInt64,
-  glooUint64,
-  glooFloat16,
-  glooFloat32,
-  glooFloat64,
-};
-
-void allreduce_wrapper(const std::shared_ptr<gloo::Context> &context,
-                       intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                       glooDataType_t datatype,
-                       ReduceOp reduceop = ReduceOp::SUM,
-                       gloo::AllreduceOptions::Algorithm algorithm =
-                           gloo::AllreduceOptions::Algorithm::RING,
-                       uint32_t tag = 0);
 
 } // namespace pygloo
