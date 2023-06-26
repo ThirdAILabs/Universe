@@ -19,7 +19,7 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
     std::vector<uint32_t> hashes(num_hashes);
     for (uint32_t i = 0; i < num_hashes; i++) {
       auto hash = dist(mt);
-      while (std::find(hashes.begin(), hashes.end(), hash) == hashes.end()) {
+      while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
         hash = dist(mt);
       }
       hashes[i] = hash;
