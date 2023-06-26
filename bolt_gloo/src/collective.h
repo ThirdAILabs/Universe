@@ -1,6 +1,3 @@
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <vector>
 
 #include <gloo/gloo/allreduce.h>
@@ -8,7 +5,7 @@
 #include <gloo/gloo/math.h>
 #include <gloo/gloo/types.h>
 
-namespace pygloo {
+namespace boltgloo {
 
 enum class ReduceOp : std::uint8_t {
   SUM = 0,
@@ -52,4 +49,4 @@ template <typename T> ReduceFunc toFunction(const ReduceOp &r) {
 }
 
 
-} // namespace pygloo
+} // namespace boltgloo

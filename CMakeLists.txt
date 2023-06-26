@@ -260,6 +260,7 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
 
 # Header only dependencies
 include_directories(deps/eigen)
+include_directories(deps/gloo)
 
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
@@ -427,6 +428,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
+    bolt_gloo/src/allreduce.cc
+    bolt_gloo/src/barrier.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
@@ -497,7 +500,8 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
   telemetry/python_bindings/TelemetryPython.cc
-  licensing/python_bindings/LicensingPython.cc)
+  licensing/python_bindings/LicensingPython.cc
+  bolt_gloo/python_bindings/GlooPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 

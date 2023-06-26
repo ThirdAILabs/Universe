@@ -6,6 +6,7 @@
 #include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
+#include <bolt_gloo/python_bindings/GlooPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
@@ -150,6 +151,10 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
+
+
+  // Bolt Gloo
+  thirdai::bolt_gloo::python::defineGlooSubmodule(m);
 
   // Bolt V2
   auto bolt_v2_submodule = m.def_submodule("bolt_v2");
