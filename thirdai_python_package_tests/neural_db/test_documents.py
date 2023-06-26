@@ -208,9 +208,7 @@ def test_document_manager_reference():
 
     reference_3 = doc_manager.reference(3)
     assert reference_3.id == 3
-    assert reference_3.text == MockDocument.expected_reference_text_for_id(
-        first_id, 3
-    )
+    assert reference_3.text == MockDocument.expected_reference_text_for_id(first_id, 3)
     assert reference_3.source == first_id
 
     reference_10 = doc_manager.reference(10)
