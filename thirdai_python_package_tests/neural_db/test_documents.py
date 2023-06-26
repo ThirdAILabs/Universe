@@ -24,9 +24,11 @@ class MockDocument(Document):
 
     # We don't implement hash to test the default implementation
 
+    @property
     def size(self) -> int:
         return self._size
 
+    @property
     def name(self) -> str:
         return self._identifier
 
@@ -97,7 +99,7 @@ second_doc = MockDocument(second_id, second_size)
 
 def data_source_to_df(data_source):
     csv_string = ""
-    for _ in range(data_source.size() + 1):  # +1 for header
+    for _ in range(data_source.size + 1):  # +1 for header
         csv_string += data_source.next_line() + "\n"
 
     return pd.read_csv(StringIO(csv_string))
@@ -132,7 +134,7 @@ def test_document_data_source():
     data_source.add(first_doc, start_id=0)
     data_source.add(second_doc, start_id=first_size)
 
-    assert data_source.size() == first_size + second_size
+    assert data_source.size == first_size + second_size
 
     df = data_source_to_df(data_source)
     assert len(df) == (first_size + second_size)
@@ -145,15 +147,15 @@ def test_document_manager_splits_intro_and_train():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     data_sources, _ = doc_manager.add([first_doc])
 
-    assert data_sources.train.size() == first_size
-    assert data_sources.intro.size() == first_size
+    assert data_sources.train.size == first_size
+    assert data_sources.intro.size == first_size
     check_first_doc(data_source_to_df(data_sources.train))
     check_first_doc(data_source_to_df(data_sources.intro))
 
     data_sources, _ = doc_manager.add([first_doc, second_doc])
 
-    assert data_sources.train.size() == first_size + second_size
-    assert data_sources.intro.size() == second_size
+    assert data_sources.train.size == first_size + second_size
+    assert data_sources.intro.size == second_size
     check_first_doc(data_source_to_df(data_sources.train))
     data_sources.train.restart()
     check_second_doc(
@@ -193,10 +195,10 @@ def test_document_manager_save_load():
 def test_document_manager_sources():
     doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
-    assert first_doc.hash() in doc_manager.sources().keys()
-    assert second_doc.hash() in doc_manager.sources().keys()
-    assert first_doc.name() in doc_manager.sources().values()
-    assert second_doc.name() in doc_manager.sources().values()
+    assert first_doc.hash in doc_manager.sources().keys()
+    assert second_doc.hash in doc_manager.sources().keys()
+    assert first_doc.name in doc_manager.sources().values()
+    assert second_doc.name in doc_manager.sources().values()
 
 
 @pytest.mark.unit
@@ -205,18 +207,18 @@ def test_document_manager_reference():
     doc_manager.add([first_doc, second_doc])
 
     reference_3 = doc_manager.reference(3)
-    assert reference_3.id() == 3
-    assert reference_3.text() == MockDocument.expected_reference_text_for_id(
+    assert reference_3.id == 3
+    assert reference_3.text == MockDocument.expected_reference_text_for_id(
         first_id, 3
     )
-    assert reference_3.source() == first_id
+    assert reference_3.source == first_id
 
     reference_10 = doc_manager.reference(10)
-    assert reference_10.id() == 10
-    assert reference_10.text() == MockDocument.expected_reference_text_for_id(
+    assert reference_10.id == 10
+    assert reference_10.text == MockDocument.expected_reference_text_for_id(
         second_id, 10 - first_size
     )
-    assert reference_10.source() == second_id
+    assert reference_10.source == second_id
 
 
 @pytest.mark.unit
