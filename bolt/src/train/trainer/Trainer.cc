@@ -211,7 +211,7 @@ metrics::History Trainer::train_with_dataset_loader(
     while (auto train_chunk =
                loadSomeWrapper(train_data_loader, batch_size,
                                *max_in_memory_batches, verbose)) {
-      train(train_chunk.value(), learning_rate, epochs, train_metrics,
+      train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
             validation_data, validation_metrics, steps_per_validation,
             use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
             verbose, logging_interval);
