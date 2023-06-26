@@ -2,8 +2,9 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <utils/Random.h>
+#include <random>
 #include <stdexcept>
 #include <string>
 
@@ -12,9 +13,14 @@ namespace thirdai::dataset::mach {
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
                      uint32_t num_elements)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
+  std::mt19937 mt(global_random::nextSeed());
+  std::uniform_int_distribution<int> dist(0, num_buckets - 1);
   for (uint32_t element = 0; element < num_elements; element++) {
-    insert(element,
-           hashing::hashNTimesToOutputRange(element, num_hashes, num_buckets));
+    std::vector<uint32_t> hashes(num_hashes);
+    for (uint32_t i = 0; i < num_hashes; i++) {
+      hashes[i] = dist(mt);
+    }
+    insert(element, hashes);
   }
 }
 
