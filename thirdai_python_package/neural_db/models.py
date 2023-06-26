@@ -33,6 +33,7 @@ class Model:
     def forget_documents(self) -> None:
         raise NotImplementedError()
 
+    @property
     def searchable(self) -> bool:
         raise NotImplementedError()
 
@@ -143,7 +144,7 @@ def unsupervised_train_on_docs(
         )
 
         val = metrics["train_" + metric][0]
-        on_progress(fraction=val)
+        on_progress((i + 1) / max_epochs)
         if i >= min_epochs - 1 and val > acc_to_stop:
             break
 
@@ -217,7 +218,7 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
         else:
-            if intro_documents.size() > 0:
+            if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
                 if doc_id != self.id_col:
                     raise ValueError(
@@ -231,7 +232,7 @@ class Mach(Model):
                 )
             learning_rate = 0.001
 
-        self.n_ids += intro_documents.size()
+        self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
         if should_train:
@@ -263,7 +264,7 @@ class Mach(Model):
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
-            n_target_classes=documents.size(),
+            n_target_classes=documents.size,
             integer_target=True,
             options={
                 "extreme_classification": True,
@@ -280,6 +281,7 @@ class Mach(Model):
         self.n_ids = 0
         self.balancing_samples = []
 
+    @property
     def searchable(self) -> bool:
         return self.n_ids != 0
 

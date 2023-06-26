@@ -20,12 +20,14 @@ class SearchState:
         self._query = query
         self._references = references
 
+    @property
     def len(self):
         return len(self._references)
 
     def __len__(self):
         return self.len()
 
+    @property
     def references(self):
         return self._references
 
@@ -35,9 +37,11 @@ class AnswererState:
         self._answerer = answerer
         self._context_args = context_args
 
+    @property
     def answerer(self):
         return self._answerer
 
+    @property
     def context_args(self):
         return self._context_args
 
