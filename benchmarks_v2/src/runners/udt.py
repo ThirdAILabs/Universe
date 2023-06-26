@@ -61,7 +61,7 @@ class UDTRunner(Runner):
                 strong_column_names=config.strong_column_names,
                 weak_column_names=config.weak_column_names,
                 validation=validation,
-                callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
+                callbacks=config.callbacks + ([mlflow_logger] if mlflow_logger else []),
             )
 
         if train_file is not None:
@@ -71,7 +71,7 @@ class UDTRunner(Runner):
                 learning_rate=config.learning_rate,
                 validation=validation,
                 max_in_memory_batches=config.max_in_memory_batches,
-                callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
+                callbacks=config.callbacks + ([mlflow_logger] if mlflow_logger else []),
             )
 
         average_predict_time_ms = cls.get_average_predict_time(
