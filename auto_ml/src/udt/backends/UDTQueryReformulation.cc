@@ -68,19 +68,17 @@ UDTQueryReformulation::UDTQueryReformulation(
 
 py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   (void)learning_rate;
   (void)epochs;
-  (void)validation;
-  (void)max_in_memory_batches;
-  (void)metrics;
+  (void)train_metrics;
+  (void)val_data;
+  (void)val_metrics;
   (void)callbacks;
-  (void)logging_interval;
+  (void)options;
 
   licensing::TrainPermissionsToken token(data);
 
@@ -90,11 +88,11 @@ py::object UDTQueryReformulation::train(
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
 
   uint32_t batch_size =
-      batch_size_opt.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
+      options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
   auto [unsupervised_data, labels] =
       loadData(data, /* col_to_hash= */ _correct_column_name,
-               /* include_labels= */ true, batch_size, verbose);
+               /* include_labels= */ true, batch_size, options.verbose);
 
   // If we are using supervised training then we have twice as much data to
   // insert because index each sample once using itself as the input, and once
@@ -103,7 +101,7 @@ py::object UDTQueryReformulation::train(
                                     ? unsupervised_data->numBatches() * 2
                                     : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-      /* verbose = */ verbose,
+      /* verbose = */ options.verbose,
       /* description = */ fmt::format("train"),
       /* max_steps = */ progress_bar_steps);
 
@@ -359,7 +357,8 @@ uint32_t UDTQueryReformulation::recall(
     const BoltBatch& labels) {
   uint32_t correct = 0;
 
-#pragma omp parallel for default(none) shared(retrieved_ids, labels) reduction(+:correct)
+#pragma omp parallel for default(none) shared(retrieved_ids, labels) \
+    reduction(+ : correct)
   for (uint32_t i = 0; i < retrieved_ids.size(); i++) {
     if (std::find(retrieved_ids[i].begin(), retrieved_ids[i].end(),
                   labels[i].active_neurons[0]) != retrieved_ids[i].end()) {

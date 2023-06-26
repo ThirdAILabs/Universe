@@ -26,7 +26,8 @@ namespace thirdai::bolt::nn::model {
 
 Model::Model(autograd::ComputationList inputs,
              autograd::ComputationList outputs,
-             std::vector<loss::LossPtr> losses)
+             std::vector<loss::LossPtr> losses,
+             autograd::ComputationList additional_labels)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -39,6 +40,8 @@ Model::Model(autograd::ComputationList inputs,
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
+  _labels.insert(_labels.end(), additional_labels.begin(),
+                 additional_labels.end());
 
   _computation_order =
       autograd::getComputationOrder(_inputs, _outputs, _losses);
@@ -56,11 +59,13 @@ Model::Model(autograd::ComputationList inputs,
   verifyAllowedOutputDim();
 }
 
-std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
-                                   autograd::ComputationList outputs,
-                                   std::vector<loss::LossPtr> losses) {
+std::shared_ptr<Model> Model::make(
+    autograd::ComputationList inputs, autograd::ComputationList outputs,
+    std::vector<loss::LossPtr> losses,
+    autograd::ComputationList additional_labels) {
   auto model = std::shared_ptr<Model>(
-      new Model(std::move(inputs), std::move(outputs), std::move(losses)));
+      new Model(std::move(inputs), std::move(outputs), std::move(losses),
+                std::move(additional_labels)));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -196,6 +201,10 @@ std::string Model::summary(bool print) const {
 }
 
 uint32_t Model::trainSteps() const { return _train_steps; }
+
+void Model::overrideTrainSteps(uint32_t train_steps) {
+  _train_steps = train_steps;
+}
 
 std::vector<uint32_t> Model::inputDims() const {
   std::vector<uint32_t> dims;

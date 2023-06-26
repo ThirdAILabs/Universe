@@ -20,6 +20,8 @@
 
 namespace thirdai::automl::udt {
 
+using bolt::train::metrics::InputMetrics;
+
 using Label = std::variant<uint32_t, std::string>;
 
 class UDTMachClassifier final : public UDTBackend {
@@ -32,16 +34,15 @@ class UDTMachClassifier final : public UDTBackend {
                     uint32_t n_target_classes, bool integer_target,
                     const data::TabularOptions& tabular_options,
                     const std::optional<std::string>& model_config,
-                    const config::ArgumentMap& user_args);
+                    config::ArgumentMap user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size_opt,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval) final;
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -72,12 +73,11 @@ class UDTMachClassifier final : public UDTBackend {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
-                       std::optional<size_t> batch_size_opt,
-                       const std::vector<std::string>& metrics,
-                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       std::optional<size_t> max_in_memory_batches,
-                       bool verbose) final;
+                       TrainOptions options) final;
 
   py::object embedding(const MapInput& sample) final;
 
@@ -91,16 +91,20 @@ class UDTMachClassifier final : public UDTBackend {
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) final;
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          uint32_t num_random_hashes,
+                          bool fast_approximation) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
-                         std::optional<uint32_t> num_buckets_to_sample) final;
+                         std::optional<uint32_t> num_buckets_to_sample,
+                         uint32_t num_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample) final;
+                      std::optional<uint32_t> num_buckets_to_sample,
+                      uint32_t num_random_hashes) final;
 
   void forget(const Label& label) final;
 
@@ -141,9 +145,6 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
-  TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const final;
-
  private:
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
@@ -171,9 +172,30 @@ class UDTMachClassifier final : public UDTBackend {
 
   void requireRLHFSampler();
 
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) final {
+    if (_rlhf_sampler.has_value()) {
+      std::cout << "rlhf already enabled." << std::endl;
+      return;
+    }
+
+    _rlhf_sampler = std::make_optional<RLHFSampler>(
+        num_balancing_docs, num_balancing_samples_per_doc);
+  }
+
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample) const;
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
+
+  InputMetrics getMetrics(const std::vector<std::string>& metric_names,
+                          const std::string& prefix);
+
+  // Mach requires two sets of labels. The buckets for each doc/class for
+  // computing losses when training, and also the original doc/class ids for
+  // computing metrics. In some methods like trainWithHashes, or trainOnBatch we
+  // don't have/need the doc/class ids for metrics so we use this method to get
+  // an empty placeholder to pass to the model.
+  static bolt::nn::tensor::TensorPtr placeholderDocIds(uint32_t batch_size);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
@@ -203,7 +225,7 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
-  data::TabularDatasetFactoryPtr _hashes_and_doc_id_factory;
+
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
   float _sparse_inference_threshold;

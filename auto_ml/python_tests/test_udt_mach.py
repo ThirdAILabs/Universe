@@ -13,6 +13,7 @@ pytestmark = [pytest.mark.unit]
 
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
 OUTPUT_DIM = 100
+NUM_HASHES = 7
 
 
 def make_simple_test_file(invalid_data=False):
@@ -47,7 +48,9 @@ def train_simple_mach_udt(
         },
     )
 
-    model.train(SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001)
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
 
     os.remove(SIMPLE_TEST_FILE)
 
@@ -307,7 +310,8 @@ def test_mach_udt_introduce_document():
     )
 
 
-def test_mach_udt_introduce_documents():
+@pytest.mark.parametrize("fast_approximation", [True, False])
+def test_mach_udt_introduce_documents(fast_approximation):
     model = train_simple_mach_udt()
 
     new_docs = "NEW_DOCS.csv"
@@ -320,6 +324,7 @@ def test_mach_udt_introduce_documents():
         new_docs,
         strong_column_names=["title"],
         weak_column_names=["description"],
+        fast_approximation=fast_approximation,
     )
 
     os.remove(new_docs)
@@ -346,9 +351,10 @@ def test_mach_udt_hash_based_methods():
 
 def test_mach_save_load_get_set_index():
     model = train_simple_mach_udt()
+    metrics = ["recall@5", "precision@5"]
 
     make_simple_test_file()
-    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
     index = model.get_index()
     save_loc = "index.mach"
@@ -358,12 +364,9 @@ def test_mach_save_load_get_set_index():
     model.clear_index()
     model.set_index(index)
 
-    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
-    assert (
-        metrics_before["val_categorical_accuracy"]
-        == metrics_after["val_categorical_accuracy"]
-    )
+    assert metrics_before == metrics_after
 
     os.remove(save_loc)
 
@@ -604,3 +607,67 @@ def test_upvote():
             break
 
     assert predicted_label == 200
+
+
+def test_enable_rlhf():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
+    ):
+        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+    model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
+
+    make_simple_test_file()
+
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
+
+    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+
+def regularized_introduce_helper(model, num_random_hashes):
+    """Returns an array counting the number of hashes in each bucket after
+    introducing three identical samples"""
+
+    for label in range(3):
+        model.introduce_label(
+            [{"text": "some text"}],
+            label,
+            num_buckets_to_sample=None,
+            num_random_hashes=num_random_hashes,
+        )
+
+    index = model.get_index()
+    load = np.zeros(OUTPUT_DIM, dtype=np.int32)
+    for i in range(len(load)):
+        load[i] = len(index.get_hash_to_entities(i))
+
+    return load
+
+
+def test_introduce_hash_regularization():
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    # without any regularization or balancing, introducing 3 labels with the
+    # same representative sample should yield 3 sets of identical hashes
+    load = regularized_introduce_helper(model, num_random_hashes=0)
+    assert np.sum(load > 0) == NUM_HASHES
+
+    model.clear_index()
+
+    # when 2 of the 7 hashes in every new doc are random there should be more
+    # than NUM_HASHES non-zeroes in the index's load
+    load = regularized_introduce_helper(model, num_random_hashes=2)
+    assert np.sum(load > 0) > NUM_HASHES
+
+
+def test_udt_mach_train_batch():
+    model = train_simple_mach_udt()
+
+    model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)

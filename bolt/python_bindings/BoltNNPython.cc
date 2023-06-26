@@ -615,7 +615,7 @@ That's all for now, folks! More docs coming soon :)
            "this manually after setting the gradients of the wrapped model.")
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"),
+           py::arg("all_datasets"),
            "Sets the current train data and labels the wrapper class uses for "
            "computeAndStoreBatchGradients. We need this method instead of just "
            "passing in a single pair of training data and training labels at "

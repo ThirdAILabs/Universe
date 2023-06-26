@@ -4,12 +4,16 @@
 #include "PybindUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/callbacks/LearningRateScheduler.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/FMeasure.h>
 #include <bolt/src/train/metrics/LossMetric.h>
+#include <bolt/src/train/metrics/MachPrecision.h>
+#include <bolt/src/train/metrics/MachRecall.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/metrics/PrecisionAtK.h>
 #include <bolt/src/train/metrics/RecallAtK.h>
@@ -190,6 +194,22 @@ void defineMetrics(py::module_& train) {
                     float, float>(),
            py::arg("outputs"), py::arg("labels"), py::arg("threshold"),
            py::arg("beta") = 1);
+
+  py::class_<metrics::MachPrecision, std::shared_ptr<metrics::MachPrecision>,
+             metrics::Metric>(metrics, "MachPrecision")
+      .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
+                    nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
+
+  py::class_<metrics::MachRecall, std::shared_ptr<metrics::MachRecall>,
+             metrics::Metric>(metrics, "MachRecall")
+      .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
+                    nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
 }
 
 void defineCallbacks(py::module_& train) {
@@ -221,6 +241,42 @@ void defineCallbacks(py::module_& train) {
              callbacks::Callback>(callbacks, "Overfitting")
       .def(py::init<std::string, float, bool>(), py::arg("metric"),
            py::arg("threshold") = 0.97, py::arg("maximize") = true);
+
+  py::class_<callbacks::LearningRateScheduler,
+             std::shared_ptr<callbacks::LearningRateScheduler>,
+             callbacks::Callback>
+      LearningRateScheduler(callbacks, "LearningRateScheduler");
+
+  py::class_<callbacks::LinearSchedule,
+             std::shared_ptr<callbacks::LinearSchedule>,
+             callbacks::LearningRateScheduler>(callbacks, "LinearLR")
+      .def(py::init<float, float, uint32_t, bool>(),
+           py::arg("start_factor") = 1.0, py::arg("end_factor") = 1.0 / 3.0,
+           py::arg("total_iters") = 5, py::arg("batch_level_steps") = false,
+           "LinearLR scheduler changes the learning rate linearly by a small "
+           "multiplicative factor until the number of epochs reaches the total "
+           "iterations.\n");
+
+  py::class_<callbacks::MultiStepLR, std::shared_ptr<callbacks::MultiStepLR>,
+             callbacks::LearningRateScheduler>(callbacks, "MultiStepLR")
+      .def(py::init<float, std::vector<uint32_t>, bool>(), py::arg("gamma"),
+           py::arg("milestones"), py::arg("batch_level_steps") = false,
+           "The Multi-step learning rate scheduler changes"
+           "the learning rate by a factor of gamma for every milestone"
+           "specified in the vector of milestones. \n");
+
+  py::class_<callbacks::CosineAnnealingWarmRestart,
+             std::shared_ptr<callbacks::CosineAnnealingWarmRestart>,
+             callbacks::LearningRateScheduler>(callbacks,
+                                               "CosineAnnealingWarmRestart")
+      .def(py::init<uint32_t, uint32_t, float, bool>(),
+           py::arg("initial_restart_iter") = 4,
+           py::arg("iter_restart_multiplicative_factor") = 1,
+           py::arg("min_lr") = 0.0, py::arg("batch_per_step") = false,
+           "The cosine annealing warm restart LR scheduler decays the learning "
+           "rate until the specified number of epochs (current_restart_iter) "
+           "following a cosine schedule and next restarts occurs after "
+           "current_restart_iter * iter_restart_multiplicative_factor");
 }
 
 void defineDistributedTrainer(py::module_& train) {
@@ -239,7 +295,7 @@ void defineDistributedTrainer(py::module_& train) {
       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"))
+           py::arg("all_datasets"))
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",

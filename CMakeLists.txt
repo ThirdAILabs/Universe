@@ -323,6 +323,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
+    bolt/src/nn/ops/RobeZ.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
@@ -343,6 +344,8 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
     bolt/src/train/metrics/FMeasure.cc
+    bolt/src/train/metrics/MachPrecision.cc
+    bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc
@@ -385,7 +388,9 @@ set(THIRDAI_SOURCES
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
-    dataset/src/featurizers/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextContextFeaturizer.cc
+    dataset/src/featurizers/llm/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextClassificationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
@@ -479,7 +484,6 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc

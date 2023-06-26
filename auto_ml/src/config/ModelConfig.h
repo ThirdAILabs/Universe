@@ -41,7 +41,8 @@ namespace thirdai::automl::config {
  */
 bolt::nn::model::ModelPtr buildModel(const json& config,
                                      const ArgumentMap& args,
-                                     const std::vector<uint32_t>& input_dims);
+                                     const std::vector<uint32_t>& input_dims,
+                                     bool mach = false);
 
 /**
  * Takes in a config as a json string and encrypts it using a per byte cipher

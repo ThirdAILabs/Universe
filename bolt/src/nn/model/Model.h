@@ -25,13 +25,24 @@ namespace thirdai::bolt::nn::model {
  */
 class Model : public std::enable_shared_from_this<Model> {
  private:
+  /**
+   * The additional_labels allow for passing in a placeholder for labels that
+   * are not used in any loss function. This is useful because there could be a
+   * case (particularly in Mach) where metrics need to have access to labels
+   * that are not used in the loss function. Adding those labels here ensures
+   * that they are part of the model and can be accessed by the metrics. Note
+   * that the model does not require any relationship between the number of
+   * outputs, loss functions, and labels so it is ok to add additonal labels.
+   */
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
-        std::vector<loss::LossPtr> losses);
+        std::vector<loss::LossPtr> losses,
+        autograd::ComputationList additional_labels = {});
 
  public:
-  static std::shared_ptr<Model> make(autograd::ComputationList inputs,
-                                     autograd::ComputationList outputs,
-                                     std::vector<loss::LossPtr> losses);
+  static std::shared_ptr<Model> make(
+      autograd::ComputationList inputs, autograd::ComputationList outputs,
+      std::vector<loss::LossPtr> losses,
+      autograd::ComputationList additional_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -133,6 +144,13 @@ class Model : public std::enable_shared_from_this<Model> {
    * trainer.
    */
   uint32_t trainSteps() const;
+
+  /**
+   * Overrides the number of train steps in the model. This is used when porting
+   * parameters to new models to ensure that the training and parameter updates
+   * are consistent since this is used in Adam to do bias correction.
+   */
+  void overrideTrainSteps(uint32_t train_steps);
 
   /**
    * Returns the dimensions of the inputs the model is expecting, in the order

@@ -72,8 +72,10 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, target_col, n_target_classes.value(), integer_target,
         tabular_options);
   } else if (as_categorical && !has_graph_inputs) {
-    bool use_mach = user_args.get<bool>("extreme_classification", "boolean",
-                                        defaults::USE_MACH);
+    bool use_mach =
+        user_args.get<bool>("extreme_classification", "boolean",
+                            defaults::USE_MACH) ||
+        user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
       _backend = std::make_unique<UDTMachClassifier>(
           data_types, temporal_tracking_relationships, target_col,
@@ -122,19 +124,17 @@ UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
 
 py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       uint32_t epochs,
-                      const std::optional<ValidationDataSource>& validation,
-                      std::optional<size_t> batch_size,
-                      std::optional<size_t> max_in_memory_batches,
-                      const std::vector<std::string>& metrics,
-                      const std::vector<CallbackPtr>& callbacks, bool verbose,
-                      std::optional<uint32_t> logging_interval) {
+                      const std::vector<std::string>& train_metrics,
+                      const dataset::DataSourcePtr& val_data,
+                      const std::vector<std::string>& val_metrics,
+                      const std::vector<CallbackPtr>& callbacks,
+                      TrainOptions options) {
   licensing::entitlements().verifyDataSource(data);
 
   bolt::utils::Timer timer;
 
-  auto output = _backend->train(data, learning_rate, epochs, validation,
-                                batch_size, max_in_memory_batches, metrics,
-                                callbacks, verbose, logging_interval);
+  auto output = _backend->train(data, learning_rate, epochs, train_metrics,
+                                val_data, val_metrics, callbacks, options);
 
   timer.stop();
   telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
@@ -226,18 +226,25 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           float learning_rate, uint32_t epochs,
-                          std::optional<size_t> batch_size,
-                          const std::vector<std::string>& metrics,
-                          const std::optional<ValidationDataSource>& validation,
+                          const std::vector<std::string>& train_metrics,
+                          const dataset::DataSourcePtr& val_data,
+                          const std::vector<std::string>& val_metrics,
                           const std::vector<CallbackPtr>& callbacks,
-                          std::optional<size_t> max_in_memory_batches,
-                          bool verbose) {
+                          TrainOptions options) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
-                             learning_rate, epochs, batch_size, metrics,
-                             validation, callbacks, max_in_memory_batches,
-                             verbose);
+                             learning_rate, epochs, train_metrics, val_data,
+                             val_metrics, callbacks, options);
+}
+
+std::vector<uint32_t> UDT::modelDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& comp : model()->computationOrder()) {
+    dims.push_back(comp->dim());
+  }
+
+  return dims;
 }
 
 void UDT::save(const std::string& filename) const {

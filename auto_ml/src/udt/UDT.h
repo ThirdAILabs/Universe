@@ -42,12 +42,11 @@ class UDT {
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
-                   const std::optional<ValidationDataSource>& validation,
-                   std::optional<size_t> batch_size,
-                   std::optional<size_t> max_in_memory_batches,
-                   const std::vector<std::string>& metrics,
-                   const std::vector<CallbackPtr>& callbacks, bool verbose,
-                   std::optional<uint32_t> logging_interval);
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
@@ -75,12 +74,11 @@ class UDT {
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
                        float learning_rate, uint32_t epochs,
-                       std::optional<size_t> batch_size,
-                       const std::vector<std::string>& metrics,
-                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       std::optional<size_t> max_in_memory_batches,
-                       bool verbose);
+                       TrainOptions options);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
@@ -145,12 +143,16 @@ class UDT {
 
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
+  std::vector<uint32_t> modelDims() const;
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample) {
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          uint32_t num_random_hashes, bool fast_approximation) {
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample);
+                                 num_buckets_to_sample, num_random_hashes,
+                                 fast_approximation);
   }
 
   void introduceDocument(const MapInput& document,
@@ -158,16 +160,19 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
 
-                         std::optional<uint32_t> num_buckets_to_sample) {
+                         std::optional<uint32_t> num_buckets_to_sample,
+                         uint32_t num_random_hashes) {
     _backend->introduceDocument(document, strong_column_names,
                                 weak_column_names, new_label,
-                                num_buckets_to_sample);
+                                num_buckets_to_sample, num_random_hashes);
   }
 
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample) {
-    _backend->introduceLabel(sample, new_label, num_buckets_to_sample);
+                      std::optional<uint32_t> num_buckets_to_sample,
+                      uint32_t num_random_hashes) {
+    _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
+                             num_random_hashes);
   }
 
   void forget(const std::variant<uint32_t, std::string>& label) {
@@ -201,6 +206,11 @@ class UDT {
                      n_balancing_samples, learning_rate, epochs);
   }
 
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) {
+    _backend->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
+  }
+
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {
@@ -209,10 +219,6 @@ class UDT {
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
-  }
-
-  TextEmbeddingModelPtr getTextEmbeddingModel(float distance_cutoff) const {
-    return _backend->getTextEmbeddingModel(distance_cutoff);
   }
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
