@@ -1,7 +1,7 @@
 import copy
 from enum import Enum
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple, Dict
 
 import pandas as pd
 from thirdai._thirdai import bolt
@@ -195,7 +195,7 @@ class NeuralDB:
     def clear_session(self) -> None:
         self._savable_state = None
 
-    def sources(self) -> List[str]:
+    def sources(self) -> Dict[str, str]:
         return self._savable_state.documents.sources()
 
     def save(self, save_to: str, on_progress: Callable = no_op) -> None:
