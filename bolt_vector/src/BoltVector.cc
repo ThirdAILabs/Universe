@@ -290,7 +290,9 @@ FoundActiveNeuron BoltVector::findActiveNeuronNoTemplate(
   return findSparseActiveNeuron(active_neuron);
 }
 
-bool BoltVector::isDense() const { return this->active_neurons == nullptr; }
+bool BoltVector::isDense() const {
+  return (this->active_neurons == nullptr) && (this->len > 0);
+}
 
 // Returns the active neuron ID's that are greater than activation_threshold.
 // Returns at most max_count_to_return (if number of neurons exceeds

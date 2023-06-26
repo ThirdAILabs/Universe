@@ -146,6 +146,13 @@ class Model : public std::enable_shared_from_this<Model> {
   uint32_t trainSteps() const;
 
   /**
+   * Overrides the number of train steps in the model. This is used when porting
+   * parameters to new models to ensure that the training and parameter updates
+   * are consistent since this is used in Adam to do bias correction.
+   */
+  void overrideTrainSteps(uint32_t train_steps);
+
+  /**
    * Returns the dimensions of the inputs the model is expecting, in the order
    * they are expected.
    */

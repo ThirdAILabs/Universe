@@ -370,6 +370,13 @@ class UDTBackend {
     throw notSupported("upvote");
   }
 
+  virtual void enableRlhf(uint32_t num_balancing_docs,
+                          uint32_t num_balancing_samples_per_doc) {
+    (void)num_balancing_docs;
+    (void)num_balancing_samples_per_doc;
+    throw notSupported("enable_rlhf");
+  }
+
   /**
    * Gets the internal index for UDTMachClassifier.
    */

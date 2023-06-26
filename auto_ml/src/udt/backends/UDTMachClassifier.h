@@ -182,6 +182,17 @@ class UDTMachClassifier final : public UDTBackend {
 
   void requireRLHFSampler();
 
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) final {
+    if (_rlhf_sampler.has_value()) {
+      std::cout << "rlhf already enabled." << std::endl;
+      return;
+    }
+
+    _rlhf_sampler = std::make_optional<RLHFSampler>(
+        num_balancing_docs, num_balancing_samples_per_doc);
+  }
+
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
       uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
