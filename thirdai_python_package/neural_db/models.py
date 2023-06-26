@@ -218,7 +218,7 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
         else:
-            if intro_documents.size() > 0:
+            if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
                 if doc_id != self.id_col:
                     raise ValueError(
@@ -264,7 +264,7 @@ class Mach(Model):
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
-            n_target_classes=documents.size(),
+            n_target_classes=documents.size,
             integer_target=True,
             options={
                 "extreme_classification": True,
