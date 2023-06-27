@@ -220,7 +220,8 @@ setup(
             "pyOpenSSL>22.1.0",
             "ray",
             "torch",
-        ] + neural_db_deps,
+        ]
+        + neural_db_deps,
         "benchmark": [
             "toml",
             "psutil",
