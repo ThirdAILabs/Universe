@@ -261,7 +261,7 @@ void UDT::save(const std::string& filename) const {
    * redundant saving of the optimizer.
    */
   // Since UDTQueryReformulation doesn't defines model()
-  if (dynamic_cast<UDTQueryReformulation*>(_backend.get()) == nullptr) {
+  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
     _backend->model()->setSerializeOptimizer(
         /* should_save_optimizer= */ false);
   }
@@ -270,9 +270,9 @@ void UDT::save(const std::string& filename) const {
 
 void UDT::checkpoint(const std::string& filename) const {
   // Since UDTQueryReformulation doesn't defines model()
-  if (dynamic_cast<UDTQueryReformulation*>(_backend.get()) == nullptr) {
+  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
     _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ false);
+        /* should_save_optimizer= */ true);
   }
   saveImpl(filename);
 }
