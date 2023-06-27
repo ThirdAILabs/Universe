@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
-from parsing_utils import doc_parse, pdf_parse, url_parse
 from pytrie import StringTrie
 from requests.models import Response
 from thirdai.dataset.data_source import PyDataSource
 
+from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .utils import hash_file, hash_string
 
 
