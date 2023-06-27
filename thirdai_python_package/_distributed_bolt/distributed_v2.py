@@ -1,6 +1,8 @@
 import numpy as np
 from thirdai._thirdai import bolt_v2 as bolt
 
+from .utils import check_torch_installed
+
 
 class DistributedTrainer(bolt.train.Trainer):
     def __init__(self, *args, **kwargs):
@@ -18,6 +20,7 @@ class DistributedTrainer(bolt.train.Trainer):
             raise ValueError(
                 "Ray is not initialized. Bolt's distributed training needs acess to a ray cluster!"
             )
+        check_torch_installed()
 
     def train_on_batch(self, inputs, labels, learning_rate):
         # TODO(pratik): Add a check here, so these functions can only be called inside worker-group
@@ -30,14 +33,11 @@ class DistributedTrainer(bolt.train.Trainer):
 
         self.model.train_on_batch(inputs, labels)
 
-        # Until each of the worker calls this barrier function, we won't be calling all-reduce. We
-        # need this since we need all worker to be at gloo's rendezvous before we start
-        # communicating, else gloo might timeout waiting for all the workers.
+        # This barrier synchronizes different training loops for workers before all-reduce operation.
         dist.barrier()
 
         gradients = torch.from_numpy(np.array(self.model.get_gradients()))
         dist.all_reduce(gradients)
-        gradients = gradients.numpy() / num_workers
         self.model.set_gradients(gradients)
 
         self.model.update_parameters(learning_rate=learning_rate)
