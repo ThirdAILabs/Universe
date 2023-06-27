@@ -28,8 +28,6 @@ class DistributedTrainer(bolt.train.Trainer):
 
         num_workers = session.get_world_size()
 
-        num_workers = session.get_world_size()
-
         self.model.train_on_batch(inputs, labels)
 
         # Until each of the worker calls this barrier function, we won't be calling all-reduce. We
@@ -41,4 +39,5 @@ class DistributedTrainer(bolt.train.Trainer):
         dist.all_reduce(gradients)
         gradients = gradients.numpy() / num_workers
         self.model.set_gradients(gradients)
+
         self.model.update_parameters(learning_rate=learning_rate)
