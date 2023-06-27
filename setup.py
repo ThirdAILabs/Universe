@@ -151,6 +151,16 @@ with open("thirdai.version") as version_file:
     if suffix:
         version = "{}+{}".format(version, suffix)
 
+neural_db_deps = [
+    "PyTrie",
+    "PyMuPDF",
+    "langchain",
+    "bs4",
+    "trafilatura",
+    "python-docx",
+    "url-normalize",
+    "nltk",
+]
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -184,16 +194,7 @@ setup(
         # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
-        "neural_db": [
-            "PyTrie",
-            "PyMuPDF",
-            "langchain",
-            "bs4",
-            "trafilatura",
-            "python-docx",
-            "url-normalize",
-            "nltk",
-        ],
+        "neural_db": neural_db_deps,
         "test": [
             "pytest",
             "pytest-mock",
@@ -219,7 +220,7 @@ setup(
             "pyOpenSSL>22.1.0",
             "ray",
             "torch",
-        ],
+        ] + neural_db_deps,
         "benchmark": [
             "toml",
             "psutil",

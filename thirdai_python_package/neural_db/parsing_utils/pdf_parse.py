@@ -110,19 +110,3 @@ def create_train_df(elements):
     for column in ["passage", "para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
-
-
-def num_classes(filename):
-    return len(pd.read_csv(filename, encoding="utf-8"))
-
-
-def highlight_pdf(input_filename, output_filename, highlight):
-    doc = fitz.open(input_filename)
-    for key, val in highlight.items():
-        page = doc[key]
-        blocks = page.get_text("blocks")
-        for i, b in enumerate(blocks):
-            if i in val:
-                rect = fitz.Rect(b[:4])
-                page.add_highlight_annot(rect)
-    doc.save(output_filename)

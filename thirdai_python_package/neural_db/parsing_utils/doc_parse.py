@@ -46,10 +46,3 @@ def create_train_df(elements):
     for column in ["passage", "para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
-
-
-def show_docx(PLATFORM, item):
-    if PLATFORM == "Windows" or PLATFORM == "win32":
-        os.startfile(item)
-    else:
-        os.system('open "' + item + '"')
