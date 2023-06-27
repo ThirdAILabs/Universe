@@ -41,3 +41,17 @@ class DistributedTrainer(bolt.train.Trainer):
         self.model.set_gradients(gradients)
 
         self.model.update_parameters(learning_rate=learning_rate)
+
+    def train(self, train_data, train_labels, learning_rate):
+        import torch
+        import torch.distributed as dist
+
+        num_batches = len(train_data)
+
+        dist.barrier()
+        dist.all_reduce(torch.tensor(num_batches), op=dist.ReduceOp.MIN)
+
+        for batch_id in range(num_batches):
+            self.train_on_batch(
+                train_data[batch_id], train_labels[batch_id], learning_rate
+            )

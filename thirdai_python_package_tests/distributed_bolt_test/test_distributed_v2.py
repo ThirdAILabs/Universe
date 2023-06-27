@@ -19,9 +19,7 @@ def training_loop_per_worker(config):
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    # user needs to make sure all the nodes have same number of batches for training
-    for x, y in zip(train_x, train_y):
-        trainer.train_on_batch(x, y, 0.005)
+    trainer.train(train_x, train_y, 0.005)
 
     # session report should always have a metrics stored, hence added a demo_metric
     session.report(
