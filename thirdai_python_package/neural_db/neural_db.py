@@ -7,7 +7,7 @@ import pandas as pd
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
-from . import loggers, qa, teachers
+from . import loggers, teachers
 from .documents import Document, DocumentManager, Reference
 from .models import Mach
 from .savable_state import State
