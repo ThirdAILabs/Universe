@@ -1,6 +1,7 @@
 #include "BoltLayerTestUtils.h"
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <cstddef>
@@ -44,7 +45,9 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                              /* binsize=*/8,
                                              /* reservoir_size= */ 10,
                                              /* permutations=*/8)},
-               INPUT_DIM) {}
+               INPUT_DIM) {
+    _layer.initOptimizer(nn::optimizers::AdamFactory());
+  }
 
   void SetUp() override {
     // Initialize the weights and biases to random values. Use decimal powers of

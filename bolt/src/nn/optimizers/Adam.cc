@@ -21,6 +21,8 @@ void Adam::updateDense(std::vector<float>& params, std::vector<float>& grads,
   float b1_corrected = biasCorrect(_beta1, train_steps);
   float b2_corrected = biasCorrect(_beta2, train_steps);
 
+#pragma omp parallel for default(none) \
+    shared(params, grads, learning_rate, b1_corrected, b2_corrected)
   for (size_t i = 0; i < params.size(); i++) {
     params[i] += learning_rate * step(i, grads[i], b1_corrected, b2_corrected);
     grads[i] = 0;
@@ -38,6 +40,8 @@ void Adam::updateSparseRows(std::vector<float>& params,
   float b1_corrected = biasCorrect(_beta1, train_steps);
   float b2_corrected = biasCorrect(_beta2, train_steps);
 
+#pragma omp parallel for default(none) shared( \
+    params, grads, rows_used, learning_rate, b1_corrected, b2_corrected)
   for (size_t row = 0; row < _rows; row++) {
     if (!rows_used[row]) {
       continue;
@@ -68,6 +72,8 @@ void Adam::updateSparseCols(std::vector<float>& params,
   float b1_corrected = biasCorrect(_beta1, train_steps);
   float b2_corrected = biasCorrect(_beta2, train_steps);
 
+#pragma omp parallel for default(none) shared( \
+    params, grads, cols_used, learning_rate, b1_corrected, b2_corrected)
   for (size_t row = 0; row < _rows; row++) {
     for (size_t col = 0; col < _cols; col++) {
       if (cols_used[col]) {
@@ -93,6 +99,9 @@ void Adam::updateSparseRowsAndCols(std::vector<float>& params,
   float b1_corrected = biasCorrect(_beta1, train_steps);
   float b2_corrected = biasCorrect(_beta2, train_steps);
 
+#pragma omp parallel for default(none)                                       \
+    shared(params, grads, rows_used, cols_used, learning_rate, b1_corrected, \
+           b2_corrected)
   for (size_t row = 0; row < _rows; row++) {
     if (!rows_used[row]) {
       continue;
