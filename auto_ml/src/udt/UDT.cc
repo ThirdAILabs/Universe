@@ -247,15 +247,26 @@ std::vector<uint32_t> UDT::modelDims() const {
   return dims;
 }
 
-void UDT::save(const std::string& filename) const {
+void UDT::saveImpl(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
+void UDT::save(const std::string& filename) const {
+  /*
+   * setting `should_save_optimizer` to false prevents unnecessary checkpointing
+   * of the model. If we load the model from a checkpoint and intend to save it,
+   * by default `_should_save_optimizer` variable is set to true could result in
+   * redundant saving of the optimizer.
+   */
+  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ false);
+  saveImpl(filename);
+}
+
 void UDT::checkpoint(const std::string& filename) const {
   _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ true);
-  save(filename);
+  saveImpl(filename);
 }
 
 void UDT::save_stream(std::ostream& output_stream) const {

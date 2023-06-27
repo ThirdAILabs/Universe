@@ -225,6 +225,8 @@ class UDT {
 
   void save(const std::string& filename) const;
 
+  void saveImpl(const std::string& filename) const;
+
   void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
