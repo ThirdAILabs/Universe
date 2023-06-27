@@ -22,14 +22,11 @@ class DistributedTrainer(bolt.train.Trainer):
     def train_on_batch(self, inputs, labels, learning_rate):
         # TODO(pratik): Add a check here, so these functions can only be called inside worker-group
 
-        import ray.util.collective as col
+        import torch
+        import torch.distributed as dist
         from ray.air import session
-        from ray.util.collective.types import ReduceOp
 
-        if not col.is_group_initialized("default"):
-            raise RuntimeError(
-                "Gloo group not initialized. Make sure to pass in BoltBackendConfig as backend_config to BoltTrainer"
-            )
+        num_workers = session.get_world_size()
 
         num_workers = session.get_world_size()
 
@@ -38,14 +35,10 @@ class DistributedTrainer(bolt.train.Trainer):
         # Until each of the worker calls this barrier function, we won't be calling all-reduce. We
         # need this since we need all worker to be at gloo's rendezvous before we start
         # communicating, else gloo might timeout waiting for all the workers.
-        col.barrier(group_name="default")
+        dist.barrier()
 
-        gradients = np.array(self.model.get_gradients())
-        col.allreduce(
-            tensor=gradients,
-            group_name="default",
-            op=ReduceOp.SUM,
-        )
-        gradients /= num_workers
+        gradients = torch.from_numpy(np.array(self.model.get_gradients()))
+        dist.all_reduce(gradients)
+        gradients = gradients.numpy() / num_workers
         self.model.set_gradients(gradients)
         self.model.update_parameters(learning_rate=learning_rate)
