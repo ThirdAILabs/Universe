@@ -260,12 +260,20 @@ void UDT::save(const std::string& filename) const {
    * by default `_should_save_optimizer` variable is set to true could result in
    * redundant saving of the optimizer.
    */
-  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ false);
+  // Since UDTQueryReformulation doesn't defines model()
+  if (dynamic_cast<UDTQueryReformulation*>(_backend.get()) == nullptr) {
+    _backend->model()->setSerializeOptimizer(
+        /* should_save_optimizer= */ false);
+  }
   saveImpl(filename);
 }
 
 void UDT::checkpoint(const std::string& filename) const {
-  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ true);
+  // Since UDTQueryReformulation doesn't defines model()
+  if (dynamic_cast<UDTQueryReformulation*>(_backend.get()) == nullptr) {
+    _backend->model()->setSerializeOptimizer(
+        /* should_save_optimizer= */ false);
+  }
   saveImpl(filename);
 }
 
