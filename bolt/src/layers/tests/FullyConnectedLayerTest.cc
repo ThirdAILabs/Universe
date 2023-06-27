@@ -62,11 +62,11 @@ class FullyConnectedLayerTestFixture : public testing::Test {
   }
 
   const std::vector<float>& getWeightGradients() {
-    return _layer._weight_optimizer->gradients;
+    return _layer._weight_gradients;
   }
 
   const std::vector<float>& getBiasGradients() {
-    return _layer._bias_optimizer->gradients;
+    return _layer._bias_gradients;
   }
 
   std::vector<uint32_t> genRandomIndices(uint32_t len, uint32_t max) {

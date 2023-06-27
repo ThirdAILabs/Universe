@@ -27,7 +27,8 @@ namespace thirdai::bolt::nn::model {
 Model::Model(autograd::ComputationList inputs,
              autograd::ComputationList outputs,
              std::vector<loss::LossPtr> losses,
-             autograd::ComputationList additional_labels)
+             autograd::ComputationList additional_labels,
+             const nn::optimizers::Factory& optimizer)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -57,15 +58,20 @@ Model::Model(autograd::ComputationList inputs,
   matchOutputFullyConnectedLayersWithLabels();
 
   verifyAllowedOutputDim();
+
+  for (auto& op : _ops) {
+    op->initOptimizer(optimizer);
+  }
 }
 
-std::shared_ptr<Model> Model::make(
-    autograd::ComputationList inputs, autograd::ComputationList outputs,
-    std::vector<loss::LossPtr> losses,
-    autograd::ComputationList additional_labels) {
+std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
+                                   autograd::ComputationList outputs,
+                                   std::vector<loss::LossPtr> losses,
+                                   autograd::ComputationList additional_labels,
+                                   const nn::optimizers::Factory& optimizer) {
   auto model = std::shared_ptr<Model>(
       new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                std::move(additional_labels)));
+                std::move(additional_labels), optimizer));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.

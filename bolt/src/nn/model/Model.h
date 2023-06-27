@@ -4,6 +4,8 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Adam.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
@@ -34,15 +36,18 @@ class Model : public std::enable_shared_from_this<Model> {
    * that the model does not require any relationship between the number of
    * outputs, loss functions, and labels so it is ok to add additonal labels.
    */
-  Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
-        std::vector<loss::LossPtr> losses,
-        autograd::ComputationList additional_labels = {});
+  Model(
+      autograd::ComputationList inputs, autograd::ComputationList outputs,
+      std::vector<loss::LossPtr> losses,
+      autograd::ComputationList additional_labels = {},
+      const nn::optimizers::Factory& optimizer = nn::optimizers::AdamFactory());
 
  public:
   static std::shared_ptr<Model> make(
       autograd::ComputationList inputs, autograd::ComputationList outputs,
       std::vector<loss::LossPtr> losses,
-      autograd::ComputationList additional_labels = {});
+      autograd::ComputationList additional_labels = {},
+      const nn::optimizers::Factory& optimizer = nn::optimizers::AdamFactory());
 
   /**
    * Computes the forward pass through the model for the given batch.

@@ -107,9 +107,9 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
 
     input.gradients[i] += grad_x;
 
-    _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
+    _gamma_gradients[neuron] += output.gradients[i] * x_hat;
 
-    _beta_optimizer.gradients[neuron] += output.gradients[i];
+    _beta_gradients[neuron] += output.gradients[i];
   }
 }
 
@@ -131,8 +131,22 @@ std::pair<float, float> LayerNorm::moments(const BoltVector& vector) {
 }
 
 void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
-  _gamma_optimizer.applyUpdate(_gamma, learning_rate, train_steps);
-  _beta_optimizer.applyUpdate(_beta, learning_rate, train_steps);
+  _gamma_optimizer->updateDense(_gamma, _gamma_gradients, learning_rate,
+                                train_steps);
+  _beta_optimizer->updateDense(_beta, _beta_gradients, learning_rate,
+                               train_steps);
+}
+
+void LayerNorm::initOptimizer(const optimizers::Factory& optimizer_factory) {
+  if (!_gamma_optimizer || !_beta_optimizer) {
+    _gamma_optimizer =
+        optimizer_factory.makeOptimizer(/* rows= */ 1, _gamma.size());
+    _beta_optimizer =
+        optimizer_factory.makeOptimizer(/* rows= */ 1, _beta.size());
+
+    _gamma_gradients.assign(_gamma.size(), 0.0);
+    _beta_gradients.assign(_beta.size(), 0.0);
+  }
 }
 
 uint32_t LayerNorm::dim() const { return _gamma.size(); }
@@ -145,7 +159,7 @@ std::optional<uint32_t> LayerNorm::nonzeros(
 void LayerNorm::disableSparseParameterUpdates() {}
 
 std::vector<std::vector<float>*> LayerNorm::gradients() {
-  return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
+  return {&_gamma_gradients, &_beta_gradients};
 }
 
 std::vector<std::vector<float>*> LayerNorm::parameters() {
@@ -164,8 +178,6 @@ autograd::ComputationPtr LayerNorm::apply(
   if (dim() == 0) {
     _gamma.assign(input->dim(), 1.0);
     _beta.assign(input->dim(), 0.0);
-    _gamma_optimizer = AdamOptimizer(input->dim());
-    _beta_optimizer = AdamOptimizer(input->dim());
   } else if (input->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot apply LayerNorm op for input with dimension " +
@@ -182,8 +194,8 @@ template void LayerNorm::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void LayerNorm::serialize(Archive& archive) {
   // The optimizer is small so we can always serialize it.
-  archive(cereal::base_class<Op>(this), _gamma, _beta, _gamma_optimizer,
-          _beta_optimizer);
+  archive(cereal::base_class<Op>(this), _gamma, _beta, _gamma_gradients,
+          _beta_gradients, _gamma_optimizer, _beta_optimizer);
 }
 
 }  // namespace thirdai::bolt::nn::ops

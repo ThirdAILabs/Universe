@@ -40,6 +40,8 @@ class FullyConnected final
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const optimizers::Factory& optimizer_factory) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
@@ -144,14 +146,8 @@ class FullyConnected final
   FullyConnected() {}
 
   friend class cereal::access;
-
-  // We use save/load instead of serialize so we can ensure the optimizer is
-  // initialized when the model is loaded.
   template <class Archive>
-  void save(Archive& archive) const;
-
-  template <class Archive>
-  void load(Archive& archive);
+  void serialize(Archive& archive);
 };
 
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;

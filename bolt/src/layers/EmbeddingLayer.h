@@ -5,7 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
-#include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <utils/Random.h>
@@ -32,7 +32,7 @@ class EmbeddingLayer {
 
   void backpropagate(const BoltVector& tokens, const BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float lr, size_t train_steps);
 
   uint64_t getOutputDim() const { return _total_embedding_dim; }
 
@@ -42,9 +42,11 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::ostream& summary) const;
 
-  void initOptimizer() {
+  void initOptimizer(const nn::optimizers::Factory& optimizer_factory) {
     if (!_optimizer) {
-      _optimizer = AdamOptimizer(_embedding_block_size);
+      _optimizer = optimizer_factory.makeOptimizer(
+          _embedding_chunks_used.size(), _update_chunk_size);
+      _gradients.assign(_embedding_block->size(), 0.0);
     }
   }
 
@@ -53,13 +55,12 @@ class EmbeddingLayer {
   }
 
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
+
   void saveWithOptimizer(bool should_save_optimizer) {
-    _should_save_optimizer = should_save_optimizer;
+    _optimizer->setSerializeState(should_save_optimizer);
   }
 
-  std::vector<float>& getRawEmbeddingBlockGradient() {
-    return _optimizer->gradients;
-  }
+  std::vector<float>& getRawEmbeddingBlockGradient() { return _gradients; }
 
   std::unique_ptr<EmbeddingLayer> duplicateWithNewReduction(
       const std::string& reduction,
@@ -68,9 +69,6 @@ class EmbeddingLayer {
   ~EmbeddingLayer() = default;
 
  private:
-  void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,
-                              float eps);
-
   inline uint64_t getEmbeddingBlockOffset(uint32_t token,
                                           uint64_t lookup_index) {
     uint64_t id = token * _num_lookups_per_token + lookup_index;
@@ -118,9 +116,14 @@ class EmbeddingLayer {
             _log_embedding_block_size, _update_chunk_size, _reduction,
             _num_tokens_per_input, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
-            _disable_sparse_parameter_updates, _should_save_optimizer);
-    if (_should_save_optimizer) {
-      archive(_optimizer);
+            _disable_sparse_parameter_updates, _optimizer);
+
+    // We never save the gradients from a particular batch. Users should call
+    // updateParameters to apply an update before saving, or process the
+    // training batch again after loading. This will ensure they are properly
+    // initialized when loading.
+    if (_gradients.empty()) {
+      _gradients.assign(_embedding_block->size(), 0.0);
     }
   }
 
@@ -145,12 +148,11 @@ class EmbeddingLayer {
    * updated.
    */
   std::vector<bool> _embedding_chunks_used;
-  std::optional<AdamOptimizer> _optimizer = std::nullopt;
-  bool _disable_sparse_parameter_updates;
 
-  // A flag to determine whether the current network saves the optimizer states
-  // or not. If true, it saves the optimizer states, else doesn't.
-  bool _should_save_optimizer;
+  std::vector<float> _gradients;
+  nn::optimizers::OptimizerPtr _optimizer;
+
+  bool _disable_sparse_parameter_updates;
 };
 
 }  // namespace thirdai::bolt

@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 
 namespace thirdai::bolt {
 
@@ -81,7 +82,9 @@ uint32_t FullyConnectedNode::outputDim() const {
 
 bool FullyConnectedNode::isInputNode() const { return false; }
 
-void FullyConnectedNode::initOptimizer() { _layer->initOptimizer(); }
+void FullyConnectedNode::initOptimizer() {
+  _layer->initOptimizer(nn::optimizers::AdamFactory());
+}
 
 ActivationFunction FullyConnectedNode::getActivationFunction() const {
   NodeState node_state = getState();
@@ -287,7 +290,7 @@ void FullyConnectedNode::backpropagateImpl(uint32_t vec_index) {
 void FullyConnectedNode::updateParametersImpl(float learning_rate,
                                               uint32_t batch_cnt) {
   // TODO(Nicholas): Abstract away these constants
-  _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
+  _layer->updateParameters(learning_rate, batch_cnt);
 }
 
 BoltVector& FullyConnectedNode::getOutputVectorImpl(uint32_t vec_index) {

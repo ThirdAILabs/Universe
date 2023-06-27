@@ -15,6 +15,8 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Tanh.h>
+#include <bolt/src/nn/optimizers/Adam.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -67,8 +69,20 @@ void defineOps(py::module_& nn);
 
 void defineLosses(py::module_& nn);
 
+void defineOptimizers(py::module_& nn);
+
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
+
+#if THIRDAI_EXPOSE_ALL
+  defineTensor(nn);
+
+  defineOps(nn);
+
+  defineLosses(nn);
+
+  defineOptimizers(nn);
+#endif
 
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
@@ -81,7 +95,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
        */
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"),
-           py::arg("additional_labels") = autograd::ComputationList{})
+           py::arg("additional_labels") = autograd::ComputationList{},
+           py::arg("optimizer") = optimizers::AdamFactory())
       .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",
@@ -118,14 +133,6 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("save_metadata") = true)
       .def_static("load", &model::Model::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<model::Model>());
-
-#if THIRDAI_EXPOSE_ALL
-  defineTensor(nn);
-
-  defineOps(nn);
-
-  defineLosses(nn);
-#endif
 }
 
 void defineTensor(py::module_& nn) {
@@ -296,6 +303,15 @@ void defineLosses(py::module_& nn) {
       .def(py::init(&loss::EuclideanContrastive::make), py::arg("output_1"),
            py::arg("output_2"), py::arg("labels"),
            py::arg("dissimilar_cutoff_distance"));
+}
+
+void defineOptimizers(py::module_& nn) {
+  auto optimizers = nn.def_submodule("optimizers");
+
+  py::class_<optimizers::Factory>(optimizers, "Optimizer");  // NOLINT
+
+  py::class_<optimizers::AdamFactory, optimizers::Factory>(optimizers, "Adam")
+      .def(py::init<>());
 }
 
 }  // namespace thirdai::bolt::nn::python

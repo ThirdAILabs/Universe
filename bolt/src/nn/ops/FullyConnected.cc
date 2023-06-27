@@ -80,7 +80,7 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
 
 void FullyConnected::updateParameters(float learning_rate,
                                       uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
 
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
@@ -92,6 +92,11 @@ void FullyConnected::updateParameters(float learning_rate,
     _kernel->buildHashTables();
     _updates_since_rebuild_hash_tables = 0;
   }
+}
+
+void FullyConnected::initOptimizer(
+    const optimizers::Factory& optimizer_factory) {
+  _kernel->initOptimizer(optimizer_factory);
 }
 
 uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
@@ -247,40 +252,16 @@ void FullyConnected::setSparsity(float sparsity, bool rebuild_hash_tables,
   }
 }
 
-template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
+template void FullyConnected::serialize(cereal::BinaryInputArchive&);
+template void FullyConnected::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void FullyConnected::save(Archive& archive) const {
+void FullyConnected::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
-}
-
-template void FullyConnected::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void FullyConnected::load(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
-          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions);
-
-  _kernel->initOptimizer();
 }
 
 }  // namespace thirdai::bolt::nn::ops
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::FullyConnected,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::FullyConnected)

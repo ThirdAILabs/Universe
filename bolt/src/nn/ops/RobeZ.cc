@@ -62,7 +62,11 @@ void RobeZ::backpropagate(autograd::ComputationList& inputs,
 }
 
 void RobeZ::updateParameters(float learning_rate, uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
+}
+
+void RobeZ::initOptimizer(const optimizers::Factory& optimizer_factory) {
+  _kernel->initOptimizer(optimizer_factory);
 }
 
 uint32_t RobeZ::dim() const { return _kernel->getOutputDim(); }
@@ -104,20 +108,12 @@ autograd::ComputationPtr RobeZ::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-template void RobeZ::save(cereal::BinaryOutputArchive&) const;
+template void RobeZ::serialize(cereal::BinaryInputArchive&);
+template void RobeZ::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void RobeZ::save(Archive& archive) const {
+void RobeZ::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
-}
-
-template void RobeZ::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void RobeZ::load(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _kernel);
-
-  _kernel->initOptimizer();
 }
 
 std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(
@@ -131,19 +127,5 @@ std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(
 }
 
 }  // namespace thirdai::bolt::nn::ops
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::RobeZ,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::RobeZ)

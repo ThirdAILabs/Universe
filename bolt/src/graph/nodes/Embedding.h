@@ -7,6 +7,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <memory>
@@ -38,7 +39,9 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final { _embedding_layer->initOptimizer(); }
+  void initOptimizer() final {
+    _embedding_layer->initOptimizer(nn::optimizers::AdamFactory());
+  }
 
   std::string type() const final { return "embedding"; }
 

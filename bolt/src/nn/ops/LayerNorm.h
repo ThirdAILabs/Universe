@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
+#include <vector>
 
 namespace thirdai::bolt::nn::ops {
 
@@ -20,6 +20,8 @@ class LayerNorm final : public Op,
                      tensor::TensorPtr& output, uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
+
+  void initOptimizer(const optimizers::Factory& optimizer_factory) final;
 
   uint32_t dim() const final;
 
@@ -53,8 +55,11 @@ class LayerNorm final : public Op,
   std::vector<float> _gamma;
   std::vector<float> _beta;
 
-  AdamOptimizer _gamma_optimizer;
-  AdamOptimizer _beta_optimizer;
+  std::vector<float> _gamma_gradients;
+  std::vector<float> _beta_gradients;
+
+  nn::optimizers::OptimizerPtr _gamma_optimizer;
+  nn::optimizers::OptimizerPtr _beta_optimizer;
 
   friend class cereal::access;
   template <class Archive>

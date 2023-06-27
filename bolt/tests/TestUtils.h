@@ -42,6 +42,10 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
+  void initOptimizer(const optimizers::Factory& optimizer_factory) final {
+    (void)optimizer_factory;
+  }
+
   uint32_t dim() const final { return _dim; }
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,

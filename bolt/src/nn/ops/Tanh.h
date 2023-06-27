@@ -18,6 +18,8 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const optimizers::Factory& optimizer_factory) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,

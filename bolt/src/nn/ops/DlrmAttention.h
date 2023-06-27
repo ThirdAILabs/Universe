@@ -42,6 +42,10 @@ class DlrmAttention final : public Op,
     (void)train_steps;
   }
 
+  void initOptimizer(const optimizers::Factory& optimizer_factory) final {
+    (void)optimizer_factory;
+  }
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,

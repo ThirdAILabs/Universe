@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
 
@@ -77,8 +78,14 @@ class Op {
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
   /**
-   * Returns the output dimension of the op. Does not include batch size. For
-   * instance a fully connected layer op will return its number of neurons.
+   * Initializes the optimizer for the op.
+   */
+  virtual void initOptimizer(const optimizers::Factory& optimizer_factory) = 0;
+
+  /**
+   * Returns the output dimension of the op. Does not include batch size.
+   * For instance a fully connected layer op will return its number of
+   * neurons.
    */
   virtual uint32_t dim() const = 0;
 

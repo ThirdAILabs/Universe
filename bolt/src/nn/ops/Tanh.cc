@@ -56,6 +56,10 @@ void Tanh::updateParameters(float learning_rate, uint32_t train_steps) {
   (void)train_steps;
 }
 
+void Tanh::initOptimizer(const optimizers::Factory& optimizer_factory) {
+  (void)optimizer_factory;
+}
+
 uint32_t Tanh::dim() const { return _dim; }
 
 std::optional<uint32_t> Tanh::nonzeros(const autograd::ComputationList& inputs,

@@ -4,8 +4,8 @@
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/neuron_index/NeuronIndex.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
@@ -43,14 +43,15 @@ class FullyConnectedLayer final {
 
   void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float lr, size_t train_steps);
 
   void disableSparseParameterUpdates() {
     _disable_sparse_parameter_updates = true;
   };
 
   void saveWithOptimizer(bool should_save_optimizer) {
-    _should_save_optimizer = should_save_optimizer;
+    _weight_optimizer->setSerializeState(should_save_optimizer);
+    _bias_optimizer->setSerializeState(should_save_optimizer);
   }
 
   BoltBatch createBatchState(const uint32_t batch_size,
@@ -85,13 +86,13 @@ class FullyConnectedLayer final {
 
   float* getBiasesPtr() { return _biases.data(); }
 
-  float* getWeightGradientsPtr() { return _weight_optimizer->gradients.data(); }
+  float* getWeightGradientsPtr() { return _weight_gradients.data(); }
 
-  float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }
+  float* getBiasGradientsPtr() { return _bias_gradients.data(); }
 
-  std::vector<float>& weightsGradient() { return _weight_optimizer->gradients; }
+  std::vector<float>& weightsGradient() { return _weight_gradients; }
 
-  std::vector<float>& biasGradient() { return _bias_optimizer->gradients; }
+  std::vector<float>& biasGradient() { return _bias_gradients; }
 
   std::vector<float>& weights() { return _weights; }
 
@@ -134,7 +135,7 @@ class FullyConnectedLayer final {
 
   void buildSamplingSummary(std::ostream& summary) const;
 
-  void initOptimizer();
+  void initOptimizer(const nn::optimizers::Factory& optimizer_factory);
 
   ~FullyConnectedLayer() = default;
 
@@ -147,8 +148,11 @@ class FullyConnectedLayer final {
   std::vector<float> _weights;
   std::vector<float> _biases;
 
-  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
-  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+  std::vector<float> _weight_gradients;
+  std::vector<float> _bias_gradients;
+
+  nn::optimizers::OptimizerPtr _weight_optimizer;
+  nn::optimizers::OptimizerPtr _bias_optimizer;
 
   nn::NeuronIndexPtr _neuron_index;
   bool _index_frozen = false;
@@ -165,10 +169,6 @@ class FullyConnectedLayer final {
   // A flag to check whether the current network is running in normal
   // or distributed mode
   bool _disable_sparse_parameter_updates;
-
-  // A flag to determine whether the current network saves the optimizer states
-  // or not. If true, it saves the optimizer states, else doesn't.
-  bool _should_save_optimizer;
 
   bool _use_bias;
 
@@ -207,37 +207,6 @@ class FullyConnectedLayer final {
 
   void initActiveNeuronsTrackers();
 
-  inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
-                                                 float eps,
-                                                 float B1_bias_corrected,
-                                                 float B2_bias_corrected);
-
-  inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
-                                                float eps,
-                                                float B1_bias_corrected,
-                                                float B2_bias_corrected);
-
-  inline void updateDenseSparseWeightParameters(float lr, float B1, float B2,
-                                                float eps,
-                                                float B1_bias_corrected,
-                                                float B2_bias_corrected);
-  inline void updateDenseDenseWeightParameters(float lr, float B1, float B2,
-                                               float eps,
-                                               float B1_bias_corrected,
-                                               float B2_bias_corrected);
-
-  inline void updateSingleWeightParameters(uint64_t prev_neuron,
-                                           uint64_t cur_neuron, float lr,
-                                           float B1, float B2, float eps,
-                                           float B1_bias_corrected,
-                                           float B2_bias_corrected);
-
-  inline void updateBiasParameters(float lr, float B1, float B2, float eps,
-                                   float B1_bias_corrected,
-                                   float B2_bias_corrected);
-
-  inline void cleanupWithinBatchVars();
-
   template <bool DENSE, bool PREV_DENSE>
   void markActiveNeuronsForUpdate(const BoltVector& input,
                                   const BoltVector& output, uint32_t len_out);
@@ -256,45 +225,26 @@ class FullyConnectedLayer final {
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
-
   template <class Archive>
-  void save(Archive& archive) const {
+  void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
-            _disable_sparse_parameter_updates, _should_save_optimizer,
-            _use_bias);
-    if (_should_save_optimizer) {
-      archive(_weight_optimizer, _bias_optimizer);
-    }
-  }
+            _disable_sparse_parameter_updates, _use_bias, _weight_optimizer,
+            _bias_optimizer);
 
-  /**
-   * Training data-structures (like the optimizer and the active neurons
-   * trackers) are not loaded in by default. If we want to continue training
-   * after a load, the expectation is that the higher level Graph/Network API
-   * will handle this initialization with the initOptimizer() method.
-   *
-   * Doing this means our load API is as simple as possible for both
-   * training and inference purposes. It doesn't make sense to load these
-   * data-structures by default then remove them with another function since
-   * users may be memory constrained during deployment.
-   *
-   * We don't know yet if its worth it to save the optimizer for
-   * retraining/finetuning purposes. If in the future we figure out this has
-   * some benefit we can adjust this method accordingly.
-   */
-  template <class Archive>
-  void load(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _neuron_index, _index_frozen,
-            _disable_sparse_parameter_updates, _should_save_optimizer,
-            _use_bias);
-    if (_should_save_optimizer) {
-      archive(_weight_optimizer, _bias_optimizer);
+    // We never save the gradients from a particular batch. Users should call
+    // updateParameters to apply an update before saving, or process the
+    // training batch again after loading. This will ensure they are properly
+    // initialized when loading.
+    if (_weight_gradients.empty()) {
+      _weight_gradients.assign(_weights.size(), 0.0);
     }
-    // TODO(david) another way to reduce memory for inference is to remove these
-    // in addition to the optimizer as mentioned above
-    initActiveNeuronsTrackers();
+    if (_bias_gradients.empty()) {
+      _bias_gradients.assign(_biases.size(), 0.0);
+    }
+    if (_prev_is_active.empty() || _is_active.empty()) {
+      initActiveNeuronsTrackers();
+    }
   }
 };
 

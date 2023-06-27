@@ -109,8 +109,7 @@ void EmbeddingNode::backpropagateImpl(uint32_t vec_index) {
 
 void EmbeddingNode::updateParametersImpl(float learning_rate,
                                          uint32_t batch_cnt) {
-  _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
-                                     EPS);
+  _embedding_layer->updateParameters(learning_rate, batch_cnt);
 }
 
 void EmbeddingNode::summarizeImpl(std::stringstream& summary,
