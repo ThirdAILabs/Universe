@@ -202,6 +202,10 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
+void Model::overrideTrainSteps(uint32_t train_steps) {
+  _train_steps = train_steps;
+}
+
 std::vector<uint32_t> Model::inputDims() const {
   std::vector<uint32_t> dims;
   for (const auto& input : _inputs) {
