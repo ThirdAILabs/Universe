@@ -186,6 +186,7 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
+        num_buckets_to_sample: int = 16,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = None,
@@ -205,6 +206,7 @@ class NeuralDB:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
                 train_documents=intro_and_train.train,
+                num_buckets_to_sample=num_buckets_to_sample,
                 should_train=train,
                 on_progress=on_progress,
             )

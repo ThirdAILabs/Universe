@@ -25,6 +25,7 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        num_buckets_to_sample: int,
         on_progress: Callable = lambda **kwargs: None,
         on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
@@ -204,6 +205,7 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        num_buckets_to_sample: int,
         on_progress: Callable = lambda **kwargs: None,
         on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
@@ -226,8 +228,8 @@ class Mach(Model):
                 self.model.introduce_documents_on_data_source(
                     data_source=intro_documents,
                     strong_column_names=[intro_documents.strong_column],
-                    weak_column_names=[],
-                    num_buckets_to_sample=16,
+                    weak_column_names=[intro_documents.weak_column],
+                    num_buckets_to_sample=num_buckets_to_sample,
                 )
             learning_rate = 0.001
 
