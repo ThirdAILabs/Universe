@@ -30,6 +30,7 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <exception>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -306,19 +307,29 @@ py::object UDTMachClassifier::outputCorrectness(
       outputBuckets(samples, sparse_inference, top_k);
 
   std::vector<uint32_t> matching_buckets(labels.size());
+  std::exception_ptr hashes_err;
 
 #pragma omp parallel for default(none) \
-    shared(labels, top_buckets, matching_buckets)
+    shared(labels, top_buckets, matching_buckets, hashes_err)
   for (uint32_t i = 0; i < labels.size(); i++) {
-    std::vector<uint32_t> hashes =
-        _mach_label_block->index()->getHashes(labels[i]);
-    uint32_t count = 0;
-    for (auto hash : hashes) {
-      if (top_buckets[i].count(hash) > 0) {
-        count++;
+    try {
+      std::vector<uint32_t> hashes =
+          _mach_label_block->index()->getHashes(labels[i]);
+      uint32_t count = 0;
+      for (auto hash : hashes) {
+        if (top_buckets[i].count(hash) > 0) {
+          count++;
+        }
       }
+      matching_buckets[i] = count;
+    } catch (const std::exception& e) {
+#pragma omp critical
+      hashes_err = std::current_exception();
     }
-    matching_buckets[i] = count;
+  }
+
+  if (hashes_err) {
+    std::rethrow_exception(hashes_err);
   }
 
   return py::cast(matching_buckets);
