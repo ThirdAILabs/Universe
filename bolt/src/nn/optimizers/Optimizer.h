@@ -32,6 +32,8 @@ class Optimizer {
     _serialize_state = serialize_state;
   }
 
+  virtual ~Optimizer() = default;
+
  protected:
   bool shouldSerializeState() const { return _serialize_state; }
 
@@ -56,6 +58,8 @@ using OptimizerPtr = std::unique_ptr<Optimizer>;
 class Factory {
  public:
   virtual OptimizerPtr makeOptimizer(size_t rows, size_t cols) const = 0;
+
+  virtual ~Factory() = default;
 };
 
 }  // namespace thirdai::bolt::nn::optimizers
