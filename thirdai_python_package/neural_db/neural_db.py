@@ -13,7 +13,7 @@ from .models import Mach
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
-   
+
 
 def no_op(*args, **kwargs):
     pass

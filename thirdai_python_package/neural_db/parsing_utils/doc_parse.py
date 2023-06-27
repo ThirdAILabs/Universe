@@ -6,6 +6,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 
 from .utils import ATTACH_N_WORD_THRESHOLD, chunk_text, ensure_valid_encoding
 
+
 def get_elements(filename):
     temp = []
     document = Document(filename)
@@ -16,13 +17,9 @@ def get_elements(filename):
                 temp[-1] = (temp[-1][0] + " " + p.text.strip(), filename)
             else:
                 temp.append((p.text.strip(), filename))
-            prev_short = (
-                len(word_tokenize(p.text.strip())) < ATTACH_N_WORD_THRESHOLD
-            )
+            prev_short = len(word_tokenize(p.text.strip())) < ATTACH_N_WORD_THRESHOLD
     temp = [
-        (chunk, filename)
-        for passage, filename in temp
-        for chunk in chunk_text(passage)
+        (chunk, filename) for passage, filename in temp for chunk in chunk_text(passage)
     ]
     return temp, True
 
@@ -34,7 +31,10 @@ def create_train_df(elements):
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(str(elem[0]))
-        sents = [sent.replace("\t", " ").replace(",", " ").replace("\n", " ").strip().lower() for sent in sents]
+        sents = [
+            sent.replace("\t", " ").replace(",", " ").replace("\n", " ").strip().lower()
+            for sent in sents
+        ]
         passage = " ".join(sents)
         df.iloc[i] = [
             passage,

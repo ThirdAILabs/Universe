@@ -192,7 +192,7 @@ setup(
             "trafilatura",
             "python-docx",
             "url-normalize",
-            "nltk"
+            "nltk",
         ],
         "test": [
             "pytest",

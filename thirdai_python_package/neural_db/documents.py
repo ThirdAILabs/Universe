@@ -1,16 +1,16 @@
 import hashlib
 import os
+import shutil
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
-import shutil
 
 import pandas as pd
+from parsing_utils import doc_parse, pdf_parse, url_parse
 from pytrie import StringTrie
-from thirdai.dataset.data_source import PyDataSource
 from requests.models import Response
+from thirdai.dataset.data_source import PyDataSource
 
-from .utils import hash_string, hash_file
-from parsing_utils import doc_parse, url_parse, pdf_parse
+from .utils import hash_file, hash_string
 
 
 class Reference:
@@ -235,8 +235,11 @@ class DocumentManager:
             subdir = directory / str(i)
             doc.load_meta(subdir)
 
+
 class CSV(Document):
-    def __init__(self, path, id_column, strong_columns, weak_columns, reference_columns) -> None:
+    def __init__(
+        self, path, id_column, strong_columns, weak_columns, reference_columns
+    ) -> None:
         self.df = pd.read_csv(path)
         self.df = self.df.sort_values(id_column)
         assert len(self.df[id_column].unique()) == len(self.df[id_column])
@@ -252,47 +255,48 @@ class CSV(Document):
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
-    
+
     @property
     def hash(self) -> str:
         return self._hash
-    
+
     @property
     def size(self) -> int:
         return len(self.df)
-    
+
     @property
     def name(self) -> str:
         return self.path.name
-    
+
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
         return " ".join([row[col] for col in self.strong_columns])
-    
+
     def weak_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
         return " ".join([row[col] for col in self.weak_columns])
-    
+
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
         text = " ".join([row[col] for col in self.reference_columns])
         return Reference(
             document=self,
-            element_id=element_id, 
-            text=text, 
-            source=str(self.path.absolute()), 
-            metadata={})
-    
+            element_id=element_id,
+            text=text,
+            source=str(self.path.absolute()),
+            metadata={},
+        )
+
     def context(self, element_id: int, radius) -> str:
         rows = self.df.iloc[
-            max(0, element_id - radius):
-            min(len(self.df), element_id + radius)]
+            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+        ]
         return " ".join([row[col] for col in self.reference_columns for row in rows])
-    
+
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
         shutil.copy(self.path, directory)
-    
+
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
@@ -305,7 +309,6 @@ class Extracted(Document):
         self,
         filename: str,
     ):
-        
         self.filename = filename
         self.df = self.process_data(filename)
         self.hash_val = hash_file(filename)
@@ -333,7 +336,7 @@ class Extracted(Document):
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
-    
+
     def show_fn(text, source, **kwargs):
         return text
 
@@ -366,15 +369,12 @@ class Extracted(Document):
         return "\n".join(window_chunks)
 
 
-
 class PDF(Extracted):
     def __init__(
         self,
         filename: str,
     ):
-        super().__init__(
-            filename=filename
-        )
+        super().__init__(filename=filename)
 
     def process_data(
         self,
@@ -396,9 +396,7 @@ class DOCX(Extracted):
         self,
         filename: str,
     ):
-        super().__init__(
-            filename=filename
-        )
+        super().__init__(filename=filename)
 
     def process_data(
         self,
@@ -416,11 +414,7 @@ class DOCX(Extracted):
 
 
 class URL(Document):
-    def __init__(
-        self,
-        url: str,
-        url_response: Response = None
-    ):
+    def __init__(self, url: str, url_response: Response = None):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)

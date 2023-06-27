@@ -5,10 +5,11 @@ import fitz
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 
-from .utils import ensure_valid_encoding, chunk_text, ATTACH_N_WORD_THRESHOLD
+from .utils import ATTACH_N_WORD_THRESHOLD, chunk_text, ensure_valid_encoding
 
 # TODO: Remove senttokenize
 # TODO: Limit paragraph length
+
 
 def para_is_complete(para):
     endings = [".", "?", "!", '."', ".'"]
@@ -87,9 +88,7 @@ def process_pdf_file(filename):
                     .strip(),
                 )
                 if len(sent) > 0:
-                    rows.append(
-                        (sent.lower(), sent, para[1], para[2], str(para[3]))
-                    )
+                    rows.append((sent.lower(), sent, para[1], para[2], str(para[3])))
 
         return rows, True
     except Exception as e:

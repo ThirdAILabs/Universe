@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from thirdai import bolt, demos
-from thirdai.neural_db import Document, Reference, CSV
+from thirdai.neural_db import CSV, Document, Reference
 from thirdai.neural_db import documents as docs
 
 # We don't have a test on just the Document interface since it is just an
@@ -237,7 +237,6 @@ def test_document_manager_context():
 
 @pytest.mark.unit
 def test_udt_cold_start_on_csv_document():
-
     (
         catalog_file,
         n_target_classes,

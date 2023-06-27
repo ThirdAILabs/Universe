@@ -1,5 +1,7 @@
 try:
-    from .documents import Document, Reference, PDF, DOCX, URL, CSV
+    from .documents import CSV, DOCX, PDF, URL, Document, Reference
     from .neural_db import AnswererState, NeuralDB, Strength, Sup
 except ImportError as error:
-    raise ImportError("To use thirdai.neural_db, please install the additional dependencies by running 'pip install thirdai[neural_db]'")
+    raise ImportError(
+        "To use thirdai.neural_db, please install the additional dependencies by running 'pip install thirdai[neural_db]'"
+    )
