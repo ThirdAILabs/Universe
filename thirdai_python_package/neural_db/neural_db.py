@@ -13,38 +13,7 @@ from .models import Mach
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
-
-
-class SearchState:
-    def __init__(self, query: str, references: List[Reference]):
-        self._query = query
-        self._references = references
-
-    @property
-    def len(self):
-        return len(self._references)
-
-    def __len__(self):
-        return self.len()
-
-    @property
-    def references(self):
-        return self._references
-
-
-class AnswererState:
-    def __init__(self, answerer: qa.QA, context_args: qa.ContextArgs):
-        self._answerer = answerer
-        self._context_args = context_args
-
-    @property
-    def answerer(self):
-        return self._answerer
-
-    @property
-    def context_args(self):
-        return self._context_args
-
+   
 
 def no_op(*args, **kwargs):
     pass
@@ -118,7 +87,6 @@ class NeuralDB:
     def __init__(self, user_id: str) -> None:
         self._user_id = user_id
         self._savable_state: Optional[State] = None
-        self._answerer_state: Optional[AnswererState] = None
 
     def from_scratch(self) -> None:
         self._savable_state = State(

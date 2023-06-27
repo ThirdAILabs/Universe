@@ -174,7 +174,6 @@ setup(
         "typing_extensions",
         "requests",
         "pandas>=1.2.0",
-        "PyTrie",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
@@ -185,6 +184,16 @@ setup(
         # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
+        "neural_db": [
+            "PyTrie",
+            "PyMuPDF",
+            "langchain",
+            "bs4",
+            "trafilatura",
+            "python-docx",
+            "url-normalize",
+            "nltk"
+        ],
         "test": [
             "pytest",
             "pytest-mock",
