@@ -141,13 +141,13 @@ void DWTAHashFunction::save_stream(std::ostream& output_stream) const {
   oarchive(*this);
 }
 
-std::shared_ptr<HashFunction> DWTAHashFunction::load(
+std::shared_ptr<DWTAHashFunction> DWTAHashFunction::load(
     const std::string& filename) {
   auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(input_stream);
 }
 
-std::shared_ptr<HashFunction> DWTAHashFunction::load_stream(
+std::shared_ptr<DWTAHashFunction> DWTAHashFunction::load_stream(
     std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<DWTAHashFunction> deserialize_into(new DWTAHashFunction());

@@ -57,9 +57,10 @@ class DWTAHashFunction final : public HashFunction {
 
   void save_stream(std::ostream& output_stream) const;
 
-  static std::shared_ptr<HashFunction> load(const std::string& filename);
+  static std::shared_ptr<DWTAHashFunction> load(const std::string& filename);
 
-  static std::shared_ptr<HashFunction> load_stream(std::istream& input_stream);
+  static std::shared_ptr<DWTAHashFunction> load_stream(
+      std::istream& input_stream);
 };
 
 }  // namespace thirdai::hashing
