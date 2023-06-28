@@ -373,8 +373,7 @@ class PDF(Extracted):
         elements, success = pdf_parse.process_pdf_file(filename)
 
         if not success:
-            print(f"Could not read PDF file {filename}")
-            return pd.DataFrame()
+            raise ValueError(f"Could not read PDF file: {filename}")
 
         elements_df = pdf_parse.create_train_df(elements)
 
@@ -395,8 +394,7 @@ class DOCX(Extracted):
         elements, success = doc_parse.get_elements(filename)
 
         if not success:
-            print(f"Could not read DOCX file {filename}")
-            return pd.DataFrame()
+            raise ValueError(f"Could not read DOCX file: {filename}")
 
         elements_df = doc_parse.create_train_df(elements)
 
@@ -414,7 +412,7 @@ class URL(Document):
         elements, success = url_parse.process_url(url, url_response)
 
         if not success or not elements:
-            return pd.DataFrame()
+            raise ValueError(f"Could not retrieve data from URL: {url}")
 
         elements_df = url_parse.create_train_df(elements)
 
