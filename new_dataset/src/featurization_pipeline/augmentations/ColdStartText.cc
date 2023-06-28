@@ -102,10 +102,15 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
 
 #pragma omp critical
       {
+        uint32_t current_count = 0;
         for (auto& sample : augmented_samples) {
           if (!sample.empty()) {
             augmented_data.emplace_back(std::move(sample));
             augmented_labels.push_back(labels);
+            current_count++;
+          }
+          if (current_count > 10) {
+            break;
           }
         }
       }
