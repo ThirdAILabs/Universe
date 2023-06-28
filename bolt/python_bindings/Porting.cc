@@ -329,7 +329,19 @@ class ModelImporter {
     auto losses = importLosses();
     auto outputs = importOutputs();
 
-    auto model = model::Model::make(inputs, outputs, losses);
+    // Remove all labels used by the losses, the rest are additional labels such
+    // as the ones used for metrics in Mach.
+    for (const auto& loss : losses) {
+      for (const auto& label : loss->labels()) {
+        auto loc = std::find(labels.begin(), labels.end(), label);
+        if (loc != labels.end()) {
+          labels.erase(loc);
+        }
+      }
+    }
+
+    auto model = model::Model::make(inputs, outputs, losses,
+                                    /* additional_labels= */ labels);
 
     model->overrideTrainSteps(_params["train_steps"].cast<size_t>());
 
