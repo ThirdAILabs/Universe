@@ -172,6 +172,40 @@ py::object UDTMachClassifier::train(
                             callbacks, options);
 }
 
+py::object UDTMachClassifier::trainBatch(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
+py::object UDTMachClassifier::trainWithHashes(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] =
+      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
+  labels.push_back(placeholderDocIds(batch.size()));
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
                                        bool sparse_inference, bool verbose,
@@ -214,22 +248,6 @@ std::vector<std::pair<uint32_t, double>> UDTMachClassifier::predictImpl(
   return decoded_output;
 }
 
-py::object UDTMachClassifier::trainBatch(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
-  return py::none();
-}
-
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class,
@@ -261,41 +279,25 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predicted_entities);
 }
 
-py::object UDTMachClassifier::trainWithHashes(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] =
-      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
-  labels.push_back(placeholderDocIds(batch.size()));
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
-  return py::none();
-}
-
-py::object UDTMachClassifier::predictHashes(const MapInput& sample,
-                                            bool sparse_inference) {
-  return py::cast(predictHashesImpl(sample, sparse_inference));
+py::object UDTMachClassifier::predictHashes(
+    const MapInput& sample, bool sparse_inference,
+    std::optional<uint32_t> num_hashes) {
+  return py::cast(predictHashesImpl(sample, sparse_inference, num_hashes));
 }
 
 std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
-    const MapInput& sample, bool sparse_inference) {
+    const MapInput& sample, bool sparse_inference,
+    std::optional<uint32_t> num_hashes) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
-  uint32_t k = _mach_label_block->index()->numHashes();
-  auto heap = output.findKLargestActivations(k);
+  uint32_t k = num_hashes.value_or(_mach_label_block->index()->numHashes());
+  auto heap = _mach_label_block->index()->topKNonEmptyBuckets(output, k);
 
   std::vector<uint32_t> hashes_to_return;
-  while (hashes_to_return.size() < k && !heap.empty()) {
+  while (!heap.empty()) {
     auto [_, active_neuron] = heap.top();
     hashes_to_return.push_back(active_neuron);
     heap.pop();
@@ -713,7 +715,8 @@ void UDTMachClassifier::associate(
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
   for (const auto& [source, target] : source_target_samples) {
-    teaching_samples.emplace_back(source, predictHashesImpl(target, false));
+    teaching_samples.emplace_back(
+        source, predictHashesImpl(target, /* sparse_inference = */ false));
   }
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);

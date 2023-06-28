@@ -63,7 +63,8 @@ class UDTMachClassifier final : public UDTBackend {
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) final;
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) final;
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           std::optional<uint32_t> num_hashes) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -153,8 +154,10 @@ class UDTMachClassifier final : public UDTBackend {
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
 
-  std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
-                                          bool sparse_inference);
+  // TODO(david) add comment
+  std::vector<uint32_t> predictHashesImpl(
+      const MapInput& sample, bool sparse_inference,
+      std::optional<uint32_t> num_hashes = std::nullopt);
 
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
