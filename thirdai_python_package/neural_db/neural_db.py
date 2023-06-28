@@ -1,7 +1,7 @@
 import copy
 from enum import Enum
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple, Dict
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from thirdai._thirdai import bolt
