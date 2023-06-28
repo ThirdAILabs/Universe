@@ -147,6 +147,8 @@ UDTMachClassifier::UDTMachClassifier(
     _rlhf_sampler = std::make_optional<RLHFSampler>(
         num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  updateSamplingStrategy();
 }
 
 py::object UDTMachClassifier::train(
