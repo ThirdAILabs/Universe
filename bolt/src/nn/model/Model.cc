@@ -19,6 +19,7 @@
 #include <numeric>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -48,9 +49,18 @@ Model::Model(autograd::ComputationList inputs,
 
   _allocation_manager = AllocationManager(_computation_order);
 
+  std::unordered_set<std::string> op_names;
   std::unordered_set<ops::OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.insert(comp->op());
+    std::string name = comp->op()->name();
+    if (op_names.count(name)) {
+      throw std::invalid_argument(
+          "Found multiple Ops in model with the name '" + name +
+          "'. All ops in a model must have unique names. The name of the op "
+          "can be updated with `op.name = 'op_name'`.");
+    }
+    op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
 
@@ -150,6 +160,12 @@ autograd::ComputationList Model::computationOrder() const {
                    _computation_order.end());
   return all_comps;
 }
+
+autograd::ComputationList Model::computationOrderWithoutInputs() const {
+  return _computation_order;
+}
+
+const autograd::ComputationList& Model::inputs() const { return _inputs; }
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 

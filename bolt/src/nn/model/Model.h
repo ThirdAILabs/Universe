@@ -104,6 +104,13 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   autograd::ComputationList computationOrder() const;
 
+  autograd::ComputationList computationOrderWithoutInputs() const;
+
+  /**
+   * Returns the inputs of the model.
+   */
+  const autograd::ComputationList& inputs() const;
+
   /**
    * Returns the outputs of the model.
    */

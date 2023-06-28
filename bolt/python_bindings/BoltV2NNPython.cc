@@ -165,7 +165,7 @@ void defineOps(py::module_& nn) {
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op")
       .def("dim", &ops::Op::dim)
-      .def("name", &ops::Op::name);
+      .def_property("name", &ops::Op::name, &ops::Op::setName);
 
   py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
       nn, "FullyConnected")

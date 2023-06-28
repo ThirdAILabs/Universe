@@ -121,7 +121,10 @@ def test_udt_text_classification_model_porting(
 
     new_model = clinc_model()
 
-    new_bolt_model = bolt_v2.nn.Model.from_params(trained_model._get_model().params())
+    trained_model._get_model().summary()
+
+    params = trained_model._get_model().params()
+    new_bolt_model = bolt_v2.nn.Model.from_params(params)
     new_model._set_model(new_bolt_model)
 
     acc = compute_predict_batch_accuracy(
