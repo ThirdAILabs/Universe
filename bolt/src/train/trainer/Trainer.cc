@@ -69,7 +69,7 @@ void Trainer::trainOnBatches(
     }
 
     if (train_state->isTrainingStopped()) {
-      // TODO: Print stuff and have more graceful termination
+      // TODO(Nicholas): Print stuff and have more graceful termination
       return;
     }
 
