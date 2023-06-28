@@ -149,4 +149,4 @@ void Adam::load(Archive& archive) {
 
 }  // namespace thirdai::bolt::nn::optimizers
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::optimizers::Adam);
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::optimizers::Adam)
