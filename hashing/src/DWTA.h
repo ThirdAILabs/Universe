@@ -53,9 +53,13 @@ class DWTAHashFunction final : public HashFunction {
 
   uint32_t getHashesPerTable() const { return _hashes_per_table; }
 
-  void save(const std::string& filename);
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
 
   static std::shared_ptr<HashFunction> load(const std::string& filename);
+
+  static std::shared_ptr<HashFunction> load_stream(std::istream& input_stream);
 };
 
 }  // namespace thirdai::hashing

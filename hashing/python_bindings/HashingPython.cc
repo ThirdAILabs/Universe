@@ -1,4 +1,5 @@
 #include "HashingPython.h"
+#include <bolt/python_bindings/PybindUtils.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
@@ -45,6 +46,7 @@ void createHashingSubmodule(py::module_& module) {
   py::class_<DWTAHashFunction, std::shared_ptr<DWTAHashFunction>, HashFunction>(
       hashing_submodule, "DWTA")
       .def("save", &DWTAHashFunction::save, py::arg("filename"))
-      .def_static("load", &DWTAHashFunction::load, py::arg("filename"));
+      .def_static("load", &DWTAHashFunction::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<DWTAHashFunction>());
 }
 }  // namespace thirdai::hashing::python
