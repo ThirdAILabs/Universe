@@ -259,6 +259,7 @@ def test_udt_cold_start_on_csv_document():
             "PRODUCT_ID",
             ["TITLE"],
             ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+            ["TITLE"]
         ),
         start_id=0,
     )
