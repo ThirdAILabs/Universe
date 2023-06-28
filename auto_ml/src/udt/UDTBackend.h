@@ -374,6 +374,14 @@ class UDTBackend {
     throw notSupported("set_index");
   }
 
+  /**
+   * Sets the threshold for changing the type of sampling in Mach.
+   */
+  virtual void setSparseInferenceThreshold(float threshold) {
+    (void)threshold;
+    throw notSupported("set_sparse_inference_threshold");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:

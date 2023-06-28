@@ -827,6 +827,11 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   updateSamplingStrategy();
 }
 
+void UDTMachClassifier::setSparseInferenceThreshold(float threshold) {
+  _sparse_inference_threshold = threshold;
+  updateSamplingStrategy();
+}
+
 InputMetrics UDTMachClassifier::getMetrics(
     const std::vector<std::string>& metric_names, const std::string& prefix) {
   const auto& model = _classifier->model();

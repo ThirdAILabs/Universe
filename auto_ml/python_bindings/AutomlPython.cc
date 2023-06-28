@@ -198,6 +198,8 @@ void defineAutomlInModule(py::module_& module) {
                udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
+      .def("set_sparse_inference_threshold",
+           &udt::UDT::setSparseInferenceThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))

@@ -145,6 +145,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
+  void setSparseInferenceThreshold(float threshold) final;
+
  private:
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
