@@ -55,7 +55,7 @@ void Trainer::trainOnBatches(
       bar->increment();
     }
 
-    *steps_since_validation += *steps_since_validation + 1;
+    *steps_since_validation = *steps_since_validation + 1;
     if (steps_per_validation &&
         *steps_since_validation == *steps_per_validation) {
       validate(*validation_data, validation_metrics,
@@ -106,7 +106,8 @@ metrics::History Trainer::train_max_in_memory_batches(
   callbacks.onTrainBegin();
 
   uint32_t steps_since_validation = 0;
-  for (_epoch = 0; _epoch < epochs; _epoch++) {
+  uint32_t num_epochs = _epoch + epochs;
+  for (; _epoch < num_epochs; _epoch++) {
     if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
@@ -186,7 +187,8 @@ metrics::History Trainer::train(
 
   uint32_t steps_since_validation = 0;
 
-  for (_epoch = 0; _epoch < epochs; _epoch++) {
+  uint32_t num_epochs = _epoch + epochs;
+  for (; _epoch < num_epochs; _epoch++) {
     if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
