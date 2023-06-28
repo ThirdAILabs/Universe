@@ -308,6 +308,37 @@ std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
   return hashes_to_return;
 }
 
+py::object UDTMachClassifier::predictHashesBatch(
+    const MapInputBatch& samples, bool sparse_inference,
+    std::optional<uint32_t> num_hashes) {
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               sparse_inference)
+                     .at(0);
+
+  uint32_t k = num_hashes.value_or(_mach_label_block->index()->numHashes());
+
+  std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
+#pragma omp parallel for default(none) shared(outputs, all_hashes, k)
+  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
+    std::vector<uint32_t> hashes_to_return;
+    auto heap = _mach_label_block->index()->topKNonEmptyBuckets(
+        outputs->getVector(i), k);
+
+    while (!heap.empty()) {
+      auto [_, active_neuron] = heap.top();
+      hashes_to_return.push_back(active_neuron);
+      heap.pop();
+    }
+
+    std::reverse(hashes_to_return.begin(), hashes_to_return.end());
+
+    all_hashes[i] = hashes_to_return;
+  }
+
+  return py::cast(all_hashes);
+}
+
 void UDTMachClassifier::setModel(const ModelPtr& model) {
   bolt::nn::model::ModelPtr& curr_model = _classifier->model();
 

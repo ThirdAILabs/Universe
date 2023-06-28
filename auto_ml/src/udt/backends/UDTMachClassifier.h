@@ -44,6 +44,12 @@ class UDTMachClassifier final : public UDTBackend {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options) final;
 
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        const std::vector<std::string>& metrics) final;
+
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
+                             const std::vector<std::string>& metrics) final;
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
@@ -53,18 +59,16 @@ class UDTMachClassifier final : public UDTBackend {
                      bool return_predicted_class,
                      std::optional<uint32_t> top_k) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics) final;
-
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) final;
-
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            std::optional<uint32_t> num_hashes) final;
+
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference,
+                                std::optional<uint32_t> num_hashes) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 

@@ -329,6 +329,15 @@ class UDTBackend {
     throw notSupported("predict_hashes");
   }
 
+  virtual py::object predictHashesBatch(const MapInputBatch& samples,
+                                        bool sparse_inference,
+                                        std::optional<uint32_t> num_hashes) {
+    (void)samples;
+    (void)sparse_inference;
+    (void)num_hashes;
+    throw notSupported("predict_hashes_batch");
+  }
+
   /**
    * Used for fine tuning in UDTMachClassifier.
    */

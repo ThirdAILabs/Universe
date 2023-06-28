@@ -194,6 +194,12 @@ class UDT {
     return _backend->predictHashes(sample, sparse_inference, num_hashes);
   }
 
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference,
+                                std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashesBatch(samples, sparse_inference, num_hashes);
+  }
+
   void associate(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
