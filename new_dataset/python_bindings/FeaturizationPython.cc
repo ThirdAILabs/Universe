@@ -73,6 +73,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       augmentations_submodule, "Augmentation")
       .def("apply", &Augmentation::apply);
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Augmentation,
              std::shared_ptr<ColdStartTextAugmentation>>(
       augmentations_submodule, "ColdStartText")
@@ -110,6 +111,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_text"), py::arg("weak_text"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+#endif
 
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
