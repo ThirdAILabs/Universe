@@ -105,7 +105,8 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("weak_sample_reps") = 1,
            py::arg("strong_max_len") = std::nullopt,
            py::arg("strong_sample_num_words") = std::nullopt,
-           py::arg("seed") = 42803);
+           py::arg("seed") = 42803)
+      .def("augment_single_row", py::arg("strong_text"), py::arg("weak_text"));
 
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
