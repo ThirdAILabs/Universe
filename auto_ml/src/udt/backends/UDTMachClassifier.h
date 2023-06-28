@@ -158,7 +158,6 @@ class UDTMachClassifier final : public UDTBackend {
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
 
-  // TODO(david) add comment
   std::vector<uint32_t> predictHashesImpl(
       const MapInput& sample, bool sparse_inference,
       std::optional<uint32_t> num_hashes = std::nullopt);
