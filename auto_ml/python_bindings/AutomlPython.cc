@@ -210,6 +210,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)
+      .def("data_types", &udt::UDT::dataTypes)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
@@ -286,7 +287,11 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<std::optional<char>,
                     automl::data::CategoricalMetadataConfigPtr>(),
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-           docs::UDT_CATEGORICAL_TEMPORAL);
+           docs::UDT_CATEGORICAL_TEMPORAL)
+      .def_property_readonly(
+          "delimiter", [](automl::data::CategoricalDataType& categorical) {
+            return categorical.delimiter;
+          });
 
   py::class_<automl::data::NumericalDataType, automl::data::DataType,
              automl::data::NumericalDataTypePtr>(udt_types_submodule,

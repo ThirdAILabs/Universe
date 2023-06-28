@@ -53,6 +53,10 @@ class UDTGraphClassifier final : public UDTBackend {
 
   ModelPtr model() const final { return _classifier->model(); }
 
+  data::ColumnDataTypes dataTypes() const final {
+    return _dataset_manager->dataTypes();
+  }
+
  private:
   UDTGraphClassifier() {}
 
