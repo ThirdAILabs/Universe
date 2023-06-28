@@ -48,41 +48,39 @@ class Trainer {
    *    - callbacks: The callbacks to use during training.
    */
 
-void trainOnBatches(
-    const LabeledDataset& train_data, 
-    const TrainStatePtr& train_state, 
-    metrics::MetricCollection& train_metrics,
-    callbacks::CallbackList& callbacks, 
-    uint32_t *steps_since_validation = nullptr,
-    const std::optional<LabeledDataset>& validation_data = std::nullopt, 
-    const metrics::InputMetrics& validation_metrics = {},
-    const std::optional<uint32_t>& steps_per_validation = std::nullopt, 
-    bool use_sparsity_in_validation = false,
-    const std::optional<uint32_t>& logging_interval = std::nullopt,
-    bool verbose = true
-);
-metrics::History train(
-    const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
-    const metrics::InputMetrics& train_metrics = {},
-    const std::optional<LabeledDataset>& validation_data = std::nullopt,
-    const metrics::InputMetrics& validation_metrics = {},
-    std::optional<uint32_t> steps_per_validation = std::nullopt,
-    bool use_sparsity_in_validation = false,
-    const std::vector<callbacks::CallbackPtr>& callbacks = {},
-    bool autotune_rehash_rebuild = false, bool verbose = true,
-    std::optional<uint32_t> logging_interval = std::nullopt);
-metrics::History train_max_in_memory_batches(
-  const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate, uint32_t epochs,
-  const metrics::InputMetrics& train_metrics_in = {},
-  uint32_t batch_size = 1,
-  const std::vector<callbacks::CallbackPtr>& callbacks = {},
-  std::optional<uint32_t> max_in_memory_batches = std::nullopt,
-  const std::optional<LabeledDataset>& validation_data = std::nullopt,
-  const metrics::InputMetrics&  validation_metrics = {},
-  std::optional<uint32_t> steps_per_validation = std::nullopt,
-  bool use_sparsity_in_validation = false,
-  bool autotune_rehash_rebuild = false, bool verbose = false, 
-  std::optional<uint32_t> logging_interval = std::nullopt);
+  void trainOnBatches(
+      const LabeledDataset& train_data, const TrainStatePtr& train_state,
+      metrics::MetricCollection& train_metrics,
+      callbacks::CallbackList& callbacks,
+      uint32_t* steps_since_validation = nullptr,
+      const std::optional<LabeledDataset>& validation_data = std::nullopt,
+      const metrics::InputMetrics& validation_metrics = {},
+      const std::optional<uint32_t>& steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      const std::optional<uint32_t>& logging_interval = std::nullopt,
+      bool verbose = true);
+  metrics::History train(
+      const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
+      const metrics::InputMetrics& train_metrics = {},
+      const std::optional<LabeledDataset>& validation_data = std::nullopt,
+      const metrics::InputMetrics& validation_metrics = {},
+      std::optional<uint32_t> steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
+      bool autotune_rehash_rebuild = false, bool verbose = true,
+      std::optional<uint32_t> logging_interval = std::nullopt);
+  metrics::History train_max_in_memory_batches(
+      const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
+      uint32_t epochs, const metrics::InputMetrics& train_metrics_in = {},
+      uint32_t batch_size = 1,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
+      std::optional<uint32_t> max_in_memory_batches = std::nullopt,
+      const std::optional<LabeledDataset>& validation_data = std::nullopt,
+      const metrics::InputMetrics& validation_metrics = {},
+      std::optional<uint32_t> steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      bool autotune_rehash_rebuild = false, bool verbose = false,
+      std::optional<uint32_t> logging_interval = std::nullopt);
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
       const std::vector<std::string>& train_metrics = {},
