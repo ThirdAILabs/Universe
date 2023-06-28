@@ -45,6 +45,7 @@ def train_simple_mach_udt(
             "extreme_output_dim": OUTPUT_DIM,
             "use_bias": use_bias,
             **rlhf_args,
+            "mach_sampling_threshold": 0.2,
         },
     )
 

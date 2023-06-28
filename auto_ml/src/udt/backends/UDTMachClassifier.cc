@@ -133,9 +133,8 @@ UDTMachClassifier::UDTMachClassifier(
       /* label_col_names = */ std::set<std::string>{target_name},
       /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 
-  _sparse_inference_threshold =
-      user_args.get<float>("sparse_inference_threshold", "float",
-                           defaults::MACH_SPARSE_INFERENCE_THRESHOLD);
+  _mach_sampling_threshold = user_args.get<float>(
+      "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
@@ -409,7 +408,7 @@ void UDTMachClassifier::updateSamplingStrategy() {
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
   float index_sparsity = mach_index->sparsity();
-  if (index_sparsity > 0 && index_sparsity <= _sparse_inference_threshold) {
+  if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
     auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
@@ -828,7 +827,7 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
 }
 
 void UDTMachClassifier::setSparseInferenceThreshold(float threshold) {
-  _sparse_inference_threshold = threshold;
+  _mach_sampling_threshold = threshold;
   updateSamplingStrategy();
 }
 
@@ -902,7 +901,7 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
           _min_num_eval_results, _top_k_per_eval_aggregation,
-          _sparse_inference_threshold, _rlhf_sampler);
+          _mach_sampling_threshold, _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt
