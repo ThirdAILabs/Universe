@@ -183,6 +183,7 @@ class TabularDatasetFactory {
 
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
+  uint32_t _num_label_blocks;
 
   TabularOptions _options;
 };

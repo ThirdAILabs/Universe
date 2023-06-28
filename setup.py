@@ -174,6 +174,7 @@ setup(
         "typing_extensions",
         "requests",
         "pandas>=1.2.0",
+        "PyTrie",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
@@ -208,6 +209,7 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
+            "torch",
         ],
         "benchmark": [
             "toml",

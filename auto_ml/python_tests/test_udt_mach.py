@@ -609,6 +609,26 @@ def test_upvote():
     assert predicted_label == 200
 
 
+def test_enable_rlhf():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
+    ):
+        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+    model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
+
+    make_simple_test_file()
+
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
+
+    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+
 def regularized_introduce_helper(model, num_random_hashes):
     """Returns an array counting the number of hashes in each bucket after
     introducing three identical samples"""
@@ -645,3 +665,9 @@ def test_introduce_hash_regularization():
     # than NUM_HASHES non-zeroes in the index's load
     load = regularized_introduce_helper(model, num_random_hashes=2)
     assert np.sum(load > 0) > NUM_HASHES
+
+
+def test_udt_mach_train_batch():
+    model = train_simple_mach_udt()
+
+    model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)
