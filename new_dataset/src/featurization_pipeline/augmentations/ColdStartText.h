@@ -139,6 +139,13 @@ class ColdStartTextAugmentation final : public Augmentation {
 
   std::vector<std::string> augmentMapInput(const dataset::MapInput& document);
 
+  /**
+   * Helper method to perform the augmentation of a single row in the input.
+   * Returns the augmented phrases from that input row as strings.
+   */
+  std::vector<std::string> augmentSingleRow(std::string& strong_text,
+                                            std::string& weak_text);
+
  private:
   typedef std::vector<std::string> Phrase;
   typedef std::vector<Phrase> PhraseCollection;
@@ -155,13 +162,6 @@ class ColdStartTextAugmentation final : public Augmentation {
   std::optional<uint32_t> _strong_max_len;
   std::optional<uint32_t> _strong_sample_num_words;
   uint32_t _seed;
-
-  /**
-   * Helper method to perform the augmentation of a single row in the input.
-   * Returns the augmented phrases from that input row as strings.
-   */
-  std::vector<std::string> augmentSingleRow(std::string& strong_text,
-                                            std::string& weak_text);
 
   /**
    * Creates a phrase by splitting an input string s into whitespace-separated
