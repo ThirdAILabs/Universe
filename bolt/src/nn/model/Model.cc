@@ -54,7 +54,9 @@ Model::Model(autograd::ComputationList inputs,
   for (const auto& comp : _computation_order) {
     ops.insert(comp->op());
     std::string name = comp->op()->name();
-    if (op_names.count(name)) {
+
+    // Check if we have found a new op with the same name.
+    if (op_names.count(name) && !ops.count(comp->op())) {
       throw std::invalid_argument(
           "Found multiple Ops in model with the name '" + name +
           "'. All ops in a model must have unique names. The name of the op "
