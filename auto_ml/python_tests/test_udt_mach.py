@@ -103,14 +103,7 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-def train_on_scifact(download_scifact_dataset, coldstart):
-    (
-        unsupervised_file,
-        supervised_trn,
-        supervised_tst,
-        n_target_classes,
-    ) = download_scifact_dataset
-
+def scifact_model(n_target_classes):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -121,6 +114,18 @@ def train_on_scifact(download_scifact_dataset, coldstart):
         integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
+    return model
+
+
+def train_on_scifact(download_scifact_dataset, coldstart):
+    (
+        unsupervised_file,
+        supervised_trn,
+        supervised_tst,
+        n_target_classes,
+    ) = download_scifact_dataset
+
+    model = scifact_model(n_target_classes=n_target_classes)
 
     if coldstart:
         metrics = model.cold_start(
@@ -175,6 +180,15 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     assert before_save_precision == after_save_precision
 
     os.remove(save_loc)
+
+    new_model = scifact_model(n_target_classes=download_scifact_dataset[3])
+
+    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_model._set_model(new_bolt_model)
+
+    new_model.set_index(model.get_index())
+
+    assert after_save_precision == evaluate_model(new_model, supervised_tst)
 
 
 def test_mach_udt_label_too_large():

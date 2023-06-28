@@ -6,7 +6,7 @@ from model_test_utils import (
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
 )
-from thirdai import bolt
+from thirdai import bolt, bolt_v2
 
 ACCURACY_THRESHOLD = 0.8
 
@@ -105,6 +105,24 @@ def test_udt_text_classification_model_migration(
     ):
         new_op.set_weights(old_op.weights)
         new_op.set_biases(old_op.biases)
+
+    acc = compute_predict_batch_accuracy(
+        new_model, inference_samples, use_class_name=False
+    )
+
+    assert acc > ACCURACY_THRESHOLD
+
+
+def test_udt_text_classification_model_porting(
+    train_udt_text_classification, download_clinc_dataset
+):
+    trained_model = train_udt_text_classification
+    _, _, inference_samples = download_clinc_dataset
+
+    new_model = clinc_model()
+
+    new_bolt_model = bolt_v2.nn.Model.from_params(trained_model._get_model().params())
+    new_model._set_model(new_bolt_model)
 
     acc = compute_predict_batch_accuracy(
         new_model, inference_samples, use_class_name=False

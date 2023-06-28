@@ -1,5 +1,6 @@
 #include "BoltV2NNPython.h"
 #include "PybindUtils.h"
+#include <bolt/python_bindings/Porting.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -108,6 +109,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("train_steps", &model::Model::trainSteps)
       .def("override_train_steps", &model::Model::overrideTrainSteps,
            py::arg("train_steps"))
+      .def("params", &modelParams)
+      .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
@@ -209,7 +212,10 @@ void defineOps(py::module_& nn) {
            })
       .def("get_hash_table", &ops::FullyConnected::getHashTable)
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
-           py::arg("hash_fn"), py::arg("hash_table"));
+           py::arg("hash_fn"), py::arg("hash_table"))
+      .def("params", &fullyConnectedOpParams)
+      .def_static("from_params", &fullyConnectedOpFromParams,
+                  py::arg("params"));
 
   py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
       .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
@@ -254,7 +260,9 @@ void defineOps(py::module_& nn) {
                throw std::invalid_argument(error.str());
              }
              op->setBiases(biases.data());
-           });
+           })
+      .def("params", &embeddingOpParams)
+      .def_static("from_params", &embeddingOpFromParams, py::arg("params"));
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))

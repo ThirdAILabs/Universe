@@ -67,6 +67,8 @@ class FullyConnectedLayer final {
 
   void unfreezeHashTables() { _index_frozen = false; }
 
+  bool isNeuronIndexFrozen() const { return _index_frozen; }
+
   void buildHashTables();
 
   void reBuildHashFunction();
