@@ -284,7 +284,7 @@ class CSV(Document):
             element_id=element_id,
             text=text,
             source=str(self.path.absolute()),
-            metadata={},
+            metadata=row.to_dict(),
         )
 
     def context(self, element_id: int, radius) -> str:
@@ -346,27 +346,17 @@ class Extracted(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.filename,
-            metadata={"page": self.df["page"].iloc[element_id]},
+            metadata=self.df.iloc[element_id].to_dict(),
         )
 
     def get_context(self, element_id, radius) -> str:
         if not 0 <= element_id < self.size():
             raise ("Element id not in document.")
 
-        center_chunk_idx = element_id
-
-        window_start = center_chunk_idx - radius // 2
-        window_end = window_start + radius
-
-        if window_start < 0:
-            window_start = 0
-            window_end = min(radius, self.size)
-        elif window_end > self.size:
-            window_end = self.size
-            window_start = max(0, self.size - radius)
-
-        window_chunks = self.df.iloc[window_start:window_end]["passage"].tolist()
-        return "\n".join(window_chunks)
+        rows = self.df.iloc[
+            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+        ]
+        return "\n".join(rows["passage"])
 
 
 class PDF(Extracted):
@@ -455,20 +445,7 @@ class URL(Document):
         )
 
     def get_context(self, element_id, radius) -> str:
-        if not 0 <= element_id < self.size():
-            raise ("Element id not in document.")
-
-        center_chunk_idx = element_id
-
-        window_start = center_chunk_idx - radius // 2
-        window_end = window_start + radius
-
-        if window_start < 0:
-            window_start = 0
-            window_end = min(radius, self.size)
-        elif window_end > self.size:
-            window_end = self.size
-            window_start = max(0, self.size - radius)
-
-        window_chunks = self.df.iloc[window_start:window_end]["text"].tolist()
-        return "\n".join(window_chunks)
+        rows = self.df.iloc[
+            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+        ]
+        return "\n".join(rows["text"])
