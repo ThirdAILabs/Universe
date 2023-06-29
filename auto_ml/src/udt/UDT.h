@@ -77,8 +77,10 @@ class UDT {
 
   py::object outputCorrectness(const MapInputBatch& sample,
                                const std::vector<uint32_t>& labels,
-                               bool sparse_inference, uint32_t top_k) {
-    return _backend->outputCorrectness(sample, labels, sparse_inference, top_k);
+                               bool sparse_inference,
+                               std::optional<uint32_t> num_hashes) {
+    return _backend->outputCorrectness(sample, labels, sparse_inference,
+                                       num_hashes);
   }
 
   std::vector<dataset::Explanation> explain(
@@ -204,10 +206,17 @@ class UDT {
   }
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
-                           std::optional<uint32_t> top_k = std::nullopt,
-                           bool return_non_empty = false) {
-    return _backend->predictHashes(sample, sparse_inference, top_k,
-                                   return_non_empty);
+                           bool force_non_empty,
+                           std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashes(sample, sparse_inference, force_non_empty,
+                                   num_hashes);
+  }
+
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference, bool force_non_empty,
+                                std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashesBatch(samples, sparse_inference,
+                                        force_non_empty, num_hashes);
   }
 
   void associate(
