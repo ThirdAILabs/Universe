@@ -79,6 +79,8 @@ class EmbeddingLayer {
         return "sum";
       case EmbeddingReductionType::CONCATENATION:
         return "concat";
+      default:
+        return "";
     }
   }
 
