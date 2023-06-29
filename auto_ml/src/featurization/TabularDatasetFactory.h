@@ -118,6 +118,8 @@ class TabularDatasetFactory {
     return input_data_types;
   }
 
+  ColumnDataTypes dataTypes() const { return _data_types; }
+
   void verifyCanDistribute() {
     if (!_temporal_context.empty()) {
       throw std::invalid_argument(
@@ -183,6 +185,7 @@ class TabularDatasetFactory {
 
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
+  uint32_t _num_label_blocks;
 
   TabularOptions _options;
 };

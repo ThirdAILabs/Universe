@@ -4,6 +4,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -201,6 +202,10 @@ class UDTBackend {
     return nullptr;
   }
 
+  virtual data::ColumnDataTypes dataTypes() const {
+    throw notSupported("data_types");
+  }
+
   /**
    * Returns metadata for ColdStart which are needed to be passed to
    * ColdStartPreprocessing. Optional Method that is not supported by
@@ -350,6 +355,13 @@ class UDTBackend {
     (void)learning_rate;
     (void)epochs;
     throw notSupported("upvote");
+  }
+
+  virtual void enableRlhf(uint32_t num_balancing_docs,
+                          uint32_t num_balancing_samples_per_doc) {
+    (void)num_balancing_docs;
+    (void)num_balancing_samples_per_doc;
+    throw notSupported("enable_rlhf");
   }
 
   /**
