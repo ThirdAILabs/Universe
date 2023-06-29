@@ -741,8 +741,8 @@ void UDTMachClassifier::associate(
     batch.emplace_back(target);
   }
 
-  auto all_predicted_hashes =
-      predictHashesImpl(batch, /* sparse_inference = */ false);
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
