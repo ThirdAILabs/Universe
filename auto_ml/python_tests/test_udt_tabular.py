@@ -1,5 +1,6 @@
 import copy
 
+import numpy as np
 import pytest
 from download_dataset_fixtures import download_census_income
 from model_test_utils import (
@@ -46,12 +47,14 @@ def test_udt_tabular_get_set_parameters(download_census_income):
 
     untrained_model.set_parameters(model.get_parameters())
 
-    old_acc = compute_predict_batch_accuracy(model, test_samples, use_class_name=True)
-    new_acc = compute_predict_batch_accuracy(
-        untrained_model, test_samples, use_class_name=True
-    )
+    batch = [x[0] for x in test_samples]
 
-    assert old_acc == new_acc
+    old_activations = model.predict_batch(batch)
+    new_activations = untrained_model.predict_batch(batch)
+
+    assert (
+        np.argmax(old_activations, axis=1) == np.argmax(new_activations, axis=1)
+    ).all()
 
 
 def test_udt_tabular_save_load(train_udt_tabular, download_census_income):
