@@ -40,15 +40,18 @@ def test_udt_tabular_get_set_parameters(download_census_income):
     model.save(save_file_name)
     untrained_model = bolt.UniversalDeepTransformer.load(save_file_name)
 
-    train_filename, test_filename, _ = download_census_income
+    train_filename, _, test_samples = download_census_income
 
     model.train(train_filename, epochs=1, learning_rate=0.01)
 
     untrained_model.set_parameters(model.get_parameters())
 
-    assert compute_evaluate_accuracy(model, test_filename) == compute_evaluate_accuracy(
-        untrained_model, test_filename
+    old_acc = compute_predict_batch_accuracy(model, test_samples, use_class_name=True)
+    new_acc = compute_predict_batch_accuracy(
+        untrained_model, test_samples, use_class_name=True
     )
+
+    assert old_acc == new_acc
 
 
 def test_udt_tabular_save_load(train_udt_tabular, download_census_income):
