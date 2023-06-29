@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from thirdai import bolt, demos
-from thirdai.neural_db import Document, Reference
+from thirdai.neural_db import CSV, Document, Reference
 from thirdai.neural_db import documents as docs
 
 # We don't have a test on just the Document interface since it is just an
@@ -235,75 +235,44 @@ def test_document_manager_context():
     )
 
 
-# @pytest.mark.unit
-# def test_udt_cold_start_on_csv_document():
-#     class CSV(Document):
-#         def __init__(self, csv_path, id_column, strong_columns, weak_columns) -> None:
-#             self.df = pd.read_csv(csv_path)
-#             self.df = self.df.sort_values(id_column)
-#             assert len(self.df[id_column].unique()) == len(self.df[id_column])
-#             assert self.df[id_column].min() == 0
-#             assert self.df[id_column].max() == len(self.df[id_column]) - 1
+@pytest.mark.unit
+def test_udt_cold_start_on_csv_document():
+    (
+        catalog_file,
+        n_target_classes,
+    ) = demos.download_amazon_kaggle_product_catalog_sampled()
 
-#             for col in strong_columns + weak_columns:
-#                 self.df[col] = self.df[col].fillna("")
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "QUERY": bolt.types.text(),
+            "PRODUCT_ID": bolt.types.categorical(),
+        },
+        target="PRODUCT_ID",
+        n_target_classes=n_target_classes,
+        integer_target=True,
+    )
 
-#             self.csv_path = csv_path
-#             self.id_column = id_column
-#             self.strong_columns = strong_columns
-#             self.weak_columns = weak_columns
+    data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
+    data_source.add(
+        CSV(
+            catalog_file,
+            "PRODUCT_ID",
+            ["TITLE"],
+            ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+            ["TITLE"],
+        ),
+        start_id=0,
+    )
+    metrics = model.cold_start_on_data_source(
+        data_source=data_source,
+        strong_column_names=["STRONG"],
+        weak_column_names=["WEAK"],
+        learning_rate=0.001,
+        epochs=5,
+        batch_size=2000,
+        metrics=["categorical_accuracy"],
+    )
 
-#         def size(self) -> int:
-#             return len(self.df)
+    os.remove(catalog_file)
 
-#         def strong_text(self, element_id: int) -> str:
-#             return " ".join(
-#                 [self.df.iloc[element_id][col] for col in self.strong_columns]
-#             )
-
-#         def weak_text(self, element_id: int) -> str:
-#             return " ".join(
-#                 [self.df.iloc[element_id][col] for col in self.weak_columns]
-#             )
-
-#         def name(self) -> str:
-#             return self.csv_path
-
-#     (
-#         catalog_file,
-#         n_target_classes,
-#     ) = demos.download_amazon_kaggle_product_catalog_sampled()
-
-#     model = bolt.UniversalDeepTransformer(
-#         data_types={
-#             "QUERY": bolt.types.text(),
-#             "PRODUCT_ID": bolt.types.categorical(),
-#         },
-#         target="PRODUCT_ID",
-#         n_target_classes=n_target_classes,
-#         integer_target=True,
-#     )
-
-#     data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
-#     data_source.add(
-#         CSV(
-#             catalog_file,
-#             "PRODUCT_ID",
-#             ["TITLE"],
-#             ["DESCRIPTION", "BULLET_POINTS", "BRAND"],
-#         ),
-#         start_id=0,
-#     )
-#     metrics = model.cold_start_on_data_source(
-#         data_source=data_source,
-#         strong_column_names=["STRONG"],
-#         weak_column_names=["WEAK"],
-#         learning_rate=0.001,
-#         epochs=5,
-#         batch_size=2000,
-#         metrics=["categorical_accuracy"],
-#     )
-
-#     os.remove(catalog_file)
-
-#     assert metrics["train_categorical_accuracy"][-1] > 0.5
+    assert metrics["train_categorical_accuracy"][-1] > 0.5
