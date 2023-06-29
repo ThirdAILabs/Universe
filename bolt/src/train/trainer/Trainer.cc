@@ -28,7 +28,7 @@ Trainer::Trainer(nn::model::ModelPtr model,
 void Trainer::trainOnBatches(
     const LabeledDataset& train_data, const TrainStatePtr& train_state,
     metrics::MetricCollection& train_metrics,
-    callbacks::CallbackList& callbacks, uint32_t* steps_since_validation,
+    callbacks::CallbackList& callbacks,
     const std::optional<LabeledDataset>& validation_data,
     const metrics::InputMetrics& validation_metrics,
     const std::optional<uint32_t>& steps_per_validation,
@@ -55,12 +55,12 @@ void Trainer::trainOnBatches(
       bar->increment();
     }
 
-    *steps_since_validation = *steps_since_validation + 1;
+    train_state->increment_steps_since_val();
     if (steps_per_validation &&
-        *steps_since_validation == *steps_per_validation) {
+        train_state->compare_steps_since_val(*steps_per_validation)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      *steps_since_validation = 0;
+      train_state->reset_steps_since_val();
     }
 
     if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
@@ -105,7 +105,6 @@ metrics::History Trainer::train_max_in_memory_batches(
 
   callbacks.onTrainBegin();
 
-  uint32_t steps_since_validation = 0;
   uint32_t num_epochs = _epoch + epochs;
   for (; _epoch < num_epochs; _epoch++) {
     if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
@@ -126,8 +125,7 @@ metrics::History Trainer::train_max_in_memory_batches(
                               train_data.first.at(0).at(0)->batchSize());
       }
       trainOnBatches(train_data, train_state, train_metrics, callbacks,
-                     &steps_since_validation, validation_data,
-                     validation_metrics, steps_per_validation,
+                     validation_data, validation_metrics, steps_per_validation,
                      use_sparsity_in_validation, logging_interval, verbose);
     }
     epoch_timer.stop();
@@ -138,10 +136,11 @@ metrics::History Trainer::train_max_in_memory_batches(
     // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
-    if (validation_data && steps_since_validation != 0) {
+
+    if (validation_data && !train_state->compare_steps_since_val(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      steps_since_validation = 0;
+      train_state->reset_steps_since_val();
     }
 
     callbacks.onEpochEnd();
@@ -185,8 +184,6 @@ metrics::History Trainer::train(
 
   callbacks.onTrainBegin();
 
-  uint32_t steps_since_validation = 0;
-
   uint32_t num_epochs = _epoch + epochs;
   for (; _epoch < num_epochs; _epoch++) {
     if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
@@ -196,9 +193,8 @@ metrics::History Trainer::train(
     utils::Timer epoch_timer;
 
     trainOnBatches(train_data, train_state, train_metrics, callbacks,
-                   &steps_since_validation, validation_data, validation_metrics,
-                   steps_per_validation, use_sparsity_in_validation,
-                   logging_interval, verbose);
+                   validation_data, validation_metrics, steps_per_validation,
+                   use_sparsity_in_validation, logging_interval, verbose);
     epoch_timer.stop();
 
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
@@ -208,10 +204,11 @@ metrics::History Trainer::train(
     // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
-    if (validation_data && steps_since_validation != 0) {
+
+    if (validation_data && !train_state->compare_steps_since_val(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      steps_since_validation = 0;
+      train_state->reset_steps_since_val();
     }
 
     callbacks.onEpochEnd();
