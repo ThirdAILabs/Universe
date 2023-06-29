@@ -81,16 +81,15 @@ class Reference:
         return self._text
 
     @property
-    def context(self, radius: int):
-        return self._context_fn(radius)
-
-    @property
     def source(self):
         return self._source
 
     @property
     def metadata(self):
         return self._metadata
+
+    def context(self, radius: int):
+        return self._context_fn(radius)
 
 
 class DocumentRow:
