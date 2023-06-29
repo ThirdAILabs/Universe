@@ -118,6 +118,8 @@ class TabularDatasetFactory {
     return input_data_types;
   }
 
+  ColumnDataTypes dataTypes() const { return _data_types; }
+
   void verifyCanDistribute() {
     if (!_temporal_context.empty()) {
       throw std::invalid_argument(
