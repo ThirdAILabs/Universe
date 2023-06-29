@@ -26,7 +26,6 @@ class Model:
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
-        on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
         raise NotImplementedError()
 
@@ -128,11 +127,11 @@ def unsupervised_train_on_docs(
     learning_rate: float,
     acc_to_stop: float,
     on_progress: Callable,
-    on_freeze_hash_tables: Callable,
+    freeze_epoch: int,
 ):
-    model._get_model().freeze_hash_tables()
-
     for i in range(max_epochs):
+        if i == freeze_epoch:
+            model._get_model().freeze_hash_tables()
         documents.restart()
         metrics = model.cold_start_on_data_source(
             data_source=documents,
@@ -206,7 +205,6 @@ class Mach(Model):
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
-        on_freeze_hash_tables: Callable = lambda **kwargs: None,
     ) -> None:
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -217,6 +215,7 @@ class Mach(Model):
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
+            freeze_epoch = 1
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -231,6 +230,9 @@ class Mach(Model):
                     num_buckets_to_sample=16,
                 )
             learning_rate = 0.001
+            # Freezing at the beginning prevents the model from forgetting
+            # things it learned from pretraining.
+            freeze_epoch = 0
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
@@ -245,7 +247,7 @@ class Mach(Model):
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
-                on_freeze_hash_tables=on_freeze_hash_tables,
+                freeze_epoch=freeze_epoch,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
