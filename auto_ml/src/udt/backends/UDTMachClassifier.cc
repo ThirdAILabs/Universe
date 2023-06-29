@@ -87,16 +87,15 @@ UDTMachClassifier::UDTMachClassifier(
   // TODO(david) should we freeze hash tables for mach? how does this work
   // with coldstart?
 
-  dataset::mach::MachIndexPtr mach_index;
-  if (integer_target) {
-    mach_index = dataset::mach::MachIndex::make(
-        /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-        /* num_elements = */ n_target_classes);
-  } else {
+  if (!integer_target) {
     throw std::invalid_argument(
         "Option 'integer_target=True' must be specified when using extreme "
         "classification options.");
   }
+
+  dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
+      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
+      /* num_elements = */ n_target_classes);
 
   _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
                                                      target_config->delimiter);
@@ -135,6 +134,8 @@ UDTMachClassifier::UDTMachClassifier(
 
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
+
+  updateSamplingStrategy();
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
@@ -826,7 +827,7 @@ void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
   updateSamplingStrategy();
 }
 
-void UDTMachClassifier::setSparseInferenceThreshold(float threshold) {
+void UDTMachClassifier::setMachSamplingThreshold(float threshold) {
   _mach_sampling_threshold = threshold;
   updateSamplingStrategy();
 }

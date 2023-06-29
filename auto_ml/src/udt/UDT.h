@@ -217,8 +217,8 @@ class UDT {
     return _backend->setIndex(index);
   }
 
-  void setSparseInferenceThreshold(float threshold) {
-    _backend->setSparseInferenceThreshold(threshold);
+  void setMachSamplingThreshold(float threshold) {
+    _backend->setMachSamplingThreshold(threshold);
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
