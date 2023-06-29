@@ -65,7 +65,7 @@ py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
   float* flattened_activations = new float[num_batches * top_k];
   uint32_t* flattened_active_neurons = new uint32_t[num_batches * top_k];
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    uint32_t idx_ = top_k - 1;
+    int idx_ = top_k - 1;
     BoltVector bolt_vec = tensor->getVector(batch_idx);
     TopKActivationsQueue topk_activations_queue =
         bolt_vec.findKLargestActivations(top_k);
