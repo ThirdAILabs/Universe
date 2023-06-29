@@ -147,7 +147,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("top_k") = std::nullopt)
       .def("predict_batch_hashes", &udt::UDT::predictBatchHashes,
            py::arg("samples"), py::arg("sparse_inference") = false,
-           py::arg("top_k") = 10)
+           py::arg("top_k") = std::nullopt)
       .def("output_correctness", &udt::UDT::outputCorrectness,
            py::arg("samples"), py::arg("labels"),
            py::arg("sparse_inference") = false, py::arg("top_k") = 10)

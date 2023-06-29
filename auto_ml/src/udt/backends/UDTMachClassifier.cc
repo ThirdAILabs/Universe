@@ -283,11 +283,13 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::outputBuckets(
   return top_buckets;
 }
 
-py::object UDTMachClassifier::predictBatchHashes(const MapInputBatch& samples,
-                                                 bool sparse_inference,
-                                                 uint32_t top_k) {
+py::object UDTMachClassifier::predictBatchHashes(
+    const MapInputBatch& samples, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
+  uint32_t k = top_k ? *top_k : _mach_label_block->index()->numHashes();
+
   std::vector<std::vector<uint32_t>> top_buckets =
-      outputBuckets(samples, sparse_inference, top_k);
+      outputBuckets(samples, sparse_inference, k);
 
   return py::cast(top_buckets);
 }
