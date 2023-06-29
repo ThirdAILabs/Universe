@@ -1,10 +1,8 @@
+import math
 import random
 from pathlib import Path
 from typing import Callable, List, Sequence, Tuple
 
-import numpy as np
-import pandas as pd
-from nltk.tokenize import sent_tokenize
 from thirdai import bolt, bolt_v2
 
 from .documents import DocumentDataSource
@@ -118,6 +116,45 @@ class Model:
         raise NotImplementedError()
 
 
+class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        min_epochs,
+        max_epochs,
+        tracked_metric,
+        metric_threshold,
+        progress_bar_callback,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.batch_count = 0
+        self.min_epochs = min_epochs
+        self.max_epochs = max_epochs
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+        self.progress_bar_callback = progress_bar_callback
+
+    def on_batch_end(self):
+        self.batch_count += 1
+        if self.batch_count % 3:
+            batch_progress = self.batch_count / self.train_state.batches_per_epoch()
+            progress = batch_progress / self.max_epochs
+
+            # TODO revisit this progress bar update
+            progress = progress ** (1.0 / 2)
+            self.progress_bar_callback(progress)
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+
+        if (
+            self.epoch_count > self.min_epochs
+            and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.train_state.stop_training()
+
+
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
@@ -131,24 +168,26 @@ def unsupervised_train_on_docs(
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
-    for i in range(max_epochs):
-        documents.restart()
-        metrics = model.cold_start_on_data_source(
-            data_source=documents,
-            strong_column_names=[documents.strong_column],
-            weak_column_names=[documents.weak_column],
-            learning_rate=learning_rate,
-            epochs=max_epochs,
-            metrics=[metric],
-            callbacks=[
-                #TODO(David): Add callback here
-            ]
-        )
 
-        val = metrics["train_" + metric][0]
-        on_progress((i + 1) / max_epochs)
-        if i >= min_epochs - 1 and val > acc_to_stop:
-            break
+    documents.restart()
+
+    callback = EarlyStopWithMinEpochs(
+        min_epochs=min_epochs,
+        max_epochs=max_epochs,
+        tracked_metric=metric,
+        metric_threshold=acc_to_stop,
+        progress_bar_callback=on_progress,
+    )
+
+    model.cold_start_on_data_source(
+        data_source=documents,
+        strong_column_names=[documents.strong_column],
+        weak_column_names=[documents.weak_column],
+        learning_rate=learning_rate,
+        epochs=max_epochs,
+        metrics=[metric],
+        callbacks=[callback],
+    )
 
 
 def make_balancing_samples(documents: DocumentDataSource):
@@ -238,7 +277,7 @@ class Mach(Model):
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_before_train = True
-            # Less epochs here since it converges faster when trained on a base 
+            # Less epochs here since it converges faster when trained on a base
             # model.
             min_epochs = 5
             max_epochs = 10
