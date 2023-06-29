@@ -189,8 +189,18 @@ class UDT {
     return _backend->trainWithHashes(batch, learning_rate, metrics);
   }
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) {
-    return _backend->predictHashes(sample, sparse_inference);
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           bool force_non_empty,
+                           std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashes(sample, sparse_inference, force_non_empty,
+                                   num_hashes);
+  }
+
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference, bool force_non_empty,
+                                std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashesBatch(samples, sparse_inference,
+                                        force_non_empty, num_hashes);
   }
 
   void associate(

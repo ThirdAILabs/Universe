@@ -334,7 +334,11 @@ def test_mach_udt_introduce_documents(fast_approximation):
 def test_mach_udt_hash_based_methods():
     model = train_simple_mach_udt()
 
-    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    hashes = model.predict_hashes(
+        {"text": "testing hash based methods"},
+        sparse_inference=False,
+        force_non_empty=False,
+    )
     assert len(hashes) == 7
 
     new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
@@ -346,7 +350,11 @@ def test_mach_udt_hash_based_methods():
             learning_rate=0.01,
         )
 
-    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    new_hashes = model.predict_hashes(
+        {"text": "testing hash based methods"},
+        sparse_inference=False,
+        force_non_empty=False,
+    )
     assert set(new_hashes) == new_hash_set
 
 

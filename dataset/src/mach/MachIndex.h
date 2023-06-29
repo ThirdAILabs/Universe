@@ -73,6 +73,9 @@ class MachIndex {
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
+  TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
+                                           uint32_t k) const;
+
   float sparsity() const;
 
   void save(const std::string& filename) const;
@@ -81,9 +84,6 @@ class MachIndex {
 
  private:
   void verifyHash(uint32_t hash) const;
-
-  TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
-                                           uint32_t k) const;
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;
