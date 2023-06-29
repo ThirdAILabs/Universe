@@ -430,3 +430,56 @@ def test_udt_train_batch():
     predictions = np.argmax(scores, axis=0)
 
     assert (predictions == np.array([0, 1, 2])).all()
+
+
+def test_model_dims_regular_udt():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=2,
+        options={"input_dim": 8, "embedding_dimension": 4},
+    )
+
+    assert model.model_dims() == [8, 4, 2]
+
+
+def test_model_dims_mach():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=20,
+        integer_target=True,
+        options={
+            "input_dim": 8,
+            "embedding_dimension": 4,
+            "extreme_classification": True,
+            "extreme_output_dim": 2,
+        },
+    )
+
+    assert model.model_dims() == [8, 4, 2]
+
+
+def test_data_types():
+    for extreme_classification in [True, False]:
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "cat": bolt.types.categorical(delimiter=":"),
+                "text": bolt.types.text(),
+            },
+            target="cat",
+            n_target_classes=2,
+            integer_target=True,
+            options={
+                "input_dim": 8,
+                "embedding_dimension": 4,
+                "extreme_classification": extreme_classification,
+            },
+        )
+
+        data_types = model.data_types()
+        assert "cat" in data_types.keys()
+        assert "text" in data_types.keys()
+        assert isinstance(data_types["cat"], bolt.types.categorical)
+        assert data_types["cat"].delimiter == ":"
+        assert isinstance(data_types["text"], bolt.types.text)

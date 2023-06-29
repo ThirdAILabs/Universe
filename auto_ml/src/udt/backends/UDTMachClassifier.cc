@@ -1,5 +1,6 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -7,6 +8,8 @@
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
 #include <bolt/src/train/metrics/MachRecall.h>
+#include <bolt/src/train/metrics/PrecisionAtK.h>
+#include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -40,6 +43,8 @@ namespace thirdai::automl::udt {
 using bolt::train::metrics::LossMetric;
 using bolt::train::metrics::MachPrecision;
 using bolt::train::metrics::MachRecall;
+using bolt::train::metrics::PrecisionAtK;
+using bolt::train::metrics::RecallAtK;
 
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -215,8 +220,6 @@ py::object UDTMachClassifier::trainBatch(
   auto& model = _classifier->model();
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
-
-  labels.push_back(placeholderDocIds(batch.size()));
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -466,6 +469,8 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
+  bolt::train::python::CtrlCCheck ctrl_c_check;
+
   for (const auto& batch : doc_samples_tensors) {
     // Note: using sparse inference here could cause issues because the mach
     // index sampler will only return nonempty buckets, which could cause new
@@ -477,12 +482,16 @@ void UDTMachClassifier::introduceDocuments(
       top_k_per_doc[label].push_back(
           scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
+
+    ctrl_c_check();
   }
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
                                   num_random_hashes);
     _mach_label_block->index()->insert(doc, hashes);
+
+    ctrl_c_check();
   }
 
   addBalancingSamples(cold_start_data);
@@ -683,7 +692,7 @@ void UDTMachClassifier::requireRLHFSampler() {
   if (!_rlhf_sampler) {
     throw std::runtime_error(
         "This model was not configured to support rlhf. Please pass {'rlhf': "
-        "True} in the model options.");
+        "True} in the model options or call enable_rlhf().");
   }
 }
 
@@ -828,7 +837,8 @@ InputMetrics UDTMachClassifier::getMetrics(
   }
 
   bolt::nn::autograd::ComputationPtr output = model->outputs().front();
-  bolt::nn::autograd::ComputationPtr labels = model->labels().back();
+  bolt::nn::autograd::ComputationPtr hash_labels = model->labels().front();
+  bolt::nn::autograd::ComputationPtr true_class_labels = model->labels().back();
   bolt::nn::loss::LossPtr loss = model->losses().front();
 
   InputMetrics metrics;
@@ -837,12 +847,20 @@ InputMetrics UDTMachClassifier::getMetrics(
       uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachPrecision>(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
-          labels, k);
+          true_class_labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachRecall>(
           _mach_label_block->index(), _top_k_per_eval_aggregation, output,
-          labels, k);
+          true_class_labels, k);
+    } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
+      uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
+      metrics[prefix + name] =
+          std::make_shared<PrecisionAtK>(output, hash_labels, k);
+    } else if (std::regex_match(name, std::regex("hash_recall@[1-9]\\d*"))) {
+      uint32_t k = std::strtoul(name.data() + 12, nullptr, 10);
+      metrics[prefix + name] =
+          std::make_shared<RecallAtK>(output, hash_labels, k);
     } else if (name == "loss") {
       metrics[prefix + name] = std::make_shared<LossMetric>(loss);
     } else {

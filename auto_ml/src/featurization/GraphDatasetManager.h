@@ -36,6 +36,8 @@ class GraphDatasetManager {
 
   uint32_t getLabelDim() const { return _n_target_classes; }
 
+  data::ColumnDataTypes dataTypes() { return _data_types; }
+
  private:
   data::ColumnDataTypes _data_types;
   std::string _target_col;

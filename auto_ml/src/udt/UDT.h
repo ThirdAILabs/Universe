@@ -7,6 +7,7 @@
 #include <dataset/src/DataSource.h>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::automl::udt {
 
@@ -143,6 +144,10 @@ class UDT {
 
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
+  std::vector<uint32_t> modelDims() const;
+
+  data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
@@ -204,6 +209,11 @@ class UDT {
                      n_balancing_samples, learning_rate, epochs);
   }
 
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) {
+    _backend->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
+  }
+
   dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {
@@ -217,6 +227,8 @@ class UDT {
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
+
+  void saveImpl(const std::string& filename) const;
 
   void checkpoint(const std::string& filename) const;
 

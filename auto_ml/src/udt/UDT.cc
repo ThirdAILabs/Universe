@@ -238,15 +238,43 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
                              val_metrics, callbacks, options);
 }
 
-void UDT::save(const std::string& filename) const {
+std::vector<uint32_t> UDT::modelDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& comp : model()->computationOrder()) {
+    dims.push_back(comp->dim());
+  }
+
+  return dims;
+}
+
+void UDT::saveImpl(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
+void UDT::save(const std::string& filename) const {
+  /*
+   * setting `should_save_optimizer` to false prevents unnecessary checkpointing
+   * of the model. If we load the model from a checkpoint and intend to save it,
+   * by default `_should_save_optimizer` variable is set to true could result in
+   * redundant saving of the optimizer.
+   */
+  // Since UDTQueryReformulation doesn't defines model()
+  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
+    _backend->model()->setSerializeOptimizer(
+        /* should_save_optimizer= */ false);
+  }
+  saveImpl(filename);
+}
+
 void UDT::checkpoint(const std::string& filename) const {
-  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ true);
-  save(filename);
+  // Since UDTQueryReformulation doesn't defines model()
+  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
+    _backend->model()->setSerializeOptimizer(
+        /* should_save_optimizer= */ true);
+  }
+  saveImpl(filename);
 }
 
 void UDT::save_stream(std::ostream& output_stream) const {
