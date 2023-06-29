@@ -184,9 +184,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{})
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
            py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
       .def("predict_hashes_batch", &udt::UDT::predictHashesBatch,
            py::arg("samples"), py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
