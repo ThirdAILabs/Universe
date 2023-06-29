@@ -651,9 +651,9 @@ void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes) {
-  // Note: using sparse inference here could cause issues because the
-  // mach index sampler will only return nonempty buckets, which could
-  // cause new docs to only be mapped to buckets already containing entities.
+  // Note: using sparse inference here could cause issues because the mach index
+  // sampler will only return nonempty buckets, which could cause new docs to
+  // only be mapped to buckets already containing entities.
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
