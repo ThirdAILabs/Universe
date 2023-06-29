@@ -69,12 +69,6 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
-  py::object predictBatchHashes(const MapInputBatch& sample,
-                                bool sparse_inference,
-                                std::optional<uint32_t> top_k) {
-    return _backend->predictBatchHashes(sample, sparse_inference, top_k);
-  }
-
   py::object outputCorrectness(const MapInputBatch& sample,
                                const std::vector<uint32_t>& labels,
                                bool sparse_inference,
