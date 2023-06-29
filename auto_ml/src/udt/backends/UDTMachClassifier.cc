@@ -284,8 +284,8 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::outputBuckets(
 }
 
 py::object UDTMachClassifier::predictBatchHashes(const MapInputBatch& samples,
-                                         bool sparse_inference,
-                                         uint32_t top_k) {
+                                                 bool sparse_inference,
+                                                 uint32_t top_k) {
   std::vector<std::vector<uint32_t>> top_buckets =
       outputBuckets(samples, sparse_inference, top_k);
 
@@ -309,7 +309,8 @@ py::object UDTMachClassifier::outputCorrectness(
           _mach_label_block->index()->getHashes(labels[i]);
       uint32_t count = 0;
       for (auto hash : hashes) {
-        if (std::count(top_buckets[i].begin(),top_buckets[i].end(),hash) > 0) {
+        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
+            0) {
           count++;
         }
       }

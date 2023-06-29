@@ -104,7 +104,7 @@ class UDTBackend {
                                   std::optional<uint32_t> top_k) = 0;
 
   virtual py::object predictBatchHashes(const MapInputBatch& sample,
-                                bool sparse_inference, uint32_t top_k) {
+                                        bool sparse_inference, uint32_t top_k) {
     (void)sample;
     (void)sparse_inference;
     (void)top_k;
