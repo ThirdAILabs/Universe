@@ -361,6 +361,7 @@ def test_document_manager_context(prepare_documents_test):
 def test_udt_cold_start_on_csv_document():
     from thirdai.neural_db import CSV
     from thirdai.neural_db import documents as docs
+
     (
         catalog_file,
         n_target_classes,
