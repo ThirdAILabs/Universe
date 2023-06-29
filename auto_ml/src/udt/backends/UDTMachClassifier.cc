@@ -498,9 +498,9 @@ void UDTMachClassifier::introduceDocuments(
   bolt::train::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
-    // Note: using sparse inference here could cause issues because the
-    // mach index sampler will only return nonempty buckets, which could
-    // cause new docs to only be mapped to buckets already containing entities.
+    // Note: using sparse inference here could cause issues because the mach
+    // index sampler will only return nonempty buckets, which could cause new
+    // docs to only be mapped to buckets already containing entities.
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
@@ -593,9 +593,9 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     }
   }
 
-  // We sort the hashes first by number of occurances and tiebreak with
-  // the higher aggregated score if necessary. We don't only use the
-  // activations since those typically aren't as useful as the frequencies.
+  // We sort the hashes first by number of occurances and tiebreak with the
+  // higher aggregated score if necessary. We don't only use the activations
+  // since those typically aren't as useful as the frequencies.
   std::vector<std::pair<uint32_t, BucketScore>> sorted_hashes(
       hash_freq_and_scores.begin(), hash_freq_and_scores.end());
 
@@ -623,9 +623,8 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 
   std::vector<uint32_t> new_hashes;
 
-  // We can optionally specify the number of hashes we'd like to be
-  // random for a new document. This is to encourage an even distribution among
-  // buckets.
+  // We can optionally specify the number of hashes we'd like to be random for a
+  // new document. This is to encourage an even distribution among buckets.
   if (num_random_hashes > num_hashes) {
     throw std::invalid_argument(
         "num_random_hashes cannot be greater than num hashes.");
@@ -869,8 +868,7 @@ InputMetrics UDTMachClassifier::getMetrics(
   if (model->outputs().size() != 1 || model->labels().size() != 2 ||
       model->losses().size() != 1) {
     throw std::invalid_argument(
-        "Expected model to have single input, two labels, and one "
-        "loss.");
+        "Expected model to have single input, two labels, and one loss.");
   }
 
   bolt::nn::autograd::ComputationPtr output = model->outputs().front();
