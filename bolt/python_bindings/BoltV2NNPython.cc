@@ -24,6 +24,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <utils/Random.h>
 #include <optional>
 #include <stdexcept>
 
@@ -221,7 +222,8 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
-           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+           py::arg("seed") = global_random::nextSeed())
       .def("__call__", &ops::RobeZ::apply)
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
@@ -269,7 +271,7 @@ void defineOps(py::module_& nn) {
       .def("__call__", &ops::Concatenate::apply);
 
   py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
-      .def(py::init(&ops::LayerNorm::make))
+      .def(py::init(py::overload_cast<>(&ops::LayerNorm::make)))
       .def("__call__", &ops::LayerNorm::apply);
 
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")

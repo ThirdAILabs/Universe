@@ -6,13 +6,18 @@
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/RobeZ.h>
+#include <bolt/src/nn/ops/Tanh.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <functional>
 #include <memory>
 #include <numeric>
@@ -187,6 +192,90 @@ ops::EmbeddingPtr embeddingOpFromParams(const py::dict& params) {
   return emb;
 }
 
+py::dict robeZOpParams(const ops::RobeZPtr& emb) {
+  py::dict params;
+
+  params["type"] = "robe_z";
+
+  params["num_embedding_lookups"] = emb->kernel()->numEmbeddingLookups();
+  params["lookup_size"] = emb->kernel()->lookupSize();
+  params["log_embedding_block_size"] = emb->kernel()->logEmbeddingBlockSize();
+  params["reduction"] = emb->kernel()->reduction();
+  params["num_tokens_per_input"] = emb->kernel()->numTokensPerInput();
+  params["update_chunk_size"] = emb->kernel()->updateChunkSize();
+  params["hash_seed"] = emb->kernel()->hashSeed();
+
+  size_t emb_block_size = emb->kernel()->getRawEmbeddingBlock().size();
+  const float* emb_block_ptr = emb->kernel()->getRawEmbeddingBlock().data();
+
+  auto arr =
+      copyArray(emb_block_ptr, {emb_block_size}).cast<NumpyArray<float>>();
+  params["embedding_block"] = arr;
+
+  return params;
+}
+
+ops::RobeZPtr robeZOpFromParams(const py::dict& params) {
+  size_t num_embedding_lookups = params["num_embedding_lookups"].cast<size_t>();
+  size_t lookup_size = params["lookup_size"].cast<size_t>();
+  size_t log_embedding_block_size =
+      params["log_embedding_block_size"].cast<size_t>();
+  std::string reduction = params["reduction"].cast<std::string>();
+  std::optional<size_t> num_tokens_per_input =
+      params["num_tokens_per_input"].cast<std::optional<size_t>>();
+  size_t update_chunk_size = params["update_chunk_size"].cast<size_t>();
+  uint32_t hash_seed = params["hash_seed"].cast<uint32_t>();
+
+  auto embedding_block = params["embedding_block"].cast<NumpyArray<float>>();
+
+  auto emb = ops::RobeZ::make(
+      num_embedding_lookups, lookup_size, log_embedding_block_size, reduction,
+      num_tokens_per_input, update_chunk_size, hash_seed);
+
+  size_t embedding_block_size = emb->kernel()->getRawEmbeddingBlock().size();
+  if (!shapeMatches(embedding_block, {embedding_block_size})) {
+    throw std::invalid_argument(
+        "Expected embedding block to be 1D array of size " +
+        std::to_string(embedding_block_size) + ".");
+  }
+
+  std::copy(embedding_block.data(),
+            embedding_block.data() + embedding_block_size,
+            emb->kernel()->getRawEmbeddingBlock().data());
+
+  return emb;
+}
+
+py::dict layerNormParams(const ops::LayerNormPtr& norm) {
+  py::dict params;
+
+  params["type"] = "layer_norm";
+
+  params["gamma"] = copyArray(norm->gamma().data(), {norm->dim()});
+  params["beta"] = copyArray(norm->beta().data(), {norm->dim()});
+
+  return params;
+}
+
+ops::LayerNormPtr layerNormFromParams(const py::dict& params) {
+  auto gamma = params["gamma"].cast<NumpyArray<float>>();
+  auto beta = params["beta"].cast<NumpyArray<float>>();
+
+  if (gamma.ndim() != 1 || beta.ndim() != 1 ||
+      gamma.shape(0) != beta.shape(0)) {
+    throw std::invalid_argument(
+        "Expected gamma and beta to be 1D arrays of the same size.");
+  }
+
+  return ops::LayerNorm::make(gamma.data(), beta.data(), gamma.shape(0));
+}
+
+py::dict typeOnlyParams(const std::string& type) {
+  py::dict params;
+  params["type"] = type;
+  return params;
+}
+
 class ModelExporter {
  public:
   static py::dict run(model::ModelPtr model) {
@@ -213,8 +302,7 @@ class ModelExporter {
   py::list exportPlacholders(const autograd::ComputationList& placeholders) {
     py::list placeholder_infos;
     for (const auto& placeholder : placeholders) {
-      std::string name = nextCompName();
-      _comps_to_names[placeholder] = name;
+      std::string name = getName(placeholder);
 
       py::dict placeholder_info;
       placeholder_info["name"] = name;
@@ -232,6 +320,14 @@ class ModelExporter {
         ops[py::str(op->name())] = fullyConnectedOpParams(fc);
       } else if (auto emb = ops::Embedding::cast(op)) {
         ops[py::str(op->name())] = embeddingOpParams(emb);
+      } else if (auto emb = std::dynamic_pointer_cast<ops::RobeZ>(op)) {
+        ops[py::str(op->name())] = robeZOpParams(emb);
+      } else if (auto norm = std::dynamic_pointer_cast<ops::LayerNorm>(op)) {
+        ops[py::str(op->name())] = layerNormParams(norm);
+      } else if (std::dynamic_pointer_cast<ops::Concatenate>(op)) {
+        ops[py::str(op->name())] = typeOnlyParams("concat");
+      } else if (std::dynamic_pointer_cast<ops::Tanh>(op)) {
+        ops[py::str(op->name())] = typeOnlyParams("tanh");
       } else {
         throw std::invalid_argument(
             "Converting model to parameters dictionary is currently only "
@@ -244,8 +340,7 @@ class ModelExporter {
   py::list exportComputations() {
     py::list computations;
     for (const auto& comp : _model->computationOrderWithoutInputs()) {
-      std::string name = nextCompName();
-      _comps_to_names[comp] = name;
+      std::string name = getName(comp);
 
       py::dict comp_info;
       comp_info["name"] = name;
@@ -292,14 +387,10 @@ class ModelExporter {
     return outputs;
   }
 
-  std::string nextCompName() const {
-    return "computation_" + std::to_string(_comps_to_names.size());
-  }
-
   std::string getName(const autograd::ComputationPtr& comp) {
     if (!_comps_to_names.count(comp)) {
-      throw std::runtime_error("No matching name for computation: '" +
-                               comp->name() + "'.");
+      _comps_to_names[comp] =
+          "computation_" + std::to_string(_comps_to_names.size());
     }
     return _comps_to_names.at(comp);
   }
@@ -325,7 +416,6 @@ class ModelImporter {
     auto inputs = importPlaceholders(_params["inputs"].cast<py::list>());
     auto labels = importPlaceholders(_params["labels"].cast<py::list>());
     importComputationGraph();
-
     auto losses = importLosses();
     auto outputs = importOutputs();
 
@@ -353,10 +443,13 @@ class ModelImporter {
     autograd::ComputationList placeholders;
     for (const auto& placeholder_info : placeholder_infos) {
       std::string name = placeholder_info["name"].cast<std::string>();
-      size_t dim = placeholder_info["dim"].cast<size_t>();
-      auto placeholder = ops::Input::make(dim);
-      _computations[name] = placeholder;
-      placeholders.push_back(placeholder);
+      if (!_computations.count(name)) {
+        size_t dim = placeholder_info["dim"].cast<size_t>();
+
+        auto placeholder = ops::Input::make(dim);
+        _computations[name] = placeholder;
+        placeholders.push_back(placeholder);
+      }
     }
 
     return placeholders;
@@ -369,13 +462,26 @@ class ModelImporter {
       py::dict op_params = op_info.second.cast<py::dict>();
 
       std::string type = op_params["type"].cast<std::string>();
+
+      ops::OpPtr op;
       if (type == "fully_connected") {
-        _ops[name] = fullyConnectedOpFromParams(op_params);
+        op = fullyConnectedOpFromParams(op_params);
       } else if (type == "embedding") {
-        _ops[name] = embeddingOpFromParams(op_params);
+        op = embeddingOpFromParams(op_params);
+      } else if (type == "robe_z") {
+        op = robeZOpFromParams(op_params);
+      } else if (type == "layer_norm") {
+        op = layerNormFromParams(op_params);
+      } else if (type == "concat") {
+        op = ops::Concatenate::make();
+      } else if (type == "tanh") {
+        op = ops::Tanh::make();
       } else {
         throw std::invalid_argument("Unexpected op type '" + type + "'.");
       }
+
+      op->setName(name);
+      _ops[name] = op;
     }
   }
 
@@ -393,6 +499,14 @@ class ModelImporter {
         _computations[name] = fc->apply(inputs.at(0));
       } else if (auto emb = ops::Embedding::cast(op)) {
         _computations[name] = emb->apply(inputs.at(0));
+      } else if (auto emb = std::dynamic_pointer_cast<ops::RobeZ>(op)) {
+        _computations[name] = emb->apply(inputs.at(0));
+      } else if (auto norm = std::dynamic_pointer_cast<ops::LayerNorm>(op)) {
+        _computations[name] = norm->apply(inputs.at(0));
+      } else if (auto cat = std::dynamic_pointer_cast<ops::Concatenate>(op)) {
+        _computations[name] = cat->apply(inputs);
+      } else if (auto tanh = std::dynamic_pointer_cast<ops::Tanh>(op)) {
+        _computations[name] = tanh->apply(inputs.at(0));
       } else {
         throw std::runtime_error("Unsupported op in model parameters.");
       }
