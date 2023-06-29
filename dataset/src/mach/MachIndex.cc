@@ -4,10 +4,8 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <algorithm>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 
 namespace thirdai::dataset::mach {
 

@@ -170,10 +170,6 @@ class UDTMachClassifier final : public UDTBackend {
       bool force_non_empty = true,
       std::optional<uint32_t> num_hashes = std::nullopt);
 
-  std::vector<std::vector<uint32_t>> outputBuckets(const MapInputBatch& samples,
-                                                   bool sparse_inference,
-                                                   uint32_t top_k);
-
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
              uint32_t n_buckets, uint32_t n_teaching_samples,
