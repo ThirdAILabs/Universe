@@ -135,6 +135,7 @@ UDTMachClassifier::UDTMachClassifier(
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
+  // TODO(David): Should we call this in constructor as well?
   updateSamplingStrategy();
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
