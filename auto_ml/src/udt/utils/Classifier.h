@@ -51,7 +51,7 @@ class Classifier {
 
   py::object predict(const bolt::nn::tensor::TensorList& inputs,
                      bool sparse_inference, bool return_predicted_class,
-                     bool single);
+                     bool single, std::optional<uint32_t> top_k);
 
   py::object embedding(const bolt::nn::tensor::TensorList& inputs);
 
@@ -62,8 +62,8 @@ class Classifier {
  private:
   uint32_t predictedClass(const BoltVector& output);
 
-  py::object predictedClasses(const bolt::nn::tensor::TensorPtr& output,
-                              bool single);
+  py::object predictedClasses(const bolt::nn::tensor::TensorPtr& output, 
+  bool single);
 
   std::vector<std::vector<float>> getBinaryClassificationScores(
       const dataset::BoltDatasetList& dataset);
