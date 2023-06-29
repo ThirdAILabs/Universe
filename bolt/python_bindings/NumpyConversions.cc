@@ -60,26 +60,31 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
 }
 
 py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
-                         bool single_row_to_vector, uint32_t top_k){
-
+                             bool single_row_to_vector, uint32_t top_k) {
   uint32_t num_batches = tensor->batchSize();
   float* flattened_activations = new float[num_batches * top_k];
   uint32_t* flattened_active_neurons = new uint32_t[num_batches * top_k];
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++){
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     uint32_t idx_ = top_k - 1;
     BoltVector bolt_vec = tensor->getVector(batch_idx);
-    TopKActivationsQueue topk_activations_queue = bolt_vec.findKLargestActivations(top_k);
-    while(!topk_activations_queue.empty() && idx_ >= 0){
-      flattened_activations[batch_idx * top_k + idx_] = topk_activations_queue.top().first;
-      flattened_active_neurons[batch_idx * top_k + idx_] = topk_activations_queue.top().second;
+    TopKActivationsQueue topk_activations_queue =
+        bolt_vec.findKLargestActivations(top_k);
+    while (!topk_activations_queue.empty() && idx_ >= 0) {
+      flattened_activations[batch_idx * top_k + idx_] =
+          topk_activations_queue.top().first;
+      flattened_active_neurons[batch_idx * top_k + idx_] =
+          topk_activations_queue.top().second;
       topk_activations_queue.pop();
       idx_--;
     }
   }
-  auto activations = createArrayCopy(flattened_activations, tensor->batchSize(), top_k, single_row_to_vector);
-  auto active_neurons = createArrayCopy(flattened_active_neurons, tensor->batchSize(), top_k, single_row_to_vector);
-  return std::move (
-                    py::make_tuple(std::move(active_neurons), std::move(activations)));
+  auto activations = createArrayCopy(flattened_activations, tensor->batchSize(),
+                                     top_k, single_row_to_vector);
+  auto active_neurons =
+      createArrayCopy(flattened_active_neurons, tensor->batchSize(), top_k,
+                      single_row_to_vector);
+  return std::move(
+      py::make_tuple(std::move(active_neurons), std::move(activations)));
 }
 
 }  // namespace thirdai::bolt::nn::python
