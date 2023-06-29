@@ -910,9 +910,8 @@ InputMetrics UDTMachClassifier::getMetrics(
 
 bolt::nn::tensor::TensorPtr UDTMachClassifier::placeholderDocIds(
     uint32_t batch_size) {
-  return bolt::nn::tensor::Tensor::sparse(batch_size,
-                                          std::numeric_limits<uint32_t>::max(),
-                                          /* nonzeros= */ 1);
+  return bolt::nn::tensor::Tensor::sparse(
+      batch_size, std::numeric_limits<uint32_t>::max(), /* nonzeros= */ 1);
 }
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
