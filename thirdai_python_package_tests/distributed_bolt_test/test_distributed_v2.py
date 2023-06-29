@@ -5,119 +5,21 @@ import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import gen_numpy_training_data
 from ray.air import ScalingConfig, session
+from ray.train.torch import TorchConfig
 from thirdai import bolt_v2 as bolt
-from thirdai import dataset
-from thirdai.demos import download_mnist_dataset
 
 pytestmark = [pytest.mark.distributed]
 
 
-def get_mnist_model():
-    input_layer = bolt.nn.Input(dim=784)
-
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=20000,
-        input_dim=784,
-        sparsity=0.01,
-        activation="relu",
-        rebuild_hash_tables=12,
-        reconstruct_hash_functions=40,
-    )(input_layer)
-    output = bolt.nn.FullyConnected(dim=10, input_dim=20000, activation="softmax")(
-        hidden_layer
-    )
-
-    labels = bolt.nn.Input(dim=10)
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
-
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
-    return model
-
-
-def train_loop_per_worker(config):
-    mnist_model = config.get("model")
-    trainer = dist.DistributedTrainer(mnist_model)
-
-    train_x, train_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist", 250)
-    train_x = bolt.train.convert_dataset(train_x, dim=784)
-    train_y = bolt.train.convert_dataset(train_y, dim=10)
-
-    history = trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
-
-    epochs = 3
-    for _ in range(epochs):
-        for x, y in zip(train_x, train_y):
-            trainer.train_on_batch(x, y, 0.005)
-
-    session.report(
-        history,
-        checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
-    )
-
-
-reason = """We don't have working pygloo wheels on PyPI. So, we can only run it locally.
-Wheels can be downloaded from: https://github.com/pratkpranav/pygloo/releases/tag/0.2.0"""
-
-
-@pytest.mark.skip(reason=reason)
-def test_distributed_v2_skip():
-    # this test is configured to run on blade
-    working_dir = os.path.dirname(os.path.realpath(__file__))
-    ray.init(
-        runtime_env={"working_dir": working_dir, "env_vars": {"OMP_NUM_THREADS": "23"}}
-    )
-    scaling_config = ScalingConfig(
-        # Number of distributed workers.
-        num_workers=2,
-        # Turn on/off GPU.
-        use_gpu=False,
-        # Specify resources used for trainer.
-        trainer_resources={"CPU": 23},
-        # Try to schedule workers on different nodes.
-        placement_strategy="SPREAD",
-    )
-
-    trainer = dist.BoltTrainer(
-        train_loop_per_worker=train_loop_per_worker,
-        train_loop_config={"model": get_mnist_model()},
-        scaling_config=scaling_config,
-        bolt_config=dist.BoltBackendConfig(),
-    )
-    result = trainer.fit()
-
-    test_x, test_y = dataset.load_bolt_svm_dataset("/share/pratik/mnist.t", 250)
-    test_x = bolt.train.convert_dataset(test_x, dim=784)
-    test_y = bolt.train.convert_dataset(test_y, dim=10)
-
-    trained_model = result.checkpoint.get_model()
-
-    new_trainer = bolt.train.Trainer(trained_model)
-
-    history = new_trainer.validate(
-        validation_data=(test_x, test_y),
-        validation_metrics=["loss", "categorical_accuracy"],
-        use_sparsity=False,
-    )
-    assert history["val_categorical_accuracy"][-1] > 0.9
-
-
-def initialize_and_checkpoint(config):
+def training_loop_per_worker(config):
     model = config.get("model")
+
+    trainer = dist.DistributedTrainer(model)
     train_x, train_y = gen_numpy_training_data(n_samples=8000, n_classes=10)
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    for x, y in zip(train_x, train_y):
-        # this unit test checks for working of BoltTrainer rather
-        # testing the whole system, and considering we dont have
-        # working wheel for pygloo. Hence, we are just doing a
-        # single machine training.
-        model.train_on_batch(x, y)
-        model.update_parameters(learning_rate=0.05)
+    trainer.train(train_x, train_y, 0.005)
 
     # session report should always have a metrics stored, hence added a demo_metric
     session.report(
@@ -126,8 +28,7 @@ def initialize_and_checkpoint(config):
     )
 
 
-def test_independent_model():
-    # This test only trains for one worker,
+def test_distributed_v2():
     n_classes = 10
     input_layer = bolt.nn.Input(dim=n_classes)
 
@@ -147,8 +48,11 @@ def test_independent_model():
     loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
-    num_cpu_per_node = dist.get_num_cpus()
 
+    # reserve 1 cpu for bolt trainer
+    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
+
+    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
     working_dir = os.path.dirname(os.path.realpath(__file__))
 
     ray.init(
@@ -159,7 +63,7 @@ def test_independent_model():
     )
     scaling_config = ScalingConfig(
         # Number of distributed workers.
-        num_workers=1,
+        num_workers=2,
         # Turn on/off GPU.
         use_gpu=False,
         # Specify resources used for trainer.
@@ -168,9 +72,10 @@ def test_independent_model():
         placement_strategy="SPREAD",
     )
     trainer = dist.BoltTrainer(
-        train_loop_per_worker=initialize_and_checkpoint,
+        train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"model": model},
         scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
     )
 
     result_checkpoint_and_history = trainer.fit()

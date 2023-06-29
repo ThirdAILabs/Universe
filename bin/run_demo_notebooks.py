@@ -15,6 +15,7 @@ IGNORED_NBS = [
     "DeployThirdaiwithDatabricks.ipynb",
     "TrainingDistributedUDT.ipynb",
     "demo.ipynb",
+    "run_neural_db.ipynb",
 ]
 
 

@@ -7,6 +7,7 @@
 #include <dataset/src/DataSource.h>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::automl::udt {
 
@@ -145,6 +146,8 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
+  data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
@@ -224,6 +227,8 @@ class UDT {
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
+
+  void saveImpl(const std::string& filename) const;
 
   void checkpoint(const std::string& filename) const;
 
