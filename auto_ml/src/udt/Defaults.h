@@ -13,7 +13,7 @@ constexpr uint32_t HIDDEN_DIM = 512;
 constexpr uint32_t BATCH_SIZE = 2048;
 
 // Whether to freeze hash tables after first epoch of training.
-constexpr bool FREEZE_HASH_TABLES = true;
+constexpr uint32_t FREEZE_HASH_TABLES = 1;
 
 // Whether to use sigmoid and bce for the output layer in UDT
 constexpr bool USE_SIGMOID_BCE = false;

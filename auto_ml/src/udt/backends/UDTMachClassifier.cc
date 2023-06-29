@@ -81,7 +81,7 @@ UDTMachClassifier::UDTMachClassifier(
           /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
           /* use_sigmoid_bce = */ true, /* mach= */ true),
-      user_args.get<bool>("freeze_hash_tables", "boolean",
+      user_args.get<uint32_t>("freeze_hash_tables", "integer",
                           defaults::FREEZE_HASH_TABLES));
 
   // TODO(david) should we freeze hash tables for mach? how does this work

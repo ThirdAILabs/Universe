@@ -14,7 +14,7 @@ namespace thirdai::automl::udt::utils {
 
 using bolt::train::metrics::fromMetricNames;
 
-Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
+Classifier::Classifier(bolt::nn::model::ModelPtr model, uint32_t freeze_hash_tables)
     : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
@@ -77,10 +77,10 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
                              TrainOptions options) {
   uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
-  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
-  if (_freeze_hash_tables) {
-    freeze_hash_tables_epoch = 1;
-  }
+  // std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  // if (_freeze_hash_tables) {
+    uint32_t freeze_hash_tables_epoch = _freeze_hash_tables;
+  // }
 
   bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
                                bolt::train::python::CtrlCCheck{});

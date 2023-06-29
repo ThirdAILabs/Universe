@@ -19,10 +19,10 @@ using bolt::train::metrics::InputMetrics;
 
 class Classifier {
  public:
-  Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables);
+  Classifier(bolt::nn::model::ModelPtr model, uint32_t freeze_hash_tables);
 
   static std::shared_ptr<Classifier> make(
-      const bolt::nn::model::ModelPtr& model, bool freeze_hash_tables) {
+      const bolt::nn::model::ModelPtr& model, uint32_t freeze_hash_tables) {
     return std::make_shared<Classifier>(model, freeze_hash_tables);
   }
 
@@ -80,7 +80,7 @@ class Classifier {
   bolt::nn::model::ModelPtr _model;
   bolt::nn::autograd::ComputationPtr _emb;
 
-  bool _freeze_hash_tables;
+  uint32_t _freeze_hash_tables;
   std::optional<float> _binary_prediction_threshold;
 };
 
