@@ -317,13 +317,28 @@ class UDTBackend {
 
   /**
    * Used in UDTMachClassifier, returns the predicted hashes from the input
-   * sample.
+   * sample. If num_hashes is not provided, will return the number of hashes
+   * used in the index by default.
    */
   virtual py::object predictHashes(const MapInput& sample,
-                                   bool sparse_inference) {
+                                   bool sparse_inference, bool force_non_empty,
+                                   std::optional<uint32_t> num_hashes) {
     (void)sample;
     (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
     throw notSupported("predict_hashes");
+  }
+
+  virtual py::object predictHashesBatch(const MapInputBatch& samples,
+                                        bool sparse_inference,
+                                        bool force_non_empty,
+                                        std::optional<uint32_t> num_hashes) {
+    (void)samples;
+    (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
+    throw notSupported("predict_hashes_batch");
   }
 
   /**
