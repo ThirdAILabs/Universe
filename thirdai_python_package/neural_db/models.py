@@ -216,6 +216,8 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_epoch = 1
+            min_epochs = 10
+            max_epochs = 15
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -233,6 +235,10 @@ class Mach(Model):
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_epoch = 0
+            # Less epochs here since it converges faster when trained on a base 
+            # model.
+            min_epochs = 5
+            max_epochs = 10
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
@@ -241,8 +247,8 @@ class Mach(Model):
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
-                min_epochs=10,
-                max_epochs=20,
+                min_epochs=min_epochs,
+                max_epochs=max_epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
