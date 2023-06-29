@@ -145,7 +145,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
-      .def("output_freq", &udt::UDT::outputFreq, py::arg("samples"),
+      .def("predict_batch_hashes", &udt::UDT::predictBatchHashes, py::arg("samples"),
            py::arg("sparse_inference") = false, py::arg("top_k") = 10)
       .def("output_correctness", &udt::UDT::outputCorrectness,
            py::arg("samples"), py::arg("labels"),
@@ -188,7 +188,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{})
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
-           py::arg("sparse_inference") = false)
+           py::arg("sparse_inference") = false, py::arg("top_k") = 10)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,

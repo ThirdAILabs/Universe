@@ -67,9 +67,9 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
-  py::object outputFreq(const MapInputBatch& sample, bool sparse_inference,
+  py::object predictBatchHashes(const MapInputBatch& sample, bool sparse_inference,
                         uint32_t top_k) {
-    return _backend->outputFreq(sample, sparse_inference, top_k);
+    return _backend->predictBatchHashes(sample, sparse_inference, top_k);
   }
 
   py::object outputCorrectness(const MapInputBatch& sample,
@@ -198,8 +198,9 @@ class UDT {
     return _backend->trainWithHashes(batch, learning_rate, metrics);
   }
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) {
-    return _backend->predictHashes(sample, sparse_inference);
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           uint32_t top_k) {
+    return _backend->predictHashes(sample, sparse_inference, top_k);
   }
 
   void associate(

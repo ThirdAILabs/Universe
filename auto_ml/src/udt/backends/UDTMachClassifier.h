@@ -16,6 +16,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -60,7 +61,7 @@ class UDTMachClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  py::object outputFreq(const MapInputBatch& samples, bool sparse_inference,
+  py::object predictBatchHashes(const MapInputBatch& samples, bool sparse_inference,
                         uint32_t top_k) final;
 
   py::object outputCorrectness(const MapInputBatch& samples,
@@ -70,7 +71,8 @@ class UDTMachClassifier final : public UDTBackend {
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) final;
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) final;
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           uint32_t top_k) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -156,10 +158,11 @@ class UDTMachClassifier final : public UDTBackend {
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
 
-  std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
-                                          bool sparse_inference);
+  std::vector<uint32_t> predictHashesImpl(
+      const MapInput& sample, bool sparse_inference,
+      std::optional<uint32_t> top_k = std::nullopt);
 
-  std::vector<std::unordered_set<uint32_t>> outputBuckets(
+  std::vector<std::vector<uint32_t>> outputBuckets(
       const MapInputBatch& samples, bool sparse_inference, uint32_t top_k);
 
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&

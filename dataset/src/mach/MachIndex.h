@@ -79,7 +79,7 @@ class MachIndex {
 
   static std::shared_ptr<MachIndex> load(const std::string& filename);
 
-  std::unordered_set<uint32_t> topKNonEmptyBucketsIndices(
+  std::vector<uint32_t> topKNonEmptyBucketsIndices(
       const BoltVector& output, uint32_t k) const;
 
  private:

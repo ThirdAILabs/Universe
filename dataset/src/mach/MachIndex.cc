@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -120,17 +121,19 @@ float MachIndex::sparsity() const {
   return guess;
 }
 
-std::unordered_set<uint32_t> MachIndex::topKNonEmptyBucketsIndices(
+std::vector<uint32_t> MachIndex::topKNonEmptyBucketsIndices(
     const BoltVector& output, uint32_t k) const {
   TopKActivationsQueue top_buckets = topKNonEmptyBuckets(output, k);
 
-  std::unordered_set<uint32_t> buckets;
+  std::vector<uint32_t> buckets;
 
   while (!top_buckets.empty()) {
     std::pair<float, uint32_t> element = top_buckets.top();
-    buckets.insert(element.second);
+    buckets.push_back(element.second);
     top_buckets.pop();
   }
+
+  std::reverse(buckets.begin(), buckets.end());
 
   return buckets;
 }

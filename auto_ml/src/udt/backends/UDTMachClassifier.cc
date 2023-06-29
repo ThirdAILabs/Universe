@@ -264,14 +264,14 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predicted_entities);
 }
 
-std::vector<std::unordered_set<uint32_t>> UDTMachClassifier::outputBuckets(
+std::vector<std::vector<uint32_t>> UDTMachClassifier::outputBuckets(
     const MapInputBatch& samples, bool sparse_inference, uint32_t top_k) {
   auto outputs = _classifier->model()
                      ->forward(_dataset_factory->featurizeInputBatch(samples),
                                sparse_inference)
                      .at(0);
 
-  std::vector<std::unordered_set<uint32_t>> top_buckets(outputs->batchSize());
+  std::vector<std::vector<uint32_t>> top_buckets(outputs->batchSize());
 
 #pragma omp parallel for default(none) shared(outputs, top_buckets, top_k)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
@@ -283,27 +283,19 @@ std::vector<std::unordered_set<uint32_t>> UDTMachClassifier::outputBuckets(
   return top_buckets;
 }
 
-py::object UDTMachClassifier::outputFreq(const MapInputBatch& samples,
+py::object UDTMachClassifier::predictBatchHashes(const MapInputBatch& samples,
                                          bool sparse_inference,
                                          uint32_t top_k) {
-  std::vector<std::unordered_set<uint32_t>> top_buckets =
+  std::vector<std::vector<uint32_t>> top_buckets =
       outputBuckets(samples, sparse_inference, top_k);
 
-  std::unordered_map<uint32_t, uint32_t> bucket_freq;
-
-  for (const auto& top_bucket : top_buckets) {
-    for (unsigned int j : top_bucket) {
-      bucket_freq[j]++;
-    }
-  }
-
-  return py::cast(bucket_freq);
+  return py::cast(top_buckets);
 }
 
 py::object UDTMachClassifier::outputCorrectness(
     const MapInputBatch& samples, const std::vector<uint32_t>& labels,
     bool sparse_inference, uint32_t top_k) {
-  std::vector<std::unordered_set<uint32_t>> top_buckets =
+  std::vector<std::vector<uint32_t>> top_buckets =
       outputBuckets(samples, sparse_inference, top_k);
 
   std::vector<uint32_t> matching_buckets(labels.size());
@@ -317,7 +309,7 @@ py::object UDTMachClassifier::outputCorrectness(
           _mach_label_block->index()->getHashes(labels[i]);
       uint32_t count = 0;
       for (auto hash : hashes) {
-        if (top_buckets[i].count(hash) > 0) {
+        if (std::count(top_buckets[i].begin(),top_buckets[i].end(),hash) > 0) {
           count++;
         }
       }
@@ -354,30 +346,25 @@ py::object UDTMachClassifier::trainWithHashes(
 }
 
 py::object UDTMachClassifier::predictHashes(const MapInput& sample,
-                                            bool sparse_inference) {
-  return py::cast(predictHashesImpl(sample, sparse_inference));
+                                            bool sparse_inference,
+                                            uint32_t top_k) {
+  return py::cast(predictHashesImpl(sample, sparse_inference, top_k));
 }
 
 std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
-    const MapInput& sample, bool sparse_inference) {
+    const MapInput& sample, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
-  uint32_t k = _mach_label_block->index()->numHashes();
-  auto heap = output.findKLargestActivations(k);
+  uint32_t k = top_k ? *top_k : _mach_label_block->index()->numHashes();
 
-  std::vector<uint32_t> hashes_to_return;
-  while (hashes_to_return.size() < k && !heap.empty()) {
-    auto [_, active_neuron] = heap.top();
-    hashes_to_return.push_back(active_neuron);
-    heap.pop();
-  }
+  std::vector<uint32_t> hashes =
+      _mach_label_block->index()->topKNonEmptyBucketsIndices(output, k);
 
-  std::reverse(hashes_to_return.begin(), hashes_to_return.end());
-
-  return hashes_to_return;
+  return hashes;
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
