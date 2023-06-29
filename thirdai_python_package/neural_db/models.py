@@ -235,7 +235,7 @@ class Mach(Model):
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_epoch = 0
-            # Less epochs here since it converges faster when trained on a base 
+            # Less epochs here since it converges faster when trained on a base
             # model.
             min_epochs = 5
             max_epochs = 10
