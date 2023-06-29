@@ -124,17 +124,19 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 
 py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
                                bool sparse_inference,
-                               bool return_predicted_class, bool single, 
+                               bool return_predicted_class, bool single,
                                std::optional<uint32_t> top_k) {
   auto output = _model->forward(inputs, sparse_inference).at(0);
   if (return_predicted_class) {
     return predictedClasses(output, single);
   }
 
-  if (top_k){
-      return bolt::nn::python::tensorToNumpyTopK(output, /* single_row_to_vector= */ single, top_k.value());
+  if (top_k) {
+    return bolt::nn::python::tensorToNumpyTopK(
+        output, /* single_row_to_vector= */ single, top_k.value());
   }
-  return bolt::nn::python::tensorToNumpy(output, /* single_row_to_vector= */ single);
+  return bolt::nn::python::tensorToNumpy(output,
+                                         /* single_row_to_vector= */ single);
 }
 
 py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {
