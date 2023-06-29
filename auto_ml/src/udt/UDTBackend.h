@@ -120,7 +120,7 @@ class UDTBackend {
     (void)sample;
     (void)labels;
     (void)sparse_inference;
-    (void)top_k;
+    (void)num_hashes;
     throw notSupported("output correctness");
   }
 
