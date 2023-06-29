@@ -127,19 +127,22 @@ def unsupervised_train_on_docs(
     learning_rate: float,
     acc_to_stop: float,
     on_progress: Callable,
-    freeze_epoch: int,
+    freeze_before_train: bool,
 ):
+    if freeze_before_train:
+        model._get_model().freeze_hash_tables()
     for i in range(max_epochs):
-        if i == freeze_epoch:
-            model._get_model().freeze_hash_tables()
         documents.restart()
         metrics = model.cold_start_on_data_source(
             data_source=documents,
             strong_column_names=[documents.strong_column],
             weak_column_names=[documents.weak_column],
             learning_rate=learning_rate,
-            epochs=1,
+            epochs=max_epochs,
             metrics=[metric],
+            callbacks=[
+                #TODO(David): Add callback here
+            ]
         )
 
         val = metrics["train_" + metric][0]
@@ -215,7 +218,7 @@ class Mach(Model):
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
-            freeze_epoch = 1
+            freeze_before_train = False
             min_epochs = 10
             max_epochs = 15
         else:
@@ -234,7 +237,7 @@ class Mach(Model):
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
-            freeze_epoch = 0
+            freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base 
             # model.
             min_epochs = 5
@@ -253,7 +256,7 @@ class Mach(Model):
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
-                freeze_epoch=freeze_epoch,
+                freeze_before_train=freeze_before_train,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
