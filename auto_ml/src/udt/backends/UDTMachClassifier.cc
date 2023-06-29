@@ -348,13 +348,15 @@ py::object UDTMachClassifier::trainWithHashes(
 
 py::object UDTMachClassifier::predictHashes(const MapInput& sample,
                                             bool sparse_inference,
-                                            uint32_t top_k) {
-  return py::cast(predictHashesImpl(sample, sparse_inference, top_k));
+                                            std::optional<uint32_t> top_k,
+                                            bool return_non_empty) {
+  return py::cast(
+      predictHashesImpl(sample, sparse_inference, top_k, return_non_empty));
 }
 
 std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
     const MapInput& sample, bool sparse_inference,
-    std::optional<uint32_t> top_k) {
+    std::optional<uint32_t> top_k, bool return_non_empty) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
@@ -362,8 +364,23 @@ std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
 
   uint32_t k = top_k ? *top_k : _mach_label_block->index()->numHashes();
 
-  std::vector<uint32_t> hashes =
-      _mach_label_block->index()->topKNonEmptyBucketsIndices(output, k);
+  if (return_non_empty) {
+    std::vector<uint32_t> hashes =
+        _mach_label_block->index()->topKNonEmptyBucketsIndices(output, k);
+
+    return hashes;
+  }
+
+  auto heap = output.findKLargestActivations(k);
+
+  std::vector<uint32_t> hashes;
+  while (hashes.size() < k && !heap.empty()) {
+    auto [_, active_neuron] = heap.top();
+    hashes.push_back(active_neuron);
+    heap.pop();
+  }
+
+  std::reverse(hashes.begin(), hashes.end());
 
   return hashes;
 }

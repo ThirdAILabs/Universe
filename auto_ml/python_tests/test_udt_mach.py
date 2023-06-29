@@ -333,7 +333,7 @@ def test_mach_udt_introduce_documents(fast_approximation):
 def test_mach_udt_hash_based_methods():
     model = train_simple_mach_udt()
 
-    hashes = model.predict_hashes({"text": "testing hash based methods"}, top_k=7)
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert len(hashes) == 7
 
     new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
@@ -345,7 +345,7 @@ def test_mach_udt_hash_based_methods():
             learning_rate=0.01,
         )
 
-    new_hashes = model.predict_hashes({"text": "testing hash based methods"}, top_k=7)
+    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert set(new_hashes) == new_hash_set
 
 
@@ -400,7 +400,7 @@ def test_mach_manual_index_creation():
     model.train(SIMPLE_TEST_FILE, learning_rate=0.01, epochs=10)
 
     for label, sample in samples.items():
-        new_hashes = model.predict_hashes({"text": sample}, top_k=7)
+        new_hashes = model.predict_hashes({"text": sample})
         assert set(new_hashes) == set(entity_to_hashes[label])
 
 
@@ -433,7 +433,7 @@ def test_load_balancing():
     )
 
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes(sample, top_k=8)
+    hash_locs = model.predict_hashes(sample)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.

@@ -72,7 +72,8 @@ class UDTMachClassifier final : public UDTBackend {
                              const std::vector<std::string>& metrics) final;
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
-                           uint32_t top_k) final;
+                           std::optional<uint32_t> top_k,
+                           bool return_non_empty) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -164,7 +165,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::vector<uint32_t> predictHashesImpl(
       const MapInput& sample, bool sparse_inference,
-      std::optional<uint32_t> top_k = std::nullopt);
+      std::optional<uint32_t> top_k = std::nullopt,
+      bool return_non_empty = false);
 
   std::vector<std::vector<uint32_t>> outputBuckets(const MapInputBatch& samples,
                                                    bool sparse_inference,

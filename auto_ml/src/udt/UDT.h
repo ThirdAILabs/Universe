@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -202,8 +203,10 @@ class UDT {
   }
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
-                           uint32_t top_k) {
-    return _backend->predictHashes(sample, sparse_inference, top_k);
+                           std::optional<uint32_t> top_k = std::nullopt,
+                           bool return_non_empty = false) {
+    return _backend->predictHashes(sample, sparse_inference, top_k,
+                                   return_non_empty);
   }
 
   void associate(
