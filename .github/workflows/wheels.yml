@@ -94,7 +94,7 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            PATH=“$(brew --prefix llvm)/bin:$PATH"
+            PATH=$(brew --prefix llvm)/bin:$PATH
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
