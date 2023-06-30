@@ -22,12 +22,15 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
+#include <pybind11/cast.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
 #include <utils/StringManipulation.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <exception>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -330,6 +333,42 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
   }
 
   return all_hashes;
+}
+
+py::object UDTMachClassifier::outputCorrectness(
+    const MapInputBatch& samples, const std::vector<uint32_t>& labels,
+    bool sparse_inference, std::optional<uint32_t> num_hashes) {
+  std::vector<std::vector<uint32_t>> top_buckets = predictHashesImpl(
+      samples, sparse_inference, /* force_non_empty = */ true, num_hashes);
+
+  std::vector<uint32_t> matching_buckets(labels.size());
+  std::exception_ptr hashes_err;
+
+#pragma omp parallel for default(none) \
+    shared(labels, top_buckets, matching_buckets, hashes_err)
+  for (uint32_t i = 0; i < labels.size(); i++) {
+    try {
+      std::vector<uint32_t> hashes =
+          _mach_label_block->index()->getHashes(labels[i]);
+      uint32_t count = 0;
+      for (auto hash : hashes) {
+        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
+            0) {
+          count++;
+        }
+      }
+      matching_buckets[i] = count;
+    } catch (const std::exception& e) {
+#pragma omp critical
+      hashes_err = std::current_exception();
+    }
+  }
+
+  if (hashes_err) {
+    std::rethrow_exception(hashes_err);
+  }
+
+  return py::cast(matching_buckets);
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
@@ -748,8 +787,8 @@ void UDTMachClassifier::associate(
     batch.emplace_back(target);
   }
 
-  auto all_predicted_hashes =
-      predictHashesImpl(batch, /* sparse_inference = */ false);
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
@@ -864,8 +903,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output
-  // ranges
+  // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
 
   updateSamplingStrategy();
