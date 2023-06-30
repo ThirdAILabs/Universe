@@ -7,6 +7,8 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -18,9 +20,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -60,221 +64,361 @@ bool shapeMatches(const NumpyArray<float>& arr,
   return true;
 }
 
-py::dict fullyConnectedOpParams(const ops::FullyConnectedPtr& fc) {
-  py::dict params;
+class OpConverter {
+ public:
+  virtual std::optional<py::dict> toParams(const ops::OpPtr& op) const = 0;
 
-  params["type"] = "fully_connected";
+  using OpApplyFunc = std::function<autograd::ComputationPtr(
+      const ops::OpPtr& op, const autograd::ComputationList& inputs)>;
 
-  params["dim"] = fc->dim();
-  params["input_dim"] = fc->inputDim();
-  params["sparsity"] = fc->getSparsity();
-  params["activation"] =
-      activationFunctionToStr(fc->kernel()->getActivationFunction());
-  params["use_bias"] = fc->kernel()->useBias();
+  virtual std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& op) const = 0;
 
-  params["weights"] = copyArray(fc->weightsPtr(), {fc->dim(), fc->inputDim()});
-  params["biases"] = copyArray(fc->biasesPtr(), {fc->dim()});
+  virtual std::string opType() const = 0;
 
-  params["rebuild_hash_tables"] = fc->getRebuildHashTables();
-  params["reconstruct_hash_functions"] = fc->getReconstructHashFunctions();
+  template <typename OP_TYPE>
+  static OpApplyFunc getUnaryApplyFunc() {
+    auto apply_func = [](const ops::OpPtr& op,
+                         const autograd::ComputationList& inputs) {
+      auto concrete_op = std::dynamic_pointer_cast<OP_TYPE>(op);
+      if (!concrete_op) {
+        throw std::runtime_error("Op type mismatch in apply func.");
+      }
 
-  auto [hash_fn, hash_table] = fc->getHashTable();
+      return concrete_op->apply(inputs.at(0));
+    };
 
-  if (hash_fn && hash_table) {
-    params["hash_fn"] = hash_fn;
-    params["hash_table"] = hash_table;
-    params["hash_table_frozen"] = fc->kernel()->isNeuronIndexFrozen();
-  } else {
-    if (std::dynamic_pointer_cast<RandomSampler>(fc->kernel()->neuronIndex())) {
-      params["random_sampling"] = true;
+    return apply_func;
+  }
+
+  py::dict emptyParams() const {
+    py::dict params;
+    params["type"] = opType();
+    return params;
+  }
+};
+
+class FullyConnectedOpConverter final : public OpConverter {
+ public:
+  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
+    auto fc = ops::FullyConnected::cast(op);
+    if (!fc) {
+      return std::nullopt;
     }
-  }
 
-  return params;
-}
+    py::dict params;
 
-ops::FullyConnectedPtr fullyConnectedOpFromParams(const py::dict& params) {
-  size_t dim = params["dim"].cast<size_t>();
-  size_t input_dim = params["input_dim"].cast<size_t>();
-  float sparsity = params["sparsity"].cast<float>();
-  std::string activation = params["activation"].cast<std::string>();
-  bool use_bias = params["use_bias"].cast<bool>();
+    params["type"] = opType();
 
-  size_t rebuild_hash_tables = params["rebuild_hash_tables"].cast<size_t>();
-  size_t reconstruct_hash_functions =
-      params["reconstruct_hash_functions"].cast<size_t>();
+    params["dim"] = fc->dim();
+    params["input_dim"] = fc->inputDim();
+    params["sparsity"] = fc->getSparsity();
+    params["activation"] =
+        activationFunctionToStr(fc->kernel()->getActivationFunction());
+    params["use_bias"] = fc->kernel()->useBias();
 
-  auto weights = params["weights"].cast<NumpyArray<float>>();
-  auto biases = params["biases"].cast<NumpyArray<float>>();
+    params["weights"] =
+        copyArray(fc->weightsPtr(), {fc->dim(), fc->inputDim()});
+    params["biases"] = copyArray(fc->biasesPtr(), {fc->dim()});
 
-  SamplingConfigPtr sampling = nullptr;
+    params["rebuild_hash_tables"] = fc->getRebuildHashTables();
+    params["reconstruct_hash_functions"] = fc->getReconstructHashFunctions();
 
-  if (params.contains("random_sampling") &&
-      params["random_sampling"].cast<bool>()) {
-    sampling = std::make_shared<RandomSamplingConfig>();
-  }
+    auto [hash_fn, hash_table] = fc->getHashTable();
 
-  auto fc = ops::FullyConnected::make(dim, input_dim, sparsity, activation,
-                                      sampling, use_bias, rebuild_hash_tables,
-                                      reconstruct_hash_functions);
-
-  if (!shapeMatches(weights, {dim, input_dim})) {
-    throw std::invalid_argument("Invalid shape for weights. Expected (" +
-                                std::to_string(dim) + ", " +
-                                std::to_string(input_dim) + ").");
-  }
-
-  if (!shapeMatches(biases, {dim})) {
-    throw std::invalid_argument("Invalid shape for biases. Expected (" +
-                                std::to_string(dim) + ",).");
-  }
-
-  fc->setWeights(weights.data());
-  fc->setBiases(biases.data());
-
-  if (params.contains("hash_fn") && params.contains("hash_table")) {
-    auto hash_fn = params["hash_fn"].cast<hashing::HashFunctionPtr>();
-    auto hash_table =
-        params["hash_table"].cast<hashtable::SampledHashTablePtr>();
-
-    fc->setHashTable(hash_fn, hash_table);
-
-    if (params["hash_table_frozen"].cast<bool>()) {
-      fc->freezeHashTables(true);
+    if (hash_fn && hash_table) {
+      params["hash_fn"] = hash_fn;
+      params["hash_table"] = hash_table;
+      params["hash_table_frozen"] = fc->kernel()->isNeuronIndexFrozen();
+    } else {
+      if (std::dynamic_pointer_cast<RandomSampler>(
+              fc->kernel()->neuronIndex())) {
+        params["random_sampling"] = true;
+      }
     }
+
+    return params;
   }
 
-  return fc;
-}
+  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& params) const final {
+    size_t dim = params["dim"].cast<size_t>();
+    size_t input_dim = params["input_dim"].cast<size_t>();
+    float sparsity = params["sparsity"].cast<float>();
+    std::string activation = params["activation"].cast<std::string>();
+    bool use_bias = params["use_bias"].cast<bool>();
 
-py::dict embeddingOpParams(const ops::EmbeddingPtr& emb) {
-  py::dict params;
+    size_t rebuild_hash_tables = params["rebuild_hash_tables"].cast<size_t>();
+    size_t reconstruct_hash_functions =
+        params["reconstruct_hash_functions"].cast<size_t>();
 
-  params["type"] = "embedding";
+    auto weights = params["weights"].cast<NumpyArray<float>>();
+    auto biases = params["biases"].cast<NumpyArray<float>>();
 
-  params["dim"] = emb->dim();
-  params["input_dim"] = emb->inputDim();
-  params["activation"] = activationFunctionToStr(emb->activation());
-  params["use_bias"] = emb->useBias();
+    SamplingConfigPtr sampling = nullptr;
 
-  params["embeddings"] =
-      copyArray(emb->embeddingsPtr(), {emb->inputDim(), emb->dim()});
-  params["biases"] = copyArray(emb->biasesPtr(), {emb->dim()});
+    if (params.contains("random_sampling") &&
+        params["random_sampling"].cast<bool>()) {
+      sampling = std::make_shared<RandomSamplingConfig>();
+    }
 
-  return params;
-}
+    auto fc = ops::FullyConnected::make(dim, input_dim, sparsity, activation,
+                                        sampling, use_bias, rebuild_hash_tables,
+                                        reconstruct_hash_functions);
 
-ops::EmbeddingPtr embeddingOpFromParams(const py::dict& params) {
-  size_t dim = params["dim"].cast<size_t>();
-  size_t input_dim = params["input_dim"].cast<size_t>();
-  std::string activation = params["activation"].cast<std::string>();
-  bool use_bias = params["use_bias"].cast<bool>();
+    if (!shapeMatches(weights, {dim, input_dim})) {
+      throw std::invalid_argument("Invalid shape for weights. Expected (" +
+                                  std::to_string(dim) + ", " +
+                                  std::to_string(input_dim) + ").");
+    }
 
-  auto embeddings = params["embeddings"].cast<NumpyArray<float>>();
-  auto biases = params["biases"].cast<NumpyArray<float>>();
+    if (!shapeMatches(biases, {dim})) {
+      throw std::invalid_argument("Invalid shape for biases. Expected (" +
+                                  std::to_string(dim) + ",).");
+    }
 
-  auto emb = ops::Embedding::make(dim, input_dim, activation, use_bias);
+    fc->setWeights(weights.data());
+    fc->setBiases(biases.data());
 
-  if (!shapeMatches(embeddings, {input_dim, dim})) {
-    throw std::invalid_argument("Invalid shape for embeddings. Expected (" +
-                                std::to_string(input_dim) + ", " +
-                                std::to_string(dim) + ").");
+    if (params.contains("hash_fn") && params.contains("hash_table")) {
+      auto hash_fn = params["hash_fn"].cast<hashing::HashFunctionPtr>();
+      auto hash_table =
+          params["hash_table"].cast<hashtable::SampledHashTablePtr>();
+
+      fc->setHashTable(hash_fn, hash_table);
+
+      if (params["hash_table_frozen"].cast<bool>()) {
+        fc->freezeHashTables(true);
+      }
+    }
+
+    return {fc, getUnaryApplyFunc<ops::FullyConnected>()};
   }
 
-  if (!shapeMatches(biases, {dim})) {
-    throw std::invalid_argument("Invalid shape for biases. Expected (" +
-                                std::to_string(dim) + ",).");
+  std::string opType() const final { return "fully_connected"; }
+};
+
+class EmbeddingOpConverter final : public OpConverter {
+ public:
+  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
+    auto emb = ops::Embedding::cast(op);
+    if (!emb) {
+      return std::nullopt;
+    }
+
+    py::dict params;
+
+    params["type"] = opType();
+
+    params["dim"] = emb->dim();
+    params["input_dim"] = emb->inputDim();
+    params["activation"] = activationFunctionToStr(emb->activation());
+    params["use_bias"] = emb->useBias();
+
+    params["embeddings"] =
+        copyArray(emb->embeddingsPtr(), {emb->inputDim(), emb->dim()});
+    params["biases"] = copyArray(emb->biasesPtr(), {emb->dim()});
+
+    return params;
   }
 
-  emb->setEmbeddings(embeddings.data());
-  emb->setBiases(biases.data());
+  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& params) const final {
+    size_t dim = params["dim"].cast<size_t>();
+    size_t input_dim = params["input_dim"].cast<size_t>();
+    std::string activation = params["activation"].cast<std::string>();
+    bool use_bias = params["use_bias"].cast<bool>();
 
-  return emb;
-}
+    auto embeddings = params["embeddings"].cast<NumpyArray<float>>();
+    auto biases = params["biases"].cast<NumpyArray<float>>();
 
-py::dict robeZOpParams(const ops::RobeZPtr& emb) {
-  py::dict params;
+    auto emb = ops::Embedding::make(dim, input_dim, activation, use_bias);
 
-  params["type"] = "robe_z";
+    if (!shapeMatches(embeddings, {input_dim, dim})) {
+      throw std::invalid_argument("Invalid shape for embeddings. Expected (" +
+                                  std::to_string(input_dim) + ", " +
+                                  std::to_string(dim) + ").");
+    }
 
-  params["num_embedding_lookups"] = emb->kernel()->numEmbeddingLookups();
-  params["lookup_size"] = emb->kernel()->lookupSize();
-  params["log_embedding_block_size"] = emb->kernel()->logEmbeddingBlockSize();
-  params["reduction"] = emb->kernel()->reduction();
-  params["num_tokens_per_input"] = emb->kernel()->numTokensPerInput();
-  params["update_chunk_size"] = emb->kernel()->updateChunkSize();
-  params["hash_seed"] = emb->kernel()->hashSeed();
+    if (!shapeMatches(biases, {dim})) {
+      throw std::invalid_argument("Invalid shape for biases. Expected (" +
+                                  std::to_string(dim) + ",).");
+    }
 
-  size_t emb_block_size = emb->kernel()->getRawEmbeddingBlock().size();
-  const float* emb_block_ptr = emb->kernel()->getRawEmbeddingBlock().data();
+    emb->setEmbeddings(embeddings.data());
+    emb->setBiases(biases.data());
 
-  auto arr =
-      copyArray(emb_block_ptr, {emb_block_size}).cast<NumpyArray<float>>();
-  params["embedding_block"] = arr;
-
-  return params;
-}
-
-ops::RobeZPtr robeZOpFromParams(const py::dict& params) {
-  size_t num_embedding_lookups = params["num_embedding_lookups"].cast<size_t>();
-  size_t lookup_size = params["lookup_size"].cast<size_t>();
-  size_t log_embedding_block_size =
-      params["log_embedding_block_size"].cast<size_t>();
-  std::string reduction = params["reduction"].cast<std::string>();
-  std::optional<size_t> num_tokens_per_input =
-      params["num_tokens_per_input"].cast<std::optional<size_t>>();
-  size_t update_chunk_size = params["update_chunk_size"].cast<size_t>();
-  uint32_t hash_seed = params["hash_seed"].cast<uint32_t>();
-
-  auto embedding_block = params["embedding_block"].cast<NumpyArray<float>>();
-
-  auto emb = ops::RobeZ::make(
-      num_embedding_lookups, lookup_size, log_embedding_block_size, reduction,
-      num_tokens_per_input, update_chunk_size, hash_seed);
-
-  size_t embedding_block_size = emb->kernel()->getRawEmbeddingBlock().size();
-  if (!shapeMatches(embedding_block, {embedding_block_size})) {
-    throw std::invalid_argument(
-        "Expected embedding block to be 1D array of size " +
-        std::to_string(embedding_block_size) + ".");
+    return {emb, getUnaryApplyFunc<ops::Embedding>()};
   }
 
-  std::copy(embedding_block.data(),
-            embedding_block.data() + embedding_block_size,
-            emb->kernel()->getRawEmbeddingBlock().data());
+  std::string opType() const final { return "embedding"; }
+};
 
-  return emb;
-}
+class RobeZOpConverter final : public OpConverter {
+ public:
+  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
+    auto emb = std::dynamic_pointer_cast<ops::RobeZ>(op);
+    if (!emb) {
+      return std::nullopt;
+    }
 
-py::dict layerNormParams(const ops::LayerNormPtr& norm) {
-  py::dict params;
+    py::dict params;
 
-  params["type"] = "layer_norm";
+    params["type"] = opType();
 
-  params["gamma"] = copyArray(norm->gamma().data(), {norm->dim()});
-  params["beta"] = copyArray(norm->beta().data(), {norm->dim()});
+    params["num_embedding_lookups"] = emb->kernel()->numEmbeddingLookups();
+    params["lookup_size"] = emb->kernel()->lookupSize();
+    params["log_embedding_block_size"] = emb->kernel()->logEmbeddingBlockSize();
+    params["reduction"] = emb->kernel()->reduction();
+    params["num_tokens_per_input"] = emb->kernel()->numTokensPerInput();
+    params["update_chunk_size"] = emb->kernel()->updateChunkSize();
+    params["hash_seed"] = emb->kernel()->hashSeed();
 
-  return params;
-}
+    size_t emb_block_size = emb->kernel()->getRawEmbeddingBlock().size();
+    const float* emb_block_ptr = emb->kernel()->getRawEmbeddingBlock().data();
 
-ops::LayerNormPtr layerNormFromParams(const py::dict& params) {
-  auto gamma = params["gamma"].cast<NumpyArray<float>>();
-  auto beta = params["beta"].cast<NumpyArray<float>>();
+    auto arr =
+        copyArray(emb_block_ptr, {emb_block_size}).cast<NumpyArray<float>>();
+    params["embedding_block"] = arr;
 
-  if (gamma.ndim() != 1 || beta.ndim() != 1 ||
-      gamma.shape(0) != beta.shape(0)) {
-    throw std::invalid_argument(
-        "Expected gamma and beta to be 1D arrays of the same size.");
+    return params;
   }
 
-  return ops::LayerNorm::make(gamma.data(), beta.data(), gamma.shape(0));
-}
+  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& params) const final {
+    size_t num_embedding_lookups =
+        params["num_embedding_lookups"].cast<size_t>();
+    size_t lookup_size = params["lookup_size"].cast<size_t>();
+    size_t log_embedding_block_size =
+        params["log_embedding_block_size"].cast<size_t>();
+    std::string reduction = params["reduction"].cast<std::string>();
+    std::optional<size_t> num_tokens_per_input =
+        params["num_tokens_per_input"].cast<std::optional<size_t>>();
+    size_t update_chunk_size = params["update_chunk_size"].cast<size_t>();
+    uint32_t hash_seed = params["hash_seed"].cast<uint32_t>();
 
-py::dict typeOnlyParams(const std::string& type) {
-  py::dict params;
-  params["type"] = type;
-  return params;
-}
+    auto embedding_block = params["embedding_block"].cast<NumpyArray<float>>();
+
+    auto emb = ops::RobeZ::make(
+        num_embedding_lookups, lookup_size, log_embedding_block_size, reduction,
+        num_tokens_per_input, update_chunk_size, hash_seed);
+
+    size_t embedding_block_size = emb->kernel()->getRawEmbeddingBlock().size();
+    if (!shapeMatches(embedding_block, {embedding_block_size})) {
+      throw std::invalid_argument(
+          "Expected embedding block to be 1D array of size " +
+          std::to_string(embedding_block_size) + ".");
+    }
+
+    std::copy(embedding_block.data(),
+              embedding_block.data() + embedding_block_size,
+              emb->kernel()->getRawEmbeddingBlock().data());
+
+    return {emb, getUnaryApplyFunc<ops::RobeZ>()};
+  }
+
+  std::string opType() const final { return "robe_z"; }
+};
+
+class LayerNormOpConverter final : public OpConverter {
+ public:
+  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
+    auto norm = std::dynamic_pointer_cast<ops::LayerNorm>(op);
+    if (!norm) {
+      return std::nullopt;
+    }
+
+    py::dict params;
+
+    params["type"] = opType();
+
+    params["gamma"] = copyArray(norm->gamma().data(), {norm->dim()});
+    params["beta"] = copyArray(norm->beta().data(), {norm->dim()});
+
+    return params;
+  }
+
+  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& params) const final {
+    auto gamma = params["gamma"].cast<NumpyArray<float>>();
+    auto beta = params["beta"].cast<NumpyArray<float>>();
+
+    if (gamma.ndim() != 1 || beta.ndim() != 1 ||
+        gamma.shape(0) != beta.shape(0)) {
+      throw std::invalid_argument(
+          "Expected gamma and beta to be 1D arrays of the same size.");
+    }
+
+    auto op = ops::LayerNorm::make(gamma.data(), beta.data(), gamma.shape(0));
+
+    return {op, getUnaryApplyFunc<ops::LayerNorm>()};
+  }
+
+  std::string opType() const final { return "layer_norm"; }
+};
+
+class ConcatenateOpConverter final : public OpConverter {
+ public:
+  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
+    if (!std::dynamic_pointer_cast<ops::Concatenate>(op)) {
+      return std::nullopt;
+    }
+
+    return emptyParams();
+  }
+
+  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& params) const final {
+    (void)params;
+
+    auto op = ops::Concatenate::make();
+
+    auto apply_func = [](const ops::OpPtr& op,
+                         const autograd::ComputationList& inputs) {
+      auto concrete_op = std::dynamic_pointer_cast<ops::Concatenate>(op);
+      if (!concrete_op) {
+        throw std::runtime_error("Op type mismatch in apply func.");
+      }
+
+      return concrete_op->apply(inputs);
+    };
+
+    return {op, apply_func};
+  }
+
+  std::string opType() const final { return "concat"; }
+};
+
+class TanhOpConverter final : public OpConverter {
+ public:
+  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
+    if (!std::dynamic_pointer_cast<ops::Tanh>(op)) {
+      return std::nullopt;
+    }
+
+    return emptyParams();
+  }
+
+  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+      const py::dict& params) const final {
+    (void)params;
+
+    auto op = ops::Tanh::make();
+
+    return {op, getUnaryApplyFunc<ops::Tanh>()};
+  }
+
+  std::string opType() const final { return "tanh"; }
+};
+
+std::vector<std::shared_ptr<OpConverter>> op_converters = {
+    std::make_shared<FullyConnectedOpConverter>(),
+    std::make_shared<EmbeddingOpConverter>(),
+    std::make_shared<RobeZOpConverter>(),
+    std::make_shared<LayerNormOpConverter>(),
+    std::make_shared<ConcatenateOpConverter>(),
+    std::make_shared<TanhOpConverter>(),
+};
 
 class ModelExporter {
  public:
@@ -316,22 +460,18 @@ class ModelExporter {
   py::dict exportOps() {
     py::dict ops;
     for (const auto& op : _model->ops()) {
-      if (auto fc = ops::FullyConnected::cast(op)) {
-        ops[py::str(op->name())] = fullyConnectedOpParams(fc);
-      } else if (auto emb = ops::Embedding::cast(op)) {
-        ops[py::str(op->name())] = embeddingOpParams(emb);
-      } else if (auto emb = std::dynamic_pointer_cast<ops::RobeZ>(op)) {
-        ops[py::str(op->name())] = robeZOpParams(emb);
-      } else if (auto norm = std::dynamic_pointer_cast<ops::LayerNorm>(op)) {
-        ops[py::str(op->name())] = layerNormParams(norm);
-      } else if (std::dynamic_pointer_cast<ops::Concatenate>(op)) {
-        ops[py::str(op->name())] = typeOnlyParams("concat");
-      } else if (std::dynamic_pointer_cast<ops::Tanh>(op)) {
-        ops[py::str(op->name())] = typeOnlyParams("tanh");
-      } else {
-        throw std::invalid_argument(
-            "Converting model to parameters dictionary is currently only "
-            "supported for FullyConnected and Embedding Ops.");
+      bool found_converter = false;
+      for (const auto& converter : op_converters) {
+        if (auto params = converter->toParams(op)) {
+          ops[py::str(op->name())] = std::move(params.value());
+          found_converter = true;
+          break;
+        }
+      }
+
+      if (!found_converter) {
+        throw std::invalid_argument("Unable to find op converter for op '" +
+                                    op->name() + "'.");
       }
     }
     return ops;
@@ -456,6 +596,11 @@ class ModelImporter {
   }
 
   void importOps() {
+    std::unordered_map<std::string, std::shared_ptr<OpConverter>> converter_map;
+    for (const auto& converter : op_converters) {
+      converter_map[converter->opType()] = converter;
+    }
+
     for (const auto& op_info : _params["ops"].cast<py::dict>()) {
       std::string name = op_info.first.cast<std::string>();
 
@@ -463,53 +608,23 @@ class ModelImporter {
 
       std::string type = op_params["type"].cast<std::string>();
 
-      ops::OpPtr op;
-      if (type == "fully_connected") {
-        op = fullyConnectedOpFromParams(op_params);
-      } else if (type == "embedding") {
-        op = embeddingOpFromParams(op_params);
-      } else if (type == "robe_z") {
-        op = robeZOpFromParams(op_params);
-      } else if (type == "layer_norm") {
-        op = layerNormFromParams(op_params);
-      } else if (type == "concat") {
-        op = ops::Concatenate::make();
-      } else if (type == "tanh") {
-        op = ops::Tanh::make();
-      } else {
-        throw std::invalid_argument("Unexpected op type '" + type + "'.");
-      }
-
+      auto [op, apply_func] = converter_map.at(type)->fromParams(op_params);
       op->setName(name);
-      _ops[name] = op;
+      _ops[name] = {op, apply_func};
     }
   }
 
   void importComputationGraph() {
     for (const auto& comp : _params["computation_graph"]) {
       std::string name = comp["name"].cast<std::string>();
-      ops::OpPtr op = _ops[comp["op"].cast<std::string>()];
+      auto [op, apply_func] = _ops[comp["op"].cast<std::string>()];
 
       autograd::ComputationList inputs;
       for (const auto input : comp["inputs"]) {
         inputs.push_back(_computations[input.cast<std::string>()]);
       }
 
-      if (auto fc = ops::FullyConnected::cast(op)) {
-        _computations[name] = fc->apply(inputs.at(0));
-      } else if (auto emb = ops::Embedding::cast(op)) {
-        _computations[name] = emb->apply(inputs.at(0));
-      } else if (auto emb = std::dynamic_pointer_cast<ops::RobeZ>(op)) {
-        _computations[name] = emb->apply(inputs.at(0));
-      } else if (auto norm = std::dynamic_pointer_cast<ops::LayerNorm>(op)) {
-        _computations[name] = norm->apply(inputs.at(0));
-      } else if (auto cat = std::dynamic_pointer_cast<ops::Concatenate>(op)) {
-        _computations[name] = cat->apply(inputs);
-      } else if (auto tanh = std::dynamic_pointer_cast<ops::Tanh>(op)) {
-        _computations[name] = tanh->apply(inputs.at(0));
-      } else {
-        throw std::runtime_error("Unsupported op in model parameters.");
-      }
+      _computations[name] = apply_func(op, inputs);
     }
   }
 
@@ -557,7 +672,9 @@ class ModelImporter {
 
   py::dict _params;
 
-  std::unordered_map<std::string, ops::OpPtr> _ops;
+  std::unordered_map<std::string,
+                     std::pair<ops::OpPtr, OpConverter::OpApplyFunc>>
+      _ops;
   std::unordered_map<std::string, autograd::ComputationPtr> _computations;
 };
 

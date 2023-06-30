@@ -213,10 +213,7 @@ void defineOps(py::module_& nn) {
            })
       .def("get_hash_table", &ops::FullyConnected::getHashTable)
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
-           py::arg("hash_fn"), py::arg("hash_table"))
-      .def("params", &fullyConnectedOpParams)
-      .def_static("from_params", &fullyConnectedOpFromParams,
-                  py::arg("params"));
+           py::arg("hash_fn"), py::arg("hash_table"));
 
   py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
       .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
@@ -262,9 +259,7 @@ void defineOps(py::module_& nn) {
                throw std::invalid_argument(error.str());
              }
              op->setBiases(biases.data());
-           })
-      .def("params", &embeddingOpParams)
-      .def_static("from_params", &embeddingOpFromParams, py::arg("params"));
+           });
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
