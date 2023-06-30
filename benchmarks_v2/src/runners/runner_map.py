@@ -8,6 +8,7 @@ from .mini_benchmark_runners.udt import MiniBenchmarkUDTRunner
 from .query_reformulation import QueryReformulationRunner
 from .temporal import TemporalRunner
 from .udt import UDTRunner
+from .distributed_v1 import DistributedRunner
 
 runner_map = {
     "bolt_fc": BoltFullyConnectedRunner,
@@ -20,4 +21,5 @@ runner_map = {
     "mini_benchmark_udt": MiniBenchmarkUDTRunner,
     "mini_benchmark_query_reformulation": MiniBenchmarkQueryReformulationRunner,
     "mini_benchmark_temporal": MiniBenchmarkTemporalRunner,
+    "distributed_v1": DistributedRunner,
 }
