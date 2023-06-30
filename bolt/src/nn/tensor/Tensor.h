@@ -54,6 +54,10 @@ class Tensor {
 
   const float* activationsPtr() const;
 
+  const uint32_t* TopKactiveNeuronsPtr(uint32_t topk);
+
+  const float* TopKactivationsPtr(uint32_t topk);
+
   const float* gradientsPtr() const;
 
  private:

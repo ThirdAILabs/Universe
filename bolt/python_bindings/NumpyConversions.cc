@@ -79,23 +79,11 @@ py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
           "top_k value is invalid. top_k > 0 and top_k <= number of target "
           "classes");
   }
-  uint32_t num_batches = tensor->batchSize();
-  float* flattened_activations = new float[num_batches * top_k];
-  uint32_t* flattened_active_neurons = new uint32_t[num_batches * top_k];
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    int idx_ = top_k - 1;
-    BoltVector bolt_vec = tensor->getVector(batch_idx);
-    TopKActivationsQueue topk_activations_queue =
-        bolt_vec.findKLargestActivations(top_k);
-    while (!topk_activations_queue.empty() && idx_ >= 0) {
-      flattened_activations[batch_idx * top_k + idx_] =
-          topk_activations_queue.top().first;
-      flattened_active_neurons[batch_idx * top_k + idx_] =
-          topk_activations_queue.top().second;
-      topk_activations_queue.pop();
-      idx_--;
-    }
-  }
+
+  const float* flattened_activations = tensor->TopKactivationsPtr(top_k);
+  const uint32_t* flattened_active_neurons =
+      tensor->TopKactiveNeuronsPtr(top_k);
+
   auto activations = createArrayCopy(flattened_activations, tensor->batchSize(),
                                      top_k, single_row_to_vector);
   auto active_neurons =
