@@ -7,7 +7,6 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace thirdai::dataset::mach {
@@ -73,20 +72,17 @@ class MachIndex {
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
+  TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
+                                           uint32_t k) const;
+
   float sparsity() const;
 
   void save(const std::string& filename) const;
 
   static std::shared_ptr<MachIndex> load(const std::string& filename);
 
-  std::vector<uint32_t> topKNonEmptyBucketsIndices(const BoltVector& output,
-                                                   uint32_t k) const;
-
  private:
   void verifyHash(uint32_t hash) const;
-
-  TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
-                                           uint32_t k) const;
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;

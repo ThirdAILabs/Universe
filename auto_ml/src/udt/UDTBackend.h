@@ -104,22 +104,14 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
-  virtual py::object predictBatchHashes(const MapInputBatch& sample,
-                                        bool sparse_inference,
-                                        std::optional<uint32_t> top_k) {
-    (void)sample;
-    (void)sparse_inference;
-    (void)top_k;
-    throw notSupported("output frequency");
-  }
-
   virtual py::object outputCorrectness(const MapInputBatch& sample,
                                        const std::vector<uint32_t>& labels,
-                                       bool sparse_inference, uint32_t top_k) {
+                                       bool sparse_inference,
+                                       std::optional<uint32_t> num_hashes) {
     (void)sample;
     (void)labels;
     (void)sparse_inference;
-    (void)top_k;
+    (void)num_hashes;
     throw notSupported("output correctness");
   }
 
@@ -336,17 +328,28 @@ class UDTBackend {
 
   /**
    * Used in UDTMachClassifier, returns the predicted hashes from the input
-   * sample.
+   * sample. If num_hashes is not provided, will return the number of hashes
+   * used in the index by default.
    */
   virtual py::object predictHashes(const MapInput& sample,
-                                   bool sparse_inference,
-                                   std::optional<uint32_t> top_k,
-                                   bool return_non_empty) {
+                                   bool sparse_inference, bool force_non_empty,
+                                   std::optional<uint32_t> num_hashes) {
     (void)sample;
     (void)sparse_inference;
-    (void)top_k;
-    (void)return_non_empty;
+    (void)force_non_empty;
+    (void)num_hashes;
     throw notSupported("predict_hashes");
+  }
+
+  virtual py::object predictHashesBatch(const MapInputBatch& samples,
+                                        bool sparse_inference,
+                                        bool force_non_empty,
+                                        std::optional<uint32_t> num_hashes) {
+    (void)samples;
+    (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
+    throw notSupported("predict_hashes_batch");
   }
 
   /**

@@ -4,10 +4,8 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <algorithm>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 
 namespace thirdai::dataset::mach {
 
@@ -119,23 +117,6 @@ float MachIndex::sparsity() const {
            nonemptyBuckets().size());
 
   return guess;
-}
-
-std::vector<uint32_t> MachIndex::topKNonEmptyBucketsIndices(
-    const BoltVector& output, uint32_t k) const {
-  TopKActivationsQueue top_buckets = topKNonEmptyBuckets(output, k);
-
-  std::vector<uint32_t> buckets;
-
-  while (!top_buckets.empty()) {
-    std::pair<float, uint32_t> element = top_buckets.top();
-    buckets.push_back(element.second);
-    top_buckets.pop();
-  }
-
-  std::reverse(buckets.begin(), buckets.end());
-
-  return buckets;
 }
 
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
