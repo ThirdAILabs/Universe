@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/python_bindings/DistributedCommunicationPython.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
@@ -26,7 +27,8 @@ class Trainer {
   explicit Trainer(
       nn::model::ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
-      InterruptCheck interrupt_check = std::nullopt);
+      InterruptCheck interrupt_check = std::nullopt,
+      std::optional<python::DistributedCommPython> comm = std::nullopt);
 
   /**
    * Training loop function. Takes in data, metrics, callbacks, validation data,
@@ -155,6 +157,7 @@ class Trainer {
   std::optional<uint32_t> _freeze_hash_tables_epoch;
 
   InterruptCheck _interrupt_check;
+  std::optional<python::DistributedCommPython> _comm;
 };
 
 }  // namespace thirdai::bolt::train

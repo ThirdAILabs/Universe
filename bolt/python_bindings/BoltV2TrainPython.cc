@@ -2,6 +2,7 @@
 #include "CtrlCCheck.h"
 #include "PyCallback.h"
 #include "PybindUtils.h"
+#include "DistributedCommunicationPython.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -26,6 +27,7 @@
 #include <pybind11/stl_bind.h>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace py = pybind11;
 
@@ -90,8 +92,8 @@ void createBoltV2TrainSubmodule(py::module_& module) {
 }
 
 Trainer makeTrainer(nn::model::ModelPtr model,
-                    std::optional<uint32_t> freeze_hash_tables_epoch) {
-  return Trainer(std::move(model), freeze_hash_tables_epoch, CtrlCCheck{});
+                    std::optional<uint32_t> freeze_hash_tables_epoch, py::object &dist_comm_class) {
+  return Trainer(std::move(model), freeze_hash_tables_epoch, CtrlCCheck{}, DistributedCommPython(std::move(dist_comm_class)));
 }
 
 void defineTrainer(py::module_& train) {
@@ -112,7 +114,8 @@ void defineTrainer(py::module_& train) {
    */
   py::class_<Trainer>(train, "Trainer")
       .def(py::init(&makeTrainer), py::arg("model"),
-           py::arg("freeze_hash_tables_epoch") = std::nullopt)
+           py::arg("freeze_hash_tables_epoch") = std::nullopt,
+           py::arg("dist_comm_class"))
 #if THIRDAI_EXPOSE_ALL
       /**
        * ==============================================================

@@ -17,11 +17,13 @@ constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
 Trainer::Trainer(nn::model::ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
-                 InterruptCheck interrupt_check)
+                 InterruptCheck interrupt_check,
+                 std::optional<python::DistributedCommPython> comm)
     : _model(std::move(model)),
       _epoch(0),
       _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
-      _interrupt_check(std::move(interrupt_check)) {
+      _interrupt_check(std::move(interrupt_check)),
+      _comm(comm) {
   _history = std::make_shared<metrics::History>();
 }
 
@@ -65,6 +67,9 @@ metrics::History Trainer::train(
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();
+    if(_comm.has_value()){
+      num_batches = _comm->min_num_batches(num_batches);
+    }
     auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
     utils::Timer epoch_timer;
@@ -76,6 +81,10 @@ metrics::History Trainer::train(
       const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
 
       _model->trainOnBatch(inputs, labels);
+
+      if(_comm.has_value()){
+          _comm->communicate(_model);
+      }
 
       _model->updateParameters(train_state->learningRate());
 
