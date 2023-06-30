@@ -1,5 +1,6 @@
 import copy
 
+import numpy as np
 import pytest
 from download_dataset_fixtures import download_census_income
 from model_test_utils import (
@@ -40,15 +41,20 @@ def test_udt_tabular_get_set_parameters(download_census_income):
     model.save(save_file_name)
     untrained_model = bolt.UniversalDeepTransformer.load(save_file_name)
 
-    train_filename, test_filename, _ = download_census_income
+    train_filename, _, test_samples = download_census_income
 
     model.train(train_filename, epochs=1, learning_rate=0.01)
 
     untrained_model.set_parameters(model.get_parameters())
 
-    assert compute_evaluate_accuracy(model, test_filename) == compute_evaluate_accuracy(
-        untrained_model, test_filename
-    )
+    batch = [x[0] for x in test_samples]
+
+    old_activations = model.predict_batch(batch)
+    new_activations = untrained_model.predict_batch(batch)
+
+    assert (
+        np.argmax(old_activations, axis=1) == np.argmax(new_activations, axis=1)
+    ).all()
 
 
 def test_udt_tabular_save_load(train_udt_tabular, download_census_income):

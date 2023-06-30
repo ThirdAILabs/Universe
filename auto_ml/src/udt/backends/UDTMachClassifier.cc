@@ -788,8 +788,8 @@ void UDTMachClassifier::associate(
     batch.emplace_back(target);
   }
 
-  auto all_predicted_hashes =
-      predictHashesImpl(batch, /* sparse_inference = */ false);
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
@@ -904,8 +904,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output
-  // ranges
+  // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
 
   updateSamplingStrategy();

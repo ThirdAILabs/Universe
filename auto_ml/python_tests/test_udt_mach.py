@@ -441,7 +441,7 @@ def test_load_balancing():
     )
 
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes(sample)
+    hash_locs = model.predict_hashes(sample, force_non_empty=False)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
