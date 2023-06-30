@@ -16,6 +16,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -70,6 +71,11 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictHashesBatch(const MapInputBatch& samples,
                                 bool sparse_inference, bool force_non_empty,
                                 std::optional<uint32_t> num_hashes) final;
+
+  py::object outputCorrectness(const MapInputBatch& samples,
+                               const std::vector<uint32_t>& labels,
+                               bool sparse_inference,
+                               std::optional<uint32_t> num_hashes) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 

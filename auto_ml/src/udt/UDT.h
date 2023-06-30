@@ -1,10 +1,12 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -66,6 +68,14 @@ class UDT {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
+
+  py::object outputCorrectness(const MapInputBatch& sample,
+                               const std::vector<uint32_t>& labels,
+                               bool sparse_inference,
+                               std::optional<uint32_t> num_hashes) {
+    return _backend->outputCorrectness(sample, labels, sparse_inference,
+                                       num_hashes);
+  }
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,

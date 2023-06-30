@@ -104,6 +104,17 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual py::object outputCorrectness(const MapInputBatch& sample,
+                                       const std::vector<uint32_t>& labels,
+                                       bool sparse_inference,
+                                       std::optional<uint32_t> num_hashes) {
+    (void)sample;
+    (void)labels;
+    (void)sparse_inference;
+    (void)num_hashes;
+    throw notSupported("output correctness");
+  }
+
   /**
    * Returns the model used.
    */

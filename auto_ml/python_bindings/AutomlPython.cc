@@ -145,6 +145,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
+      .def("output_correctness", &udt::UDT::outputCorrectness,
+           py::arg("samples"), py::arg("labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("num_hashes") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"),
