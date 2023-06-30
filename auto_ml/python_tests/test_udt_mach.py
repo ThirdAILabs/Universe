@@ -31,6 +31,7 @@ def train_simple_mach_udt(
     embedding_dim=256,
     use_bias=True,
     rlhf_args={},
+    mach_sampling_threshold=0.2,
     output_dim=OUTPUT_DIM,
 ):
     make_simple_test_file(invalid_data=invalid_data)
@@ -49,6 +50,7 @@ def train_simple_mach_udt(
             "extreme_output_dim": output_dim,
             "use_bias": use_bias,
             **rlhf_args,
+            "mach_sampling_threshold": mach_sampling_threshold,
         },
     )
 
@@ -335,7 +337,9 @@ def test_mach_udt_introduce_documents(fast_approximation):
 
 
 def test_mach_udt_hash_based_methods():
-    model = train_simple_mach_udt()
+    # Set mach_sampling_threshold = 1.0 to ensure that we use MACH index for
+    # active neuron selection.
+    model = train_simple_mach_udt(mach_sampling_threshold=1.0)
 
     hashes = model.predict_hashes(
         {"text": "testing hash based methods"},
@@ -344,12 +348,50 @@ def test_mach_udt_hash_based_methods():
     )
     assert len(hashes) == 7
 
-    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    # All hashes in new_hash_set represent non-empty buckets since they are
+    # the hashes of an entity. This is important since we're using MACH index
+    # for active neuron selection.
+    model.introduce_label([{"text": "text that will map to different buckets"}], 1000)
+    new_hash_set = set(model.get_index().get_entity_hashes(1000))
     assert hashes != new_hash_set
 
     for _ in range(5):
         model.train_with_hashes(
-            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            [
+                {
+                    "text": "testing hash based methods",
+                    "label": " ".join(map(str, new_hash_set)),
+                }
+            ],
+            learning_rate=0.01,
+        )
+
+    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert set(new_hashes) == new_hash_set
+
+    # Now set mach_sampling_threshold = 0.0 to ensure that we use LSH index for
+    # active neuron selection.
+    model = train_simple_mach_udt(mach_sampling_threshold=0.0)
+
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert len(hashes) == 7
+
+    # Hashes are empty buckets. This is fine since we are using LSH index for
+    # active neuron selection.
+    empty_hashes = [
+        i for i in range(100) if len(model.get_index().get_hash_to_entities(i)) == 0
+    ]
+    new_hash_set = set(empty_hashes[:7])
+    assert hashes != new_hash_set
+
+    for _ in range(10):
+        model.train_with_hashes(
+            [
+                {
+                    "text": "testing hash based methods",
+                    "label": " ".join(map(str, new_hash_set)),
+                }
+            ],
             learning_rate=0.01,
         )
 

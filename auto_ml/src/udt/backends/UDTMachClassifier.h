@@ -161,6 +161,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
+  void setMachSamplingThreshold(float threshold) final;
+
  private:
   std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
                                                        bool sparse_inference);
@@ -246,7 +248,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
-  float _sparse_inference_threshold;
+  float _mach_sampling_threshold;
 
   std::optional<RLHFSampler> _rlhf_sampler;
 };
