@@ -96,6 +96,8 @@ jobs:
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
             CC=$(brew --prefix llvm)/bin/clang
             CXX=$(brew --prefix llvm)/bin/clang++
+            LDFLAGS="-L$(brew --prefix libomp)/lib"
+            CPPFLAGS="-I$(brew --prefix libomp)/include"
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
