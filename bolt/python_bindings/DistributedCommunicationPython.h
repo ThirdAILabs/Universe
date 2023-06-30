@@ -1,12 +1,10 @@
-#pragma once
-
 #include <pybind11/pybind11.h>
 #include <bolt/src/nn/model/Model.h>
 
 
 namespace py = pybind11;
 
-namespace thirdai::bolt:: train::python {
+namespace thirdai::bolt::train::python {
     
     class DistributedCommPython{
         public:

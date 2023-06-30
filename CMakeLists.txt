@@ -315,12 +315,23 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-set(THIRDAI_SOURCES
+set(
+  THIRDAI_SOURCES_PRE
+  bolt/python_bindings/DistributedCommunicationPython.cc
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/autograd/Computation.cc
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+)
+
+add_library(thirdai_pre STATIC ${THIRDAI_SOURCES_PRE})
+
+target_link_libraries(thirdai_pre PUBLIC pybind11::pybind11 OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
+                 prometheus-cpp::pull utf8proc)
+
+
+set(THIRDAI_SOURCES
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
@@ -451,6 +462,8 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
+target_link_libraries(thirdai PUBLIC thirdai_pre)
+
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
                  prometheus-cpp::pull utf8proc)
@@ -477,7 +490,6 @@ pybind11_add_module(
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
   bolt/python_bindings/NumpyConversions.cc
-  bolt/python_bindings/DistributedCommunicationPython.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/FeaturizationPython.cc
