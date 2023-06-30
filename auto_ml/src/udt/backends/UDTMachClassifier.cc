@@ -22,12 +22,15 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
+#include <pybind11/cast.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
 #include <utils/StringManipulation.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <exception>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -173,6 +176,40 @@ py::object UDTMachClassifier::train(
                             callbacks, options);
 }
 
+py::object UDTMachClassifier::trainBatch(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
+py::object UDTMachClassifier::trainWithHashes(
+    const MapInputBatch& batch, float learning_rate,
+    const std::vector<std::string>& metrics) {
+  auto& model = _classifier->model();
+
+  auto [inputs, labels] =
+      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
+  labels.push_back(placeholderDocIds(batch.size()));
+
+  model->trainOnBatch(inputs, labels);
+  model->updateParameters(learning_rate);
+
+  // TODO(Nicholas): Add back metrics
+  (void)metrics;
+
+  return py::none();
+}
+
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
                                        bool sparse_inference, bool verbose,
@@ -215,22 +252,6 @@ std::vector<std::pair<uint32_t, double>> UDTMachClassifier::predictImpl(
   return decoded_output;
 }
 
-py::object UDTMachClassifier::trainBatch(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
-  return py::none();
-}
-
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class,
@@ -262,49 +283,93 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predicted_entities);
 }
 
-py::object UDTMachClassifier::trainWithHashes(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] =
-      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
-  labels.push_back(placeholderDocIds(batch.size()));
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
-  return py::none();
+py::object UDTMachClassifier::predictHashes(
+    const MapInput& sample, bool sparse_inference, bool force_non_empty,
+    std::optional<uint32_t> num_hashes) {
+  return py::cast(
+      predictHashesImpl({sample}, sparse_inference, force_non_empty, num_hashes)
+          .at(0));
 }
 
-py::object UDTMachClassifier::predictHashes(const MapInput& sample,
-                                            bool sparse_inference) {
-  return py::cast(predictHashesImpl(sample, sparse_inference));
+py::object UDTMachClassifier::predictHashesBatch(
+    const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
+    std::optional<uint32_t> num_hashes) {
+  return py::cast(predictHashesImpl(samples, sparse_inference, force_non_empty,
+                                    num_hashes));
 }
 
-std::vector<uint32_t> UDTMachClassifier::predictHashesImpl(
-    const MapInput& sample, bool sparse_inference) {
-  auto outputs = _classifier->model()->forward(
-      _dataset_factory->featurizeInput(sample), sparse_inference);
+std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
+    const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
+    std::optional<uint32_t> num_hashes) {
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               sparse_inference)
+                     .at(0);
 
-  const BoltVector& output = outputs.at(0)->getVector(0);
+  uint32_t k = num_hashes.value_or(_mach_label_block->index()->numHashes());
 
-  uint32_t k = _mach_label_block->index()->numHashes();
-  auto heap = output.findKLargestActivations(k);
+  std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
+#pragma omp parallel for default(none) \
+    shared(outputs, all_hashes, k, force_non_empty)
+  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
+    const BoltVector& output = outputs->getVector(i);
 
-  std::vector<uint32_t> hashes_to_return;
-  while (hashes_to_return.size() < k && !heap.empty()) {
-    auto [_, active_neuron] = heap.top();
-    hashes_to_return.push_back(active_neuron);
-    heap.pop();
+    TopKActivationsQueue heap;
+    if (force_non_empty) {
+      heap = _mach_label_block->index()->topKNonEmptyBuckets(output, k);
+    } else {
+      heap = output.findKLargestActivations(k);
+    }
+
+    std::vector<uint32_t> hashes;
+    while (!heap.empty()) {
+      auto [_, active_neuron] = heap.top();
+      hashes.push_back(active_neuron);
+      heap.pop();
+    }
+
+    std::reverse(hashes.begin(), hashes.end());
+
+    all_hashes[i] = hashes;
   }
 
-  std::reverse(hashes_to_return.begin(), hashes_to_return.end());
+  return all_hashes;
+}
 
-  return hashes_to_return;
+py::object UDTMachClassifier::outputCorrectness(
+    const MapInputBatch& samples, const std::vector<uint32_t>& labels,
+    bool sparse_inference, std::optional<uint32_t> num_hashes) {
+  std::vector<std::vector<uint32_t>> top_buckets = predictHashesImpl(
+      samples, sparse_inference, /* force_non_empty = */ true, num_hashes);
+
+  std::vector<uint32_t> matching_buckets(labels.size());
+  std::exception_ptr hashes_err;
+
+#pragma omp parallel for default(none) \
+    shared(labels, top_buckets, matching_buckets, hashes_err)
+  for (uint32_t i = 0; i < labels.size(); i++) {
+    try {
+      std::vector<uint32_t> hashes =
+          _mach_label_block->index()->getHashes(labels[i]);
+      uint32_t count = 0;
+      for (auto hash : hashes) {
+        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
+            0) {
+          count++;
+        }
+      }
+      matching_buckets[i] = count;
+    } catch (const std::exception& e) {
+#pragma omp critical
+      hashes_err = std::current_exception();
+    }
+  }
+
+  if (hashes_err) {
+    std::rethrow_exception(hashes_err);
+  }
+
+  return py::cast(matching_buckets);
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
@@ -391,8 +456,10 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured with a "
-        "single text input column and target column. The current model is "
+        "Introducing documents can only be used when UDT is configured "
+        "with a "
+        "single text input column and target column. The current model "
+        "is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
         " input columns.");
@@ -473,9 +540,10 @@ void UDTMachClassifier::introduceDocuments(
   bolt::train::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
-    // Note: using sparse inference here could cause issues because the mach
-    // index sampler will only return nonempty buckets, which could cause new
-    // docs to only be mapped to buckets already containing entities.
+    // Note: using sparse inference here could cause issues because the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
@@ -568,9 +636,10 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     }
   }
 
-  // We sort the hashes first by number of occurances and tiebreak with the
-  // higher aggregated score if necessary. We don't only use the activations
-  // since those typically aren't as useful as the frequencies.
+  // We sort the hashes first by number of occurances and tiebreak with
+  // the higher aggregated score if necessary. We don't only use the
+  // activations since those typically aren't as useful as the
+  // frequencies.
   std::vector<std::pair<uint32_t, BucketScore>> sorted_hashes(
       hash_freq_and_scores.begin(), hash_freq_and_scores.end());
 
@@ -586,8 +655,8 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
 
-                // Give preference to emptier buckets. If buckets are equally
-                // empty, use one with the best score.
+                // Give preference to emptier buckets. If buckets are
+                // equally empty, use one with the best score.
                 if (lhs_size == rhs_size) {
                   return cmp(lhs, rhs);
                 }
@@ -598,8 +667,9 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 
   std::vector<uint32_t> new_hashes;
 
-  // We can optionally specify the number of hashes we'd like to be random for a
-  // new document. This is to encourage an even distribution among buckets.
+  // We can optionally specify the number of hashes we'd like to be
+  // random for a new document. This is to encourage an even distribution
+  // among buckets.
   if (num_random_hashes > num_hashes) {
     throw std::invalid_argument(
         "num_random_hashes cannot be greater than num hashes.");
@@ -626,9 +696,10 @@ void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes) {
-  // Note: using sparse inference here could cause issues because the mach
-  // index sampler will only return nonempty buckets, which could cause new
-  // docs to only be mapped to buckets already containing entities.
+  // Note: using sparse inference here could cause issues because the
+  // mach index sampler will only return nonempty buckets, which could
+  // cause new docs to only be mapped to buckets already containing
+  // entities.
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
@@ -692,7 +763,8 @@ void UDTMachClassifier::addBalancingSamples(
 void UDTMachClassifier::requireRLHFSampler() {
   if (!_rlhf_sampler) {
     throw std::runtime_error(
-        "This model was not configured to support rlhf. Please pass {'rlhf': "
+        "This model was not configured to support rlhf. Please pass "
+        "{'rlhf': "
         "True} in the model options or call enable_rlhf().");
   }
 }
@@ -711,11 +783,21 @@ void UDTMachClassifier::associate(
     const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+  MapInputBatch batch;
+  for (const auto& [_, target] : source_target_samples) {
+    batch.emplace_back(target);
+  }
+
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
-  for (const auto& [source, target] : source_target_samples) {
-    teaching_samples.emplace_back(source, predictHashesImpl(target, false));
+  for (uint32_t i = 0; i < source_target_samples.size(); i++) {
+    teaching_samples.emplace_back(source_target_samples[i].first,
+                                  all_predicted_hashes[i]);
   }
+
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);
 }
@@ -811,7 +893,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   uint32_t num_classes = _mach_label_block->index()->numEntities();
   if (min_num_eval_results > num_classes) {
     throw std::invalid_argument(
-        "Cannot return more results than the model is trained to predict. "
+        "Cannot return more results than the model is trained to "
+        "predict. "
         "Model currently can predict one of " +
         std::to_string(num_classes) + " classes.");
   }
@@ -821,8 +904,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output
-  // ranges
+  // block allows indexes with different number of hashes but not output ranges
   _mach_label_block->setIndex(index);
 
   updateSamplingStrategy();
@@ -839,7 +921,8 @@ InputMetrics UDTMachClassifier::getMetrics(
   if (model->outputs().size() != 1 || model->labels().size() != 2 ||
       model->losses().size() != 1) {
     throw std::invalid_argument(
-        "Expected model to have single input, two labels, and one loss.");
+        "Expected model to have single input, two labels, and one "
+        "loss.");
   }
 
   bolt::nn::autograd::ComputationPtr output = model->outputs().front();
@@ -881,8 +964,9 @@ InputMetrics UDTMachClassifier::getMetrics(
 
 bolt::nn::tensor::TensorPtr UDTMachClassifier::placeholderDocIds(
     uint32_t batch_size) {
-  return bolt::nn::tensor::Tensor::sparse(
-      batch_size, std::numeric_limits<uint32_t>::max(), /* nonzeros= */ 1);
+  return bolt::nn::tensor::Tensor::sparse(batch_size,
+                                          std::numeric_limits<uint32_t>::max(),
+                                          /* nonzeros= */ 1);
 }
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
