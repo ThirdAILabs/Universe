@@ -27,7 +27,11 @@ def make_simple_test_file(invalid_data=False):
 
 
 def train_simple_mach_udt(
-    invalid_data=False, embedding_dim=256, use_bias=True, rlhf_args={}
+    invalid_data=False,
+    embedding_dim=256,
+    use_bias=True,
+    rlhf_args={},
+    output_dim=OUTPUT_DIM,
 ):
     make_simple_test_file(invalid_data=invalid_data)
 
@@ -42,7 +46,7 @@ def train_simple_mach_udt(
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
-            "extreme_output_dim": OUTPUT_DIM,
+            "extreme_output_dim": output_dim,
             "use_bias": use_bias,
             **rlhf_args,
         },
@@ -333,7 +337,11 @@ def test_mach_udt_introduce_documents(fast_approximation):
 def test_mach_udt_hash_based_methods():
     model = train_simple_mach_udt()
 
-    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    hashes = model.predict_hashes(
+        {"text": "testing hash based methods"},
+        sparse_inference=False,
+        force_non_empty=False,
+    )
     assert len(hashes) == 7
 
     new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
@@ -345,8 +353,38 @@ def test_mach_udt_hash_based_methods():
             learning_rate=0.01,
         )
 
-    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    new_hashes = model.predict_hashes(
+        {"text": "testing hash based methods"},
+        sparse_inference=False,
+        force_non_empty=False,
+    )
     assert set(new_hashes) == new_hash_set
+
+
+def test_mach_output_correctness():
+    model = train_simple_mach_udt(output_dim=50)
+
+    # Suppose the label corresponding to the given text is 2.
+    predicted_hashes = model.predict_hashes(
+        {"text": "testing output correctness"},
+        force_non_empty=True,
+    )
+
+    mach_index = model.get_index()
+
+    original_hashes = mach_index.get_entity_hashes(2)
+
+    expected_ratio = len(set(predicted_hashes) & set(original_hashes)) / len(
+        original_hashes
+    )
+
+    num_correct_buckets = model.output_correctness(
+        [{"text": "testing output correctness"}], labels=[2]
+    )[0]
+
+    current_ratio = num_correct_buckets / (mach_index.num_hashes())
+
+    assert expected_ratio == current_ratio
 
 
 def test_mach_save_load_get_set_index():
@@ -433,7 +471,7 @@ def test_load_balancing():
     )
 
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes(sample)
+    hash_locs = model.predict_hashes(sample, force_non_empty=False)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
