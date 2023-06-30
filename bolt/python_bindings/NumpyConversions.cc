@@ -74,11 +74,10 @@ py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
       throw std::runtime_error(
           "top_k value is invalid. top_k > 0 and top_k <= number of target "
           "classes * sparsity");
-    } else {
-      throw std::runtime_error(
-          "top_k value is invalid. top_k > 0 and top_k <= number of target "
-          "classes");
-    }
+    } 
+    throw std::runtime_error(
+        "top_k value is invalid. top_k > 0 and top_k <= number of target "
+        "classes");
   }
 
   const float* flattened_activations = tensor->TopKactivationsPtr(top_k);
