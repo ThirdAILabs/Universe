@@ -94,15 +94,13 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CC=$(brew --prefix llvm)/bin/clang
-            CXX=$(brew --prefix llvm)/bin/clang++
-            LDFLAGS="-L$(brew --prefix libomp)/lib"
-            CPPFLAGS="-I$(brew --prefix libomp)/include"
+            CC=$(brew --prefix gcc)/bin/g
+            CXX=$(brew --prefix g++)/bin/g++
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y
-          CIBW_BEFORE_BUILD_MACOS: brew install openssl libomp llvm
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl gcc-11 g++-11
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
