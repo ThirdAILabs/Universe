@@ -337,12 +337,18 @@ def test_mach_udt_hash_based_methods():
     hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert len(hashes) == 7
 
-    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    model.introduce_label([{"text": "text that will map to different buckets"}], 1000)
+    new_hash_set = set(model.get_index().get_entity_hashes(1000))
     assert hashes != new_hash_set
 
     for _ in range(5):
         model.train_with_hashes(
-            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            [
+                {
+                    "text": "testing hash based methods",
+                    "label": " ".join(map(str, new_hash_set)),
+                }
+            ],
             learning_rate=0.01,
         )
 
