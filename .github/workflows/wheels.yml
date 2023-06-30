@@ -94,13 +94,13 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CC=$(brew --prefix gcc)/bin/g
-            CXX=$(brew --prefix g++)/bin/g++
+            CC=$(brew --prefix)/bin/gcc-11
+            CXX=$(brew --prefix)/bin/g++-11
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y
-          CIBW_BEFORE_BUILD_MACOS: brew install openssl gcc-11 g++-11
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl gcc-11
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
