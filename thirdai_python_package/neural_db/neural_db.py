@@ -9,7 +9,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import Document, DocumentManager, Reference
-from .models import Mach
+from .models import CancelState, Mach
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -184,6 +184,7 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = None,
         on_irrecoverable_error: Callable = None,
+        cancel_state: CancelState = None,
     ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
@@ -201,6 +202,7 @@ class NeuralDB:
                 train_documents=intro_and_train.train,
                 should_train=train,
                 on_progress=on_progress,
+                cancel_state=cancel_state,
             )
 
             self._savable_state.logger.log(

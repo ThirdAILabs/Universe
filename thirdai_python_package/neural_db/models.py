@@ -14,6 +14,23 @@ TrainLabels = List
 TrainSamples = List
 
 
+# This class can be constructed by clients that use neural_db.
+# The object can then be passed into Model.index_documents(), and if
+# the client calls CancelState.cancel() on the object, training will halt.
+class CancelState:
+    def __init__(self, canceled=False):
+        self.canceled = canceled
+
+    def cancel(self):
+        self.canceled = True
+
+    def uncancel(self):
+        self.canceled = False
+
+    def is_canceled(self):
+        return self.canceled
+
+
 class Model:
     def get_model(self) -> bolt.UniversalDeepTransformer:
         raise NotImplementedError()
@@ -24,6 +41,7 @@ class Model:
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -155,6 +173,16 @@ class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
+class CancelTraining(bolt_v2.train.callbacks.Callback):
+    def __init__(self, cancel_state):
+        super().__init__()
+        self.cancel_state = cancel_state
+
+    def on_batch_end(self):
+        if self.cancel_state is not None and self.cancel_state.is_canceled():
+            self.train_state.stop_training()
+
+
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
@@ -165,19 +193,22 @@ def unsupervised_train_on_docs(
     acc_to_stop: float,
     on_progress: Callable,
     freeze_before_train: bool,
+    cancel_state: CancelState,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
 
     documents.restart()
 
-    callback = EarlyStopWithMinEpochs(
+    early_stop_callback = EarlyStopWithMinEpochs(
         min_epochs=min_epochs,
         max_epochs=max_epochs,
         tracked_metric=metric,
         metric_threshold=acc_to_stop,
         progress_bar_callback=on_progress,
     )
+
+    cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
     model.cold_start_on_data_source(
         data_source=documents,
@@ -186,7 +217,7 @@ def unsupervised_train_on_docs(
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
-        callbacks=[callback],
+        callbacks=[early_stop_callback, cancel_training_callback],
     )
 
 
@@ -247,6 +278,7 @@ class Mach(Model):
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
     ) -> None:
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -296,6 +328,7 @@ class Mach(Model):
                 acc_to_stop=0.95,
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
+                cancel_state=cancel_state,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
