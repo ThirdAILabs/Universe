@@ -167,7 +167,7 @@ else()
     # This block needs to happen before all the compile-options are added to
     # escape -Wall and -Werror being enforced on OpenMP library.
 
-    set(LLVM_OPENMP_VERSION "13.0.1")
+    set(LLVM_OPENMP_VERSION "16.0.0")
     set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
 
     if(NOT EXISTS ${LLVM_OPENMP_SOURCE_DIR})
