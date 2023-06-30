@@ -29,7 +29,8 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
 }
 
 py::object tensorToNumpy(const tensor::TensorPtr& tensor,
-                         bool single_row_to_vector) {
+                         bool single_row_to_vector,
+                         std::optional<uint32_t> top_k) {
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
     throw std::runtime_error(
@@ -41,6 +42,11 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
     throw std::runtime_error("Cannot convert ragged tensor to numpy.");
   }
 
+  if (top_k) {
+    return tensorToNumpyTopK(tensor,
+                             /* single_row_to_vector= */ single_row_to_vector,
+                             top_k.value());
+  }
   auto activations =
       createArrayCopy(/* data= */ tensor->activationsPtr(),
                       /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros,
@@ -61,6 +67,18 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
 
 py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
                              bool single_row_to_vector, uint32_t top_k) {
+  auto nonzeros = tensor->nonzeros();
+
+  if (top_k > *nonzeros) {
+    if (tensor->activeNeuronsPtr())
+      throw std::runtime_error(
+          "top_k value is invalid. top_k > 0 and top_k <= number of target "
+          "classes * sparsity");
+    else
+      throw std::runtime_error(
+          "top_k value is invalid. top_k > 0 and top_k <= number of target "
+          "classes");
+  }
   uint32_t num_batches = tensor->batchSize();
   float* flattened_activations = new float[num_batches * top_k];
   uint32_t* flattened_active_neurons = new uint32_t[num_batches * top_k];

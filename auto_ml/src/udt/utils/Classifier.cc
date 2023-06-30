@@ -131,12 +131,9 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
     return predictedClasses(output, single);
   }
 
-  if (top_k) {
-    return bolt::nn::python::tensorToNumpyTopK(
-        output, /* single_row_to_vector= */ single, top_k.value());
-  }
   return bolt::nn::python::tensorToNumpy(output,
-                                         /* single_row_to_vector= */ single);
+                                         /* single_row_to_vector= */ single,
+                                         top_k);
 }
 
 py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {

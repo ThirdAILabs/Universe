@@ -8,9 +8,10 @@ namespace py = pybind11;
 namespace thirdai::bolt::nn::python {
 
 py::object tensorToNumpy(const tensor::TensorPtr& tensor,
-                         bool single_row_to_vector = true);
+                         bool single_row_to_vector = true,
+                         std::optional<uint32_t> top_k = std::nullopt);
 
 py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
                              bool single_row_to_vector = true,
-                             uint32_t top_k = 1);
+                             uint32_t top_k = 5);
 }  // namespace thirdai::bolt::nn::python
