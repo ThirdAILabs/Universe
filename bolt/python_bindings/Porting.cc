@@ -76,6 +76,8 @@ class OpConverter {
 
   virtual std::string opType() const = 0;
 
+  virtual ~OpConverter() = default;
+
   template <typename OP_TYPE>
   static OpApplyFunc getUnaryApplyFunc() {
     auto apply_func = [](const ops::OpPtr& op,
