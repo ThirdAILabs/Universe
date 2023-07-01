@@ -488,7 +488,7 @@ class SentenceLevelExtracted(Extracted):
         df = pd.DataFrame.from_records(
             [
                 {
-                    "sentence": sentence,
+                    "passage": sentence,
                     "para_id": para_id,
                     "sentence_id": i + record["id_offsets"],
                     "sentence_ids_in_para": get_ids(record),
