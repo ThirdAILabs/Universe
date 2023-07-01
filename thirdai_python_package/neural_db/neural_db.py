@@ -8,7 +8,7 @@ from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
-from .documents import Document, DocumentManager, Reference, CSV
+from .documents import CSV, Document, DocumentManager, Reference
 from .models import CancelState, Mach
 from .savable_state import State
 
@@ -167,13 +167,13 @@ class NeuralDB:
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
         self._savable_state = State(model=model, logger=logger)
-        
+
         if csv is not None:
             if (
-                csv_id_column is None or
-                csv_strong_columns is None or
-                csv_weak_columns is None or
-                csv_reference_columns is None
+                csv_id_column is None
+                or csv_strong_columns is None
+                or csv_weak_columns is None
+                or csv_reference_columns is None
             ):
                 error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
                 error_msg += " - `csv_id_column`\n"

@@ -57,7 +57,7 @@ class Model:
 
     def get_n_ids(self) -> int:
         raise NotImplementedError()
-    
+
     def set_n_ids(self, n_ids: int):
         raise NotImplementedError()
 
