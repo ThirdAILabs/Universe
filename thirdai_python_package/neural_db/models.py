@@ -57,6 +57,9 @@ class Model:
 
     def get_n_ids(self) -> int:
         raise NotImplementedError()
+    
+    def set_n_ids(self, n_ids: int):
+        raise NotImplementedError()
 
     def get_id_col(self) -> str:
         raise NotImplementedError()
@@ -262,6 +265,9 @@ class Mach(Model):
 
     def get_n_ids(self) -> int:
         return self.n_ids
+
+    def set_n_ids(self, n_ids: int):
+        self.n_ids = n_ids
 
     def get_query_col(self) -> str:
         return self.query_col
