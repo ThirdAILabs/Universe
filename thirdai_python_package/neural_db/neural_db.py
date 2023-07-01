@@ -8,7 +8,7 @@ from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
-from .documents import Document, DocumentManager, Reference
+from .documents import Document, DocumentManager, Reference, CSV
 from .models import CancelState, Mach
 from .savable_state import State
 
@@ -120,6 +120,11 @@ class NeuralDB:
     def from_udt(
         self,
         udt: bolt.UniversalDeepTransformer,
+        csv: Optional[str] = None,
+        csv_id_column: Optional[str] = None,
+        csv_strong_columns: Optional[List[str]] = None,
+        csv_weak_columns: Optional[List[str]] = None,
+        csv_reference_columns: Optional[List[str]] = None,
     ):
         udt.clear_index()
         udt.enable_rlhf()
@@ -160,6 +165,29 @@ class NeuralDB:
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
         self._savable_state = State(model=model, logger=logger)
+
+        if csv is not None:
+            if (
+                csv_id_column is None or
+                csv_strong_columns is None or
+                csv_weak_columns is None or
+                csv_reference_columns is None
+            ):
+                error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
+                error_msg += " - `csv_id_column`\n"
+                error_msg += " - `csv_strong_columns`\n"
+                error_msg += " - `csv_weak_columns`\n"
+                error_msg += " - `csv_reference_columns`\n"
+                raise ValueError(error_msg)
+            csv_doc = CSV(
+                path=csv,
+                id_column=csv_id_column,
+                strong_columns=csv_strong_columns,
+                weak_columns=csv_weak_columns,
+                reference_columns=csv_reference_columns,
+            )
+            self._savable_state.documents.add([csv_doc])
+
 
     def in_session(self) -> bool:
         return self._savable_state is not None
