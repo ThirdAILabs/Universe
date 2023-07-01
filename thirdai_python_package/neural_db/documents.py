@@ -4,8 +4,8 @@ import shutil
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
@@ -474,38 +474,41 @@ class SentenceLevelExtracted(Extracted):
         df = self.get_orig_df(filename)
         df["sentences"] = df["passage"].apply(sent_tokenize)
         df.drop("passage", axis=1, inplace=True)
-        
+
         num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
-        df["id_offsets"] = np.zeros(len(df)) 
+        df["id_offsets"] = np.zeros(len(df))
         df["id_offsets"][1:] = num_sents_cum_sum[:-1]
         df["id_offsets"] = df["id_offsets"].astype(int)
-        
+
         def get_ids(record):
             id_offset = record["id_offsets"]
             n_sents = len(record["sentences"])
             return list(range(id_offset, id_offset + n_sents))
-        
-        df = pd.DataFrame.from_records([
-            {
-                "sentence": sentence, 
-                "para_id": para_id,
-                "sentence_id": i + record["id_offsets"], 
-                "sentence_ids_in_para": get_ids(record), 
-                **record
-            }
-            for para_id, record in enumerate(df.to_dict(orient="records"))
-            for i, sentence in enumerate(record["sentences"])
-        ])
+
+        df = pd.DataFrame.from_records(
+            [
+                {
+                    "sentence": sentence,
+                    "para_id": para_id,
+                    "sentence_id": i + record["id_offsets"],
+                    "sentence_ids_in_para": get_ids(record),
+                    **record,
+                }
+                for para_id, record in enumerate(df.to_dict(orient="records"))
+                for i, sentence in enumerate(record["sentences"])
+            ]
+        )
 
         df.drop("sentences", axis=1, inplace=True)
         df.drop("id_offsets", axis=1, inplace=True)
         return df
-    
+
     def get_orig_df(
         self,
         filename: str,
     ) -> pd.DataFrame:
         raise NotImplementedError()
+
 
 class SentenceLevelPDF(SentenceLevelExtracted):
     def __init__(
@@ -519,6 +522,7 @@ class SentenceLevelPDF(SentenceLevelExtracted):
         filename: str,
     ) -> pd.DataFrame:
         return process_pdf(filename)
+
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
     def __init__(
