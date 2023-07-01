@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
+import numpy as np
+from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
 from thirdai.dataset.data_source import PyDataSource
@@ -358,6 +360,28 @@ class Extracted(Document):
         return "\n".join(rows["passage"])
 
 
+def process_pdf(filename: str) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(filename)
+
+    if not success:
+        raise ValueError(f"Could not read PDF file: {filename}")
+
+    elements_df = pdf_parse.create_train_df(elements)
+
+    return elements_df
+
+
+def process_docx(filename: str) -> pd.DataFrame:
+    elements, success = doc_parse.get_elements(filename)
+
+    if not success:
+        raise ValueError(f"Could not read DOCX file: {filename}")
+
+    elements_df = doc_parse.create_train_df(elements)
+
+    return elements_df
+
+
 class PDF(Extracted):
     def __init__(
         self,
@@ -369,14 +393,7 @@ class PDF(Extracted):
         self,
         filename: str,
     ) -> pd.DataFrame:
-        elements, success = pdf_parse.process_pdf_file(filename)
-
-        if not success:
-            raise ValueError(f"Could not read PDF file: {filename}")
-
-        elements_df = pdf_parse.create_train_df(elements)
-
-        return elements_df
+        return process_pdf(filename)
 
 
 class DOCX(Extracted):
@@ -390,14 +407,7 @@ class DOCX(Extracted):
         self,
         filename: str,
     ) -> pd.DataFrame:
-        elements, success = doc_parse.get_elements(filename)
-
-        if not success:
-            raise ValueError(f"Could not read DOCX file: {filename}")
-
-        elements_df = doc_parse.create_train_df(elements)
-
-        return elements_df
+        return process_docx(filename)
 
 
 class URL(Document):
@@ -446,3 +456,79 @@ class URL(Document):
             max(0, element_id - radius) : min(len(self.df), element_id + radius)
         ]
         return "\n".join(rows["text"])
+
+
+# Base class for PDF and DOCX classes because they share the same logic.
+class SentenceLevelExtracted(Extracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        # really it's just adding 2 columns: sentence and sentence_ids in para, and revising id column to be sentence-based.
+        df = self.get_orig_df(filename)
+        df["sentences"] = df["passage"].apply(sent_tokenize)
+        df.drop("passage", axis=1, inplace=True)
+        
+        num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
+        df["id_offsets"] = np.zeros(len(df)) 
+        df["id_offsets"][1:] = num_sents_cum_sum[:-1]
+        df["id_offsets"] = df["id_offsets"].astype(int)
+        
+        def get_ids(record):
+            id_offset = record["id_offsets"]
+            n_sents = len(record["sentences"])
+            return list(range(id_offset, id_offset + n_sents))
+        
+        df = pd.DataFrame.from_records([
+            {
+                "sentence": sentence, 
+                "para_id": para_id,
+                "sentence_id": i + record["id_offsets"], 
+                "sentence_ids_in_para": get_ids(record), 
+                **record
+            }
+            for para_id, record in enumerate(df.to_dict(orient="records"))
+            for i, sentence in enumerate(record["sentences"])
+        ])
+
+        df.drop("sentences", axis=1, inplace=True)
+        df.drop("id_offsets", axis=1, inplace=True)
+        return df
+    
+    def get_orig_df(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        raise NotImplementedError()
+
+class SentenceLevelPDF(SentenceLevelExtracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def get_orig_df(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        return process_pdf(filename)
+
+class SentenceLevelDOCX(SentenceLevelExtracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def get_orig_df(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        return process_docx(filename)
