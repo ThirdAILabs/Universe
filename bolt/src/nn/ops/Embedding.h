@@ -76,6 +76,8 @@ class Embedding final : public Op,
     std::copy(biases, biases + _dim, _biases.begin());
   }
 
+  ~Embedding();
+
  private:
   void applyActivationFunction(float* activations);
 
