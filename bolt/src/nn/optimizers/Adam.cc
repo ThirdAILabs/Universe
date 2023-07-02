@@ -3,6 +3,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/utils/Timer.h>
+#include <chrono>
 #include <vector>
 
 namespace thirdai::bolt::nn::optimizers {
@@ -39,10 +41,14 @@ void Adam::updateDense(std::vector<float>& params, std::vector<float>& grads,
   }
 }
 
+int64_t sparse_update_time = 0;
+
 void Adam::updateSparseRows(std::vector<float>& params,
                             std::vector<float>& grads,
                             const std::vector<bool>& rows_used,
                             float learning_rate, size_t train_steps) {
+  utils::Timer timer;
+
   assert(params.size() == grads.size());
   assert(params.size() == _momentum.size());
   assert(rows_used.size() == _rows);
@@ -78,6 +84,14 @@ void Adam::updateSparseRows(std::vector<float>& params,
       grads[i] = 0;
     }
   }
+
+  timer.stop();
+
+  sparse_update_time += timer.elapsed<std::chrono::milliseconds>();
+}
+
+Adam::~Adam() {
+  std::cerr << "sparse_update_time=" << sparse_update_time << std::endl;
 }
 
 void Adam::updateSparseCols(std::vector<float>& params,
