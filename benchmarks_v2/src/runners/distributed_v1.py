@@ -1,8 +1,9 @@
+import os
+
 import ray
+import thirdai.distributed_bolt as db
 from ray.cluster_utils import Cluster
 from thirdai import bolt
-import thirdai.distributed_bolt as db
-import os
 
 from ..configs.distributed_configs import DistributedBenchmarkConfig
 from .runner import Runner

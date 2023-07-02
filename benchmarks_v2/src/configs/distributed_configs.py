@@ -1,6 +1,7 @@
 import os
 import shutil
 from abc import ABC, abstractmethod
+
 from thirdai.demos import download_beir_dataset
 
 
