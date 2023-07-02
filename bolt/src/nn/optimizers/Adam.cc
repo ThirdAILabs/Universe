@@ -24,7 +24,17 @@ void Adam::updateDense(std::vector<float>& params, std::vector<float>& grads,
 #pragma omp parallel for default(none) \
     shared(params, grads, learning_rate, b1_corrected, b2_corrected)
   for (size_t i = 0; i < params.size(); i++) {
-    params[i] += learning_rate * step(i, grads[i], b1_corrected, b2_corrected);
+    // params[i] += learning_rate * step(i, grads[i], b1_corrected,
+    // b2_corrected);
+
+    float grad = grads[i];
+
+    _momentum[i] = momentum(_momentum[i], grad);
+    _velocity[i] = velocity(_velocity[i], grad);
+
+    params[i] += step(_momentum[i], _velocity[i], learning_rate, b1_corrected,
+                      b2_corrected);
+
     grads[i] = 0;
   }
 }
@@ -54,8 +64,17 @@ void Adam::updateSparseRows(std::vector<float>& params,
 
     for (size_t col = 0; col < _cols; col++) {
       size_t i = row * _cols + col;
-      params[i] +=
-          learning_rate * step(i, grads[i], b1_corrected, b2_corrected);
+      // params[i] +=
+      //     learning_rate * step(i, grads[i], b1_corrected, b2_corrected);
+
+      float grad = grads[i];
+
+      _momentum[i] = momentum(_momentum[i], grad);
+      _velocity[i] = velocity(_velocity[i], grad);
+
+      params[i] += step(_momentum[i], _velocity[i], learning_rate, b1_corrected,
+                        b2_corrected);
+
       grads[i] = 0;
     }
   }
@@ -78,8 +97,13 @@ void Adam::updateSparseCols(std::vector<float>& params,
     for (size_t col = 0; col < _cols; col++) {
       if (cols_used[col]) {
         size_t i = row * _cols + col;
-        params[i] +=
-            learning_rate * step(i, grads[i], b1_corrected, b2_corrected);
+        float grad = grads[i];
+
+        _momentum[i] = momentum(_momentum[i], grad);
+        _velocity[i] = velocity(_velocity[i], grad);
+
+        params[i] += step(_momentum[i], _velocity[i], learning_rate,
+                          b1_corrected, b2_corrected);
         grads[i] = 0;
       }
     }
@@ -110,8 +134,13 @@ void Adam::updateSparseRowsAndCols(std::vector<float>& params,
     for (size_t col = 0; col < _cols; col++) {
       if (cols_used[col]) {
         size_t i = row * _cols + col;
-        params[i] +=
-            learning_rate * step(i, grads[i], b1_corrected, b2_corrected);
+        float grad = grads[i];
+
+        _momentum[i] = momentum(_momentum[i], grad);
+        _velocity[i] = velocity(_velocity[i], grad);
+
+        params[i] += step(_momentum[i], _velocity[i], learning_rate,
+                          b1_corrected, b2_corrected);
         grads[i] = 0;
       }
     }
