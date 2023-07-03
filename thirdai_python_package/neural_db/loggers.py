@@ -17,6 +17,12 @@ class Logger:
         train_samples: Optional[any] = None,
     ):
         raise NotImplementedError()
+    
+    def size(self) -> int:
+        raise NotImplementedError()
+    
+    def filter_by_action(self, action: str) -> pd.DataFrame:
+        raise NotImplementedError()
 
     def save_meta(self, directory: Path):
         raise NotImplementedError()
@@ -43,6 +49,8 @@ class InMemoryLogger(Logger):
         return "in_memory"
 
     def log(self, session_id: str, action: str, args: dict, train_samples=None):
+        # TODO (Geordie): This doesn't seem very efficient. There must be a 
+        # better way to do this.
         self.logs = pd.concat(
             [
                 self.logs,
@@ -54,6 +62,12 @@ class InMemoryLogger(Logger):
                 ),
             ]
         )
+    
+    def size(self) -> int:
+        return len(self.logs)
+    
+    def filter_by_action(self, action: str) -> pd.DataFrame:
+        return self.logs[self.logs["action"] == action]
 
     def save_meta(self, directory: Path):
         pass
@@ -85,6 +99,18 @@ class LoggerList(Logger):
             )
             for logger in self.loggers
         ]
+    
+    def size(self) -> int:
+        return max([logger.size() for logger in self.loggers])
+    
+    def filter_by_action(self, action: str) -> pd.DataFrame:
+        max_logger = NoOpLogger()
+        max_size = self.size()
+        for logger in self.loggers:
+            if logger.size() == max_size:
+                max_logger = logger
+        
+        return max_logger.filter_by_action(action)
 
     def save_meta(self, directory: Path):
         for logger in self.loggers:
@@ -105,6 +131,17 @@ class NoOpLogger(Logger):
 
     def log(self, session_id: str, action: str, args: dict, train_samples=None):
         pass
+
+    def size(self) -> int:
+        return 0
+    
+    def filter_by_action(self, action: str) -> pd.DataFrame:
+        return pd.DataFrame({
+            "session_id": [],
+            "action": [],
+            "args": [],
+            "train_samples": [],
+        })
 
     def save_meta(self, directory: Path):
         pass
