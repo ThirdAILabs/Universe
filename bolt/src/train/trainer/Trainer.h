@@ -7,6 +7,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <unordered_map>

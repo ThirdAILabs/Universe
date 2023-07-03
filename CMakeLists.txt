@@ -315,23 +315,12 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-set(
-  THIRDAI_SOURCES_PRE
-  bolt/python_bindings/DistributedCommunicationPython.cc
+set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/autograd/Computation.cc
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
-)
-
-add_library(thirdai_pre STATIC ${THIRDAI_SOURCES_PRE})
-
-target_link_libraries(thirdai_pre PUBLIC pybind11::pybind11 OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
-
-
-set(THIRDAI_SOURCES
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
