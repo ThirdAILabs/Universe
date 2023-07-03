@@ -211,7 +211,7 @@ std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
   return {datasets, labels};
 }
 
-static void Classifier::can_convert_tensor_to_numpy(
+void Classifier::can_convert_tensor_to_numpy(
     const bolt::nn::tensor::TensorPtr& tensor) {
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
