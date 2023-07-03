@@ -38,25 +38,20 @@ class Adam final : public Optimizer {
     return _beta2 * curr_velocity + (1 - _beta2) * grad * grad;
   }
 
-  // inline float step(size_t index, float gradient, float b1_corrected,
-  //                   float b2_corrected) {
-  //   float mom = momentum(_momentum[index], gradient);
-  //   _momentum[index] = mom;
+  inline float step(size_t index, float gradient, float learning_rate,
+                    float b1_corrected, float b2_corrected) {
+    float mom = momentum(_momentum[index], gradient);
+    _momentum[index] = mom;
 
-  //   float vel = velocity(_velocity[index], gradient);
-  //   _velocity[index] = vel;
+    float vel = velocity(_velocity[index], gradient);
+    _velocity[index] = vel;
 
-  //   assert(!std::isnan(gradient));
-  //   assert(!std::isnan(mom));
-  //   assert(!std::isnan(vel));
+    assert(!std::isnan(gradient));
+    assert(!std::isnan(mom));
+    assert(!std::isnan(vel));
 
-  //   return (mom / b1_corrected) / (std::sqrt(vel / b2_corrected) + _eps);
-  // }
-
-  static inline float step(float momentum, float velocity, float learning_rate,
-                           float b1_corrected, float b2_corrected) {
-    return learning_rate * (momentum / b1_corrected) /
-           (std::sqrt(velocity / b2_corrected) + _eps);
+    return learning_rate * (mom / b1_corrected) /
+           (std::sqrt(vel / b2_corrected) + _eps);
   }
 
   static constexpr float biasCorrect(float beta, uint32_t train_steps) {
