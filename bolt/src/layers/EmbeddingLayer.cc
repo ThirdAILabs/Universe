@@ -151,8 +151,8 @@ void EmbeddingLayer::updateParameters(float lr, size_t train_steps) {
     _optimizer->updateDense(*_embedding_block, _gradients, lr, train_steps);
   } else {
     _optimizer->updateSparseRows(*_embedding_block, _gradients,
-                                 _embedding_chunks_used, lr, train_steps);
-    std::fill(_embedding_chunks_used.begin(), _embedding_chunks_used.end(), 0);
+                                 _embedding_chunks_used, lr, train_steps,
+                                 /* reset_rows_used= */ true);
   }
 }
 

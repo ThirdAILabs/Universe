@@ -14,8 +14,8 @@ class Adam final : public Optimizer {
                    float learning_rate, size_t train_steps) final;
 
   void updateSparseRows(std::vector<float>& params, std::vector<float>& grads,
-                        const std::vector<bool>& rows_used, float learning_rate,
-                        size_t train_steps) final;
+                        std::vector<bool>& rows_used, float learning_rate,
+                        size_t train_steps, bool reset_rows_used) final;
 
   void updateSparseCols(std::vector<float>& params, std::vector<float>& grads,
                         const std::vector<bool>& cols_used, float learning_rate,

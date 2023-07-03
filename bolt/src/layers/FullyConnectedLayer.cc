@@ -371,7 +371,8 @@ void FullyConnectedLayer::updateParameters(float lr, size_t train_steps) {
                                         _prev_is_active, lr, train_steps);
   } else if (_prev_is_dense && !_this_is_dense) {
     _weight_optimizer->updateSparseRows(_weights, _weight_gradients, _is_active,
-                                        lr, train_steps);
+                                        lr, train_steps,
+                                        /* reset_rows_used= */ false);
   }
 
   if (useBias()) {
@@ -379,7 +380,8 @@ void FullyConnectedLayer::updateParameters(float lr, size_t train_steps) {
       _bias_optimizer->updateDense(_biases, _bias_gradients, lr, train_steps);
     } else {
       _bias_optimizer->updateSparseRows(_biases, _bias_gradients, _is_active,
-                                        lr, train_steps);
+                                        lr, train_steps,
+                                        /* reset_rows_used= */ false);
     }
   }
 

@@ -45,8 +45,8 @@ int64_t sparse_update_time = 0;
 
 void Adam::updateSparseRows(std::vector<float>& params,
                             std::vector<float>& grads,
-                            const std::vector<bool>& rows_used,
-                            float learning_rate, size_t train_steps) {
+                            std::vector<bool>& rows_used, float learning_rate,
+                            size_t train_steps, bool reset_rows_used) {
   utils::Timer timer;
 
   assert(params.size() == grads.size());
@@ -56,8 +56,9 @@ void Adam::updateSparseRows(std::vector<float>& params,
   float b1_corrected = biasCorrect(_beta1, train_steps);
   float b2_corrected = biasCorrect(_beta2, train_steps);
 
-#pragma omp parallel for default(none) shared( \
-    params, grads, rows_used, learning_rate, b1_corrected, b2_corrected)
+#pragma omp parallel for default(none)                            \
+    shared(params, grads, rows_used, learning_rate, b1_corrected, \
+           b2_corrected, reset_rows_used)
   for (size_t row = 0; row < _rows; row++) {
     if (!rows_used[row]) {
       continue;
@@ -67,6 +68,12 @@ void Adam::updateSparseRows(std::vector<float>& params,
     // for this to avoid updating unused elements of the embedding table. It is
     // highly unlikely that the gradient would be zero if the section of the
     // embedding table was used. Do we need that?
+
+    if (reset_rows_used) {
+      rows_used[row] = false;
+    }
+    // Is it faster to do rows_used[row] = rows_used[row] && !reset_rows_used?
+    // It saves a branch but does an extra write?
 
     for (size_t col = 0; col < _cols; col++) {
       size_t i = row * _cols + col;
