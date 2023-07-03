@@ -30,12 +30,7 @@ class Communication:
 
 class DistributedTrainer(bolt.train.Trainer):
     def __init__(self, *args, **kwargs):
-        # Note: We need to disable sparse updates neural network updates as after allreduce
-        # during sparse training, we only update the parameters selected by hash tables, rather we
-        # need to update all the parameters, since during all-reduce some other neuron could be non-zero
-        # too.
-        self.model.disable_sparse_parameter_updates()
-
+        super().__init__(*args, **kwargs)
         import ray
 
         if not ray.is_initialized():
@@ -44,5 +39,12 @@ class DistributedTrainer(bolt.train.Trainer):
             )
         check_torch_installed()
 
-        kwargs["dist_comm_class"] = Communication()
-        super().__init__(*args, **kwargs)
+        # Note: We need to disable sparse updates neural network updates as after allreduce
+        # during sparse training, we only update the parameters selected by hash tables, rather we
+        # need to update all the parameters, since during all-reduce some other neuron could be non-zero
+        # too.
+        self.model.disable_sparse_parameter_updates()
+
+    def train_distributed(self, *args, **kwargs):
+        kwargs["comm"] = Communication()
+        self.train(*args, **kwargs)

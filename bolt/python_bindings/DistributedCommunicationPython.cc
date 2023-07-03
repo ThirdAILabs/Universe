@@ -32,9 +32,9 @@ uint64_t DistributedCommPython::min_num_batches(uint64_t num_batches) {
 }
 // Conversion function to
 // std::optional<std::shared_ptr<DistributedCommInterface>>
-std::optional<std::shared_ptr<thirdai::bolt::train::DistributedCommInterface>>
+std::optional<std::shared_ptr<DistributedCommPython>>
 DistributedCommPython::to_optional() {
-  return std::make_shared<thirdai::bolt::train::DistributedCommInterface>(
+  return std::make_shared<DistributedCommPython>(
       *this);
 }
 
