@@ -130,42 +130,30 @@ const float* Tensor::activationsPtr() const {
   return _activations.empty() ? nullptr : _activations.data();
 }
 
-const uint32_t* Tensor::TopKactiveNeuronsPtr(uint32_t topk) {
-  uint32_t num_batches = batchSize();
-  uint32_t* flattened_active_neurons = new uint32_t[num_batches * topk];
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+const std::pair<std::vector<float>, std::vector<uint32_t> >
+Tensor::topKValueIndexVector(uint32_t topk) {
+  std::vector<float> _topk_activations;
+  std::vector<uint32_t> _topk_active_neurons;
+  uint32_t batch_size = batchSize();
+
+  _topk_activations.assign(batch_size * topk, 0.0);
+  _topk_active_neurons.assign(batch_size * topk, 0);
+  for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     int idx_ = topk - 1;
     BoltVector bolt_vec = getVector(batch_idx);
     TopKActivationsQueue topk_activations_queue =
         bolt_vec.findKLargestActivations(topk);
     while (!topk_activations_queue.empty() && idx_ >= 0) {
-      flattened_active_neurons[batch_idx * topk + idx_] =
+      _topk_activations[batch_idx * topk + idx_] =
+          topk_activations_queue.top().first;
+      _topk_active_neurons[batch_idx * topk + idx_] =
           topk_activations_queue.top().second;
       topk_activations_queue.pop();
       idx_--;
     }
   }
-  return flattened_active_neurons;
+  return std::make_pair(_topk_activations, _topk_active_neurons);
 }
-
-const float* Tensor::TopKactivationsPtr(uint32_t topk) {
-  uint32_t num_batches = batchSize();
-  float* flattened_activations = new float[num_batches * topk];
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    int idx_ = topk - 1;
-    BoltVector bolt_vec = getVector(batch_idx);
-    TopKActivationsQueue topk_activations_queue =
-        bolt_vec.findKLargestActivations(topk);
-    while (!topk_activations_queue.empty() && idx_ >= 0) {
-      flattened_activations[batch_idx * topk + idx_] =
-          topk_activations_queue.top().first;
-      topk_activations_queue.pop();
-      idx_--;
-    }
-  }
-  return flattened_activations;
-}
-
 const float* Tensor::gradientsPtr() const {
   return _gradients.empty() ? nullptr : _gradients.data();
 }

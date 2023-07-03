@@ -130,10 +130,35 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
   if (return_predicted_class) {
     return predictedClasses(output, single);
   }
+  auto nonzeros = output->nonzeros();
+  if (!nonzeros) {
+    throw std::runtime_error(
+        "Cannot convert tensor to numpy if the number of nonzeros is not "
+        "fixed.");
+  }
 
+  if (!output->activationsPtr()) {
+    throw std::runtime_error("Cannot convert ragged tensor to numpy.");
+  }
+
+  if (top_k) {
+
+    if (top_k > *nonzeros) {
+      if (output->activeNeuronsPtr()) {
+        throw std::runtime_error(
+            "top_k value is invalid. top_k > 0 and top_k <= number of target "
+            "classes * sparsity");
+      }
+      throw std::runtime_error(
+          "top_k value is invalid. top_k > 0 and top_k <= number of target "
+          "classes");
+    }
+    return bolt::nn::python::tensorToNumpyTopK(
+        output,
+        /* single_row_to_vector= */ single, top_k.value());
+  }
   return bolt::nn::python::tensorToNumpy(output,
-                                         /* single_row_to_vector= */ single,
-                                         top_k);
+                                         /* single_row_to_vector= */ single);
 }
 
 py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {
