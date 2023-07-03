@@ -9,7 +9,7 @@ from ..configs.distributed_configs import DistributedBenchmarkConfig
 from .runner import Runner
 
 
-def create_udt_model(n_target_classes, output_dim, num_hashes):
+def create_udt_model(n_target_classes, output_dim, num_hashes, embedding_dimension):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -19,16 +19,11 @@ def create_udt_model(n_target_classes, output_dim, num_hashes):
         n_target_classes=n_target_classes,
         integer_target=True,
         options={
-            "extreme_classification": True,
-            "train_without_bias": True,
-            "embedding_dimension": 2048,
-            "freeze_hash_tables": False,
+            "embedding_dimension": embedding_dimension,
             "extreme_output_dim": output_dim,
             "extreme_num_hashes": num_hashes,
         },
     )
-    model._get_model().summary()
-
     return model
 
 
@@ -91,18 +86,15 @@ class DistributedRunner(Runner):
             n_target_classes=config.n_target_classes,
             output_dim=config.output_dim,
             num_hashes=config.num_hashes,
+            embedding_dimension=config.embedding_dimension,
         )
-        # print("======== Model Created ===========")
+
         validation = bolt.Validation(
             os.path.join(path_prefix, config.supervised_tst),
             interval=5000,
             metrics=config.val_metrics,
         )
 
-        # curr_dir = os.getcwd()
-        # print(f"{os.getcwd()} is the current working directory.")
-
-        # print("========= Training started ==========")
         if hasattr(config, "supervised_trn_1"):
             model.train_distributed(
                 cluster_config=make_cluster_config(
@@ -114,14 +106,13 @@ class DistributedRunner(Runner):
                     os.path.join(path_prefix, config.supervised_trn_1),
                     os.path.join(path_prefix, config.supervised_trn_2),
                 ],
+                batch_size=8192,
                 learning_rate=config.learning_rate,
                 epochs=config.num_epochs,
                 metrics=config.train_metrics,
                 validation=validation,
-                # callbacks=[LoggingCallback(model, supervised_tst)],
             )
 
-        # print("========== Cold Start Training =============")
         if hasattr(config, "unsupervised_file_1"):
             model.cold_start_distributed(
                 cluster_config=make_cluster_config(
@@ -133,15 +124,12 @@ class DistributedRunner(Runner):
                     os.path.join(path_prefix, config.unsupervised_file_1),
                     os.path.join(path_prefix, config.unsupervised_file_2),
                 ],
+                batch_size=32_768,
                 strong_column_names=["TITLE"],
                 weak_column_names=["TEXT"],
                 learning_rate=config.learning_rate,
-                epochs=20,
-                metrics=[
-                    "precision@1",
-                    "recall@10",
-                ],
-                # callbacks=[LoggingCallback(model, supervised_tst)],
+                epochs=config.num_epochs,
+                metrics=config.train_metrics,
             )
 
         # Destroy the cluster
