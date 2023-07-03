@@ -499,4 +499,4 @@ def test_top_k_predictions():
             if (predictions[i] == topk_predictions[1][i] for i in range(topk))
             else False
         )
-        assert (check_equal == True)
+        assert check_equal == True
