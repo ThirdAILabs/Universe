@@ -27,8 +27,6 @@ class Adam final : public Optimizer {
                                const std::vector<bool>& cols_used,
                                float learning_rate, size_t train_steps) final;
 
-  ~Adam();
-
  private:
   static constexpr float momentum(float curr_momentum, float grad) {
     return _beta1 * curr_momentum + (1 - _beta1) * grad;

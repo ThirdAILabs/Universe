@@ -38,8 +38,6 @@ void Adam::updateSparseRows(std::vector<float>& params,
                             std::vector<float>& grads,
                             std::vector<bool>& rows_used, float learning_rate,
                             size_t train_steps, bool reset_rows_used) {
-  utils::Timer timer;
-
   assert(params.size() == grads.size());
   assert(params.size() == _momentum.size());
   assert(rows_used.size() == _rows);
@@ -71,14 +69,6 @@ void Adam::updateSparseRows(std::vector<float>& params,
       grads[i] = 0;
     }
   }
-
-  timer.stop();
-
-  sparse_update_time += timer.elapsed<std::chrono::milliseconds>();
-}
-
-Adam::~Adam() {
-  std::cerr << "sparse_update_time=" << sparse_update_time << std::endl;
 }
 
 void Adam::updateSparseCols(std::vector<float>& params,
