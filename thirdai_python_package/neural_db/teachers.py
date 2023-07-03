@@ -42,11 +42,10 @@ def upvote(
     logger: Logger,
     user_id: str,
     query_id_pairs: List[Tuple[str, int]],
-    target_para: Optional[List[str]] = None,
 ):
     model.upvote(query_id_pairs)
     logger.log(
         session_id=user_id,
         action="upvote",
-        args={"query_id_pairs": query_id_pairs, "target_para": target_para},
+        args={"query_id_pairs": query_id_pairs},
     )

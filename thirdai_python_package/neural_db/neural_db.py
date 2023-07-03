@@ -278,22 +278,20 @@ class NeuralDB:
                 return []
             raise e
 
-    def text_to_result(self, text: str, result_id: int, target_para: Optional[str] = None) -> None:
+    def text_to_result(self, text: str, result_id: int) -> None:
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_pairs=[(text, result_id)],
-            target_para=None if target_para is None else [target_para],
         )
 
-    def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]], target_para: Optional[List[str]] = None) -> None:
+    def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_pairs=text_id_pairs,
-            target_para=target_para,
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
