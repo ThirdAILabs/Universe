@@ -13,6 +13,9 @@ namespace thirdai::dataset::mach {
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
                      uint32_t num_elements)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
+  if (num_hashes > num_buckets) {
+    throw std::invalid_argument("Can't have more hashes than buckets");
+  }
   std::mt19937 mt(341);
   std::uniform_int_distribution<int> dist(0, num_buckets - 1);
   for (uint32_t element = 0; element < num_elements; element++) {

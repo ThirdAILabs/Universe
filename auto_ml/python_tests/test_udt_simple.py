@@ -453,6 +453,7 @@ def test_model_dims_mach():
             "input_dim": 8,
             "embedding_dimension": 4,
             "extreme_classification": True,
+            "extreme_num_hashes": 1,
             "extreme_output_dim": 2,
         },
     )
