@@ -88,9 +88,9 @@ class NeuralDB:
         self._user_id = user_id
         self._savable_state: Optional[State] = None
 
-    def from_scratch(self) -> None:
+    def from_scratch(self, **kwargs) -> None:
         self._savable_state = State(
-            model=Mach(id_col="id", query_col="query"),
+            model=Mach(id_col="id", query_col="query", **kwargs),
             logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
 
