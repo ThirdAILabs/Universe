@@ -3,7 +3,6 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/utils/Timer.h>
 #include <chrono>
 #include <vector>
 
@@ -56,10 +55,6 @@ void Adam::updateSparseRows(std::vector<float>& params,
     if (reset_rows_used) {
       rows_used[row] = false;
     }
-
-    // rows_used[row] = rows_used[row] && !reset_rows_used;
-    // Is it faster to do rows_used[row] = rows_used[row] && !reset_rows_used?
-    // It saves a branch but does an extra write?
 
     for (size_t col = 0; col < _cols; col++) {
       size_t i = row * _cols + col;

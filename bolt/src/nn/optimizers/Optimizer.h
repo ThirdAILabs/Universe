@@ -11,6 +11,13 @@ class Optimizer {
                            std::vector<float>& grads, float learning_rate,
                            size_t train_steps) = 0;
 
+  /**
+   * In this method rows_used is not a const reference because we want the
+   * option to reset rows_used back to false as it is iterated over. This
+   * has a performance impact for embedding layers. For other methods are used
+   * in fully connected layers and where the layer resets which rows/cols are
+   * used after updating the bias parameters.
+   */
   virtual void updateSparseRows(std::vector<float>& params,
                                 std::vector<float>& grads,
                                 std::vector<bool>& rows_used,
