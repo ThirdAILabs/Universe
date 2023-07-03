@@ -1,10 +1,10 @@
 #pragma once
 
-#include <bolt/python_bindings/DistributedCommunicationPython.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/train/trainer/DistributedCommInterface.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <functional>
@@ -28,8 +28,7 @@ class Trainer {
   explicit Trainer(
       nn::model::ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
-      InterruptCheck interrupt_check = std::nullopt,
-      std::optional<python::DistributedCommPython> comm = std::nullopt);
+      InterruptCheck interrupt_check = std::nullopt);
 
   /**
    * Training loop function. Takes in data, metrics, callbacks, validation data,
@@ -59,7 +58,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      std::optional<DistributedCommInterfacePtr> comm = std::nullopt);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -158,7 +158,6 @@ class Trainer {
   std::optional<uint32_t> _freeze_hash_tables_epoch;
 
   InterruptCheck _interrupt_check;
-  std::optional<python::DistributedCommPython> _comm;
 };
 
 }  // namespace thirdai::bolt::train

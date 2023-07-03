@@ -17,13 +17,11 @@ constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
 Trainer::Trainer(nn::model::ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
-                 InterruptCheck interrupt_check,
-                 std::optional<python::DistributedCommPython> comm)
+                 InterruptCheck interrupt_check)
     : _model(std::move(model)),
       _epoch(0),
       _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
-      _interrupt_check(std::move(interrupt_check)),
-      _comm(comm) {
+      _interrupt_check(std::move(interrupt_check)) {
   _history = std::make_shared<metrics::History>();
 }
 
@@ -36,7 +34,8 @@ metrics::History Trainer::train(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    std::optional<uint32_t> logging_interval,
+    std::optional<DistributedCommInterfacePtr> comm) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
@@ -67,8 +66,8 @@ metrics::History Trainer::train(
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();
-    if(_comm.has_value()){
-      num_batches = _comm->min_num_batches(num_batches);
+    if (comm.has_value()) {
+      num_batches = comm->get()->min_num_batches(num_batches);
     }
     auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
@@ -82,8 +81,8 @@ metrics::History Trainer::train(
 
       _model->trainOnBatch(inputs, labels);
 
-      if(_comm.has_value()){
-          _comm->communicate(_model);
+      if (comm.has_value()) {
+        comm->get()->communicate(_model);
       }
 
       _model->updateParameters(train_state->learningRate());
