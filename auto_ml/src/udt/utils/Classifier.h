@@ -77,6 +77,7 @@ class Classifier {
   template <class Archive>
   void serialize(Archive& archive);
 
+  void can_convert_tensor_to_numpy(const bolt::nn::tensor::TensorPtr& tensor);
   bolt::nn::model::ModelPtr _model;
   bolt::nn::autograd::ComputationPtr _emb;
 

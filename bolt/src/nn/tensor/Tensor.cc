@@ -131,23 +131,22 @@ const float* Tensor::activationsPtr() const {
 }
 
 std::pair<std::vector<float>, std::vector<uint32_t> >
-Tensor::topKValueIndexVector(uint32_t topk) {
+Tensor::topKValueIndexPair(uint32_t topk) {
   std::vector<float> _topk_activations;
   std::vector<uint32_t> _topk_active_neurons;
   uint32_t batch_size = batchSize();
-
-  _topk_activations.assign(batch_size * topk, 0.0);
-  _topk_active_neurons.assign(batch_size * topk, 0);
+  uint32_t total_size = batch_size * topk;
+  _topk_activations.resize(total_size);
+  _topk_active_neurons.resize(total_size);
   for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     int idx_ = topk - 1;
     BoltVector bolt_vec = getVector(batch_idx);
     TopKActivationsQueue topk_activations_queue =
         bolt_vec.findKLargestActivations(topk);
     while (!topk_activations_queue.empty() && idx_ >= 0) {
-      _topk_activations[batch_idx * topk + idx_] =
-          topk_activations_queue.top().first;
-      _topk_active_neurons[batch_idx * topk + idx_] =
-          topk_activations_queue.top().second;
+      ValueIndexPair val_idx_pair = topk_activations_queue.top();
+      _topk_activations[batch_idx * topk + idx_] = val_idx_pair.first;
+      _topk_active_neurons[batch_idx * topk + idx_] = val_idx_pair.second;
       topk_activations_queue.pop();
       idx_--;
     }
