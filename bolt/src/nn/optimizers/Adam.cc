@@ -31,8 +31,6 @@ void Adam::updateDense(std::vector<float>& params, std::vector<float>& grads,
   }
 }
 
-int64_t sparse_update_time = 0;
-
 void Adam::updateSparseRows(std::vector<float>& params,
                             std::vector<float>& grads,
                             std::vector<bool>& rows_used, float learning_rate,
