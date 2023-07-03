@@ -164,6 +164,8 @@ void Embedding::applyActivationFunctionGrad(const float* activations,
 }
 
 int64_t total_update_time = 0;
+int64_t sparse_update_time_wo_fill = 0;
+int64_t sparse_update_time_outside = 0;
 
 void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   utils::Timer timer;
@@ -172,10 +174,20 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
     _embedding_optimizer->updateDense(_embeddings, _embedding_gradients,
                                       learning_rate, train_steps);
   } else {
+    utils::Timer t0;
+    utils::Timer t1;
+
     _embedding_optimizer->updateSparseRows(_embeddings, _embedding_gradients,
                                            _embeddings_used, learning_rate,
                                            train_steps);
+
+    t0.stop();
+    sparse_update_time_wo_fill += t0.elapsed<std::chrono::milliseconds>();
+
     std::fill(_embeddings_used.begin(), _embeddings_used.end(), 0);
+
+    t1.stop();
+    sparse_update_time_outside += t1.elapsed<std::chrono::milliseconds>();
   }
 
   if (_bias) {
@@ -190,6 +202,11 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
 
 Embedding::~Embedding() {
   std::cerr << "Optimizers: total_update_time=" << total_update_time
+            << std::endl;
+
+  std::cerr << "sparse_update_time_outside_opt=" << sparse_update_time_outside
+            << std::endl;
+  std::cerr << "sparse_update_time_wo_fill=" << sparse_update_time_wo_fill
             << std::endl;
 }
 
