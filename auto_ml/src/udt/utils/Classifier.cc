@@ -137,7 +137,7 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
     if (top_k.value() > *nonzeros || (top_k.value() == 0)) {
       if (output->activeNeuronsPtr()) {
         throw std::runtime_error(
-            "top_k value is invalid. top_k > 0 and top_k <= number of target "
+            "top_k value is invalid.  top_k <= number of target "
             "classes * sparsity");
       }
       throw std::runtime_error(
