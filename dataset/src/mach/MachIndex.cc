@@ -17,7 +17,7 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
     throw std::invalid_argument("Can't have more hashes than buckets");
   }
   std::mt19937 mt(341);
-  std::uniform_int_distribution<int> dist(0, num_buckets - 1);
+  std::uniform_int_distribution<uint32_t> dist(0, num_buckets - 1);
   for (uint32_t element = 0; element < num_elements; element++) {
     std::vector<uint32_t> hashes(num_hashes);
     for (uint32_t i = 0; i < num_hashes; i++) {
