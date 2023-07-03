@@ -27,6 +27,11 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                                            defaults::HIDDEN_DIM);
   bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
 
+  if (args.contains("use_bias")) {
+    throw std::invalid_argument(
+        "Option 'use_bias' has been depreciated. Please use 'hidden_bias' or "
+        "'output_bias'.");
+  }
   bool hidden_bias =
       args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
   bool output_bias =
