@@ -142,7 +142,6 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
   }
 
   if (top_k) {
-
     if (top_k > *nonzeros) {
       if (output->activeNeuronsPtr()) {
         throw std::runtime_error(

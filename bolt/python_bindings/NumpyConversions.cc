@@ -52,7 +52,6 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
 
 py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
                              bool single_row_to_vector, uint32_t top_k) {
-
   std::pair<std::vector<float>, std::vector<uint32_t> > topkValueIdxVector =
       tensor->topKValueIndexVector(top_k);
   const float* flattened_activations = topkValueIdxVector.first.data();
