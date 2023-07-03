@@ -747,7 +747,11 @@ void UDTMachClassifier::addBalancingSamples(
 
     for (uint32_t i = 0; i < samples.front()->len(); i++) {
       const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
-      uint32_t doc_id = samples.at(2)->at(0)[i].active_neurons[0];
+      if (doc_id_vec.len < 1) {
+        continue;
+      }
+
+      uint32_t doc_id = doc_id_vec.active_neurons[0];
 
       const BoltVector& input = samples.at(0)->at(0)[i];
       const BoltVector& label = samples.at(1)->at(0)[i];
