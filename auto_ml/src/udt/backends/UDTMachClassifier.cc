@@ -227,26 +227,28 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
                                       bool return_predicted_class,
                                       std::optional<uint32_t> top_k) {
-  (void)top_k;
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
         "return_predicted_class flag.");
   }
 
-  return py::cast(predictImpl(sample, sparse_inference));
+  return py::cast(predictImpl(sample, sparse_inference, top_k));
 }
 
 std::vector<std::pair<uint32_t, double>> UDTMachClassifier::predictImpl(
-    const MapInput& sample, bool sparse_inference) {
+    const MapInput& sample, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
   auto outputs = _classifier->model()->forward(
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
   const BoltVector& output = outputs.at(0)->getVector(0);
 
+  uint32_t k = top_k ? *top_k : _min_num_eval_results;
+
   auto decoded_output = _mach_label_block->index()->decode(
       /* output = */ output,
-      /* min_num_eval_results = */ _min_num_eval_results,
+      /* min_num_eval_results = */ k,
       /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
 
   return decoded_output;
