@@ -130,7 +130,7 @@ const float* Tensor::activationsPtr() const {
   return _activations.empty() ? nullptr : _activations.data();
 }
 
-const std::pair<std::vector<float>, std::vector<uint32_t> >
+std::pair<std::vector<float>, std::vector<uint32_t> >
 Tensor::topKValueIndexVector(uint32_t topk) {
   std::vector<float> _topk_activations;
   std::vector<uint32_t> _topk_active_neurons;
