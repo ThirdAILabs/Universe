@@ -40,6 +40,7 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        num_buckets_to_sample: int = 16,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ) -> None:
@@ -283,6 +284,7 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        num_buckets_to_sample: int = 16,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ) -> None:
@@ -309,7 +311,7 @@ class Mach(Model):
                     data_source=intro_documents,
                     strong_column_names=[intro_documents.strong_column],
                     weak_column_names=[],
-                    num_buckets_to_sample=16,
+                    num_buckets_to_sample=num_buckets_to_sample,
                 )
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
