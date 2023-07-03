@@ -289,7 +289,6 @@ void FullyConnectedNode::backpropagateImpl(uint32_t vec_index) {
 
 void FullyConnectedNode::updateParametersImpl(float learning_rate,
                                               uint32_t batch_cnt) {
-  // TODO(Nicholas): Abstract away these constants
   _layer->updateParameters(learning_rate, batch_cnt);
 }
 
