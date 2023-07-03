@@ -747,10 +747,11 @@ void UDTMachClassifier::addBalancingSamples(
 
     for (uint32_t i = 0; i < samples.front()->len(); i++) {
       const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
-      if (doc_id_vec.len != 1) {
-        throw std::runtime_error("Expected doc id to be a single integer.");
+      if (doc_id_vec.len < 1) {
+        continue;
       }
-      uint32_t doc_id = samples.at(2)->at(0)[i].active_neurons[0];
+
+      uint32_t doc_id = doc_id_vec.active_neurons[0];
 
       const BoltVector& input = samples.at(0)->at(0)[i];
       const BoltVector& label = samples.at(1)->at(0)[i];
