@@ -189,6 +189,9 @@ else()
            "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
            "${LLVM_OPENMP_SOURCE_DIR}")
 
+
+      # We install the llvm cmake directory as well to get around the ExtendPath not found error.
+      # https://github.com/llvm/llvm-project/issues/53281#issuecomment-1399635906
       set(LLVM_CMAKE_DOWNLOAD_URL
            "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/cmake-${LLVM_OPENMP_VERSION}.src.tar.xz"
        )
