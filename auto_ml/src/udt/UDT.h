@@ -1,10 +1,12 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -66,6 +68,14 @@ class UDT {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
+
+  py::object outputCorrectness(const MapInputBatch& sample,
+                               const std::vector<uint32_t>& labels,
+                               bool sparse_inference,
+                               std::optional<uint32_t> num_hashes) {
+    return _backend->outputCorrectness(sample, labels, sparse_inference,
+                                       num_hashes);
+  }
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
@@ -189,8 +199,18 @@ class UDT {
     return _backend->trainWithHashes(batch, learning_rate, metrics);
   }
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) {
-    return _backend->predictHashes(sample, sparse_inference);
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           bool force_non_empty,
+                           std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashes(sample, sparse_inference, force_non_empty,
+                                   num_hashes);
+  }
+
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference, bool force_non_empty,
+                                std::optional<uint32_t> num_hashes) {
+    return _backend->predictHashesBatch(samples, sparse_inference,
+                                        force_non_empty, num_hashes);
   }
 
   void associate(
@@ -218,6 +238,10 @@ class UDT {
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {
     return _backend->setIndex(index);
+  }
+
+  void setMachSamplingThreshold(float threshold) {
+    _backend->setMachSamplingThreshold(threshold);
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
