@@ -469,7 +469,7 @@ def test_data_types():
                 "text": bolt.types.text(),
             },
             target="cat",
-            n_target_classes=2,
+            n_target_classes=10,
             integer_target=True,
             options={
                 "input_dim": 8,
