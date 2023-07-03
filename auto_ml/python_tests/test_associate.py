@@ -2,9 +2,12 @@ import os
 import random
 
 import pandas as pd
+import pytest
 from thirdai import bolt
 
 QUERY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "texts.csv")
+
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def train_model():
