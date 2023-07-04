@@ -210,6 +210,7 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
+        use_weak_columns: bool = False,
         num_buckets_to_sample: int = 16,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
@@ -233,6 +234,7 @@ class NeuralDB:
                 train_documents=intro_and_train.train,
                 num_buckets_to_sample=num_buckets_to_sample,
                 should_train=train,
+                use_weak_columns=use_weak_columns,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
             )
