@@ -48,7 +48,8 @@ def train_simple_mach_udt(
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
             "extreme_output_dim": output_dim,
-            "use_bias": use_bias,
+            "hidden_bias": use_bias,
+            "output_bias": use_bias,
             **rlhf_args,
             "mach_sampling_threshold": mach_sampling_threshold,
         },
@@ -510,11 +511,8 @@ def test_mach_without_bias():
     hidden_layer = ops[0]  # hidden layer
     output_layer = ops[1]  # output layer
 
-    hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
-    output_bias_all_zeros = np.all(output_layer.biases == 0)
-
-    assert hidden_bias_all_zeros, "Error: Hidden layer biases should be all zeros."
-    assert not output_bias_all_zeros, "Error: All output layer biases are zeros."
+    assert np.all(hidden_layer.biases == 0)
+    assert np.all(output_layer.biases == 0)
 
 
 def test_load_balancing():
