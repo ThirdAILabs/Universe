@@ -262,7 +262,7 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
   std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
       batch_size);
 #pragma omp parallel for default(none) \
-    shared(outputs, predicted_entities, k) if (batch_size > 1)
+    shared(outputs, predicted_entities, k, batch_size) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
     const BoltVector& vector = outputs->getVector(i);
     auto predictions = _mach_label_block->index()->decode(
