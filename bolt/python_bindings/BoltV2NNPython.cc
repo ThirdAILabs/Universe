@@ -14,6 +14,7 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
+#include <bolt/src/nn/ops/Sigmoid.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -267,6 +268,10 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::Sigmoid, ops::SigmoidPtr, ops::Op>(nn, "Sigmoid")
+      .def(py::init(&ops::Sigmoid::make))
+      .def("__call__", &ops::Sigmoid::apply);
 
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")

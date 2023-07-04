@@ -328,6 +328,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Sigmoid.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
