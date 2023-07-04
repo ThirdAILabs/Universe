@@ -4,6 +4,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -103,6 +104,17 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual py::object outputCorrectness(const MapInputBatch& sample,
+                                       const std::vector<uint32_t>& labels,
+                                       bool sparse_inference,
+                                       std::optional<uint32_t> num_hashes) {
+    (void)sample;
+    (void)labels;
+    (void)sparse_inference;
+    (void)num_hashes;
+    throw notSupported("output correctness");
+  }
+
   /**
    * Returns the model used.
    */
@@ -199,6 +211,10 @@ class UDTBackend {
    */
   virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
+  }
+
+  virtual data::ColumnDataTypes dataTypes() const {
+    throw notSupported("data_types");
   }
 
   /**
@@ -312,13 +328,28 @@ class UDTBackend {
 
   /**
    * Used in UDTMachClassifier, returns the predicted hashes from the input
-   * sample.
+   * sample. If num_hashes is not provided, will return the number of hashes
+   * used in the index by default.
    */
   virtual py::object predictHashes(const MapInput& sample,
-                                   bool sparse_inference) {
+                                   bool sparse_inference, bool force_non_empty,
+                                   std::optional<uint32_t> num_hashes) {
     (void)sample;
     (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
     throw notSupported("predict_hashes");
+  }
+
+  virtual py::object predictHashesBatch(const MapInputBatch& samples,
+                                        bool sparse_inference,
+                                        bool force_non_empty,
+                                        std::optional<uint32_t> num_hashes) {
+    (void)samples;
+    (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
+    throw notSupported("predict_hashes_batch");
   }
 
   /**
@@ -372,6 +403,14 @@ class UDTBackend {
   virtual void setIndex(const dataset::mach::MachIndexPtr& index) {
     (void)index;
     throw notSupported("set_index");
+  }
+
+  /**
+   * Sets the threshold for changing the type of sampling in Mach.
+   */
+  virtual void setMachSamplingThreshold(float threshold) {
+    (void)threshold;
+    throw notSupported("set_mach_sampling_threshold");
   }
 
   virtual ~UDTBackend() = default;

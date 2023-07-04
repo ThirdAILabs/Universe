@@ -1,13 +1,16 @@
 import hashlib
 import os
+import shutil
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
 from pytrie import StringTrie
+from requests.models import Response
 from thirdai.dataset.data_source import PyDataSource
 
-from .utils import hash_string
+from .parsing_utils import doc_parse, pdf_parse, url_parse
+from .utils import hash_file, hash_string
 
 
 class Reference:
@@ -78,16 +81,15 @@ class Reference:
         return self._text
 
     @property
-    def context(self, radius: int):
-        return self._context_fn(radius)
-
-    @property
     def source(self):
         return self._source
 
     @property
     def metadata(self):
         return self._metadata
+
+    def context(self, radius: int):
+        return self._context_fn(radius)
 
 
 class DocumentRow:
@@ -231,3 +233,216 @@ class DocumentManager:
         for i, (doc, _) in enumerate(self.id_sorted_docs):
             subdir = directory / str(i)
             doc.load_meta(subdir)
+
+
+class CSV(Document):
+    def __init__(
+        self, path, id_column, strong_columns, weak_columns, reference_columns
+    ) -> None:
+        self.df = pd.read_csv(path)
+        self.df = self.df.sort_values(id_column)
+        assert len(self.df[id_column].unique()) == len(self.df[id_column])
+        assert self.df[id_column].min() == 0
+        assert self.df[id_column].max() == len(self.df[id_column]) - 1
+
+        for col in strong_columns + weak_columns:
+            self.df[col] = self.df[col].fillna("")
+
+        self.path = Path(path)
+        self._hash = hash_file(path)
+        self.id_column = id_column
+        self.strong_columns = strong_columns
+        self.weak_columns = weak_columns
+        self.reference_columns = reference_columns
+
+    @property
+    def hash(self) -> str:
+        return self._hash
+
+    @property
+    def size(self) -> int:
+        return len(self.df)
+
+    @property
+    def name(self) -> str:
+        return self.path.name
+
+    def strong_text(self, element_id: int) -> str:
+        row = self.df.iloc[element_id]
+        return " ".join([row[col] for col in self.strong_columns])
+
+    def weak_text(self, element_id: int) -> str:
+        row = self.df.iloc[element_id]
+        return " ".join([row[col] for col in self.weak_columns])
+
+    def reference(self, element_id: int) -> Reference:
+        row = self.df.iloc[element_id]
+        text = " ".join([row[col] for col in self.reference_columns])
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=text,
+            source=str(self.path.absolute()),
+            metadata=row.to_dict(),
+        )
+
+    def context(self, element_id: int, radius) -> str:
+        rows = self.df.iloc[
+            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+        ]
+        return " ".join([row[col] for col in self.reference_columns for row in rows])
+
+    def save_meta(self, directory: Path):
+        # Let's copy the original CSV file to the provided directory
+        shutil.copy(self.path, directory)
+
+    def load_meta(self, directory: Path):
+        # Since we've moved the CSV file to the provided directory, let's make
+        # sure that we point to this CSV file.
+        self.path = directory / self.path.name
+
+
+# Base class for PDF and DOCX classes because they share the same logic.
+class Extracted(Document):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        self.filename = filename
+        self.df = self.process_data(filename)
+        self.hash_val = hash_file(filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    @property
+    def hash(self) -> str:
+        return self.hash_val
+
+    @property
+    def size(self) -> int:
+        return len(self.df)
+
+    @property
+    def name(self) -> str:
+        return self.filename
+
+    def strong_text(self, element_id: int) -> str:
+        return self.df["passage"].iloc[element_id]
+
+    def weak_text(self, element_id: int) -> str:
+        return self.df["para"].iloc[element_id]
+
+    def show_fn(text, source, **kwargs):
+        return text
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=self.df["display"].iloc[element_id],
+            source=self.filename,
+            metadata=self.df.iloc[element_id].to_dict(),
+        )
+
+    def get_context(self, element_id, radius) -> str:
+        if not 0 <= element_id < self.size():
+            raise ("Element id not in document.")
+
+        rows = self.df.iloc[
+            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+        ]
+        return "\n".join(rows["passage"])
+
+
+class PDF(Extracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        elements, success = pdf_parse.process_pdf_file(filename)
+
+        if not success:
+            raise ValueError(f"Could not read PDF file: {filename}")
+
+        elements_df = pdf_parse.create_train_df(elements)
+
+        return elements_df
+
+
+class DOCX(Extracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        elements, success = doc_parse.get_elements(filename)
+
+        if not success:
+            raise ValueError(f"Could not read DOCX file: {filename}")
+
+        elements_df = doc_parse.create_train_df(elements)
+
+        return elements_df
+
+
+class URL(Document):
+    def __init__(self, url: str, url_response: Response = None):
+        self.url = url
+        self.df = self.process_data(url, url_response)
+        self.hash_val = hash_string(url)
+
+    def process_data(self, url, url_response=None) -> pd.DataFrame:
+        # Extract elements from each file
+        elements, success = url_parse.process_url(url, url_response)
+
+        if not success or not elements:
+            raise ValueError(f"Could not retrieve data from URL: {url}")
+
+        elements_df = url_parse.create_train_df(elements)
+
+        return elements_df
+
+    def hash(self) -> str:
+        return self.hash_val
+
+    def size(self) -> int:
+        return len(self.df)
+
+    def name(self) -> str:
+        return self.url
+
+    def strong_text(self, element_id: int) -> str:
+        return self.df["text"].iloc[element_id]
+
+    def weak_text(self, element_id: int) -> str:
+        return self.df["text"].iloc[element_id]
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=self.df["display"].iloc[element_id],
+            source=self.url,
+            metadata={},
+        )
+
+    def get_context(self, element_id, radius) -> str:
+        rows = self.df.iloc[
+            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+        ]
+        return "\n".join(rows["text"])
