@@ -451,7 +451,6 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
                  prometheus-cpp::pull utf8proc)
