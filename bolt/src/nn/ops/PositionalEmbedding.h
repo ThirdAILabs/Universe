@@ -47,13 +47,12 @@ class PosEmbedding final : public Op,
                std::optional<uint64_t> num_tokens_per_input,
                uint64_t update_chunk_size);
 
-  PosEmbedding(std::pair<std::unique_ptr<EmbeddingLayer>&&,
-                         std::unique_ptr<EmbeddingLayer>&&>
-                   kernel,
+  PosEmbedding(std::unique_ptr<EmbeddingLayer>&& pos_kernel,
+               std::unique_ptr<EmbeddingLayer>&& token_kernel,
                const std::string& name)
       : Op(name),
-        _pos_kernel(std::move(kernel.first)),
-        _token_kernel(std::move(kernel.second)) {}
+        _pos_kernel(std::move(pos_kernel)),
+        _token_kernel(std::move(token_kernel)) {}
 
   std::unique_ptr<EmbeddingLayer> _pos_kernel, _token_kernel;
 

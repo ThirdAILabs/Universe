@@ -3,6 +3,7 @@
 #include <cereal/specialize.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/nn/autograd/Computation.h>
@@ -35,7 +36,7 @@ PosEmbedding::PosEmbedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
       /* log_embedding_block_size= */ log_embedding_block_size,
       /* update_chunk_size= */ update_chunk_size, /* reduction= */ reduction,
       /* num_tokens_per_input= */ num_tokens_per_input);
-  _pos_kernel = std::make_unique<EmbeddingLayer>(token_config);
+  _pos_kernel = std::make_unique<EmbeddingLayer>(pos_config);
 }
 
 std::shared_ptr<PosEmbedding> PosEmbedding::make(
@@ -122,4 +123,68 @@ std::vector<std::vector<float>*> PosEmbedding::parameters() {
   return {&_pos_kernel->getRawEmbeddingBlock(),
           &_token_kernel->getRawEmbeddingBlock()};
 }
+
+void PosEmbedding::summary(std::ostream& summary,
+                           const autograd::ComputationList& inputs,
+                           const autograd::Computation* output) const {
+  summary << "PosEmbedding(" << name() << "): " << inputs[0]->name() << " -> "
+          << output->name() << " [pos_kernel : ";
+  _pos_kernel->buildLayerSummary(summary);
+  summary << "token_kernel : ";
+  _token_kernel->buildLayerSummary(summary);
+  summary << "]";
+}
+
+void PosEmbedding::setSerializeOptimizer(bool should_serialize_optimizer) {
+  _pos_kernel->saveWithOptimizer(should_serialize_optimizer);
+  _token_kernel->saveWithOptimizer(should_serialize_optimizer);
+}
+
+autograd::ComputationPtr PosEmbedding::apply(autograd::ComputationPtr input) {
+  return autograd::Computation::make(shared_from_this(), {std::move(input)});
+}
+
+template void PosEmbedding::save(cereal::BinaryOutputArchive&) const;
+
+template <class Archive>
+void PosEmbedding::save(Archive& archive) const {
+  archive(cereal::base_class<Op>(this), _pos_kernel, _token_kernel);
+}
+
+template void PosEmbedding::load(cereal::BinaryInputArchive&);
+
+template <class Archive>
+void PosEmbedding::load(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _pos_kernel, _token_kernel);
+  _pos_kernel->initOptimizer();
+  _token_kernel->initOptimizer();
+}
+
+std::shared_ptr<PosEmbedding> PosEmbedding::duplicateWithNewReduction(
+    const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input) {
+  auto new_pos_kernel =
+      _pos_kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
+  auto new_token_kernel =
+      _token_kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
+  std::string new_name = nextPositionalEncodingOpName() + "_shared_" + name();
+  return std::shared_ptr<PosEmbedding>(new PosEmbedding(
+      std::move(new_pos_kernel), std::move(new_token_kernel), new_name));
+}
 }  // namespace thirdai::bolt::nn::ops
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::nn::ops::PosEmbedding,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::PosEmbedding)

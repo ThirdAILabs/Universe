@@ -13,6 +13,7 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/PositionalEmbedding.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -151,7 +152,11 @@ void defineTensor(py::module_& nn) {
           [](const tensor::TensorPtr& tensor) {
             return toNumpy(tensor, tensor->gradientsPtr());
           },
-          py::return_value_policy::reference_internal);
+          py::return_value_policy::reference_internal)
+      .def("__getitem__",
+           static_cast<BoltVector& (tensor::Tensor::*)(uint32_t index)>(
+               &tensor::Tensor::getVector),
+           py::arg("index"), py::return_value_policy::copy);
 }
 
 void defineOps(py::module_& nn) {
@@ -219,6 +224,17 @@ void defineOps(py::module_& nn) {
       .def("__call__", &ops::RobeZ::apply)
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
+           py::arg("num_tokens_per_input"));
+
+  py::class_<ops::PosEmbedding, ops::PosEmbeddingPtr, ops::Op>(nn,
+                                                               "PosEmbedding")
+      .def(py::init(&ops::PosEmbedding::make), py::arg("num_embedding_lookups"),
+           py::arg("lookup_size"), py::arg("log_embedding_block_size"),
+           py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::PosEmbedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::PosEmbedding::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
 
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
