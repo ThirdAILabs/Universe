@@ -164,8 +164,8 @@ class UDTMachClassifier final : public UDTBackend {
   void setMachSamplingThreshold(float threshold) final;
 
  private:
-  std::vector<std::pair<uint32_t, double>> predictImpl(
-      const MapInput& sample, bool sparse_inference,
+  std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
+      const MapInputBatch& samples, bool sparse_inference,
       std::optional<uint32_t> top_k);
 
   std::vector<std::vector<uint32_t>> predictHashesImpl(
