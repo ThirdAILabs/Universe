@@ -8,7 +8,8 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::train::python {
 
-class DistributedCommPython final : public DistributedCommInterface,
+class DistributedCommPython final
+    : public DistributedCommInterface,
       public std::enable_shared_from_this<DistributedCommPython> {
  public:
   explicit DistributedCommPython(py::object& py_instance);
@@ -17,8 +18,7 @@ class DistributedCommPython final : public DistributedCommInterface,
 
   uint64_t min_num_batches(uint64_t num_batches) final;
 
-  std::optional<std::shared_ptr<DistributedCommPython>>
-  to_optional();
+  std::optional<std::shared_ptr<DistributedCommPython>> to_optional();
 
  private:
   py::object py_instance;

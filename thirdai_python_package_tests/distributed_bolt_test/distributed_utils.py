@@ -142,3 +142,16 @@ def gen_numpy_training_data(
         examples = dataset.from_numpy(examples, batch_size=batch_size_for_conversion)
         labels = dataset.from_numpy(labels, batch_size=batch_size_for_conversion)
     return examples, labels
+
+
+def check_model_parameters_equal(model_0, model_1):
+    for op_0, op_1 in zip(model_0.ops(), model_1.ops()):
+        assert np.allclose(op_0.weights, op_1.weights)
+        assert np.allclose(op_0.biases, op_1.biases)
+
+
+def check_model_parameters_match(distributed_model):
+    model_0 = distributed_model.get_model(0)
+    model_1 = distributed_model.get_model(1)
+
+    check_model_parameters_equal(model_0, model_1)

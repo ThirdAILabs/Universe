@@ -34,8 +34,7 @@ uint64_t DistributedCommPython::min_num_batches(uint64_t num_batches) {
 // std::optional<std::shared_ptr<DistributedCommInterface>>
 std::optional<std::shared_ptr<DistributedCommPython>>
 DistributedCommPython::to_optional() {
-  return std::make_shared<DistributedCommPython>(
-      *this);
+  return std::make_shared<DistributedCommPython>(*this);
 }
 
 }  // namespace thirdai::bolt::train::python

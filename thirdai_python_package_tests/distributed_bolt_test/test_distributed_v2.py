@@ -3,7 +3,7 @@ import os
 import pytest
 import ray
 import thirdai.distributed_bolt as dist
-from distributed_utils import gen_numpy_training_data
+from distributed_utils import check_model_parameters_equal, gen_numpy_training_data
 from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import bolt_v2 as bolt
@@ -15,17 +15,20 @@ def training_loop_per_worker(config):
     model = config.get("model")
 
     trainer = dist.DistributedTrainer(model)
-    train_x, train_y = gen_numpy_training_data(n_samples=8000, n_classes=10)
+    train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed(train_data=(train_x, train_y), learning_rate=0.005)
+    trainer.train_distributed(
+        train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+    )
 
     # session report should always have a metrics stored, hence added a demo_metric
     session.report(
-        {"demo_metric": 1},
+        {"model_location": session.get_trial_dir()},
         checkpoint=dist.BoltCheckPoint.from_model(model),
     )
+    trainer.model.save("trained.model")
 
 
 def test_distributed_v2():
@@ -95,3 +98,19 @@ def test_distributed_v2():
     )
 
     assert history["val_categorical_accuracy"][-1] > 0.8
+
+    print(result_checkpoint_and_history.metrics["model_location"])
+    model_1 = bolt.nn.Model.load(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_0/trained.model",
+        )
+    )
+    model_2 = bolt.nn.Model.load(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_1/trained.model",
+        )
+    )
+
+    check_model_parameters_equal(model_1, model_2)
