@@ -182,6 +182,10 @@ void defineAutomlInModule(py::module_& module) {
           py::arg("epochs"), py::arg("train_metrics"), py::arg("val_data"),
           py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
           py::arg("comm"), bolt::python::OutputRedirect())
+      .def("output_correctness", &udt::UDT::outputCorrectness,
+           py::arg("samples"), py::arg("labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("num_hashes") = std::nullopt)
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
@@ -235,6 +239,7 @@ void defineAutomlInModule(py::module_& module) {
                udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
+      .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
