@@ -324,6 +324,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
+    bolt/src/nn/ops/MultiplicativePositionalEmbedding.cc
     bolt/src/nn/ops/PositionalEmbedding.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
