@@ -235,6 +235,22 @@ def test_mach_udt_decode_params():
     assert len(model.predict({"text": "something"})) == 1
 
 
+def test_mach_udt_topk_predict():
+    model = train_simple_mach_udt()
+
+    model.set_decode_params(1, 5)
+
+    assert len(model.predict({"text": "something"})) == 1
+
+    assert len(model.predict({"text": "something"}, top_k=2)) == 2
+
+    with pytest.raises(
+        ValueError,
+        match=r"Cannot return more results than the model is trained to predict. Model currently can predict one of 3 classes.",
+    ):
+        model.predict({"text": "something"}, top_k=4)
+
+
 def test_mach_udt_introduce_and_forget():
     model = train_simple_mach_udt()
 
