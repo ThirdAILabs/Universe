@@ -3,10 +3,17 @@ import os
 import pytest
 import ray
 import thirdai.distributed_bolt as dist
-from distributed_utils import check_model_parameters_equal, gen_numpy_training_data
+from distributed_utils import (
+    check_model_parameters_equal,
+    gen_numpy_training_data,
+    remove_files,
+)
 from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import bolt_v2 as bolt
+from thirdai.demos import download_clinc_dataset
+
+from .test_mock_cluster_udt_clinc import get_clinc_udt_model
 
 pytestmark = [pytest.mark.distributed]
 
@@ -114,3 +121,47 @@ def test_distributed_v2():
     )
 
     check_model_parameters_equal(model_1, model_2)
+
+    ray.shutdown()
+
+
+def test_udt_train_distributed_v2():
+    TRAIN_FILE_1 = "./clinc_train_0.csv"
+    TRAIN_FILE_2 = "./clinc_train_1.csv"
+    TEST_FILE = "./clinc_test.csv"
+
+    remove_files([TRAIN_FILE_1, TRAIN_FILE_2, TEST_FILE])
+    download_clinc_dataset(num_training_files=2, clinc_small=True)
+
+    def udt_training_loop_per_worker(config):
+        model = config.get("model")
+
+    udt_model = get_clinc_udt_model()
+    # reserve 1 cpu for bolt trainer
+    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
+
+    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={
+            "working_dir": working_dir,
+            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
+        }
+    )
+    scaling_config = ScalingConfig(
+        # Number of distributed workers.
+        num_workers=2,
+        # Turn on/off GPU.
+        use_gpu=False,
+        # Specify resources used for trainer.
+        trainer_resources={"CPU": num_cpu_per_node - 1},
+        # Try to schedule workers on different nodes.
+        placement_strategy="SPREAD",
+    )
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=udt_training_loop_per_worker,
+        train_loop_config={"model": udt_model},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )

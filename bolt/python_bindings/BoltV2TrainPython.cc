@@ -140,7 +140,9 @@ void defineTrainer(py::module_& train) {
                 validation_data, validation_metrics, steps_per_validation,
                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
                 verbose, logging_interval,
-                (!comm.is(py::none()) ? DistributedCommPython(comm).to_optional() : std::nullopt));
+                (!comm.is(py::none())
+                     ? DistributedCommPython(comm).to_optional()
+                     : std::nullopt));
           },
           py::arg("train_data"), py::arg("learning_rate"),
           py::arg("epochs") = 1,
@@ -170,7 +172,9 @@ void defineTrainer(py::module_& train) {
                 validation_data, validation_metrics, steps_per_validation,
                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
                 verbose, logging_interval,
-              (!comm.is(py::none()) ? DistributedCommPython(comm).to_optional() : std::nullopt));
+                (!comm.is(py::none())
+                     ? DistributedCommPython(comm).to_optional()
+                     : std::nullopt));
           },
           py::arg("train_data"), py::arg("learning_rate"),
           py::arg("epochs") = 1,

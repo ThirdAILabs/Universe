@@ -31,12 +31,6 @@ class Communication:
 class DistributedTrainer(bolt.train.Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        import ray
-
-        if not ray.is_initialized():
-            raise ValueError(
-                "Ray is not initialized. Bolt's distributed training needs acess to a ray cluster!"
-            )
         check_torch_installed()
 
         # Note: We need to disable sparse updates neural network updates as after allreduce
@@ -52,14 +46,24 @@ class DistributedTrainer(bolt.train.Trainer):
 
 def adds_distributed_v2_to_udt():
     def train_distributed_v2(self, *args, **kwargs):
+        check_torch_installed()
+
+        self.get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
         self.train(*args, **kwargs)
+
+        # TODO(pratik): Should we enable sparse parameter updates after training?
 
     setattr(bolt.UniversalDeepTransformer, "train_distributed_v2", train_distributed_v2)
 
     def coldstart_distributed_v2(self, *args, **kwargs):
+        check_torch_installed()
+
+        self.get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
         self.cold_start(*args, **kwargs)
+
+        # TODO(pratik): Should we enable sparse parameter updates after training?
 
     setattr(
         bolt.UniversalDeepTransformer,

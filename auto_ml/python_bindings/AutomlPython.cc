@@ -132,7 +132,10 @@ void defineAutomlInModule(py::module_& module) {
             return udt.train(
                 data, learning_rate, epochs, train_metrics, val_data,
                 val_metrics, callbacks, options,
-              (!comm.is(py::none()) ? bolt::train::python::DistributedCommPython(comm).to_optional() : std::nullopt));
+                (!comm.is(py::none())
+                     ? bolt::train::python::DistributedCommPython(comm)
+                           .to_optional()
+                     : std::nullopt));
           },
           py::arg("data"), py::arg("learning_rate"), py::arg("epochs"),
           py::arg("train_metrics") = std::vector<std::string>{},
@@ -171,13 +174,16 @@ void defineAutomlInModule(py::module_& module) {
              const std::vector<std::string>& val_metrics,
              const std::vector<udt::CallbackPtr>& callbacks,
              udt::TrainOptions options, py::object& comm) {
-            udt.coldstart(
+            return udt.coldstart(
                 data, strong_column_names, weak_column_names, learning_rate,
                 epochs, train_metrics, val_data, val_metrics, callbacks,
                 options,
-              (!comm.is(py::none()) ? bolt::train::python::DistributedCommPython(comm).to_optional() : std::nullopt)
+                (!comm.is(py::none())
+                     ? bolt::train::python::DistributedCommPython(comm)
+                           .to_optional()
+                     : std::nullopt)
 
-);
+            );
           },
           py::arg("data"), py::arg("strong_column_names"),
           py::arg("weak_column_names"), py::arg("learning_rate"),
