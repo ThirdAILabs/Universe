@@ -152,8 +152,8 @@ class UDTBackend {
       uint32_t epochs, const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options ,
-                          std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;

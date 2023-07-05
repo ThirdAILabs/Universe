@@ -184,7 +184,7 @@ py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-                          std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(

@@ -169,8 +169,8 @@ void defineAutomlInModule(py::module_& module) {
              const std::vector<std::string>& train_metrics,
              const dataset::DataSourcePtr& val_data,
              const std::vector<std::string>& val_metrics,
-             const std::vector<udt::CallbackPtr>& callbacks, udt::TrainOptions options,
-             py::object& comm) {
+             const std::vector<udt::CallbackPtr>& callbacks,
+             udt::TrainOptions options, py::object& comm) {
             udt.coldstart(
                 data, strong_column_names, weak_column_names, learning_rate,
                 epochs, train_metrics, val_data, val_metrics, callbacks,
