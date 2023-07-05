@@ -30,6 +30,11 @@ def train_model():
     return model
 
 
+# TODO(Any): add another version of this test that replaces words with synonyms
+# to test how assoicating between the synonyms transfers between different samples
+# which have occurences of the synonym.
+
+
 def get_association_samples():
     df = pd.read_csv(QUERY_FILE)
 
@@ -52,6 +57,11 @@ def get_association_samples():
         end = n_words // 10 * 9
 
         acronym = "".join(word[0] for word in words[start:end])
+
+        # Replace the middle words with the acronym and add random words selected
+        # from some of the other samples. These random words just make the sample
+        # more difficult for the model so that it can't just get the answer by looking
+        # at the words that are not part of the acronym.
         new_words = (
             words[:start] + [acronym] + words[end:] + random.choices(random_words, k=15)
         )
