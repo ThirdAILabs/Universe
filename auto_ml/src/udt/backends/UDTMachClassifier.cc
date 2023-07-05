@@ -138,6 +138,8 @@ UDTMachClassifier::UDTMachClassifier(
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
+
+  // TODO(David): Should we call this in constructor as well?
   updateSamplingStrategy();
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
@@ -226,60 +228,65 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
                                       bool return_predicted_class,
                                       std::optional<uint32_t> top_k) {
-  (void)top_k;
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
         "return_predicted_class flag.");
   }
 
-  return py::cast(predictImpl(sample, sparse_inference));
+  return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
 }
 
-std::vector<std::pair<uint32_t, double>> UDTMachClassifier::predictImpl(
-    const MapInput& sample, bool sparse_inference) {
-  auto outputs = _classifier->model()->forward(
-      _dataset_factory->featurizeInput(sample), sparse_inference);
+std::vector<std::vector<std::pair<uint32_t, double>>>
+UDTMachClassifier::predictImpl(const MapInputBatch& samples,
+                               bool sparse_inference,
+                               std::optional<uint32_t> top_k) {
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               sparse_inference)
+                     .at(0);
 
-  const BoltVector& output = outputs.at(0)->getVector(0);
+  uint32_t num_classes = _mach_label_block->index()->numEntities();
 
-  auto decoded_output = _mach_label_block->index()->decode(
-      /* output = */ output,
-      /* min_num_eval_results = */ _min_num_eval_results,
-      /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
+  if (top_k && top_k > num_classes) {
+    throw std::invalid_argument(
+        "Cannot return more results than the model is trained to "
+        "predict. "
+        "Model currently can predict one of " +
+        std::to_string(num_classes) + " classes.");
+  }
 
-  return decoded_output;
+  uint32_t k = top_k.value_or(_min_num_eval_results);
+
+  uint32_t batch_size = outputs->batchSize();
+
+  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
+      batch_size);
+#pragma omp parallel for default(none) \
+    shared(outputs, predicted_entities, k, batch_size) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    auto predictions = _mach_label_block->index()->decode(
+        /* output = */ vector,
+        /* min_num_eval_results = */ k,
+        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
+    predicted_entities[i] = predictions;
+  }
+
+  return predicted_entities;
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class,
                                            std::optional<uint32_t> top_k) {
-  (void)top_k;
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
         "return_predicted_class flag.");
   }
 
-  auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               sparse_inference)
-                     .at(0);
-
-  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
-      outputs->batchSize());
-#pragma omp parallel for default(none) shared(outputs, predicted_entities)
-  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
-    const BoltVector& vector = outputs->getVector(i);
-    auto predictions = _mach_label_block->index()->decode(
-        /* output = */ vector,
-        /* min_num_eval_results = */ _min_num_eval_results,
-        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
-    predicted_entities[i] = predictions;
-  }
-
-  return py::cast(predicted_entities);
+  return py::cast(predictImpl(samples, sparse_inference, top_k));
 }
 
 py::object UDTMachClassifier::predictHashes(
@@ -746,10 +753,11 @@ void UDTMachClassifier::addBalancingSamples(
 
     for (uint32_t i = 0; i < samples.front()->len(); i++) {
       const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
-      if (doc_id_vec.len != 1) {
-        throw std::runtime_error("Expected doc id to be a single integer.");
+      if (doc_id_vec.len < 1) {
+        continue;
       }
-      uint32_t doc_id = samples.at(2)->at(0)[i].active_neurons[0];
+
+      uint32_t doc_id = doc_id_vec.active_neurons[0];
 
       const BoltVector& input = samples.at(0)->at(0)[i];
       const BoltVector& label = samples.at(1)->at(0)[i];
