@@ -10,10 +10,9 @@ from distributed_utils import (
 )
 from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
+from test_mock_cluster_udt_clinc import get_clinc_udt_model
 from thirdai import bolt_v2 as bolt
 from thirdai.demos import download_clinc_dataset
-
-from test_mock_cluster_udt_clinc import get_clinc_udt_model
 
 pytestmark = [pytest.mark.distributed]
 
