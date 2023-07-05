@@ -1,6 +1,8 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
+#include <bolt/python_bindings/DistributedCommunicationPython.h>
 #include <bolt/python_bindings/PybindUtils.h>
+#include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
@@ -118,14 +120,27 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_target_classes"), py::arg("input_dim"),
            py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict())
-      .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
-           py::arg("epochs"),
-           py::arg("train_metrics") = std::vector<std::string>{},
-           py::arg("val_data") = nullptr,
-           py::arg("val_metrics") = std::vector<std::string>{},
-           py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
-           py::arg("options") = udt::TrainOptions(),
-           bolt::python::OutputRedirect())
+      .def(
+          "train",
+          [](udt::UDT& udt, const dataset::DataSourcePtr& data,
+             float learning_rate, uint32_t epochs,
+             const std::vector<std::string>& train_metrics,
+             const dataset::DataSourcePtr& val_data,
+             const std::vector<std::string>& val_metrics,
+             const std::vector<udt::CallbackPtr>& callbacks,
+             udt::TrainOptions options, py::object& comm) {
+            return udt.train(
+                data, learning_rate, epochs, train_metrics, val_data,
+                val_metrics, callbacks, options,
+                bolt::train::python::DistributedCommPython(comm).to_optional());
+          },
+          py::arg("data"), py::arg("learning_rate"), py::arg("epochs"),
+          py::arg("train_metrics") = std::vector<std::string>{},
+          py::arg("val_data") = nullptr,
+          py::arg("val_metrics") = std::vector<std::string>{},
+          py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
+          py::arg("options") = udt::TrainOptions(),
+          py::arg("comm") = std::nullopt, bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
@@ -145,12 +160,28 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
-      .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
-           py::arg("strong_column_names"), py::arg("weak_column_names"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("train_metrics"), py::arg("val_data"),
-           py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
-           bolt::python::OutputRedirect())
+      .def(
+          "cold_start",
+          [](udt::UDT& udt, const dataset::DataSourcePtr& data,
+             const std::vector<std::string>& strong_column_names,
+             const std::vector<std::string>& weak_column_names,
+             float learning_rate, uint32_t epochs,
+             const std::vector<std::string>& train_metrics,
+             const dataset::DataSourcePtr& val_data,
+             const std::vector<std::string>& val_metrics,
+             const std::vector<udt::CallbackPtr>& callbacks, udt::TrainOptions options,
+             py::object& comm) {
+            udt.coldstart(
+                data, strong_column_names, weak_column_names, learning_rate,
+                epochs, train_metrics, val_data, val_metrics, callbacks,
+                options,
+                bolt::train::python::DistributedCommPython(comm).to_optional());
+          },
+          py::arg("data"), py::arg("strong_column_names"),
+          py::arg("weak_column_names"), py::arg("learning_rate"),
+          py::arg("epochs"), py::arg("train_metrics"), py::arg("val_data"),
+          py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
+          py::arg("comm"), bolt::python::OutputRedirect())
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,

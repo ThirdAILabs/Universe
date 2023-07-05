@@ -70,7 +70,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      std::optional<DistributedCommInterfacePtr> comm = std::nullopt);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -83,7 +84,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      std::optional<DistributedCommInterfacePtr> comm = std::nullopt);
 
   /**
    * Performs evaluation on the model using the given validation data and

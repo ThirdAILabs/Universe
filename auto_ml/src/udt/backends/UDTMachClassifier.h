@@ -36,13 +36,13 @@ class UDTMachClassifier final : public UDTBackend {
                     const std::optional<std::string>& model_config,
                     config::ArgumentMap user_args);
 
-  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
-                   uint32_t epochs,
-                   const std::vector<std::string>& train_metrics,
-                   const dataset::DataSourcePtr& val_data,
-                   const std::vector<std::string>& val_metrics,
-                   const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options) final;
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      std::optional<bolt::train::DistributedCommInterfacePtr> comm) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
@@ -87,7 +87,8 @@ class UDTMachClassifier final : public UDTBackend {
                        const dataset::DataSourcePtr& val_data,
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options) final;
+                       TrainOptions options,
+                       std::optional<bolt::train::DistributedCommInterfacePtr> comm) final;
 
   py::object embedding(const MapInput& sample) final;
 

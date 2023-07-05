@@ -48,3 +48,21 @@ class DistributedTrainer(bolt.train.Trainer):
     def train_distributed(self, *args, **kwargs):
         kwargs["comm"] = Communication()
         self.train(*args, **kwargs)
+
+
+def adds_distributed_v2_to_udt():
+    def train_distributed_v2(self, *args, **kwargs):
+        kwargs["comm"] = Communication()
+        self.train(*args, **kwargs)
+
+    setattr(bolt.UniversalDeepTransformer, "train_distributed_v2", train_distributed_v2)
+
+    def coldstart_distributed_v2(self, *args, **kwargs):
+        kwargs["comm"] = Communication()
+        self.cold_start(*args, **kwargs)
+
+    setattr(
+        bolt.UniversalDeepTransformer,
+        "coldstart_distributed_v2",
+        coldstart_distributed_v2,
+    )

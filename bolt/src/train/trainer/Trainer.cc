@@ -10,6 +10,7 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt::train {
 
@@ -162,7 +163,8 @@ metrics::History Trainer::train_with_metric_names(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    std::optional<uint32_t> logging_interval,
+    std::optional<DistributedCommInterfacePtr> comm) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -174,7 +176,8 @@ metrics::History Trainer::train_with_metric_names(
       /* use_sparsity_in_validation= */ use_sparsity_in_validation,
       /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ autotune_rehash_rebuild,
-      /* verbose= */ verbose, /* logging_interval= */ logging_interval);
+      /* verbose= */ verbose, /* logging_interval= */ logging_interval,
+      std::move(comm));
 }
 
 metrics::History Trainer::train_with_dataset_loader(
@@ -188,7 +191,8 @@ metrics::History Trainer::train_with_dataset_loader(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    std::optional<uint32_t> logging_interval,
+    std::optional<DistributedCommInterfacePtr> comm) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 
@@ -201,7 +205,7 @@ metrics::History Trainer::train_with_dataset_loader(
     return train(train_data, learning_rate, epochs, train_metrics,
                  validation_data, validation_metrics, steps_per_validation,
                  use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-                 verbose, logging_interval);
+                 verbose, logging_interval, comm);
   }
 
   // We have duplicate code here for loading validation data because for
@@ -222,7 +226,7 @@ metrics::History Trainer::train_with_dataset_loader(
       train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
             validation_data, validation_metrics, steps_per_validation,
             use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-            verbose, logging_interval);
+            verbose, logging_interval, comm);
     }
     train_data_loader->restart();
   }

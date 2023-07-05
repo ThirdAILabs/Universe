@@ -153,7 +153,23 @@ void defineTrainer(py::module_& train) {
           py::arg("autotune_rehash_rebuild") = false, py::arg("verbose") = true,
           py::arg("logging_interval") = std::nullopt,
           py::arg("comm") = std::nullopt, bolt::python::OutputRedirect())
-      .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
+      .def("train", [](Trainer& trainer, const LabeledDataset& train_data,
+             float learning_rate, uint32_t epochs,
+             std::vector<std::string>& train_metrics,
+             const std::optional<LabeledDataset>& validation_data,
+             std::vector<std::string>& validation_metrics,
+             std::optional<uint32_t> steps_per_validation,
+             bool use_sparsity_in_validation,
+             const std::vector<callbacks::CallbackPtr>& callbacks,
+             bool autotune_rehash_rebuild, bool verbose,
+             std::optional<uint32_t> logging_interval, py::object& comm) {
+            return trainer.train_with_metric_names(
+                train_data, learning_rate, epochs, train_metrics,
+                validation_data, validation_metrics, steps_per_validation,
+                use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
+                verbose, logging_interval,
+                DistributedCommPython(comm).to_optional());
+          }, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = std::vector<std::string>(),
            py::arg("validation_data") = std::nullopt,
@@ -164,6 +180,7 @@ void defineTrainer(py::module_& train) {
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
+           py::arg("comm") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),

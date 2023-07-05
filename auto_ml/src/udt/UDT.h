@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/train/trainer/DistributedCommInterface.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -41,13 +42,13 @@ class UDT {
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
-                   uint32_t epochs,
-                   const std::vector<std::string>& train_metrics,
-                   const dataset::DataSourcePtr& val_data,
-                   const std::vector<std::string>& val_metrics,
-                   const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options);
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      std::optional<bolt::train::DistributedCommInterfacePtr> comm);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
@@ -79,7 +80,8 @@ class UDT {
                        const dataset::DataSourcePtr& val_data,
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options);
+                       TrainOptions options,
+                      std::optional<bolt::train::DistributedCommInterfacePtr> comm);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();

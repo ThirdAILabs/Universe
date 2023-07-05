@@ -32,7 +32,8 @@ py::object UDTSVMClassifier::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
   auto train_dataset_loader = svmDatasetLoader(
       data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
@@ -44,7 +45,7 @@ py::object UDTSVMClassifier::train(
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             train_metrics, val_dataset_loader, val_metrics,
-                            callbacks, options);
+                            callbacks, options, comm);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
