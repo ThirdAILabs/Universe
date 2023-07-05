@@ -7,11 +7,11 @@ from thirdai._thirdai import bolt as old_bolt
 from thirdai._thirdai import bolt_v2 as bolt
 
 
-class UDTCheckpoint(Checkpoint):
+class UDTCheckPoint(Checkpoint):
     """A :py:class:`~ray.air.checkpoint.Checkpoint` with UDT-specific
     functionality.
 
-    Use ``UDTCheckpoint.from_model`` to create this type of checkpoint.
+    Use ``UDTCheckPoint.from_model`` to create this type of checkpoint.
     """
 
     @classmethod

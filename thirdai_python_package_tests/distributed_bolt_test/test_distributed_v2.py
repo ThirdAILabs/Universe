@@ -13,7 +13,7 @@ from ray.train.torch import TorchConfig
 from thirdai import bolt_v2 as bolt
 from thirdai.demos import download_clinc_dataset
 
-from .test_mock_cluster_udt_clinc import get_clinc_udt_model
+from test_mock_cluster_udt_clinc import get_clinc_udt_model
 
 pytestmark = [pytest.mark.distributed]
 
@@ -126,18 +126,27 @@ def test_distributed_v2():
 
 
 def test_udt_train_distributed_v2():
-    TRAIN_FILE_1 = "./clinc_train_0.csv"
-    TRAIN_FILE_2 = "./clinc_train_1.csv"
-    TEST_FILE = "./clinc_test.csv"
-
-    remove_files([TRAIN_FILE_1, TRAIN_FILE_2, TEST_FILE])
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
-        model = config.get("model")
+        download_clinc_dataset(num_training_files=2, clinc_small=True)
+        udt_model = config.get("model")
+        udt_model.train_distributed_v2(
+            f"clinc_train_{session.get_world_rank()}.csv",
+            epochs=1,
+            learning_rate=0.02,
+            batch_size=256,
+        )
+
+        # session report should always have a metrics stored, hence added a demo_metric
+        session.report(
+            {"demo_metric": 1},
+            checkpoint=dist.UDTCheckPoint.from_model(udt_model),
+        )
 
     udt_model = get_clinc_udt_model()
-    # reserve 1 cpu for bolt trainer
+
+    # session report should always have a metrics stored, hence added a demo_metric
     num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
 
     assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
@@ -165,3 +174,11 @@ def test_udt_train_distributed_v2():
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
+
+    result = trainer.fit()
+    trained_udt_model = result.checkpoint.get_model()
+    metrics = trained_udt_model.evaluate(
+        f"{os.getcwd()}/clinc_test.csv", metrics=["categorical_accuracy"]
+    )
+
+    assert metrics["val_categorical_accuracy"][-1] > 0.7

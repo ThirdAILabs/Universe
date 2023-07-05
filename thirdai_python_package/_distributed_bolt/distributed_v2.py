@@ -1,5 +1,6 @@
 import numpy as np
 from thirdai._thirdai import bolt_v2 as bolt
+from thirdai._thirdai import bolt as old_bolt
 
 from .utils import check_torch_installed
 
@@ -48,25 +49,27 @@ def adds_distributed_v2_to_udt():
     def train_distributed_v2(self, *args, **kwargs):
         check_torch_installed()
 
-        self.get_model().disable_sparse_parameter_updates()
+        self._get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
         self.train(*args, **kwargs)
 
         # TODO(pratik): Should we enable sparse parameter updates after training?
 
-    setattr(bolt.UniversalDeepTransformer, "train_distributed_v2", train_distributed_v2)
+    setattr(
+        old_bolt.UniversalDeepTransformer, "train_distributed_v2", train_distributed_v2
+    )
 
     def coldstart_distributed_v2(self, *args, **kwargs):
         check_torch_installed()
 
-        self.get_model().disable_sparse_parameter_updates()
+        self._get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
         self.cold_start(*args, **kwargs)
 
         # TODO(pratik): Should we enable sparse parameter updates after training?
 
     setattr(
-        bolt.UniversalDeepTransformer,
+        old_bolt.UniversalDeepTransformer,
         "coldstart_distributed_v2",
         coldstart_distributed_v2,
     )

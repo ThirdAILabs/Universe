@@ -80,6 +80,7 @@ def modify_udt():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
         shuffle_reservoir_size: int = 64000,
+        comm=None,
     ):
         data_source = _create_data_source(filename)
 
@@ -102,6 +103,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     def wrapped_train_on_data_source(
@@ -115,6 +117,7 @@ def modify_udt():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
+        comm=None,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -134,6 +137,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     def wrapped_evaluate(
@@ -186,6 +190,7 @@ def modify_udt():
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
         logging_interval: Optional[int] = None,
+        comm=None,
     ):
         data_source = _create_data_source(filename)
 
@@ -209,6 +214,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     def wrapped_cold_start_on_data_source(
@@ -224,6 +230,7 @@ def modify_udt():
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
         logging_interval: Optional[int] = None,
+        comm=None,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -245,6 +252,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")
