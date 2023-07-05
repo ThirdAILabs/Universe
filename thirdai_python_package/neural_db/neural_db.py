@@ -144,10 +144,6 @@ class NeuralDB:
             raise ValueError(f"Incompatible UDT model. Cannot find a query column.")
         if id_col is None:
             raise ValueError(f"Incompatible UDT model. Cannot find an id column.")
-        if id_delimiter is None:
-            raise ValueError(
-                f"Incompatible UDT model. Id column must have a delimiter."
-            )
 
         model = Mach(
             id_col=id_col,
