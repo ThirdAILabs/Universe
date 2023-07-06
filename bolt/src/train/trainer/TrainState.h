@@ -12,14 +12,14 @@ namespace thirdai::bolt::train {
  */
 class TrainState {
  public:
-  explicit TrainState(float learning_rate, uint32_t batches_per_epoch)
+  explicit TrainState(float learning_rate, uint32_t batches_in_dataset)
       : _learning_rate(learning_rate),
-        _batches_per_epoch(batches_per_epoch),
+        _batches_in_dataset(batches_in_dataset),
         _stop_training(false) {}
 
   static std::shared_ptr<TrainState> make(float learning_rate,
-                                          uint32_t batches_per_epoch) {
-    return std::make_shared<TrainState>(learning_rate, batches_per_epoch);
+                                          uint32_t batches_in_dataset) {
+    return std::make_shared<TrainState>(learning_rate, batches_in_dataset);
   }
 
   /**
@@ -45,11 +45,11 @@ class TrainState {
    */
   void stopTraining() { _stop_training = true; }
 
-  uint32_t batchesPerEpoch() const { return _batches_per_epoch; }
+  uint32_t batchesInDataset() const { return _batches_in_dataset; }
 
  private:
   float _learning_rate;
-  uint32_t _batches_per_epoch;
+  uint32_t _batches_in_dataset;
   bool _stop_training;
 };
 

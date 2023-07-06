@@ -110,30 +110,15 @@ class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
     def __init__(
         self,
         min_epochs,
-        max_epochs,
         tracked_metric,
         metric_threshold,
-        progress_bar_callback,
     ):
         super().__init__()
 
         self.epoch_count = 0
-        self.batch_count = 0
         self.min_epochs = min_epochs
-        self.max_epochs = max_epochs
         self.tracked_metric = tracked_metric
         self.metric_threshold = metric_threshold
-        self.progress_bar_callback = progress_bar_callback
-
-    def on_batch_end(self):
-        self.batch_count += 1
-        if self.batch_count % 3:
-            batch_progress = self.batch_count / self.train_state.batches_per_epoch()
-            progress = batch_progress / self.max_epochs
-
-            # TODO revisit this progress bar update
-            progress = progress ** (1.0 / 2)
-            self.progress_bar_callback(progress)
 
     def on_epoch_end(self):
         self.epoch_count += 1
@@ -143,6 +128,33 @@ class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
             and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
         ):
             self.train_state.stop_training()
+
+
+class ProgressUpdate(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        max_epochs,
+        progress_callback,
+    ):
+        super().__init__()
+
+        self.batch_count = 0
+        self.max_epochs = max_epochs
+        self.progress_callback = progress_callback
+
+    def on_batch_end(self):
+        self.batch_count += 1
+
+        # We update progress every other epoch because otherwise the updates are
+        # too fast for frontend components to display these changes.
+        if self.batch_count % 2:
+            batch_progress = self.batch_count / self.train_state.batches_in_dataset()
+            progress = batch_progress / self.max_epochs
+
+            # TODO revisit this progress bar update
+            # This function (sqrt) increases faster at the beginning
+            progress = progress ** (1.0 / 2)
+            self.progress_callback(progress)
 
 
 class CancelTraining(bolt_v2.train.callbacks.Callback):
@@ -174,9 +186,12 @@ def unsupervised_train_on_docs(
 
     early_stop_callback = EarlyStopWithMinEpochs(
         min_epochs=min_epochs,
-        max_epochs=max_epochs,
         tracked_metric=metric,
         metric_threshold=acc_to_stop,
+    )
+
+    progress_callback = ProgressUpdate(
+        max_epochs=max_epochs,
         progress_bar_callback=on_progress,
     )
 
@@ -189,7 +204,7 @@ def unsupervised_train_on_docs(
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
-        callbacks=[early_stop_callback, cancel_training_callback],
+        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
     )
 
 
