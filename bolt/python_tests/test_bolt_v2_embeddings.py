@@ -92,7 +92,6 @@ def train_and_evaluate_embedding_model(embedding_factory):
         correct += np.sum(np.argmax(output[0].activations, axis=1) == y_np)
         total += len(y_np)
 
-    print("final acc ", correct / total)
     assert correct / total > 0.8
 
 
