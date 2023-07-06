@@ -20,6 +20,21 @@ class DistributedBenchmarkConfig(ABC):
     n_target_classes = None
     embedding_dimension = 2048
 
+    train_metrics = [
+        "precision@1",
+        "recall@1",
+        "recall@5",
+        "recall@10",
+        "recall@100",
+    ]
+    val_metrics = [
+        "precision@1",
+        "recall@1",
+        "recall@5",
+        "recall@10",
+        "recall@100",
+    ]
+
     @classmethod
     def prepare_dataset(cls, path_prefix: str):
         (
@@ -61,22 +76,8 @@ class FiqaConfig(DistributedBenchmarkConfig):
 
     learning_rate = 0.001
     num_epochs = 20
-    output_dim = 5000
-    num_hashes = 8
-    train_metrics = [
-        "precision@1",
-        "recall@1",
-        "recall@5",
-        "recall@10",
-        "recall@100",
-    ]
-    val_metrics = [
-        "precision@1",
-        "recall@1",
-        "recall@5",
-        "recall@10",
-        "recall@100",
-    ]
+    output_dim = 50000
+    num_hashes = 16
 
 
 class TreqCovidConfig(DistributedBenchmarkConfig):
@@ -90,17 +91,3 @@ class TreqCovidConfig(DistributedBenchmarkConfig):
     num_epochs = 20
     output_dim = 20000
     num_hashes = 16
-    train_metrics = [
-        "precision@1",
-        "recall@1",
-        "recall@5",
-        "recall@10",
-        "recall@100",
-    ]
-    val_metrics = [
-        "precision@1",
-        "recall@1",
-        "recall@5",
-        "recall@10",
-        "recall@100",
-    ]

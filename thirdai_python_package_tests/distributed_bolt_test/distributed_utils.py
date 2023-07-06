@@ -6,8 +6,7 @@ from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
 
 
-@pytest.fixture(scope="module")
-def ray_two_node_cluster_config():
+def ray_two_node_cluster_config_impl():
     # Do these imports here so pytest collection doesn't fail if ray isn't installed
     import ray
     import thirdai.distributed_bolt as db
@@ -53,6 +52,15 @@ def ray_two_node_cluster_config():
 
     ray.shutdown()
     mini_cluster.shutdown()
+
+    yield "Successfully teared down cluster"
+
+
+@pytest.fixture(scope="module")
+def ray_two_node_cluster_config():
+    _generator = ray_two_node_cluster_config_impl()
+    yield next(_generator)
+    next(_generator)
 
 
 def split_into_2(
