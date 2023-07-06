@@ -487,10 +487,14 @@ def test_data_types():
 
 def test_top_k_predictions():
     model = make_simple_trained_model(integer_label=False)
-    predictions = sorted(model.predict(single_sample()), reverse=True)
+    predictions = sorted(
+        model.predict(single_sample(), return_predicted_class=False), reverse=True
+    )
     for topk in range(1, len(predictions)):
-        topk_predictions = model.predict(single_sample(), top_k=topk)
+        topk_predictions = model.predict(
+            single_sample(), top_k=topk, return_predicted_class=False
+        )
         check_equal = all(
             [predictions[i] == topk_predictions[1][i] for i in range(topk)]
         )
-        assert check_equal
+        assert check_equal == True

@@ -68,11 +68,11 @@ py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
                              bool single_row_to_vector, uint32_t top_k) {
   can_convert_tensor_to_numpy(tensor);
 
-  std::pair<std::vector<uint32_t>, std::vector<float> > topkIdxValuePair =
-      tensor->topKIndexValuePair(top_k);
+  std::pair<std::vector<uint32_t>, std::vector<float> > topkValueIdxPair =
+      tensor->topKValueIndexPair(top_k);
 
-  const uint32_t* flattened_active_neurons = topkIdxValuePair.first.data();
-  const float* flattened_activations = topkIdxValuePair.second.data();
+  const uint32_t* flattened_active_neurons = topkValueIdxPair.first.data();
+  const float* flattened_activations = topkValueIdxPair.second.data();
 
   auto activations = createArrayCopy(flattened_activations, tensor->batchSize(),
                                      top_k, single_row_to_vector);
