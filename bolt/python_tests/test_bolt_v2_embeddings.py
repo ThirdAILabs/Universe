@@ -92,6 +92,7 @@ def train_and_evaluate_embedding_model(embedding_factory):
         correct += np.sum(np.argmax(output[0].activations, axis=1) == y_np)
         total += len(y_np)
 
+    print("final acc ", correct / total)
     assert correct / total > 0.8
 
 
@@ -111,6 +112,11 @@ def test_robez_op():
 @pytest.mark.unit
 def test_embedding_op():
     def embedding_factory():
-        return bolt.nn.Embedding(dim=32, input_dim=INPUT_DIM, activation="relu")
+        return bolt.nn.Embedding(dim=32, input_dim=INPUT_DIM, activation="linear")
 
     train_and_evaluate_embedding_model(embedding_factory)
+
+
+for i in range(1000):
+    test_embedding_op()
+    print("passed ", i)
