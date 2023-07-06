@@ -284,7 +284,7 @@ class NeuralDB:
             top_k=top_k,
         )
 
-    def _get_associate_top_k(strength):
+    def _get_associate_top_k(self, strength):
         if strength == Strength.Weak:
             return 3
         elif strength == Strength.Medium:
@@ -313,17 +313,23 @@ class NeuralDB:
 
         logs = self._savable_state.logger.get_logs()
 
+        query_col = self._savable_state.model.get_query_col()
+
         association_logs = logs[logs["action"] == "associate"]
         associate_samples = []
-        for _, row in association_logs:
-            association_logs.extend(row["args"]["pairs"])
+        for _, row in association_logs.iterrows():
+            for source, target in row["args"]["pairs"]:
+                associate_samples.append(({query_col: source}, {query_col: target}))
 
-        self._savable_state.model.get_model().neural_db.associate_train_data_source(
+        self._savable_state.model.get_model().neural_db.associate_cold_start_data_source(
             balancing_data=doc_manager.get_data_source(),
+            strong_column_names=[self._savable_state.documents.strong_column],
+            weak_column_names=[self._savable_state.documents.weak_column],
             source_target_samples=associate_samples,
             n_buckets=self._get_associate_top_k(strength),
             n_association_samples=1,
             learning_rate=learning_rate,
             epochs=epochs,
             metrics=["hash_precision@5"],
+            options=bolt.TrainOptions(),
         )

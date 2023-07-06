@@ -934,9 +934,9 @@ py::object UDTMachClassifier::associateColdStart(
       balancing_data, strong_column_names, weak_column_names, _dataset_factory,
       metadata);
 
-  return associateTrain(balancing_data, source_target_samples, n_buckets,
-                        n_association_samples, learning_rate, epochs, metrics,
-                        options);
+  return associateTrain(cold_start_balancing_data, source_target_samples,
+                        n_buckets, n_association_samples, learning_rate, epochs,
+                        metrics, options);
 }
 
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
