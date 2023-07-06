@@ -25,6 +25,138 @@ Trainer::Trainer(nn::model::ModelPtr model,
   _history = std::make_shared<metrics::History>();
 }
 
+void Trainer::trainOnBatches(
+    const LabeledDataset& train_data, const TrainStatePtr& train_state,
+    metrics::MetricCollection& train_metrics,
+    callbacks::CallbackList& callbacks,
+    const std::optional<LabeledDataset>& validation_data,
+    const metrics::InputMetrics& validation_metrics,
+    const std::optional<uint32_t>& steps_per_validation,
+    bool use_sparsity_in_validation,
+    const std::optional<uint32_t>& logging_interval, bool verbose) {
+  uint32_t num_batches = train_data.first.size();
+  auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
+
+  utils::Timer max_batch_timer;
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+    callbacks.onBatchBegin();
+
+    const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
+    const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
+
+    _model->trainOnBatch(inputs, labels);
+    _model->updateParameters(train_state->learningRate());
+
+    train_metrics.recordBatch(inputs.at(0)->batchSize());
+
+    callbacks.onBatchEnd();
+
+    if (bar) {
+      bar->increment();
+    }
+
+    train_state->increment_steps_since_val();
+    if (steps_per_validation &&
+        train_state->compare_steps_since_val(*steps_per_validation)) {
+      validate(*validation_data, validation_metrics,
+               use_sparsity_in_validation);
+      train_state->reset_steps_since_val();
+    }
+
+    if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
+      logging::info(
+          formatIntermediateLogLine(train_metrics.summarizeLastStep()));
+    }
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return;
+    }
+
+    checkInterrupt();
+  }
+  train_metrics.updateHistory(*_history);
+  std::string log_line =
+      formatTrainLogLine(train_metrics.summarizeLastStep(), num_batches,
+                         max_batch_timer.seconds());
+  logging::info(log_line);
+  if (bar) {
+    bar->close(log_line);
+  }
+}
+
+metrics::History Trainer::train_max_in_memory_batches(
+    const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
+    uint32_t epochs, const metrics::InputMetrics& train_metrics_in,
+    uint32_t batch_size,
+    const std::vector<callbacks::CallbackPtr>& callbacks_in,
+    std::optional<uint32_t> max_in_memory_batches,
+    const std::optional<LabeledDataset>& validation_data,
+    const metrics::InputMetrics& validation_metrics,
+    std::optional<uint32_t> steps_per_validation,
+    bool use_sparsity_in_validation, bool autotune_rehash_rebuild, bool verbose,
+    std::optional<uint32_t> logging_interval) {
+  auto train_state = TrainState::make(learning_rate);
+
+  metrics::MetricCollection train_metrics(train_metrics_in);
+
+  callbacks::CallbackList callbacks(callbacks_in, _model, train_state,
+                                    _history);
+
+  callbacks.onTrainBegin();
+
+  uint32_t num_epochs = _epoch + epochs;
+  for (; _epoch < num_epochs; _epoch++) {
+    if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+    }
+    callbacks.onEpochBegin();
+    utils::Timer epoch_timer;
+    while (auto train_data_wrapper =
+               loadSomeWrapper(train_data_loader, batch_size,
+                               *max_in_memory_batches, verbose)) {
+      auto train_data = train_data_wrapper.value();
+      verifyNumBatchesMatch(train_data);
+      if (validation_data) {
+        verifyNumBatchesMatch(*validation_data);
+      }
+      if (autotune_rehash_rebuild) {
+        autotuneRehashRebuild(train_data.first.size(),
+                              train_data.first.at(0).at(0)->batchSize());
+      }
+      trainOnBatches(train_data, train_state, train_metrics, callbacks,
+                     validation_data, validation_metrics, steps_per_validation,
+                     use_sparsity_in_validation, logging_interval, verbose);
+    }
+    epoch_timer.stop();
+    (*_history)["epoch_times"].push_back(epoch_timer.seconds());
+
+    train_metrics.reset();
+
+    // This condition ensures that if steps_per_validation coincides with the
+    // end of the epoch that we don't validate twice: once above when we reach
+    // the validation interval and once when we reach the end of the epoch.
+
+    if (validation_data && !train_state->compare_steps_since_val(0)) {
+      validate(*validation_data, validation_metrics,
+               use_sparsity_in_validation);
+      train_state->reset_steps_since_val();
+    }
+
+    callbacks.onEpochEnd();
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return *_history;
+    }
+
+    train_data_loader->restart();
+  }
+  callbacks.onTrainEnd();
+
+  return *_history;  // Copies the history in case users modify it.
+}
+
 metrics::History Trainer::train(
     const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
     const metrics::InputMetrics& train_metrics_in,
@@ -39,12 +171,10 @@ metrics::History Trainer::train(
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
   }
-
   if (autotune_rehash_rebuild) {
     autotuneRehashRebuild(train_data.first.size(),
                           train_data.first.at(0).at(0)->batchSize());
   }
-
   auto train_state = TrainState::make(learning_rate);
 
   metrics::MetricCollection train_metrics(train_metrics_in);
@@ -54,82 +184,31 @@ metrics::History Trainer::train(
 
   callbacks.onTrainBegin();
 
-  uint32_t steps_since_validation = 0;
-
   uint32_t num_epochs = _epoch + epochs;
   for (; _epoch < num_epochs; _epoch++) {
     if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
-
     callbacks.onEpochBegin();
-
-    uint32_t num_batches = train_data.first.size();
-    auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
-
     utils::Timer epoch_timer;
 
-    for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-      callbacks.onBatchBegin();
-
-      const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
-      const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
-
-      _model->trainOnBatch(inputs, labels);
-
-      _model->updateParameters(train_state->learningRate());
-
-      train_metrics.recordBatch(inputs.at(0)->batchSize());
-
-      callbacks.onBatchEnd();
-
-      if (bar) {
-        bar->increment();
-      }
-
-      ++steps_since_validation;
-      if (steps_per_validation &&
-          steps_since_validation == *steps_per_validation) {
-        validate(*validation_data, validation_metrics,
-                 use_sparsity_in_validation);
-        steps_since_validation = 0;
-      }
-
-      if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
-        logging::info(
-            formatIntermediateLogLine(train_metrics.summarizeLastStep()));
-      }
-
-      if (train_state->isTrainingStopped()) {
-        // TODO(Nicholas): Print stuff and have more graceful termination
-        return *_history;
-      }
-      checkInterrupt();
-    }
-
+    trainOnBatches(train_data, train_state, train_metrics, callbacks,
+                   validation_data, validation_metrics, steps_per_validation,
+                   use_sparsity_in_validation, logging_interval, verbose);
     epoch_timer.stop();
 
-    train_metrics.updateHistory(*_history);
-
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
-
-    std::string log_line = formatTrainLogLine(
-        train_metrics.summarizeLastStep(), num_batches, epoch_timer.seconds());
-    logging::info(log_line);
-
-    if (bar) {
-      bar->close(log_line);
-    }
 
     train_metrics.reset();
 
     // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
-    if (validation_data && steps_since_validation != 0) {
+
+    if (validation_data && !train_state->compare_steps_since_val(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      steps_since_validation = 0;
+      train_state->reset_steps_since_val();
     }
 
     callbacks.onEpochEnd();
@@ -207,19 +286,11 @@ metrics::History Trainer::train_with_dataset_loader(
         loadAllWrapper(validation_data_loader, batch_size, verbose);
   }
 
-  for (uint32_t e = 0; e < epochs; e++) {
-    while (auto train_chunk =
-               loadSomeWrapper(train_data_loader, batch_size,
-                               *max_in_memory_batches, verbose)) {
-      train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
-            validation_data, validation_metrics, steps_per_validation,
-            use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-            verbose, logging_interval);
-    }
-    train_data_loader->restart();
-  }
-
-  return *_history;
+  return train_max_in_memory_batches(
+      train_data_loader, learning_rate, epochs, train_metrics, batch_size,
+      callbacks, max_in_memory_batches, validation_data, validation_metrics,
+      steps_per_validation, use_sparsity_in_validation, autotune_rehash_rebuild,
+      verbose, logging_interval);
 }
 
 metrics::History Trainer::validate(const LabeledDataset& data,
