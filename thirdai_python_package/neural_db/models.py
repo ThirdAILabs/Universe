@@ -192,7 +192,7 @@ def unsupervised_train_on_docs(
 
     progress_callback = ProgressUpdate(
         max_epochs=max_epochs,
-        progress_bar_callback=on_progress,
+        progress_callback=on_progress,
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
