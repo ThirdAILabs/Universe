@@ -495,6 +495,6 @@ def test_top_k_predictions():
             single_sample(), top_k=topk, return_predicted_class=False
         )
         check_equal = all(
-            [predictions[i] == topk_predicitions[1][i] for i in range(topk)]
+            [predictions[i] == topk_predictions[1][i] for i in range(topk)]
         )
         assert check_equal == True
