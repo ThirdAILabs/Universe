@@ -494,9 +494,5 @@ def test_top_k_predictions():
         topk_predictions = model.predict(
             single_sample(), top_k=topk, return_predicted_class=False
         )
-        check_equal = (
-            True
-            if (predictions[i] == topk_predictions[1][i] for i in range(topk))
-            else False
-        )
+        check_equal = all([predictions[i] == topk_predicitons[1][i] for i in range(topk)])
         assert check_equal == True

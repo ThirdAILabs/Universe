@@ -28,10 +28,24 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
       {rows, cols}, data_copy, free_when_done);
 }
 
+void can_convert_tensor_to_numpy(const tensor::TensorPtr& tensor) {
+  auto nonzeros = tensor->nonzeros();
+  if (!nonzeros) {
+    throw std::runtime_error(
+        "Cannot convert tensor to numpy if the number of nonzeros is not "
+        "fixed.");
+  }
+
+  if (!tensor->activationsPtr()) {
+    throw std::runtime_error("Cannot convert ragged tensor to numpy.");
+  }
+}
+
 py::object tensorToNumpy(const tensor::TensorPtr& tensor,
                          bool single_row_to_vector) {
   auto nonzeros = tensor->nonzeros();
 
+  can_convert_tensor_to_numpy(tensor);
   auto activations =
       createArrayCopy(/* data= */ tensor->activationsPtr(),
                       /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros,
@@ -52,10 +66,13 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
 
 py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
                              bool single_row_to_vector, uint32_t top_k) {
-  std::pair<std::vector<float>, std::vector<uint32_t> > topkValueIdxPair =
+  can_convert_tensor_to_numpy(tensor);
+
+  std::pair<std::vector<uint32_t>, std::vector<float> > topkValueIdxPair =
       tensor->topKValueIndexPair(top_k);
-  const float* flattened_activations = topkValueIdxPair.first.data();
-  const uint32_t* flattened_active_neurons = topkValueIdxPair.second.data();
+
+  const uint32_t* flattened_active_neurons = topkValueIdxPair.first.data();
+  const float* flattened_activations = topkValueIdxPair.second.data();
 
   auto activations = createArrayCopy(flattened_activations, tensor->batchSize(),
                                      top_k, single_row_to_vector);

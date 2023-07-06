@@ -131,7 +131,6 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
     return predictedClasses(output, single);
   }
 
-  can_convert_tensor_to_numpy(output);
   auto nonzeros = output->nonzeros();
   if (top_k) {
     if (top_k.value() > *nonzeros || (top_k.value() == 0)) {
@@ -209,20 +208,6 @@ std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
   auto labels = datasets.back();
   datasets.pop_back();
   return {datasets, labels};
-}
-
-void Classifier::can_convert_tensor_to_numpy(
-    const bolt::nn::tensor::TensorPtr& tensor) {
-  auto nonzeros = tensor->nonzeros();
-  if (!nonzeros) {
-    throw std::runtime_error(
-        "Cannot convert tensor to numpy if the number of nonzeros is not "
-        "fixed.");
-  }
-
-  if (!tensor->activationsPtr()) {
-    throw std::runtime_error("Cannot convert ragged tensor to numpy.");
-  }
 }
 
 std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(

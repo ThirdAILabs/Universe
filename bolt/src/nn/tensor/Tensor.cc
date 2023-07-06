@@ -130,7 +130,7 @@ const float* Tensor::activationsPtr() const {
   return _activations.empty() ? nullptr : _activations.data();
 }
 
-std::pair<std::vector<float>, std::vector<uint32_t> >
+std::pair<std::vector<uint32_t>, std::vector<float> >
 Tensor::topKValueIndexPair(uint32_t topk) {
   std::vector<float> _topk_activations;
   std::vector<uint32_t> _topk_active_neurons;
@@ -140,9 +140,8 @@ Tensor::topKValueIndexPair(uint32_t topk) {
   _topk_active_neurons.resize(total_size);
   for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     int idx_ = topk - 1;
-    BoltVector bolt_vec = getVector(batch_idx);
     TopKActivationsQueue topk_activations_queue =
-        bolt_vec.findKLargestActivations(topk);
+        getVector(batch_idx).findKLargestActivations(topk);
     while (!topk_activations_queue.empty() && idx_ >= 0) {
       ValueIndexPair val_idx_pair = topk_activations_queue.top();
       _topk_activations[batch_idx * topk + idx_] = val_idx_pair.first;
@@ -151,8 +150,9 @@ Tensor::topKValueIndexPair(uint32_t topk) {
       idx_--;
     }
   }
-  return std::make_pair(_topk_activations, _topk_active_neurons);
+  return std::make_pair(_topk_active_neurons, _topk_activations);
 }
+
 const float* Tensor::gradientsPtr() const {
   return _gradients.empty() ? nullptr : _gradients.data();
 }
