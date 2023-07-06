@@ -11,10 +11,39 @@ from distributed_utils import (
 from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from test_mock_cluster_udt_clinc import get_clinc_udt_model
+from test_mock_cluster_cold_start import (
+    download_and_split_catalog_dataset,
+    get_udt_cold_start_model,
+    download_amazon_kaggle_product_catalog_sampled,
+)
 from thirdai import bolt_v2 as bolt
-from thirdai.demos import download_clinc_dataset
+from thirdai.demos import (
+    download_clinc_dataset,
+)
 
 pytestmark = [pytest.mark.distributed]
+
+
+def setting_up_ray():
+    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
+
+    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={
+            "working_dir": working_dir,
+            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
+        },
+        ignore_reinit_error=True,
+    )
+    scaling_config = ScalingConfig(
+        num_workers=2,
+        use_gpu=False,
+        trainer_resources={"CPU": num_cpu_per_node - 1},
+        placement_strategy="PACK",
+    )
+    return scaling_config
 
 
 def training_loop_per_worker(config):
@@ -58,28 +87,7 @@ def test_distributed_v2():
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
-    # reserve 1 cpu for bolt trainer
-    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
-
-    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
-    working_dir = os.path.dirname(os.path.realpath(__file__))
-
-    ray.init(
-        runtime_env={
-            "working_dir": working_dir,
-            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
-        }
-    )
-    scaling_config = ScalingConfig(
-        # Number of distributed workers.
-        num_workers=2,
-        # Turn on/off GPU.
-        use_gpu=False,
-        # Specify resources used for trainer.
-        trainer_resources={"CPU": num_cpu_per_node - 1},
-        # Try to schedule workers on different nodes.
-        placement_strategy="SPREAD",
-    )
+    scaling_config = setting_up_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"model": model},
@@ -125,9 +133,11 @@ def test_distributed_v2():
 
 
 def test_udt_train_distributed_v2():
+    # TODO(pratik): Remove multiple download of training data
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
+        # TODO(pratik): Remove multiple download of training data
         download_clinc_dataset(num_training_files=2, clinc_small=True)
         udt_model = config.get("model")
         udt_model.train_distributed_v2(
@@ -145,28 +155,8 @@ def test_udt_train_distributed_v2():
 
     udt_model = get_clinc_udt_model(integer_target=True)
 
-    # session report should always have a metrics stored, hence added a demo_metric
-    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
+    scaling_config = setting_up_ray()
 
-    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
-    working_dir = os.path.dirname(os.path.realpath(__file__))
-
-    ray.init(
-        runtime_env={
-            "working_dir": working_dir,
-            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
-        }
-    )
-    scaling_config = ScalingConfig(
-        # Number of distributed workers.
-        num_workers=2,
-        # Turn on/off GPU.
-        use_gpu=False,
-        # Specify resources used for trainer.
-        trainer_resources={"CPU": num_cpu_per_node - 1},
-        # Try to schedule workers on different nodes.
-        placement_strategy="SPREAD",
-    )
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
         train_loop_config={"model": udt_model},
@@ -181,3 +171,44 @@ def test_udt_train_distributed_v2():
     )
 
     assert metrics["val_categorical_accuracy"][-1] > 0.7
+    ray.shutdown()
+
+
+def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sampled):
+    # TODO(pratik): Remove multiple download of training data
+    n_target_classes = download_and_split_catalog_dataset(
+        download_amazon_kaggle_product_catalog_sampled
+    )
+
+    def udt_coldstart_loop_per_worker(config):
+        # TODO(pratik): Remove multiple download of training data
+        udt_model = config.get("model")
+        n_target_classes = download_and_split_catalog_dataset(
+            download_amazon_kaggle_product_catalog_sampled
+        )
+
+        metrics = udt_model.coldstart_distributed_v2(
+            filename=f"amazon_product_catalog/part{session.get_world_rank()}",
+            strong_column_names=["TITLE"],
+            weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+            batch_size=1024,
+            learning_rate=0.001,
+            epochs=5,
+            metrics=["categorical_accuracy"],
+        )
+
+        session.report(metrics)
+
+    udt_model = get_udt_cold_start_model(n_target_classes)
+
+    scaling_config = setting_up_ray()
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=udt_coldstart_loop_per_worker,
+        train_loop_config={"model": udt_model},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )
+
+    result = trainer.fit()
+    result.metrics["train_categorical_accuracy"][-1] > 0.7
