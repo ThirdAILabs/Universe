@@ -123,7 +123,7 @@ def test_associate_acronyms_balancing_data():
 
     results = []
     for _ in range(5):
-        model.neural_db.associate(
+        model.neural_db.associate_train(
             filename=QUERY_FILE,
             source_target_samples=associations,
             n_buckets=4,
