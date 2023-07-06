@@ -10,16 +10,14 @@ from distributed_utils import (
 )
 from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
-from test_mock_cluster_udt_clinc import get_clinc_udt_model
 from test_mock_cluster_cold_start import (
+    download_amazon_kaggle_product_catalog_sampled,
     download_and_split_catalog_dataset,
     get_udt_cold_start_model,
-    download_amazon_kaggle_product_catalog_sampled,
 )
+from test_mock_cluster_udt_clinc import get_clinc_udt_model
 from thirdai import bolt_v2 as bolt
-from thirdai.demos import (
-    download_clinc_dataset,
-)
+from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
 
