@@ -5,7 +5,9 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <dataset/src/DataSource.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -154,6 +156,10 @@ class UDT {
 
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
+  std::shared_ptr<UDTMachClassifier> neuralDB() const {
+    return std::dynamic_pointer_cast<UDTMachClassifier>(_backend);
+  }
+
   std::vector<uint32_t> modelDims() const;
 
   data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
@@ -278,7 +284,7 @@ class UDT {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  std::unique_ptr<UDTBackend> _backend;
+  std::shared_ptr<UDTBackend> _backend;
 };
 
 }  // namespace thirdai::automl::udt

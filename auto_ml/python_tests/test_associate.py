@@ -3,6 +3,7 @@ import random
 
 import pandas as pd
 import pytest
+import thirdai
 from thirdai import bolt
 
 QUERY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "texts.csv")
@@ -23,7 +24,7 @@ def train_model():
         },
     )
 
-    model.train(QUERY_FILE, metrics=["precision@1"])
+    model.train(QUERY_FILE, metrics=["precision@1"], verbose=False)
 
     model.evaluate(QUERY_FILE, metrics=["precision@1"], use_sparse_inference=True)
 
@@ -80,11 +81,10 @@ def get_association_samples():
 
 def compare_predictions(model, original_samples, acronym_samples):
     correct = 0
-    for original, acronym in zip(original_samples, acronym_samples):
-        original_pred = model.predict(original)[0][0]
-        acronym_pred = model.predict(acronym)[0][0]
-
-        if original_pred == acronym_pred:
+    original_preds = model.predict_batch(original_samples)
+    acronym_preds = model.predict_batch(acronym_samples)
+    for original_pred, acronym_pred in zip(original_preds, acronym_preds):
+        if original_pred[0][0] == acronym_pred[0][0]:
             correct += 1
 
     return correct / len(original_samples)
@@ -101,10 +101,46 @@ def test_associate_acronyms():
     print(matches_before_associate)
     assert matches_before_associate <= 0.5
 
-    model.associate(associations, 4, epochs=10, learning_rate=0.01)
+    model.associate(associations, n_buckets=4, epochs=10, learning_rate=0.01)
 
     matches_after_associate = compare_predictions(
         model, original_samples, acronym_samples
     )
     print(matches_after_associate)
     assert matches_after_associate >= 0.9
+
+
+def test_associate_acronyms_balancing_data():
+    model = train_model()
+
+    original_samples, acronym_samples, associations = get_association_samples()
+
+    matches_before_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_before_associate)
+    assert matches_before_associate <= 0.5
+
+    results = []
+    for _ in range(5):
+        model.neural_db.associate(
+            filename=QUERY_FILE,
+            source_target_samples=associations,
+            n_buckets=4,
+            n_association_samples=1,
+            epochs=3,
+            learning_rate=0.001,
+            verbose=False,
+            batch_size=100,
+        )
+
+        matches_after_associate = compare_predictions(
+            model, original_samples, acronym_samples
+        )
+        results.append(matches_after_associate)
+
+    print(max(results))
+    # Checking that it reaches an accuracy at some point was less flaky compared
+    # to just checking the final accuracy. With this the accuracy is usually at
+    # least 0.9, but occasionally lower.
+    assert max(results) >= 0.7

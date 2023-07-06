@@ -16,6 +16,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
 
@@ -144,6 +145,22 @@ class UDTMachClassifier final : public UDTBackend {
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
       float learning_rate, uint32_t epochs) final;
 
+  py::object associateWithBalancingData(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options);
+
+  py::object associateWithBalancingColdStartData(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options);
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
@@ -178,6 +195,9 @@ class UDTMachClassifier final : public UDTBackend {
              uint32_t n_buckets, uint32_t n_teaching_samples,
              uint32_t n_balancing_samples, float learning_rate,
              uint32_t epochs);
+
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
