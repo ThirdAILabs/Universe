@@ -318,7 +318,7 @@ class NeuralDB:
         for _, row in association_logs:
             association_logs.extend(row["args"]["pairs"])
 
-        self._savable_state.model.get_model().neural_db.associate_data_source(
+        self._savable_state.model.get_model().neural_db.associate_train_data_source(
             balancing_data=doc_manager.get_data_source(),
             source_target_samples=associate_samples,
             n_buckets=self._get_associate_top_k(strength),

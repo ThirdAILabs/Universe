@@ -240,14 +240,13 @@ void defineAutomlInModule(py::module_& module) {
 
   py::class_<udt::UDTMachClassifier, std::shared_ptr<udt::UDTMachClassifier>>(
       module, "UDTNeuralDB")
-      .def("associate_data_source",
-           &udt::UDTMachClassifier::associateWithBalancingData,
-           py::arg("balancing_data"), py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("options"))
+      .def("associate_train_data_source",
+           &udt::UDTMachClassifier::associateTrain, py::arg("balancing_data"),
+           py::arg("source_target_samples"), py::arg("n_buckets"),
+           py::arg("n_association_samples"), py::arg("learning_rate"),
+           py::arg("epochs"), py::arg("metrics"), py::arg("options"))
       .def("associate_cold_start_data_source",
-           &udt::UDTMachClassifier::associateWithBalancingColdStartData,
+           &udt::UDTMachClassifier::associateColdStart,
            py::arg("balancing_data"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples"),

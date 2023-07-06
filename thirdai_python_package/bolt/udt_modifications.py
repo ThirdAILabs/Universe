@@ -295,10 +295,10 @@ def modify_mach_udt():
         original_introduce_documents
     )
 
-    original_associate = bolt.UDTNeuralDB.associate_data_source
+    original_associate_train = bolt.UDTNeuralDB.associate_train_data_source
     original_associate_cold_start = bolt.UDTNeuralDB.associate_cold_start_data_source
 
-    def wrapped_associate(
+    def wrapped_associate_train(
         self,
         filename: str,
         source_target_samples: List[Tuple[Dict[str, str], Dict[str, str]]],
@@ -310,7 +310,7 @@ def modify_mach_udt():
         batch_size: int = None,
         verbose=True,
     ):
-        original_associate(
+        original_associate_train(
             self,
             balancing_data=_create_data_source(filename),
             source_target_samples=source_target_samples,
@@ -356,7 +356,7 @@ def modify_mach_udt():
             )[-1],
         )
 
-    bolt.UDTNeuralDB.associate = wrapped_associate
+    bolt.UDTNeuralDB.associate_train = wrapped_associate_train
     bolt.UDTNeuralDB.associate_cold_start = wrapped_associate_cold_start
 
 

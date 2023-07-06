@@ -145,14 +145,14 @@ class UDTMachClassifier final : public UDTBackend {
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
       float learning_rate, uint32_t epochs) final;
 
-  py::object associateWithBalancingData(
+  py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options);
 
-  py::object associateWithBalancingColdStartData(
+  py::object associateColdStart(
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
