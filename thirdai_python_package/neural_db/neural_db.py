@@ -336,24 +336,35 @@ class NeuralDB:
             epochs=epochs,
         )
 
-    def retrain(self, learning_rate=0.0001, epochs=3, strength=Strength.Strong):
-        doc_manager = self._savable_state.documents
-
+    def get_associate_samples(self):
         logs = self._savable_state.logger.get_logs()
-
         query_col = self._savable_state.model.get_query_col()
 
-        association_logs = logs[logs["action"] == "associate"]
+        associate_logs = logs[logs["action"] == "associate"]
         associate_samples = []
-        for _, row in association_logs.iterrows():
+        for _, row in associate_logs.iterrows():
             for source, target in row["args"]["pairs"]:
                 associate_samples.append(({query_col: source}, {query_col: target}))
+
+        return associate_samples
+
+    def retrain(
+        self,
+        text_pairs: List[Tuple[str, str]] = [],
+        learning_rate: float = 0.0001,
+        epochs: int = 3,
+        strength: Strength = Strength.Strong,
+    ):
+        doc_manager = self._savable_state.documents
+
+        if not text_pairs:
+            text_pairs = self.get_associate_samples()
 
         self._savable_state.model.get_model().neural_db.associate_cold_start_data_source(
             balancing_data=doc_manager.get_data_source(),
             strong_column_names=[self._savable_state.documents.strong_column],
             weak_column_names=[self._savable_state.documents.weak_column],
-            source_target_samples=associate_samples,
+            source_target_samples=text_pairs,
             n_buckets=self._get_associate_top_k(strength),
             n_association_samples=1,
             learning_rate=learning_rate,
