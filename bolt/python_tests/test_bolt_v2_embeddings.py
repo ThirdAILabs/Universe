@@ -115,8 +115,3 @@ def test_embedding_op():
         return bolt.nn.Embedding(dim=32, input_dim=INPUT_DIM, activation="linear")
 
     train_and_evaluate_embedding_model(embedding_factory)
-
-
-for i in range(1000):
-    test_embedding_op()
-    print("passed ", i)
