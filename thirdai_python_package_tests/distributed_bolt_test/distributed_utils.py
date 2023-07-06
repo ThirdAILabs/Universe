@@ -53,13 +53,20 @@ def ray_two_node_cluster_config_impl():
     ray.shutdown()
     mini_cluster.shutdown()
 
+    # This yield is necessary to advance generator to teardown cluster
+    # without giving `StopIteration` error while calling `next(generator)`.
     yield "Successfully teared down cluster"
 
 
 @pytest.fixture(scope="module")
 def ray_two_node_cluster_config():
+    # This generator object initialises cluster, returns cluster config and also teardowns cluster.
     _generator = ray_two_node_cluster_config_impl()
+
+    # This yields the `_make_cluster_config()` function.
     yield next(_generator)
+
+    # Pytest will automaticaly call this for teardown of cluster.
     next(_generator)
 
 
