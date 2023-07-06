@@ -134,7 +134,7 @@ def test_udt_train_distributed_v2():
             f"clinc_train_{session.get_world_rank()}.csv",
             epochs=1,
             learning_rate=0.02,
-            batch_size=256,
+            batch_size=128,
         )
 
         # session report should always have a metrics stored, hence added a demo_metric
@@ -143,7 +143,7 @@ def test_udt_train_distributed_v2():
             checkpoint=dist.UDTCheckPoint.from_model(udt_model),
         )
 
-    udt_model = get_clinc_udt_model()
+    udt_model = get_clinc_udt_model(integer_target=True)
 
     # session report should always have a metrics stored, hence added a demo_metric
     num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
