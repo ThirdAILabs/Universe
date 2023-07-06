@@ -29,13 +29,6 @@ jobs:
       matrix:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
-        os: [ubuntu-20.04, windows-2022]
-        include:
-          - name: macos-x86_64
-            os: macos-12
-            archs: x86_64
-            deployment_target: "10.15"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
           - name: macos-arm64
             os: macos-12
             archs: arm64
@@ -103,7 +96,11 @@ jobs:
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y
-          CIBW_BEFORE_BUILD_MACOS: brew install openssl libomp llvm
+          CIBW_BEFORE_BUILD_MACOS: |
+            brew install openssl libomp llvm
+            brew info llvm
+            brew info libomp
+            clang --version
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
@@ -133,89 +130,3 @@ jobs:
           #
           # TODO(any): A more future proof solution when stuff starts working.
           CIBW_SKIP: "cp36-* cp37-macox_arm64 cp311-*"
-
-
-      - name: Upload wheels
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./wheelhouse/*.whl
-      
-      - name: Notify slack fail
-        if: failure() && github.event_name == 'release' && github.event.action == 'published'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel_id: pypi_package_releases
-          status: FAILED
-          color: danger
-
-
-  upload_to_test_pypi:
-    name: Upload to test pypi
-    needs: [build_wheels]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
-
-    steps:
-    - uses: actions/setup-python@v2
-
-    - uses: actions/download-artifact@v2
-      with:
-        name: artifact
-        path: dist
-
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.TEST_PYPI_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
-    
-    - name: Notify slack fail
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: FAILED
-        color: danger
-
-  upload_to_real_pypi:
-    name: Upload to real pypi
-    needs: [upload_to_test_pypi]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
-
-    steps:
-    - uses: actions/setup-python@v2
-
-    - uses: actions/download-artifact@v2
-      with:
-        name: artifact
-        path: dist
-
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
-
-    - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
-      if: success()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: SUCCESS
-        color: good
-
-    - name: Notify slack fail
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: FAILED
-        color: danger
