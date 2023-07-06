@@ -263,14 +263,7 @@ class NeuralDB:
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
-        if strength == Strength.Weak:
-            top_k = 3
-        elif strength == Strength.Medium:
-            top_k = 5
-        elif strength == Strength.Strong:
-            top_k = 7
-        else:
-            top_k = 7
+        top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -282,14 +275,7 @@ class NeuralDB:
     def associate_batch(
         self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
     ):
-        if strength == Strength.Weak:
-            top_k = 3
-        elif strength == Strength.Medium:
-            top_k = 5
-        elif strength == Strength.Strong:
-            top_k = 7
-        else:
-            top_k = 7
+        top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -297,6 +283,16 @@ class NeuralDB:
             text_pairs=text_pairs,
             top_k=top_k,
         )
+
+    def _get_associate_top_k(strength):
+        if strength == Strength.Weak:
+            return 3
+        elif strength == Strength.Medium:
+            return 5
+        elif strength == Strength.Strong:
+            return 7
+        else:
+            return 7
 
     def supervised_train(
         self,
@@ -310,4 +306,24 @@ class NeuralDB:
             data_source=SupDataSource(doc_manager, query_col, data),
             learning_rate=learning_rate,
             epochs=epochs,
+        )
+
+    def retrain(self, learning_rate=0.0001, epochs=3, strength=Strength.Strong):
+        doc_manager = self._savable_state.documents
+
+        logs = self._savable_state.logger.get_logs()
+
+        association_logs = logs[logs["action"] == "associate"]
+        associate_samples = []
+        for _, row in association_logs:
+            association_logs.extend(row["args"]["pairs"])
+
+        self._savable_state.model.get_model().neural_db.associate_data_source(
+            balancing_data=doc_manager.get_data_source(),
+            source_target_samples=associate_samples,
+            n_buckets=self._get_associate_top_k(strength),
+            n_association_samples=1,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=["hash_precision@5"],
         )
