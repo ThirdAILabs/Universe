@@ -7,6 +7,7 @@ import re
 
 
 def parse_feature_flag(flag):
+
     flag = flag.upper()
 
     pattern = re.compile("^THIRDAI[A-Za-z_]*[A-Za-z]$")
@@ -30,6 +31,7 @@ def checked_system_call(cmd):
 
 
 def main():
+
     bin_directory = os.path.dirname(os.path.realpath(__file__))
     os.chdir(bin_directory)
 
@@ -76,7 +78,7 @@ def main():
     parser.add_argument(
         "-fb",
         "--fast_build",
-        action="store_true",
+        action='store_true',
         help="Whether to enable build time speedups that remove features. For now, this removes cereal support for polymorphism and gets a 4x build time speedup.",
     )
     args = parser.parse_args()
@@ -110,10 +112,10 @@ def main():
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
         if args.extras == "none":
-            checked_system_call(f"pip3 install . --verbose --no-dependencies")
+            checked_system_call(f"pip3 install . --verbose --force --no-dependencies")
         else:
             args.extras = "[" + args.extras + "]"
-            checked_system_call(f"pip3 install .{args.extras} --verbose")
+            checked_system_call(f"pip3 install .{args.extras} --verbose --force")
 
     else:
         cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DTHIRDAI_FEATURE_FLAGS='{joined_feature_flags}'"
