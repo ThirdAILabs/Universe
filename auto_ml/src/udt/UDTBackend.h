@@ -405,6 +405,14 @@ class UDTBackend {
     throw notSupported("set_index");
   }
 
+  /**
+   * Sets the threshold for changing the type of sampling in Mach.
+   */
+  virtual void setMachSamplingThreshold(float threshold) {
+    (void)threshold;
+    throw notSupported("set_mach_sampling_threshold");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:

@@ -18,8 +18,11 @@ constexpr bool FREEZE_HASH_TABLES = true;
 // Whether to use sigmoid and bce for the output layer in UDT
 constexpr bool USE_SIGMOID_BCE = false;
 
-// Whether there is bias in training in hidden layer
-constexpr bool USE_BIAS = true;
+// Whether the hidden layer has a bias
+constexpr bool HIDDEN_BIAS = true;
+
+// Whether the output layer has a bias
+constexpr bool OUTPUT_BIAS = true;
 
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;
@@ -78,7 +81,7 @@ constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 
 // When to switch to using the mach index for sparse inference
-constexpr float MACH_SPARSE_INFERENCE_THRESHOLD = 0.2;
+constexpr float MACH_SAMPLING_THRESHOLD = 0.01;
 
 // Whether to use the experimental autotune for fully connected layer hash
 // tables

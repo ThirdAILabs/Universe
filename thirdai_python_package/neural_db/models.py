@@ -39,50 +39,19 @@ class Model:
     def get_query_col(self) -> str:
         raise NotImplementedError()
 
-    def get_n_ids(self) -> int:
-        raise NotImplementedError()
-
     def get_id_col(self) -> str:
         raise NotImplementedError()
 
     def get_id_delimiter(self) -> str:
         raise NotImplementedError()
 
-    def train_samples_to_train_batch(self, samples: TrainSamples):
-        query_col = self.get_query_col()
-        id_col = self.get_id_col()
-        id_delimiter = self.get_id_delimiter()
-        return [
-            {
-                query_col: clean_text(text),
-                id_col: id_delimiter.join(map(str, labels)),
-            }
-            for text, labels in samples
-        ]
-
-    def balance_train_label_samples(self, samples: TrainSamples, n_samples: int):
-        raise NotImplementedError()
-
-    def balance_train_bucket_samples(self, samples: TrainSamples, n_samples: int):
-        raise NotImplementedError()
-
     def infer_samples_to_infer_batch(self, samples: InferSamples):
         query_col = self.get_query_col()
         return [{query_col: clean_text(text)} for text in samples]
 
-    def train_buckets(
-        self, samples: TrainSamples, learning_rate: float, **kwargs
-    ) -> None:
-        raise NotImplementedError()
-
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
-        raise NotImplementedError()
-
-    def train_labels(
-        self, samples: TrainSamples, learning_rate: float, **kwargs
-    ) -> None:
         raise NotImplementedError()
 
     def infer_labels(
@@ -162,7 +131,7 @@ class Mach(Model):
     def __init__(
         self,
         id_col="DOC_ID",
-        id_delimiter=" ",
+        id_delimiter=None,
         query_col="QUERY",
         input_dim=50_000,
         hidden_dim=2048,
@@ -186,9 +155,6 @@ class Mach(Model):
 
     def load_meta(self, directory: Path):
         pass
-
-    def get_n_ids(self) -> int:
-        return self.n_ids
 
     def get_query_col(self) -> str:
         return self.query_col
@@ -216,6 +182,8 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_epoch = 1
+            min_epochs = 10
+            max_epochs = 15
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -233,6 +201,10 @@ class Mach(Model):
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_epoch = 0
+            # Less epochs here since it converges faster when trained on a base
+            # model.
+            min_epochs = 5
+            max_epochs = 10
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
@@ -241,8 +213,8 @@ class Mach(Model):
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
-                min_epochs=10,
-                max_epochs=20,
+                min_epochs=min_epochs,
+                max_epochs=max_epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
@@ -287,12 +259,6 @@ class Mach(Model):
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def train_labels(
-        self, samples: TrainSamples, learning_rate: float, **kwargs
-    ) -> None:
-        train_batch = self.train_samples_to_train_batch(samples)
-        self.model.train_batch(train_batch, learning_rate=learning_rate)
-
     def infer_labels(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
@@ -304,10 +270,6 @@ class Mach(Model):
             [int(pred) for pred, _ in predictions] for predictions in all_predictions
         ]
 
-    def train_buckets(self, samples: TrainSamples, learning_rate, **kwargs) -> None:
-        train_batch = self.train_samples_to_train_batch(samples)
-        self.model.train_with_hashes(train_batch, learning_rate=learning_rate)
-
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
@@ -316,23 +278,6 @@ class Mach(Model):
             self.model.predict_hashes(sample)[:n_results] for sample in infer_batch
         ]
         return predictions
-
-    def balance_train_label_samples(self, samples: List, n_samples: int):
-        balanced_samples = samples + list(
-            random.choices(self.balancing_samples, k=n_samples)
-        )
-        random.shuffle(balanced_samples)
-        return balanced_samples
-
-    def balance_train_bucket_samples(self, samples: List, n_samples: int):
-        balancers = random_sample(self.balancing_samples, k=n_samples)
-        balancers = [(query, self.get_bucket(labels[0])) for query, labels in balancers]
-        balanced_samples = samples + balancers
-        random.shuffle(balanced_samples)
-        return balanced_samples
-
-    def get_bucket(self, entity: int):
-        return self.model.get_index().get_entity_hashes(entity)
 
     def associate(
         self,
