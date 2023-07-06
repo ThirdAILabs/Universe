@@ -1,12 +1,14 @@
 import os
+
 from thirdai import bolt
 
-from ..configs.distributed_configs import DistributedBenchmarkConfig
-from .runner import Runner
 from thirdai_python_package_tests.distributed_bolt_test.distributed_utils import (
     metrics_aggregation_from_workers,
     ray_two_node_cluster_config_impl,
 )
+
+from ..configs.distributed_configs import DistributedBenchmarkConfig
+from .runner import Runner
 
 
 def create_udt_model(n_target_classes, output_dim, num_hashes, embedding_dimension):
