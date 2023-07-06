@@ -131,26 +131,26 @@ const float* Tensor::activationsPtr() const {
 }
 
 std::pair<std::vector<uint32_t>, std::vector<float> >
-Tensor::topKValueIndexPair(uint32_t topk) {
-  std::vector<float> _topk_activations;
-  std::vector<uint32_t> _topk_active_neurons;
+Tensor::topKIndexValuePair(uint32_t topk) {
+  std::vector<float> topk_activations;
+  std::vector<uint32_t> topk_active_neurons;
   uint32_t batch_size = batchSize();
   uint32_t total_size = batch_size * topk;
-  _topk_activations.resize(total_size);
-  _topk_active_neurons.resize(total_size);
+  topk_activations.resize(total_size);
+  topk_active_neurons.resize(total_size);
   for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     int idx_ = topk - 1;
     TopKActivationsQueue topk_activations_queue =
         getVector(batch_idx).findKLargestActivations(topk);
     while (!topk_activations_queue.empty() && idx_ >= 0) {
       ValueIndexPair val_idx_pair = topk_activations_queue.top();
-      _topk_activations[batch_idx * topk + idx_] = val_idx_pair.first;
-      _topk_active_neurons[batch_idx * topk + idx_] = val_idx_pair.second;
+      topk_activations[batch_idx * topk + idx_] = val_idx_pair.first;
+      topk_active_neurons[batch_idx * topk + idx_] = val_idx_pair.second;
       topk_activations_queue.pop();
       idx_--;
     }
   }
-  return std::make_pair(_topk_active_neurons, _topk_activations);
+  return std::make_pair(topk_active_neurons, topk_activations);
 }
 
 const float* Tensor::gradientsPtr() const {
