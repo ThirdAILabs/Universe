@@ -28,6 +28,9 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Upgrade pip
+        run: pip3 install --upgrade pip
         
       - name: Build python package and install test dependencies
         run: bin/build.py --extras test
