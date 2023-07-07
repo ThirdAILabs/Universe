@@ -81,9 +81,9 @@ jobs:
             CMAKE_ARGS='-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
             KMP_DUPLICATE_LIB_OK=TRUE
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-          CIBW_ENVIRONMENT_MACOS: |
+          CIBW_ENVIRONMENT_MACOS: >
             PATH=/usr/local/opt/llvm/bin:$PATH
-            CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
