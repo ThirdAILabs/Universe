@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 from ray.air.checkpoint import Checkpoint
 from ray.air.config import RunConfig, ScalingConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
-from ray.train.torch import TorchConfig
 
 if TYPE_CHECKING:
     from ray.data.preprocessor import Preprocessor
@@ -58,6 +57,8 @@ class BoltTrainer(DataParallelTrainer):
         resume_from_checkpoint: A checkpoint to resume training from. It can be acessed in the
             training-loop function with `session.get_checkpoint`.
     """
+
+    from ray.train.torch import TorchConfig
 
     def __init__(
         self,
