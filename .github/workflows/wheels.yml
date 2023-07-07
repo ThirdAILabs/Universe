@@ -29,13 +29,11 @@ jobs:
       matrix:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
-        os: []
-        include:
-          - name: macos-arm64
-            os: macos-12
-            archs: arm64
-            deployment_target: "11.0"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
+        name: [macos-arm64]
+        os: [macos-12]
+        archs: [arm64]
+        deployment_target: ["11.0"]
+        cmake_additional_args: ["-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"]
 
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
