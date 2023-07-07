@@ -132,6 +132,10 @@ py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
   }
 
   auto nonzeros = output->nonzeros();
+
+  if (!nonzeros) {
+    throw std::runtime_error("Number of nonzeros is not fixed");
+  }
   if (top_k) {
     if (top_k.value() > *nonzeros || (top_k.value() == 0)) {
       if (output->activeNeuronsPtr()) {
