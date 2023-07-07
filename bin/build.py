@@ -112,10 +112,10 @@ def main():
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
         if args.extras == "none":
-            checked_system_call(f"pip3 install . --verbose --force --no-dependencies")
+            checked_system_call(f"pip3 install . --verbose --no-dependencies")
         else:
             args.extras = "[" + args.extras + "]"
-            checked_system_call(f"pip3 install .{args.extras} --verbose --force")
+            checked_system_call(f"pip3 install .{args.extras} --verbose")
 
     else:
         cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DTHIRDAI_FEATURE_FLAGS='{joined_feature_flags}'"

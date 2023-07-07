@@ -13,7 +13,6 @@ from .distributed import (
 )
 from .ray_trainer.bolt_checkpoint import BoltCheckPoint
 from .ray_trainer.bolt_trainer import BoltTrainer
-from .ray_trainer.config import BoltBackendConfig
 from .utils import PandasColumnMapGenerator, get_num_cpus
 
 add_distributed_to_udt()

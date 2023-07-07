@@ -145,6 +145,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
+      .def("output_correctness", &udt::UDT::outputCorrectness,
+           py::arg("samples"), py::arg("labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("num_hashes") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -183,7 +187,13 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{})
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
-           py::arg("sparse_inference") = false)
+           py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
+           py::arg("num_hashes") = std::nullopt)
+      .def("predict_hashes_batch", &udt::UDT::predictHashesBatch,
+           py::arg("samples"), py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
+           py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
@@ -198,6 +208,7 @@ void defineAutomlInModule(py::module_& module) {
                udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
+      .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -210,6 +221,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)
+      .def("data_types", &udt::UDT::dataTypes)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
@@ -286,7 +298,11 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<std::optional<char>,
                     automl::data::CategoricalMetadataConfigPtr>(),
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-           docs::UDT_CATEGORICAL_TEMPORAL);
+           docs::UDT_CATEGORICAL_TEMPORAL)
+      .def_property_readonly(
+          "delimiter", [](automl::data::CategoricalDataType& categorical) {
+            return categorical.delimiter;
+          });
 
   py::class_<automl::data::NumericalDataType, automl::data::DataType,
              automl::data::NumericalDataTypePtr>(udt_types_submodule,
