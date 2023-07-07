@@ -2,7 +2,8 @@ import hashlib
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Dict, List, Tuple
+import string
 
 import numpy as np
 import pandas as pd
@@ -478,11 +479,22 @@ class SentenceLevelExtracted(Extracted):
         self.hash_val = hash_file(filename)
         self.para_df = self.df["para"].unique()
 
+    def not_just_punctuation(sentence: str):
+        for character in sentence:
+            if character not in string.punctuation and not sentence.isspace():
+                return True
+        return False
+
+    def get_sentences(paragraph: str):
+        return [
+            sentence for sentence in sent_tokenize(paragraph) 
+            if SentenceLevelExtracted.not_just_punctuation(sentence)]
+
     def parse_sentences(
         self,
         df: pd.DataFrame,
     ) -> pd.DataFrame:
-        df["sentences"] = df["passage"].apply(sent_tokenize)
+        df["sentences"] = df["passage"].apply(SentenceLevelExtracted.get_sentences)
         df.drop("passage", axis=1, inplace=True)
 
         num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
