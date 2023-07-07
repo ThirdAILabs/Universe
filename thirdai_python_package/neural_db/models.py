@@ -134,13 +134,13 @@ class ProgressUpdate(bolt_v2.train.callbacks.Callback):
     def __init__(
         self,
         max_epochs,
-        progress_callback,
+        progress_callback_fn,
     ):
         super().__init__()
 
         self.batch_count = 0
         self.max_epochs = max_epochs
-        self.progress_callback = progress_callback
+        self.progress_callback_fn = progress_callback_fn
 
     def on_batch_end(self):
         self.batch_count += 1
@@ -154,7 +154,7 @@ class ProgressUpdate(bolt_v2.train.callbacks.Callback):
             # TODO revisit this progress bar update
             # This function (sqrt) increases faster at the beginning
             progress = progress ** (1.0 / 2)
-            self.progress_callback(progress)
+            self.progress_callback_fn(progress)
 
 
 class CancelTraining(bolt_v2.train.callbacks.Callback):
@@ -192,7 +192,7 @@ def unsupervised_train_on_docs(
 
     progress_callback = ProgressUpdate(
         max_epochs=max_epochs,
-        progress_bar_callback=on_progress,
+        progress_callback_fn=on_progress,
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
