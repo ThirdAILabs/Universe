@@ -1,16 +1,21 @@
 cmake_minimum_required(VERSION 3.4...3.18)
-# set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
-# set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
-# set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
-# set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include")
-# set(OpenMP_CXX_LIB_NAMES "omp")
-# set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib")
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(WIN32)
   # Set this to use static linking by default, see
   # https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+if(DEFINED ENV{GH_MACOS_BUILD})
+  message("GitHub MacOS build")
+  set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
+  set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
+  set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+  set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include")
+  set(OpenMP_CXX_LIB_NAMES "omp")
+  set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib")
 endif()
 
 # When I set LD_PRELOAD to be able use ASan with python tests, for some reason

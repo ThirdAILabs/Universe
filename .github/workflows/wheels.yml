@@ -82,37 +82,18 @@ jobs:
             KMP_DUPLICATE_LIB_OK=TRUE
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS: >
-            CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++'
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang
-            CMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
-            OpenMP_CXX_FLAGS='-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include'
-            OpenMP_CXX_LIB_NAMES=omp
-            OpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib
-            CC=/usr/local/opt/llvm/bin/clang
-            CXX=/usr/local/opt/llvm/bin/clang++
-            LDFLAGS=-L/usr/local/opt/llvm/lib
-            CPPFLAGS=-I/usr/local/opt/llvm/include
+            GH_MACOS_BUILD=true
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y
           CIBW_BEFORE_BUILD_MACOS: |
             brew install openssl libomp llvm
-            brew info llvm
-            brew info libomp
-            export CC=/usr/local/opt/llvm/bin/clang
-            export CXX=/usr/local/opt/llvm/bin/clang++
-            export LDFLAGS=-L/usr/local/opt/llvm/lib
-            export CPPFLAGS=-I/usr/local/opt/llvm/include
-            clang --version
-            $CXX --version
-            $CC --version
-            echo "CXX=$CXX"
-            echo "CC=$CC"
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
