@@ -507,7 +507,7 @@ void Model::nameComputations(autograd::ComputationList& inputs,
                              autograd::ComputationList& labels) {
   uint32_t comp_count = 0;
   auto next_name = [&comp_count]() {
-    return "tensor_" + std::to_string(comp_count++);
+    return "tensor_" + std::to_string(++comp_count);
   };
   std::unordered_set<autograd::ComputationPtr> visited;
   for (auto& input : inputs) {
