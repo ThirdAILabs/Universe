@@ -101,9 +101,18 @@ jobs:
             yum update -y && yum clean all &&
             yum install openssl11-devel -y
           CIBW_BEFORE_BUILD_MACOS: |
-            brew install openssl libomp llvm
+            arch -arm64 brew install openssl libomp llvm
             brew info llvm
             brew info libomp
+            export CC=/usr/local/opt/llvm/bin/clang
+            export CXX=/usr/local/opt/llvm/bin/clang++
+            export LDFLAGS=-L/usr/local/opt/llvm/lib
+            export CPPFLAGS=-I/usr/local/opt/llvm/include
+            clang --version
+            $CXX --version
+            $CC --version
+            echo "CXX=$CXX"
+            echo "CC=$CC"
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
