@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from thirdai.demos import download_beir_dataset
 
-from ..runners.distributed_utils import split_into_2
+from ..distributed_utils import split_into_2
 
 
 class DistributedBenchmarkConfig(ABC):
