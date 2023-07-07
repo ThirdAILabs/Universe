@@ -1,9 +1,9 @@
 import hashlib
 import os
 import shutil
+import string
 from pathlib import Path
 from typing import Dict, List, Tuple
-import string
 
 import numpy as np
 import pandas as pd
@@ -475,7 +475,7 @@ class SentenceLevelExtracted(Extracted):
         filename: str,
     ):
         self.filename = filename
-        self.df = self.parse_sentence(self.process_data(filename))
+        self.df = self.parse_sentences(self.process_data(filename))
         self.hash_val = hash_file(filename)
         self.para_df = self.df["para"].unique()
 
@@ -487,8 +487,10 @@ class SentenceLevelExtracted(Extracted):
 
     def get_sentences(paragraph: str):
         return [
-            sentence for sentence in sent_tokenize(paragraph) 
-            if SentenceLevelExtracted.not_just_punctuation(sentence)]
+            sentence
+            for sentence in sent_tokenize(paragraph)
+            if SentenceLevelExtracted.not_just_punctuation(sentence)
+        ]
 
     def parse_sentences(
         self,
