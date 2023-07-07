@@ -82,16 +82,11 @@ jobs:
             KMP_DUPLICATE_LIB_OK=TRUE
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS: >
-            PATH=/usr/local/opt/llvm/bin:$PATH
-            CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CC=/usr/local/opt/llvm/bin/clang
-            CXX=/usr/local/opt/llvm/bin/clang++
-            LDFLAGS=-L/usr/local/opt/llvm/lib
-            CPPFLAGS=-I/usr/local/opt/llvm/include
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
