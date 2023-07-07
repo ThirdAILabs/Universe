@@ -281,6 +281,13 @@ class Model : public std::enable_shared_from_this<Model> {
   void registerWithOps();
 
   /**
+   * Names the computations in the model based on the order they are executed.
+   */
+  static void nameComputations(autograd::ComputationList& inputs,
+                               autograd::ComputationList& comps,
+                               autograd::ComputationList& labels);
+
+  /**
    * Creates a metadata file which gives the thirdai version, model uuid, the
    * date saved, number of train steps before the save, and the model summary
    * (summary only present if THIRDAI_EXPOSE_ALL is true).

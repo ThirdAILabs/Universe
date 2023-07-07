@@ -64,12 +64,12 @@ bool shapeMatches(const NumpyArray<float>& arr,
   return true;
 }
 
+using OpApplyFunc = std::function<autograd::ComputationPtr(
+    const ops::OpPtr& op, const autograd::ComputationList& inputs)>;
+
 class OpConverter {
  public:
   virtual std::optional<py::dict> toParams(const ops::OpPtr& op) const = 0;
-
-  using OpApplyFunc = std::function<autograd::ComputationPtr(
-      const ops::OpPtr& op, const autograd::ComputationList& inputs)>;
 
   virtual std::pair<ops::OpPtr, OpApplyFunc> fromParams(
       const py::dict& op) const = 0;
@@ -169,14 +169,15 @@ class FullyConnectedOpConverter final : public OpConverter {
                                         reconstruct_hash_functions);
 
     if (!shapeMatches(weights, {dim, input_dim})) {
-      throw std::invalid_argument("Invalid shape for weights. Expected (" +
-                                  std::to_string(dim) + ", " +
-                                  std::to_string(input_dim) + ").");
+      throw std::invalid_argument(
+          "Invalid shape for weights in FullyConnected op. Expected (" +
+          std::to_string(dim) + ", " + std::to_string(input_dim) + ").");
     }
 
     if (!shapeMatches(biases, {dim})) {
-      throw std::invalid_argument("Invalid shape for biases. Expected (" +
-                                  std::to_string(dim) + ",).");
+      throw std::invalid_argument(
+          "Invalid shape for biases in FullyConnected op. Expected (" +
+          std::to_string(dim) + ",).");
     }
 
     fc->setWeights(weights.data());
@@ -237,14 +238,15 @@ class EmbeddingOpConverter final : public OpConverter {
     auto emb = ops::Embedding::make(dim, input_dim, activation, use_bias);
 
     if (!shapeMatches(embeddings, {input_dim, dim})) {
-      throw std::invalid_argument("Invalid shape for embeddings. Expected (" +
-                                  std::to_string(input_dim) + ", " +
-                                  std::to_string(dim) + ").");
+      throw std::invalid_argument(
+          "Invalid shape for embeddings in Embedding op. Expected (" +
+          std::to_string(input_dim) + ", " + std::to_string(dim) + ").");
     }
 
     if (!shapeMatches(biases, {dim})) {
-      throw std::invalid_argument("Invalid shape for biases. Expected (" +
-                                  std::to_string(dim) + ",).");
+      throw std::invalid_argument(
+          "Invalid shape for biases in Embedding op. Expected (" +
+          std::to_string(dim) + ",).");
     }
 
     emb->setEmbeddings(embeddings.data());
@@ -422,270 +424,230 @@ std::vector<std::shared_ptr<OpConverter>> op_converters = {
     std::make_shared<TanhOpConverter>(),
 };
 
-class ModelExporter {
- public:
-  static py::dict run(model::ModelPtr model) {
-    ModelExporter exp(std::move(model));
-    return exp.exportModel();
+py::list exportPlaceholders(const autograd::ComputationList& placeholders) {
+  py::list placeholder_infos;
+  for (const auto& placeholder : placeholders) {
+    py::dict placeholder_info;
+    placeholder_info["name"] = placeholder->name();
+    placeholder_info["dim"] = placeholder->dim();
+    placeholder_infos.append(placeholder_info);
   }
 
- private:
-  explicit ModelExporter(model::ModelPtr model) : _model(std::move(model)) {}
+  return placeholder_infos;
+}
 
-  py::dict exportModel() {
-    py::dict model_params;
-    model_params["ops"] = exportOps();
-    model_params["inputs"] = exportPlacholders(_model->inputs());
-    model_params["labels"] = exportPlacholders(_model->labels());
-    model_params["computation_graph"] = exportComputations();
-    model_params["losses"] = exportLosses();
-    model_params["outputs"] = exportOutputs();
-    model_params["train_steps"] = _model->trainSteps();
-
-    return model_params;
-  }
-
-  py::list exportPlacholders(const autograd::ComputationList& placeholders) {
-    py::list placeholder_infos;
-    for (const auto& placeholder : placeholders) {
-      std::string name = getName(placeholder);
-
-      py::dict placeholder_info;
-      placeholder_info["name"] = name;
-      placeholder_info["dim"] = placeholder->dim();
-      placeholder_infos.append(placeholder_info);
-    }
-
-    return placeholder_infos;
-  }
-
-  py::dict exportOps() {
-    py::dict ops;
-    for (const auto& op : _model->ops()) {
-      bool found_converter = false;
-      for (const auto& converter : op_converters) {
-        if (auto params = converter->toParams(op)) {
-          ops[py::str(op->name())] = std::move(params.value());
-          found_converter = true;
-          break;
-        }
-      }
-
-      if (!found_converter) {
-        throw std::invalid_argument("Unable to find op converter for op '" +
-                                    op->name() + "'.");
-      }
-    }
-    return ops;
-  }
-
-  py::list exportComputations() {
-    py::list computations;
-    for (const auto& comp : _model->computationOrderWithoutInputs()) {
-      std::string name = getName(comp);
-
-      py::dict comp_info;
-      comp_info["name"] = name;
-      comp_info["op"] = comp->op()->name();
-
-      py::list comp_inputs;
-      for (const auto& input : comp->inputs()) {
-        comp_inputs.append(getName(input));
-      }
-      comp_info["inputs"] = comp_inputs;
-
-      computations.append(comp_info);
-    }
-
-    return computations;
-  }
-
-  py::list exportLosses() {
-    py::list losses;
-    for (const auto& loss : _model->losses()) {
-      py::dict loss_info;
-
-      if (std::dynamic_pointer_cast<loss::CategoricalCrossEntropy>(loss)) {
-        loss_info["name"] = "categorical_cross_entropy";
-        loss_info["output"] = getName(loss->outputsUsed().at(0));
-        loss_info["label"] = getName(loss->labels().at(0));
-      } else if (std::dynamic_pointer_cast<loss::BinaryCrossEntropy>(loss)) {
-        loss_info["name"] = "binary_cross_entropy";
-        loss_info["output"] = getName(loss->outputsUsed().at(0));
-        loss_info["label"] = getName(loss->labels().at(0));
-      }
-      losses.append(loss_info);
-    }
-    return losses;
-  }
-
-  py::list exportOutputs() {
-    py::list outputs;
-
-    for (const auto& output : _model->outputs()) {
-      outputs.append(getName(output));
-    }
-
-    return outputs;
-  }
-
-  std::string getName(const autograd::ComputationPtr& comp) {
-    if (!_comps_to_names.count(comp)) {
-      _comps_to_names[comp] =
-          "computation_" + std::to_string(_comps_to_names.size());
-    }
-    return _comps_to_names.at(comp);
-  }
-
-  model::ModelPtr _model;
-
-  std::unordered_map<autograd::ComputationPtr, std::string> _comps_to_names;
-};
-
-class ModelImporter {
- public:
-  static model::ModelPtr run(py::dict params) {
-    ModelImporter imp(std::move(params));
-    return imp.importModel();
-  }
-
- private:
-  explicit ModelImporter(py::dict params) : _params(std::move(params)) {}
-
-  model::ModelPtr importModel() {
-    importOps();
-
-    auto inputs = importPlaceholders(_params["inputs"].cast<py::list>());
-    auto labels = importPlaceholders(_params["labels"].cast<py::list>());
-    importComputationGraph();
-    auto losses = importLosses();
-    auto outputs = importOutputs();
-
-    // Remove all labels used by the losses, the rest are additional labels such
-    // as the ones used for metrics in Mach.
-    for (const auto& loss : losses) {
-      for (const auto& label : loss->labels()) {
-        auto loc = std::find(labels.begin(), labels.end(), label);
-        if (loc != labels.end()) {
-          labels.erase(loc);
-        }
-      }
-    }
-
-    auto model = model::Model::make(inputs, outputs, losses,
-                                    /* additional_labels= */ labels);
-
-    model->overrideTrainSteps(_params["train_steps"].cast<size_t>());
-
-    return model;
-  }
-
-  autograd::ComputationList importPlaceholders(
-      const py::list& placeholder_infos) {
-    autograd::ComputationList placeholders;
-    for (const auto& placeholder_info : placeholder_infos) {
-      std::string name = placeholder_info["name"].cast<std::string>();
-      if (!_computations.count(name)) {
-        size_t dim = placeholder_info["dim"].cast<size_t>();
-
-        auto placeholder = ops::Input::make(dim);
-        _computations[name] = placeholder;
-        placeholders.push_back(placeholder);
-      }
-    }
-
-    return placeholders;
-  }
-
-  void importOps() {
-    std::unordered_map<std::string, std::shared_ptr<OpConverter>> converter_map;
+py::dict exportOps(const model::ModelPtr& model) {
+  py::dict ops;
+  for (const auto& op : model->ops()) {
+    bool found_converter = false;
     for (const auto& converter : op_converters) {
-      converter_map[converter->opType()] = converter;
-    }
-
-    for (const auto& op_info : _params["ops"].cast<py::dict>()) {
-      std::string name = op_info.first.cast<std::string>();
-
-      py::dict op_params = op_info.second.cast<py::dict>();
-
-      std::string type = op_params["type"].cast<std::string>();
-
-      auto [op, apply_func] = converter_map.at(type)->fromParams(op_params);
-      op->setName(name);
-      _ops[name] = {op, apply_func};
-    }
-  }
-
-  void importComputationGraph() {
-    for (const auto& comp : _params["computation_graph"]) {
-      std::string name = comp["name"].cast<std::string>();
-      auto [op, apply_func] = _ops[comp["op"].cast<std::string>()];
-
-      autograd::ComputationList inputs;
-      for (const auto input : comp["inputs"]) {
-        inputs.push_back(_computations[input.cast<std::string>()]);
-      }
-
-      _computations[name] = apply_func(op, inputs);
-    }
-  }
-
-  std::vector<loss::LossPtr> importLosses() {
-    std::vector<loss::LossPtr> losses;
-    for (const auto& loss : _params["losses"]) {
-      std::string loss_name = loss["name"].cast<std::string>();
-
-      if (loss_name == "categorical_cross_entropy") {
-        auto output = loss["output"].cast<std::string>();
-        auto label = loss["label"].cast<std::string>();
-        auto loss = loss::CategoricalCrossEntropy::make(getComp(output),
-                                                        getComp(label));
-        losses.push_back(loss);
-      } else if (loss_name == "binary_cross_entropy") {
-        auto output = loss["output"].cast<std::string>();
-        auto label = loss["label"].cast<std::string>();
-        auto loss =
-            loss::BinaryCrossEntropy::make(getComp(output), getComp(label));
-        losses.push_back(loss);
-      } else {
-        throw std::invalid_argument("Unexpected loss '" + loss_name + "'.");
+      if (auto params = converter->toParams(op)) {
+        ops[py::str(op->name())] = std::move(params.value());
+        found_converter = true;
+        break;
       }
     }
 
-    return losses;
-  }
-
-  autograd::ComputationList importOutputs() {
-    autograd::ComputationList comps;
-    for (const auto& output : _params["outputs"]) {
-      comps.push_back(_computations[output.cast<std::string>()]);
+    if (!found_converter) {
+      throw std::invalid_argument("Unable to find op converter for op '" +
+                                  op->name() + "'.");
     }
-
-    return comps;
   }
+  return ops;
+}
 
-  autograd::ComputationPtr getComp(const std::string& name) {
-    if (!_computations.count(name)) {
-      throw std::runtime_error("No matching computation for name: '" + name +
-                               "'.");
+py::list exportComputations(const model::ModelPtr& model) {
+  py::list computations;
+  for (const auto& comp : model->computationOrderWithoutInputs()) {
+    py::dict comp_info;
+    comp_info["name"] = comp->name();
+    comp_info["op"] = comp->op()->name();
+
+    py::list comp_inputs;
+    for (const auto& input : comp->inputs()) {
+      comp_inputs.append(input->name());
     }
-    return _computations.at(name);
+    comp_info["inputs"] = comp_inputs;
+
+    computations.append(comp_info);
   }
 
-  py::dict _params;
+  return computations;
+}
 
-  std::unordered_map<std::string,
-                     std::pair<ops::OpPtr, OpConverter::OpApplyFunc>>
-      _ops;
-  std::unordered_map<std::string, autograd::ComputationPtr> _computations;
-};
+py::list exportOutputs(const model::ModelPtr& model) {
+  py::list outputs;
+
+  for (const auto& output : model->outputs()) {
+    outputs.append(output->name());
+  }
+
+  return outputs;
+}
+
+py::list exportLosses(const model::ModelPtr& model) {
+  py::list losses;
+  for (const auto& loss : model->losses()) {
+    py::dict loss_info;
+
+    if (std::dynamic_pointer_cast<loss::CategoricalCrossEntropy>(loss)) {
+      loss_info["name"] = "categorical_cross_entropy";
+      loss_info["output"] = loss->outputsUsed().at(0)->name();
+      loss_info["label"] = loss->labels().at(0)->name();
+    } else if (std::dynamic_pointer_cast<loss::BinaryCrossEntropy>(loss)) {
+      loss_info["name"] = "binary_cross_entropy";
+      loss_info["output"] = loss->outputsUsed().at(0)->name();
+      loss_info["label"] = loss->labels().at(0)->name();
+    }
+    losses.append(loss_info);
+  }
+  return losses;
+}
 
 py::dict modelParams(const model::ModelPtr& model) {
-  return ModelExporter::run(model);
+  py::dict model_params;
+  model_params["ops"] = exportOps(model);
+  model_params["inputs"] = exportPlaceholders(model->inputs());
+  model_params["labels"] = exportPlaceholders(model->labels());
+  model_params["computation_graph"] = exportComputations(model);
+  model_params["losses"] = exportLosses(model);
+  model_params["outputs"] = exportOutputs(model);
+  model_params["train_steps"] = model->trainSteps();
+
+  return model_params;
+}
+
+autograd::ComputationList importPlaceholders(
+    const py::list& placeholder_infos,
+    std::unordered_map<std::string, autograd::ComputationPtr>& computations) {
+  autograd::ComputationList placeholders;
+  for (const auto& placeholder_info : placeholder_infos) {
+    std::string name = placeholder_info["name"].cast<std::string>();
+    if (!computations.count(name)) {
+      size_t dim = placeholder_info["dim"].cast<size_t>();
+
+      auto placeholder = ops::Input::make(dim);
+      computations[name] = placeholder;
+      placeholders.push_back(placeholder);
+    }
+  }
+
+  return placeholders;
+}
+
+using OpMap =
+    std::unordered_map<std::string, std::pair<ops::OpPtr, OpApplyFunc>>;
+
+using ComputationMap =
+    std::unordered_map<std::string, autograd::ComputationPtr>;
+
+OpMap importOps(const py::dict& params) {
+  std::unordered_map<std::string, std::shared_ptr<OpConverter>> converter_map;
+  for (const auto& converter : op_converters) {
+    converter_map[converter->opType()] = converter;
+  }
+
+  OpMap ops;
+
+  for (const auto& op_info : params["ops"].cast<py::dict>()) {
+    std::string name = op_info.first.cast<std::string>();
+
+    py::dict op_params = op_info.second.cast<py::dict>();
+
+    std::string type = op_params["type"].cast<std::string>();
+
+    if (!converter_map.count(type)) {
+      throw std::invalid_argument("No converter found for op type '" + type +
+                                  "'.");
+    }
+    auto [op, apply_func] = converter_map.at(type)->fromParams(op_params);
+    op->setName(name);
+    ops[name] = {op, apply_func};
+  }
+
+  return ops;
+}
+
+void importComputationGraph(const py::dict& params, const OpMap& ops,
+                            ComputationMap& computations) {
+  for (const auto& comp : params["computation_graph"]) {
+    std::string name = comp["name"].cast<std::string>();
+    auto [op, apply_func] = ops.at(comp["op"].cast<std::string>());
+
+    autograd::ComputationList inputs;
+    for (const auto input : comp["inputs"]) {
+      inputs.push_back(computations[input.cast<std::string>()]);
+    }
+
+    computations[name] = apply_func(op, inputs);
+  }
+}
+
+std::vector<loss::LossPtr> importLosses(const py::dict& params,
+                                        const ComputationMap& computations) {
+  std::vector<loss::LossPtr> losses;
+  for (const auto& loss : params["losses"]) {
+    std::string loss_name = loss["name"].cast<std::string>();
+
+    if (loss_name == "categorical_cross_entropy") {
+      auto output = loss["output"].cast<std::string>();
+      auto label = loss["label"].cast<std::string>();
+      auto loss = loss::CategoricalCrossEntropy::make(computations.at(output),
+                                                      computations.at(label));
+      losses.push_back(loss);
+    } else if (loss_name == "binary_cross_entropy") {
+      auto output = loss["output"].cast<std::string>();
+      auto label = loss["label"].cast<std::string>();
+      auto loss = loss::BinaryCrossEntropy::make(computations.at(output),
+                                                 computations.at(label));
+      losses.push_back(loss);
+    } else {
+      throw std::invalid_argument("Unexpected loss '" + loss_name + "'.");
+    }
+  }
+
+  return losses;
+}
+
+autograd::ComputationList importOutputs(const py::dict& params,
+                                        const ComputationMap& computations) {
+  autograd::ComputationList comps;
+  for (const auto& output : params["outputs"]) {
+    comps.push_back(computations.at(output.cast<std::string>()));
+  }
+
+  return comps;
 }
 
 model::ModelPtr modelFromParams(const py::dict& params) {
-  return ModelImporter::run(params);
+  OpMap ops = importOps(params);
+
+  ComputationMap computations;
+  auto inputs =
+      importPlaceholders(params["inputs"].cast<py::list>(), computations);
+  auto labels =
+      importPlaceholders(params["labels"].cast<py::list>(), computations);
+  importComputationGraph(params, ops, computations);
+  auto losses = importLosses(params, computations);
+  auto outputs = importOutputs(params, computations);
+
+  // Remove all labels used by the losses, the rest are additional labels such
+  // as the ones used for metrics in Mach.
+  for (const auto& loss : losses) {
+    for (const auto& label : loss->labels()) {
+      auto loc = std::find(labels.begin(), labels.end(), label);
+      if (loc != labels.end()) {
+        labels.erase(loc);
+      }
+    }
+  }
+
+  auto model = model::Model::make(inputs, outputs, losses,
+                                  /* additional_labels= */ labels);
+
+  model->overrideTrainSteps(params["train_steps"].cast<size_t>());
+
+  return model;
 }
 
 }  // namespace thirdai::bolt::nn::python

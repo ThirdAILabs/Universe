@@ -47,6 +47,8 @@ Model::Model(autograd::ComputationList inputs,
   _computation_order =
       autograd::getComputationOrder(_inputs, _outputs, _losses);
 
+  nameComputations(_inputs, _computation_order, _labels);
+
   _allocation_manager = AllocationManager(_computation_order);
 
   std::unordered_set<std::string> op_names;
@@ -497,6 +499,39 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
 void Model::registerWithOps() {
   for (auto& op : _ops) {
     op->registerModel(weak_from_this());
+  }
+}
+
+void Model::nameComputations(autograd::ComputationList& inputs,
+                             autograd::ComputationList& comps,
+                             autograd::ComputationList& labels) {
+  uint32_t comp_count = 0;
+  auto next_name = [&comp_count]() {
+    return "tensor_" + std::to_string(comp_count++);
+  };
+  std::unordered_set<autograd::ComputationPtr> visited;
+  for (auto& input : inputs) {
+    // The same computation might be referenced multiple times in the inputs.
+    if (!visited.count(input)) {
+      input->setName(next_name());
+      visited.insert(input);
+    }
+  }
+  for (auto& comp : comps) {
+    if (visited.count(comp)) {
+      throw std::invalid_argument(
+          "A computation must not be used multiple times in the computation "
+          "graph.");
+    }
+    comp->setName(next_name());
+    visited.insert(comp);
+  }
+  // The same computation might be referenced multiple times in the labels.
+  for (auto& label : labels) {
+    if (!visited.count(label)) {
+      label->setName(next_name());
+      visited.insert(label);
+    }
   }
 }
 
