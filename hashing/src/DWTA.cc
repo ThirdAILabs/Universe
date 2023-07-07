@@ -27,6 +27,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
 
   std::mt19937 gen(seed);
   //-------------------------New DWTA--------------
+  // added a comment
   std::uniform_int_distribution<uint32_t> bin_mapper(
       0, _num_hashes * _binsize - 1);
   _bin_map = std::vector<uint32_t>(_dim * _permute);
