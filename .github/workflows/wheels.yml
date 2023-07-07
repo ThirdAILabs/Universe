@@ -83,7 +83,7 @@ jobs:
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS: |
             PATH=/usr/local/opt/llvm/bin:$PATH
-            CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
+            CMAKE_ARGS: '${{ matrix.cmake_additional_args }} -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include -DOpenMP_CXX_LIB_NAMES=omp -DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
