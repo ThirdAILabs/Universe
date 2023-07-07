@@ -92,6 +92,10 @@ jobs:
             OpenMP_CXX_FLAGS='-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include'
             OpenMP_CXX_LIB_NAMES=omp
             OpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib
+            CC=/usr/local/opt/llvm/bin/clang
+            CXX=/usr/local/opt/llvm/bin/clang++
+            LDFLAGS=-L/usr/local/opt/llvm/lib
+            CPPFLAGS=-I/usr/local/opt/llvm/include
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
@@ -100,15 +104,6 @@ jobs:
             brew install openssl libomp llvm
             brew info llvm
             brew info libomp
-            export CC=/usr/local/opt/llvm/bin/clang
-            export CXX=/usr/local/opt/llvm/bin/clang++
-            export LDFLAGS=-L/usr/local/opt/llvm/lib
-            export CPPFLAGS=-I/usr/local/opt/llvm/include
-            clang --version
-            $CXX --version
-            $CC --version
-            echo "CXX=$CXX"
-            echo "CC=$CC"
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
