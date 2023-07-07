@@ -100,6 +100,12 @@ jobs:
             brew install openssl libomp llvm
             brew info llvm
             brew info libomp
+            export CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
+            export CC=/usr/local/opt/llvm/bin/clang
+            export CXX=/usr/local/opt/llvm/bin/clang++
+            export LDFLAGS=-L/usr/local/opt/llvm/lib
+            export CPPFLAGS=-I/usr/local/opt/llvm/include
+            export PATH=/usr/local/opt/llvm/bin:$PATH
             clang --version
             $CXX --version
             $CC --version
