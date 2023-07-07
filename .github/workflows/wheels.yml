@@ -82,7 +82,7 @@ jobs:
             KMP_DUPLICATE_LIB_OK=TRUE
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS: >
-            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
@@ -101,7 +101,7 @@ jobs:
             yum update -y && yum clean all &&
             yum install openssl11-devel -y
           CIBW_BEFORE_BUILD_MACOS: |
-            arch -arm64 brew install openssl libomp llvm
+            brew install openssl libomp llvm
             brew info llvm
             brew info libomp
             export CC=/usr/local/opt/llvm/bin/clang
