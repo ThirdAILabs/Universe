@@ -1,8 +1,9 @@
 import os
+
 from thirdai import bolt
 
-from .distributed_utils import ray_two_node_cluster_config
 from ..configs.distributed_configs import DistributedBenchmarkConfig
+from .distributed_utils import ray_two_node_cluster_config
 from .runner import Runner
 
 
