@@ -67,8 +67,10 @@ class Reference:
         text: str,
         source: str,
         metadata: dict,
+        upvote_ids: List[int] = None,
     ):
         self._id = element_id
+        self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
         self._text = text
         self._source = source
         self._metadata = metadata
@@ -77,6 +79,10 @@ class Reference:
     @property
     def id(self):
         return self._id
+
+    @property
+    def upvote_ids(self):
+        return self._upvote_ids
 
     @property
     def text(self):
@@ -540,6 +546,7 @@ class SentenceLevelExtracted(Extracted):
             text=self.df["display"].iloc[element_id],
             source=self.filename,
             metadata=self.df.iloc[element_id].to_dict(),
+            upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
 
     def context(self, element_id, radius) -> str:

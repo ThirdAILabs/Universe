@@ -287,13 +287,21 @@ class NeuralDB:
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query_id_para=[(text, result_id, self._para_with_id(result_id))],
+            query_id_para=[
+                (text, upvote_id, self._para_with_id(result_id))
+                for upvote_id in self._savable_state.documents.reference(
+                    result_id
+                ).upvote_ids
+            ],
         )
 
     def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
         query_id_para = [
-            (query, result_id, self._para_with_id(result_id))
+            (query, upvote_id, self._para_with_id(result_id))
             for query, result_id in text_id_pairs
+            for upvote_id in self._savable_state.documents.reference(
+                result_id
+            ).upvote_ids
         ]
         teachers.upvote(
             model=self._savable_state.model,
