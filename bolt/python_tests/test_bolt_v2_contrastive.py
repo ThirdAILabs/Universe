@@ -37,11 +37,12 @@ def get_contrastive_and_embedding_models(
     )
 
     # TODO(Nick): Replace with noop loss
+    emb_input = bolt.nn.Input(dim=input_dim)
     labels = bolt.nn.Input(dim=embedding_dim)
-    embedding_output = output_op(input_1)
+    embedding_output = output_op(emb_input)
     loss = bolt.nn.losses.CategoricalCrossEntropy(embedding_output, labels)
     embedding_model = bolt.nn.Model(
-        inputs=[input_1], outputs=[embedding_output], losses=[loss]
+        inputs=[emb_input], outputs=[embedding_output], losses=[loss]
     )
 
     return (
