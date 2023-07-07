@@ -81,9 +81,9 @@ jobs:
             CMAKE_ARGS='-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
             KMP_DUPLICATE_LIB_OK=TRUE
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-          CIBW_ENVIRONMENT_MACOS: >
+          CIBW_ENVIRONMENT_MACOS: |
             PATH=/usr/local/opt/llvm/bin:$PATH
-            CMAKE_ARGS='CMAKE_ARGS="${{ matrix.cmake_additional_args }} -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DOpenMP_CXX_LIB_NAMES=omp -DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib -DCMAKE_CXX_FLAGS=\"-fopenmp=libomp -Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include\" -DCMAKE_C_FLAGS=\"-fopenmp=libomp -Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include\""'
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
@@ -100,12 +100,10 @@ jobs:
             brew install openssl libomp llvm
             brew info llvm
             brew info libomp
-            export CMAKE_ARGS='${{ matrix.cmake_additional_args }} -DCMAKE_CXX_FLAGS=-fopenmp=libomp -DCMAKE_C_FLAGS=-fopenmp=libomp'
             export CC=/usr/local/opt/llvm/bin/clang
             export CXX=/usr/local/opt/llvm/bin/clang++
             export LDFLAGS=-L/usr/local/opt/llvm/lib
             export CPPFLAGS=-I/usr/local/opt/llvm/include
-            export PATH=/usr/local/opt/llvm/bin:$PATH
             clang --version
             $CXX --version
             $CC --version
