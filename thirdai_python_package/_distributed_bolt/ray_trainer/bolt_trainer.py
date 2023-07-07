@@ -58,13 +58,11 @@ class BoltTrainer(DataParallelTrainer):
             training-loop function with `session.get_checkpoint`.
     """
 
-    from ray.train.torch import TorchConfig
-
     def __init__(
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
         *,
-        backend_config: TorchConfig = None,
+        backend_config=None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
         run_config: Optional[RunConfig] = None,
