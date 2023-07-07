@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
 set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
+set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(WIN32)
