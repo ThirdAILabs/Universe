@@ -132,7 +132,6 @@ const float* Tensor::activationsPtr() const {
 
 std::pair<std::vector<uint32_t>, std::vector<float> >
 Tensor::topKIndexValuePair(uint32_t topk) {
-
   std::vector<float> topk_activations;
   std::vector<uint32_t> topk_active_neurons;
 
@@ -156,7 +155,6 @@ Tensor::topKIndexValuePair(uint32_t topk) {
       topk_activations_queue.pop();
       idx_--;
     }
-
   }
   return std::make_pair(topk_active_neurons, topk_activations);
 }
