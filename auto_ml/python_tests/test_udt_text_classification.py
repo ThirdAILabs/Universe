@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import (
@@ -127,8 +128,16 @@ def test_udt_text_classification_model_porting(
     new_bolt_model = bolt_v2.nn.Model.from_params(params)
     new_model._set_model(new_bolt_model)
 
+    # Check the accuracy of the new model.
     acc = compute_predict_batch_accuracy(
         new_model, inference_samples, use_class_name=False
     )
 
     assert acc > ACCURACY_THRESHOLD
+
+    # Check the output of the model matches the old model.
+    batch = [x[0] for x in inference_samples]
+    assert np.array_equal(
+        trained_model.predict_batch(batch),
+        new_model.predict_batch(batch),
+    )

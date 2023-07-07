@@ -167,12 +167,19 @@ def train_on_scifact(download_scifact_dataset, coldstart):
     return model, metrics, supervised_tst
 
 
-def test_mach_udt_on_scifact(download_scifact_dataset):
-    model, metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset, coldstart=True
-    )
+@pytest.fixture(scope="session")
+def train_mach_on_scifact_with_cold_start(download_scifact_dataset):
+    return train_on_scifact(download_scifact_dataset, coldstart=True)
+
+
+def test_mach_udt_on_scifact(train_mach_on_scifact_with_cold_start):
+    _, metrics, _ = train_mach_on_scifact_with_cold_start
 
     assert metrics["train_precision@1"][-1] > 0.45
+
+
+def test_mach_udt_on_scifact_save_load(train_mach_on_scifact_with_cold_start):
+    model, _, supervised_tst = train_mach_on_scifact_with_cold_start
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
@@ -196,6 +203,31 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     new_model.set_index(model.get_index())
 
     assert after_save_precision == evaluate_model(new_model, supervised_tst)
+
+
+def test_mach_udt_on_scifact_model_porting(
+    train_mach_on_scifact_with_cold_start, download_scifact_dataset
+):
+    _, _, _, n_classes = download_scifact_dataset
+    model, _, supervised_tst = train_mach_on_scifact_with_cold_start
+
+    before_porting_precision = evaluate_model(model, supervised_tst)
+
+    new_model = scifact_model(n_target_classes=n_classes)
+
+    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_model._set_model(new_bolt_model)
+
+    new_model.set_index(model.get_index())
+
+    # Check that the accuracy matches in the ported model.
+    assert before_porting_precision == evaluate_model(new_model, supervised_tst)
+
+    # Check that predictions match in the ported model.
+    test_df = pd.read_csv(supervised_tst)
+    batch = [{"QUERY": text} for text in test_df["QUERY"]]
+
+    assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
 def test_mach_udt_label_too_large():
