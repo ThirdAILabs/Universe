@@ -8,6 +8,7 @@ if(WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+# If we are building MacOS wheels using Github runner, set the following vars
 if(DEFINED ENV{GH_MACOS_BUILD})
   message("GitHub MacOS build")
   set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
