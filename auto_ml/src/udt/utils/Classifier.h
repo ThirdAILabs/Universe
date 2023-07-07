@@ -11,6 +11,7 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <pybind11/pybind11.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
