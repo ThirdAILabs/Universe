@@ -133,9 +133,14 @@ class SampledHashTable final : public HashTable<uint32_t> {
             << ", reservoir_size=" << _reservoir_size;
   }
 
-  void save(const std::string& filename);
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
 
   static std::shared_ptr<SampledHashTable> load(const std::string& filename);
+
+  static std::shared_ptr<SampledHashTable> load_stream(
+      std::istream& input_stream);
 };
 
 using SampledHashTablePtr = std::shared_ptr<SampledHashTable>;

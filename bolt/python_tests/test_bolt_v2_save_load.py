@@ -158,3 +158,24 @@ def test_bolt_save_load():
     # Check that the model can continue to be trained after save/load.
     train_model(model, train_data, train_labels)
     evaluate_model(model, test_data, test_labels_np)
+
+
+@pytest.mark.unit
+def test_bolt_model_porting():
+    model = get_model()
+    train_data, train_labels, test_data, test_labels_np = get_data()
+
+    # Initial training/evaluation of the model.
+    train_model(model, train_data, train_labels)
+    initial_accs = evaluate_model(model, test_data, test_labels_np)
+
+    # Port to new model
+    params = model.params()
+    model = bolt.nn.Model.from_params(params)
+
+    # Check that the accuracies match
+    assert initial_accs == evaluate_model(model, test_data, test_labels_np)
+
+    # Check that the model can continue to be trained after save/load.
+    train_model(model, train_data, train_labels)
+    evaluate_model(model, test_data, test_labels_np)
