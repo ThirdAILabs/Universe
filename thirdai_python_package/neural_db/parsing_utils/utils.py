@@ -1,5 +1,5 @@
-from nltk.tokenize import sent_tokenize, word_tokenize
 import unidecode
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 ATTACH_N_WORD_THRESHOLD = 20
 MIN_WORDS_PER_CHUNK = 50

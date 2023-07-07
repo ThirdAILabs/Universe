@@ -511,7 +511,7 @@ class SentenceLevelExtracted(Extracted):
         filename: str,
     ) -> pd.DataFrame:
         raise NotImplementedError()
-    
+
     @property
     def hash(self) -> str:
         return self.hash_val
@@ -545,7 +545,7 @@ class SentenceLevelExtracted(Extracted):
     def context(self, element_id, radius) -> str:
         if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
-        
+
         para_id = self.df.iloc[element_id]["para_id"]
 
         rows = self.para_df[

@@ -278,7 +278,7 @@ class NeuralDB:
                 on_error(e.__str__())
                 return []
             raise e
-    
+
     def _para_with_id(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
 
