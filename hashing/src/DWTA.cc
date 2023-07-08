@@ -36,11 +36,17 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   std::vector<uint32_t> bin_locs(n_rounds * n_bin_locs);
 
   for (size_t i = 0; i < n_rounds; i++) {
-    std::iota(bin_locs.begin() + i * n_bin_locs,
-              bin_locs.begin() + (i + 1) * n_bin_locs, 0);
+    auto start = bin_locs.begin() + i * n_bin_locs;
+    auto end = bin_locs.begin() + (i + 1) * n_bin_locs;
+    std::iota(start, end, 0);
+    if (i == n_rounds - 1) {
+      // Shuffle the last set of bin locations so that if all of them are not
+      // used, it is not biased towards lower bin locations.
+      std::shuffle(start, end, gen);
+    }
   }
 
-  std::shuffle(bin_locs.begin(), bin_locs.end(), gen);
+  std::shuffle(bin_locs.begin(), bin_locs.begin() + _dim * _permute, gen);
 
   for (size_t i = 0; i < _permute * _dim; i++) {
     _bin_map[i] = bin_locs[i] / _binsize;
