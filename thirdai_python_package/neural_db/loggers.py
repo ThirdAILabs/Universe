@@ -70,7 +70,9 @@ class InMemoryLogger(Logger):
 
 class LoggerList(Logger):
     def __init__(self, loggers: List[Logger]):
-        self.loggers = loggers
+        self.loggers = filter(
+            lambda logger: not isinstance(logger, (NoOpLogger, LoggerList)), loggers
+        )
 
     def name(self):
         return "list"
@@ -93,7 +95,16 @@ class LoggerList(Logger):
         ]
 
     def get_logs(self):
-        return pd.concat([logger.get_logs() for logger in self.loggers])
+        if len(self.loggers) == 0:
+            return pd.DataFrame(
+                {
+                    "session_id": [],
+                    "action": [],
+                    "args": [],
+                    "train_samples": [],
+                }
+            )
+        return self.loggers[0].get_logs()
 
     def save_meta(self, directory: Path):
         for logger in self.loggers:

@@ -36,6 +36,7 @@
 #include <memory>
 #include <optional>
 #include <random>
+#include <regex>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -897,6 +898,8 @@ py::object UDTMachClassifier::associateTrain(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
+  warnOnNonHashBasedMetrics(metrics);
+
   auto dataset = _dataset_factory->getLabeledDatasetLoader(balancing_data,
                                                            /* shuffle= */ true);
 
@@ -1022,6 +1025,18 @@ InputMetrics UDTMachClassifier::getMetrics(
   }
 
   return metrics;
+}
+
+void UDTMachClassifier::warnOnNonHashBasedMetrics(
+    const std::vector<std::string>& metrics) {
+  for (const auto& metric : metrics) {
+    if (!std::regex_match(metric, std::regex("((hash_)|(loss)).*"))) {
+      std::cerr << "Warning: using precision/recall with associate_train can "
+                   "cause skewed results since the association samples may not "
+                   "have a true label."
+                << std::endl;
+    }
+  }
 }
 
 bolt::nn::tensor::TensorPtr UDTMachClassifier::placeholderDocIds(

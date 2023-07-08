@@ -295,9 +295,6 @@ def modify_mach_udt():
         original_introduce_documents
     )
 
-    original_associate_train = bolt.UDTNeuralDB.associate_train_data_source
-    original_associate_cold_start = bolt.UDTNeuralDB.associate_cold_start_data_source
-
     def wrapped_associate_train(
         self,
         filename: str,
@@ -310,8 +307,7 @@ def modify_mach_udt():
         batch_size: int = None,
         verbose=True,
     ):
-        original_associate_train(
-            self,
+        return self.associate_train_data_source(
             balancing_data=_create_data_source(filename),
             source_target_samples=source_target_samples,
             n_buckets=n_buckets,
@@ -336,11 +332,10 @@ def modify_mach_udt():
         learning_rate: float = 0.001,
         epochs: int = 3,
         metrics: List[str] = [],
-        batch_size: int = 500,
+        batch_size: int = None,
         verbose=True,
     ):
-        original_associate_cold_start(
-            self,
+        return self.associate_cold_start_data_source(
             balancing_data=_create_data_source(filename),
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,

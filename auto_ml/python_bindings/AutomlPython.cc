@@ -202,6 +202,17 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+      .def("associate_train_data_source", &udt::UDT::associateTrain,
+           py::arg("balancing_data"), py::arg("source_target_samples"),
+           py::arg("n_buckets"), py::arg("n_association_samples"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           py::arg("options"))
+      .def("associate_cold_start_data_source", &udt::UDT::associateColdStart,
+           py::arg("balancing_data"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"), py::arg("source_target_samples"),
+           py::arg("n_buckets"), py::arg("n_association_samples"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           py::arg("options"))
       .def("enable_rlhf", &udt::UDT::enableRlhf,
            py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
            py::arg("num_balancing_samples_per_doc") =
@@ -235,23 +246,8 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
-      .def_property_readonly("neural_db", &udt::UDT::neuralDB)
       .def(bolt::python::getPickleFunction<udt::UDT>());
-
-  py::class_<udt::UDTMachClassifier, std::shared_ptr<udt::UDTMachClassifier>>(
-      module, "UDTNeuralDB")
-      .def("associate_train_data_source",
-           &udt::UDTMachClassifier::associateTrain, py::arg("balancing_data"),
-           py::arg("source_target_samples"), py::arg("n_buckets"),
-           py::arg("n_association_samples"), py::arg("learning_rate"),
-           py::arg("epochs"), py::arg("metrics"), py::arg("options"))
-      .def("associate_cold_start_data_source",
-           &udt::UDTMachClassifier::associateColdStart,
-           py::arg("balancing_data"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("options"));
+  ;
 }
 
 void createModelsSubmodule(py::module_& module) {

@@ -346,6 +346,8 @@ class NeuralDB:
             for source, target in row["args"]["pairs"]:
                 associate_samples.append(({query_col: source}, {query_col: target}))
 
+        # TODO(Nicholas, Geordie): add upvote samples here after logging label text.
+
         return associate_samples
 
     def retrain(
@@ -360,7 +362,7 @@ class NeuralDB:
         if not text_pairs:
             text_pairs = self.get_associate_samples()
 
-        self._savable_state.model.get_model().neural_db.associate_cold_start_data_source(
+        self._savable_state.model.get_model().associate_cold_start_data_source(
             balancing_data=doc_manager.get_data_source(),
             strong_column_names=[self._savable_state.documents.strong_column],
             weak_column_names=[self._savable_state.documents.weak_column],
