@@ -265,7 +265,7 @@ def modify_udt():
 
 
 def modify_mach_udt():
-    original_introduce_documents = bolt.UniversalDeepTransformer.introduce_documents
+    original_introduce_documents = bolt.UDTNeuralDB.introduce_documents
 
     def wrapped_introduce_documents(
         self,
@@ -290,10 +290,10 @@ def modify_mach_udt():
             verbose,
         )
 
-    delattr(bolt.UniversalDeepTransformer, "introduce_documents")
+    delattr(bolt.UDTNeuralDB, "introduce_documents")
 
-    bolt.UniversalDeepTransformer.introduce_documents = wrapped_introduce_documents
-    bolt.UniversalDeepTransformer.introduce_documents_on_data_source = (
+    bolt.UDTNeuralDB.introduce_documents = wrapped_introduce_documents
+    bolt.UDTNeuralDB.introduce_documents_on_data_source = (
         original_introduce_documents
     )
 
@@ -313,15 +313,3 @@ def modify_graph_udt():
         original_index_nodes_method
     )
 
-
-def add_neural_index_aliases():
-    udt = bolt.UniversalDeepTransformer
-    udt.train_neural_db = udt.train
-    udt.pretrain_neural_db = udt.cold_start
-    udt.query = udt.predict
-    udt.save_neural_db = udt.save
-    udt.load_neural_db = udt.load
-    udt.insert_into_neural_db = udt.introduce_document
-    udt.insert_into_neural_db_batch = udt.introduce_documents
-    udt.reset_neural_db = udt.clear_index
-    udt.teach_concept_association = udt.associate

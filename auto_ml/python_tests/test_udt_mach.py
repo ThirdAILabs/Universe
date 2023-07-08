@@ -253,21 +253,21 @@ def test_mach_udt_decode_params():
         ValueError,
         match=r"Params must not be 0.",
     ):
-        model.set_decode_params(0, 0)
+        model.neural_db.set_decode_params(0, 0)
 
     with pytest.raises(
         ValueError,
         match=r"Cannot eval with top_k_per_eval_aggregation greater than 100.",
     ):
-        model.set_decode_params(1, 1000)
+        model.neural_db.set_decode_params(1, 1000)
 
     with pytest.raises(
         ValueError,
         match=r"Cannot return more results than the model is trained to predict. Model currently can predict one of 3 classes.",
     ):
-        model.set_decode_params(5, 2)
+        model.neural_db.set_decode_params(5, 2)
 
-    model.set_decode_params(1, OUTPUT_DIM)
+    model.neural_db.set_decode_params(1, OUTPUT_DIM)
 
     assert len(model.predict({"text": "something"})) == 1
 
@@ -275,7 +275,7 @@ def test_mach_udt_decode_params():
 def test_mach_udt_topk_predict():
     model = train_simple_mach_udt()
 
-    model.set_decode_params(1, 5)
+    model.neural_db.set_decode_params(1, 5)
 
     assert len(model.predict({"text": "something"})) == 1
 
@@ -295,7 +295,7 @@ def test_mach_udt_introduce_and_forget():
 
     sample = {"text": "something or another with lots of words"}
     assert model.predict(sample)[0][0] != label
-    model.introduce_label([sample], label)
+    model.neural_db.introduce_label([sample], label)
     assert model.predict(sample)[0][0] == label
     model.forget(label)
     assert model.predict(sample)[0][0] != label
@@ -308,7 +308,7 @@ def test_mach_udt_introduce_existing_class():
         ValueError,
         match=r"Manually adding a previously seen label: 0. Please use a new label for any new insertions.",
     ):
-        model.introduce_label([{"text": "something"}], 0)
+        model.neural_db.introduce_label([{"text": "something"}], 0)
 
 
 def test_mach_udt_forget_non_existing_class():
@@ -318,15 +318,15 @@ def test_mach_udt_forget_non_existing_class():
         ValueError,
         match=r"Invalid entity in index: 1000.",
     ):
-        model.forget(1000)
+        model.neural_db.forget(1000)
 
 
 def test_mach_udt_forgetting_everything():
     model = train_simple_mach_udt()
 
-    model.forget(0)
-    model.forget(1)
-    model.forget(2)
+    model.neural_db.forget(0)
+    model.neural_db.forget(1)
+    model.neural_db.forget(2)
 
     assert len(model.predict({"text": "something"})) == 0
 
@@ -334,7 +334,7 @@ def test_mach_udt_forgetting_everything():
 def test_mach_udt_forgetting_everything_with_clear_index():
     model = train_simple_mach_udt()
 
-    model.clear_index()
+    model.neural_db.clear_index()
 
     assert len(model.predict({"text": "something"})) == 0
 
@@ -342,9 +342,9 @@ def test_mach_udt_forgetting_everything_with_clear_index():
 def test_mach_udt_cant_predict_forgotten():
     model = train_simple_mach_udt()
 
-    model.set_decode_params(3, OUTPUT_DIM)
+    model.neural_db.set_decode_params(3, OUTPUT_DIM)
     assert 0 in [class_name for class_name, _ in model.predict({"text": "something"})]
-    model.forget(0)
+    model.neural_db.forget(0)
     assert 0 not in [
         class_name for class_name, _ in model.predict({"text": "something"})
     ]
@@ -353,16 +353,16 @@ def test_mach_udt_cant_predict_forgotten():
 def test_mach_udt_min_num_eval_results_adjusts_on_forget():
     model = train_simple_mach_udt()
 
-    model.set_decode_params(3, OUTPUT_DIM)
+    model.neural_db.set_decode_params(3, OUTPUT_DIM)
     assert len(model.predict({"text": "something"})) == 3
-    model.forget(2)
+    model.neural_db.forget(2)
     assert len(model.predict({"text": "something"})) == 2
 
 
 def test_mach_udt_introduce_document():
     model = train_simple_mach_udt()
 
-    model.introduce_document(
+    model.neural_db.introduce_document(
         {"title": "this is a title", "description": "this is a description"},
         strong_column_names=["title"],
         weak_column_names=["description"],
@@ -380,7 +380,7 @@ def test_mach_udt_introduce_documents(fast_approximation):
         f.write("4,some title,some description\n")
         f.write("5,some other title,some other description\n")
 
-    model.introduce_documents(
+    model.neural_db.introduce_documents(
         new_docs,
         strong_column_names=["title"],
         weak_column_names=["description"],
@@ -395,7 +395,7 @@ def test_mach_udt_hash_based_methods():
     # active neuron selection.
     model = train_simple_mach_udt(mach_sampling_threshold=1.0)
 
-    hashes = model.predict_hashes(
+    hashes = model.neural_db.predict_hashes(
         {"text": "testing hash based methods"},
         sparse_inference=False,
         force_non_empty=False,
@@ -405,12 +405,12 @@ def test_mach_udt_hash_based_methods():
     # All hashes in new_hash_set represent non-empty buckets since they are
     # the hashes of an entity. This is important since we're using MACH index
     # for active neuron selection.
-    model.introduce_label([{"text": "text that will map to different buckets"}], 1000)
-    new_hash_set = set(model.get_index().get_entity_hashes(1000))
+    model.neural_db.introduce_label([{"text": "text that will map to different buckets"}], 1000)
+    new_hash_set = set(model.neural_db.get_index().get_entity_hashes(1000))
     assert hashes != new_hash_set
 
     for _ in range(5):
-        model.train_with_hashes(
+        model.neural_db.train_with_hashes(
             [
                 {
                     "text": "testing hash based methods",
@@ -420,26 +420,26 @@ def test_mach_udt_hash_based_methods():
             learning_rate=0.01,
         )
 
-    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
+    new_hashes = model.neural_db.predict_hashes({"text": "testing hash based methods"})
     assert set(new_hashes) == new_hash_set
 
     # Now set mach_sampling_threshold = 0.0 to ensure that we use LSH index for
     # active neuron selection.
     model = train_simple_mach_udt(mach_sampling_threshold=0.0)
 
-    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    hashes = model.neural_db.predict_hashes({"text": "testing hash based methods"})
     assert len(hashes) == 7
 
     # Hashes are empty buckets. This is fine since we are using LSH index for
     # active neuron selection.
     empty_hashes = [
-        i for i in range(100) if len(model.get_index().get_hash_to_entities(i)) == 0
+        i for i in range(100) if len(model.neural_db.get_index().get_hash_to_entities(i)) == 0
     ]
     new_hash_set = set(empty_hashes[:7])
     assert hashes != new_hash_set
 
     for _ in range(10):
-        model.train_with_hashes(
+        model.neural_db.train_with_hashes(
             [
                 {
                     "text": "testing hash based methods",
@@ -449,7 +449,7 @@ def test_mach_udt_hash_based_methods():
             learning_rate=0.01,
         )
 
-    new_hashes = model.predict_hashes(
+    new_hashes = model.neural_db.predict_hashes(
         {"text": "testing hash based methods"},
         sparse_inference=False,
         force_non_empty=False,
@@ -461,12 +461,12 @@ def test_mach_output_correctness():
     model = train_simple_mach_udt(output_dim=50)
 
     # Suppose the label corresponding to the given text is 2.
-    predicted_hashes = model.predict_hashes(
+    predicted_hashes = model.neural_db.predict_hashes(
         {"text": "testing output correctness"},
         force_non_empty=True,
     )
 
-    mach_index = model.get_index()
+    mach_index = model.neural_db.get_index()
 
     original_hashes = mach_index.get_entity_hashes(2)
 
@@ -474,7 +474,7 @@ def test_mach_output_correctness():
         original_hashes
     )
 
-    num_correct_buckets = model.output_correctness(
+    num_correct_buckets = model.neural_db.output_correctness(
         [{"text": "testing output correctness"}], labels=[2]
     )[0]
 
@@ -490,13 +490,13 @@ def test_mach_save_load_get_set_index():
     make_simple_test_file()
     metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
-    index = model.get_index()
+    index = model.neural_db.get_index()
     save_loc = "index.mach"
     index.save(save_loc)
     index = dataset.MachIndex.load(save_loc)
 
-    model.clear_index()
-    model.set_index(index)
+    model.neural_db.clear_index()
+    model.neural_db.set_index(index)
 
     metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
@@ -508,7 +508,7 @@ def test_mach_save_load_get_set_index():
 def test_mach_manual_index_creation():
     model = train_simple_mach_udt()
 
-    model.set_decode_params(3, OUTPUT_DIM)
+    model.neural_db.set_decode_params(3, OUTPUT_DIM)
 
     samples = {
         0: "haha one time",
@@ -528,13 +528,13 @@ def test_mach_manual_index_creation():
         num_hashes=7,
     )
 
-    model.set_index(index)
+    model.neural_db.set_index(index)
 
     make_simple_test_file()
     model.train(SIMPLE_TEST_FILE, learning_rate=0.01, epochs=10)
 
     for label, sample in samples.items():
-        new_hashes = model.predict_hashes({"text": sample})
+        new_hashes = model.neural_db.predict_hashes({"text": sample})
         assert set(new_hashes) == set(entity_to_hashes[label])
 
 
@@ -559,12 +559,12 @@ def test_load_balancing():
     sample = {"text": "tomato"}
 
     # Set the index so that we know that the number of hashes is 8.
-    model.set_index(
+    model.neural_db.set_index(
         dataset.MachIndex({}, output_range=OUTPUT_DIM, num_hashes=num_hashes)
     )
 
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes(sample, force_non_empty=False)
+    hash_locs = model.neural_db.predict_hashes(sample, force_non_empty=False)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
@@ -573,12 +573,12 @@ def test_load_balancing():
         output_range=OUTPUT_DIM,
         num_hashes=half_num_hashes,
     )
-    model.set_index(new_index)
+    model.neural_db.set_index(new_index)
 
     # Insert an id for the same sample without load balancing to ensure that
     # it goes to different locations than with load balancing
     label_without_load_balancing = 9999
-    model.introduce_label(
+    model.neural_db.introduce_label(
         input_batch=[sample],
         label=label_without_load_balancing,
     )
@@ -588,16 +588,16 @@ def test_load_balancing():
     # top 8 locations it should insert the new element in the other 4 locations
     # due to the load balancing constraint.
     label_with_load_balancing = 10000
-    model.introduce_label(
+    model.neural_db.introduce_label(
         input_batch=[sample],
         label=label_with_load_balancing,
         num_buckets_to_sample=num_hashes,
     )
 
-    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+    hashes_with_load_balancing = model.neural_db.get_index().get_entity_hashes(
         label_with_load_balancing
     )
-    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+    hashes_without_load_balancing = model.neural_db.get_index().get_entity_hashes(
         label_without_load_balancing
     )
 
@@ -620,9 +620,9 @@ def test_mach_sparse_inference():
     """
     model = train_simple_mach_udt()
 
-    model.clear_index()
+    model.neural_db.clear_index()
 
-    model.set_index(
+    model.neural_db.set_index(
         dataset.MachIndex(
             {1: [10], 2: [20], 3: [30]}, output_range=OUTPUT_DIM, num_hashes=1
         )
@@ -633,7 +633,7 @@ def test_mach_sparse_inference():
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 30])
 
-    model.set_index(
+    model.neural_db.set_index(
         dataset.MachIndex(
             {1: [10], 2: [20], 3: [30], 4: [40]},
             output_range=OUTPUT_DIM,
@@ -644,13 +644,13 @@ def test_mach_sparse_inference():
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 30, 40])
 
-    model.forget(label=3)
+    model.neural_db.forget(label=3)
 
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 40])
 
     # This is above the threshold for mach index sampling, so it should revert back to LSH
-    model.set_index(
+    model.neural_db.set_index(
         dataset.MachIndex(
             {i * 10: [i] for i in range(OUTPUT_DIM // 2)},
             output_range=OUTPUT_DIM,
@@ -676,7 +676,7 @@ def test_associate():
     )
 
     target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
+    model.neural_db.introduce_label([target_sample], label=200)
     target_hashes = set(model.predict_hashes(target_sample))
 
     different_hashes = list(set(range(OUTPUT_DIM)).difference(target_hashes))
@@ -686,21 +686,21 @@ def test_associate():
     source_sample = {"text": "tomato", "label": different_hashes}
     target_sample["label"] = " ".join([str(x) for x in target_hashes])
     for _ in range(100):
-        model.train_with_hashes([source_sample, target_sample], 0.001)
+        model.neural_db.train_with_hashes([source_sample, target_sample], 0.001)
     del source_sample["label"]
 
-    target_hashes = set(model.predict_hashes(target_sample))
+    target_hashes = set(model.neural_db.predict_hashes(target_sample))
 
-    model.introduce_label([source_sample], label=100)
-    source_hashes = set(model.predict_hashes(source_sample))
+    model.neural_db.introduce_label([source_sample], label=100)
+    source_hashes = set(model.neural_db.predict_hashes(source_sample))
 
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate([(source_sample, target_sample)], n_buckets=7)
+        model.neural_db.associate([(source_sample, target_sample)], n_buckets=7)
 
-    new_target_hashes = set(model.predict_hashes(target_sample))
-    new_source_hashes = set(model.predict_hashes(source_sample))
+    new_target_hashes = set(model.neural_db.predict_hashes(target_sample))
+    new_source_hashes = set(model.neural_db.predict_hashes(source_sample))
 
     new_intersection = len(new_target_hashes.intersection(new_source_hashes))
 
@@ -717,14 +717,14 @@ def test_upvote():
     )
 
     target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
+    model.neural_db.introduce_label([target_sample], label=200)
 
     source_sample = {"text": "tomato"}
-    model.introduce_label([source_sample], label=300)
+    model.neural_db.introduce_label([source_sample], label=300)
 
     predicted_label = model.predict(source_sample)[0][0]
     for _ in range(10):
-        model.upvote([(source_sample, 300)], learning_rate=0.01)
+        model.neural_db.upvote([(source_sample, 300)], learning_rate=0.01)
         predicted_label = model.predict(source_sample)[0][0]
         if predicted_label != 200:
             break
@@ -732,7 +732,7 @@ def test_upvote():
     assert predicted_label != 200
 
     for _ in range(10):
-        model.upvote([(source_sample, 200)], learning_rate=0.01)
+        model.neural_db.upvote([(source_sample, 200)], learning_rate=0.01)
         predicted_label = model.predict(source_sample)[0][0]
         if predicted_label == 200:
             break
@@ -747,9 +747,9 @@ def test_enable_rlhf():
         RuntimeError,
         match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
     ):
-        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+        model.neural_db.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
 
-    model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
+    model.neural_db.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
 
     make_simple_test_file()
 
@@ -757,7 +757,7 @@ def test_enable_rlhf():
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
     )
 
-    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+    model.neural_db.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
 
 
 def regularized_introduce_helper(model, num_random_hashes):
@@ -765,14 +765,14 @@ def regularized_introduce_helper(model, num_random_hashes):
     introducing three identical samples"""
 
     for label in range(3):
-        model.introduce_label(
+        model.neural_db.introduce_label(
             [{"text": "some text"}],
             label,
             num_buckets_to_sample=None,
             num_random_hashes=num_random_hashes,
         )
 
-    index = model.get_index()
+    index = model.neural_db.get_index()
     load = np.zeros(OUTPUT_DIM, dtype=np.int32)
     for i in range(len(load)):
         load[i] = len(index.get_hash_to_entities(i))
@@ -783,14 +783,14 @@ def regularized_introduce_helper(model, num_random_hashes):
 def test_introduce_hash_regularization():
     model = train_simple_mach_udt()
 
-    model.clear_index()
+    model.neural_db.clear_index()
 
     # without any regularization or balancing, introducing 3 labels with the
     # same representative sample should yield 3 sets of identical hashes
     load = regularized_introduce_helper(model, num_random_hashes=0)
     assert np.sum(load > 0) == NUM_HASHES
 
-    model.clear_index()
+    model.neural_db.clear_index()
 
     # when 2 of the 7 hashes in every new doc are random there should be more
     # than NUM_HASHES non-zeroes in the index's load

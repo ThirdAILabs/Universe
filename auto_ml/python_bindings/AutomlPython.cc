@@ -145,10 +145,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
-      .def("output_correctness", &udt::UDT::outputCorrectness,
-           py::arg("samples"), py::arg("labels"),
-           py::arg("sparse_inference") = false,
-           py::arg("num_hashes") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -164,51 +160,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_samples"))
       .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
       .def("clear_graph", &udt::UDT::clearGraph)
-      .def("set_decode_params", &udt::UDT::setDecodeParams,
-           py::arg("min_num_eval_results"),
-           py::arg("top_k_per_eval_aggregation"))
-      .def("introduce_documents", &udt::UDT::introduceDocuments,
-           py::arg("data_source"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"),
-           py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
-           py::arg("fast_approximation") = false, py::arg("verbose") = true)
-      .def("introduce_document", &udt::UDT::introduceDocument,
-           py::arg("document"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("label"),
-           py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0)
-      .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
-           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0)
-      .def("forget", &udt::UDT::forget, py::arg("label"))
-      .def("clear_index", &udt::UDT::clearIndex)
-      .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
-           py::arg("learning_rate") = 0.001,
-           py::arg("metrics") = std::vector<std::string>{})
-      .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
-           py::arg("sparse_inference") = false,
-           py::arg("force_non_empty") = true,
-           py::arg("num_hashes") = std::nullopt)
-      .def("predict_hashes_batch", &udt::UDT::predictHashesBatch,
-           py::arg("samples"), py::arg("sparse_inference") = false,
-           py::arg("force_non_empty") = true,
-           py::arg("num_hashes") = std::nullopt)
-      .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
-      .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),
-           py::arg("n_upvote_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
-      .def("enable_rlhf", &udt::UDT::enableRlhf,
-           py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
-           py::arg("num_balancing_samples_per_doc") =
-               udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
-      .def("get_index", &udt::UDT::getIndex)
-      .def("set_index", &udt::UDT::setIndex, py::arg("index"))
-      .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -235,7 +186,63 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
+      .def_property_readonly("neural_db", &udt::UDT::neuralDB)
       .def(bolt::python::getPickleFunction<udt::UDT>());
+
+  py::class_<udt::UDTMachClassifier, std::shared_ptr<udt::UDTMachClassifier>>(
+      module, "UDTNeuralDB")
+      .def("set_decode_params", &udt::UDTMachClassifier::setDecodeParams,
+           py::arg("min_num_eval_results"),
+           py::arg("top_k_per_eval_aggregation"))
+      .def("output_correctness", &udt::UDTMachClassifier::outputCorrectness,
+           py::arg("samples"), py::arg("labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("num_hashes") = std::nullopt)
+      .def("introduce_documents", &udt::UDTMachClassifier::introduceDocuments,
+           py::arg("data_source"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"),
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0,
+           py::arg("fast_approximation") = false, py::arg("verbose") = true)
+      .def("introduce_document", &udt::UDTMachClassifier::introduceDocument,
+           py::arg("document"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"), py::arg("label"),
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
+      .def("introduce_label", &udt::UDTMachClassifier::introduceLabel,
+           py::arg("input_batch"), py::arg("label"),
+           py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0)
+      .def("forget", &udt::UDTMachClassifier::forget, py::arg("label"))
+      .def("clear_index", &udt::UDTMachClassifier::clearIndex)
+      .def("train_with_hashes", &udt::UDTMachClassifier::trainWithHashes,
+           py::arg("batch"), py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{})
+      .def("predict_hashes", &udt::UDTMachClassifier::predictHashes,
+           py::arg("sample"), py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
+           py::arg("num_hashes") = std::nullopt)
+      .def("predict_hashes_batch", &udt::UDTMachClassifier::predictHashesBatch,
+           py::arg("samples"), py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
+           py::arg("num_hashes") = std::nullopt)
+      .def("associate", &udt::UDTMachClassifier::associate,
+           py::arg("source_target_samples"), py::arg("n_buckets"),
+           py::arg("n_association_samples") = 16,
+           py::arg("n_balancing_samples") = 50,
+           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+      .def("upvote", &udt::UDTMachClassifier::upvote,
+           py::arg("source_target_samples"), py::arg("n_upvote_samples") = 16,
+           py::arg("n_balancing_samples") = 50,
+           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+      .def("enable_rlhf", &udt::UDTMachClassifier::enableRlhf,
+           py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
+           py::arg("num_balancing_samples_per_doc") =
+               udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
+      .def("get_index", &udt::UDTMachClassifier::getIndex)
+      .def("set_index", &udt::UDTMachClassifier::setIndex, py::arg("index"))
+      .def("set_mach_sampling_threshold",
+           &udt::UDTMachClassifier::setMachSamplingThreshold);
 }
 
 void createModelsSubmodule(py::module_& module) {

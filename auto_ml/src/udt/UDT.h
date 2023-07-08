@@ -5,7 +5,9 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <dataset/src/DataSource.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -68,14 +70,6 @@ class UDT {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
-
-  py::object outputCorrectness(const MapInputBatch& sample,
-                               const std::vector<uint32_t>& labels,
-                               bool sparse_inference,
-                               std::optional<uint32_t> num_hashes) {
-    return _backend->outputCorrectness(sample, labels, sparse_inference,
-                                       num_hashes);
-  }
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
@@ -144,106 +138,17 @@ class UDT {
 
   void clearGraph() { return _backend->clearGraph(); }
 
-  void setDecodeParams(uint32_t min_num_eval_results,
-                       uint32_t top_k_per_eval_aggregation) {
-    return _backend->setDecodeParams(min_num_eval_results,
-                                     top_k_per_eval_aggregation);
-  }
-
   ModelPtr model() const { return _backend->model(); }
 
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
+  std::shared_ptr<UDTMachClassifier> neuralDB() const {
+    return std::dynamic_pointer_cast<UDTMachClassifier>(_backend);
+  }
+
   std::vector<uint32_t> modelDims() const;
 
   data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
-
-  void introduceDocuments(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose) {
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample, num_random_hashes,
-                                 fast_approximation, verbose);
-  }
-
-  void introduceDocument(const MapInput& document,
-                         const std::vector<std::string>& strong_column_names,
-                         const std::vector<std::string>& weak_column_names,
-                         const std::variant<uint32_t, std::string>& new_label,
-
-                         std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes) {
-    _backend->introduceDocument(document, strong_column_names,
-                                weak_column_names, new_label,
-                                num_buckets_to_sample, num_random_hashes);
-  }
-
-  void introduceLabel(const MapInputBatch& sample,
-                      const std::variant<uint32_t, std::string>& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes) {
-    _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
-                             num_random_hashes);
-  }
-
-  void forget(const std::variant<uint32_t, std::string>& label) {
-    _backend->forget(label);
-  }
-
-  void clearIndex() { _backend->clearIndex(); }
-
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) {
-    return _backend->trainWithHashes(batch, learning_rate, metrics);
-  }
-
-  py::object predictHashes(const MapInput& sample, bool sparse_inference,
-                           bool force_non_empty,
-                           std::optional<uint32_t> num_hashes) {
-    return _backend->predictHashes(sample, sparse_inference, force_non_empty,
-                                   num_hashes);
-  }
-
-  py::object predictHashesBatch(const MapInputBatch& samples,
-                                bool sparse_inference, bool force_non_empty,
-                                std::optional<uint32_t> num_hashes) {
-    return _backend->predictHashesBatch(samples, sparse_inference,
-                                        force_non_empty, num_hashes);
-  }
-
-  void associate(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
-      uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    _backend->associate(source_target_samples, n_buckets, n_association_samples,
-                        n_balancing_samples, learning_rate, epochs);
-  }
-
-  void upvote(
-      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
-      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
-    _backend->upvote(source_target_samples, n_upvote_samples,
-                     n_balancing_samples, learning_rate, epochs);
-  }
-
-  void enableRlhf(uint32_t num_balancing_docs,
-                  uint32_t num_balancing_samples_per_doc) {
-    _backend->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
-  }
-
-  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
-
-  void setIndex(const dataset::mach::MachIndexPtr& index) {
-    return _backend->setIndex(index);
-  }
-
-  void setMachSamplingThreshold(float threshold) {
-    _backend->setMachSamplingThreshold(threshold);
-  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
@@ -279,7 +184,7 @@ class UDT {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  std::unique_ptr<UDTBackend> _backend;
+  std::shared_ptr<UDTBackend> _backend;
 };
 
 }  // namespace thirdai::automl::udt

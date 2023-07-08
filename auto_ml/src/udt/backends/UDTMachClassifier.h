@@ -49,7 +49,7 @@ class UDTMachClassifier final : public UDTBackend {
                         const std::vector<std::string>& metrics) final;
 
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) final;
+                             const std::vector<std::string>& metrics);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -66,16 +66,16 @@ class UDTMachClassifier final : public UDTBackend {
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,
-                           std::optional<uint32_t> num_hashes) final;
+                           std::optional<uint32_t> num_hashes);
 
   py::object predictHashesBatch(const MapInputBatch& samples,
                                 bool sparse_inference, bool force_non_empty,
-                                std::optional<uint32_t> num_hashes) final;
+                                std::optional<uint32_t> num_hashes);
 
   py::object outputCorrectness(const MapInputBatch& samples,
                                const std::vector<uint32_t>& labels,
                                bool sparse_inference,
-                               std::optional<uint32_t> num_hashes) final;
+                               std::optional<uint32_t> num_hashes);
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -109,22 +109,22 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose) final;
+                          bool verbose);
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes) final;
+                         uint32_t num_random_hashes);
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes) final;
+                      uint32_t num_random_hashes);
 
-  void forget(const Label& label) final;
+  void forget(const Label& label);
 
-  void clearIndex() final {
+  void clearIndex() {
     _mach_label_block->index()->clear();
 
     updateSamplingStrategy();
@@ -137,31 +137,40 @@ class UDTMachClassifier final : public UDTBackend {
   void associate(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs);
 
   void upvote(
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) final;
+      float learning_rate, uint32_t epochs);
+
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) {
+    if (_rlhf_sampler.has_value()) {
+      std::cout << "rlhf already enabled." << std::endl;
+      return;
+    }
+
+    _rlhf_sampler = std::make_optional<RLHFSampler>(
+        num_balancing_docs, num_balancing_samples_per_doc);
+  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
 
   void setDecodeParams(uint32_t min_num_eval_results,
-                       uint32_t top_k_per_eval_aggregation) final;
+                       uint32_t top_k_per_eval_aggregation);
 
   void verifyCanDistribute() const final {
     _dataset_factory->verifyCanDistribute();
   }
 
-  dataset::mach::MachIndexPtr getIndex() final {
-    return _mach_label_block->index();
-  }
+  dataset::mach::MachIndexPtr getIndex() { return _mach_label_block->index(); }
 
-  void setIndex(const dataset::mach::MachIndexPtr& index) final;
+  void setIndex(const dataset::mach::MachIndexPtr& index);
 
-  void setMachSamplingThreshold(float threshold) final;
+  void setMachSamplingThreshold(float threshold);
 
  private:
   std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
@@ -192,17 +201,6 @@ class UDTMachClassifier final : public UDTBackend {
   void addBalancingSamples(const dataset::DataSourcePtr& data);
 
   void requireRLHFSampler();
-
-  void enableRlhf(uint32_t num_balancing_docs,
-                  uint32_t num_balancing_samples_per_doc) final {
-    if (_rlhf_sampler.has_value()) {
-      std::cout << "rlhf already enabled." << std::endl;
-      return;
-    }
-
-    _rlhf_sampler = std::make_optional<RLHFSampler>(
-        num_balancing_docs, num_balancing_samples_per_doc);
-  }
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
