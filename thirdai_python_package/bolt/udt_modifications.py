@@ -351,8 +351,8 @@ def modify_mach_udt():
             )[-1],
         )
 
-    bolt.UDTNeuralDB.associate_train = wrapped_associate_train
-    bolt.UDTNeuralDB.associate_cold_start = wrapped_associate_cold_start
+    bolt.UniversalDeepTransformer.associate_train = wrapped_associate_train
+    bolt.UniversalDeepTransformer.associate_cold_start = wrapped_associate_cold_start
 
 
 def modify_graph_udt():
