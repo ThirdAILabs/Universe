@@ -12,6 +12,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
+#include <bolt/src/nn/ops/MultiplicativeCombined.h>
 #include <bolt/src/nn/ops/MultiplicativePositionalEmbedding.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/PositionalEmbedding.h>
@@ -250,6 +251,19 @@ void defineOps(py::module_& nn) {
       .def("__call__", &ops::MultiplicativePosEmbedding::apply)
       .def("duplicate_with_new_reduction",
            &ops::MultiplicativePosEmbedding::duplicateWithNewReduction,
+           py::arg("reduction"), py::arg("num_tokens_per_input"));
+
+  py::class_<ops::MultiplicativeCombinedEmbedding,
+             ops::MultiplicativeCombinedEmbeddingPtr, ops::Op>(
+      nn, "MultiplicativeCombinedEmbedding")
+      .def(py::init(&ops::MultiplicativeCombinedEmbedding::make),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"), py::arg("reduction"),
+           py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::MultiplicativeCombinedEmbedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::MultiplicativeCombinedEmbedding::duplicateWithNewReduction,
            py::arg("reduction"), py::arg("num_tokens_per_input"));
 
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
