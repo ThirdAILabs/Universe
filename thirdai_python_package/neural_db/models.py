@@ -105,6 +105,16 @@ class Model:
     ):
         raise NotImplementedError()
 
+    def associate_with_balancing_samples(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        raise NotImplementedError()
+
 
 class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
     def __init__(
@@ -421,4 +431,25 @@ class Mach(Model):
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
             epochs=epochs,
+        )
+
+    def associate_with_balancing_samples(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        self.model.associate_cold_start_data_source(
+            balancing_data=balancing_data,
+            strong_column_names=[balancing_data.strong_column],
+            weak_column_names=[balancing_data.weak_column],
+            source_target_samples=source_target_pairs,
+            n_buckets=n_buckets,
+            n_association_samples=1,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=["hash_precision@5"],
+            options=bolt.TrainOptions(),
         )
