@@ -365,9 +365,22 @@ class NeuralDB:
             for source, target in row["args"]["pairs"]:
                 associate_samples.append((source, target))
 
-        # TODO(Nicholas, Geordie): add upvote samples here after logging label text.
-
         return associate_samples
+
+    def get_upvote_samples(self):
+        logs = self._savable_state.logger.get_logs()
+
+        upvote_associate_samples = []
+        upvote_logs = logs[logs["action"] == "upvote"]
+        for _, row in upvote_logs.iterrows():
+            if "query_id_para" in row["args"]:
+                for source, _, target in row["args"]["query_id_para"]:
+                    upvote_associate_samples.append((source, target))
+
+        return upvote_associate_samples
+
+    def get_rlhf_samples(self):
+        return self.get_associate_samples() + self.get_upvote_samples()
 
     def retrain(
         self,
@@ -379,7 +392,7 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
 
         if not text_pairs:
-            text_pairs = self.get_associate_samples()
+            text_pairs = self.get_rlhf_samples()
 
         self._savable_state.model.associate_with_balancing_samples(
             balancing_data=doc_manager.get_data_source(),
