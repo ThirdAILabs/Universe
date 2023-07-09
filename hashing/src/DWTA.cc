@@ -130,16 +130,25 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
   }
 }
 
-void DWTAHashFunction::save(const std::string& filename) {
+void DWTAHashFunction::save(const std::string& filename) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(output_stream);
+}
+
+void DWTAHashFunction::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
-std::shared_ptr<HashFunction> DWTAHashFunction::load(
+std::shared_ptr<DWTAHashFunction> DWTAHashFunction::load(
     const std::string& filename) {
   auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(input_stream);
+}
+
+std::shared_ptr<DWTAHashFunction> DWTAHashFunction::load_stream(
+    std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<DWTAHashFunction> deserialize_into(new DWTAHashFunction());
   iarchive(*deserialize_into);

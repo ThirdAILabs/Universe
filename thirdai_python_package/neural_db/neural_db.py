@@ -8,8 +8,8 @@ from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
-from .documents import Document, DocumentManager, Reference
-from .models import Mach
+from .documents import CSV, Document, DocumentManager, Reference
+from .models import CancelState, Mach
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -88,9 +88,9 @@ class NeuralDB:
         self._user_id = user_id
         self._savable_state: Optional[State] = None
 
-    def from_scratch(self) -> None:
+    def from_scratch(self, **kwargs) -> None:
         self._savable_state = State(
-            model=Mach(id_col="id", query_col="query"),
+            model=Mach(id_col="id", query_col="query", **kwargs),
             logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
 
@@ -103,6 +103,8 @@ class NeuralDB:
         checkpoint_path = Path(checkpoint_path)
         try:
             self._savable_state = State.load(checkpoint_path, on_progress)
+            if self._savable_state.model and self._savable_state.model.get_model():
+                self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
             if not isinstance(self._savable_state.logger, loggers.LoggerList):
                 # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
                 self._savable_state.logger = loggers.LoggerList(
@@ -118,9 +120,17 @@ class NeuralDB:
     def from_udt(
         self,
         udt: bolt.UniversalDeepTransformer,
+        csv: Optional[str] = None,
+        csv_id_column: Optional[str] = None,
+        csv_strong_columns: Optional[List[str]] = None,
+        csv_weak_columns: Optional[List[str]] = None,
+        csv_reference_columns: Optional[List[str]] = None,
     ):
-        udt.clear_index()
+        if csv is None:
+            udt.clear_index()
+
         udt.enable_rlhf()
+        udt.set_mach_sampling_threshold(0.01)
         input_dim, emb_dim, out_dim = udt.model_dims()
         data_types = udt.data_types()
 
@@ -141,10 +151,6 @@ class NeuralDB:
             raise ValueError(f"Incompatible UDT model. Cannot find a query column.")
         if id_col is None:
             raise ValueError(f"Incompatible UDT model. Cannot find an id column.")
-        if id_delimiter is None:
-            raise ValueError(
-                f"Incompatible UDT model. Id column must have a delimiter."
-            )
 
         model = Mach(
             id_col=id_col,
@@ -157,6 +163,29 @@ class NeuralDB:
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
         self._savable_state = State(model=model, logger=logger)
+
+        if csv is not None:
+            if (
+                csv_id_column is None
+                or csv_strong_columns is None
+                or csv_weak_columns is None
+                or csv_reference_columns is None
+            ):
+                error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
+                error_msg += " - `csv_id_column`\n"
+                error_msg += " - `csv_strong_columns`\n"
+                error_msg += " - `csv_weak_columns`\n"
+                error_msg += " - `csv_reference_columns`\n"
+                raise ValueError(error_msg)
+            csv_doc = CSV(
+                path=csv,
+                id_column=csv_id_column,
+                strong_columns=csv_strong_columns,
+                weak_columns=csv_weak_columns,
+                reference_columns=csv_reference_columns,
+            )
+            self._savable_state.documents.add([csv_doc])
+            self._savable_state.model.set_n_ids(csv_doc.size)
 
     def in_session(self) -> bool:
         return self._savable_state is not None
@@ -181,6 +210,7 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = None,
         on_irrecoverable_error: Callable = None,
+        cancel_state: CancelState = None,
     ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
@@ -198,6 +228,7 @@ class NeuralDB:
                 train_documents=intro_and_train.train,
                 should_train=train,
                 on_progress=on_progress,
+                cancel_state=cancel_state,
             )
 
             self._savable_state.logger.log(

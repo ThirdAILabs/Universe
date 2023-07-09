@@ -141,6 +141,8 @@ class Op {
    */
   const std::string& name() const { return _name; }
 
+  void setName(std::string name) { _name = std::move(name); }
+
   virtual ~Op() = default;
 
  protected:

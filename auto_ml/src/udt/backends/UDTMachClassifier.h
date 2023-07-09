@@ -16,6 +16,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -44,6 +45,12 @@ class UDTMachClassifier final : public UDTBackend {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options) final;
 
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        const std::vector<std::string>& metrics) final;
+
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
+                             const std::vector<std::string>& metrics) final;
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
@@ -53,17 +60,22 @@ class UDTMachClassifier final : public UDTBackend {
                      bool return_predicted_class,
                      std::optional<uint32_t> top_k) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics) final;
-
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) final;
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           bool force_non_empty,
+                           std::optional<uint32_t> num_hashes) final;
 
-  py::object predictHashes(const MapInput& sample, bool sparse_inference) final;
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference, bool force_non_empty,
+                                std::optional<uint32_t> num_hashes) final;
+
+  py::object outputCorrectness(const MapInputBatch& samples,
+                               const std::vector<uint32_t>& labels,
+                               bool sparse_inference,
+                               std::optional<uint32_t> num_hashes) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -96,8 +108,8 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes,
-                          bool fast_approximation) final;
+                          uint32_t num_random_hashes, bool fast_approximation,
+                          bool verbose) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
@@ -149,12 +161,17 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
- private:
-  std::vector<std::pair<uint32_t, double>> predictImpl(const MapInput& sample,
-                                                       bool sparse_inference);
+  void setMachSamplingThreshold(float threshold) final;
 
-  std::vector<uint32_t> predictHashesImpl(const MapInput& sample,
-                                          bool sparse_inference);
+ private:
+  std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
+      const MapInputBatch& samples, bool sparse_inference,
+      std::optional<uint32_t> top_k);
+
+  std::vector<std::vector<uint32_t>> predictHashesImpl(
+      const MapInputBatch& samples, bool sparse_inference,
+      bool force_non_empty = true,
+      std::optional<uint32_t> num_hashes = std::nullopt);
 
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
@@ -232,7 +249,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
-  float _sparse_inference_threshold;
+  float _mach_sampling_threshold;
 
   std::optional<RLHFSampler> _rlhf_sampler;
 };
