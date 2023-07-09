@@ -1,5 +1,6 @@
 try:
     from .documents import CSV, DOCX, PDF, URL, Document, Reference
+    from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
 except ImportError as error:
     raise ImportError(
