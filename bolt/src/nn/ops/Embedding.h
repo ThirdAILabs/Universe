@@ -62,6 +62,10 @@ class Embedding final : public Op,
 
   uint32_t inputDim() const { return _input_dim; }
 
+  ActivationFunction activation() const { return _act_func; }
+
+  bool useBias() const { return _bias; }
+
   const float* embeddingsPtr() const { return _embeddings.data(); }
 
   const float* biasesPtr() const { return _biases.data(); }
@@ -72,6 +76,10 @@ class Embedding final : public Op,
 
   void setBiases(const float* biases) {
     std::copy(biases, biases + _dim, _biases.begin());
+  }
+
+  static auto cast(const ops::OpPtr& op) {
+    return std::dynamic_pointer_cast<Embedding>(op);
   }
 
  private:

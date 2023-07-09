@@ -1,10 +1,8 @@
+import math
 import random
 from pathlib import Path
 from typing import Callable, List, Sequence, Tuple
 
-import numpy as np
-import pandas as pd
-from nltk.tokenize import sent_tokenize
 from thirdai import bolt, bolt_v2
 
 from .documents import DocumentDataSource
@@ -14,6 +12,23 @@ InferSamples = List
 Predictions = Sequence
 TrainLabels = List
 TrainSamples = List
+
+
+# This class can be constructed by clients that use neural_db.
+# The object can then be passed into Model.index_documents(), and if
+# the client calls CancelState.cancel() on the object, training will halt.
+class CancelState:
+    def __init__(self, canceled=False):
+        self.canceled = canceled
+
+    def cancel(self):
+        self.canceled = True
+
+    def uncancel(self):
+        self.canceled = False
+
+    def is_canceled(self):
+        return self.canceled
 
 
 class Model:
@@ -26,6 +41,7 @@ class Model:
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -37,6 +53,9 @@ class Model:
         raise NotImplementedError()
 
     def get_query_col(self) -> str:
+        raise NotImplementedError()
+
+    def set_n_ids(self, n_ids: int):
         raise NotImplementedError()
 
     def get_id_col(self) -> str:
@@ -87,6 +106,67 @@ class Model:
         raise NotImplementedError()
 
 
+class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        min_epochs,
+        tracked_metric,
+        metric_threshold,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.min_epochs = min_epochs
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+
+        if (
+            self.epoch_count > self.min_epochs
+            and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.train_state.stop_training()
+
+
+class ProgressUpdate(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        max_epochs,
+        progress_callback_fn,
+    ):
+        super().__init__()
+
+        self.batch_count = 0
+        self.max_epochs = max_epochs
+        self.progress_callback_fn = progress_callback_fn
+
+    def on_batch_end(self):
+        self.batch_count += 1
+
+        # We update progress every other epoch because otherwise the updates are
+        # too fast for frontend components to display these changes.
+        if self.batch_count % 2:
+            batch_progress = self.batch_count / self.train_state.batches_in_dataset()
+            progress = batch_progress / self.max_epochs
+
+            # TODO revisit this progress bar update
+            # This function (sqrt) increases faster at the beginning
+            progress = progress ** (1.0 / 2)
+            self.progress_callback_fn(progress)
+
+
+class CancelTraining(bolt_v2.train.callbacks.Callback):
+    def __init__(self, cancel_state):
+        super().__init__()
+        self.cancel_state = cancel_state
+
+    def on_batch_end(self):
+        if self.cancel_state is not None and self.cancel_state.is_canceled():
+            self.train_state.stop_training()
+
+
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
@@ -96,25 +176,36 @@ def unsupervised_train_on_docs(
     learning_rate: float,
     acc_to_stop: float,
     on_progress: Callable,
-    freeze_epoch: int,
+    freeze_before_train: bool,
+    cancel_state: CancelState,
 ):
-    for i in range(max_epochs):
-        if i == freeze_epoch:
-            model._get_model().freeze_hash_tables()
-        documents.restart()
-        metrics = model.cold_start_on_data_source(
-            data_source=documents,
-            strong_column_names=[documents.strong_column],
-            weak_column_names=[documents.weak_column],
-            learning_rate=learning_rate,
-            epochs=1,
-            metrics=[metric],
-        )
+    if freeze_before_train:
+        model._get_model().freeze_hash_tables()
 
-        val = metrics["train_" + metric][0]
-        on_progress((i + 1) / max_epochs)
-        if i >= min_epochs - 1 and val > acc_to_stop:
-            break
+    documents.restart()
+
+    early_stop_callback = EarlyStopWithMinEpochs(
+        min_epochs=min_epochs,
+        tracked_metric=metric,
+        metric_threshold=acc_to_stop,
+    )
+
+    progress_callback = ProgressUpdate(
+        max_epochs=max_epochs,
+        progress_callback_fn=on_progress,
+    )
+
+    cancel_training_callback = CancelTraining(cancel_state=cancel_state)
+
+    model.cold_start_on_data_source(
+        data_source=documents,
+        strong_column_names=[documents.strong_column],
+        weak_column_names=[documents.weak_column],
+        learning_rate=learning_rate,
+        epochs=max_epochs,
+        metrics=[metric],
+        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+    )
 
 
 def make_balancing_samples(documents: DocumentDataSource):
@@ -156,6 +247,9 @@ class Mach(Model):
     def load_meta(self, directory: Path):
         pass
 
+    def set_n_ids(self, n_ids: int):
+        self.n_ids = n_ids
+
     def get_query_col(self) -> str:
         return self.query_col
 
@@ -171,6 +265,7 @@ class Mach(Model):
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
     ) -> None:
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -181,7 +276,7 @@ class Mach(Model):
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
-            freeze_epoch = 1
+            freeze_before_train = False
             min_epochs = 10
             max_epochs = 15
         else:
@@ -200,7 +295,7 @@ class Mach(Model):
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
-            freeze_epoch = 0
+            freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
             min_epochs = 5
@@ -219,7 +314,8 @@ class Mach(Model):
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
-                freeze_epoch=freeze_epoch,
+                freeze_before_train=freeze_before_train,
+                cancel_state=cancel_state,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):

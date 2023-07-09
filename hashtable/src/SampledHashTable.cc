@@ -5,6 +5,7 @@
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cassert>
 #include <limits>
+#include <memory>
 #include <random>
 #include <stdexcept>
 
@@ -189,9 +190,13 @@ uint32_t SampledHashTable::maxElement() const {
   return max_elem;
 }
 
-void SampledHashTable::save(const std::string& filename) {
+void SampledHashTable::save(const std::string& filename) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(output_stream);
+}
+
+void SampledHashTable::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
@@ -199,6 +204,12 @@ void SampledHashTable::save(const std::string& filename) {
 std::shared_ptr<SampledHashTable> SampledHashTable::load(
     const std::string& filename) {
   auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+
+  return load_stream(input_stream);
+}
+
+std::shared_ptr<SampledHashTable> SampledHashTable::load_stream(
+    std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<SampledHashTable> deserialize_into(new SampledHashTable());
   iarchive(*deserialize_into);

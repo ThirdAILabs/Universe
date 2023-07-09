@@ -45,7 +45,7 @@ metrics::History Trainer::train(
                           train_data.first.at(0).at(0)->batchSize());
   }
 
-  auto train_state = TrainState::make(learning_rate);
+  auto train_state = TrainState::make(learning_rate, train_data.first.size());
 
   metrics::MetricCollection train_metrics(train_metrics_in);
 

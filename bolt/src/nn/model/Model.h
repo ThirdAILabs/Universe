@@ -104,6 +104,13 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   autograd::ComputationList computationOrder() const;
 
+  autograd::ComputationList computationOrderWithoutInputs() const;
+
+  /**
+   * Returns the inputs of the model.
+   */
+  const autograd::ComputationList& inputs() const;
+
   /**
    * Returns the outputs of the model.
    */
@@ -272,6 +279,13 @@ class Model : public std::enable_shared_from_this<Model> {
    * Registers the model with the ops that it uses.
    */
   void registerWithOps();
+
+  /**
+   * Names the computations in the model based on the order they are executed.
+   */
+  static void nameComputations(autograd::ComputationList& inputs,
+                               autograd::ComputationList& comps,
+                               autograd::ComputationList& labels);
 
   /**
    * Creates a metadata file which gives the thirdai version, model uuid, the
