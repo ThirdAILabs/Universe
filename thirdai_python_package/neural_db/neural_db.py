@@ -338,7 +338,6 @@ class NeuralDB:
 
     def get_associate_samples(self):
         logs = self._savable_state.logger.get_logs()
-        query_col = self._savable_state.model.get_query_col()
 
         associate_logs = logs[logs["action"] == "associate"]
         associate_samples = []
