@@ -338,13 +338,12 @@ class NeuralDB:
 
     def get_associate_samples(self):
         logs = self._savable_state.logger.get_logs()
-        query_col = self._savable_state.model.get_query_col()
 
         associate_logs = logs[logs["action"] == "associate"]
         associate_samples = []
         for _, row in associate_logs.iterrows():
             for source, target in row["args"]["pairs"]:
-                associate_samples.append(({query_col: source}, {query_col: target}))
+                associate_samples.append((source, target))
 
         # TODO(Nicholas, Geordie): add upvote samples here after logging label text.
 
@@ -362,15 +361,10 @@ class NeuralDB:
         if not text_pairs:
             text_pairs = self.get_associate_samples()
 
-        self._savable_state.model.get_model().associate_cold_start_data_source(
+        self._savable_state.model.retrain(
             balancing_data=doc_manager.get_data_source(),
-            strong_column_names=[self._savable_state.documents.strong_column],
-            weak_column_names=[self._savable_state.documents.weak_column],
-            source_target_samples=text_pairs,
+            source_target_pairs=text_pairs,
             n_buckets=self._get_associate_top_k(strength),
-            n_association_samples=1,
             learning_rate=learning_rate,
             epochs=epochs,
-            metrics=["hash_precision@5"],
-            options=bolt.TrainOptions(),
         )
