@@ -192,7 +192,10 @@ metrics::History Trainer::train_with_dataset_loader(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    std::optional<DistributedCommInterfacePtr> comm) {
+    std::optional<DistributedCommInterfacePtr> comm) {  // NOLINT
+  // clang is asking to make comm optional paramter as const. Since, it is a
+  // std::optional, it hardly makes any difference whether the parameter is
+  // const or not
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 
