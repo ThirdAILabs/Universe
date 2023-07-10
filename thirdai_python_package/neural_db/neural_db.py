@@ -394,7 +394,7 @@ class NeuralDB:
         if not text_pairs:
             text_pairs = self.get_rlhf_samples()
 
-        self._savable_state.model.associate_with_balancing_samples(
+        self._savable_state.model.retrain(
             balancing_data=doc_manager.get_data_source(),
             source_target_pairs=text_pairs,
             n_buckets=self._get_associate_top_k(strength),

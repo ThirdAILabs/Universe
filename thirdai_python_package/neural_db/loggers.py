@@ -70,8 +70,10 @@ class InMemoryLogger(Logger):
 
 class LoggerList(Logger):
     def __init__(self, loggers: List[Logger]):
-        self.loggers = filter(
-            lambda logger: not isinstance(logger, (NoOpLogger, LoggerList)), loggers
+        self.loggers = list(
+            filter(
+                lambda logger: not isinstance(logger, (NoOpLogger, LoggerList)), loggers
+            )
         )
 
     def name(self):

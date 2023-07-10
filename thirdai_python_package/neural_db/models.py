@@ -107,7 +107,7 @@ class Model:
     ):
         raise NotImplementedError()
 
-    def associate_with_balancing_samples(
+    def retrain(
         self,
         balancing_data: DocumentDataSource,
         source_target_pairs: List[Tuple[str, str]],
@@ -391,6 +391,14 @@ class Mach(Model):
         ]
         return predictions
 
+    def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
+        query_col = self.get_query_col()
+
+        return [
+            ({query_col: clean_text(source)}, {query_col: clean_text(target)})
+            for source, target in pairs
+        ]
+
     def associate(
         self,
         pairs: List[Tuple[str, str]],
@@ -400,18 +408,8 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        query_col = self.get_query_col()
-
-        source_target_samples = [
-            (
-                {query_col: clean_text(source)},
-                {query_col: clean_text(target)},
-            )
-            for source, target in pairs
-        ]
-
         self.model.associate(
-            source_target_samples=source_target_samples,
+            source_target_samples=self._format_associate_samples(pairs),
             n_buckets=n_buckets,
             n_association_samples=n_association_samples,
             n_balancing_samples=n_balancing_samples,
@@ -439,7 +437,7 @@ class Mach(Model):
             epochs=epochs,
         )
 
-    def associate_with_balancing_samples(
+    def retrain(
         self,
         balancing_data: DocumentDataSource,
         source_target_pairs: List[Tuple[str, str]],
@@ -451,7 +449,7 @@ class Mach(Model):
             balancing_data=balancing_data,
             strong_column_names=[balancing_data.strong_column],
             weak_column_names=[balancing_data.weak_column],
-            source_target_samples=source_target_pairs,
+            source_target_samples=self._format_associate_samples(source_target_pairs),
             n_buckets=n_buckets,
             n_association_samples=1,
             learning_rate=learning_rate,
