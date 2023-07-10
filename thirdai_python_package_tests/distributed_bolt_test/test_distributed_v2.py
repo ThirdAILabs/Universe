@@ -8,7 +8,8 @@ from distributed_utils import (
     gen_numpy_training_data,
     remove_files,
 )
-from ray.air import ScalingConfig, session
+from ray.air import FailureConfig, RunConfig, ScalingConfig, session
+from ray.air.checkpoint import Checkpoint
 from ray.train.torch import TorchConfig
 from test_mock_cluster_cold_start import (
     download_amazon_kaggle_product_catalog_sampled,
@@ -46,21 +47,41 @@ def setting_up_ray():
 
 def training_loop_per_worker(config):
     model = config.get("model")
+    starting_epoch = 0
+    num_epochs = config.get("num_epochs", 1)
+
+    if session.get_checkpoint():
+        checkpoint_dict = session.get_checkpoint().to_dict()
+
+        # Load in model
+        checkpoint_model = checkpoint_dict["model"]
+        model = dist.BoltCheckPoint.get_model(checkpoint_model)
+
+        # The current epoch increments the loaded epoch by 1
+        checkpoint_epoch = checkpoint_dict["epoch"]
+        starting_epoch = checkpoint_epoch + 1
 
     trainer = dist.DistributedTrainer(model)
     train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed(
-        train_data=(train_x, train_y), learning_rate=0.005, epochs=1
-    )
+    for epoch in range(starting_epoch, num_epochs):
+        trainer.train_distributed(
+            train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+        )
 
-    # session report should always have a metrics stored, hence added a demo_metric
-    session.report(
-        {"model_location": session.get_trial_dir()},
-        checkpoint=dist.BoltCheckPoint.from_model(model),
-    )
+        # session report should always have a metrics stored, hence added a demo_metric
+        session.report(
+            {"model_location": session.get_trial_dir()},
+            checkpoint=Checkpoint.from_dict(
+                {
+                    "epoch": epoch,
+                    "model": dist.BoltCheckPoint.from_model(model),
+                }
+            ),
+        )
+
     trainer.model.save("trained.model")
 
 
@@ -88,9 +109,10 @@ def test_distributed_v2():
     scaling_config = setting_up_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
-        train_loop_config={"model": model},
+        train_loop_config={"model": model, "num_epochs": 5},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=RunConfig(failure_config=FailureConfig(max_failures=3)),
     )
 
     result_checkpoint_and_history = trainer.fit()
@@ -128,6 +150,9 @@ def test_distributed_v2():
     check_model_parameters_equal(model_1, model_2)
 
     ray.shutdown()
+
+
+test_distributed_v2()
 
 
 def test_udt_train_distributed_v2():
