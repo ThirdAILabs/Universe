@@ -43,6 +43,8 @@ struct BoltVector {
 
   BoltVector(uint32_t* an, float* a, float* g, uint32_t l);
 
+  BoltVector(float* a, float* g, uint32_t l);
+
   BoltVector(uint32_t l, bool is_dense, bool has_gradient = true);
 
   static BoltVector singleElementSparseVector(uint32_t active_neuron,

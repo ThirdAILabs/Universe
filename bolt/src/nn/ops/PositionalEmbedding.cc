@@ -9,6 +9,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <bolt_vector/src/BoltVectorUtils.h>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
@@ -21,8 +22,8 @@ PosEmbedding::PosEmbedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
                            uint64_t log_embedding_block_size,
                            const std::string& reduction,
                            std::optional<uint64_t> num_tokens_per_input,
-                           uint64_t update_chunk_size)
-    : Op(nextPositionalEncodingOpName()) {
+                           uint64_t update_chunk_size, bool sum_combination)
+    : Op(nextPositionalEncodingOpName()), _sum_combination(sum_combination) {
   EmbeddingLayerConfig token_config(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
@@ -42,14 +43,16 @@ PosEmbedding::PosEmbedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
 std::shared_ptr<PosEmbedding> PosEmbedding::make(
     uint64_t num_embedding_lookups, uint64_t lookup_size,
     uint64_t log_embedding_block_size, const std::string& reduction,
-    std::optional<uint64_t> num_tokens_per_input, uint64_t update_chunk_size) {
+    std::optional<uint64_t> num_tokens_per_input, uint64_t update_chunk_size,
+    bool sum_combination) {
   return std::shared_ptr<PosEmbedding>(new PosEmbedding(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
       /* log_embedding_block_size= */ log_embedding_block_size,
       /* reduction= */ reduction,
       /* num_tokens_per_input= */ num_tokens_per_input,
-      /* update_chunk_size= */ update_chunk_size));
+      /* update_chunk_size= */ update_chunk_size,
+      /* sum_combination= */ sum_combination));
 }
 
 void PosEmbedding::forward(const autograd::ComputationList& inputs,
@@ -57,22 +60,36 @@ void PosEmbedding::forward(const autograd::ComputationList& inputs,
                            bool training) {
   (void)training;
   assert(inputs.size() == 1);
-  BoltVector position_output = output->getVector(index_in_batch).copy();
   BoltVector position_input =
       inputs[0]->tensor()->getVector(index_in_batch).copy();
   for (uint64_t token_idx = 0; token_idx < position_input.len; token_idx++) {
     position_input.active_neurons[token_idx] = token_idx;
   }
-  _pos_kernel->forward(position_input, position_output);
-  _token_kernel->forward(inputs[0]->tensor()->getVector(index_in_batch),
-                         output->getVector(index_in_batch));
-  BoltVector& output_boltvector = output->getVector(index_in_batch);
+  if (_sum_combination) {
+    BoltVector position_output = output->getVector(index_in_batch).copy();
+    _pos_kernel->forward(position_input, position_output);
+    _token_kernel->forward(inputs[0]->tensor()->getVector(index_in_batch),
+                           output->getVector(index_in_batch));
+    BoltVector& output_boltvector = output->getVector(index_in_batch);
 
-  assert(output_boltvector.len == position_output.len);
-  for (uint64_t token_index = 0; token_index < output_boltvector.len;
-       token_index++) {
-    output_boltvector.activations[token_index] +=
-        position_output.activations[token_index];
+    assert(output_boltvector.len == position_output.len);
+    for (uint64_t token_index = 0; token_index < output_boltvector.len;
+         token_index++) {
+      output_boltvector.activations[token_index] +=
+          position_output.activations[token_index];
+    }
+  } else {
+    BoltVector position_output = thirdai::bolt_vector::getBoltVectorWithOffset(
+        output->getVector(index_in_batch), _pos_kernel->getOutputDim(),
+        _pos_kernel->getOutputDim());
+    _pos_kernel->forward(position_input, position_output);
+
+    BoltVector token_output = thirdai::bolt_vector::getBoltVectorWithOffset(
+        output->getVector(index_in_batch), _token_kernel->getOutputDim(), 0);
+    _token_kernel->forward(inputs[0]->tensor()->getVector(index_in_batch),
+                           token_output);
+
+    // The outputs of the kernels have already been written to the output vector
   }
 }
 
@@ -80,14 +97,28 @@ void PosEmbedding::backpropagate(autograd::ComputationList& inputs,
                                  tensor::TensorPtr& output,
                                  uint32_t index_in_batch) {
   assert(inputs.size() == 1);
-  _token_kernel->backpropagate(inputs[0]->tensor()->getVector(index_in_batch),
-                               output->getVector(index_in_batch));
+
   BoltVector position_input =
       inputs[0]->tensor()->getVector(index_in_batch).copy();
   for (uint64_t token_idx = 0; token_idx < position_input.len; token_idx++) {
     position_input.active_neurons[token_idx] = token_idx;
   }
-  _pos_kernel->backpropagate(position_input, output->getVector(index_in_batch));
+  if (_sum_combination) {
+    _token_kernel->backpropagate(inputs[0]->tensor()->getVector(index_in_batch),
+                                 output->getVector(index_in_batch));
+    _pos_kernel->backpropagate(position_input,
+                               output->getVector(index_in_batch));
+  } else {
+    BoltVector position_output = thirdai::bolt_vector::getBoltVectorWithOffset(
+        output->getVector(index_in_batch), _pos_kernel->getOutputDim(),
+        _pos_kernel->getOutputDim());
+    _pos_kernel->backpropagate(position_input, position_output);
+
+    BoltVector token_output = thirdai::bolt_vector::getBoltVectorWithOffset(
+        output->getVector(index_in_batch), _token_kernel->getOutputDim(), 0);
+    _token_kernel->backpropagate(inputs[0]->tensor()->getVector(index_in_batch),
+                                 token_output);
+  }
 }
 
 void PosEmbedding::updateParameters(float learning_rate, uint32_t train_steps) {
@@ -98,7 +129,8 @@ void PosEmbedding::updateParameters(float learning_rate, uint32_t train_steps) {
 
 uint32_t PosEmbedding::dim() const {
   assert(_pos_kernel->getOutputDim() == _token_kernel->getOutputDim());
-  return _pos_kernel->getOutputDim();
+  return _sum_combination ? _pos_kernel->getOutputDim()
+                          : _pos_kernel->getOutputDim() * 2;
 }
 
 std::optional<uint32_t> PosEmbedding::nonzeros(
@@ -132,7 +164,8 @@ void PosEmbedding::summary(std::ostream& summary,
   _pos_kernel->buildLayerSummary(summary);
   summary << "token_kernel : ";
   _token_kernel->buildLayerSummary(summary);
-  summary << "]";
+  summary << " sum_combination = " << (_sum_combination ? "True" : "False")
+          << " ]";
 }
 
 void PosEmbedding::setSerializeOptimizer(bool should_serialize_optimizer) {
@@ -148,14 +181,16 @@ template void PosEmbedding::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
 void PosEmbedding::save(Archive& archive) const {
-  archive(cereal::base_class<Op>(this), _pos_kernel, _token_kernel);
+  archive(cereal::base_class<Op>(this), _pos_kernel, _token_kernel,
+          _sum_combination);
 }
 
 template void PosEmbedding::load(cereal::BinaryInputArchive&);
 
 template <class Archive>
 void PosEmbedding::load(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _pos_kernel, _token_kernel);
+  archive(cereal::base_class<Op>(this), _pos_kernel, _token_kernel,
+          _sum_combination);
   _pos_kernel->initOptimizer();
   _token_kernel->initOptimizer();
 }
@@ -168,8 +203,9 @@ std::shared_ptr<PosEmbedding> PosEmbedding::duplicateWithNewReduction(
   auto new_token_kernel =
       _token_kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
   std::string new_name = nextPositionalEncodingOpName() + "_shared_" + name();
-  return std::shared_ptr<PosEmbedding>(new PosEmbedding(
-      std::move(new_pos_kernel), std::move(new_token_kernel), new_name));
+  return std::shared_ptr<PosEmbedding>(
+      new PosEmbedding(std::move(new_pos_kernel), std::move(new_token_kernel),
+                       new_name, _sum_combination));
 }
 }  // namespace thirdai::bolt::nn::ops
 

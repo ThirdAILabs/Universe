@@ -79,4 +79,12 @@ void visitPair(const BoltVector& vec_1, const BoltVector& vec_2,
   }
 }
 
+static BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
+                                          uint32_t length, uint32_t offset) {
+  float* new_activation_ptr = base_vector.activations + offset;
+  float* new_gradient_ptr =
+      base_vector.hasGradients() ? base_vector.gradients + offset : nullptr;
+  return BoltVector(new_activation_ptr, new_gradient_ptr, length);
+}
+
 }  // namespace thirdai::bolt_vector

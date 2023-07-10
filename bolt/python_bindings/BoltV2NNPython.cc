@@ -234,7 +234,8 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::PosEmbedding::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
-           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+           py::arg("sum_combination") = false)
       .def("__call__", &ops::PosEmbedding::apply)
       .def("duplicate_with_new_reduction",
            &ops::PosEmbedding::duplicateWithNewReduction, py::arg("reduction"),

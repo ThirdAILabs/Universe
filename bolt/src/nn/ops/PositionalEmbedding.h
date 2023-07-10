@@ -11,7 +11,8 @@ class PosEmbedding final : public Op,
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
-      uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
+      uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+      bool sum_combination = true);
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -45,16 +46,19 @@ class PosEmbedding final : public Op,
   PosEmbedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
                uint64_t log_embedding_block_size, const std::string& reduction,
                std::optional<uint64_t> num_tokens_per_input,
-               uint64_t update_chunk_size);
+               uint64_t update_chunk_size, bool sum_combination);
 
   PosEmbedding(std::unique_ptr<EmbeddingLayer>&& pos_kernel,
                std::unique_ptr<EmbeddingLayer>&& token_kernel,
-               const std::string& name)
+               const std::string& name, bool sum_combination)
       : Op(name),
         _pos_kernel(std::move(pos_kernel)),
-        _token_kernel(std::move(token_kernel)) {}
+        _token_kernel(std::move(token_kernel)),
+        _sum_combination(sum_combination) {}
 
   std::unique_ptr<EmbeddingLayer> _pos_kernel, _token_kernel;
+
+  bool _sum_combination;
 
   PosEmbedding() {}
 

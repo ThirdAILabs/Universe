@@ -21,6 +21,13 @@ BoltVector::BoltVector(uint32_t* an, float* a, float* g, uint32_t l)
       len(l),
       _owns_data(false) {}
 
+BoltVector::BoltVector(float* a, float* g, uint32_t l)
+    : active_neurons(nullptr),
+      activations(a),
+      gradients(g),
+      len(l),
+      _owns_data(false) {}
+
 BoltVector::BoltVector(uint32_t l, bool is_dense, bool has_gradient /* = true*/)
     : len(l), _owns_data(true) {
   if (!is_dense) {
