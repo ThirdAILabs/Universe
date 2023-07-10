@@ -85,7 +85,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      std::optional<DistributedCommInterfacePtr> comm);
+      std::optional<DistributedCommInterfacePtr> comm = std::nullopt);
 
   /**
    * Performs evaluation on the model using the given validation data and
