@@ -225,8 +225,6 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     )
 
     result = trainer.fit()
-    print(result.metrics)
-    print(result.metrics["metrics"])
     result.metrics["train_categorical_accuracy"][-1] > 0.7
 
     ray.shutdown()
