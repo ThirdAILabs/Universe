@@ -3,9 +3,10 @@ import shutil
 
 import numpy as np
 import pytest
-from thirdai import bolt, dataset
-from thirdai.demos import download_mnist_dataset
+from thirdai import bolt
 from thirdai import bolt_v2 as bolt
+from thirdai import dataset
+from thirdai.demos import download_mnist_dataset
 
 
 def get_udt_cold_start_model(n_target_classes):

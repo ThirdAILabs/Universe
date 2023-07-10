@@ -7,9 +7,9 @@ from distributed_utils import (
     check_model_parameters_equal,
     copy_file_or_folder,
     gen_numpy_training_data,
+    get_bolt_model,
     get_udt_cold_start_model,
     remove_files,
-    get_bolt_model,
 )
 from ray.air import FailureConfig, RunConfig, ScalingConfig, session
 from ray.train.torch import TorchConfig

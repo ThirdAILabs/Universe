@@ -237,7 +237,7 @@ py::object UDT::coldstart(
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
                              learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options, comm);
+                             val_metrics, callbacks, options, std::move(comm));
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
