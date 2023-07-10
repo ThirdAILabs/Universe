@@ -386,7 +386,7 @@ class Extracted(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
-        self.filename = directory / self.filename.name
+        self.filename = directory / Path(self.filename).name
 
 
 def process_pdf(filename: str) -> pd.DataFrame:
