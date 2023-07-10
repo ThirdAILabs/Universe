@@ -46,30 +46,26 @@ class DistributedTrainer(bolt.train.Trainer):
 
 
 def adds_distributed_v2_to_udt():
-    def train_distributed_v2(self, *args, **kwargs):
-        check_torch_installed()
-
-        self._get_model().disable_sparse_parameter_updates()
-        kwargs["comm"] = Communication()
-        self.train(*args, **kwargs)
-
-        # TODO(pratik): Should we enable sparse parameter updates after training?
-
-    setattr(
-        old_bolt.UniversalDeepTransformer, "train_distributed_v2", train_distributed_v2
-    )
-
     def coldstart_distributed_v2(self, *args, **kwargs):
         check_torch_installed()
 
         self._get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
-        self.cold_start(*args, **kwargs)
+        return self.cold_start(*args, **kwargs)
 
         # TODO(pratik): Should we enable sparse parameter updates after training?
 
-    setattr(
-        old_bolt.UniversalDeepTransformer,
-        "coldstart_distributed_v2",
-        coldstart_distributed_v2,
+    old_bolt.UniversalDeepTransformer.coldstart_distributed_v2 = (
+        coldstart_distributed_v2
     )
+
+    def train_distributed_v2(self, *args, **kwargs):
+        check_torch_installed()
+
+        self._get_model().disable_sparse_parameter_updates()
+        kwargs["comm"] = Communication()
+        return self.train(*args, **kwargs)
+
+        # TODO(pratik): Should we enable sparse parameter updates after training?
+
+    old_bolt.UniversalDeepTransformer.train_distributed_v2 = train_distributed_v2

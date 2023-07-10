@@ -7,6 +7,7 @@ from distributed_utils import (
     check_model_parameters_equal,
     copy_file_or_folder,
     gen_numpy_training_data,
+    get_udt_cold_start_model,
     remove_files,
 )
 from ray.air import ScalingConfig, session
@@ -14,7 +15,6 @@ from ray.train.torch import TorchConfig
 from test_mock_cluster_cold_start import (
     download_amazon_kaggle_product_catalog_sampled,
     download_and_split_catalog_dataset,
-    get_udt_cold_start_model,
 )
 from test_mock_cluster_udt_clinc import get_clinc_udt_model
 from thirdai import bolt_v2 as bolt
@@ -136,8 +136,13 @@ def test_udt_train_distributed_v2():
 
     def udt_training_loop_per_worker(config):
         copy_file_or_folder(
-            f'{config.get("cur_dir")}/clinc_train_{session.get_world_rank()}.csv',
-            f"{session.get_trial_dir()}/rank_{session.get_world_rank()}/clinc_train_{session.get_world_rank()}.csv",
+            os.path.join(
+                config.get("cur_dir"), f"clinc_train_{session.get_world_rank()}.csv"
+            ),
+            os.path.join(
+                session.get_trial_dir(),
+                f"rank_{session.get_world_rank()}/clinc_train_{session.get_world_rank()}.csv",
+            ),
         )
         udt_model = config.get("model")
         udt_model.train_distributed_v2(
@@ -175,21 +180,25 @@ def test_udt_train_distributed_v2():
 
 
 def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sampled):
-    # TODO(pratik): Remove multiple download of training data
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
     )
 
     def udt_coldstart_loop_per_worker(config):
-        # TODO(pratik): Remove multiple download of training data
         udt_model = config.get("model")
         copy_file_or_folder(
-            f'{config.get("cur_dir")}/amazon_product_catalog/part{session.get_world_rank()}',
-            f"{session.get_trial_dir()}/rank_{session.get_world_rank()}/amazon_product_catalog/part{session.get_world_rank()}",
+            os.path.join(
+                config.get("cur_dir"),
+                f"amazon_product_catalog/part{session.get_world_rank()+1}",
+            ),
+            os.path.join(
+                session.get_trial_dir(),
+                f"rank_{session.get_world_rank()}/part{session.get_world_rank()+1}",
+            ),
         )
-
+        print(udt_model.train_distributed_v2)
         metrics = udt_model.coldstart_distributed_v2(
-            filename=f"amazon_product_catalog/part{session.get_world_rank()}",
+            filename=f"part{session.get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
             batch_size=1024,
@@ -198,7 +207,11 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
             metrics=["categorical_accuracy"],
         )
 
-        session.report(metrics)
+        # session report should always have a metrics stored, hence added a demo_metric
+        session.report(
+            metrics,
+            checkpoint=dist.UDTCheckPoint.from_model(udt_model),
+        )
 
     udt_model = get_udt_cold_start_model(n_target_classes)
 
@@ -212,4 +225,8 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     )
 
     result = trainer.fit()
+    print(result.metrics)
+    print(result.metrics["metrics"])
     result.metrics["train_categorical_accuracy"][-1] > 0.7
+
+    ray.shutdown()

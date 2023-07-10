@@ -3,8 +3,21 @@ import shutil
 
 import numpy as np
 import pytest
-from thirdai import dataset
+from thirdai import bolt, dataset
 from thirdai.demos import download_mnist_dataset
+
+
+def get_udt_cold_start_model(n_target_classes):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "QUERY": bolt.types.text(),
+            "PRODUCT_ID": bolt.types.categorical(),
+        },
+        target="PRODUCT_ID",
+        n_target_classes=n_target_classes,
+        integer_target=True,
+    )
+    return model
 
 
 @pytest.fixture(scope="module")
