@@ -36,6 +36,7 @@
 #include <memory>
 #include <optional>
 #include <random>
+#include <regex>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -619,9 +620,12 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   uint32_t num_hashes = mach_index->numHashes();
 
   if (num_buckets_to_sample < mach_index->numHashes()) {
-    std::cout << "Warning. Sampling from fewer buckets than num_hashes. "
-                 "Defaulting to sampling from num_hashes buckets.";
+    throw std::invalid_argument(
+        "Sampling from fewer buckets than num_hashes is not supported. If "
+        "you'd like to introduce using fewer hashes, please reset the number "
+        "of hashes for the index.");
   }
+
   if (num_buckets_to_sample > mach_index->numBuckets()) {
     throw std::invalid_argument(
         "Cannot sample more buckets than there are in the index.");
@@ -789,20 +793,7 @@ void UDTMachClassifier::associate(
     const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  MapInputBatch batch;
-  for (const auto& [_, target] : source_target_samples) {
-    batch.emplace_back(target);
-  }
-
-  auto all_predicted_hashes = predictHashesImpl(
-      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
-
-  std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
-  teaching_samples.reserve(source_target_samples.size());
-  for (uint32_t i = 0; i < source_target_samples.size(); i++) {
-    teaching_samples.emplace_back(source_target_samples[i].first,
-                                  all_predicted_hashes[i]);
-  }
+  auto teaching_samples = getAssociateSamples(source_target_samples);
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);
@@ -881,6 +872,77 @@ void UDTMachClassifier::teach(
       _classifier->model()->updateParameters(learning_rate);
     }
   }
+}
+
+std::vector<std::pair<MapInput, std::vector<uint32_t>>>
+UDTMachClassifier::getAssociateSamples(
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples) {
+  MapInputBatch batch;
+  for (const auto& [_, target] : source_target_samples) {
+    batch.emplace_back(target);
+  }
+
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> associate_samples;
+  associate_samples.reserve(source_target_samples.size());
+  for (uint32_t i = 0; i < source_target_samples.size(); i++) {
+    associate_samples.emplace_back(source_target_samples[i].first,
+                                   all_predicted_hashes[i]);
+  }
+
+  return associate_samples;
+}
+
+py::object UDTMachClassifier::associateTrain(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  warnOnNonHashBasedMetrics(metrics);
+
+  auto dataset = _dataset_factory->getLabeledDatasetLoader(balancing_data,
+                                                           /* shuffle= */ true);
+
+  auto associate_samples = getAssociateSamples(source_target_samples);
+
+  std::mt19937 rng(global_random::nextSeed());
+
+  for (auto& [input, hashes] : associate_samples) {
+    BoltVector input_vec =
+        _dataset_factory->featurizeInput(input).at(0)->getVector(0);
+    BoltVector doc_id = BoltVector::singleElementSparseVector(0);
+    for (uint32_t i = 0; i < n_association_samples; i++) {
+      dataset->manuallyAddToBuffer(
+          {input_vec, doc_id, makeLabelFromHashes(hashes, n_buckets, rng)});
+    }
+  }
+
+  return _classifier->train(dataset, learning_rate, epochs,
+                            getMetrics(metrics, "train_"),
+                            /* val_dataset */ nullptr, /* val_metrics= */ {},
+                            /* callbacks= */ {}, options);
+}
+
+py::object UDTMachClassifier::associateColdStart(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  auto metadata = getColdStartMetaData();
+
+  auto cold_start_balancing_data = cold_start::preprocessColdStartTrainSource(
+      balancing_data, strong_column_names, weak_column_names, _dataset_factory,
+      metadata);
+
+  return associateTrain(cold_start_balancing_data, source_target_samples,
+                        n_buckets, n_association_samples, learning_rate, epochs,
+                        metrics, options);
 }
 
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
@@ -966,6 +1028,18 @@ InputMetrics UDTMachClassifier::getMetrics(
   }
 
   return metrics;
+}
+
+void UDTMachClassifier::warnOnNonHashBasedMetrics(
+    const std::vector<std::string>& metrics) {
+  for (const auto& metric : metrics) {
+    if (!std::regex_match(metric, std::regex("((hash_)|(loss)).*"))) {
+      std::cerr << "Warning: using precision/recall with associate_train can "
+                   "cause skewed results since the association samples may not "
+                   "have a true label."
+                << std::endl;
+    }
+  }
 }
 
 bolt::nn::tensor::TensorPtr UDTMachClassifier::placeholderDocIds(

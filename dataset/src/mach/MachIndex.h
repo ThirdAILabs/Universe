@@ -19,6 +19,9 @@ class MachIndex {
                 entity_to_hashes,
             uint32_t num_buckets, uint32_t num_hashes);
 
+  MachIndex(uint32_t num_buckets, uint32_t num_hashes)
+      : _buckets(num_buckets), _num_hashes(num_hashes) {}
+
   static auto make(uint32_t num_buckets, uint32_t num_hashes,
                    uint32_t num_elements) {
     return std::make_shared<MachIndex>(num_buckets, num_hashes, num_elements);

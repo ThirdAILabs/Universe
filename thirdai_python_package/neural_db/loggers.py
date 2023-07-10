@@ -18,6 +18,9 @@ class Logger:
     ):
         raise NotImplementedError()
 
+    def get_logs(self) -> pd.DataFrame:
+        raise NotImplementedError()
+
     def save_meta(self, directory: Path):
         raise NotImplementedError()
 
@@ -55,6 +58,9 @@ class InMemoryLogger(Logger):
             ]
         )
 
+    def get_logs(self) -> pd.DataFrame:
+        return self.logs
+
     def save_meta(self, directory: Path):
         pass
 
@@ -64,7 +70,11 @@ class InMemoryLogger(Logger):
 
 class LoggerList(Logger):
     def __init__(self, loggers: List[Logger]):
-        self.loggers = loggers
+        self.loggers = list(
+            filter(
+                lambda logger: not isinstance(logger, (NoOpLogger, LoggerList)), loggers
+            )
+        )
 
     def name(self):
         return "list"
@@ -86,6 +96,18 @@ class LoggerList(Logger):
             for logger in self.loggers
         ]
 
+    def get_logs(self):
+        if len(self.loggers) == 0:
+            return pd.DataFrame(
+                {
+                    "session_id": [],
+                    "action": [],
+                    "args": [],
+                    "train_samples": [],
+                }
+            )
+        return self.loggers[0].get_logs()
+
     def save_meta(self, directory: Path):
         for logger in self.loggers:
             os.mkdir(directory / logger.name())
@@ -105,6 +127,16 @@ class NoOpLogger(Logger):
 
     def log(self, session_id: str, action: str, args: dict, train_samples=None):
         pass
+
+    def get_logs(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "session_id": [],
+                "action": [],
+                "args": [],
+                "train_samples": [],
+            }
+        )
 
     def save_meta(self, directory: Path):
         pass
