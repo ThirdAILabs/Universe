@@ -493,7 +493,7 @@ class SentenceLevelExtracted(Extracted):
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
-            if character not in string.punctuation and not sentence.isspace():
+            if character not in string.punctuation and not character.isspace():
                 return True
         return False
 
