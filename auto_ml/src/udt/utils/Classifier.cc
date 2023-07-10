@@ -42,7 +42,7 @@ py::object thirdai::automl::udt::utils::Classifier::train(
       dataset, learning_rate, epochs,
       fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
       val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
-      callbacks, options, comm);
+      callbacks, options, std::move(comm));
 
   /**
    * For binary classification we tune the prediction threshold to optimize
