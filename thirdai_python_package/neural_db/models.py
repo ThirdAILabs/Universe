@@ -105,6 +105,16 @@ class Model:
     ):
         raise NotImplementedError()
 
+    def retrain(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        raise NotImplementedError()
+
 
 class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
     def __init__(
@@ -375,6 +385,14 @@ class Mach(Model):
         ]
         return predictions
 
+    def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
+        query_col = self.get_query_col()
+
+        return [
+            ({query_col: clean_text(source)}, {query_col: clean_text(target)})
+            for source, target in pairs
+        ]
+
     def associate(
         self,
         pairs: List[Tuple[str, str]],
@@ -384,18 +402,8 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        query_col = self.get_query_col()
-
-        source_target_samples = [
-            (
-                {query_col: clean_text(source)},
-                {query_col: clean_text(target)},
-            )
-            for source, target in pairs
-        ]
-
         self.model.associate(
-            source_target_samples=source_target_samples,
+            source_target_samples=self._format_associate_samples(pairs),
             n_buckets=n_buckets,
             n_association_samples=n_association_samples,
             n_balancing_samples=n_balancing_samples,
@@ -421,4 +429,25 @@ class Mach(Model):
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
             epochs=epochs,
+        )
+
+    def retrain(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        self.model.associate_cold_start_data_source(
+            balancing_data=balancing_data,
+            strong_column_names=[balancing_data.strong_column],
+            weak_column_names=[balancing_data.weak_column],
+            source_target_samples=self._format_associate_samples(source_target_pairs),
+            n_buckets=n_buckets,
+            n_association_samples=1,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=["hash_precision@5"],
+            options=bolt.TrainOptions(),
         )
