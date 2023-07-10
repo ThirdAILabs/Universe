@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 from thirdai import bolt, dataset
 from thirdai.demos import download_mnist_dataset
-from thirdai import bolt_v2 as bolt
 
 
 def get_udt_cold_start_model(n_target_classes):
@@ -173,6 +172,8 @@ def check_model_parameters_match(distributed_model):
 
 
 def get_bolt_model():
+    from thirdai import bolt_v2 as bolt
+
     n_classes = 10
     input_layer = bolt.nn.Input(dim=n_classes)
 
