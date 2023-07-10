@@ -7,6 +7,7 @@ from distributed_utils import (
     check_model_parameters_equal,
     gen_numpy_training_data,
     remove_files,
+    get_bolt_model,
 )
 from ray.air import FailureConfig, RunConfig, ScalingConfig, session
 from ray.train.torch import TorchConfig
@@ -66,25 +67,7 @@ def training_loop_per_worker(config):
 
 
 def test_distributed_v2():
-    n_classes = 10
-    input_layer = bolt.nn.Input(dim=n_classes)
-
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=20000,
-        input_dim=n_classes,
-        sparsity=0.01,
-        activation="relu",
-        rebuild_hash_tables=12,
-        reconstruct_hash_functions=40,
-    )(input_layer)
-    output = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=20000, activation="softmax"
-    )(hidden_layer)
-
-    labels = bolt.nn.Input(dim=n_classes)
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
-
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+    model = get_bolt_model()
 
     scaling_config = setting_up_ray()
     trainer = dist.BoltTrainer(
@@ -212,6 +195,8 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     result = trainer.fit()
     result.metrics["train_categorical_accuracy"][-1] > 0.7
 
+    ray.shutdown()
+
 
 def test_distributed_fault_tolerance():
     import sys
@@ -263,25 +248,7 @@ def test_distributed_fault_tolerance():
                     is_worker_killed = True
                     sys.exit(1)
 
-    n_classes = 10
-    input_layer = bolt.nn.Input(dim=n_classes)
-
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=20000,
-        input_dim=n_classes,
-        sparsity=0.01,
-        activation="relu",
-        rebuild_hash_tables=12,
-        reconstruct_hash_functions=40,
-    )(input_layer)
-    output = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=20000, activation="softmax"
-    )(hidden_layer)
-
-    labels = bolt.nn.Input(dim=n_classes)
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
-
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+    model = get_bolt_model()
 
     scaling_config = setting_up_ray()
     trainer = dist.BoltTrainer(
