@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import numpy as np
 import pytest
@@ -155,3 +156,19 @@ def check_model_parameters_match(distributed_model):
     model_1 = distributed_model.get_model(1)
 
     check_model_parameters_equal(model_0, model_1)
+
+
+def copy_file_or_folder(source_path, destination_path):
+    try:
+        if os.path.isfile(source_path):
+            shutil.copy2(source_path, destination_path)
+            print(f"File '{source_path}' copied to '{destination_path}' successfully.")
+        elif os.path.isdir(source_path):
+            shutil.copytree(source_path, destination_path)
+            print(
+                f"Folder '{source_path}' copied to '{destination_path}' successfully."
+            )
+        else:
+            print(f"Source '{source_path}' does not exist.")
+    except PermissionError:
+        print(f"Permission denied while copying '{source_path}'.")

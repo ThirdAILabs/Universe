@@ -5,6 +5,7 @@ import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import (
     check_model_parameters_equal,
+    copy_file_or_folder,
     gen_numpy_training_data,
     remove_files,
 )
@@ -131,12 +132,13 @@ def test_distributed_v2():
 
 
 def test_udt_train_distributed_v2():
-    # TODO(pratik): Remove multiple download of training data
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
-        # TODO(pratik): Remove multiple download of training data
-        download_clinc_dataset(num_training_files=2, clinc_small=True)
+        copy_file_or_folder(
+            f'{config.get("cur_dir")}/clinc_train_{session.get_world_rank()}.csv',
+            f"{session.get_trial_dir()}/rank_{session.get_world_rank()}/clinc_train_{session.get_world_rank()}.csv",
+        )
         udt_model = config.get("model")
         udt_model.train_distributed_v2(
             f"clinc_train_{session.get_world_rank()}.csv",
@@ -157,7 +159,7 @@ def test_udt_train_distributed_v2():
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
-        train_loop_config={"model": udt_model},
+        train_loop_config={"model": udt_model, "cur_dir": os.path.abspath(os.getcwd())},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
@@ -181,8 +183,9 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     def udt_coldstart_loop_per_worker(config):
         # TODO(pratik): Remove multiple download of training data
         udt_model = config.get("model")
-        n_target_classes = download_and_split_catalog_dataset(
-            download_amazon_kaggle_product_catalog_sampled
+        copy_file_or_folder(
+            f'{config.get("cur_dir")}/amazon_product_catalog/part{session.get_world_rank()}',
+            f"{session.get_trial_dir()}/rank_{session.get_world_rank()}/amazon_product_catalog/part{session.get_world_rank()}",
         )
 
         metrics = udt_model.coldstart_distributed_v2(
@@ -203,7 +206,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_coldstart_loop_per_worker,
-        train_loop_config={"model": udt_model},
+        train_loop_config={"model": udt_model, "cur_dir": os.path.abspath(os.getcwd())},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
