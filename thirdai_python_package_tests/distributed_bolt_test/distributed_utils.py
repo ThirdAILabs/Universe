@@ -3,8 +3,7 @@ import shutil
 
 import numpy as np
 import pytest
-from thirdai import bolt
-from thirdai import dataset
+from thirdai import bolt, dataset
 from thirdai.demos import download_mnist_dataset
 
 
