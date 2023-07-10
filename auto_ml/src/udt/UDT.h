@@ -163,10 +163,11 @@ class UDT {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation) {
+                          uint32_t num_random_hashes, bool fast_approximation,
+                          bool verbose) {
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
                                  num_buckets_to_sample, num_random_hashes,
-                                 fast_approximation);
+                                 fast_approximation, verbose);
   }
 
   void introduceDocument(const MapInput& document,

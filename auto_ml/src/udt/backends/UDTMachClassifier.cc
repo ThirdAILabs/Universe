@@ -514,7 +514,7 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -531,7 +531,7 @@ void UDTMachClassifier::introduceDocuments(
   auto dataset_loader =
       _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
 
-  auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE);
+  auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE, verbose);
 
   auto doc_samples_tensors = bolt::train::convertDatasets(
       doc_samples, _classifier->model()->inputDims());
