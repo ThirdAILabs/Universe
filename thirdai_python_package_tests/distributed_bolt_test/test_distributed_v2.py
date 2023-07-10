@@ -9,8 +9,9 @@ from distributed_utils import (
     gen_numpy_training_data,
     get_udt_cold_start_model,
     remove_files,
+    get_bolt_model,
 )
-from ray.air import ScalingConfig, session
+from ray.air import FailureConfig, RunConfig, ScalingConfig, session
 from ray.train.torch import TorchConfig
 from test_mock_cluster_cold_start import (
     download_amazon_kaggle_product_catalog_sampled,
@@ -66,30 +67,12 @@ def training_loop_per_worker(config):
 
 
 def test_distributed_v2():
-    n_classes = 10
-    input_layer = bolt.nn.Input(dim=n_classes)
-
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=20000,
-        input_dim=n_classes,
-        sparsity=0.01,
-        activation="relu",
-        rebuild_hash_tables=12,
-        reconstruct_hash_functions=40,
-    )(input_layer)
-    output = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=20000, activation="softmax"
-    )(hidden_layer)
-
-    labels = bolt.nn.Input(dim=n_classes)
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
-
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+    model = get_bolt_model()
 
     scaling_config = setting_up_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
-        train_loop_config={"model": model},
+        train_loop_config={"model": model, "num_epochs": 5},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
@@ -226,5 +209,71 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
 
     result = trainer.fit()
     result.metrics["train_categorical_accuracy"][-1] > 0.7
+
+    ray.shutdown()
+
+
+def test_distributed_fault_tolerance():
+    import sys
+
+    def training_loop_per_worker(config):
+        model = config.get("model")
+        starting_epoch = 0
+        num_epochs = config.get("num_epochs", 1)
+        is_worker_killed = False
+
+        if session.get_checkpoint():
+            checkpoint_dict = session.get_checkpoint().to_dict()
+
+            # Load in model
+            checkpoint_model = checkpoint_dict["model"]
+            model = dist.BoltCheckPoint.get_model(checkpoint_model)
+
+            # The current epoch resumes from loaded model's epoch
+            starting_epoch = checkpoint_dict["epoch"]
+
+            # flag whether worker-0 has been killed once
+            is_worker_killed = checkpoint_dict["is_worker_killed"]
+
+        trainer = dist.DistributedTrainer(model)
+        train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
+        train_x = bolt.train.convert_dataset(train_x, dim=10)
+        train_y = bolt.train.convert_dataset(train_y, dim=10)
+
+        for epoch in range(starting_epoch, num_epochs):
+            trainer.train_distributed(
+                train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+            )
+
+            # session report should always have a metrics stored, hence added a demo_metric
+            session.report(
+                {"model_location": session.get_trial_dir()},
+                checkpoint=dist.BoltCheckPoint.from_dict(
+                    {
+                        "epoch": epoch + 1,
+                        "model": dist.BoltCheckPoint.from_model(model),
+                        "is_worker_killed": True,
+                    }
+                ),
+            )
+
+            # Kill one of the workers if never killed.
+            if not is_worker_killed and session.get_world_rank() == 0:
+                if epoch == num_epochs // 2:
+                    is_worker_killed = True
+                    sys.exit(1)
+
+    model = get_bolt_model()
+
+    scaling_config = setting_up_ray()
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=training_loop_per_worker,
+        train_loop_config={"model": model, "num_epochs": 10},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+        run_config=RunConfig(failure_config=FailureConfig(max_failures=3)),
+    )
+
+    result_checkpoint_and_history = trainer.fit()
 
     ray.shutdown()

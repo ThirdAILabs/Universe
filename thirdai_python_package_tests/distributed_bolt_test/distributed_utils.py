@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from thirdai import bolt, dataset
 from thirdai.demos import download_mnist_dataset
+from thirdai import bolt_v2 as bolt
 
 
 def get_udt_cold_start_model(n_target_classes):
@@ -169,6 +170,30 @@ def check_model_parameters_match(distributed_model):
     model_1 = distributed_model.get_model(1)
 
     check_model_parameters_equal(model_0, model_1)
+
+
+def get_bolt_model():
+    n_classes = 10
+    input_layer = bolt.nn.Input(dim=n_classes)
+
+    hidden_layer = bolt.nn.FullyConnected(
+        dim=20000,
+        input_dim=n_classes,
+        sparsity=0.01,
+        activation="relu",
+        rebuild_hash_tables=12,
+        reconstruct_hash_functions=40,
+    )(input_layer)
+    output = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=20000, activation="softmax"
+    )(hidden_layer)
+
+    labels = bolt.nn.Input(dim=n_classes)
+    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+
+    return model
 
 
 def copy_file_or_folder(source_path, destination_path):
