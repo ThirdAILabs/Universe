@@ -154,7 +154,7 @@ with open("thirdai.version") as version_file:
 neural_db_deps = [
     "PyTrie",
     "PyMuPDF",
-    "langchain",
+    "langchain>=0.0.64",
     "bs4",
     "trafilatura",
     "python-docx",
