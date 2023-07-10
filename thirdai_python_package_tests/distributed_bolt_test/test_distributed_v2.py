@@ -152,9 +152,6 @@ def test_distributed_v2():
     ray.shutdown()
 
 
-test_distributed_v2()
-
-
 def test_udt_train_distributed_v2():
     # TODO(pratik): Remove multiple download of training data
     download_clinc_dataset(num_training_files=2, clinc_small=True)
