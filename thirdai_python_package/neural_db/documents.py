@@ -379,6 +379,15 @@ class Extracted(Document):
         ]
         return "\n".join(rows["passage"])
 
+    def save_meta(self, directory: Path):
+        # Let's copy the original CSV file to the provided directory
+        shutil.copy(self.filename, directory)
+
+    def load_meta(self, directory: Path):
+        # Since we've moved the CSV file to the provided directory, let's make
+        # sure that we point to this CSV file.
+        self.filename = directory / self.filename.name
+
 
 def process_pdf(filename: str) -> pd.DataFrame:
     elements, success = pdf_parse.process_pdf_file(filename)

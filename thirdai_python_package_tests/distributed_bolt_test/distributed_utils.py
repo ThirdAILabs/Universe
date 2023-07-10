@@ -6,7 +6,8 @@ from thirdai import dataset
 from thirdai.demos import download_mnist_dataset
 
 
-def ray_two_node_cluster_config_impl():
+@pytest.fixture(scope="module")
+def ray_two_node_cluster_config():
     # Do these imports here so pytest collection doesn't fail if ray isn't installed
     import ray
     import thirdai.distributed_bolt as db
@@ -52,22 +53,6 @@ def ray_two_node_cluster_config_impl():
 
     ray.shutdown()
     mini_cluster.shutdown()
-
-    # This yield is necessary to advance generator to teardown cluster
-    # without giving `StopIteration` error while calling `next(generator)`.
-    yield "Successfully teared down cluster"
-
-
-@pytest.fixture(scope="module")
-def ray_two_node_cluster_config():
-    # This generator object initialises cluster, returns cluster config and also teardowns cluster.
-    _generator = ray_two_node_cluster_config_impl()
-
-    # This yields the `_make_cluster_config()` function.
-    yield next(_generator)
-
-    # Pytest will automaticaly call this for teardown of cluster.
-    next(_generator)
 
 
 def split_into_2(
