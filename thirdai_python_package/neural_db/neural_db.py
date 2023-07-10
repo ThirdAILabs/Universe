@@ -279,7 +279,7 @@ class NeuralDB:
                 return []
             raise e
 
-    def _para_with_id(self, result_id) -> str:
+    def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
 
     def text_to_result(self, text: str, result_id: int) -> None:
@@ -288,7 +288,7 @@ class NeuralDB:
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_para=[
-                (text, upvote_id, self._para_with_id(result_id))
+                (text, upvote_id, self._get_text(result_id))
                 for upvote_id in self._savable_state.documents.reference(
                     result_id
                 ).upvote_ids
@@ -297,7 +297,7 @@ class NeuralDB:
 
     def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
         query_id_para = [
-            (query, upvote_id, self._para_with_id(result_id))
+            (query, upvote_id, self._get_text(result_id))
             for query, result_id in text_id_pairs
             for upvote_id in self._savable_state.documents.reference(
                 result_id

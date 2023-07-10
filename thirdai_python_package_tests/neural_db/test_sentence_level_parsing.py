@@ -1,7 +1,8 @@
+import os
+
+import pandas as pd
 import pytest
 from thirdai.neural_db import documents as docs
-import pandas as pd
-import os
 
 pytestmark = [pytest.mark.unit]
 
