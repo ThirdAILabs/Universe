@@ -60,9 +60,8 @@ def training_loop_per_worker(config):
     # session report should always have a metrics stored, hence added a demo_metric
     session.report(
         {"model_location": session.get_trial_dir()},
-        dist.BoltCheckPoint.from_model(model),
-    ),
-
+        checkpoint=dist.BoltCheckPoint.from_model(model),
+    )
     trainer.model.save("trained.model")
 
 
@@ -179,7 +178,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
             metrics=["categorical_accuracy"],
         )
 
-        session.report(metrics)
+        session.report(dict(metrics))
 
     udt_model = get_udt_cold_start_model(n_target_classes)
 
