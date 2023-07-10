@@ -619,9 +619,12 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   uint32_t num_hashes = mach_index->numHashes();
 
   if (num_buckets_to_sample < mach_index->numHashes()) {
-    std::cout << "Warning. Sampling from fewer buckets than num_hashes. "
-                 "Defaulting to sampling from num_hashes buckets.";
+    throw std::invalid_argument(
+        "Sampling from fewer buckets than num_hashes is not supported. If "
+        "you'd like to introduce using fewer hashes, please reset the number "
+        "of hashes for the index.");
   }
+
   if (num_buckets_to_sample > mach_index->numBuckets()) {
     throw std::invalid_argument(
         "Cannot sample more buckets than there are in the index.");
