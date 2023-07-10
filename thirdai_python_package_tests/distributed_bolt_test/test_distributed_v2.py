@@ -9,7 +9,6 @@ from distributed_utils import (
     remove_files,
 )
 from ray.air import FailureConfig, RunConfig, ScalingConfig, session
-from ray.air.checkpoint import Checkpoint
 from ray.train.torch import TorchConfig
 from test_mock_cluster_cold_start import (
     download_amazon_kaggle_product_catalog_sampled,
@@ -74,7 +73,7 @@ def training_loop_per_worker(config):
         # session report should always have a metrics stored, hence added a demo_metric
         session.report(
             {"model_location": session.get_trial_dir()},
-            checkpoint=Checkpoint.from_dict(
+            checkpoint=dist.BoltCheckPoint.from_dict(
                 {
                     "epoch": epoch,
                     "model": dist.BoltCheckPoint.from_model(model),
