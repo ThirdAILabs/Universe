@@ -330,7 +330,7 @@ class Extracted(Document):
         self,
         filename: str,
     ):
-        self.filename = filename
+        self.filename = Path(filename)
         self.df = self.process_data(filename)
         self.hash_val = hash_file(filename)
 
@@ -350,7 +350,7 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename
+        return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -366,7 +366,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=self.filename,
+            source=str(self.filename.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
@@ -495,7 +495,7 @@ class SentenceLevelExtracted(Extracted):
         self,
         filename: str,
     ):
-        self.filename = filename
+        self.filename = Path(filename)
         self.df = self.parse_sentences(self.process_data(filename))
         self.hash_val = hash_file(filename)
         self.para_df = self.df["para"].unique()
@@ -564,7 +564,7 @@ class SentenceLevelExtracted(Extracted):
 
     @property
     def name(self) -> str:
-        return self.filename
+        return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -580,7 +580,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=self.filename,
+            source=str(self.filename.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
@@ -595,6 +595,15 @@ class SentenceLevelExtracted(Extracted):
             max(0, para_id - radius) : min(len(self.para_df), para_id + radius + 1)
         ]
         return "\n\n".join(rows)
+
+    def save_meta(self, directory: Path):
+        # Let's copy the original CSV file to the provided directory
+        shutil.copy(self.filename, directory)
+
+    def load_meta(self, directory: Path):
+        # Since we've moved the CSV file to the provided directory, let's make
+        # sure that we point to this CSV file.
+        self.filename = directory / self.filename.name
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
