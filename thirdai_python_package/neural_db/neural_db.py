@@ -318,14 +318,7 @@ class NeuralDB:
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
-        if strength == Strength.Weak:
-            top_k = 3
-        elif strength == Strength.Medium:
-            top_k = 5
-        elif strength == Strength.Strong:
-            top_k = 7
-        else:
-            top_k = 7
+        top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -337,14 +330,7 @@ class NeuralDB:
     def associate_batch(
         self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
     ):
-        if strength == Strength.Weak:
-            top_k = 3
-        elif strength == Strength.Medium:
-            top_k = 5
-        elif strength == Strength.Strong:
-            top_k = 7
-        else:
-            top_k = 7
+        top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -352,6 +338,16 @@ class NeuralDB:
             text_pairs=text_pairs,
             top_k=top_k,
         )
+
+    def _get_associate_top_k(self, strength):
+        if strength == Strength.Weak:
+            return 3
+        elif strength == Strength.Medium:
+            return 5
+        elif strength == Strength.Strong:
+            return 7
+        else:
+            return 7
 
     def supervised_train(
         self,
@@ -363,6 +359,39 @@ class NeuralDB:
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
             data_source=SupDataSource(doc_manager, query_col, data),
+            learning_rate=learning_rate,
+            epochs=epochs,
+        )
+
+    def get_associate_samples(self):
+        logs = self._savable_state.logger.get_logs()
+
+        associate_logs = logs[logs["action"] == "associate"]
+        associate_samples = []
+        for _, row in associate_logs.iterrows():
+            for source, target in row["args"]["pairs"]:
+                associate_samples.append((source, target))
+
+        # TODO(Nicholas, Geordie): add upvote samples here after logging label text.
+
+        return associate_samples
+
+    def retrain(
+        self,
+        text_pairs: List[Tuple[str, str]] = [],
+        learning_rate: float = 0.0001,
+        epochs: int = 3,
+        strength: Strength = Strength.Strong,
+    ):
+        doc_manager = self._savable_state.documents
+
+        if not text_pairs:
+            text_pairs = self.get_associate_samples()
+
+        self._savable_state.model.retrain(
+            balancing_data=doc_manager.get_data_source(),
+            source_target_pairs=text_pairs,
+            n_buckets=self._get_associate_top_k(strength),
             learning_rate=learning_rate,
             epochs=epochs,
         )
