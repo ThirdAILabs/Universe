@@ -186,6 +186,7 @@ def modify_udt():
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
         logging_interval: Optional[int] = None,
+        shuffle_reservoir_size: int = 64000,
     ):
         data_source = _create_data_source(filename)
 
@@ -195,6 +196,7 @@ def modify_udt():
             max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
             logging_interval=logging_interval,
+            shuffle_reservoir_size=shuffle_reservoir_size,
         )
 
         return original_cold_start(

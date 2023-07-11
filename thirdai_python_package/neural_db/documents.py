@@ -3,10 +3,13 @@ import os
 import pickle
 import shutil
 from collections import OrderedDict
+import string
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
+from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
 from thirdai.dataset.data_source import PyDataSource
@@ -67,8 +70,10 @@ class Reference:
         text: str,
         source: str,
         metadata: dict,
+        upvote_ids: List[int] = None,
     ):
         self._id = element_id
+        self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
         self._text = text
         self._source = source
         self._metadata = metadata
@@ -77,6 +82,10 @@ class Reference:
     @property
     def id(self):
         return self._id
+
+    @property
+    def upvote_ids(self):
+        return self._upvote_ids
 
     @property
     def text(self):
@@ -215,6 +224,7 @@ class DocumentManager:
         doc, start_id = self._get_doc_and_start_id(element_id)
         doc_ref = doc.reference(element_id - start_id)
         doc_ref._id = element_id
+        doc_ref._upvote_ids = [start_id + uid for uid in doc_ref._upvote_ids]
         return doc_ref
 
     def context(self, element_id: int, radius: int):
@@ -342,7 +352,7 @@ class CSV(Document):
 
     def context(self, element_id: int, radius) -> str:
         rows = self.df.iloc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
         return " ".join([row[col] for col in self.reference_columns for row in rows])
 
@@ -424,22 +434,22 @@ class Extracted(Document):
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
-    def get_context(self, element_id, radius) -> str:
-        if not 0 <= element_id < self.size():
+    def context(self, element_id, radius) -> str:
+        if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
 
         rows = self.df.iloc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
         return "\n".join(rows["passage"])
 
     def save_meta(self, directory: Path):
-        # Let's copy the original extracted file to the provided directory
+        # Let's copy the original file to the provided directory
         shutil.copy(self.filename, directory)
 
     def load_meta(self, directory: Path):
-        # Since we've moved the extracted file to the provided directory, let's make
-        # sure that we point to this extracted file.
+        # Since we've moved the file to the provided directory, let's make
+        # sure that we point to this file.
         self.filename = directory / self.filename.name
 
     def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
@@ -465,6 +475,28 @@ class Extracted(Document):
         self.path = save_path
 
 
+def process_pdf(filename: str) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(filename)
+
+    if not success:
+        raise ValueError(f"Could not read PDF file: {filename}")
+
+    elements_df = pdf_parse.create_train_df(elements)
+
+    return elements_df
+
+
+def process_docx(filename: str) -> pd.DataFrame:
+    elements, success = doc_parse.get_elements(filename)
+
+    if not success:
+        raise ValueError(f"Could not read DOCX file: {filename}")
+
+    elements_df = doc_parse.create_train_df(elements)
+
+    return elements_df
+
+
 class PDF(Extracted):
     def __init__(
         self,
@@ -476,14 +508,7 @@ class PDF(Extracted):
         self,
         filename: str,
     ) -> pd.DataFrame:
-        elements, success = pdf_parse.process_pdf_file(filename)
-
-        if not success:
-            raise ValueError(f"Could not read PDF file: {filename}")
-
-        elements_df = pdf_parse.create_train_df(elements)
-
-        return elements_df
+        return process_pdf(filename)
 
 
 class DOCX(Extracted):
@@ -497,14 +522,7 @@ class DOCX(Extracted):
         self,
         filename: str,
     ) -> pd.DataFrame:
-        elements, success = doc_parse.get_elements(filename)
-
-        if not success:
-            raise ValueError(f"Could not read DOCX file: {filename}")
-
-        elements_df = doc_parse.create_train_df(elements)
-
-        return elements_df
+        return process_docx(filename)
 
 
 class URL(Document):
@@ -548,8 +566,161 @@ class URL(Document):
             metadata={},
         )
 
-    def get_context(self, element_id, radius) -> str:
+    def context(self, element_id, radius) -> str:
+        if not 0 <= element_id or not element_id < self.size:
+            raise ("Element id not in document.")
         rows = self.df.iloc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius)
+            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
         return "\n".join(rows["text"])
+
+
+class SentenceLevelExtracted(Extracted):
+    """Parses a document into sentences and creates a NeuralDB entry for each
+    sentence. The strong column of the entry is the sentence itself while the
+    weak column is the paragraph from which the sentence came. A NeuralDB
+    reference produced by this object displays the paragraph instead of the
+    sentence to increase recall.
+    """
+
+    def __init__(
+        self,
+        filename: str,
+    ):
+        self.filename = Path(filename)
+        self.df = self.parse_sentences(self.process_data(filename))
+        self.hash_val = hash_file(filename)
+        self.para_df = self.df["para"].unique()
+
+    def not_just_punctuation(sentence: str):
+        for character in sentence:
+            if character not in string.punctuation and not character.isspace():
+                return True
+        return False
+
+    def get_sentences(paragraph: str):
+        return [
+            sentence
+            for sentence in sent_tokenize(paragraph)
+            if SentenceLevelExtracted.not_just_punctuation(sentence)
+        ]
+
+    def parse_sentences(
+        self,
+        df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        df["sentences"] = df["passage"].apply(SentenceLevelExtracted.get_sentences)
+        df.drop("passage", axis=1, inplace=True)
+
+        num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
+        df["id_offsets"] = np.zeros(len(df))
+        df["id_offsets"][1:] = num_sents_cum_sum[:-1]
+        df["id_offsets"] = df["id_offsets"].astype(int)
+
+        def get_ids(record):
+            id_offset = record["id_offsets"]
+            n_sents = len(record["sentences"])
+            return list(range(id_offset, id_offset + n_sents))
+
+        df = pd.DataFrame.from_records(
+            [
+                {
+                    "passage": sentence,
+                    "para_id": para_id,
+                    "sentence_id": i + record["id_offsets"],
+                    "sentence_ids_in_para": get_ids(record),
+                    **record,
+                }
+                for para_id, record in enumerate(df.to_dict(orient="records"))
+                for i, sentence in enumerate(record["sentences"])
+            ]
+        )
+
+        df.drop("sentences", axis=1, inplace=True)
+        df.drop("id_offsets", axis=1, inplace=True)
+        return df
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    @property
+    def hash(self) -> str:
+        return self.hash_val
+
+    @property
+    def size(self) -> int:
+        return len(self.df)
+
+    @property
+    def name(self) -> str:
+        return self.filename.name
+
+    def strong_text(self, element_id: int) -> str:
+        return self.df["passage"].iloc[element_id]
+
+    def weak_text(self, element_id: int) -> str:
+        return self.df["para"].iloc[element_id]
+
+    def show_fn(text, source, **kwargs):
+        return text
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=self.df["display"].iloc[element_id],
+            source=str(self.filename.absolute()),
+            metadata=self.df.iloc[element_id].to_dict(),
+            upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
+        )
+
+    def context(self, element_id, radius) -> str:
+        if not 0 <= element_id or not element_id < self.size:
+            raise ("Element id not in document.")
+
+        para_id = self.df.iloc[element_id]["para_id"]
+
+        rows = self.para_df[
+            max(0, para_id - radius) : min(len(self.para_df), para_id + radius + 1)
+        ]
+        return "\n\n".join(rows)
+
+    def save_meta(self, directory: Path):
+        # Let's copy the original file to the provided directory
+        shutil.copy(self.filename, directory)
+
+    def load_meta(self, directory: Path):
+        # Since we've moved the file to the provided directory, let's make
+        # sure that we point to this file.
+        self.filename = directory / self.filename.name
+
+
+class SentenceLevelPDF(SentenceLevelExtracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        return process_pdf(filename)
+
+
+class SentenceLevelDOCX(SentenceLevelExtracted):
+    def __init__(
+        self,
+        filename: str,
+    ):
+        super().__init__(filename=filename)
+
+    def process_data(
+        self,
+        filename: str,
+    ) -> pd.DataFrame:
+        return process_docx(filename)
