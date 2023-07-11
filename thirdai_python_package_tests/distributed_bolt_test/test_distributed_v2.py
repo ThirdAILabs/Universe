@@ -2,6 +2,7 @@ import os
 
 import pytest
 import ray
+import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import (
     check_model_parameters_equal,
@@ -16,14 +17,13 @@ from ray.train.torch import TorchConfig
 from test_mock_cluster_cold_start import (
     download_amazon_kaggle_product_catalog_sampled,
     download_and_split_catalog_dataset,
-    download_scifact_dataset,
     download_and_split_scifact_dataset,
+    download_scifact_dataset,
     get_udt_scifact_mach_model,
 )
 from test_mock_cluster_udt_clinc import get_clinc_udt_model
-from thirdai import bolt_v2 as bolt
 from thirdai import bolt as old_bolt
-import thirdai
+from thirdai import bolt_v2 as bolt
 from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
@@ -74,7 +74,7 @@ def training_loop_per_worker(config):
 def test_distributed_v2():
     model = get_bolt_model()
 
-    scaling_config = setting_up_ray()
+    scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"model": model, "num_epochs": 5},
@@ -148,7 +148,7 @@ def test_udt_train_distributed_v2():
 
     udt_model = get_clinc_udt_model(integer_target=True)
 
-    scaling_config = setting_up_ray()
+    scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
@@ -221,7 +221,7 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
         )
 
     udt_model = get_udt_scifact_mach_model(n_target_classes)
-    scaling_config = setting_up_ray()
+    scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_mach_loop_per_worker,
@@ -276,7 +276,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
 
     udt_model = get_udt_cold_start_model(n_target_classes)
 
-    scaling_config = setting_up_ray()
+    scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_coldstart_loop_per_worker,
@@ -343,7 +343,7 @@ def test_distributed_fault_tolerance():
 
     model = get_bolt_model()
 
-    scaling_config = setting_up_ray()
+    scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"model": model, "num_epochs": 10},
