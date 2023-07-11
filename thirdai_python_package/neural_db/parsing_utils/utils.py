@@ -1,3 +1,4 @@
+import unidecode
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 ATTACH_N_WORD_THRESHOLD = 20
@@ -6,7 +7,7 @@ CHUNK_THRESHOLD = 150
 
 
 def ensure_valid_encoding(text):
-    return text.encode("utf-8", "replace").decode("utf-8")
+    return unidecode.unidecode(text.encode("utf-8", "replace").decode("utf-8"))
 
 
 def chunk_text(text: str):
