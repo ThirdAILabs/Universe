@@ -1,4 +1,5 @@
 import os
+import pickle
 from pathlib import Path
 from typing import List, Optional
 
@@ -23,6 +24,21 @@ class Logger:
 
     def load_meta(self, directory: Path):
         raise NotImplementedError()
+
+    # TODO: Need to handle unpicklable metadata.
+    # Implement __getstate__ and __setstate__ for those classes.
+    # Look at DocumentManager save_pkl/load_pkl for example.
+    def save_pkl(self, pkl_file):
+        metadata = {
+            "type": "logger",
+        }
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+
+    @staticmethod
+    def load_pkl(pkl_file, metadata):
+        logger = pickle.load(pkl_file)
+        return logger
 
 
 class InMemoryLogger(Logger):

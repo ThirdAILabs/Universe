@@ -117,6 +117,32 @@ class NeuralDB:
             else:
                 raise e
 
+    def load_pkl(
+        self,
+        pkl_path: str,
+        metadata_dir: str,
+        on_progress: Callable = no_op,
+        on_error: Callable = None,
+    ):
+        pkl_path = Path(pkl_path)
+        metadata_dir = Path(metadata_dir)
+        try:
+            self._savable_state = State.load_pkl(pkl_path, metadata_dir, on_progress)
+            if self._savable_state.model and self._savable_state.model.get_model():
+                self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+            if not isinstance(self._savable_state.logger, loggers.LoggerList):
+                # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
+                # TODO: Need to handle DBLogger pickling, check logger.py for more info
+                self._savable_state.logger = loggers.LoggerList(
+                    [self._savable_state.logger]
+                )
+        except Exception as e:
+            self._savable_state = None
+            if on_error is not None:
+                on_error(error_msg=e.__str__())
+            else:
+                raise e
+
     def from_udt(
         self,
         udt: bolt.UniversalDeepTransformer,
@@ -201,6 +227,9 @@ class NeuralDB:
 
     def save(self, save_to: str, on_progress: Callable = no_op) -> None:
         return self._savable_state.save(Path(save_to), on_progress)
+
+    def save_pkl(self, pkl_path: str, on_progress: Callable = no_op) -> None:
+        return self._savable_state.save_pkl(Path(pkl_path), on_progress)
 
     def insert(
         self,

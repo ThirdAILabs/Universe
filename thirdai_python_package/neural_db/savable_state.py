@@ -7,7 +7,7 @@ from typing import Callable
 
 from .documents import DocumentManager
 from .loggers import Logger
-from .models import Model
+from .models import Model, Mach
 
 
 def pickle_to(obj: object, filepath: Path):
@@ -22,7 +22,7 @@ def unpickle_from(filepath: Path):
 
 
 def default_checkpoint_name():
-    return Path(f"checkpoint {datetime.datetime.now()}.3ai")
+    return Path(f"checkpoint_{datetime.datetime.now()}.3ai")
 
 
 class State:
@@ -122,4 +122,42 @@ class State:
         state.documents.load_meta(State.documents_meta_path(location))
         on_progress(6 / total_steps)
 
+        return state
+
+    def save_pkl(
+        self,
+        pkl_file: Path,
+        on_progress: Callable = lambda **kwargs: None,
+    ):
+        with open(pkl_file, "wb") as pkl_file:
+            self.model.save_pkl(pkl_file)
+            self.logger.save_pkl(pkl_file)
+            self.documents.save_pkl(pkl_file)
+
+    @staticmethod
+    def load_pkl(
+        pkl_file: Path,
+        metadata_dir: Path,
+        on_progress: Callable = lambda **kwargs: None,
+    ):
+        with open(pkl_file, "rb") as pkl_file:
+            while True:
+                try:
+                    metadata = pickle.load(pkl_file)
+                    pkl_type = metadata["type"]
+
+                    if pkl_type == "model":
+                        model = Mach.load_pkl(pkl_file, metadata)
+                    elif pkl_type == "logger":
+                        logger = Logger.load_pkl(pkl_file, metadata)
+                    elif pkl_type == "document_manager":
+                        documents = DocumentManager.load_pkl(
+                            pkl_file, metadata, metadata_dir
+                        )
+
+                except EOFError:
+                    break
+
+        state = State(model=model, logger=logger)
+        state.documents = documents
         return state

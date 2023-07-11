@@ -1,6 +1,8 @@
 import hashlib
 import os
+import pickle
 import shutil
+from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
@@ -158,14 +160,15 @@ class DocumentManager:
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
-        self.registry: Dict[str, Tuple[Document, int]] = {}
-        self.id_sorted_docs: List[Tuple[Document, int]] = []
+
+        # After python 3.8, we don't need to use OrderedDict as Dict is ordered by default
+        self.registry: OrderedDict[str, Tuple[Document, int]] = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
 
     def _next_id(self):
-        if len(self.id_sorted_docs) == 0:
+        if len(self.registry) == 0:
             return 0
-        doc, start_id = self.id_sorted_docs[-1]
+        doc, start_id = next(reversed(self.registry.values()))
         return start_id + doc.size
 
     def add(self, documents: List[Document]):
@@ -175,11 +178,8 @@ class DocumentManager:
             doc_hash = doc.hash
             if doc_hash not in self.registry:
                 start_id = self._next_id()
-                # Adding this tuple to two data structures does not double the
-                # memory usage because Python uses references.
                 doc_and_id = (doc, start_id)
                 self.registry[doc_hash] = doc_and_id
-                self.id_sorted_docs.append(doc_and_id)
                 self.source_id_prefix_trie[doc_hash] = doc_hash
                 intro.add(doc, start_id)
             doc, start_id = self.registry[doc_hash]
@@ -201,17 +201,15 @@ class DocumentManager:
         return self.registry[source_id]
 
     def clear(self):
-        self.registry = {}
-        self.id_sorted_docs = []
+        self.registry = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
 
     def _get_doc_and_start_id(self, element_id: int):
-        # Iterate through docs in reverse order
-        for i in range(len(self.id_sorted_docs) - 1, -1, -1):
-            doc, start_id = self.id_sorted_docs[i]
+        for doc, start_id in reversed(self.registry.values()):
             if start_id <= element_id:
-                return self.id_sorted_docs[i]
-        raise ValueError(f"Unable to find document that has id {id}.")
+                return doc, start_id
+
+        raise ValueError(f"Unable to find document that has id {element_id}.")
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
@@ -224,15 +222,67 @@ class DocumentManager:
         return doc.context(element_id - start_id, radius)
 
     def save_meta(self, directory: Path):
-        for i, (doc, _) in enumerate(self.id_sorted_docs):
+        for i, (doc, _) in enumerate(self.registry.values()):
             subdir = directory / str(i)
             os.mkdir(subdir)
             doc.save_meta(subdir)
 
     def load_meta(self, directory: Path):
-        for i, (doc, _) in enumerate(self.id_sorted_docs):
+        for i, (doc, _) in enumerate(self.registry.values()):
             subdir = directory / str(i)
             doc.load_meta(subdir)
+
+    # This variable is needed to not break current load/save
+    # We can remove this and all its references if we only use save_pkl/load_pkl
+    saving_pkl = False
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the temp_attr entry
+        if DocumentManager.saving_pkl:
+            del state["registry"]
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes
+        self.__dict__.update(state)
+        # Set a default value for temp_attr since it was not in the state
+        if DocumentManager.saving_pkl:
+            self.registry = None
+
+    def save_pkl(self, pkl_file):
+        DocumentManager.saving_pkl = True
+        metadata = {"type": "document_manager", "num_docs": len(self.registry)}
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+        for i, (doc_hash, (doc, doc_offset)) in enumerate(self.registry.items()):
+            subdir = str(i)
+            doc.save_pkl(pkl_file, doc_hash, doc_offset, subdir)
+        DocumentManager.saving_pkl = False
+
+    @staticmethod
+    def load_pkl(pkl_file, metadata, metadata_dir):
+        DocumentManager.saving_pkl = True
+        document_manager = pickle.load(pkl_file)
+        registry = OrderedDict()
+        for _ in range(metadata["num_docs"]):
+            doc_metadata = pickle.load(pkl_file)
+            doc_type = doc_metadata["type"]
+            doc_hash = doc_metadata["doc_hash"]
+            doc_offset = doc_metadata["doc_offset"]
+
+            if doc_type == "csv":
+                doc = CSV.load_pkl(pkl_file, doc_metadata, metadata_dir)
+            elif doc_type == "extracted":
+                doc = Extracted.load_pkl(pkl_file, doc_metadata, metadata_dir)
+            else:
+                raise Exception(f"Trying to load unknown document type: {doc_type}")
+
+            registry[doc_hash] = (doc, doc_offset)
+
+        document_manager.registry = registry
+        DocumentManager.saving_pkl = False
+        return document_manager
 
 
 class CSV(Document):
@@ -301,6 +351,31 @@ class CSV(Document):
         # sure that we point to this CSV file.
         self.path = directory / self.path.name
 
+    def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
+        metadata = {
+            "type": "csv",
+            "doc_hash": doc_hash,
+            "doc_offset": doc_offset,
+            "subdir": subdir,
+            "filename": self.name,
+        }
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+        with open(self.path, "rb") as csv_file:
+            csv_file_data = csv_file.read()
+        pickle.dump(csv_file_data, pkl_file)
+
+    @staticmethod
+    def load_pkl(pkl_file, metadata, metadata_dir: Path):
+        csv_document = pickle.load(pkl_file)
+        csv_file_data = pickle.load(pkl_file)
+        save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
+        os.makedirs(save_path)
+        with open(save_path, "wb") as csv_file:
+            csv_file.write(csv_file_data)
+        csv_document.path = save_path
+        return csv_document
+
 
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
@@ -308,7 +383,7 @@ class Extracted(Document):
         self,
         filename: str,
     ):
-        self.filename = filename
+        self.filename = Path(filename)
         self.df = self.process_data(filename)
         self.hash_val = hash_file(filename)
 
@@ -328,7 +403,7 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename
+        return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -344,7 +419,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=self.filename,
+            source=str(self.filename.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
@@ -358,13 +433,38 @@ class Extracted(Document):
         return "\n".join(rows["passage"])
 
     def save_meta(self, directory: Path):
-        # Let's copy the original CSV file to the provided directory
+        # Let's copy the original extracted file to the provided directory
         shutil.copy(self.filename, directory)
 
     def load_meta(self, directory: Path):
-        # Since we've moved the CSV file to the provided directory, let's make
-        # sure that we point to this CSV file.
+        # Since we've moved the extracted file to the provided directory, let's make
+        # sure that we point to this extracted file.
         self.filename = directory / self.filename.name
+
+    def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
+        metadata = {
+            "type": "extracted",
+            "doc_hash": doc_hash,
+            "doc_offset": doc_offset,
+            "subdir": subdir,
+            "filename": self.name,
+        }
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+        with open(self.filename, "rb") as extracted_file:
+            extracted_file_data = extracted_file.read()
+        pickle.dump(extracted_file_data, pkl_file)
+
+    @staticmethod
+    def load_pkl(pkl_file, metadata, metadata_dir: Path):
+        extracted_document = pickle.load(pkl_file)
+        extracted_file_data = pickle.load(pkl_file)
+        save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
+        os.makedirs(os.path.dirname(save_path))
+        with open(save_path, "wb") as extracted_file:
+            extracted_file.write(extracted_file_data)
+        extracted_document.path = save_path
+        return extracted_document
 
 
 class PDF(Extracted):

@@ -1,4 +1,5 @@
 import math
+import pickle
 import random
 from pathlib import Path
 from typing import Callable, List, Sequence, Tuple
@@ -79,6 +80,13 @@ class Model:
         raise NotImplementedError()
 
     def save_meta(self, directory: Path) -> None:
+        raise NotImplementedError()
+
+    def save_pkl(self, pkl_file) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def load_pkl(pkl_file, metadata) -> None:
         raise NotImplementedError()
 
     def load_meta(self, directory: Path):
@@ -243,6 +251,18 @@ class Mach(Model):
 
     def save_meta(self, directory: Path):
         pass
+
+    def save_pkl(self, pkl_file) -> None:
+        metadata = {
+            "type": "model",
+        }
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+
+    @staticmethod
+    def load_pkl(pkl_file, metadata) -> None:
+        model = pickle.load(pkl_file)
+        return model
 
     def load_meta(self, directory: Path):
         pass
