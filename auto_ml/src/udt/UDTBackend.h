@@ -387,6 +387,44 @@ class UDTBackend {
     throw notSupported("upvote");
   }
 
+  virtual py::object associateTrain(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) {
+    (void)balancing_data;
+    (void)source_target_samples;
+    (void)n_buckets;
+    (void)n_association_samples;
+    (void)learning_rate;
+    (void)epochs;
+    (void)metrics;
+    (void)options;
+    throw notSupported("associate_train");
+  }
+
+  virtual py::object associateColdStart(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) {
+    (void)balancing_data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)source_target_samples;
+    (void)n_buckets;
+    (void)n_association_samples;
+    (void)learning_rate;
+    (void)epochs;
+    (void)metrics;
+    (void)options;
+    throw notSupported("associate_cold_start");
+  }
+
   virtual void enableRlhf(uint32_t num_balancing_docs,
                           uint32_t num_balancing_samples_per_doc) {
     (void)num_balancing_docs;

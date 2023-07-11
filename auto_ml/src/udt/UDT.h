@@ -6,7 +6,9 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <dataset/src/DataSource.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -229,6 +231,31 @@ class UDT {
       float learning_rate, uint32_t epochs) {
     _backend->upvote(source_target_samples, n_upvote_samples,
                      n_balancing_samples, learning_rate, epochs);
+  }
+
+  py::object associateTrain(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) {
+    return _backend->associateTrain(balancing_data, source_target_samples,
+                                    n_buckets, n_association_samples,
+                                    learning_rate, epochs, metrics, options);
+  }
+
+  py::object associateColdStart(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) {
+    return _backend->associateColdStart(
+        balancing_data, strong_column_names, weak_column_names,
+        source_target_samples, n_buckets, n_association_samples, learning_rate,
+        epochs, metrics, options);
   }
 
   void enableRlhf(uint32_t num_balancing_docs,

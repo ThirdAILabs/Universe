@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -43,6 +44,8 @@ class DatasetLoader final {
   }
 
   uint32_t getLabelDim() { return _featurizer->getDimensions().at(1); }
+
+  void manuallyAddToBuffer(std::vector<BoltVector>&& vectors);
 
  private:
   // Adds batches to the buffer until the data source is finished or the buffer

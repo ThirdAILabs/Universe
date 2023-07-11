@@ -802,3 +802,23 @@ def test_udt_mach_train_batch():
     model = train_simple_mach_udt()
 
     model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)
+
+
+def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        ValueError,
+        match=r"Sampling from fewer buckets than num_hashes is not supported. If you'd like to introduce using fewer hashes, please reset the number of hashes for the index.",
+    ):
+        model.introduce_label(
+            [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
+        )
+
+    new_index = dataset.MachIndex(num_hashes=NUM_HASHES - 1, output_range=OUTPUT_DIM)
+
+    model.set_index(new_index)
+
+    model.introduce_label(
+        [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
+    )
