@@ -320,7 +320,7 @@ class Extracted(Document):
         self,
         filename: str,
     ):
-        self.filename = filename
+        self.filename = Path(filename)
         self.df = self.process_data(filename)
         self.hash_val = hash_file(filename)
 
@@ -340,7 +340,7 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename
+        return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -356,7 +356,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=self.filename,
+            source=str(self.filename.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
