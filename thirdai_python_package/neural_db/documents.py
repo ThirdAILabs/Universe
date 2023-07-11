@@ -489,8 +489,14 @@ class URL(Document):
         return "\n".join(rows["text"])
 
 
-# Base class for PDF and DOCX classes because they share the same logic.
 class SentenceLevelExtracted(Extracted):
+    """Parses a document into sentences and creates a NeuralDB entry for each
+    sentence. The strong column of the entry is the sentence itself while the
+    weak column is the paragraph from which the sentence came. A NeuralDB
+    reference produced by this object displays the paragraph instead of the
+    sentence to increase recall.
+    """
+
     def __init__(
         self,
         filename: str,
