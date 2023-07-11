@@ -1,10 +1,8 @@
+import math
 import random
 from pathlib import Path
 from typing import Callable, List, Sequence, Tuple
 
-import numpy as np
-import pandas as pd
-from nltk.tokenize import sent_tokenize
 from thirdai import bolt, bolt_v2
 
 from .documents import DocumentDataSource
@@ -14,6 +12,23 @@ InferSamples = List
 Predictions = Sequence
 TrainLabels = List
 TrainSamples = List
+
+
+# This class can be constructed by clients that use neural_db.
+# The object can then be passed into Model.index_documents(), and if
+# the client calls CancelState.cancel() on the object, training will halt.
+class CancelState:
+    def __init__(self, canceled=False):
+        self.canceled = canceled
+
+    def cancel(self):
+        self.canceled = True
+
+    def uncancel(self):
+        self.canceled = False
+
+    def is_canceled(self):
+        return self.canceled
 
 
 class Model:
@@ -26,6 +41,7 @@ class Model:
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -39,7 +55,7 @@ class Model:
     def get_query_col(self) -> str:
         raise NotImplementedError()
 
-    def get_n_ids(self) -> int:
+    def set_n_ids(self, n_ids: int):
         raise NotImplementedError()
 
     def get_id_col(self) -> str:
@@ -48,41 +64,13 @@ class Model:
     def get_id_delimiter(self) -> str:
         raise NotImplementedError()
 
-    def train_samples_to_train_batch(self, samples: TrainSamples):
-        query_col = self.get_query_col()
-        id_col = self.get_id_col()
-        id_delimiter = self.get_id_delimiter()
-        return [
-            {
-                query_col: clean_text(text),
-                id_col: id_delimiter.join(map(str, labels)),
-            }
-            for text, labels in samples
-        ]
-
-    def balance_train_label_samples(self, samples: TrainSamples, n_samples: int):
-        raise NotImplementedError()
-
-    def balance_train_bucket_samples(self, samples: TrainSamples, n_samples: int):
-        raise NotImplementedError()
-
     def infer_samples_to_infer_batch(self, samples: InferSamples):
         query_col = self.get_query_col()
         return [{query_col: clean_text(text)} for text in samples]
 
-    def train_buckets(
-        self, samples: TrainSamples, learning_rate: float, **kwargs
-    ) -> None:
-        raise NotImplementedError()
-
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
-        raise NotImplementedError()
-
-    def train_labels(
-        self, samples: TrainSamples, learning_rate: float, **kwargs
-    ) -> None:
         raise NotImplementedError()
 
     def infer_labels(
@@ -117,6 +105,77 @@ class Model:
     ):
         raise NotImplementedError()
 
+    def retrain(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        raise NotImplementedError()
+
+
+class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        min_epochs,
+        tracked_metric,
+        metric_threshold,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.min_epochs = min_epochs
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+
+        if (
+            self.epoch_count > self.min_epochs
+            and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.train_state.stop_training()
+
+
+class ProgressUpdate(bolt_v2.train.callbacks.Callback):
+    def __init__(
+        self,
+        max_epochs,
+        progress_callback_fn,
+    ):
+        super().__init__()
+
+        self.batch_count = 0
+        self.max_epochs = max_epochs
+        self.progress_callback_fn = progress_callback_fn
+
+    def on_batch_end(self):
+        self.batch_count += 1
+
+        # We update progress every other epoch because otherwise the updates are
+        # too fast for frontend components to display these changes.
+        if self.batch_count % 2:
+            batch_progress = self.batch_count / self.train_state.batches_in_dataset()
+            progress = batch_progress / self.max_epochs
+
+            # TODO revisit this progress bar update
+            # This function (sqrt) increases faster at the beginning
+            progress = progress ** (1.0 / 2)
+            self.progress_callback_fn(progress)
+
+
+class CancelTraining(bolt_v2.train.callbacks.Callback):
+    def __init__(self, cancel_state):
+        super().__init__()
+        self.cancel_state = cancel_state
+
+    def on_batch_end(self):
+        if self.cancel_state is not None and self.cancel_state.is_canceled():
+            self.train_state.stop_training()
+
 
 def unsupervised_train_on_docs(
     model,
@@ -127,25 +186,36 @@ def unsupervised_train_on_docs(
     learning_rate: float,
     acc_to_stop: float,
     on_progress: Callable,
-    freeze_epoch: int,
+    freeze_before_train: bool,
+    cancel_state: CancelState,
 ):
-    for i in range(max_epochs):
-        if i == freeze_epoch:
-            model._get_model().freeze_hash_tables()
-        documents.restart()
-        metrics = model.cold_start_on_data_source(
-            data_source=documents,
-            strong_column_names=[documents.strong_column],
-            weak_column_names=[documents.weak_column],
-            learning_rate=learning_rate,
-            epochs=1,
-            metrics=[metric],
-        )
+    if freeze_before_train:
+        model._get_model().freeze_hash_tables()
 
-        val = metrics["train_" + metric][0]
-        on_progress((i + 1) / max_epochs)
-        if i >= min_epochs - 1 and val > acc_to_stop:
-            break
+    documents.restart()
+
+    early_stop_callback = EarlyStopWithMinEpochs(
+        min_epochs=min_epochs,
+        tracked_metric=metric,
+        metric_threshold=acc_to_stop,
+    )
+
+    progress_callback = ProgressUpdate(
+        max_epochs=max_epochs,
+        progress_callback_fn=on_progress,
+    )
+
+    cancel_training_callback = CancelTraining(cancel_state=cancel_state)
+
+    model.cold_start_on_data_source(
+        data_source=documents,
+        strong_column_names=[documents.strong_column],
+        weak_column_names=[documents.weak_column],
+        learning_rate=learning_rate,
+        epochs=max_epochs,
+        metrics=[metric],
+        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+    )
 
 
 def make_balancing_samples(documents: DocumentDataSource):
@@ -162,7 +232,7 @@ class Mach(Model):
     def __init__(
         self,
         id_col="DOC_ID",
-        id_delimiter=" ",
+        id_delimiter=None,
         query_col="QUERY",
         input_dim=50_000,
         hidden_dim=2048,
@@ -187,8 +257,8 @@ class Mach(Model):
     def load_meta(self, directory: Path):
         pass
 
-    def get_n_ids(self) -> int:
-        return self.n_ids
+    def set_n_ids(self, n_ids: int):
+        self.n_ids = n_ids
 
     def get_query_col(self) -> str:
         return self.query_col
@@ -205,6 +275,7 @@ class Mach(Model):
         train_documents: DocumentDataSource,
         should_train: bool,
         on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
     ) -> None:
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -215,7 +286,7 @@ class Mach(Model):
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
-            freeze_epoch = 1
+            freeze_before_train = False
             min_epochs = 10
             max_epochs = 15
         else:
@@ -234,7 +305,7 @@ class Mach(Model):
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
-            freeze_epoch = 0
+            freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
             min_epochs = 5
@@ -253,7 +324,8 @@ class Mach(Model):
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
-                freeze_epoch=freeze_epoch,
+                freeze_before_train=freeze_before_train,
+                cancel_state=cancel_state,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -293,12 +365,6 @@ class Mach(Model):
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def train_labels(
-        self, samples: TrainSamples, learning_rate: float, **kwargs
-    ) -> None:
-        train_batch = self.train_samples_to_train_batch(samples)
-        self.model.train_batch(train_batch, learning_rate=learning_rate)
-
     def infer_labels(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
@@ -310,10 +376,6 @@ class Mach(Model):
             [int(pred) for pred, _ in predictions] for predictions in all_predictions
         ]
 
-    def train_buckets(self, samples: TrainSamples, learning_rate, **kwargs) -> None:
-        train_batch = self.train_samples_to_train_batch(samples)
-        self.model.train_with_hashes(train_batch, learning_rate=learning_rate)
-
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
@@ -323,22 +385,13 @@ class Mach(Model):
         ]
         return predictions
 
-    def balance_train_label_samples(self, samples: List, n_samples: int):
-        balanced_samples = samples + list(
-            random.choices(self.balancing_samples, k=n_samples)
-        )
-        random.shuffle(balanced_samples)
-        return balanced_samples
+    def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
+        query_col = self.get_query_col()
 
-    def balance_train_bucket_samples(self, samples: List, n_samples: int):
-        balancers = random_sample(self.balancing_samples, k=n_samples)
-        balancers = [(query, self.get_bucket(labels[0])) for query, labels in balancers]
-        balanced_samples = samples + balancers
-        random.shuffle(balanced_samples)
-        return balanced_samples
-
-    def get_bucket(self, entity: int):
-        return self.model.get_index().get_entity_hashes(entity)
+        return [
+            ({query_col: clean_text(source)}, {query_col: clean_text(target)})
+            for source, target in pairs
+        ]
 
     def associate(
         self,
@@ -349,18 +402,8 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        query_col = self.get_query_col()
-
-        source_target_samples = [
-            (
-                {query_col: clean_text(source)},
-                {query_col: clean_text(target)},
-            )
-            for source, target in pairs
-        ]
-
         self.model.associate(
-            source_target_samples=source_target_samples,
+            source_target_samples=self._format_associate_samples(pairs),
             n_buckets=n_buckets,
             n_association_samples=n_association_samples,
             n_balancing_samples=n_balancing_samples,
@@ -386,4 +429,25 @@ class Mach(Model):
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
             epochs=epochs,
+        )
+
+    def retrain(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        self.model.associate_cold_start_data_source(
+            balancing_data=balancing_data,
+            strong_column_names=[balancing_data.strong_column],
+            weak_column_names=[balancing_data.weak_column],
+            source_target_samples=self._format_associate_samples(source_target_pairs),
+            n_buckets=n_buckets,
+            n_association_samples=1,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=["hash_precision@5"],
+            options=bolt.TrainOptions(),
         )

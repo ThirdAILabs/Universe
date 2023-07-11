@@ -28,6 +28,7 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         epochs=5,
         batch_size=2000,
         metrics=["categorical_accuracy"],
+        shuffle_reservoir_size=32000,
     )
 
     os.remove(catalog_file)

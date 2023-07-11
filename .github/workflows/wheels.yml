@@ -97,7 +97,8 @@ jobs:
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
-            yum install openssl11-devel -y
+            yum install openssl11-devel -y &&
+            yum install -y libxslt-devel libxml2-devel
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
           # Online compile cpython wheels (pytorch does this too), no big 

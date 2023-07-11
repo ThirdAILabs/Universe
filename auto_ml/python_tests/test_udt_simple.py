@@ -453,6 +453,7 @@ def test_model_dims_mach():
             "input_dim": 8,
             "embedding_dimension": 4,
             "extreme_classification": True,
+            "extreme_num_hashes": 1,
             "extreme_output_dim": 2,
         },
     )
@@ -468,7 +469,7 @@ def test_data_types():
                 "text": bolt.types.text(),
             },
             target="cat",
-            n_target_classes=2,
+            n_target_classes=10,
             integer_target=True,
             options={
                 "input_dim": 8,

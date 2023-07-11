@@ -48,7 +48,8 @@ def train_simple_mach_udt(
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
             "extreme_output_dim": output_dim,
-            "use_bias": use_bias,
+            "hidden_bias": use_bias,
+            "output_bias": use_bias,
             **rlhf_args,
             "mach_sampling_threshold": mach_sampling_threshold,
         },
@@ -109,14 +110,7 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-def train_on_scifact(download_scifact_dataset, coldstart):
-    (
-        unsupervised_file,
-        supervised_trn,
-        supervised_tst,
-        n_target_classes,
-    ) = download_scifact_dataset
-
+def scifact_model(n_target_classes):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -127,6 +121,18 @@ def train_on_scifact(download_scifact_dataset, coldstart):
         integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
+    return model
+
+
+def train_on_scifact(download_scifact_dataset, coldstart):
+    (
+        unsupervised_file,
+        supervised_trn,
+        supervised_tst,
+        n_target_classes,
+    ) = download_scifact_dataset
+
+    model = scifact_model(n_target_classes=n_target_classes)
 
     if coldstart:
         metrics = model.cold_start(
@@ -161,12 +167,19 @@ def train_on_scifact(download_scifact_dataset, coldstart):
     return model, metrics, supervised_tst
 
 
-def test_mach_udt_on_scifact(download_scifact_dataset):
-    model, metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset, coldstart=True
-    )
+@pytest.fixture(scope="session")
+def train_mach_on_scifact_with_cold_start(download_scifact_dataset):
+    return train_on_scifact(download_scifact_dataset, coldstart=True)
+
+
+def test_mach_udt_on_scifact(train_mach_on_scifact_with_cold_start):
+    _, metrics, _ = train_mach_on_scifact_with_cold_start
 
     assert metrics["train_precision@1"][-1] > 0.45
+
+
+def test_mach_udt_on_scifact_save_load(train_mach_on_scifact_with_cold_start):
+    model, _, supervised_tst = train_mach_on_scifact_with_cold_start
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
@@ -181,6 +194,31 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     assert before_save_precision == after_save_precision
 
     os.remove(save_loc)
+
+
+def test_mach_udt_on_scifact_model_porting(
+    train_mach_on_scifact_with_cold_start, download_scifact_dataset
+):
+    _, _, _, n_classes = download_scifact_dataset
+    model, _, supervised_tst = train_mach_on_scifact_with_cold_start
+
+    before_porting_precision = evaluate_model(model, supervised_tst)
+
+    new_model = scifact_model(n_target_classes=n_classes)
+
+    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_model._set_model(new_bolt_model)
+
+    new_model.set_index(model.get_index())
+
+    # Check that the accuracy matches in the ported model.
+    assert before_porting_precision == evaluate_model(new_model, supervised_tst)
+
+    # Check that predictions match in the ported model.
+    test_df = pd.read_csv(supervised_tst)
+    batch = [{"QUERY": text} for text in test_df["QUERY"]]
+
+    assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
 def test_mach_udt_label_too_large():
@@ -232,6 +270,22 @@ def test_mach_udt_decode_params():
     model.set_decode_params(1, OUTPUT_DIM)
 
     assert len(model.predict({"text": "something"})) == 1
+
+
+def test_mach_udt_topk_predict():
+    model = train_simple_mach_udt()
+
+    model.set_decode_params(1, 5)
+
+    assert len(model.predict({"text": "something"})) == 1
+
+    assert len(model.predict({"text": "something"}, top_k=2)) == 2
+
+    with pytest.raises(
+        ValueError,
+        match=r"Cannot return more results than the model is trained to predict. Model currently can predict one of 3 classes.",
+    ):
+        model.predict({"text": "something"}, top_k=4)
 
 
 def test_mach_udt_introduce_and_forget():
@@ -494,11 +548,8 @@ def test_mach_without_bias():
     hidden_layer = ops[0]  # hidden layer
     output_layer = ops[1]  # output layer
 
-    hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
-    output_bias_all_zeros = np.all(output_layer.biases == 0)
-
-    assert hidden_bias_all_zeros, "Error: Hidden layer biases should be all zeros."
-    assert not output_bias_all_zeros, "Error: All output layer biases are zeros."
+    assert np.all(hidden_layer.biases == 0)
+    assert np.all(output_layer.biases == 0)
 
 
 def test_load_balancing():
@@ -751,3 +802,23 @@ def test_udt_mach_train_batch():
     model = train_simple_mach_udt()
 
     model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)
+
+
+def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        ValueError,
+        match=r"Sampling from fewer buckets than num_hashes is not supported. If you'd like to introduce using fewer hashes, please reset the number of hashes for the index.",
+    ):
+        model.introduce_label(
+            [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
+        )
+
+    new_index = dataset.MachIndex(num_hashes=NUM_HASHES - 1, output_range=OUTPUT_DIM)
+
+    model.set_index(new_index)
+
+    model.introduce_label(
+        [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
+    )

@@ -111,6 +111,6 @@ def test_robez_op():
 @pytest.mark.unit
 def test_embedding_op():
     def embedding_factory():
-        return bolt.nn.Embedding(dim=32, input_dim=INPUT_DIM, activation="relu")
+        return bolt.nn.Embedding(dim=32, input_dim=INPUT_DIM, activation="linear")
 
     train_and_evaluate_embedding_model(embedding_factory)

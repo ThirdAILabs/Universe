@@ -103,6 +103,8 @@ class Computation {
    */
   const std::string& name() const;
 
+  void setName(const std::string& name);
+
  private:
   ops::OpPtr _op;
 
