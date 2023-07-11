@@ -2,12 +2,8 @@ import os
 
 from thirdai import bolt
 
-from thirdai_python_package_tests.distributed_bolt_test.distributed_utils import (
-    metrics_aggregation_from_workers,
-    ray_two_node_cluster_config_impl,
-)
-
 from ..configs.distributed_configs import DistributedBenchmarkConfig
+from ..distributed_utils import ray_two_node_cluster_config
 from .runner import Runner
 
 
@@ -38,7 +34,7 @@ class DistributedRunner(Runner):
         config.prepare_dataset(path_prefix=path_prefix)
 
         # Initilize ray cluster
-        cluster_generator_obj = ray_two_node_cluster_config_impl()
+        cluster_generator_obj = ray_two_node_cluster_config()
         cluster_config_fn = next(cluster_generator_obj)
 
         # Create model

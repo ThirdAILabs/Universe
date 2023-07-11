@@ -16,6 +16,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
 
@@ -108,8 +109,8 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes,
-                          bool fast_approximation) final;
+                          uint32_t num_random_hashes, bool fast_approximation,
+                          bool verbose) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
@@ -143,6 +144,22 @@ class UDTMachClassifier final : public UDTBackend {
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
       float learning_rate, uint32_t epochs) final;
+
+  py::object associateTrain(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) final;
+
+  py::object associateColdStart(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
@@ -179,6 +196,9 @@ class UDTMachClassifier final : public UDTBackend {
              uint32_t n_balancing_samples, float learning_rate,
              uint32_t epochs);
 
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
+
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),
@@ -210,6 +230,9 @@ class UDTMachClassifier final : public UDTBackend {
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
+
+  static void warnOnNonHashBasedMetrics(
+      const std::vector<std::string>& metrics);
 
   // Mach requires two sets of labels. The buckets for each doc/class for
   // computing losses when training, and also the original doc/class ids for
