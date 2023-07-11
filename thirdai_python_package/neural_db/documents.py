@@ -380,12 +380,12 @@ class Extracted(Document):
         return "\n".join(rows["passage"])
 
     def save_meta(self, directory: Path):
-        # Let's copy the original CSV file to the provided directory
+        # Let's copy the original file to the provided directory
         shutil.copy(self.filename, directory)
 
     def load_meta(self, directory: Path):
-        # Since we've moved the CSV file to the provided directory, let's make
-        # sure that we point to this CSV file.
+        # Since we've moved the file to the provided directory, let's make
+        # sure that we point to this file.
         self.filename = directory / self.filename.name
 
 
@@ -597,12 +597,12 @@ class SentenceLevelExtracted(Extracted):
         return "\n\n".join(rows)
 
     def save_meta(self, directory: Path):
-        # Let's copy the original CSV file to the provided directory
+        # Let's copy the original file to the provided directory
         shutil.copy(self.filename, directory)
 
     def load_meta(self, directory: Path):
-        # Since we've moved the CSV file to the provided directory, let's make
-        # sure that we point to this CSV file.
+        # Since we've moved the file to the provided directory, let's make
+        # sure that we point to this file.
         self.filename = directory / self.filename.name
 
 
