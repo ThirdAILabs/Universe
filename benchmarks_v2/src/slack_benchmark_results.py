@@ -124,7 +124,10 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
 def extract_mlflow_data(experiment_name, num_runs, run_name=""):
     mlflow.set_tracking_uri(args.mlflow_uri)
     client = MlflowClient()
-    exp_id = client.get_experiment_by_name(experiment_name).experiment_id
+    exp = client.get_experiment_by_name(experiment_name)
+    if exp is None:
+        return pd.DataFrame()
+    exp_id = exp.experiment_id
 
     mlflow_runs = mlflow.search_runs(exp_id)
     df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name)
