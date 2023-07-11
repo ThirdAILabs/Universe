@@ -223,6 +223,18 @@ class DocumentManager:
         doc, start_id = self._get_doc_and_start_id(element_id)
         return doc.context(element_id - start_id, radius)
 
+    def get_data_source(self) -> DocumentDataSource:
+        data_source = DocumentDataSource(
+            id_column=self.id_column,
+            strong_column=self.strong_column,
+            weak_column=self.weak_column,
+        )
+
+        for doc, start_id in self.id_sorted_docs:
+            data_source.add(document=doc, start_id=start_id)
+
+        return data_source
+
     def save_meta(self, directory: Path):
         for i, (doc, _) in enumerate(self.id_sorted_docs):
             subdir = directory / str(i)
@@ -308,7 +320,7 @@ class Extracted(Document):
         self,
         filename: str,
     ):
-        self.filename = filename
+        self.filename = Path(filename)
         self.df = self.process_data(filename)
         self.hash_val = hash_file(filename)
 
@@ -328,7 +340,7 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename
+        return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -344,7 +356,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=self.filename,
+            source=str(self.filename.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
