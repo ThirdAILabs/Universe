@@ -228,7 +228,7 @@ class DocumentManager:
             weak_column=self.weak_column,
         )
 
-        for doc, start_id in self.id_sorted_docs:
+        for doc, start_id in self.registry.values():
             data_source.add(document=doc, start_id=start_id)
 
         return data_source
