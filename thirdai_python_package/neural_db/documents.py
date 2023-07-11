@@ -272,10 +272,8 @@ class DocumentManager:
             doc.save_pkl(pkl_file, doc_hash, doc_offset, subdir)
         DocumentManager.saving_pkl = False
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
+    def load_pkl(self, pkl_file, metadata, metadata_dir):
         DocumentManager.saving_pkl = True
-        document_manager = pkl_data
         registry = OrderedDict()
         for _ in range(metadata["num_docs"]):
             doc_metadata = pickle.load(pkl_file)
@@ -283,11 +281,11 @@ class DocumentManager:
             doc_offset = doc_metadata["doc_offset"]
 
             doc = pickle.load(pkl_file)
-            type(doc).load_pkl(doc, pkl_file, doc_metadata, metadata_dir)
+            doc.load_pkl(pkl_file, doc_metadata, metadata_dir)
 
             registry[doc_hash] = (doc, doc_offset)
 
-        document_manager.registry = registry
+        self.registry = registry
         DocumentManager.saving_pkl = False
 
 
@@ -371,15 +369,13 @@ class CSV(Document):
             csv_file_data = csv_file.read()
         pickle.dump(csv_file_data, pkl_file)
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
-        csv_document = pkl_data
+    def load_pkl(self, pkl_file, metadata, metadata_dir):
         csv_file_data = pickle.load(pkl_file)
         save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
         os.makedirs(save_path)
         with open(save_path, "wb") as csv_file:
             csv_file.write(csv_file_data)
-        csv_document.path = save_path
+        self.path = save_path
 
 
 # Base class for PDF and DOCX classes because they share the same logic.
@@ -460,15 +456,13 @@ class Extracted(Document):
             extracted_file_data = extracted_file.read()
         pickle.dump(extracted_file_data, pkl_file)
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
-        extracted_document = pkl_data
+    def load_pkl(self, pkl_file, metadata, metadata_dir):
         extracted_file_data = pickle.load(pkl_file)
         save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
         os.makedirs(os.path.dirname(save_path))
         with open(save_path, "wb") as extracted_file:
             extracted_file.write(extracted_file_data)
-        extracted_document.path = save_path
+        self.path = save_path
 
 
 class PDF(Extracted):

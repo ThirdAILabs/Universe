@@ -31,8 +31,7 @@ class Logger:
     def save_pkl(self, pkl_file) -> None:
         raise NotImplementedError()
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         raise NotImplementedError()
 
 
@@ -82,8 +81,7 @@ class InMemoryLogger(Logger):
         pickle.dump(metadata, pkl_file)
         pickle.dump(self, pkl_file)
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         pass
 
 
@@ -163,18 +161,16 @@ class LoggerList(Logger):
             logger.save_pkl(pkl_file)
         LoggerList.saving_pkl = False
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
+    def load_pkl(self, pkl_file, metadata, metadata_dir):
         LoggerList.saving_pkl = True
-        logger_list = pkl_data
         loggers = []
         for _ in range(metadata["num_loggers"]):
             logger_metadata = pickle.load(pkl_file)
             logger = pickle.load(pkl_file)
-            type(logger).load_pkl(logger, pkl_file, logger_metadata, metadata_dir)
+            logger.load_pkl(pkl_file, logger_metadata, metadata_dir)
             loggers.append(logger)
 
-        logger_list.loggers = loggers
+        self.loggers = loggers
         LoggerList.saving_pkl = False
 
 
@@ -211,6 +207,5 @@ class NoOpLogger(Logger):
         pickle.dump(metadata, pkl_file)
         pickle.dump(self, pkl_file)
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         pass
