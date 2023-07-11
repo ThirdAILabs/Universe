@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Callable
 
 from .documents import DocumentManager
-from .loggers import Logger, LoggerList
-from .models import Mach, Model
+from .loggers import Logger
+from .models import Model
 
 
 def pickle_to(obj: object, filepath: Path):
