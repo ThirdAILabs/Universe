@@ -350,7 +350,10 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename.name
+        # We cast self.filename to Path for backwards compatibility; older versions
+        # stored strings and would throw an error when we call self.filename.name
+        # without casting.
+        return Path(self.filename).name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -386,7 +389,10 @@ class Extracted(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.filename = directory / self.filename.name
+        # We cast self.filename to Path for backwards compatibility; older versions
+        # stored strings and would throw an error when we call self.filename.name
+        # without casting.
+        self.filename = directory / Path(self.filename).name
 
 
 def process_pdf(filename: str) -> pd.DataFrame:
@@ -570,7 +576,10 @@ class SentenceLevelExtracted(Extracted):
 
     @property
     def name(self) -> str:
-        return self.filename.name
+        # We cast self.filename to Path for backwards compatibility; older versions
+        # stored strings and would throw an error when we call self.filename.name
+        # without casting.
+        return Path(self.filename).name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -609,7 +618,10 @@ class SentenceLevelExtracted(Extracted):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.filename = directory / self.filename.name
+        # We cast self.filename to Path for backwards compatibility; older versions
+        # stored strings and would throw an error when we call self.filename.name
+        # without casting.
+        self.filename = directory / Path(self.filename).name
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
