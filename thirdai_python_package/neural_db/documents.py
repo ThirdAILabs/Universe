@@ -221,6 +221,18 @@ class DocumentManager:
         doc, start_id = self._get_doc_and_start_id(element_id)
         return doc.context(element_id - start_id, radius)
 
+    def get_data_source(self) -> DocumentDataSource:
+        data_source = DocumentDataSource(
+            id_column=self.id_column,
+            strong_column=self.strong_column,
+            weak_column=self.weak_column,
+        )
+
+        for doc, start_id in self.id_sorted_docs:
+            data_source.add(document=doc, start_id=start_id)
+
+        return data_source
+
     def save_meta(self, directory: Path):
         for i, (doc, _) in enumerate(self.registry.values()):
             subdir = directory / str(i)
