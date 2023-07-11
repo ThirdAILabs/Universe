@@ -25,20 +25,12 @@ class Logger:
     def load_meta(self, directory: Path):
         raise NotImplementedError()
 
-    # TODO: Need to handle unpicklable metadata.
-    # Implement __getstate__ and __setstate__ for those classes.
-    # Look at DocumentManager save_pkl/load_pkl for example.
-    def save_pkl(self, pkl_file):
-        metadata = {
-            "type": "logger",
-        }
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
+    def save_pkl(self, pkl_file) -> None:
+        raise NotImplementedError()
 
     @staticmethod
-    def load_pkl(pkl_file, metadata):
-        logger = pickle.load(pkl_file)
-        return logger
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+        raise NotImplementedError()
 
 
 class InMemoryLogger(Logger):
@@ -77,6 +69,17 @@ class InMemoryLogger(Logger):
     def load_meta(self, directory: Path):
         pass
 
+    def save_pkl(self, pkl_file) -> None:
+        metadata = {
+            "type": "logger",
+        }
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+
+    @staticmethod
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+        pass
+
 
 class LoggerList(Logger):
     def __init__(self, loggers: List[Logger]):
@@ -111,6 +114,47 @@ class LoggerList(Logger):
         for logger in self.loggers:
             logger.load_meta(directory / logger.name())
 
+    # This variable is needed to not break current load/save
+    # We can remove this and all its references if we only use save_pkl/load_pkl
+    saving_pkl = False
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the loggers attribute
+        if LoggerList.saving_pkl:
+            del state["loggers"]
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes
+        self.__dict__.update(state)
+        # Set a default value for loggers since it was not in the state
+        if LoggerList.saving_pkl:
+            self.loggers = None
+
+    def save_pkl(self, pkl_file):
+        LoggerList.saving_pkl = True
+        metadata = {"type": "logger", "num_loggers": len(self.loggers)}
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+        for logger in self.loggers:
+            logger.save_pkl(pkl_file)
+        LoggerList.saving_pkl = False
+
+    @staticmethod
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
+        LoggerList.saving_pkl = True
+        logger_list = pkl_data
+        loggers = []
+        for _ in range(metadata["num_loggers"]):
+            logger_metadata = pickle.load(pkl_file)
+            logger = pickle.load(pkl_file)
+            type(logger).load_pkl(logger, pkl_file, logger_metadata, metadata_dir)
+            loggers.append(logger)
+
+        logger_list.loggers = loggers
+        LoggerList.saving_pkl = False
+
 
 class NoOpLogger(Logger):
     def __init__(self) -> None:
@@ -126,4 +170,15 @@ class NoOpLogger(Logger):
         pass
 
     def load_meta(self, directory: Path):
+        pass
+
+    def save_pkl(self, pkl_file) -> None:
+        metadata = {
+            "type": "logger",
+        }
+        pickle.dump(metadata, pkl_file)
+        pickle.dump(self, pkl_file)
+
+    @staticmethod
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
         pass

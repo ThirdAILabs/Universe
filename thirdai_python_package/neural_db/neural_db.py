@@ -131,8 +131,6 @@ class NeuralDB:
             if self._savable_state.model and self._savable_state.model.get_model():
                 self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
             if not isinstance(self._savable_state.logger, loggers.LoggerList):
-                # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
-                # TODO: Need to handle DBLogger pickling, check logger.py for more info
                 self._savable_state.logger = loggers.LoggerList(
                     [self._savable_state.logger]
                 )

@@ -238,7 +238,7 @@ class DocumentManager:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        # Remove the temp_attr entry
+        # Remove the registry attribute
         if DocumentManager.saving_pkl:
             del state["registry"]
         return state
@@ -246,7 +246,7 @@ class DocumentManager:
     def __setstate__(self, state):
         # Restore instance attributes
         self.__dict__.update(state)
-        # Set a default value for temp_attr since it was not in the state
+        # Set a default value for registry since it was not in the state
         if DocumentManager.saving_pkl:
             self.registry = None
 
@@ -261,28 +261,22 @@ class DocumentManager:
         DocumentManager.saving_pkl = False
 
     @staticmethod
-    def load_pkl(pkl_file, metadata, metadata_dir):
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
         DocumentManager.saving_pkl = True
-        document_manager = pickle.load(pkl_file)
+        document_manager = pkl_data
         registry = OrderedDict()
         for _ in range(metadata["num_docs"]):
             doc_metadata = pickle.load(pkl_file)
-            doc_type = doc_metadata["type"]
             doc_hash = doc_metadata["doc_hash"]
             doc_offset = doc_metadata["doc_offset"]
 
-            if doc_type == "csv":
-                doc = CSV.load_pkl(pkl_file, doc_metadata, metadata_dir)
-            elif doc_type == "extracted":
-                doc = Extracted.load_pkl(pkl_file, doc_metadata, metadata_dir)
-            else:
-                raise Exception(f"Trying to load unknown document type: {doc_type}")
+            doc = pickle.load(pkl_file)
+            type(doc).load_pkl(doc, pkl_file, doc_metadata, metadata_dir)
 
             registry[doc_hash] = (doc, doc_offset)
 
         document_manager.registry = registry
         DocumentManager.saving_pkl = False
-        return document_manager
 
 
 class CSV(Document):
@@ -353,7 +347,7 @@ class CSV(Document):
 
     def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
         metadata = {
-            "type": "csv",
+            "type": "document",
             "doc_hash": doc_hash,
             "doc_offset": doc_offset,
             "subdir": subdir,
@@ -366,15 +360,14 @@ class CSV(Document):
         pickle.dump(csv_file_data, pkl_file)
 
     @staticmethod
-    def load_pkl(pkl_file, metadata, metadata_dir: Path):
-        csv_document = pickle.load(pkl_file)
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
+        csv_document = pkl_data
         csv_file_data = pickle.load(pkl_file)
         save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
         os.makedirs(save_path)
         with open(save_path, "wb") as csv_file:
             csv_file.write(csv_file_data)
         csv_document.path = save_path
-        return csv_document
 
 
 # Base class for PDF and DOCX classes because they share the same logic.
@@ -443,7 +436,7 @@ class Extracted(Document):
 
     def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
         metadata = {
-            "type": "extracted",
+            "type": "document",
             "doc_hash": doc_hash,
             "doc_offset": doc_offset,
             "subdir": subdir,
@@ -456,15 +449,14 @@ class Extracted(Document):
         pickle.dump(extracted_file_data, pkl_file)
 
     @staticmethod
-    def load_pkl(pkl_file, metadata, metadata_dir: Path):
-        extracted_document = pickle.load(pkl_file)
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir):
+        extracted_document = pkl_data
         extracted_file_data = pickle.load(pkl_file)
         save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
         os.makedirs(os.path.dirname(save_path))
         with open(save_path, "wb") as extracted_file:
             extracted_file.write(extracted_file_data)
         extracted_document.path = save_path
-        return extracted_document
 
 
 class PDF(Extracted):

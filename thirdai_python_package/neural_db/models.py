@@ -86,7 +86,7 @@ class Model:
         raise NotImplementedError()
 
     @staticmethod
-    def load_pkl(pkl_file, metadata) -> None:
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
         raise NotImplementedError()
 
     def load_meta(self, directory: Path):
@@ -252,6 +252,9 @@ class Mach(Model):
     def save_meta(self, directory: Path):
         pass
 
+    def load_meta(self, directory: Path):
+        pass
+
     def save_pkl(self, pkl_file) -> None:
         metadata = {
             "type": "model",
@@ -260,11 +263,7 @@ class Mach(Model):
         pickle.dump(self, pkl_file)
 
     @staticmethod
-    def load_pkl(pkl_file, metadata) -> None:
-        model = pickle.load(pkl_file)
-        return model
-
-    def load_meta(self, directory: Path):
+    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
         pass
 
     def set_n_ids(self, n_ids: int):
