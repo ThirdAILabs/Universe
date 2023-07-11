@@ -2,7 +2,7 @@ import argparse
 import signal
 import time
 from pathlib import Path
-# from urllib.parse import urlparse
+from urllib.parse import urlparse
 
 import requests
 

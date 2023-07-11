@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from typing import List, Optional
-# from urllib.parse import urlparse
+from urllib.parse import urlparse
 
 import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
@@ -44,28 +44,28 @@ class CSVDataSource(PyDataSource):
     ) -> None:
         PyDataSource.__init__(self)
 
-        # if gcs_credentials_path:
-        #     # Pandas requires the GCS file system in order
-        #     # to authenticate a read request from a GCS bucket
-        #     import gcsfs
+        if gcs_credentials_path:
+            # Pandas requires the GCS file system in order
+            # to authenticate a read request from a GCS bucket
+            import gcsfs
 
-        # self._storage_path = storage_path
-        # self._gcs_credentials = gcs_credentials_path
+        self._storage_path = storage_path
+        self._gcs_credentials = gcs_credentials_path
 
-        # token = None
-        # if gcs_credentials_path:
-        #     token = gcs_credentials_path
-        # else:
-        #     if os.path.exists(self.FIRST_DEFAULT_GCS_CREDS_PATH):
-        #         token = self.FIRST_DEFAULT_GCS_CREDS_PATH
-        #     elif os.path.exists(self.SECOND_DEFAULT_GCS_CREDS_PATH):
-        #         token = self.SECOND_DEFAULT_GCS_CREDS_PATH
+        token = None
+        if gcs_credentials_path:
+            token = gcs_credentials_path
+        else:
+            if os.path.exists(self.FIRST_DEFAULT_GCS_CREDS_PATH):
+                token = self.FIRST_DEFAULT_GCS_CREDS_PATH
+            elif os.path.exists(self.SECOND_DEFAULT_GCS_CREDS_PATH):
+                token = self.SECOND_DEFAULT_GCS_CREDS_PATH
 
-        # self._storage_options = {"token": token}
+        self._storage_options = {"token": token}
 
-        # parsed_path = urlparse(self._storage_path, allow_fragments=False)
-        # self._cloud_instance_type = parsed_path.scheme
-        # self.restart()
+        parsed_path = urlparse(self._storage_path, allow_fragments=False)
+        self._cloud_instance_type = parsed_path.scheme
+        self.restart()
 
     def _get_line_iterator(self):
         if self._cloud_instance_type not in ["s3", "gcs"]:
