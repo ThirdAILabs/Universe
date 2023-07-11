@@ -16,15 +16,20 @@ from ray.train.torch import TorchConfig
 from test_mock_cluster_cold_start import (
     download_amazon_kaggle_product_catalog_sampled,
     download_and_split_catalog_dataset,
+    download_scifact_dataset,
+    download_and_split_scifact_dataset,
+    get_udt_scifact_mach_model,
 )
 from test_mock_cluster_udt_clinc import get_clinc_udt_model
 from thirdai import bolt_v2 as bolt
+from thirdai import bolt as old_bolt
+import thirdai
 from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
 
 
-def setting_up_ray():
+def setup_ray():
     num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
 
     assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
@@ -40,7 +45,7 @@ def setting_up_ray():
     scaling_config = ScalingConfig(
         num_workers=2,
         use_gpu=False,
-        trainer_resources={"CPU": num_cpu_per_node - 1},
+        resources_per_worker={"CPU": num_cpu_per_node - 1},
         placement_strategy="PACK",
     )
     return scaling_config
@@ -162,6 +167,80 @@ def test_udt_train_distributed_v2():
     ray.shutdown()
 
 
+def test_udt_mach_distributed_v2(download_scifact_dataset):
+    supervised_tst, n_target_classes = download_and_split_scifact_dataset(
+        download_scifact_dataset
+    )
+
+    def udt_mach_loop_per_worker(config):
+        thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
+        model = config.get("model")
+        copy_file_or_folder(
+            os.path.join(
+                config.get("cur_dir"),
+                "scifact",
+            ),
+            os.path.join(
+                session.get_trial_dir(),
+                f"rank_{session.get_world_rank()}/scifact",
+            ),
+        )
+        model.coldstart_distributed_v2(
+            filename=f"scifact/unsupervised_part{session.get_world_rank()+1}",
+            strong_column_names=["TITLE"],
+            weak_column_names=["TEXT"],
+            learning_rate=0.001,
+            epochs=5,
+            batch_size=1024,
+            metrics=[
+                "precision@1",
+                "recall@10",
+            ],
+        )
+
+        validation = old_bolt.Validation(
+            filename="scifact/tst_supervised.csv",
+            metrics=["precision@1"],
+        )
+
+        metrics = model.train_distributed_v2(
+            filename=f"scifact/supervised_trn_part{session.get_world_rank()+1}",
+            learning_rate=0.001,
+            epochs=10,
+            batch_size=1024,
+            metrics=[
+                "precision@1",
+                "recall@10",
+            ],
+            validation=validation,
+        )
+
+        session.report(
+            metrics,
+            checkpoint=dist.UDTCheckPoint.from_model(model),
+        )
+
+    udt_model = get_udt_scifact_mach_model(n_target_classes)
+    scaling_config = setting_up_ray()
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=udt_mach_loop_per_worker,
+        train_loop_config={
+            "model": udt_model,
+            "cur_dir": os.path.abspath(os.getcwd()),
+            "supervised_tst": supervised_tst,
+        },
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )
+
+    result = trainer.fit()
+    assert result.metrics["train_precision@1"][-1] > 0.45
+    assert result.metrics["val_precision@1"][-1] > 0.45
+
+    ray.shutdown()
+
+
 def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sampled):
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
@@ -179,7 +258,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
                 f"rank_{session.get_world_rank()}/part{session.get_world_rank()+1}",
             ),
         )
-        print(udt_model.train_distributed_v2)
+
         metrics = udt_model.coldstart_distributed_v2(
             filename=f"part{session.get_world_rank()+1}",
             strong_column_names=["TITLE"],
@@ -190,7 +269,6 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
             metrics=["categorical_accuracy"],
         )
 
-        # session report should always have a metrics stored, hence added a demo_metric
         session.report(
             metrics,
             checkpoint=dist.UDTCheckPoint.from_model(udt_model),
@@ -208,7 +286,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     )
 
     result = trainer.fit()
-    result.metrics["train_categorical_accuracy"][-1] > 0.7
+    assert result.metrics["train_categorical_accuracy"][-1] > 0.7
 
     ray.shutdown()
 

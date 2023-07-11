@@ -25,8 +25,9 @@ class Communication:
         import torch.distributed as dist
 
         dist.barrier()
-        dist.all_reduce(torch.tensor(num_batches), op=dist.ReduceOp.MIN)
-        return num_batches
+        all_reduce_num_batches = torch.tensor(num_batches)
+        dist.all_reduce(all_reduce_num_batches, op=dist.ReduceOp.MIN)
+        return all_reduce_num_batches
 
 
 class DistributedTrainer(bolt.train.Trainer):

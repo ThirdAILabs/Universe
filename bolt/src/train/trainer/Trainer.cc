@@ -75,6 +75,7 @@ metrics::History Trainer::train(
     utils::Timer epoch_timer;
 
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+      utils::Timer batch_timer;
       callbacks.onBatchBegin();
 
       const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
@@ -83,7 +84,12 @@ metrics::History Trainer::train(
       _model->trainOnBatch(inputs, labels);
 
       if (comm.has_value()) {
+        utils::Timer comm_timer;
         comm->get()->communicate(_model);
+        comm_timer.stop();
+        std::string log_line = formatFuncCallLogLine("communication", batch_idx,
+                                                     comm_timer.milliseconds());
+        logging::info(log_line);
       }
 
       _model->updateParameters(train_state->learningRate());
@@ -114,6 +120,10 @@ metrics::History Trainer::train(
         return *_history;
       }
       checkInterrupt();
+      batch_timer.stop();
+      std::string log_line = formatFuncCallLogLine("train_batch", batch_idx,
+                                                   batch_timer.milliseconds());
+      logging::info(log_line);
     }
 
     epoch_timer.stop();
@@ -312,6 +322,15 @@ std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
   std::string logline = fmt::format(
       "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
+
+  return logline;
+}
+
+std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
+                                           uint32_t batches, int64_t time) {
+  std::string logline = fmt::format(
+      "{} | epoch {} | train_steps {} | train_batches {} | time {}s", func_call,
+      _epoch, _model->trainSteps(), batches, time);
 
   return logline;
 }

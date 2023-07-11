@@ -134,6 +134,13 @@ class Trainer {
    * Invokes the autotuner for rehash and rebuild based on the size of the
    * dataset.
    */
+
+  /**
+   * Returns a formatted log line for the end of each epoch.
+   */
+  std::string formatFuncCallLogLine(const std::string& func_call,
+                                    uint32_t batches, int64_t time);
+
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
   // TODO(Nicholas): These are just wrappers to convert the datasets to tensors.
