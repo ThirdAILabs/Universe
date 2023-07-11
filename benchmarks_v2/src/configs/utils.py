@@ -145,69 +145,6 @@ def get_mae_metric_fn(target_column):
     return mae_additional_metric
 
 
-def get_mach_recall_at_k_metric_fn(target_column, k=1, target_delimeter=None):
-    # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
-    assert 1 <= k <= 5
-
-    def recall_at_k_additional_metric(model, test_file):
-        activations = get_activations(model, test_file, target_column)
-        df = pd.read_csv(test_file)
-        labels = df[target_column].to_numpy()
-
-        predictions = [
-            [idx for idx, score in top_5_idx_score_pairs[:k]]
-            for top_5_idx_score_pairs in activations
-        ]
-        labels = [idxs.split(target_delimeter) for idxs in labels]
-
-        num_true_positives = 0
-        num_total_positives = 0
-
-        for i, top_k_idxs in enumerate(predictions):
-            num_true_positives += len(
-                [1 for pred in predictions[i] if pred in labels[i]]
-            )
-            num_total_positives += len(labels[i])
-
-        recall_at_k = num_true_positives / num_total_positives
-
-        return recall_at_k
-
-    return recall_at_k_additional_metric
-
-
-def get_mach_precision_at_k_metric_fn(target_column, k=1, target_delimeter=None):
-    # This function assumes that mach model.evaluate returns top 5 highest scoring predictions for each sample
-    # TODO(Kartik): Add option for mach udt to return more than top 5 highest activations
-    assert 1 <= k <= 5
-
-    def precision_at_k_additional_metric(model, test_file):
-        activations = get_activations(model, test_file, target_column)
-        df = pd.read_csv(test_file)
-        labels = df[target_column].to_numpy()
-
-        predictions = [
-            [idx for idx, score in top_5_idx_score_pairs[:k]]
-            for top_5_idx_score_pairs in activations
-        ]
-        labels = [idxs.split(target_delimeter) for idxs in labels]
-
-        num_true_positives = 0
-        num_predicted_positives = 0
-
-        for i, top_k_idxs in enumerate(predictions):
-            num_true_positives += len(
-                [1 for pred in predictions[i] if pred in labels[i]]
-            )
-            num_predicted_positives += k
-
-        precision_at_k = num_true_positives / num_predicted_positives
-
-        return precision_at_k
-
-    return precision_at_k_additional_metric
-
-
 def get_qr_predictions(model, test_file, k):
     samples = create_test_samples(test_file=test_file, target_column="target_queries")
     samples = [{"phrase": x["source_queries"]} for x in samples]

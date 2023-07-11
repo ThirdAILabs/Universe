@@ -1,11 +1,6 @@
 from thirdai import bolt
 
 from .udt_configs import UDTBenchmarkConfig
-from .utils import (
-    AdditionalMetricCallback,
-    get_mach_precision_at_k_metric_fn,
-    get_mach_recall_at_k_metric_fn,
-)
 
 
 class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
