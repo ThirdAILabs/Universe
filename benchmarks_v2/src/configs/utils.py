@@ -44,19 +44,12 @@ class AdditionalMetricCallback(bolt.train.callbacks.Callback):
         print(f"{self.metric_name} = {metric_val}")
         if self.mlflow_logger:
             self.mlflow_logger.log_additional_metric(
-                key=f"val_{self._clean(self.metric_name)}",
+                key=f"val_{self.metric_name}",
                 value=metric_val,
                 step=self.step,
             )
 
         self.step += 1
-
-    def _clean(self, key):
-        # mlflow doesn't like when metrics have "@", "(", or ")" in them (e.g. "precision@k")
-        key = key.replace("(", "_")
-        key = key.replace(")", "")
-        key = key.replace("@", "_")
-        return key
 
 
 def create_test_samples(test_file, target_column):
