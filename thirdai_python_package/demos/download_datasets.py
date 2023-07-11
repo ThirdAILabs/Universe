@@ -211,10 +211,18 @@ def prep_fraud_dataset(dataset_path, seed=42):
 
 def download_census_income(num_inference_samples=5, return_labels=False):
     CENSUS_INCOME_BASE_DOWNLOAD_URL = (
-        "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
+        "https://archive.ics.uci.edu/static/public/2/adult.zip"
     )
+    CENSUS_INCOME_ZIP = "./adult.zip"
+    CENSUS_INCOME_DIR = "./adult"
     TRAIN_FILE = "./census_income_train.csv"
     TEST_FILE = "./census_income_test.csv"
+    _download_dataset(
+        url=CENSUS_INCOME_BASE_DOWNLOAD_URL,
+        zip_file=CENSUS_INCOME_ZIP,
+        check_existence=["./adult/adult.data", "./adult/adult.test"],
+        output_dir=CENSUS_INCOME_DIR,
+    )
     COLUMN_NAMES = [
         "age",
         "workclass",
@@ -233,11 +241,8 @@ def download_census_income(num_inference_samples=5, return_labels=False):
         "label",
     ]
     if not os.path.exists(TRAIN_FILE):
-        os.system(
-            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {TRAIN_FILE}"
-        )
         # reformat the train file
-        with open(TRAIN_FILE, "r") as file:
+        with open("./adult/adult.data", "r") as file:
             data = file.read().splitlines(True)
         with open(TRAIN_FILE, "w") as file:
             # Write header
@@ -249,11 +254,8 @@ def download_census_income(num_inference_samples=5, return_labels=False):
             file.writelines([line for line in lines if len(line.strip()) > 0])
 
     if not os.path.exists(TEST_FILE):
-        os.system(
-            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {TEST_FILE}"
-        )
         # reformat the test file
-        with open(TEST_FILE, "r") as file:
+        with open("./adult/adult.test", "r") as file:
             data = file.read().splitlines(True)
         with open(TEST_FILE, "w") as file:
             # Write header
@@ -412,7 +414,7 @@ def prepare_query_reformulation_data(seed=42):
 def download_clinc_dataset(
     num_training_files=1, clinc_small=False, file_prefix="clinc"
 ):
-    CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
+    CLINC_URL = "https://archive.ics.uci.edu/static/public/570/clinc150.zip"
     CLINC_ZIP = "./clinc150_uci.zip"
     CLINC_DIR = "./clinc"
     MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
@@ -509,17 +511,22 @@ def download_brazilian_houses_dataset():
 def download_internet_ads_dataset(seed=42):
     random.seed(seed)
 
-    INTERNET_ADS_URL = (
-        "https://archive.ics.uci.edu/ml/machine-learning-databases/internet_ads/ad.data"
+    INTERNET_ADS_DOWNLOAD_URL = (
+        "https://archive.ics.uci.edu/static/public/51/internet+advertisements.zip"
     )
-    INTERNET_ADS_FILE = "./internet_ads.data"
+    INTERNET_ADS_ZIP = "./internet+advertisements.zip"
+    INTERNET_ADS_DIR = "./internet+advertisements"
+    _download_dataset(
+        url=INTERNET_ADS_DOWNLOAD_URL,
+        zip_file=INTERNET_ADS_ZIP,
+        check_existence=["./internet+advertisements/ad.data"],
+        output_dir=INTERNET_ADS_DIR,
+    )
+    INTERNET_ADS_FILE = "./internet+advertisements/ad.data"
     TRAIN_FILE = "./internet_ads_train.csv"
     TEST_FILE = "./internet_ads_test.csv"
 
     column_names = [str(i) for i in range(1558)] + ["label"]
-
-    if not os.path.exists(INTERNET_ADS_FILE):
-        os.system(f"curl {INTERNET_ADS_URL} --output {INTERNET_ADS_FILE}")
 
     if not os.path.exists(TRAIN_FILE) or not os.path.exists(TEST_FILE):
         header = ",".join(column_names) + "\n"

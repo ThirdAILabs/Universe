@@ -12,6 +12,9 @@ class LayerNorm final : public Op,
  public:
   static std::shared_ptr<LayerNorm> make();
 
+  static std::shared_ptr<LayerNorm> make(const float* gamma, const float* beta,
+                                         size_t dim);
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -30,13 +33,21 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> gradients() final;
 
+  std::vector<std::vector<float>*> parameters() final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
   autograd::ComputationPtr apply(const autograd::ComputationPtr& input);
 
+  const auto& gamma() const { return _gamma; }
+
+  const auto& beta() const { return _beta; }
+
  private:
   LayerNorm();
+
+  LayerNorm(const float* gamma, const float* beta, size_t dim);
 
   template <bool DENSE>
   void forward(const BoltVector& input, BoltVector& output);

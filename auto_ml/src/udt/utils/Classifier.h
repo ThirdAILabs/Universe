@@ -4,7 +4,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
-#include <auto_ml/src/udt/Validation.h>
+#include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
@@ -13,9 +13,9 @@
 #include <memory>
 #include <stdexcept>
 
-namespace py = pybind11;
-
 namespace thirdai::automl::udt::utils {
+
+using bolt::train::metrics::InputMetrics;
 
 class Classifier {
  public:
@@ -26,18 +26,28 @@ class Classifier {
     return std::make_shared<Classifier>(model, freeze_hash_tables);
   }
 
-  py::object train(
-      dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
-      const ValidationDatasetLoader& validation,
-      std::optional<size_t> batch_size_opt,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<bolt::train::callbacks::CallbackPtr>& callbacks,
-      bool verbose, std::optional<uint32_t> logging_interval);
+  py::object train(const dataset::DatasetLoaderPtr& dataset,
+                   float learning_rate, uint32_t epochs,
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DatasetLoaderPtr& val_dataset,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options);
+
+  py::object train(const dataset::DatasetLoaderPtr& data, float learning_rate,
+                   uint32_t epochs, const InputMetrics& train_metrics,
+                   const dataset::DatasetLoaderPtr& val_data,
+                   const InputMetrics& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options);
 
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose);
+
+  py::object evaluate(dataset::DatasetLoaderPtr& dataset,
+                      const InputMetrics& metrics, bool sparse_inference,
+                      bool verbose);
 
   py::object predict(const bolt::nn::tensor::TensorList& inputs,
                      bool sparse_inference, bool return_predicted_class,

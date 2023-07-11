@@ -10,6 +10,10 @@ namespace thirdai::automl::udt {
 
 std::vector<std::pair<BoltVector, BoltVector>> RLHFSampler::balancingSamples(
     size_t num_samples) {
+  if (num_samples == 0) {
+    return {};
+  }
+
   if (_samples_per_doc.empty()) {
     throw std::runtime_error(
         "Cannot call associate before training, coldstarting, or introducing "

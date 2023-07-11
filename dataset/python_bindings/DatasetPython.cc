@@ -19,7 +19,8 @@
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
-#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
@@ -110,6 +111,10 @@ void createDatasetSubmodule(py::module_& module) {
                     uint32_t, uint32_t>(),
            py::arg("entity_to_hashes"), py::arg("output_range"),
            py::arg("num_hashes"))
+      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"), py::arg("num_elements"))
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
@@ -283,6 +288,19 @@ void createDatasetSubmodule(py::module_& module) {
            &TextGenerationFeaturizer::featurizeInferenceSample,
            py::arg("prompt"), py::arg("context"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
+
+  py::class_<TextClassificationFeaturizer, Featurizer,
+             TextClassificationFeaturizerPtr>(dataset_submodule,
+                                              "TextClassificationFeaturizer")
+      .def(py::init<const std::string&, const std::string&, uint32_t, uint32_t,
+                    uint32_t, uint32_t, uint32_t, char, std::optional<char>,
+                    bool, bool>(),
+           py::arg("text_column"), py::arg("label_column"), py::arg("lrc_len"),
+           py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
+           py::arg("n_labels"), py::arg("delimiter") = ',',
+           py::arg("label_delimiter") = std::nullopt,
+           py::arg("integer_labels") = false,
+           py::arg("normalize_categories") = true);
 
 #endif
 

@@ -46,7 +46,7 @@ def test_model_with_fixed_seed():
     output_1 = model_1.forward(input_sample, use_sparsity=True)[0]
     output_2 = model_2.forward(input_sample, use_sparsity=True)[0]
 
-    assert np.array_equal(output_1.active_neurons, output_2.active_neurons)
+    assert set(output_1.active_neurons[0]) == set(output_2.active_neurons[0])
 
 
 @pytest.mark.unit

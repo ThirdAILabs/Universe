@@ -19,8 +19,20 @@ std::string nextLayerNormOpName() {
 
 LayerNorm::LayerNorm() : Op(nextLayerNormOpName()) {}
 
+LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
+    : Op(nextLayerNormOpName()),
+      _gamma(gamma, gamma + dim),
+      _beta(beta, beta + dim),
+      _gamma_optimizer(dim),
+      _beta_optimizer(dim) {}
+
 std::shared_ptr<LayerNorm> LayerNorm::make() {
   return std::shared_ptr<LayerNorm>(new LayerNorm());
+}
+
+std::shared_ptr<LayerNorm> LayerNorm::make(const float* gamma,
+                                           const float* beta, size_t dim) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(gamma, beta, dim));
 }
 
 void LayerNorm::forward(const autograd::ComputationList& inputs,
@@ -146,6 +158,10 @@ void LayerNorm::disableSparseParameterUpdates() {}
 
 std::vector<std::vector<float>*> LayerNorm::gradients() {
   return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
+}
+
+std::vector<std::vector<float>*> LayerNorm::parameters() {
+  return {&_gamma, &_beta};
 }
 
 void LayerNorm::summary(std::ostream& summary,

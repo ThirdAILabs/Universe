@@ -4,26 +4,16 @@ from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 
 
-def get_sum_model(input_dim):
+def get_embedding_model(input_dim, embedding_factory):
     input_1 = bolt.nn.Input(dim=input_dim)
 
     input_2 = bolt.nn.Input(dim=input_dim)
 
-    embedding_bottom = bolt.nn.Embedding(
-        num_embedding_lookups=4,
-        lookup_size=8,
-        log_embedding_block_size=10,
-        reduction="sum",
-    )(input_1)
+    robez_bottom = embedding_factory()(input_1)
 
-    embedding_top = bolt.nn.Embedding(
-        num_embedding_lookups=4,
-        lookup_size=8,
-        log_embedding_block_size=10,
-        reduction="sum",
-    )(input_2)
+    robez_top = embedding_factory()(input_2)
 
-    concat_layer = bolt.nn.Concatenate()([embedding_bottom, embedding_top])
+    concat_layer = bolt.nn.Concatenate()([robez_bottom, robez_top])
 
     output_layer = bolt.nn.FullyConnected(
         dim=input_dim * 2, input_dim=concat_layer.dim(), activation="softmax"
@@ -69,18 +59,19 @@ def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
     return data, labels, chunk(labels_np, batch_size)
 
 
-# This test ensures we can learn how to add (almost certainly by memorizing)
-# The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
-@pytest.mark.unit
-def test_embedding_op():
-    input_dim = 10
-    num_train = 10000
-    num_test = 100
+INPUT_DIM = 10
+NUM_TRAIN = 10000
+NUM_TEST = 100
 
-    model = get_sum_model(input_dim)
+
+def train_and_evaluate_embedding_model(embedding_factory):
+    # This test ensures we can learn how to add (almost certainly by memorizing)
+    # The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
+
+    model = get_embedding_model(INPUT_DIM, embedding_factory)
 
     train_data, train_labels, _ = generate_sum_datasets_and_labels(
-        input_dim=input_dim, num_examples=num_train
+        input_dim=INPUT_DIM, num_examples=NUM_TRAIN
     )
 
     for _ in range(5):
@@ -89,8 +80,8 @@ def test_embedding_op():
             model.update_parameters(0.01)
 
     test_data, _, test_labels_np = generate_sum_datasets_and_labels(
-        input_dim=input_dim,
-        num_examples=num_test,
+        input_dim=INPUT_DIM,
+        num_examples=NUM_TEST,
     )
 
     correct = 0
@@ -102,3 +93,24 @@ def test_embedding_op():
         total += len(y_np)
 
     assert correct / total > 0.8
+
+
+@pytest.mark.unit
+def test_robez_op():
+    def robez_factory():
+        return bolt.nn.RobeZ(
+            num_embedding_lookups=4,
+            lookup_size=8,
+            log_embedding_block_size=10,
+            reduction="sum",
+        )
+
+    train_and_evaluate_embedding_model(robez_factory)
+
+
+@pytest.mark.unit
+def test_embedding_op():
+    def embedding_factory():
+        return bolt.nn.Embedding(dim=32, input_dim=INPUT_DIM, activation="linear")
+
+    train_and_evaluate_embedding_model(embedding_factory)

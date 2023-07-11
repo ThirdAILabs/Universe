@@ -60,62 +60,13 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
   for (uint32_t i = predict_start; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.push_back({prompt, lrcContext(tokens, i), ircContext(tokens, i),
-                       srcContext(tokens, i), std::move(label)});
+    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, i),
+                       _context_featurizer.ircContext(tokens, i),
+                       _context_featurizer.srcContext(tokens, i),
+                       std::move(label)});
   }
 
   return vectors;
-}
-
-BoltVector TextGenerationFeaturizer::lrcContext(
-    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
-  uint32_t lrc_len = std::min(label_index, _lrc_len);
-
-  const uint32_t* context_start = tokens.data() + label_index - lrc_len;
-
-  BoltVector vector(/* l= */ lrc_len, /* is_dense= */ false,
-                    /* has_gradient= */ false);
-  std::copy(context_start, context_start + lrc_len, vector.active_neurons);
-  std::fill_n(vector.activations, vector.len, 1.0);
-
-  return vector;
-}
-
-BoltVector TextGenerationFeaturizer::ircContext(
-    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
-  uint32_t irc_len = std::min(label_index, _irc_len);
-
-  std::vector<uint32_t> irc_context =
-      token_encoding::unigramPreservingPairgrams(
-          tokens.data() + label_index - irc_len, irc_len, _vocab_size);
-
-  BoltVector vector(/* l= */ irc_context.size(), /* is_dense= */ false,
-                    /* has_gradient= */ false);
-  std::copy(irc_context.begin(), irc_context.end(), vector.active_neurons);
-  std::fill_n(vector.activations, vector.len, 1.0);
-
-  return vector;
-}
-
-BoltVector TextGenerationFeaturizer::srcContext(
-    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
-  uint32_t src_len = std::min(label_index, _src_len);
-  uint32_t padding_len = _src_len - src_len;
-
-  const uint32_t* context_start = tokens.data() + label_index - src_len;
-
-  BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
-                    /* has_gradient= */ false);
-
-  // Zero pad if short range context length is greater than number of tokens. We
-  // pad the begining so that the last token before the prediction is always at
-  // the end.
-  std::fill_n(vector.active_neurons, padding_len, 0);
-  std::copy(context_start, context_start + src_len,
-            vector.active_neurons + padding_len);
-  std::fill_n(vector.activations, vector.len, 1.0);
-
-  return vector;
 }
 
 BoltVector TextGenerationFeaturizer::promptContext(
@@ -135,10 +86,9 @@ BoltVector TextGenerationFeaturizer::promptContext(
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& prompt,
     const std::vector<uint32_t>& context) const {
-  uint32_t prediction_index = context.size();
-  return {promptContext(prompt), lrcContext(context, prediction_index),
-          ircContext(context, prediction_index),
-          srcContext(context, prediction_index)};
+  return {promptContext(prompt), _context_featurizer.lrcContext(context),
+          _context_featurizer.ircContext(context),
+          _context_featurizer.srcContext(context)};
 }
 
 std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
@@ -148,11 +98,11 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
   }
 
   std::vector<uint32_t> target_tokens =
-      parseTokens(getStringField(line_content, "target"));
+      token_encoding::tokenIds(getStringField(line_content, "target"));
 
   if (line_content.contains("context")) {
     std::vector<uint32_t> context_tokens =
-        parseTokens(getStringField(line_content, "context"));
+        token_encoding::tokenIds(getStringField(line_content, "context"));
 
     // The predict start is 1 after the end of the context because there will be
     // a [CLS] token.
@@ -170,26 +120,9 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
 std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(
     const json& line_content) {
   if (line_content.contains("prompt")) {
-    return parseTokens(getStringField(line_content, "prompt"));
+    return token_encoding::tokenIds(getStringField(line_content, "prompt"));
   }
   return {};
-}
-
-std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
-    const std::string& line) {
-  // TODO(Nicholas): consolidate integer/float parsing functions into utility.
-  std::vector<uint32_t> tokens;
-
-  const char* start = line.data();
-  const char* line_end = line.data() + line.size();
-
-  while (start != line_end) {
-    char* end;
-    tokens.push_back(std::strtoul(start, &end, /* base= */ 10));
-    start = end;
-  }
-
-  return tokens;
 }
 
 void TextGenerationFeaturizer::save(const std::string& filename) const {

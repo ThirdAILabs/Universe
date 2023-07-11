@@ -4,9 +4,8 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
-#include <auto_ml/src/embedding_prototype/TextEmbeddingModel.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
-#include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -15,11 +14,24 @@
 #include <optional>
 #include <stdexcept>
 
+namespace py = pybind11;
+
 namespace thirdai::automl::udt {
 
 using bolt::train::callbacks::CallbackPtr;
 
 using bolt::nn::model::ModelPtr;
+
+struct TrainOptions {
+  std::optional<size_t> batch_size = std::nullopt;
+  std::optional<size_t> max_in_memory_batches = std::nullopt;
+  std::optional<uint32_t> steps_per_validation = std::nullopt;
+  bool sparse_validation = false;
+  bool verbose = true;
+  std::optional<uint32_t> logging_interval = std::nullopt;
+  dataset::DatasetShuffleConfig shuffle_config =
+      dataset::DatasetShuffleConfig();
+};
 
 /**
  * This is an interface for the backends that are used in a UDT model. To
@@ -35,14 +47,13 @@ class UDTBackend {
   /**
    * Trains the model on the given dataset.
    */
-  virtual py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<ValidationDataSource>& validation,
-      std::optional<size_t> batch_size,
-      std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& metrics,
-      const std::vector<CallbackPtr>& callbacks, bool verbose,
-      std::optional<uint32_t> logging_interval) = 0;
+  virtual py::object train(const dataset::DataSourcePtr& data,
+                           float learning_rate, uint32_t epochs,
+                           const std::vector<std::string>& train_metrics,
+                           const dataset::DataSourcePtr& val_data,
+                           const std::vector<std::string>& val_metrics,
+                           const std::vector<CallbackPtr>& callbacks,
+                           TrainOptions options) = 0;
 
   /**
    * Trains the model on a batch of samples.
@@ -93,6 +104,17 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual py::object outputCorrectness(const MapInputBatch& sample,
+                                       const std::vector<uint32_t>& labels,
+                                       bool sparse_inference,
+                                       std::optional<uint32_t> num_hashes) {
+    (void)sample;
+    (void)labels;
+    (void)sparse_inference;
+    (void)num_hashes;
+    throw notSupported("output correctness");
+  }
+
   /**
    * Returns the model used.
    */
@@ -137,20 +159,20 @@ class UDTBackend {
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      const std::optional<ValidationDataSource>& validation,
-      const std::vector<CallbackPtr>& callbacks,
-      std::optional<size_t> max_in_memory_batches, bool verbose) {
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)learning_rate;
     (void)epochs;
-    (void)metrics;
-    (void)validation;
+    (void)train_metrics;
+    (void)val_data;
+    (void)val_metrics;
     (void)callbacks;
-    (void)max_in_memory_batches;
-    (void)verbose;
+    (void)options;
     throw notSupported("cold_start");
   }
 
@@ -191,6 +213,10 @@ class UDTBackend {
     return nullptr;
   }
 
+  virtual data::ColumnDataTypes dataTypes() const {
+    throw notSupported("data_types");
+  }
+
   /**
    * Returns metadata for ColdStart which are needed to be passed to
    * ColdStartPreprocessing. Optional Method that is not supported by
@@ -226,11 +252,15 @@ class UDTBackend {
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      std::optional<uint32_t> num_buckets_to_sample) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool fast_approximation, bool verbose) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)num_buckets_to_sample;
+    (void)num_random_hashes;
+    (void)fast_approximation;
+    (void)verbose;
     throw notSupported("introduce_documents");
   }
 
@@ -243,12 +273,14 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample) {
+      std::optional<uint32_t> num_buckets_to_sample,
+      uint32_t num_random_hashes) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
     (void)num_buckets_to_sample;
+    (void)num_random_hashes;
     throw notSupported("introduce_document");
   }
 
@@ -259,10 +291,12 @@ class UDTBackend {
   virtual void introduceLabel(
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample) {
+      std::optional<uint32_t> num_buckets_to_sample,
+      uint32_t num_random_hashes) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
+    (void)num_random_hashes;
     throw notSupported("introduce_label");
   }
 
@@ -295,13 +329,28 @@ class UDTBackend {
 
   /**
    * Used in UDTMachClassifier, returns the predicted hashes from the input
-   * sample.
+   * sample. If num_hashes is not provided, will return the number of hashes
+   * used in the index by default.
    */
   virtual py::object predictHashes(const MapInput& sample,
-                                   bool sparse_inference) {
+                                   bool sparse_inference, bool force_non_empty,
+                                   std::optional<uint32_t> num_hashes) {
     (void)sample;
     (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
     throw notSupported("predict_hashes");
+  }
+
+  virtual py::object predictHashesBatch(const MapInputBatch& samples,
+                                        bool sparse_inference,
+                                        bool force_non_empty,
+                                        std::optional<uint32_t> num_hashes) {
+    (void)samples;
+    (void)sparse_inference;
+    (void)force_non_empty;
+    (void)num_hashes;
+    throw notSupported("predict_hashes_batch");
   }
 
   /**
@@ -321,6 +370,66 @@ class UDTBackend {
   }
 
   /**
+   * Used for fine tuning in UDTMachClassifier.
+   */
+  virtual void upvote(
+      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+      float learning_rate, uint32_t epochs) {
+    (void)source_target_samples;
+    (void)n_upvote_samples;
+    (void)n_balancing_samples;
+    (void)learning_rate;
+    (void)epochs;
+    throw notSupported("upvote");
+  }
+
+  virtual py::object associateTrain(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) {
+    (void)balancing_data;
+    (void)source_target_samples;
+    (void)n_buckets;
+    (void)n_association_samples;
+    (void)learning_rate;
+    (void)epochs;
+    (void)metrics;
+    (void)options;
+    throw notSupported("associate_train");
+  }
+
+  virtual py::object associateColdStart(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) {
+    (void)balancing_data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)source_target_samples;
+    (void)n_buckets;
+    (void)n_association_samples;
+    (void)learning_rate;
+    (void)epochs;
+    (void)metrics;
+    (void)options;
+    throw notSupported("associate_cold_start");
+  }
+
+  virtual void enableRlhf(uint32_t num_balancing_docs,
+                          uint32_t num_balancing_samples_per_doc) {
+    (void)num_balancing_docs;
+    (void)num_balancing_samples_per_doc;
+    throw notSupported("enable_rlhf");
+  }
+
+  /**
    * Gets the internal index for UDTMachClassifier.
    */
   virtual dataset::mach::MachIndexPtr getIndex() {
@@ -335,13 +444,12 @@ class UDTBackend {
     throw notSupported("set_index");
   }
 
-  /*
-   * Returns a model that embeds text using the hidden layer of the UDT model.
+  /**
+   * Sets the threshold for changing the type of sampling in Mach.
    */
-  virtual TextEmbeddingModelPtr getTextEmbeddingModel(
-      float distance_cutoff) const {
-    (void)distance_cutoff;
-    throw notSupported("get_text_embedding_model");
+  virtual void setMachSamplingThreshold(float threshold) {
+    (void)threshold;
+    throw notSupported("set_mach_sampling_threshold");
   }
 
   virtual ~UDTBackend() = default;

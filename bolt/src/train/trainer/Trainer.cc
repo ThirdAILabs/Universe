@@ -45,7 +45,7 @@ metrics::History Trainer::train(
                           train_data.first.at(0).at(0)->batchSize());
   }
 
-  auto train_state = TrainState::make(learning_rate);
+  auto train_state = TrainState::make(learning_rate, train_data.first.size());
 
   metrics::MetricCollection train_metrics(train_metrics_in);
 
@@ -173,9 +173,9 @@ metrics::History Trainer::train_with_dataset_loader(
     const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
     uint32_t epochs, uint32_t batch_size,
     std::optional<uint32_t> max_in_memory_batches,
-    const std::vector<std::string>& train_metrics,
+    const metrics::InputMetrics& train_metrics,
     const dataset::DatasetLoaderPtr& validation_data_loader,
-    const std::vector<std::string>& validation_metrics,
+    const metrics::InputMetrics& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
@@ -190,10 +190,10 @@ metrics::History Trainer::train_with_dataset_loader(
           loadAllWrapper(validation_data_loader, batch_size, verbose);
     }
 
-    return train_with_metric_names(
-        train_data, learning_rate, epochs, train_metrics, validation_data,
-        validation_metrics, steps_per_validation, use_sparsity_in_validation,
-        callbacks, autotune_rehash_rebuild, verbose, logging_interval);
+    return train(train_data, learning_rate, epochs, train_metrics,
+                 validation_data, validation_metrics, steps_per_validation,
+                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
+                 verbose, logging_interval);
   }
 
   // We have duplicate code here for loading validation data because for
@@ -211,11 +211,10 @@ metrics::History Trainer::train_with_dataset_loader(
     while (auto train_chunk =
                loadSomeWrapper(train_data_loader, batch_size,
                                *max_in_memory_batches, verbose)) {
-      train_with_metric_names(
-          train_chunk.value(), learning_rate, epochs, train_metrics,
-          validation_data, validation_metrics, steps_per_validation,
-          use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-          verbose, logging_interval);
+      train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
+            validation_data, validation_metrics, steps_per_validation,
+            use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
+            verbose, logging_interval);
     }
     train_data_loader->restart();
   }
@@ -277,9 +276,9 @@ metrics::History Trainer::validate_with_metric_names(
 }
 
 metrics::History Trainer::validate_with_dataset_loader(
-    const dataset::DatasetLoaderPtr& data,
-    const std::vector<std::string>& metrics, bool use_sparsity, bool verbose) {
-  return validate_with_metric_names(
+    const dataset::DatasetLoaderPtr& data, const metrics::InputMetrics& metrics,
+    bool use_sparsity, bool verbose) {
+  return validate(
       /* data= */ loadAllWrapper(data, /* batch_size= */ DEFAULT_BATCH_SIZE,
                                  verbose),
       /* metrics= */ metrics, /* use_sparsity= */ use_sparsity,

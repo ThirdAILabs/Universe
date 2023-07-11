@@ -122,6 +122,8 @@ class BoltGraph {
 
   void saveWithOptimizer(bool should_save_optimizer);
 
+  void incrementEpochCount() { _epoch++; }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::checkLicense(); }

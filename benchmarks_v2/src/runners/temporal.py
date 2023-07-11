@@ -37,7 +37,7 @@ class TemporalRunner(Runner):
                 epochs=1,
                 learning_rate=config.learning_rate,
                 max_in_memory_batches=config.max_in_memory_batches,
-                callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
+                callbacks=config.callbacks + ([mlflow_logger] if mlflow_logger else []),
             )
 
             if len(config.metrics) > 0:
