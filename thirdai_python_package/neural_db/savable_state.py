@@ -157,7 +157,7 @@ class State:
                     pkl_data = pickle.load(pkl_file)
                     pkl_type = metadata["type"]
 
-                    type(pkl_data).load_pkl(pkl_data, pkl_file, metadata, metadata_dir)
+                    pkl_data.load_pkl(pkl_file, metadata, metadata_dir)
 
                     if pkl_type == "model":
                         model = pkl_data

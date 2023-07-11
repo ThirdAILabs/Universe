@@ -85,8 +85,7 @@ class Model:
     def save_pkl(self, pkl_file) -> None:
         raise NotImplementedError()
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         raise NotImplementedError()
 
     def load_meta(self, directory: Path):
@@ -272,8 +271,7 @@ class Mach(Model):
         pickle.dump(metadata, pkl_file)
         pickle.dump(self, pkl_file)
 
-    @staticmethod
-    def load_pkl(pkl_data, pkl_file, metadata, metadata_dir) -> None:
+    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         pass
 
     def set_n_ids(self, n_ids: int):
