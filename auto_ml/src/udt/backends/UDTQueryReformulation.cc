@@ -72,7 +72,7 @@ py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   (void)learning_rate;
   (void)epochs;
   (void)train_metrics;

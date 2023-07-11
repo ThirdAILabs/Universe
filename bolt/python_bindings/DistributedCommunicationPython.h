@@ -13,9 +13,9 @@ class PyDistributedComm : public DistributedCommInterface {
   void communicate(const bolt::nn::model::ModelPtr& model) override {
     PYBIND11_OVERRIDE_NAME(void,                     /* Return type */
                            DistributedCommInterface, /* Parent class */
-                           "communicate",  /* Name of Python function */
-                           communicate,    /* Name of C++ function */
-                           model /* Argument(s) */
+                           "communicate", /* Name of Python function */
+                           communicate,   /* Name of C++ function */
+                           model          /* Argument(s) */
     );
   }
 

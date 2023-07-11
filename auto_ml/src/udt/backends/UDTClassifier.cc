@@ -64,7 +64,7 @@ py::object UDTClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader =
@@ -184,7 +184,7 @@ py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(

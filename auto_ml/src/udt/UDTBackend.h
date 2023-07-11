@@ -54,7 +54,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      std::optional<bolt::train::DistributedCommInterfacePtr> comm) = 0;
+      const bolt::train::DistributedCommInterfacePtr& comm) = 0;
 
   /**
    * Trains the model on a batch of samples.
@@ -164,7 +164,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+      const bolt::train::DistributedCommInterfacePtr& comm) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;

@@ -16,13 +16,14 @@ class UDTSVMClassifier final : public UDTBackend {
                    const std::optional<std::string>& model_config,
                    const config::ArgumentMap& user_args);
 
-  py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::vector<std::string>& train_metrics,
-      const dataset::DataSourcePtr& val_data,
-      const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      std::optional<bolt::train::DistributedCommInterfacePtr> comm) final;
+  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
+                   uint32_t epochs,
+                   const std::vector<std::string>& train_metrics,
+                   const dataset::DataSourcePtr& val_data,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options,
+                   const bolt::train::DistributedCommInterfacePtr& comm) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,

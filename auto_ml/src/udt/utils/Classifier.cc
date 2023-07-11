@@ -37,12 +37,12 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     const dataset::DatasetLoaderPtr& val_dataset,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   auto history = train(
       dataset, learning_rate, epochs,
       fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
       val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
-      callbacks, options, std::move(comm));
+      callbacks, options, comm);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
@@ -76,7 +76,7 @@ py::object Classifier::train(
     const dataset::DatasetLoaderPtr& val_dataset,
     const InputMetrics& val_metrics, const std::vector<CallbackPtr>& callbacks,
     TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
@@ -100,7 +100,7 @@ py::object Classifier::train(
       /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval,
-      /*comm= */ std::move(comm));
+      /*comm= */ comm);
 
   return py::cast(history);
 }

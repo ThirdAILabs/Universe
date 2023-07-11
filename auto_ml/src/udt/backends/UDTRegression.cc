@@ -62,7 +62,7 @@ py::object UDTRegression::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   dataset::DatasetLoaderPtr val_dataset;

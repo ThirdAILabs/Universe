@@ -36,7 +36,7 @@ metrics::History Trainer::train(
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    std::optional<DistributedCommInterfacePtr> comm) {
+    const DistributedCommInterfacePtr& comm) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
@@ -67,8 +67,8 @@ metrics::History Trainer::train(
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();
-    if (comm.has_value()) {
-      num_batches = comm->get()->min_num_batches(num_batches);
+    if (comm != nullptr) {
+      num_batches = comm->min_num_batches(num_batches);
     }
     auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
@@ -83,9 +83,9 @@ metrics::History Trainer::train(
 
       _model->trainOnBatch(inputs, labels);
 
-      if (comm.has_value()) {
+      if (comm != nullptr) {
         utils::Timer comm_timer;
-        comm->get()->communicate(_model);
+        comm->communicate(_model);
         comm_timer.stop();
         std::string log_line = formatFuncCallLogLine("communication", batch_idx,
                                                      comm_timer.milliseconds());
@@ -174,7 +174,7 @@ metrics::History Trainer::train_with_metric_names(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    std::optional<DistributedCommInterfacePtr> comm) {
+    const DistributedCommInterfacePtr& comm) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -186,8 +186,7 @@ metrics::History Trainer::train_with_metric_names(
       /* use_sparsity_in_validation= */ use_sparsity_in_validation,
       /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ autotune_rehash_rebuild,
-      /* verbose= */ verbose, /* logging_interval= */ logging_interval,
-      std::move(comm));
+      /* verbose= */ verbose, /* logging_interval= */ logging_interval, comm);
 }
 
 metrics::History Trainer::train_with_dataset_loader(
@@ -202,7 +201,7 @@ metrics::History Trainer::train_with_dataset_loader(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    std::optional<DistributedCommInterfacePtr> comm) {  // NOLINT
+    const DistributedCommInterfacePtr& comm) {  // NOLINT
   // clang is asking to make comm optional paramter as const. Since, it is a
   // std::optional, it hardly makes any difference whether the parameter is
   // const or not

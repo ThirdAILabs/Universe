@@ -123,20 +123,21 @@ UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
   }
 }
 
-py::object UDT::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
-    const dataset::DataSourcePtr& val_data,
-    const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
+                      uint32_t epochs,
+                      const std::vector<std::string>& train_metrics,
+                      const dataset::DataSourcePtr& val_data,
+                      const std::vector<std::string>& val_metrics,
+                      const std::vector<CallbackPtr>& callbacks,
+                      TrainOptions options,
+                      const bolt::train::DistributedCommInterfacePtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   bolt::utils::Timer timer;
 
   auto output =
       _backend->train(data, learning_rate, epochs, train_metrics, val_data,
-                      val_metrics, callbacks, options, std::move(comm));
+                      val_metrics, callbacks, options, comm);
 
   timer.stop();
   telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
@@ -232,12 +233,12 @@ py::object UDT::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    std::optional<bolt::train::DistributedCommInterfacePtr> comm) {
+    const bolt::train::DistributedCommInterfacePtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
                              learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options, std::move(comm));
+                             val_metrics, callbacks, options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
