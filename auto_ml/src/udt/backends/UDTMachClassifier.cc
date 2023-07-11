@@ -925,7 +925,7 @@ py::object UDTMachClassifier::associateTrain(
   return _classifier->train(dataset, learning_rate, epochs,
                             getMetrics(metrics, "train_"),
                             /* val_dataset */ nullptr, /* val_metrics= */ {},
-                            /* callbacks= */ {}, options);
+                            /* callbacks= */ {}, options, std::nullopt);
 }
 
 py::object UDTMachClassifier::associateColdStart(
