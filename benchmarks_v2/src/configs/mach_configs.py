@@ -32,7 +32,7 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
             "QUERY": bolt.types.text(contextual_encoding="local"),
             "DOC_ID": bolt.types.categorical(delimiter=":"),
         }
-    
+
 
 class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
     config_name = "trec_covid_mach_udt"
@@ -45,7 +45,11 @@ class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
     n_target_classes = 171332
     delimiter = ","
 
-    options = {"extreme_classification": True, "embedding_dimension": 3000, "extreme_output_dim": 20000}
+    options = {
+        "extreme_classification": True,
+        "embedding_dimension": 3000,
+        "extreme_output_dim": 20000,
+    }
     metrics = ["precision@1", "precision@10"]
     callbacks = []
 
