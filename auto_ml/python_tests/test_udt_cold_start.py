@@ -1,14 +1,14 @@
 import os
 
 import pytest
-from download_dataset_fixtures import download_amazon_kaggle_product_catalog_sampled
 from thirdai import bolt
+from thirdai.demos import download_amazon_kaggle_product_catalog_sampled
 
 pytestmark = [pytest.mark.unit]
 
 
-def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
-    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
+def test_udt_cold_start_kaggle():
+    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled()
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -28,11 +28,15 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
         epochs=5,
         batch_size=2000,
         metrics=["categorical_accuracy"],
+        shuffle_reservoir_size=32000,
     )
 
     os.remove(catalog_file)
 
     assert metrics["train_categorical_accuracy"][-1] > 0.5
+
+
+test_udt_cold_start_kaggle()
 
 
 def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
