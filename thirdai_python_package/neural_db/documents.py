@@ -2,8 +2,8 @@ import hashlib
 import os
 import pickle
 import shutil
-from collections import OrderedDict
 import string
+from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Tuple
 
