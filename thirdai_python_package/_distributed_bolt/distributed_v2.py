@@ -5,7 +5,7 @@ from thirdai._thirdai import bolt_v2 as bolt
 from .utils import check_torch_installed
 
 
-class Communication:
+class Communication(bolt.train.Communication):
     def communicate(self, model):
         import torch
         import torch.distributed as dist

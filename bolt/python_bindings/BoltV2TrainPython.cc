@@ -134,15 +134,12 @@ void defineTrainer(py::module_& train) {
              bool use_sparsity_in_validation,
              const std::vector<callbacks::CallbackPtr>& callbacks,
              bool autotune_rehash_rebuild, bool verbose,
-             std::optional<uint32_t> logging_interval, py::object& comm) {
+             std::optional<uint32_t> logging_interval, DistributedCommInterfacePtr& comm) {
             return trainer.train(
                 train_data, learning_rate, epochs, train_metrics,
                 validation_data, validation_metrics, steps_per_validation,
                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-                verbose, logging_interval,
-                (!comm.is(py::none())
-                     ? DistributedCommPython(comm).to_optional()
-                     : std::nullopt));
+                verbose, logging_interval,comm);
           },
           py::arg("train_data"), py::arg("learning_rate"),
           py::arg("epochs") = 1,
@@ -166,15 +163,12 @@ void defineTrainer(py::module_& train) {
              bool use_sparsity_in_validation,
              const std::vector<callbacks::CallbackPtr>& callbacks,
              bool autotune_rehash_rebuild, bool verbose,
-             std::optional<uint32_t> logging_interval, py::object& comm) {
+             std::optional<uint32_t> logging_interval, DistributedCommInterfacePtr& comm) {
             return trainer.train_with_metric_names(
                 train_data, learning_rate, epochs, train_metrics,
                 validation_data, validation_metrics, steps_per_validation,
                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-                verbose, logging_interval,
-                (!comm.is(py::none())
-                     ? DistributedCommPython(comm).to_optional()
-                     : std::nullopt));
+                verbose, logging_interval,comm);
           },
           py::arg("train_data"), py::arg("learning_rate"),
           py::arg("epochs") = 1,
@@ -323,6 +317,9 @@ void defineCallbacks(py::module_& train) {
 }
 
 void defineDistributedTrainer(py::module_& train) {
+  py::class_<DistributedCommInterface, PyDistributedComm, DistributedCommInterfacePtr>(train, "Communication")
+      .def(py::init<>());
+
   py::class_<GradientReference>(train, "GradientReference")
       .def("get_gradients", &GradientReference::getGradients)
       .def("set_gradients", &GradientReference::setGradients,

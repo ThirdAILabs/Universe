@@ -1,8 +1,8 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
-#include <bolt/python_bindings/DistributedCommunicationPython.h>
 #include <bolt/python_bindings/PybindUtils.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/train/trainer/DistributedCommInterface.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
@@ -128,14 +128,10 @@ void defineAutomlInModule(py::module_& module) {
              const dataset::DataSourcePtr& val_data,
              const std::vector<std::string>& val_metrics,
              const std::vector<udt::CallbackPtr>& callbacks,
-             udt::TrainOptions options, py::object& comm) {
-            return udt.train(
-                data, learning_rate, epochs, train_metrics, val_data,
-                val_metrics, callbacks, options,
-                (!comm.is(py::none())
-                     ? bolt::train::python::DistributedCommPython(comm)
-                           .to_optional()
-                     : std::nullopt));
+             udt::TrainOptions options,
+             bolt::train::DistributedCommInterfacePtr& comm) {
+            return udt.train(data, learning_rate, epochs, train_metrics,
+                             val_data, val_metrics, callbacks, options, comm);
           },
           py::arg("data"), py::arg("learning_rate"), py::arg("epochs"),
           py::arg("train_metrics") = std::vector<std::string>{},
@@ -173,17 +169,11 @@ void defineAutomlInModule(py::module_& module) {
              const dataset::DataSourcePtr& val_data,
              const std::vector<std::string>& val_metrics,
              const std::vector<udt::CallbackPtr>& callbacks,
-             udt::TrainOptions options, py::object& comm) {
-            return udt.coldstart(
-                data, strong_column_names, weak_column_names, learning_rate,
-                epochs, train_metrics, val_data, val_metrics, callbacks,
-                options,
-                (!comm.is(py::none())
-                     ? bolt::train::python::DistributedCommPython(comm)
-                           .to_optional()
-                     : std::nullopt)
-
-            );
+             udt::TrainOptions options,
+             bolt::train::DistributedCommInterfacePtr& comm) {
+            return udt.coldstart(data, strong_column_names, weak_column_names,
+                                 learning_rate, epochs, train_metrics, val_data,
+                                 val_metrics, callbacks, options, comm);
           },
           py::arg("data"), py::arg("strong_column_names"),
           py::arg("weak_column_names"), py::arg("learning_rate"),
