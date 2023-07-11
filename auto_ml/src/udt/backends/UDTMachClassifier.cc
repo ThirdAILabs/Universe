@@ -916,7 +916,7 @@ py::object UDTMachClassifier::associateTrain(
     BoltVector doc_id = BoltVector::singleElementSparseVector(0);
     for (uint32_t i = 0; i < n_association_samples; i++) {
       dataset->manuallyAddToBuffer(
-          {input_vec, doc_id, makeLabelFromHashes(hashes, n_buckets, rng)});
+          {input_vec, makeLabelFromHashes(hashes, n_buckets, rng), doc_id});
     }
   }
 

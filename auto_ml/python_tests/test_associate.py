@@ -3,7 +3,6 @@ import random
 
 import pandas as pd
 import pytest
-import thirdai
 from thirdai import bolt
 
 QUERY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "texts.csv")
@@ -110,7 +109,7 @@ def test_associate_acronyms():
     assert matches_after_associate >= 0.9
 
 
-def test_associate_acronyms_balancing_data():
+def test_associate_train_acronyms():
     model = train_model()
 
     original_samples, acronym_samples, associations = get_association_samples()
@@ -121,26 +120,24 @@ def test_associate_acronyms_balancing_data():
     print(matches_before_associate)
     assert matches_before_associate <= 0.5
 
-    results = []
-    for _ in range(5):
-        model.associate_train(
-            filename=QUERY_FILE,
-            source_target_samples=associations,
-            n_buckets=4,
-            n_association_samples=1,
-            epochs=3,
-            learning_rate=0.001,
-            verbose=False,
-            batch_size=100,
-        )
+    model.associate_train(
+        filename=QUERY_FILE,
+        source_target_samples=associations,
+        n_buckets=4,
+        n_association_samples=4,
+        epochs=20,  # We need more epochs in this test because there not the same sample replication
+        learning_rate=0.01,
+        verbose=False,
+        batch_size=100,
+    )
 
-        matches_after_associate = compare_predictions(
-            model, original_samples, acronym_samples
-        )
-        results.append(matches_after_associate)
+    matches_after_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
 
-    print(max(results))
-    # Checking that it reaches an accuracy at some point was less flaky compared
-    # to just checking the final accuracy. With this the accuracy is usually at
-    # least 0.9, but occasionally lower.
-    assert max(results) >= 0.7
+    print(matches_after_associate)  # Accuracy should be around 0.98-1.0
+    assert matches_after_associate >= 0.9
+
+
+for _ in range(20):
+    test_associate_train_acronyms()
