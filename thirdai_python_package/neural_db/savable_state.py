@@ -140,7 +140,6 @@ class State:
             self.documents.save_pkl(pkl_file)
             on_progress(3 / total_steps)
 
-
     # Pickle file is structured such that first there is a metadata dict,
     # and then the actual pickled object follows the metadata.
     @staticmethod
