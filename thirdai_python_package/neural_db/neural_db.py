@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
@@ -233,6 +234,8 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
+        use_weak_columns: bool = False,
+        num_buckets_to_sample: int = 16,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = None,
@@ -253,7 +256,9 @@ class NeuralDB:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
                 train_documents=intro_and_train.train,
+                num_buckets_to_sample=num_buckets_to_sample,
                 should_train=train,
+                use_weak_columns=use_weak_columns,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
             )
@@ -301,20 +306,35 @@ class NeuralDB:
                 return []
             raise e
 
+    def _get_text(self, result_id) -> str:
+        return self._savable_state.documents.reference(result_id).text
+
     def text_to_result(self, text: str, result_id: int) -> None:
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query_id_pairs=[(text, result_id)],
+            query_id_para=[
+                (text, upvote_id, self._get_text(result_id))
+                for upvote_id in self._savable_state.documents.reference(
+                    result_id
+                ).upvote_ids
+            ],
         )
 
     def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
+        query_id_para = [
+            (query, upvote_id, self._get_text(result_id))
+            for query, result_id in text_id_pairs
+            for upvote_id in self._savable_state.documents.reference(
+                result_id
+            ).upvote_ids
+        ]
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query_id_pairs=text_id_pairs,
+            query_id_para=query_id_para,
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
@@ -372,9 +392,22 @@ class NeuralDB:
             for source, target in row["args"]["pairs"]:
                 associate_samples.append((source, target))
 
-        # TODO(Nicholas, Geordie): add upvote samples here after logging label text.
-
         return associate_samples
+
+    def get_upvote_samples(self):
+        logs = self._savable_state.logger.get_logs()
+
+        upvote_associate_samples = []
+        upvote_logs = logs[logs["action"] == "upvote"]
+        for _, row in upvote_logs.iterrows():
+            if "query_id_para" in row["args"]:
+                for source, _, target in row["args"]["query_id_para"]:
+                    upvote_associate_samples.append((source, target))
+
+        return upvote_associate_samples
+
+    def get_rlhf_samples(self):
+        return self.get_associate_samples() + self.get_upvote_samples()
 
     def retrain(
         self,
@@ -386,7 +419,7 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
 
         if not text_pairs:
-            text_pairs = self.get_associate_samples()
+            text_pairs = self.get_rlhf_samples()
 
         self._savable_state.model.retrain(
             balancing_data=doc_manager.get_data_source(),
