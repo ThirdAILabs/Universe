@@ -84,13 +84,13 @@ class Model:
     def save_meta(self, directory: Path) -> None:
         raise NotImplementedError()
 
+    def load_meta(self, directory: Path):
+        raise NotImplementedError()
+
     def save_pkl(self, pkl_file) -> None:
         raise NotImplementedError()
 
     def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
-        raise NotImplementedError()
-
-    def load_meta(self, directory: Path):
         raise NotImplementedError()
 
     def associate(
