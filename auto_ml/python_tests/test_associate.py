@@ -125,7 +125,7 @@ def test_associate_train_acronyms():
         source_target_samples=associations,
         n_buckets=4,
         n_association_samples=4,
-        epochs=20,  # We need more epochs in this test because there not the same sample replication
+        epochs=20,  # We need more epochs in this test because we don't do the same sample replication
         learning_rate=0.01,
         verbose=False,
         batch_size=100,
