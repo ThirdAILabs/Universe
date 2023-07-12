@@ -12,6 +12,7 @@ __all__ = [
     "set_global_num_threads",
     "logging",
     "bolt_v2",
+    "neural_db",
 ]
 
 # Include these so we can use them just by import the top level.
@@ -22,6 +23,7 @@ import thirdai.dataset as dataset
 import thirdai.demos as demos
 import thirdai.hashing as hashing
 import thirdai.licensing as licensing
+import thirdai.neural_db as neural_db
 import thirdai.search as search
 import thirdai.telemetry as telemetry
 

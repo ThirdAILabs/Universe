@@ -21,7 +21,7 @@ config = use_config()
 config.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
 
 
-def get_all_urls(base_url, max_crawl_depth):
+def recursive_url_scrape(base_url, max_crawl_depth, match_url_prefix=True):
     crawled_urls = set()
     valid_urls = set()
     queue = deque([(base_url, 0)])
@@ -53,9 +53,8 @@ def get_all_urls(base_url, max_crawl_depth):
             href = a_tag["href"]
             next_url = url_normalize(urljoin(base_url, href))
 
-            url_exact_match = True
             if next_url not in crawled_urls and (
-                next_url[: len(base_url)] == base_url or not url_exact_match
+                next_url[: len(base_url)] == base_url or not match_url_prefix
             ):
                 crawled_urls.add(next_url)
                 queue.append((next_url, depth + 1))
