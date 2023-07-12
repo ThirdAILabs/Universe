@@ -63,3 +63,23 @@ def test_census_demo_key_fails_on_query_reformulation():
         model.train(temp_filename)
 
     os.remove(temp_filename)
+
+
+def test_introduce_documents_fails_on_demo_license():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+
+    temp_filename = "temp_data.txt"
+    with open(temp_filename, "w") as file:
+        file.writelines(["query,label\n", "input1,output1\n", "input2,output2\n"])
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "query": bolt.types.text(),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        integer_target=True,
+        options={"extreme_classification": True, "extreme_output_dim": 100},
+    )
+
+    model.introduce_documents(temp_filename)
