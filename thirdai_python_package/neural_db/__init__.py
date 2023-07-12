@@ -1,5 +1,14 @@
 try:
-    from .documents import CSV, DOCX, PDF, URL, Document, Reference
+    from .documents import (
+        CSV,
+        DOCX,
+        PDF,
+        URL,
+        Document,
+        Reference,
+        SentenceLevelDOCX,
+        SentenceLevelPDF,
+    )
     from .neural_db import CancelState, NeuralDB, Strength, Sup
 except ImportError as error:
     raise ImportError(
