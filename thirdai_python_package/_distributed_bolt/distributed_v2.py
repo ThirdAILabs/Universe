@@ -54,7 +54,7 @@ def adds_distributed_v2_to_udt():
         kwargs["comm"] = Communication()
         return self.cold_start(*args, **kwargs)
 
-        # TODO(pratik): Should we enable sparse parameter updates after training?
+        # TODO(pratik/mritunjay): Enable sparse parameter updates after training.
 
     old_bolt.UniversalDeepTransformer.coldstart_distributed_v2 = (
         coldstart_distributed_v2
@@ -67,6 +67,6 @@ def adds_distributed_v2_to_udt():
         kwargs["comm"] = Communication()
         return self.train(*args, **kwargs)
 
-        # TODO(pratik): Should we enable sparse parameter updates after training?
+        # TODO(pratik/mritunjay): Enable sparse parameter updates after training.
 
     old_bolt.UniversalDeepTransformer.train_distributed_v2 = train_distributed_v2

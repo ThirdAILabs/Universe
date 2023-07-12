@@ -11,25 +11,21 @@ class PyDistributedComm : public DistributedCommInterface {
   PyDistributedComm() {}
 
   void communicate(const bolt::nn::model::ModelPtr& model) override {
-    PYBIND11_OVERRIDE_NAME(void,                     /* Return type */
-                           DistributedCommInterface, /* Parent class */
-                           "communicate", /* Name of Python function */
-                           communicate,   /* Name of C++ function */
-                           model          /* Argument(s) */
+    PYBIND11_OVERRIDE_PURE_NAME(void,                     /* Return type */
+                                DistributedCommInterface, /* Parent class */
+                                "communicate", /* Name of Python function */
+                                communicate,   /* Name of C++ function */
+                                model          /* Argument(s) */
     );
   }
 
   uint64_t min_num_batches(uint64_t num_batches) override {
-    PYBIND11_OVERRIDE_NAME(uint64_t,                 /* Return type */
-                           DistributedCommInterface, /* Parent class */
-                           "min_num_batches", /* Name of Python function */
-                           min_num_batches,   /* Name of C++ function */
-                           num_batches        /* Argument(s) */
+    PYBIND11_OVERRIDE_PURE_NAME(uint64_t,                 /* Return type */
+                                DistributedCommInterface, /* Parent class */
+                                "min_num_batches", /* Name of Python function */
+                                min_num_batches,   /* Name of C++ function */
+                                num_batches        /* Argument(s) */
     );
-  }
-
-  std::optional<std::shared_ptr<PyDistributedComm>> to_optional() {
-    return std::make_shared<PyDistributedComm>(*this);
   }
 };
 
