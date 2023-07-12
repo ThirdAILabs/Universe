@@ -7,6 +7,8 @@ from .utils import check_torch_installed
 
 class Communication(bolt.train.Communication):
     def __init__(self):
+        # For trampoline classes, we need to explicitly call
+        # __init__ of the object rather than just using super()
         bolt.train.Communication.__init__(self)
         check_torch_installed()
 
