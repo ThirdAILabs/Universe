@@ -120,19 +120,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_target_classes"), py::arg("input_dim"),
            py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict())
-      .def(
-          "train",
-          [](udt::UDT& udt, const dataset::DataSourcePtr& data,
-             float learning_rate, uint32_t epochs,
-             const std::vector<std::string>& train_metrics,
-             const dataset::DataSourcePtr& val_data,
-             const std::vector<std::string>& val_metrics,
-             const std::vector<udt::CallbackPtr>& callbacks,
-             udt::TrainOptions options,
-             bolt::train::DistributedCommInterfacePtr& comm) {
-            return udt.train(data, learning_rate, epochs, train_metrics,
-                             val_data, val_metrics, callbacks, options, comm);
-          },
+      .def("train",&udt::UDT::train,
           py::arg("data"), py::arg("learning_rate"), py::arg("epochs"),
           py::arg("train_metrics") = std::vector<std::string>{},
           py::arg("val_data") = nullptr,
@@ -159,22 +147,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
-      .def(
-          "cold_start",
-          [](udt::UDT& udt, const dataset::DataSourcePtr& data,
-             const std::vector<std::string>& strong_column_names,
-             const std::vector<std::string>& weak_column_names,
-             float learning_rate, uint32_t epochs,
-             const std::vector<std::string>& train_metrics,
-             const dataset::DataSourcePtr& val_data,
-             const std::vector<std::string>& val_metrics,
-             const std::vector<udt::CallbackPtr>& callbacks,
-             udt::TrainOptions options,
-             bolt::train::DistributedCommInterfacePtr& comm) {
-            return udt.coldstart(data, strong_column_names, weak_column_names,
-                                 learning_rate, epochs, train_metrics, val_data,
-                                 val_metrics, callbacks, options, comm);
-          },
+      .def("cold_start",&udt::UDT::coldstart,
           py::arg("data"), py::arg("strong_column_names"),
           py::arg("weak_column_names"), py::arg("learning_rate"),
           py::arg("epochs"), py::arg("train_metrics"), py::arg("val_data"),

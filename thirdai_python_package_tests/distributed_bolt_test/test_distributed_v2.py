@@ -63,7 +63,6 @@ def training_loop_per_worker(config):
         train_data=(train_x, train_y), learning_rate=0.005, epochs=1
     )
 
-    # session report should always have a metrics stored, hence added a demo_metric
     session.report(
         {"model_location": session.get_trial_dir()},
         checkpoint=dist.BoltCheckPoint.from_model(model),
@@ -323,7 +322,6 @@ def test_distributed_fault_tolerance():
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-            # session report should always have a metrics stored, hence added a demo_metric
             session.report(
                 {"model_location": session.get_trial_dir()},
                 checkpoint=dist.BoltCheckPoint.from_dict(
