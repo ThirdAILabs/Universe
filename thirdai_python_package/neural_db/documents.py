@@ -362,6 +362,18 @@ class CSV(Document):
         ]
         return " ".join([row[col] for col in self.reference_columns for row in rows])
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes
+        self.__dict__.update(state)
+        # Set a default value for path since it was not in the state
+        self.path = None
+
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
         shutil.copy(self.path, directory)
@@ -448,6 +460,18 @@ class Extracted(Document):
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
         return "\n".join(rows["passage"])
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the filename attribute because it is not cross platform compatible
+        del state["filename"]
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes
+        self.__dict__.update(state)
+        # Set a default value for filename since it was not in the state
+        self.filename = None
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
