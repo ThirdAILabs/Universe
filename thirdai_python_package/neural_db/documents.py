@@ -61,7 +61,7 @@ class Document:
     def load_meta(self, directory: Path):
         pass
 
-    def save_pkl(self, pkl_file) -> None:
+    def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir) -> None:
         raise NotImplementedError()
 
     def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
