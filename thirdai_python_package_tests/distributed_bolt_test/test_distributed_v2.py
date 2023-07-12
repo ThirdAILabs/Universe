@@ -55,12 +55,12 @@ def setup_ray():
 def training_loop_per_worker(config):
     model = config.get("model")
 
-    trainer = dist.DistributedTrainer(model)
+    trainer = bolt.train.Trainer(model)
     train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed(
+    trainer.train_distributed_v2(
         train_data=(train_x, train_y), learning_rate=0.005, epochs=1
     )
 
@@ -100,7 +100,6 @@ def test_bolt_distributed_v2():
 
     assert history["val_categorical_accuracy"][-1] > 0.8
 
-    print(result_checkpoint_and_history.metrics["model_location"])
     model_1 = bolt.nn.Model.load(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],

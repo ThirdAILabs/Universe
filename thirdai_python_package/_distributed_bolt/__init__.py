@@ -17,6 +17,6 @@ from .utils import PandasColumnMapGenerator, get_num_cpus
 
 add_distributed_to_udt()
 
-from .distributed_v2 import DistributedTrainer, adds_distributed_v2_to_udt
+from .distributed_v2 import adds_distributed_v2_to_bolt
 
-adds_distributed_v2_to_udt()
+adds_distributed_v2_to_bolt()
