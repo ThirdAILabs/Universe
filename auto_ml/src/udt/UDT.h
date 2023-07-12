@@ -238,6 +238,8 @@ class UDT {
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
+    licensing::entitlements().verifyDataSource(balancing_data);
+
     return _backend->associateTrain(balancing_data, source_target_samples,
                                     n_buckets, n_association_samples,
                                     learning_rate, epochs, metrics, options);
@@ -251,6 +253,8 @@ class UDT {
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
+    licensing::entitlements().verifyDataSource(balancing_data);
+
     return _backend->associateColdStart(
         balancing_data, strong_column_names, weak_column_names,
         source_target_samples, n_buckets, n_association_samples, learning_rate,
