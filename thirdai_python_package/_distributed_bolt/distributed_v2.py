@@ -6,6 +6,10 @@ from .utils import check_torch_installed
 
 
 class Communication(bolt.train.Communication):
+    def __init__(self):
+        bolt.train.Communication.__init__(self)
+        check_torch_installed()
+
     def communicate(self, model):
         import torch
         import torch.distributed as dist
@@ -33,7 +37,6 @@ class Communication(bolt.train.Communication):
 class DistributedTrainer(bolt.train.Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        check_torch_installed()
 
         # Note: We need to disable sparse updates neural network updates as after allreduce
         # during sparse training, we only update the parameters selected by hash tables, rather we
@@ -48,8 +51,6 @@ class DistributedTrainer(bolt.train.Trainer):
 
 def adds_distributed_v2_to_udt():
     def coldstart_distributed_v2(self, *args, **kwargs):
-        check_torch_installed()
-
         self._get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
         return self.cold_start(*args, **kwargs)
@@ -61,8 +62,6 @@ def adds_distributed_v2_to_udt():
     )
 
     def train_distributed_v2(self, *args, **kwargs):
-        check_torch_installed()
-
         self._get_model().disable_sparse_parameter_updates()
         kwargs["comm"] = Communication()
         return self.train(*args, **kwargs)

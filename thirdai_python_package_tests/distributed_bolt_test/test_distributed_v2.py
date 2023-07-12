@@ -30,6 +30,7 @@ pytestmark = [pytest.mark.distributed]
 
 
 def setup_ray():
+    # reserve one CPU for Ray Trainer
     num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
 
     assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
@@ -45,7 +46,7 @@ def setup_ray():
     scaling_config = ScalingConfig(
         num_workers=2,
         use_gpu=False,
-        resources_per_worker={"CPU": num_cpu_per_node - 1},
+        resources_per_worker={"CPU": num_cpu_per_node},
         placement_strategy="PACK",
     )
     return scaling_config
@@ -70,7 +71,7 @@ def training_loop_per_worker(config):
     trainer.model.save("trained.model")
 
 
-def test_distributed_v2():
+def test_bolt_distributed_v2():
     model = get_bolt_model()
 
     scaling_config = setup_ray()
