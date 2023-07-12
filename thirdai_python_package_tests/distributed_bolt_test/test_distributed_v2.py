@@ -312,13 +312,13 @@ def test_distributed_fault_tolerance():
             # flag whether worker-0 has been killed once
             is_worker_killed = checkpoint_dict["is_worker_killed"]
 
-        trainer = dist.DistributedTrainer(model)
+        trainer = bolt.train.Trainer(model)
         train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
         train_x = bolt.train.convert_dataset(train_x, dim=10)
         train_y = bolt.train.convert_dataset(train_y, dim=10)
 
         for epoch in range(starting_epoch, num_epochs):
-            trainer.train_distributed(
+            trainer.train_distributed_v2(
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
