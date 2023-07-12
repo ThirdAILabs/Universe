@@ -350,6 +350,6 @@ def test_distributed_fault_tolerance():
         run_config=RunConfig(failure_config=FailureConfig(max_failures=3)),
     )
 
-    result_checkpoint_and_history = trainer.fit()
+    trainer.fit()
 
     ray.shutdown()
