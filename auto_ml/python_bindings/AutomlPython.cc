@@ -120,14 +120,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_target_classes"), py::arg("input_dim"),
            py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict())
-      .def("train",&udt::UDT::train,
-          py::arg("data"), py::arg("learning_rate"), py::arg("epochs"),
-          py::arg("train_metrics") = std::vector<std::string>{},
-          py::arg("val_data") = nullptr,
-          py::arg("val_metrics") = std::vector<std::string>{},
-          py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
-          py::arg("options") = udt::TrainOptions(),
-          py::arg("comm") = std::nullopt, bolt::python::OutputRedirect())
+      .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
+           py::arg("epochs"),
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("val_data") = nullptr,
+           py::arg("val_metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
+           py::arg("options") = udt::TrainOptions(),
+           py::arg("comm") = std::nullopt, bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
@@ -147,12 +147,12 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
-      .def("cold_start",&udt::UDT::coldstart,
-          py::arg("data"), py::arg("strong_column_names"),
-          py::arg("weak_column_names"), py::arg("learning_rate"),
-          py::arg("epochs"), py::arg("train_metrics"), py::arg("val_data"),
-          py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
-          py::arg("comm") = nullptr, bolt::python::OutputRedirect())
+      .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
+           py::arg("strong_column_names"), py::arg("weak_column_names"),
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("train_metrics"), py::arg("val_data"),
+           py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
+           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
       .def("output_correctness", &udt::UDT::outputCorrectness,
            py::arg("samples"), py::arg("labels"),
            py::arg("sparse_inference") = false,
