@@ -137,7 +137,3 @@ def test_associate_train_acronyms():
 
     print(matches_after_associate)  # Accuracy should be around 0.98-1.0
     assert matches_after_associate >= 0.9
-
-
-for _ in range(20):
-    test_associate_train_acronyms()
