@@ -11,6 +11,14 @@ def ensure_valid_encoding(text):
 
 
 def chunk_text(text: str):
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_THRESHOLD,
+        chunk_overlap=0,
+        length_function=lambda x: len(word_tokenize(x)),
+    )
+
     sentences = sent_tokenize(text)
     if len(sentences) == 1:
         return [text]
@@ -38,5 +46,12 @@ def chunk_text(text: str):
             chunks[-1] += final_chunk
         else:
             chunks.append(final_chunk)
+
+    for i in range(len(chunks)):
+        chunk = chunks[i]
+        if len(chunk) > 750:
+            sub_chunks = text_splitter.split_text(chunk)
+            chunks[i] = sub_chunks
+    chunks = [chunk for sub_chunks in chunks for chunk in (sub_chunks if isinstance(sub_chunks, list) else [sub_chunks])]
 
     return chunks
