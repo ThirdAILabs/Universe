@@ -1,4 +1,5 @@
 try:
+    from . import parsing_utils
     from .documents import (
         CSV,
         DOCX,
