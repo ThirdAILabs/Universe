@@ -201,10 +201,7 @@ metrics::History Trainer::train_with_dataset_loader(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    const DistributedCommInterfacePtr& comm) {  // NOLINT
-  // clang is asking to make comm optional paramter as const. Since, it is a
-  // std::optional, it hardly makes any difference whether the parameter is
-  // const or not
+    const DistributedCommInterfacePtr& comm) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 
@@ -328,8 +325,8 @@ std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
 std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
-      "{} | epoch {} | train_steps {} | train_batches {} | time {}s", func_call,
-      _epoch, _model->trainSteps(), batches, time);
+      "{} | epoch {} | train_steps {} | train_batches {} | time {} ms",
+      func_call, _epoch, _model->trainSteps(), batches, time);
 
   return logline;
 }

@@ -1,8 +1,6 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
-#include <bolt/src/nn/model/Model.h>
-#include <bolt/src/train/trainer/DistributedCommInterface.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>

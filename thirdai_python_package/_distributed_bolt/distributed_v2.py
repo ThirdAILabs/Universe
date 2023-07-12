@@ -38,8 +38,6 @@ class Communication(bolt.train.Communication):
 # during sparse training, we only update the parameters selected by hash tables, rather we
 # need to update all the parameters, since during all-reduce some other neuron could be non-zero
 # too.
-
-
 def adds_distributed_v2_to_bolt():
     def train_distributed_v2(self, *args, **kwargs):
         self.model.disable_sparse_parameter_updates()
@@ -54,7 +52,6 @@ def adds_distributed_v2_to_bolt():
 
         kwargs["comm"] = Communication()
         return self.cold_start(*args, **kwargs)
-
         # TODO(pratik/mritunjay): Enable sparse parameter updates after training.
 
     old_bolt.UniversalDeepTransformer.coldstart_distributed_v2 = (
@@ -66,7 +63,6 @@ def adds_distributed_v2_to_bolt():
 
         kwargs["comm"] = Communication()
         return self.train(*args, **kwargs)
-
         # TODO(pratik/mritunjay): Enable sparse parameter updates after training.
 
     old_bolt.UniversalDeepTransformer.train_distributed_v2 = train_distributed_v2
