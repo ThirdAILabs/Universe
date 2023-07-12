@@ -85,8 +85,11 @@ metrics::History Trainer::train(
 
       if (comm != nullptr) {
         utils::Timer comm_timer;
+
         comm->communicate(_model);
+
         comm_timer.stop();
+
         std::string log_line = formatFuncCallLogLine("communication", batch_idx,
                                                      comm_timer.milliseconds());
         logging::info(log_line);
@@ -120,6 +123,7 @@ metrics::History Trainer::train(
         return *_history;
       }
       checkInterrupt();
+
       batch_timer.stop();
       std::string log_line = formatFuncCallLogLine("train_batch", batch_idx,
                                                    batch_timer.milliseconds());

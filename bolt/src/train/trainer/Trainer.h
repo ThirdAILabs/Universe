@@ -136,7 +136,7 @@ class Trainer {
    */
 
   /**
-   * Returns a formatted log line for the end of each epoch.
+   * Returns a formatted log line for function call
    */
   std::string formatFuncCallLogLine(const std::string& func_call,
                                     uint32_t batches, int64_t time);
