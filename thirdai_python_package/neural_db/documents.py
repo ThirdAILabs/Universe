@@ -502,7 +502,7 @@ class Extracted(Document):
         os.makedirs(os.path.dirname(save_path))
         with open(save_path, "wb") as extracted_file:
             extracted_file.write(extracted_file_data)
-        self.path = save_path
+        self.filename = save_path
 
 
 def process_pdf(filename: str) -> pd.DataFrame:
