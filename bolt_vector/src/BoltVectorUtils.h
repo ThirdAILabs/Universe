@@ -87,4 +87,26 @@ static BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
   return BoltVector(new_activation_ptr, new_gradient_ptr, length);
 }
 
+static std::vector<BoltVector> segmentRowMajorVector(
+    const BoltVector& base_vector, uint32_t rows, uint32_t columns) {
+  assert(rows * columns == base_vector.len);
+  std::vector<BoltVector> segmented_vectors;
+  segmented_vectors.reserve(rows);
+  for (uint32_t i = 0; i < rows; i++) {
+    float* new_activation_ptr = base_vector.activations + i * columns;
+    float* new_gradient_ptr = base_vector.hasGradients()
+                                  ? base_vector.gradients + i * columns
+                                  : nullptr;
+    segmented_vectors.emplace_back(
+        BoltVector(new_activation_ptr, new_gradient_ptr, columns));
+  }
+  return segmented_vectors;
+}
+
+// static BoltVector transposeBoltVector(const BoltVector& base_vector, uint32_t
+// rows, uint32_t columns){
+//   assert(rows*columns == base_vector.len);
+
+// }
+
 }  // namespace thirdai::bolt_vector

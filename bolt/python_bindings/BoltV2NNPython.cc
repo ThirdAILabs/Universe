@@ -9,6 +9,7 @@
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FCMixer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
@@ -218,6 +219,53 @@ void defineOps(py::module_& nn) {
       .def("get_hash_table", &ops::FullyConnected::getHashTable)
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
            py::arg("hash_fn"), py::arg("hash_table"));
+
+  py::class_<ops::FCMixer, ops::FCMixerPtr, ops::Op>(nn, "FCMixer")
+      .def(py::init(&ops::FCMixer::make), py::arg("dim"), py::arg("input_dim"),
+           py::arg("mixer_type"), py::arg("rows"), py::arg("columns"),
+           py::arg("sparsity") = 1.0, py::arg("activation") = "relu",
+           py::arg("sampling_config") = nullptr, py::arg("use_bias") = true,
+           py::arg("rebuild_hash_tables") = 10,
+           py::arg("reconstruct_hash_functions") = 100)
+      .def("__call__", &ops::FCMixer::apply)
+      .def("dim", &ops::FCMixer::dim)
+      .def("get_sparsity", &ops::FCMixer::getSparsity)
+      .def("set_sparsity", &ops::FCMixer::setSparsity, py::arg("sparsity"),
+           py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
+      .def_property_readonly(
+          "weights",
+          [](const ops::FCMixer& op) {
+            return toNumpy(op.weightsPtr(), {op.dim(), op.inputDim()});
+          })
+      .def_property_readonly("biases",
+                             [](const ops::FCMixer& op) {
+                               return toNumpy(op.biasesPtr(), {op.dim()});
+                             })
+      .def("set_weights",
+           [](ops::FCMixer& op, const NumpyArray<float>& weights) {
+             if (weights.ndim() != 2 || weights.shape(0) != op.dim() ||
+                 weights.shape(1) != op.inputDim()) {
+               std::stringstream error;
+               error << "Expected weights to be 2D array with shape ("
+                     << op.dim() << ", " << op.inputDim() << ").";
+               throw std::invalid_argument(error.str());
+             }
+             op.setWeights(weights.data());
+           })
+      .def("set_biases",
+           [](ops::FCMixer& op, const NumpyArray<float>& biases) {
+             if (biases.ndim() != 1 || biases.shape(0) != op.dim()) {
+               std::stringstream error;
+               error << "Expected biases to be 1D array with shape ("
+                     << op.dim() << ",).";
+               throw std::invalid_argument(error.str());
+             }
+             op.setBiases(biases.data());
+           })
+      .def("get_hash_table", &ops::FCMixer::getHashTable)
+      .def("set_hash_table", &ops::FCMixer::setHashTable, py::arg("hash_fn"),
+           py::arg("hash_table"));
 
   py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
       .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
