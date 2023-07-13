@@ -53,8 +53,8 @@ def setup_ray():
 
 
 def training_loop_per_worker(config):
-    model = config.get("model")
-
+    model = get_bolt_model()
+    model = dist.prepare_model(model)
     trainer = bolt.train.Trainer(model)
     train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
     train_x = bolt.train.convert_dataset(train_x, dim=10)
@@ -72,12 +72,10 @@ def training_loop_per_worker(config):
 
 
 def test_bolt_distributed_v2():
-    model = get_bolt_model()
-
     scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
-        train_loop_config={"model": model, "num_epochs": 5},
+        train_loop_config={"num_epochs": 5},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
@@ -122,6 +120,8 @@ def test_udt_train_distributed_v2():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
+        udt_model = get_clinc_udt_model(integer_target=True)
+        udt_model = dist.prepare_model(udt_model)
         copy_file_or_folder(
             os.path.join(
                 config.get("cur_dir"), f"clinc_train_{session.get_world_rank()}.csv"
@@ -131,7 +131,6 @@ def test_udt_train_distributed_v2():
                 f"rank_{session.get_world_rank()}/clinc_train_{session.get_world_rank()}.csv",
             ),
         )
-        udt_model = config.get("model")
         udt_model.train_distributed_v2(
             f"clinc_train_{session.get_world_rank()}.csv",
             epochs=1,
@@ -145,13 +144,13 @@ def test_udt_train_distributed_v2():
             checkpoint=dist.UDTCheckPoint.from_model(udt_model),
         )
 
-    udt_model = get_clinc_udt_model(integer_target=True)
-
     scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
-        train_loop_config={"model": udt_model, "cur_dir": os.path.abspath(os.getcwd())},
+        train_loop_config={
+            "cur_dir": os.path.abspath(os.getcwd()),
+        },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
@@ -173,7 +172,12 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
 
     def udt_mach_loop_per_worker(config):
         thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
-        model = config.get("model")
+
+        n_target_classes = config.get("n_target_classes")
+        udt_model = get_udt_scifact_mach_model(n_target_classes)
+
+        model = dist.prepare_model(udt_model)
+
         copy_file_or_folder(
             os.path.join(
                 config.get("cur_dir"),
@@ -219,13 +223,12 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
             checkpoint=dist.UDTCheckPoint.from_model(model),
         )
 
-    udt_model = get_udt_scifact_mach_model(n_target_classes)
     scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_mach_loop_per_worker,
         train_loop_config={
-            "model": udt_model,
+            "n_target_classes": n_target_classes,
             "cur_dir": os.path.abspath(os.getcwd()),
             "supervised_tst": supervised_tst,
         },
@@ -246,7 +249,9 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     )
 
     def udt_coldstart_loop_per_worker(config):
-        udt_model = config.get("model")
+        n_target_classes = config.get("n_target_classes")
+        udt_model = get_udt_cold_start_model(n_target_classes)
+
         copy_file_or_folder(
             os.path.join(
                 config.get("cur_dir"),
@@ -273,13 +278,14 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
             checkpoint=dist.UDTCheckPoint.from_model(udt_model),
         )
 
-    udt_model = get_udt_cold_start_model(n_target_classes)
-
     scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_coldstart_loop_per_worker,
-        train_loop_config={"model": udt_model, "cur_dir": os.path.abspath(os.getcwd())},
+        train_loop_config={
+            "n_target_classes": n_target_classes,
+            "cur_dir": os.path.abspath(os.getcwd()),
+        },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
@@ -294,7 +300,9 @@ def test_distributed_fault_tolerance():
     import sys
 
     def training_loop_per_worker(config):
-        model = config.get("model")
+        model = get_bolt_model()
+        model = dist.prepare_model(model)
+
         starting_epoch = 0
         num_epochs = config.get("num_epochs", 1)
         is_worker_killed = False
@@ -339,12 +347,10 @@ def test_distributed_fault_tolerance():
                     is_worker_killed = True
                     sys.exit(1)
 
-    model = get_bolt_model()
-
     scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
-        train_loop_config={"model": model, "num_epochs": 10},
+        train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
         run_config=RunConfig(failure_config=FailureConfig(max_failures=3)),
