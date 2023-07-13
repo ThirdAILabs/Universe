@@ -1,10 +1,10 @@
-from thirdai import data, dataset
+import numpy as np
 import pytest
 from dataset_utils import sparse_bolt_dataset_to_numpy
+from thirdai import data, dataset
 from transformers import BertTokenizer
-from conftest import download_bert_base_uncased
-import numpy as np
 
+from conftest import download_bert_base_uncased
 
 pytestmark = [pytest.mark.unit]
 
