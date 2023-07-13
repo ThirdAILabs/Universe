@@ -410,15 +410,15 @@ class CSV(Document):
 class Extracted(Document):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        self.filename = Path(filename)
-        self.df = self.process_data(filename)
-        self.hash_val = hash_file(filename)
+        self.path = Path(path)
+        self.df = self.process_data(path)
+        self.hash_val = hash_file(path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
         raise NotImplementedError()
 
@@ -432,7 +432,7 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename.name
+        return self.path.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -448,7 +448,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.filename.absolute()),
+            source=str(self.path.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
@@ -463,24 +463,24 @@ class Extracted(Document):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        # Remove the filename attribute because it is not cross platform compatible
-        del state["filename"]
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
         return state
 
     def __setstate__(self, state):
         # Restore instance attributes
         self.__dict__.update(state)
-        # Set a default value for filename since it was not in the state
-        self.filename = None
+        # Set a default value for path since it was not in the state
+        self.path = None
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
-        shutil.copy(self.filename, directory)
+        shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.filename = directory / self.filename.name
+        self.path = directory / self.path.name
 
     def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
         metadata = {
@@ -492,7 +492,7 @@ class Extracted(Document):
         }
         pickle.dump(metadata, pkl_file)
         pickle.dump(self, pkl_file)
-        with open(self.filename, "rb") as extracted_file:
+        with open(self.path, "rb") as extracted_file:
             extracted_file_data = extracted_file.read()
         pickle.dump(extracted_file_data, pkl_file)
 
@@ -505,22 +505,22 @@ class Extracted(Document):
         self.path = save_path
 
 
-def process_pdf(filename: str) -> pd.DataFrame:
-    elements, success = pdf_parse.process_pdf_file(filename)
+def process_pdf(path: str) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(path)
 
     if not success:
-        raise ValueError(f"Could not read PDF file: {filename}")
+        raise ValueError(f"Could not read PDF file: {path}")
 
     elements_df = pdf_parse.create_train_df(elements)
 
     return elements_df
 
 
-def process_docx(filename: str) -> pd.DataFrame:
-    elements, success = doc_parse.get_elements(filename)
+def process_docx(path: str) -> pd.DataFrame:
+    elements, success = doc_parse.get_elements(path)
 
     if not success:
-        raise ValueError(f"Could not read DOCX file: {filename}")
+        raise ValueError(f"Could not read DOCX file: {path}")
 
     elements_df = doc_parse.create_train_df(elements)
 
@@ -530,29 +530,29 @@ def process_docx(filename: str) -> pd.DataFrame:
 class PDF(Extracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_pdf(filename)
+        return process_pdf(path)
 
 
 class DOCX(Extracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_docx(filename)
+        return process_docx(path)
 
 
 class URL(Document):
@@ -615,11 +615,11 @@ class SentenceLevelExtracted(Extracted):
 
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        self.filename = Path(filename)
-        self.df = self.parse_sentences(self.process_data(filename))
-        self.hash_val = hash_file(filename)
+        self.path = Path(path)
+        self.df = self.parse_sentences(self.process_data(path))
+        self.hash_val = hash_file(path)
         self.para_df = self.df["para"].unique()
 
     def not_just_punctuation(sentence: str):
@@ -672,7 +672,7 @@ class SentenceLevelExtracted(Extracted):
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
         raise NotImplementedError()
 
@@ -686,7 +686,7 @@ class SentenceLevelExtracted(Extracted):
 
     @property
     def name(self) -> str:
-        return self.filename.name
+        return self.path.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -702,7 +702,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.filename.absolute()),
+            source=str(self.path.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
@@ -720,37 +720,37 @@ class SentenceLevelExtracted(Extracted):
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
-        shutil.copy(self.filename, directory)
+        shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.filename = directory / self.filename.name
+        self.path = directory / self.path.name
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_pdf(filename)
+        return process_pdf(path)
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_docx(filename)
+        return process_docx(path)
