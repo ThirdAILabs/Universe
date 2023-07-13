@@ -126,6 +126,7 @@ def test_introduce_documents_works_on_clinc(download_clinc_dataset):
     train_data, _, _ = download_clinc_dataset
 
     model = simple_mach_model(target_column="category")
+    model.clear_index()
 
     model.introduce_documents(
         train_data, strong_column_names=[], weak_column_names=["text"]
