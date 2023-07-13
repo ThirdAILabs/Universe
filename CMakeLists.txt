@@ -408,12 +408,11 @@ set(THIRDAI_SOURCES
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
-    new_dataset/src/featurization_pipeline/transformations/Binning.cc
-    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
-    new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
-    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
-    new_dataset/src/featurization_pipeline/ColumnMap.cc
-    new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
+    data/src/transformations/Binning.cc
+    data/src/transformations/StringHash.cc
+    data/src/transformations/ColdStartText.cc
+    data/src/transformations/TransformationList.cc
+    data/src/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
@@ -480,7 +479,7 @@ pybind11_add_module(
   bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
-  new_dataset/python_bindings/FeaturizationPython.cc
+  data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
