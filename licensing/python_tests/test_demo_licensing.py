@@ -3,6 +3,7 @@ import os
 import pytest
 import thirdai
 from licensing_utils import deactivate_license_at_start_of_demo_test
+from download_dataset_fixtures import download_clinc_dataset
 
 # These lines use a hack where we can import functions from different test files
 # as long as this file is run from bin/python-test.sh. To run just this file,
@@ -16,6 +17,7 @@ pytestmark = [pytest.mark.release]
 # I created this key on Keygen, it should be good only for the small census
 # dataset (the first 10 lines of the normal census training set)
 SMALL_CENSUS_KEY = "HKRW-4R97-KRLY-TMVY-79TW-3FHH-NRHR-HLYC"
+CLINC_DATASET_KEY = "PRCH-AAVV-3ART-3WY9-PM9H-KULT-PRW3-C399"
 
 
 def test_census_key_works_on_small_census():
@@ -116,6 +118,18 @@ def test_introduce_document_fails_on_demo_license():
             [{"text": "some text"}],
             label=1000,
         )
+
+
+def test_introduce_documents_works_on_clinc(download_clinc_dataset):
+    thirdai.licensing.activate(CLINC_DATASET_KEY)
+
+    train_data, _, _ = download_clinc_dataset
+
+    model = simple_mach_model()
+
+    model.introduce_documents(
+        train_data, strong_column_names=[], weak_column_names=["text"]
+    )
 
 
 def test_get_set_index_fails_on_demo_license():
