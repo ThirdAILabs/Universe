@@ -67,13 +67,13 @@ def test_census_demo_key_fails_on_query_reformulation():
     os.remove(temp_filename)
 
 
-def simple_mach_model():
+def simple_mach_model(target_column="label"):
     return bolt.UniversalDeepTransformer(
         data_types={
             "query": bolt.types.text(),
-            "label": bolt.types.categorical(),
+            target_column: bolt.types.categorical(),
         },
-        target="label",
+        target=target_column,
         n_target_classes=10,
         integer_target=True,
         options={"extreme_classification": True, "extreme_output_dim": 100},
@@ -125,7 +125,7 @@ def test_introduce_documents_works_on_clinc(download_clinc_dataset):
 
     train_data, _, _ = download_clinc_dataset
 
-    model = simple_mach_model()
+    model = simple_mach_model(target_column="category")
 
     model.introduce_documents(
         train_data, strong_column_names=[], weak_column_names=["text"]
