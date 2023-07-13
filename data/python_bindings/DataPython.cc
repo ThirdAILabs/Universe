@@ -6,7 +6,7 @@
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
-#include <data/src/transformations/Text.h>
+#include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
@@ -66,10 +66,10 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "Transformation", docs::TRANSFORMATION_BASE)
       .def("__call__", &Transformation::apply, py::arg("columns"));
 
-  py::class_<Text, Transformation, std::shared_ptr<Text>>(
+  py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
       transformations_submodule, "Text")
-      .def(py::init<std::string, std::string, TextTokenizerPtr, TextEncoderPtr,
-                    bool, size_t>(),
+      .def(py::init<std::string, std::string, dataset::TextTokenizerPtr,
+                    dataset::TextEncoderPtr, bool, size_t>(),
            py::arg("input_column"), py::arg("output_column"),
            py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
            py::arg("encoder") = dataset::NGramEncoder(1),

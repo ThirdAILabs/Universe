@@ -17,6 +17,13 @@ namespace thirdai::data {
  */
 class Transformation {
  public:
+  /**
+   * This is a shallow copy because columns are stored using shared pointers. It
+   * is passed by value to ensure that transformations doen't alter the contents
+   * of a ColumnMap, only return a new one. Note that the input and output
+   * ColumnMap are distinct objects, but may share references to the same
+   * columns.
+   */
   virtual ColumnMap apply(ColumnMap columns) const = 0;
 
   virtual ~Transformation() = default;

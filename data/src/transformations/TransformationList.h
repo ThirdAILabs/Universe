@@ -16,6 +16,8 @@ class TransformationList final : public Transformation {
 
   ColumnMap apply(ColumnMap columns) const final {
     for (const auto& transformation : _transformations) {
+      // This is a shallow copy and not expensive since columns are stored as
+      // shared pointers.
       columns = transformation->apply(columns);
     }
 

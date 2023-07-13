@@ -1,11 +1,17 @@
-#include "Text.h"
+#include "TextTokenizer.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/VectorColumns.h>
 
 namespace thirdai::data {
 
-Text::Text(std::string input_column, std::string output_column,
-           TextTokenizerPtr tokenizer, TextEncoderPtr encoder, bool lowercase,
-           size_t dim)
+TextTokenizer::TextTokenizer(std::string input_column,
+                             std::string output_column,
+                             dataset::TextTokenizerPtr tokenizer,
+                             dataset::TextEncoderPtr encoder, bool lowercase,
+                             size_t dim)
     : _input_column(std::move(input_column)),
       _output_column(std::move(output_column)),
       _tokenizer(std::move(tokenizer)),
@@ -13,7 +19,7 @@ Text::Text(std::string input_column, std::string output_column,
       _lowercase(lowercase),
       _dim(dim) {}
 
-ColumnMap Text::apply(ColumnMap columns) const {
+ColumnMap TextTokenizer::apply(ColumnMap columns) const {
   StringColumnPtr text_col = columns.getStringColumn(_input_column);
 
   std::vector<std::vector<uint32_t>> output_tokens(text_col->numRows());
@@ -38,6 +44,15 @@ ColumnMap Text::apply(ColumnMap columns) const {
 
   columns.setColumn(_output_column, token_col);
   return columns;
+}
+
+template void TextTokenizer::serialize(cereal::BinaryInputArchive&);
+template void TextTokenizer::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void TextTokenizer::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _tokenizer, _encoder, _lowercase, _dim);
 }
 
 }  // namespace thirdai::data
