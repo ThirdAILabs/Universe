@@ -456,12 +456,15 @@ class URL(Document):
 
         return elements_df
 
+    @property
     def hash(self) -> str:
         return self.hash_val
 
+    @property
     def size(self) -> int:
         return len(self.df)
 
+    @property
     def name(self) -> str:
         return self.url
 
