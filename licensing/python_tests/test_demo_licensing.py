@@ -134,3 +134,15 @@ def test_get_set_index_fails_on_demo_license():
         match="The license was found to be invalid: You must have a full license to perform this operation.",
     ):
         model.set_index(None)
+
+
+def test_upvote_fails_on_demo_license():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+
+    model = simple_mach_model()
+
+    with pytest.raises(
+        RuntimeError,
+        match="The license was found to be invalid: You must have a full license to perform this operation.",
+    ):
+        model.upvote([])
