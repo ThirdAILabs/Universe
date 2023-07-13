@@ -410,6 +410,7 @@ set(THIRDAI_SOURCES
     telemetry/src/PrometheusClient.cc
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
+    data/src/transformations/Text.cc
     data/src/transformations/ColdStartText.cc
     data/src/transformations/TransformationList.cc
     data/src/ColumnMap.cc

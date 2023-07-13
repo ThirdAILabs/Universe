@@ -74,11 +74,8 @@ def apply_augmentation_and_unigrams(columns, augmentation):
 
     featurizer = data.transformations.TransformationList(
         transformations=[
-            data.transformations.SentenceUnigram(
-                input_column="data",
-                output_column="unigrams",
-                deduplicate=False,
-                output_range=100000,
+            data.transformations.Text(
+                input_column="data", output_column="unigrams", dim=100000
             )
         ]
     )

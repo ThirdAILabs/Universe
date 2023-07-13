@@ -6,8 +6,11 @@
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
+#include <data/src/transformations/Text.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
+#include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/stl.h>
 #include <optional>
 #include <string>
@@ -62,6 +65,16 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   py::class_<Transformation, std::shared_ptr<Transformation>>(
       transformations_submodule, "Transformation", docs::TRANSFORMATION_BASE)
       .def("__call__", &Transformation::apply, py::arg("columns"));
+
+  py::class_<Text, Transformation, std::shared_ptr<Text>>(
+      transformations_submodule, "Text")
+      .def(py::init<std::string, std::string, TextTokenizerPtr, TextEncoderPtr,
+                    bool, size_t>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
+           py::arg("encoder") = dataset::NGramEncoder(1),
+           py::arg("lowercase") = false,
+           py::arg("dim") = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
 
   py::class_<BinningTransformation, Transformation,
              std::shared_ptr<BinningTransformation>>(transformations_submodule,
