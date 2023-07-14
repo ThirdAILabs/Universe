@@ -324,7 +324,7 @@ class CSV(Document):
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
 
-        # Save the filename so we can load it with the same
+        # Save the filename so we can load it with the same name
         state["filename"] = self.name
 
         with open(self.path, "rb") as csv_file:
@@ -432,7 +432,7 @@ class Extracted(Document):
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
 
-        # Save the filename so we can load it with the same
+        # Save the filename so we can load it with the same name
         state["filename"] = self.name
 
         with open(self.path, "rb") as extracted_file:
