@@ -79,7 +79,7 @@ void visitPair(const BoltVector& vec_1, const BoltVector& vec_2,
   }
 }
 
-inline BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
+static BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
                                           uint32_t length, uint32_t offset) {
   float* new_activation_ptr = base_vector.activations + offset;
   float* new_gradient_ptr =
@@ -87,7 +87,7 @@ inline BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
   return BoltVector(new_activation_ptr, new_gradient_ptr, length);
 }
 
-inline std::vector<BoltVector> segmentRowMajorVector(
+static std::vector<BoltVector> segmentRowMajorVector(
     const BoltVector& base_vector, uint32_t rows, uint32_t columns) {
   assert(rows * columns == base_vector.len);
   std::vector<BoltVector> segmented_vectors;
@@ -103,7 +103,7 @@ inline std::vector<BoltVector> segmentRowMajorVector(
   return segmented_vectors;
 }
 
-inline void transposeBoltVector(const BoltVector& base_vector,
+static void transposeBoltVector(const BoltVector& base_vector,
                                 BoltVector& transposed_vector, uint32_t rows,
                                 uint32_t columns) {
   assert(rows * columns == base_vector.len);
