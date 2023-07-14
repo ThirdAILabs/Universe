@@ -20,7 +20,6 @@ def create_simple_dataset():
 def test_neural_db_associate(create_simple_dataset):
     filename = create_simple_dataset
     ndb = neural_db.NeuralDB("")
-    ndb.from_scratch()
 
     doc = neural_db.CSV(
         filename,

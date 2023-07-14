@@ -96,6 +96,7 @@ class NeuralDB:
     def from_checkpoint(
         cls,
         checkpoint_path: str,
+        user_id: str = "user",
         on_progress: Callable = no_op,
         on_error: Callable = None,
     ):
