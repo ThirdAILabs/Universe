@@ -2,7 +2,6 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <_types/_uint32_t.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/Random.h>
 #include <random>
