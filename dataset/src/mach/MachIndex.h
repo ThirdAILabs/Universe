@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
-#include <_types/_uint32_t.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
