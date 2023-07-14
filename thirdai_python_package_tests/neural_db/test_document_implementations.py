@@ -1,9 +1,9 @@
+import os
+import shutil
+from pathlib import Path
+
 import pytest
 from thirdai import neural_db as ndb
-import os
-from pathlib import Path
-import shutil
-
 
 BASE_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "document_test_data"
