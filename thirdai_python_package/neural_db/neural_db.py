@@ -85,34 +85,33 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(self, user_id: str) -> None:
-        self._user_id = user_id
-        self._savable_state: Optional[State] = None
-
-    def from_scratch(self, **kwargs) -> None:
+    def __init__(self, user_id: str = "user", **kwargs) -> None:
+        self._user_id: str = "user"
         self._savable_state = State(
             model=Mach(id_col="id", query_col="query", **kwargs),
             logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
 
+    @classmethod
     def from_checkpoint(
-        self,
+        cls,
         checkpoint_path: str,
         on_progress: Callable = no_op,
         on_error: Callable = None,
     ):
+        obj = cls.__new__(cls)
         checkpoint_path = Path(checkpoint_path)
         try:
-            self._savable_state = State.load(checkpoint_path, on_progress)
-            if self._savable_state.model and self._savable_state.model.get_model():
-                self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
-            if not isinstance(self._savable_state.logger, loggers.LoggerList):
+            obj._savable_state = State.load(checkpoint_path, on_progress)
+            if obj._savable_state.model and obj._savable_state.model.get_model():
+                obj._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+            if not isinstance(obj._savable_state.logger, loggers.LoggerList):
                 # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
-                self._savable_state.logger = loggers.LoggerList(
-                    [self._savable_state.logger]
+                obj._savable_state.logger = loggers.LoggerList(
+                    [obj._savable_state.logger]
                 )
         except Exception as e:
-            self._savable_state = None
+            obj._savable_state = None
             if on_error is not None:
                 on_error(error_msg=e.__str__())
             else:
