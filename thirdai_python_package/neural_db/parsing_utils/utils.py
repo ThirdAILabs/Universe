@@ -14,9 +14,9 @@ def chunk_text(text: str):
     from langchain.text_splitter import RecursiveCharacterTextSplitter
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_THRESHOLD,
+        chunk_size=750,
         chunk_overlap=0,
-        length_function=lambda x: len(word_tokenize(x)),
+        length_function=len,
     )
 
     sentences = sent_tokenize(text)
@@ -52,6 +52,10 @@ def chunk_text(text: str):
         if len(chunk) > 750:
             sub_chunks = text_splitter.split_text(chunk)
             chunks[i] = sub_chunks
-    chunks = [chunk for sub_chunks in chunks for chunk in (sub_chunks if isinstance(sub_chunks, list) else [sub_chunks])]
+    chunks = [
+        chunk
+        for sub_chunks in chunks
+        for chunk in (sub_chunks if isinstance(sub_chunks, list) else [sub_chunks])
+    ]
 
     return chunks
