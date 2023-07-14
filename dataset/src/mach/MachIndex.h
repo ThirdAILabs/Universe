@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -86,6 +87,12 @@ class MachIndex {
 
  private:
   void verifyHash(uint32_t hash) const;
+
+  std::unordered_map<uint32_t, double> entityScoresSparse(
+      const BoltVector& output, uint32_t top_k_per_eval_aggregation) const;
+
+  std::unordered_map<uint32_t, double> entityScoresDense(
+      const BoltVector& output, uint32_t top_k_per_eval_aggregation) const;
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;
