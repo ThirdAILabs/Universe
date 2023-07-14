@@ -6,6 +6,7 @@ import string
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Tuple
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -61,11 +62,6 @@ class Document:
     def load_meta(self, directory: Path):
         pass
 
-    def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir) -> None:
-        raise NotImplementedError()
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
-        raise NotImplementedError()
 
 
 class Reference:
@@ -260,50 +256,6 @@ class DocumentManager:
             subdir = directory / str(i)
             doc.load_meta(subdir)
 
-    # This variable is needed to not break current load/save
-    # We can remove this and all its references if we only use save_pkl/load_pkl
-    saving_pkl = False
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # Remove the registry attribute
-        if DocumentManager.saving_pkl:
-            del state["registry"]
-        return state
-
-    def __setstate__(self, state):
-        # Restore instance attributes
-        self.__dict__.update(state)
-        # Set a default value for registry since it was not in the state
-        if DocumentManager.saving_pkl:
-            self.registry = None
-
-    def save_pkl(self, pkl_file):
-        DocumentManager.saving_pkl = True
-        metadata = {"type": "document_manager", "num_docs": len(self.registry)}
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-        for i, (doc_hash, (doc, doc_offset)) in enumerate(self.registry.items()):
-            subdir = str(i)
-            doc.save_pkl(pkl_file, doc_hash, doc_offset, subdir)
-        DocumentManager.saving_pkl = False
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir):
-        DocumentManager.saving_pkl = True
-        registry = OrderedDict()
-        for _ in range(metadata["num_docs"]):
-            doc_metadata = pickle.load(pkl_file)
-            doc_hash = doc_metadata["doc_hash"]
-            doc_offset = doc_metadata["doc_offset"]
-
-            doc = pickle.load(pkl_file)
-            doc.load_pkl(pkl_file, doc_metadata, metadata_dir)
-
-            registry[doc_hash] = (doc, doc_offset)
-
-        self.registry = registry
-        DocumentManager.saving_pkl = False
-
 
 class CSV(Document):
     def __init__(
@@ -363,16 +315,45 @@ class CSV(Document):
         return " ".join([row[col] for col in self.reference_columns for row in rows])
 
     def __getstate__(self):
+        from .neural_db import NeuralDB
+        if not NeuralDB.new_pickle_mode:
+            return self.__dict__
+
         state = self.__dict__.copy()
+
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
+
+        # Save the filename so we can load it with the same
+        state["filename"] = self.name
+
+        with open(self.path, "rb") as csv_file:
+            state["file_bytes"] = csv_file.read()
+
         return state
 
     def __setstate__(self, state):
-        # Restore instance attributes
+        from .neural_db import NeuralDB
+        if not NeuralDB.new_pickle_mode:
+            self.__dict__.update(state)
+            return
+        
+        # Set value for path since it is not in the state
+        savable_state_dir = NeuralDB.cache_dir / "savable_state"
+        save_path = savable_state_dir / str(uuid.uuid4()) / state["filename"]
+        os.makedirs(os.path.dirname(save_path))
+        state["path"] = save_path
+
+        # Save file bytes to disk
+        with open(save_path, "wb") as csv_file:
+            csv_file.write(state["file_bytes"])
+
+        # Remove uncessary state attributes
+        del state["file_bytes"]
+        del state["filename"]
+
+        # Set state
         self.__dict__.update(state)
-        # Set a default value for path since it was not in the state
-        self.path = None
 
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
@@ -462,16 +443,45 @@ class Extracted(Document):
         return "\n".join(rows["passage"])
 
     def __getstate__(self):
+        from .neural_db import NeuralDB
+        if not NeuralDB.new_pickle_mode:
+            return self.__dict__
+
         state = self.__dict__.copy()
+
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
+
+        # Save the filename so we can load it with the same
+        state["filename"] = self.name
+
+        with open(self.path, "rb") as extracted_file:
+            state["file_bytes"] = extracted_file.read()
+
         return state
 
     def __setstate__(self, state):
-        # Restore instance attributes
+        from .neural_db import NeuralDB
+        if not NeuralDB.new_pickle_mode:
+            self.__dict__.update(state)
+            return
+        
+        # Set value for path since it is not in the state
+        savable_state_dir = NeuralDB.cache_dir / "savable_state"
+        save_path = savable_state_dir / str(uuid.uuid4()) / state["filename"]
+        os.makedirs(os.path.dirname(save_path))
+        state["path"] = save_path
+
+        # Save file bytes to disk
+        with open(save_path, "wb") as extracted_file:
+            extracted_file.write(state["file_bytes"])
+
+        # Remove uncessary state attributes
+        del state["file_bytes"]
+        del state["filename"]
+
+        # Set state
         self.__dict__.update(state)
-        # Set a default value for path since it was not in the state
-        self.path = None
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
@@ -481,28 +491,6 @@ class Extracted(Document):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
         self.path = directory / self.path.name
-
-    def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
-        metadata = {
-            "type": "document",
-            "doc_hash": doc_hash,
-            "doc_offset": doc_offset,
-            "subdir": subdir,
-            "filename": self.name,
-        }
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-        with open(self.path, "rb") as extracted_file:
-            extracted_file_data = extracted_file.read()
-        pickle.dump(extracted_file_data, pkl_file)
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir):
-        extracted_file_data = pickle.load(pkl_file)
-        save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
-        os.makedirs(os.path.dirname(save_path))
-        with open(save_path, "wb") as extracted_file:
-            extracted_file.write(extracted_file_data)
-        self.path = save_path
 
 
 def process_pdf(path: str) -> pd.DataFrame:

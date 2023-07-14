@@ -1,4 +1,7 @@
 import copy
+import os
+import shutil
+import pickle
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -85,6 +88,21 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
+    
+    cache_dir = Path("./neural_db_cache")
+
+    # When True, this allows for the saving of _savable_state to be a single pickle dump
+    # When False, we can use the from_checkpoint function (which may deprecated in the future)
+    new_pickle_mode = False
+
+    @classmethod
+    def set_cache_dir(cls, cache_dir: str):
+        cls.cache_dir = Path(cache_dir)
+
+    @classmethod
+    def set_new_pickle_mode(cls, new_pickle_mode=True):
+        cls.new_pickle_mode = new_pickle_mode
+
     def __init__(self, user_id: str) -> None:
         self._user_id = user_id
         self._savable_state: Optional[State] = None
@@ -118,17 +136,19 @@ class NeuralDB:
             else:
                 raise e
 
-    def load_pkl(
+    def from_pkl(
         self,
         pkl_path: str,
-        metadata_dir: str,
-        on_progress: Callable = no_op,
         on_error: Callable = None,
     ):
-        pkl_path = Path(pkl_path)
-        metadata_dir = Path(metadata_dir)
         try:
-            self._savable_state = State.load_pkl(pkl_path, metadata_dir, on_progress)
+            savable_state_dir = NeuralDB.cache_dir / "savable_state"
+            if os.path.exists(savable_state_dir):
+                shutil.rmtree(savable_state_dir)
+            os.makedirs(savable_state_dir)
+            with open(pkl_path, "rb") as pkl_file:
+                self._savable_state = pickle.load(pkl_file)
+            
             if self._savable_state.model and self._savable_state.model.get_model():
                 self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
             if not isinstance(self._savable_state.logger, loggers.LoggerList):
@@ -227,8 +247,9 @@ class NeuralDB:
     def save(self, save_to: str, on_progress: Callable = no_op) -> None:
         return self._savable_state.save(Path(save_to), on_progress)
 
-    def save_pkl(self, pkl_path: str, on_progress: Callable = no_op) -> None:
-        return self._savable_state.save_pkl(Path(pkl_path), on_progress)
+    def save_pkl(self, pkl_path: str) -> None:
+        with open(pkl_path, "wb") as pkl_file:
+            pickle.dump(self._savable_state, pkl_file)
 
     def insert(
         self,

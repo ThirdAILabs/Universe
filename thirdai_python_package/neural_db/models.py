@@ -87,12 +87,6 @@ class Model:
     def load_meta(self, directory: Path):
         raise NotImplementedError()
 
-    def save_pkl(self, pkl_file) -> None:
-        raise NotImplementedError()
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
-        raise NotImplementedError()
-
     def associate(
         self,
         pairs: List[Tuple[str, str]],
@@ -264,16 +258,6 @@ class Mach(Model):
         pass
 
     def load_meta(self, directory: Path):
-        pass
-
-    def save_pkl(self, pkl_file) -> None:
-        metadata = {
-            "type": "model",
-        }
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         pass
 
     def set_n_ids(self, n_ids: int):

@@ -74,15 +74,6 @@ class InMemoryLogger(Logger):
     def load_meta(self, directory: Path):
         pass
 
-    def save_pkl(self, pkl_file) -> None:
-        metadata = {
-            "type": "logger",
-        }
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
-        pass
 
 
 class LoggerList(Logger):
@@ -138,41 +129,6 @@ class LoggerList(Logger):
     # We can remove this and all its references if we only use save_pkl/load_pkl
     saving_pkl = False
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # Remove the loggers attribute
-        if LoggerList.saving_pkl:
-            del state["loggers"]
-        return state
-
-    def __setstate__(self, state):
-        # Restore instance attributes
-        self.__dict__.update(state)
-        # Set a default value for loggers since it was not in the state
-        if LoggerList.saving_pkl:
-            self.loggers = None
-
-    def save_pkl(self, pkl_file):
-        LoggerList.saving_pkl = True
-        metadata = {"type": "logger", "num_loggers": len(self.loggers)}
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-        for logger in self.loggers:
-            logger.save_pkl(pkl_file)
-        LoggerList.saving_pkl = False
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir):
-        LoggerList.saving_pkl = True
-        loggers = []
-        for _ in range(metadata["num_loggers"]):
-            logger_metadata = pickle.load(pkl_file)
-            logger = pickle.load(pkl_file)
-            logger.load_pkl(pkl_file, logger_metadata, metadata_dir)
-            loggers.append(logger)
-
-        self.loggers = loggers
-        LoggerList.saving_pkl = False
-
 
 class NoOpLogger(Logger):
     def __init__(self) -> None:
@@ -198,14 +154,4 @@ class NoOpLogger(Logger):
         pass
 
     def load_meta(self, directory: Path):
-        pass
-
-    def save_pkl(self, pkl_file) -> None:
-        metadata = {
-            "type": "logger",
-        }
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
         pass
