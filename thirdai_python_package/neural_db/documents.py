@@ -3,10 +3,10 @@ import os
 import pickle
 import shutil
 import string
+import uuid
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Tuple
-import uuid
 
 import numpy as np
 import pandas as pd
@@ -61,7 +61,6 @@ class Document:
 
     def load_meta(self, directory: Path):
         pass
-
 
 
 class Reference:
@@ -316,6 +315,7 @@ class CSV(Document):
 
     def __getstate__(self):
         from .neural_db import NeuralDB
+
         if not NeuralDB.new_pickle_mode:
             return self.__dict__
 
@@ -334,10 +334,11 @@ class CSV(Document):
 
     def __setstate__(self, state):
         from .neural_db import NeuralDB
+
         if not NeuralDB.new_pickle_mode:
             self.__dict__.update(state)
             return
-        
+
         # Set value for path since it is not in the state
         savable_state_dir = NeuralDB.cache_dir / "savable_state"
         save_path = savable_state_dir / str(uuid.uuid4()) / state["filename"]
@@ -444,6 +445,7 @@ class Extracted(Document):
 
     def __getstate__(self):
         from .neural_db import NeuralDB
+
         if not NeuralDB.new_pickle_mode:
             return self.__dict__
 
@@ -462,10 +464,11 @@ class Extracted(Document):
 
     def __setstate__(self, state):
         from .neural_db import NeuralDB
+
         if not NeuralDB.new_pickle_mode:
             self.__dict__.update(state)
             return
-        
+
         # Set value for path since it is not in the state
         savable_state_dir = NeuralDB.cache_dir / "savable_state"
         save_path = savable_state_dir / str(uuid.uuid4()) / state["filename"]

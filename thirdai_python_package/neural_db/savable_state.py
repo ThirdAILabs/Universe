@@ -123,5 +123,3 @@ class State:
         on_progress(6 / total_steps)
 
         return state
-
-

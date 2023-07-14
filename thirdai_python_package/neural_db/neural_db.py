@@ -1,7 +1,7 @@
 import copy
 import os
-import shutil
 import pickle
+import shutil
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -88,7 +88,6 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    
     cache_dir = Path("./neural_db_cache")
 
     # When True, this allows for the saving of _savable_state to be a single pickle dump
@@ -148,7 +147,7 @@ class NeuralDB:
             os.makedirs(savable_state_dir)
             with open(pkl_path, "rb") as pkl_file:
                 self._savable_state = pickle.load(pkl_file)
-            
+
             if self._savable_state.model and self._savable_state.model.get_model():
                 self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
             if not isinstance(self._savable_state.logger, loggers.LoggerList):

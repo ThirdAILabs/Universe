@@ -75,7 +75,6 @@ class InMemoryLogger(Logger):
         pass
 
 
-
 class LoggerList(Logger):
     def __init__(self, loggers: List[Logger]):
         self.loggers = list(
