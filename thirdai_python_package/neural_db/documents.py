@@ -340,8 +340,8 @@ class CSV(Document):
             return
 
         # Set value for path since it is not in the state
-        savable_state_dir = NeuralDB.cache_dir / "savable_state"
-        save_path = savable_state_dir / str(uuid.uuid4()) / state["filename"]
+        documents_dir = NeuralDB.cache_dir / "savable_state" / "documents"
+        save_path = documents_dir / str(uuid.uuid4()) / state["filename"]
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
@@ -448,8 +448,8 @@ class Extracted(Document):
             return
 
         # Set value for path since it is not in the state
-        savable_state_dir = NeuralDB.cache_dir / "savable_state"
-        save_path = savable_state_dir / str(uuid.uuid4()) / state["filename"]
+        documents_dir = NeuralDB.cache_dir / "savable_state" / "documents"
+        save_path = documents_dir / str(uuid.uuid4()) / state["filename"]
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
