@@ -349,7 +349,7 @@ class CSV(Document):
         with open(save_path, "wb") as csv_file:
             csv_file.write(state["file_bytes"])
 
-        # Remove uncessary state attributes
+        # Remove unnecessary state attributes
         del state["file_bytes"]
         del state["filename"]
 
@@ -457,7 +457,7 @@ class Extracted(Document):
         with open(save_path, "wb") as extracted_file:
             extracted_file.write(state["file_bytes"])
 
-        # Remove uncessary state attributes
+        # Remove unnecessary state attributes
         del state["file_bytes"]
         del state["filename"]
 
