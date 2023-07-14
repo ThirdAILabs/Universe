@@ -79,7 +79,7 @@ void visitPair(const BoltVector& vec_1, const BoltVector& vec_2,
   }
 }
 
-static BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
+inline BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
                                           uint32_t length, uint32_t offset) {
   float* new_activation_ptr = base_vector.activations + offset;
   float* new_gradient_ptr =
@@ -87,7 +87,7 @@ static BoltVector getBoltVectorWithOffset(const BoltVector& base_vector,
   return BoltVector(new_activation_ptr, new_gradient_ptr, length);
 }
 
-static std::vector<BoltVector> segmentRowMajorVector(
+inline std::vector<BoltVector> segmentRowMajorVector(
     const BoltVector& base_vector, uint32_t rows, uint32_t columns) {
   assert(rows * columns == base_vector.len);
   std::vector<BoltVector> segmented_vectors;
@@ -103,10 +103,29 @@ static std::vector<BoltVector> segmentRowMajorVector(
   return segmented_vectors;
 }
 
-// static BoltVector transposeBoltVector(const BoltVector& base_vector, uint32_t
-// rows, uint32_t columns){
-//   assert(rows*columns == base_vector.len);
+inline void transposeBoltVector(const BoltVector& base_vector,
+                                BoltVector& transposed_vector, uint32_t rows,
+                                uint32_t columns) {
+  assert(rows * columns == base_vector.len);
+  float* activations_ref_base = base_vector.activations;
+  float* activations_ref_transpose = transposed_vector.activations;
+  for (uint32_t row_index = 0; row_index < rows; row_index++) {
+    for (uint32_t column_index = 0; column_index < columns; column_index++) {
+      activations_ref_transpose[column_index * rows + row_index] =
+          activations_ref_base[row_index * columns + column_index];
+    }
+  }
 
-// }
+  if (base_vector.hasGradients()) {
+    float* gradients_ref_base = base_vector.gradients;
+    float* gradients_ref_transpose = transposed_vector.gradients;
+    for (uint32_t row_index = 0; row_index < rows; row_index++) {
+      for (uint32_t column_index = 0; column_index < columns; column_index++) {
+        gradients_ref_transpose[column_index * rows + row_index] =
+            gradients_ref_base[row_index * columns + column_index];
+      }
+    }
+  }
+}
 
 }  // namespace thirdai::bolt_vector

@@ -19,34 +19,23 @@ namespace thirdai::bolt::nn::ops {
 
 std::string nextFCMixerOpName() {
   static uint32_t constructed = 0;
-  return "fc_" + std::to_string(++constructed);
+  return "mixer_" + std::to_string(++constructed);
 }
 
-FCMixer::FCMixer(uint32_t dim, uint32_t input_dim, std::string mixer_type,
-                 uint32_t rows, uint32_t columns, float sparsity,
-                 const std::string& activation, SamplingConfigPtr sampling,
-                 bool use_bias, uint32_t rebuild_hash_tables,
+FCMixer::FCMixer(uint32_t dim, uint32_t input_dim, uint32_t number_segment,
+                 float sparsity, const std::string& activation,
+                 SamplingConfigPtr sampling, bool use_bias,
+                 uint32_t rebuild_hash_tables,
                  uint32_t reconstruct_hash_functions)
     : Op(nextFCMixerOpName()),
-      _mixer_type(std::move(mixer_type)),
-      _rows(rows),
-      _columns(columns),
+      _rows(number_segment),
+      _columns(dim),
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
       _updates_since_reconstruct_hash_functions(0) {
   if (sparsity < 1) {
     throw std::logic_error("FCMixer with sparse kernel not implemented.");
-  }
-  if (_mixer_type == "rows" && dim != _rows) {
-    throw std::logic_error(
-        "Row FCMixers are supposed to have input dim equal to the number of "
-        "rows");
-  }
-  if (_mixer_type == "columns" && dim != _columns) {
-    throw std::logic_error(
-        "Column FCMixers are supposed to have input dim equal to the number of "
-        "columns");
   }
   if (_rows * _columns != input_dim) {
     throw std::logic_error(
@@ -64,14 +53,12 @@ FCMixer::FCMixer(uint32_t dim, uint32_t input_dim, std::string mixer_type,
 }
 
 std::shared_ptr<FCMixer> FCMixer::make(
-    uint32_t dim, uint32_t input_dim, std::string mixer_type, uint32_t rows,
-    uint32_t columns, float sparsity, const std::string& activation,
-    SamplingConfigPtr sampling, bool use_bias, uint32_t rebuild_hash_tables,
-    uint32_t reconstruct_hash_functions) {
-  return std::shared_ptr<FCMixer>(
-      new FCMixer(dim, input_dim, std::move(mixer_type), rows, columns,
-                  sparsity, activation, std::move(sampling), use_bias,
-                  rebuild_hash_tables, reconstruct_hash_functions));
+    uint32_t dim, uint32_t input_dim, uint32_t number_segment, float sparsity,
+    const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+  return std::shared_ptr<FCMixer>(new FCMixer(
+      dim, input_dim, number_segment, sparsity, activation, std::move(sampling),
+      use_bias, rebuild_hash_tables, reconstruct_hash_functions));
 }
 
 void FCMixer::forward(const autograd::ComputationList& inputs,
@@ -88,17 +75,15 @@ void FCMixer::forward(const autograd::ComputationList& inputs,
     throw std::logic_error("FCMixers should not have non null label pointers.");
   }
 
-  if (_mixer_type == "rows") {
-    std::vector<BoltVector> segmented_row_vector_output =
-        bolt_vector::segmentRowMajorVector(output->getVector(index_in_batch),
-                                           _rows, _columns);
-    std::vector<BoltVector> segmented_row_vector_input =
-        bolt_vector::segmentRowMajorVector(
-            inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
-    for (size_t i = 0; i < segmented_row_vector_input.size(); i++) {
-      _kernel->forward(segmented_row_vector_input[i],
-                       segmented_row_vector_output[i], labels);
-    }
+  std::vector<BoltVector> segmented_row_vector_output =
+      bolt_vector::segmentRowMajorVector(output->getVector(index_in_batch),
+                                         _rows, _columns);
+  std::vector<BoltVector> segmented_row_vector_input =
+      bolt_vector::segmentRowMajorVector(
+          inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
+  for (size_t i = 0; i < segmented_row_vector_input.size(); i++) {
+    _kernel->forward(segmented_row_vector_input[i],
+                     segmented_row_vector_output[i], labels);
   }
 }
 
@@ -109,25 +94,21 @@ void FCMixer::backpropagate(autograd::ComputationList& inputs,
 
   BoltVector& input = inputs[0]->tensor()->getVector(index_in_batch);
 
-  if (_mixer_type == "rows") {
-    std::vector<BoltVector> segmented_row_vector_output =
-        bolt_vector::segmentRowMajorVector(output->getVector(index_in_batch),
-                                           _rows, _columns);
-    std::vector<BoltVector> segmented_row_vector_input =
-        bolt_vector::segmentRowMajorVector(
-            inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
+  std::vector<BoltVector> segmented_row_vector_output =
+      bolt_vector::segmentRowMajorVector(output->getVector(index_in_batch),
+                                         _rows, _columns);
+  std::vector<BoltVector> segmented_row_vector_input =
+      bolt_vector::segmentRowMajorVector(
+          inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
 
-    for (size_t i = 0; i < segmented_row_vector_input.size(); i++) {
-      if (input.hasGradients()) {
-        _kernel->backpropagate(segmented_row_vector_input[i],
-                               segmented_row_vector_output[i]);
-      } else {
-        _kernel->backpropagateInputLayer(segmented_row_vector_input[i],
-                                         segmented_row_vector_output[i]);
-      }
+  for (size_t i = 0; i < segmented_row_vector_input.size(); i++) {
+    if (input.hasGradients()) {
+      _kernel->backpropagate(segmented_row_vector_input[i],
+                             segmented_row_vector_output[i]);
+    } else {
+      _kernel->backpropagateInputLayer(segmented_row_vector_input[i],
+                                       segmented_row_vector_output[i]);
     }
-  } else {
-    throw std::logic_error("Mixer layer type columns not supported right now");
   }
 }
 
@@ -154,10 +135,7 @@ std::optional<uint32_t> FCMixer::nonzeros(
   // inputs.
   (void)inputs;
   if (use_sparsity) {
-    if (_mixer_type == "rows") {
-      return _kernel->getSparseDim() * _columns;
-    }
-    return _kernel->getSparseDim() * _rows;
+    return _kernel->getSparseDim() * _columns;
   }
   return _rows * _columns;
 }
@@ -192,10 +170,9 @@ void FCMixer::summary(std::ostream& summary,
     summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
     summary << ")";
   }
-  summary << "mixer_type=" << _mixer_type;
 
-  summary << "rows=" << _rows;
-  summary << "columns=" << _columns;
+  summary << ", rows=" << _rows;
+  summary << ", columns=" << _columns;
   summary << "]";
 }
 
@@ -300,7 +277,7 @@ template void FCMixer::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
 void FCMixer::save(Archive& archive) const {
-  archive(cereal::base_class<Op>(this), _kernel, _mixer_type, _rows, _columns,
+  archive(cereal::base_class<Op>(this), _kernel, _rows, _columns,
           _rebuild_hash_tables, _reconstruct_hash_functions,
           _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
@@ -310,7 +287,7 @@ template void FCMixer::load(cereal::BinaryInputArchive&);
 
 template <class Archive>
 void FCMixer::load(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _kernel, _mixer_type, _rows, _columns,
+  archive(cereal::base_class<Op>(this), _kernel, _rows, _columns,
           _rebuild_hash_tables, _reconstruct_hash_functions,
           _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);

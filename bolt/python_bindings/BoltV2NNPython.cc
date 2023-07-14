@@ -20,6 +20,7 @@
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Sigmoid.h>
 #include <bolt/src/nn/ops/Tanh.h>
+#include <bolt/src/nn/ops/Transpose.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -222,10 +223,9 @@ void defineOps(py::module_& nn) {
 
   py::class_<ops::FCMixer, ops::FCMixerPtr, ops::Op>(nn, "FCMixer")
       .def(py::init(&ops::FCMixer::make), py::arg("dim"), py::arg("input_dim"),
-           py::arg("mixer_type"), py::arg("rows"), py::arg("columns"),
-           py::arg("sparsity") = 1.0, py::arg("activation") = "relu",
-           py::arg("sampling_config") = nullptr, py::arg("use_bias") = true,
-           py::arg("rebuild_hash_tables") = 10,
+           py::arg("number_segment"), py::arg("sparsity") = 1.0,
+           py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
+           py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FCMixer::apply)
       .def("dim", &ops::FCMixer::dim)
@@ -365,6 +365,10 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Sigmoid, ops::SigmoidPtr, ops::Op>(nn, "Sigmoid")
       .def(py::init(&ops::Sigmoid::make))
       .def("__call__", &ops::Sigmoid::apply);
+
+  py::class_<ops::Transpose, ops::TransposePtr, ops::Op>(nn, "Transpose")
+      .def(py::init(&ops::Transpose::make), py::arg("rows"), py::arg("columns"))
+      .def("__call__", &ops::Transpose::apply);
 
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")

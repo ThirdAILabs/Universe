@@ -18,10 +18,9 @@ class FCMixer final : public Op, public std::enable_shared_from_this<FCMixer> {
   // moved to the sampling config once bolt v1 is depreciated and there are no
   // compatability concerns.
   static std::shared_ptr<FCMixer> make(
-      uint32_t dim, uint32_t input_dim, std::string mixer_type, uint32_t rows,
-      uint32_t columns, float sparsity, const std::string& activation,
-      SamplingConfigPtr sampling = nullptr, bool use_bias = true,
-      uint32_t rebuild_hash_tables = 4,
+      uint32_t dim, uint32_t input_dim, uint32_t number_segment, float sparsity,
+      const std::string& activation, SamplingConfigPtr sampling = nullptr,
+      bool use_bias = true, uint32_t rebuild_hash_tables = 4,
       uint32_t reconstruct_hash_functions = 100);
 
   /**
@@ -121,16 +120,14 @@ class FCMixer final : public Op, public std::enable_shared_from_this<FCMixer> {
                    bool experimental_autotune);
 
  private:
-  FCMixer(uint32_t dim, uint32_t input_dim, std::string mixer_type,
-          uint32_t rows, uint32_t columns, float sparsity,
-          const std::string& activation, SamplingConfigPtr sampling = nullptr,
-          bool use_bias = true,
+  FCMixer(uint32_t dim, uint32_t input_dim, uint32_t number_segment,
+          float sparsity, const std::string& activation,
+          SamplingConfigPtr sampling = nullptr, bool use_bias = true,
           uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
           uint32_t reconstruct_hash_functions =
               std::numeric_limits<uint32_t>::max());
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
-  std::string _mixer_type;
   uint32_t _rows, _columns;
   uint32_t _rebuild_hash_tables;
   uint32_t _reconstruct_hash_functions;
