@@ -88,6 +88,7 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
+    # Path to be used for storing any neural db related stuff on disk
     cache_dir = Path("./neural_db_cache")
 
     # When True, this allows for the saving of _savable_state to be a single pickle dump
