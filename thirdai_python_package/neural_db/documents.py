@@ -365,28 +365,6 @@ class CSV(Document):
         # sure that we point to this CSV file.
         self.path = directory / self.path.name
 
-    def save_pkl(self, pkl_file, doc_hash, doc_offset, subdir):
-        metadata = {
-            "type": "document",
-            "doc_hash": doc_hash,
-            "doc_offset": doc_offset,
-            "subdir": subdir,
-            "filename": self.name,
-        }
-        pickle.dump(metadata, pkl_file)
-        pickle.dump(self, pkl_file)
-        with open(self.path, "rb") as csv_file:
-            csv_file_data = csv_file.read()
-        pickle.dump(csv_file_data, pkl_file)
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir):
-        csv_file_data = pickle.load(pkl_file)
-        save_path = metadata_dir / metadata["subdir"] / metadata["filename"]
-        os.makedirs(save_path)
-        with open(save_path, "wb") as csv_file:
-            csv_file.write(csv_file_data)
-        self.path = save_path
-
 
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):

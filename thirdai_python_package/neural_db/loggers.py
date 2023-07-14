@@ -28,12 +28,6 @@ class Logger:
     def load_meta(self, directory: Path):
         raise NotImplementedError()
 
-    def save_pkl(self, pkl_file) -> None:
-        raise NotImplementedError()
-
-    def load_pkl(self, pkl_file, metadata, metadata_dir) -> None:
-        raise NotImplementedError()
-
 
 class InMemoryLogger(Logger):
     def make_log(session_id=[], action=[], args=[], train_samples=[]):
@@ -123,10 +117,6 @@ class LoggerList(Logger):
     def load_meta(self, directory: Path):
         for logger in self.loggers:
             logger.load_meta(directory / logger.name())
-
-    # This variable is needed to not break current load/save
-    # We can remove this and all its references if we only use save_pkl/load_pkl
-    saving_pkl = False
 
 
 class NoOpLogger(Logger):
