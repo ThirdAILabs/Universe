@@ -4,7 +4,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
-#include <bolt/src/train/trainer/DistributedCommInterface.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <functional>
@@ -59,7 +59,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      const DistributedCommInterfacePtr& comm = nullptr);
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -71,7 +71,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      const DistributedCommInterfacePtr& comm = nullptr);
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -85,7 +85,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      const DistributedCommInterfacePtr& comm = nullptr);
+      const DistributedCommPtr& comm = nullptr);
 
   /**
    * Performs evaluation on the model using the given validation data and

@@ -36,7 +36,7 @@ metrics::History Trainer::train(
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    const DistributedCommInterfacePtr& comm) {
+    const DistributedCommPtr& comm) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
@@ -68,7 +68,7 @@ metrics::History Trainer::train(
 
     uint32_t num_batches = train_data.first.size();
     if (comm) {
-      num_batches = comm->min_num_batches(num_batches);
+      num_batches = comm->minNumBatches(num_batches);
     }
     auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
@@ -178,7 +178,7 @@ metrics::History Trainer::train_with_metric_names(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    const DistributedCommInterfacePtr& comm) {
+    const DistributedCommPtr& comm) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -205,7 +205,7 @@ metrics::History Trainer::train_with_dataset_loader(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval,
-    const DistributedCommInterfacePtr& comm) {
+    const DistributedCommPtr& comm) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 

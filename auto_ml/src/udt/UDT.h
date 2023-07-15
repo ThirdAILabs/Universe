@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
-#include <bolt/src/train/trainer/DistributedCommInterface.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -53,7 +53,7 @@ class UDT {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::train::DistributedCommInterfacePtr& comm);
+                   const bolt::train::DistributedCommPtr& comm);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
@@ -94,7 +94,7 @@ class UDT {
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
                        TrainOptions options,
-                       const bolt::train::DistributedCommInterfacePtr& comm);
+                       const bolt::train::DistributedCommPtr& comm);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();

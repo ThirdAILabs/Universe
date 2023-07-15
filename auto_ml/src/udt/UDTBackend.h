@@ -2,7 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
-#include <bolt/src/train/trainer/DistributedCommInterface.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -54,7 +54,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::train::DistributedCommInterfacePtr& comm) = 0;
+      const bolt::train::DistributedCommPtr& comm) = 0;
 
   /**
    * Trains the model on a batch of samples.
@@ -164,7 +164,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::train::DistributedCommInterfacePtr& comm) {
+      const bolt::train::DistributedCommPtr& comm) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;

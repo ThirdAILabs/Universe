@@ -33,7 +33,7 @@ class Classifier {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::train::DistributedCommInterfacePtr& comm);
+                   const bolt::train::DistributedCommPtr& comm);
 
   py::object train(const dataset::DatasetLoaderPtr& data, float learning_rate,
                    uint32_t epochs, const InputMetrics& train_metrics,
@@ -41,7 +41,7 @@ class Classifier {
                    const InputMetrics& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::train::DistributedCommInterfacePtr& comm);
+                   const bolt::train::DistributedCommPtr& comm);
 
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,

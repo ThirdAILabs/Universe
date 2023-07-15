@@ -130,7 +130,7 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       const std::vector<std::string>& val_metrics,
                       const std::vector<CallbackPtr>& callbacks,
                       TrainOptions options,
-                      const bolt::train::DistributedCommInterfacePtr& comm) {
+                      const bolt::train::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   bolt::utils::Timer timer;
@@ -233,7 +233,7 @@ py::object UDT::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommInterfacePtr& comm) {
+    const bolt::train::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,

@@ -5,15 +5,16 @@
 #include <stdexcept>
 
 namespace thirdai::bolt::train {
-class DistributedCommInterface {
+class DistributedComm {
+
  public:
   virtual void communicate(const bolt::nn::model::ModelPtr& model) = 0;
 
-  virtual uint64_t min_num_batches(uint64_t num_batches) = 0;
+  virtual uint64_t minNumBatches(uint64_t num_batches) = 0;
 
-  virtual ~DistributedCommInterface() = default;
+  virtual ~DistributedComm() = default;
 };
 
-using DistributedCommInterfacePtr = std::shared_ptr<DistributedCommInterface>;
+using DistributedCommPtr = std::shared_ptr<DistributedComm>;
 
 }  // namespace thirdai::bolt::train

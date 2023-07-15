@@ -160,7 +160,7 @@ py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommInterfacePtr& comm) {
+    const bolt::train::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
@@ -395,7 +395,7 @@ py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommInterfacePtr& comm) {
+    const bolt::train::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
