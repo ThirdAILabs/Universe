@@ -7,7 +7,6 @@ import shutil
 
 import numpy as np
 import pandas as pd
-import tqdm
 from thirdai import bolt
 from .cuad_rlhf_preprocessing import process_cuad_data
 
@@ -130,7 +129,7 @@ class WayfairRlhfConfig(RlhfConfig):
             for i in range(0, len(rlhf_samples), batch_size)
         ]
 
-        for batch in tqdm.tqdm(rlhf_batches):
+        for batch in rlhf_batches:
             model.associate(
                 batch,
                 epochs=1,
@@ -145,10 +144,11 @@ class CuadRlhfConfig(RlhfConfig):
     dataset_name = "cuad"
 
     cuad_dataset = "cuad/CUAD_v1/CUAD_v1.json"
+
+    preprocessed_data_dir = "cuad_rlhf"
     paragraphs_to_answers_filename = "cuad_rlhf/paragraphs_to_answers.csv"
     association_samples_filename = "cuad_rlhf/association_samples.csv"
     questions_and_answers_filename = "cuad_rlhf/questions_and_answers.csv"
-    questions_filename = "cuad_rlhf/questions.csv"
     per_contract_data_dirname = "cuad_rlhf/per_contract_data"
     contract_eval_filename = "eval.csv"
     contract_paragraphs_filename = "paragraphs.csv"
@@ -156,15 +156,16 @@ class CuadRlhfConfig(RlhfConfig):
     @classmethod
     @abstractmethod
     def prepare_data(cls, path_prefix: str):
-        if not os.path.exists("cuad_rlhf"):
-            os.makedirs("cuad_rlhf")
+        if os.path.exists(cls.preprocessed_data_dir):
+            shutil.rmtree(cls.preprocessed_data_dir)
+
+        os.makedirs(cls.preprocessed_data_dir)
 
         process_cuad_data(
             cuad_dataset=os.path.join(path_prefix, cls.cuad_dataset),
             paragraphs_to_answers_filename=cls.paragraphs_to_answers_filename,
             association_samples_filename=cls.association_samples_filename,
             questions_and_answers_filename=cls.questions_and_answers_filename,
-            questions_filename=cls.questions_filename,
             per_contract_data_dirname=cls.per_contract_data_dirname,
             contract_eval_filename=cls.contract_eval_filename,
             contract_paragraphs_filename=cls.contract_paragraphs_filename,
@@ -192,12 +193,11 @@ class CuadRlhfConfig(RlhfConfig):
             cls.questions_and_answers_filename,
             strong_column_names=["question"],
             weak_column_names=["answers"],
+            epochs=10,
         )
 
         model.train(
-            cls.paragraphs_to_answers_filename,
-            learning_rate=0.0001,
-            metrics=["precision@1"],
+            cls.paragraphs_to_answers_filename, metrics=["precision@1"], epochs=10
         )
 
         return model
@@ -220,7 +220,7 @@ class CuadRlhfConfig(RlhfConfig):
         model = bolt.UniversalDeepTransformer.load(save_path)
 
         predictions = []
-        for contract in tqdm.tqdm(os.listdir(cls.per_contract_data_dirname)):
+        for contract in os.listdir(cls.per_contract_data_dirname):
             model.clear_index()
 
             paragraphs = os.path.join(
@@ -255,7 +255,7 @@ class CuadRlhfConfig(RlhfConfig):
     @abstractmethod
     def get_labels(cls, path_prefix: str) -> List[List[int]]:
         labels = []
-        for contract in tqdm.tqdm(os.listdir(cls.per_contract_data_dirname)):
+        for contract in os.listdir(cls.per_contract_data_dirname):
             eval_data = os.path.join(
                 cls.per_contract_data_dirname, contract, cls.contract_eval_filename
             )
@@ -276,11 +276,11 @@ class CuadRlhfConfig(RlhfConfig):
         association_samples = []
         for _, row in association_data.iterrows():
             association_samples.append(
-                ({"text": row["source"]}, {"text": row["target_answer"]})
+                ({"text": row["source"]}, {"text": row["target_paragraph"]})
             )
         random.shuffle(association_samples)
 
-        batch_size = 2048
+        batch_size = 512
         association_batches = [
             association_samples[i : i + batch_size]
             for i in range(0, len(association_samples), batch_size)
@@ -292,10 +292,10 @@ class CuadRlhfConfig(RlhfConfig):
                 n_buckets=4,
                 epochs=1,
                 n_association_samples=1,
-                n_balancing_samples=3,
+                n_balancing_samples=1,
             )
 
     @classmethod
     @abstractmethod
     def cleanup(cls):
-        shutil.rmtree("cuad_rlhf")
+        shutil.rmtree(cls.preprocessed_data_dir)

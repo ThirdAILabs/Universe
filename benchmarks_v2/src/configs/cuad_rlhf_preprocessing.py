@@ -54,8 +54,8 @@ def get_paragraphs(df_data):
     paras = [
         chunk
         for para in df_data["paragraphs"][0]["context"]
-        .replace("\n\n", " \n")
-        .split("\n")
+        # Some paragraphs are separated by '\n\n' which causes empty strings after split
+        .replace("\n\n", " \n").split("\n")
         for chunk in chunk_text(para + "\n")
     ]
     return paras
@@ -66,14 +66,32 @@ def process_cuad_data(
     paragraphs_to_answers_filename,
     association_samples_filename,
     questions_and_answers_filename,
-    questions_filename,
     per_contract_data_dirname,
     contract_eval_filename,
     contract_paragraphs_filename,
 ):
+    """
+    This preprocessing creates several datasets:
+    - paragraphs_to_answers: Text of paragraphs for all contracts and the ids of
+      questions each paragraph contains answers for. Used for pretraining.
+
+    - association_samples: Text of question along with text of answer/text of
+      answer paragraph. Used for RLHF.
+
+    - questions_and_answers: Text and id of each question along with the text of
+      all of its answers across all of the documents. Used for cold start pretraining
+      with the question as a strong column and its answers as a weak column.
+
+    - contract_eval: An evaluation set, one per contract, which contains the text
+      of questions and the ids of the paragraphs containing the answers.
+
+    - contract_paragraphs: The text of each paragraph in a given contract, along with
+      the id for that paragraph. This is used to introduce the contents of the contract
+      before evaluating the accuracy on the contract.
+    """
     df = pd.read_json(cuad_dataset)
 
-    query_to_answers = defaultdict(list)
+    question_to_answers = defaultdict(list)
     paragraphs_to_questions = []
     association_samples = []
     per_contract_data = {}
@@ -97,8 +115,6 @@ def process_cuad_data(
 
         evaluation_samples = []
 
-        contract_association_samples = []
-
         paragraph_ids_to_questions = defaultdict(set)
 
         for qa in contract["paragraphs"][0]["qas"]:
@@ -114,7 +130,7 @@ def process_cuad_data(
                 )[0][0]
                 answer_paragraph = paragraphs[answer_paragraph_id]
 
-                query_to_answers[question].append(answer["text"])
+                question_to_answers[question].append(answer["text"])
 
                 association_sample = {
                     "source": question,
@@ -122,7 +138,6 @@ def process_cuad_data(
                     "target_paragraph": answer_paragraph,
                 }
                 association_samples.append(association_sample)
-                contract_association_samples.append(association_sample)
 
                 paragraph_ids_to_questions[answer_paragraph_id].add(question_id)
 
@@ -142,11 +157,29 @@ def process_cuad_data(
                 {"text": paragraphs, "id": np.arange(len(paragraphs))}
             ),
             "eval": pd.DataFrame.from_records(evaluation_samples),
-            # "association": pd.DataFrame.from_records(contract_association_samples),
         }
 
     paragraphs_to_questions = pd.DataFrame.from_records(paragraphs_to_questions)
+    paragraphs_to_questions.to_csv(paragraphs_to_answers_filename, index=False)
+
     association_samples = pd.DataFrame.from_records(association_samples)
+    association_samples.to_csv(association_samples_filename, index=False)
+
+    create_questions_and_answers_dataset(
+        question_to_answers=question_to_answers,
+        question_ids=question_ids,
+        filename=questions_and_answers_filename,
+    )
+
+    create_per_contract_datasets(
+        per_contract_data=per_contract_data,
+        per_contract_data_dirname=per_contract_data_dirname,
+        contract_eval_filename=contract_eval_filename,
+        contract_paragraphs_filename=contract_paragraphs_filename,
+    )
+
+
+def create_questions_and_answers_dataset(question_to_answers, question_ids, filename):
     questions_answers = pd.DataFrame.from_records(
         [
             {
@@ -154,19 +187,18 @@ def process_cuad_data(
                 "question": question,
                 "answers": " ".join(answers),
             }
-            for question, answers in query_to_answers.items()
+            for question, answers in question_to_answers.items()
         ]
     )
+    questions_answers.to_csv(filename, index=False)
 
-    questions = pd.DataFrame.from_records(
-        [{"id": qid, "text": question} for question, qid in question_ids.items()]
-    )
 
-    paragraphs_to_questions.to_csv(paragraphs_to_answers_filename, index=False)
-    association_samples.to_csv(association_samples_filename, index=False)
-    questions_answers.to_csv(questions_and_answers_filename, index=False)
-    questions.to_csv(questions_filename, index=False)
-
+def create_per_contract_datasets(
+    per_contract_data,
+    per_contract_data_dirname,
+    contract_eval_filename,
+    contract_paragraphs_filename,
+):
     for contract, data in per_contract_data.items():
         contract_dir = os.path.join(
             per_contract_data_dirname, contract.replace(" ", "_")
@@ -178,6 +210,3 @@ def process_cuad_data(
         data["paragraphs"].to_csv(
             os.path.join(contract_dir, contract_paragraphs_filename), index=False
         )
-        # data["association"].to_csv(
-        #     os.path.join(contract_dir, "association_samples.csv"), index=False
-        # )
