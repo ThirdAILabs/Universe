@@ -207,6 +207,18 @@ class CuadRlhfConfig(RlhfConfig):
     def get_predictions(
         cls, path_prefix: str, model: bolt.UniversalDeepTransformer
     ) -> List[int]:
+        save_path = "./cuad_pretrained.bolt"
+        if os.path.exists(save_path):
+            os.remove(save_path)
+
+        # Each contract must be evaluated individually since they share the same
+        # questions, so we need to clear the index and introduce contracts one at
+        # a time to evalaute. However this will clear the balancing samples and
+        # prevent us from doing rlhf after the first evaluation. Thus we save and
+        # reload the model to make a copy whose index we can clear for evaluation.
+        model.save(save_path)
+        model = bolt.UniversalDeepTransformer.load(save_path)
+
         predictions = []
         for contract in tqdm.tqdm(os.listdir(cls.per_contract_data_dirname)):
             model.clear_index()
@@ -234,6 +246,8 @@ class CuadRlhfConfig(RlhfConfig):
                 predictions.append(pred[0][0])
 
         model.clear_index()
+
+        os.remove(save_path)
 
         return predictions
 
