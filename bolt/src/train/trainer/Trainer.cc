@@ -67,7 +67,7 @@ metrics::History Trainer::train(
     callbacks.onEpochBegin();
 
     uint32_t num_batches = train_data.first.size();
-    if (comm != nullptr) {
+    if (comm) {
       num_batches = comm->min_num_batches(num_batches);
     }
     auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
@@ -83,7 +83,7 @@ metrics::History Trainer::train(
 
       _model->trainOnBatch(inputs, labels);
 
-      if (comm != nullptr) {
+      if (comm) {
         utils::Timer comm_timer;
 
         comm->communicate(_model);

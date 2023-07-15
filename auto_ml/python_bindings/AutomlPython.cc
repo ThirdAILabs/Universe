@@ -124,8 +124,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
-           py::arg("options") = udt::TrainOptions(),
-           py::arg("comm") = std::nullopt, bolt::python::OutputRedirect())
+           py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
+           bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
