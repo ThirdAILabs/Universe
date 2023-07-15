@@ -17,7 +17,6 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>

@@ -17,6 +17,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -555,7 +556,7 @@ void UDTMachClassifier::introduceDocuments(
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = std::stoi((*labels)[row_idx++]);
+      uint32_t label = std::stoi(labels->at(row_idx++));
       top_k_per_doc[label].push_back(
           scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }

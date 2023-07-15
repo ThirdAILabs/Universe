@@ -15,7 +15,6 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
