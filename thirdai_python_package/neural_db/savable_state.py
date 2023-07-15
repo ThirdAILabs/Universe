@@ -65,7 +65,7 @@ class State:
         self,
         location=default_checkpoint_name(),
         on_progress: Callable = lambda **kwargs: None,
-    ):
+    ) -> str:
         total_steps = 7
 
         # make directory

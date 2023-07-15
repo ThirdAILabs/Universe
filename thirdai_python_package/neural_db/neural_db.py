@@ -200,7 +200,7 @@ class NeuralDB:
     def sources(self) -> Dict[str, str]:
         return self._savable_state.documents.sources()
 
-    def save(self, save_to: str, on_progress: Callable = no_op) -> None:
+    def save(self, save_to: str, on_progress: Callable = no_op) -> str:
         return self._savable_state.save(Path(save_to), on_progress)
 
     def insert(
