@@ -1,9 +1,9 @@
+import os
+from collections import defaultdict
+
+import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize, word_tokenize
-import numpy as np
-from collections import defaultdict
-import os
-
 
 MIN_WORDS_PER_CHUNK = 50
 CHUNK_THRESHOLD = 150

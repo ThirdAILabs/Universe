@@ -1,13 +1,14 @@
 import os
 import random
+import shutil
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import List
-import shutil
 
 import numpy as np
 import pandas as pd
 from thirdai import bolt
+
 from .cuad_rlhf_preprocessing import process_cuad_data
 
 
