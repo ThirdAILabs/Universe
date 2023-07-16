@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import pytest
 from distributed_utils import (
+    get_udt_cold_start_model,
     metrics_aggregation_from_workers,
     ray_two_node_cluster_config,
     split_into_2,
@@ -93,19 +94,6 @@ def get_udt_scifact_mach_model(n_target_classes):
         n_target_classes=n_target_classes,
         integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
-    )
-    return model
-
-
-def get_udt_cold_start_model(n_target_classes):
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "QUERY": bolt.types.text(),
-            "PRODUCT_ID": bolt.types.categorical(),
-        },
-        target="PRODUCT_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
     )
     return model
 

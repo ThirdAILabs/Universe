@@ -63,7 +63,8 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const dataset::DataSourcePtr& val_data,
                                 const std::vector<std::string>& val_metrics,
                                 const std::vector<CallbackPtr>& callbacks,
-                                TrainOptions options) {
+                                TrainOptions options,
+                                const bolt::train::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader =
@@ -76,7 +77,7 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             train_metrics, val_dataset_loader, val_metrics,
-                            callbacks, options);
+                            callbacks, options, comm);
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
@@ -182,14 +183,15 @@ py::object UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   return train(data_source, learning_rate, epochs, train_metrics, val_data,
-               val_metrics, callbacks, options);
+               val_metrics, callbacks, options, comm);
 }
 
 py::object UDTClassifier::embedding(const MapInput& sample) {

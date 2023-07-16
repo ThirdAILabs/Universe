@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -53,7 +54,8 @@ class UDTBackend {
                            const dataset::DataSourcePtr& val_data,
                            const std::vector<std::string>& val_metrics,
                            const std::vector<CallbackPtr>& callbacks,
-                           TrainOptions options) = 0;
+                           TrainOptions options,
+                           const bolt::train::DistributedCommPtr& comm) = 0;
 
   /**
    * Trains the model on a batch of samples.
@@ -162,7 +164,8 @@ class UDTBackend {
       uint32_t epochs, const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const bolt::train::DistributedCommPtr& comm) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -173,6 +176,7 @@ class UDTBackend {
     (void)val_metrics;
     (void)callbacks;
     (void)options;
+    (void)comm;
     throw notSupported("cold_start");
   }
 
