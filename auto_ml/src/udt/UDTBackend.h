@@ -48,13 +48,14 @@ class UDTBackend {
   /**
    * Trains the model on the given dataset.
    */
-  virtual py::object train(
-      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::vector<std::string>& train_metrics,
-      const dataset::DataSourcePtr& val_data,
-      const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::train::DistributedCommPtr& comm) = 0;
+  virtual py::object train(const dataset::DataSourcePtr& data,
+                           float learning_rate, uint32_t epochs,
+                           const std::vector<std::string>& train_metrics,
+                           const dataset::DataSourcePtr& val_data,
+                           const std::vector<std::string>& val_metrics,
+                           const std::vector<CallbackPtr>& callbacks,
+                           TrainOptions options,
+                           const bolt::train::DistributedCommPtr& comm) = 0;
 
   /**
    * Trains the model on a batch of samples.

@@ -6,7 +6,6 @@
 
 namespace thirdai::bolt::train {
 class DistributedComm {
-
  public:
   virtual void communicate(const bolt::nn::model::ModelPtr& model) = 0;
 

@@ -283,8 +283,8 @@ void defineCallbacks(py::module_& train) {
 }
 
 void defineDistributedTrainer(py::module_& train) {
-  py::class_<DistributedComm, PyDistributedComm,
-             DistributedCommPtr>(train, "Communication")
+  py::class_<DistributedComm, PyDistributedComm, DistributedCommPtr>(
+      train, "Communication")
       .def(py::init<>());
 
   py::class_<GradientReference>(train, "GradientReference")

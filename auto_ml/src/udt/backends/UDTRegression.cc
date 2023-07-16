@@ -56,13 +56,14 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                                             defaults::FREEZE_HASH_TABLES);
 }
 
-py::object UDTRegression::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
-    const dataset::DataSourcePtr& val_data,
-    const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+py::object UDTRegression::train(const dataset::DataSourcePtr& data,
+                                float learning_rate, uint32_t epochs,
+                                const std::vector<std::string>& train_metrics,
+                                const dataset::DataSourcePtr& val_data,
+                                const std::vector<std::string>& val_metrics,
+                                const std::vector<CallbackPtr>& callbacks,
+                                TrainOptions options,
+                                const bolt::train::DistributedCommPtr& comm) {
   size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   dataset::DatasetLoaderPtr val_dataset;

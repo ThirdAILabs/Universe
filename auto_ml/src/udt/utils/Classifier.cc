@@ -70,13 +70,14 @@ py::object thirdai::automl::udt::utils::Classifier::train(
   return history;
 }
 
-py::object Classifier::train(
-    const dataset::DatasetLoaderPtr& dataset, float learning_rate,
-    uint32_t epochs, const InputMetrics& train_metrics,
-    const dataset::DatasetLoaderPtr& val_dataset,
-    const InputMetrics& val_metrics, const std::vector<CallbackPtr>& callbacks,
-    TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
+                             float learning_rate, uint32_t epochs,
+                             const InputMetrics& train_metrics,
+                             const dataset::DatasetLoaderPtr& val_dataset,
+                             const InputMetrics& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options,
+                             const bolt::train::DistributedCommPtr& comm) {
   uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;

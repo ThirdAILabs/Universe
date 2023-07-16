@@ -57,13 +57,14 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       tabular_options, force_parallel);
 }
 
-py::object UDTClassifier::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
-    const dataset::DataSourcePtr& val_data,
-    const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
+                                float learning_rate, uint32_t epochs,
+                                const std::vector<std::string>& train_metrics,
+                                const dataset::DataSourcePtr& val_data,
+                                const std::vector<std::string>& val_metrics,
+                                const std::vector<CallbackPtr>& callbacks,
+                                TrainOptions options,
+                                const bolt::train::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader =

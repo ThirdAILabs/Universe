@@ -35,8 +35,7 @@ metrics::History Trainer::train(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    const DistributedCommPtr& comm) {
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
@@ -177,8 +176,7 @@ metrics::History Trainer::train_with_metric_names(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    const DistributedCommPtr& comm) {
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -204,8 +202,7 @@ metrics::History Trainer::train_with_dataset_loader(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    const DistributedCommPtr& comm) {
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 
