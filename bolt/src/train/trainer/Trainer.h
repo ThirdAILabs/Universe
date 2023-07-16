@@ -4,8 +4,10 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -56,7 +58,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -67,7 +70,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -80,7 +84,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   /**
    * Performs evaluation on the model using the given validation data and
@@ -129,6 +134,13 @@ class Trainer {
    * Invokes the autotuner for rehash and rebuild based on the size of the
    * dataset.
    */
+
+  /**
+   * Returns a formatted log line for function call
+   */
+  std::string formatFuncCallLogLine(const std::string& func_call,
+                                    uint32_t batches, int64_t time);
+
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
   // TODO(Nicholas): These are just wrappers to convert the datasets to tensors.

@@ -160,6 +160,7 @@ neural_db_deps = [
     "python-docx",
     "url-normalize",
     "nltk",
+    "unidecode",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of

@@ -17,6 +17,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -159,7 +160,8 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
@@ -174,7 +176,7 @@ py::object UDTMachClassifier::train(
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
                             val_dataset_loader, getMetrics(val_metrics, "val_"),
-                            callbacks, options);
+                            callbacks, options, comm);
 }
 
 py::object UDTMachClassifier::trainBatch(
@@ -393,14 +395,15 @@ py::object UDTMachClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   return train(data_source, learning_rate, epochs, train_metrics, val_data,
-               val_metrics, callbacks, options);
+               val_metrics, callbacks, options, comm);
 }
 
 py::object UDTMachClassifier::embedding(const MapInput& sample) {
@@ -553,7 +556,7 @@ void UDTMachClassifier::introduceDocuments(
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = std::stoi((*labels)[row_idx++]);
+      uint32_t label = std::stoi(labels->at(row_idx++));
       top_k_per_doc[label].push_back(
           scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
@@ -916,14 +919,14 @@ py::object UDTMachClassifier::associateTrain(
     BoltVector doc_id = BoltVector::singleElementSparseVector(0);
     for (uint32_t i = 0; i < n_association_samples; i++) {
       dataset->manuallyAddToBuffer(
-          {input_vec, doc_id, makeLabelFromHashes(hashes, n_buckets, rng)});
+          {input_vec, makeLabelFromHashes(hashes, n_buckets, rng), doc_id});
     }
   }
 
   return _classifier->train(dataset, learning_rate, epochs,
                             getMetrics(metrics, "train_"),
                             /* val_dataset */ nullptr, /* val_metrics= */ {},
-                            /* callbacks= */ {}, options);
+                            /* callbacks= */ {}, options, /*comm= */ nullptr);
 }
 
 py::object UDTMachClassifier::associateColdStart(

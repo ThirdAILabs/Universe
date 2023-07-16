@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
 #include <optional>
+#include <utility>
 
 namespace thirdai::automl::udt::utils {
 
@@ -35,12 +36,13 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DatasetLoaderPtr& val_dataset,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   auto history = train(
       dataset, learning_rate, epochs,
       fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
       val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
-      callbacks, options);
+      callbacks, options, comm);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
@@ -74,7 +76,8 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
                              const dataset::DatasetLoaderPtr& val_dataset,
                              const InputMetrics& val_metrics,
                              const std::vector<CallbackPtr>& callbacks,
-                             TrainOptions options) {
+                             TrainOptions options,
+                             const bolt::train::DistributedCommPtr& comm) {
   uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
@@ -97,7 +100,8 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       /* use_sparsity_in_validation= */ options.sparse_validation,
       /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
       /* verbose= */ options.verbose,
-      /* logging_interval= */ options.logging_interval);
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ comm);
 
   return py::cast(history);
 }

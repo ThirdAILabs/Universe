@@ -15,7 +15,6 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
@@ -44,7 +43,8 @@ class UDTMachClassifier final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options) final;
+                   TrainOptions options,
+                   const bolt::train::DistributedCommPtr& comm) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
@@ -94,7 +94,8 @@ class UDTMachClassifier final : public UDTBackend {
                        const dataset::DataSourcePtr& val_data,
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options) final;
+                       TrainOptions options,
+                       const bolt::train::DistributedCommPtr& comm) final;
 
   py::object embedding(const MapInput& sample) final;
 
