@@ -1,10 +1,9 @@
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 import os
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
 from ray.air.checkpoint import Checkpoint
 from ray.air.config import RunConfig, ScalingConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
-
 from thirdai._thirdai import logging
 
 if TYPE_CHECKING:
