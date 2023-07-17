@@ -1,6 +1,7 @@
-from ..utils import check_torch_installed
+from ..utils import check_torch_installed, timed
 
 
+@timed
 def prepare_model(model):
     check_torch_installed()
 
