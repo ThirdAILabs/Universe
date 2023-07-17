@@ -1,6 +1,6 @@
-import numpy as np
 import os
 
+import numpy as np
 from thirdai._thirdai import bolt as old_bolt
 from thirdai._thirdai import bolt_v2 as bolt
 from thirdai._thirdai import logging
