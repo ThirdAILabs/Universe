@@ -106,6 +106,10 @@ static std::vector<BoltVector> segmentRowMajorVector(
 static void transposeBoltVector(const BoltVector& base_vector,
                                 BoltVector& transposed_vector, uint32_t rows,
                                 uint32_t columns) {
+  /**
+   * This function assumes that the input bolt vector is in a row major format
+   * that is the elements of the rows are stored consecutively.
+   */
   assert(rows * columns == base_vector.len);
   float* activations_ref_base = base_vector.activations;
   float* activations_ref_transpose = transposed_vector.activations;

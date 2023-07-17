@@ -21,7 +21,23 @@ std::string nextFCMixerOpName() {
   static uint32_t constructed = 0;
   return "mixer_" + std::to_string(++constructed);
 }
+/**
+ * dim = the output dimension of the FC Kernel.
+ * input_dim = dim of the input to the FC Kernel.
+ * number_segment = the number of rows in the matrix viz of the input.
 
+ * The input has the dimension input_dim and we assume that the input
+ tensor/boltvector is in row major format. If we visualize the input as a
+ matrix, the number of rows in the matrix would be equal to the number of
+ segment and the number of columns would be equal to the output dimension of the
+ FC Kernel.
+
+ * This operation operates on a single row of the input. That is, the input is
+ split into number_segment number of parts and FC kernel is applied on each of
+ the input segments and then finally the segments are concatenated. We can think
+ of this layer as a FCMixer over the rows. That is, it mixes the values inside
+ of a row.
+ */
 FCMixer::FCMixer(uint32_t dim, uint32_t input_dim, uint32_t number_segment,
                  float sparsity, const std::string& activation,
                  SamplingConfigPtr sampling, bool use_bias,
@@ -49,7 +65,7 @@ FCMixer::FCMixer(uint32_t dim, uint32_t input_dim, uint32_t number_segment,
                                    std::move(sampling));
 
   _kernel = std::make_shared<FullyConnectedLayer>(
-      config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
+      config, dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
 
 std::shared_ptr<FCMixer> FCMixer::make(
@@ -78,9 +94,20 @@ void FCMixer::forward(const autograd::ComputationList& inputs,
   std::vector<BoltVector> segmented_row_vector_output =
       bolt_vector::segmentRowMajorVector(output->getVector(index_in_batch),
                                          _rows, _columns);
+  if (segmented_row_vector_output.size() != _rows) {
+    throw std::logic_error(
+        "The size of the segmented output bolt vector should be equal to the "
+        "number of segments");
+  }
+
   std::vector<BoltVector> segmented_row_vector_input =
       bolt_vector::segmentRowMajorVector(
           inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
+  if (segmented_row_vector_input.size() != _rows) {
+    throw std::logic_error(
+        "The size of the segmented input bolt vector should be equal to the "
+        "number of segments");
+  }
   for (size_t i = 0; i < segmented_row_vector_input.size(); i++) {
     _kernel->forward(segmented_row_vector_input[i],
                      segmented_row_vector_output[i], labels);
@@ -134,9 +161,8 @@ std::optional<uint32_t> FCMixer::nonzeros(
   // The number of output nonzeros for a FullyConnected op do not depend on its
   // inputs.
   (void)inputs;
-  if (use_sparsity) {
-    return _kernel->getSparseDim() * _columns;
-  }
+  (void)use_sparsity;
+
   return _rows * _columns;
 }
 
@@ -203,7 +229,7 @@ void FCMixer::registerModel(const std::weak_ptr<model::Model>& new_model) {
 }
 
 autograd::ComputationPtr FCMixer::apply(autograd::ComputationPtr input) {
-  if (input->dim() != _kernel->getInputDim()) {
+  if (input->dim() != _rows * _columns) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
           << _kernel->getDim() << ", " << _kernel->getInputDim()
@@ -214,7 +240,7 @@ autograd::ComputationPtr FCMixer::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
-uint32_t FCMixer::inputDim() const { return _kernel->getInputDim(); }
+uint32_t FCMixer::inputDim() const { return _rows * _columns; }
 
 const float* FCMixer::weightsPtr() const { return _kernel->getWeightsPtr(); }
 

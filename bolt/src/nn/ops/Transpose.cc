@@ -17,6 +17,12 @@ std::string nextTransposeOpName() {
   return "transpose_" + std::to_string(++constructed);
 }
 
+/**
+ * Operates on an Input BoltVector which is in a row major format. This takes
+ * the transpose of the BoltVector that is convert it into column major format.
+ * rows : Number of rows in input vector
+ * columns : Number of columns in input vector
+ */
 Transpose::Transpose(uint32_t rows, uint32_t columns)
     : Op(nextTransposeOpName()), _rows(rows), _columns(columns) {}
 
