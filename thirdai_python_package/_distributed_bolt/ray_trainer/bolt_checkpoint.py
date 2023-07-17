@@ -16,8 +16,8 @@ class UDTCheckPoint(Checkpoint):
     Use ``UDTCheckPoint.from_model`` to create this type of checkpoint.
     """
 
-    @timed
     @classmethod
+    @timed
     def from_model(
         cls,
         model,
