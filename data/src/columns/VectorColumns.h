@@ -5,11 +5,39 @@
 #include <dataset/src/utils/CsvParser.h>
 #include <cctype>
 #include <cstdlib>
+#include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <typeinfo>
+#include <utility>
 
 namespace thirdai::data {
+
+template <class ColumnType>
+static std::shared_ptr<ColumnType> cast_column_for_extension(
+    const ColumnPtr& other) {
+  auto other_cast = std::dynamic_pointer_cast<ColumnType>(other);
+  if (!other_cast) {
+    std::stringstream ss("Cannot extend a ");
+    ss << typeid(ColumnType).name() << " with a ";
+    ss << typeid(other).name() << ".";
+    throw std::invalid_argument(ss.str());
+  }
+  return other_cast;
+}
+
+template <typename ContentType>
+static std::vector<ContentType> concat(
+    const std::vector<ContentType>& self_data,
+    const std::vector<ContentType>& other_data) {
+  std::vector<ContentType> new_data;
+  new_data.reserve(self_data.size() + other_data.size());
+  new_data.insert(new_data.end(), self_data.begin(), self_data.end());
+  new_data.insert(new_data.end(), other_data.begin(), other_data.end());
+  return new_data;
+}
 
 class CppTokenColumn final : public TokenColumn {
  public:
@@ -28,6 +56,12 @@ class CppTokenColumn final : public TokenColumn {
   }
 
   const uint32_t& at(uint64_t n) const final { return _data.at(n); }
+
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppTokenColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppTokenColumn>(std::move(concat_data), _dim);
+  }
 
  private:
   void checkSparseIndices() const {
@@ -60,8 +94,60 @@ class CppDenseFeatureColumn final : public DenseFeatureColumn {
 
   const float& at(uint64_t n) const final { return _data.at(n); }
 
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppDenseFeatureColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppDenseFeatureColumn>(std::move(concat_data));
+  }
+
  private:
   std::vector<float> _data;
+};
+
+class CppSparseFeatureColumn final : public SparseFeatureColumn {
+ public:
+  CppSparseFeatureColumn(std::vector<std::pair<uint32_t, float>> data,
+                         std::optional<uint32_t> dim)
+      : _data(std::move(data)), _dim(dim) {
+    checkSparseIndices();
+  }
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  std::optional<DimensionInfo> dimension() const final {
+    if (!_dim) {
+      return std::nullopt;
+    }
+    return {{*_dim, /* is_dense= */ false}};
+  }
+
+  const std::pair<uint32_t, float>& at(uint64_t n) const final {
+    return _data.at(n);
+  }
+
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppSparseFeatureColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppSparseFeatureColumn>(std::move(concat_data),
+                                                    _dim);
+  }
+
+ private:
+  void checkSparseIndices() const {
+    if (!_dim) {
+      return;
+    }
+    for (const auto& [index, _] : _data) {
+      if (index >= *_dim) {
+        throw std::out_of_range("Cannot have index " + std::to_string(index) +
+                                " in VectorSparseValueColumn of dimension " +
+                                std::to_string(*_dim) + ".");
+      }
+    }
+  }
+
+  std::vector<std::pair<uint32_t, float>> _data;
+  std::optional<uint32_t> _dim;
 };
 
 class CppStringColumn final : public StringColumn {
@@ -77,6 +163,12 @@ class CppStringColumn final : public StringColumn {
   }
 
   const std::string& at(uint64_t n) const final { return _data.at(n); }
+
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppStringColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppStringColumn>(std::move(concat_data));
+  }
 
  private:
   std::vector<std::string> _data;
@@ -164,6 +256,12 @@ class CppTokenArrayColumn final : public TokenArrayColumn {
     return {_data[n].data(), _data[n].size()};
   }
 
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppTokenArrayColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppTokenArrayColumn>(std::move(concat_data), _dim);
+  }
+
  private:
   void checkSparseIndices() {
     if (!_dim) {
@@ -217,6 +315,12 @@ class CppSparseArrayColumn final
     return {_data[n].data(), _data[n].size()};
   }
 
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppSparseArrayColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppTokenArrayColumn>(std::move(concat_data), _dim);
+  }
+
  private:
   void checkSparseIndices() {
     if (!_dim) {
@@ -261,6 +365,12 @@ class CppDenseArrayColumn final : public ArrayColumn<float> {
    */
   typename ArrayColumn<float>::RowReference at(uint64_t n) const final {
     return {_data[n].data(), _data[n].size()};
+  }
+
+  ColumnPtr extend(const ColumnPtr& other) const final {
+    auto other_cast = cast_column_for_extension<CppDenseArrayColumn>(other);
+    auto concat_data = concat(_data, other_cast->_data);
+    return std::make_shared<CppDenseArrayColumn>(std::move(concat_data));
   }
 
  private:

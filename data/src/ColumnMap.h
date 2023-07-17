@@ -5,6 +5,7 @@
 #include <dataset/src/Datasets.h>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -47,12 +48,44 @@ class ColumnMap {
 
   std::vector<std::string> columns() const;
 
+  ColumnMap extend(const ColumnMap& other) const {
+    ColumnMap new_map({});
+    for (const std::string& name : other.columns()) {
+      if (!_columns.count(name)) {
+        throwIncompatibleColumns(other);
+      }
+    }
+    for (const std::string& name : columns()) {
+      if (!other._columns.count(name)) {
+        throwIncompatibleColumns(other);
+      }
+    }
+    for (const std::string& name : other.columns()) {
+      new_map.setColumn(name, getColumn(name)->extend(other.getColumn(name)));
+    }
+    return new_map;
+  }
+
   static ColumnMap createStringColumnMapFromFile(
       const dataset::DataSourcePtr& source, char delimiter);
 
  private:
   std::vector<ColumnPtr> selectColumns(
       const std::vector<std::string>& column_names) const;
+
+  void throwIncompatibleColumns(const ColumnMap& other) const {
+    std::stringstream ss(
+        "Unable to extend column maps with incompatible column names [");
+    for (const std::string& name : columns()) {
+      ss << name << ", ";
+    }
+    ss << "] vs [";
+    for (const std::string& name : other.columns()) {
+      ss << name << ", ";
+    }
+    ss << "].";
+    throw std::invalid_argument(ss.str());
+  }
 
   std::unordered_map<std::string, ColumnPtr> _columns;
   uint64_t _num_rows;

@@ -2,9 +2,11 @@
 
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <typeinfo>
 
 namespace thirdai::data {
 
@@ -12,6 +14,9 @@ struct DimensionInfo {
   uint32_t dim;
   bool is_dense;
 };
+
+class Column;
+using ColumnPtr = std::shared_ptr<Column>;
 
 class Column {
  public:
@@ -28,10 +33,15 @@ class Column {
   virtual void appendRowToVector(dataset::SegmentedFeatureVector& vector,
                                  uint64_t row_idx) const = 0;
 
+  virtual ColumnPtr extend(const ColumnPtr& other) const {
+    (void)other;
+    std::stringstream ss;
+    ss << typeid(*this).name() << " does not support extend().";
+    throw std::runtime_error(ss.str());
+  }
+
   virtual ~Column() = default;
 };
-
-using ColumnPtr = std::shared_ptr<Column>;
 
 // We use templates to create columns with different types because there are
 // very few types which we will need to support and almost all of the code for
