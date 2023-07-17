@@ -113,6 +113,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("params", &modelParams)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
+      .def("enable_sparse_parameter_updates",
+           &model::Model::enableSparseParameterUpdates)
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)

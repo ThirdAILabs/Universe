@@ -49,6 +49,10 @@ class FullyConnectedLayer final {
     _disable_sparse_parameter_updates = true;
   };
 
+  void enableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = false;
+  };
+
   void saveWithOptimizer(bool should_save_optimizer) {
     _should_save_optimizer = should_save_optimizer;
   }
