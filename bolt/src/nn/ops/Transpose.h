@@ -36,7 +36,7 @@ class Transpose final : public Op,
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
  private:
-  Transpose();
+  Transpose() {}
 
   Transpose(uint32_t rows, uint32_t columns);
 
