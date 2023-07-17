@@ -1,8 +1,11 @@
 import numpy as np
+import os
+
 from thirdai._thirdai import bolt as old_bolt
 from thirdai._thirdai import bolt_v2 as bolt
+from thirdai._thirdai import logging
 
-from .utils import check_torch_installed
+from .utils import check_torch_installed, timed
 
 
 class Communication(bolt.train.Communication):
@@ -10,22 +13,32 @@ class Communication(bolt.train.Communication):
         # For trampoline classes, we need to explicitly call
         # __init__ of the object rather than just using super()
         bolt.train.Communication.__init__(self)
+        logging.setup(log_to_stderr=False, path=os.path.join(f"bolt_timing.log"))
         check_torch_installed()
 
+    @timed
+    def barrier(self):
+        import torch.distributed as dist
+
+        dist.barrier()
+
+    @timed
     def communicate(self, model):
         import torch
         import torch.distributed as dist
         from ray.air import session
 
-        num_workers = session.get_world_size()
-        dist.barrier()
+        self.barrier()
 
+        num_workers = session.get_world_size()
         gradients = torch.from_numpy(np.array(model.get_gradients()))
 
         dist.all_reduce(gradients)
+
         gradients = gradients.numpy() / num_workers
         model.set_gradients(gradients)
 
+    @timed
     def min_num_batches(self, num_batches):
         import torch
         import torch.distributed as dist

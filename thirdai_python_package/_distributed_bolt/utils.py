@@ -111,3 +111,15 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
                 num_nodes=1,
                 sep=self.sep,
             )
+
+
+def timed(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        logging.info("func %s | time %d ms" % (f.__name__, elapsed * 1000))
+        return result
+
+    return wrapper
