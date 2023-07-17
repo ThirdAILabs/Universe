@@ -3,30 +3,11 @@ import os
 from thirdai import bolt
 
 from ..configs.distributed_configs import DistributedBenchmarkConfig
-from ..distributed_utils import ray_two_node_cluster_config
+from ..distributed_utils import ray_two_node_cluster_config, create_udt_model
 from .runner import Runner
 
 
-def create_udt_model(n_target_classes, output_dim, num_hashes, embedding_dimension):
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
-        },
-        target="DOC_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
-        options={
-            "embedding_dimension": embedding_dimension,
-            "extreme_output_dim": output_dim,
-            "extreme_num_hashes": num_hashes,
-            "use_bias": True,
-        },
-    )
-    return model
-
-
-class DistributedRunner(Runner):
+class DistributedRunner_v1(Runner):
     config_type = DistributedBenchmarkConfig
 
     def run_benchmark(config: DistributedBenchmarkConfig, path_prefix, mlflow_logger):

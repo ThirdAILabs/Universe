@@ -1,5 +1,6 @@
 from .bolt_fc import BoltFullyConnectedRunner, BoltV2FullyConnectedRunner
-from .distributed_v1 import DistributedRunner
+from .distributed_v1 import DistributedRunner_v1
+from .distributed_v2 import DistributedRunner_v2
 from .dlrm import DLRMRunner, DLRMV2Runner
 from .mini_benchmark_runners.query_reformulation import (
     MiniBenchmarkQueryReformulationRunner,
@@ -21,5 +22,6 @@ runner_map = {
     "mini_benchmark_udt": MiniBenchmarkUDTRunner,
     "mini_benchmark_query_reformulation": MiniBenchmarkQueryReformulationRunner,
     "mini_benchmark_temporal": MiniBenchmarkTemporalRunner,
-    "distributed_v1": DistributedRunner,
+    "distributed_v1": DistributedRunner_v1,
+    "distributed_v2": DistributedRunner_v2,
 }
