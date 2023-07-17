@@ -10,10 +10,14 @@ from .utils import check_torch_installed, timed
 
 class Communication(bolt.train.Communication):
     def __init__(self):
+        import torch.distributed as dist
+
         # For trampoline classes, we need to explicitly call
         # __init__ of the object rather than just using super()
         bolt.train.Communication.__init__(self)
-        logging.setup(log_to_stderr=False, path=os.path.join(f"bolt_timing.log"))
+        logging.setup(
+            log_to_stderr=False, path=os.path.join(f"bolt_timing_{dist.get_rank()}.log")
+        )
         check_torch_installed()
 
     @timed

@@ -6,6 +6,8 @@ from ray.air.constants import MODEL_KEY
 from thirdai._thirdai import bolt as old_bolt
 from thirdai._thirdai import bolt_v2 as bolt
 
+from ..utils import timed
+
 
 class UDTCheckPoint(Checkpoint):
     """A :py:class:`~ray.air.checkpoint.Checkpoint` with UDT-specific
@@ -14,6 +16,7 @@ class UDTCheckPoint(Checkpoint):
     Use ``UDTCheckPoint.from_model`` to create this type of checkpoint.
     """
 
+    @timed
     @classmethod
     def from_model(
         cls,
@@ -41,6 +44,7 @@ class UDTCheckPoint(Checkpoint):
 
         return cls.from_dict(ckpt_dict)
 
+    @timed
     def get_model(self):
         """Retrieve the Bolt model stored in this checkpoint."""
         with self.as_directory() as checkpoint_path:
@@ -57,6 +61,7 @@ class BoltCheckPoint(Checkpoint):
     """
 
     @classmethod
+    @timed
     def from_model(
         cls,
         model,
@@ -83,6 +88,7 @@ class BoltCheckPoint(Checkpoint):
 
         return cls.from_dict(ckpt_dict)
 
+    @timed
     def get_model(self):
         """Retrieve the Bolt model stored in this checkpoint."""
         with self.as_directory() as checkpoint_path:

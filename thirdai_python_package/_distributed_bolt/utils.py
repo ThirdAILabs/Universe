@@ -1,13 +1,16 @@
 import importlib
-import logging
+from functools import wraps
+from time import time
 
-from thirdai import data
+from thirdai import data, logging
 
 
 def init_logging(logger_file: str):
     """
     Returns logger from a logger file
     """
+    import logging
+
     logger = logging.getLogger(logger_file)
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(logger_file)
