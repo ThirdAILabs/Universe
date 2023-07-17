@@ -104,7 +104,6 @@ class Op {
    */
   virtual void disableSparseParameterUpdates() = 0;
 
-
   virtual void enableSparseParameterUpdates() = 0;
 
   /**

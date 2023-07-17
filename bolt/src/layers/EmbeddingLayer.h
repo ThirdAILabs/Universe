@@ -51,7 +51,7 @@ class EmbeddingLayer {
   void disableSparseParameterUpdates() {
     _disable_sparse_parameter_updates = true;
   }
-  
+
   void enableSparseParameterUpdates() {
     _disable_sparse_parameter_updates = false;
   };

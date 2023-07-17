@@ -220,7 +220,7 @@ class Model : public std::enable_shared_from_this<Model> {
   void disableSparseParameterUpdates();
 
   void enableSparseParameterUpdates();
-  
+
   /**
    * Helper function to save the model to a stream.
    */
