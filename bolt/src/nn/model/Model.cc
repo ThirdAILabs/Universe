@@ -341,6 +341,13 @@ void Model::disableSparseParameterUpdates() {
   }
 }
 
+void Model::enableSparseParameterUpdates() {
+  for (const auto& op : _ops) {
+    op->enableSparseParameterUpdates();
+  }
+}
+
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {

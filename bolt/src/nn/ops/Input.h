@@ -28,6 +28,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
+  
+  void enableSparseParameterUpdates() final;
 
   std::vector<std::vector<float>*> gradients() final { return {}; };
 

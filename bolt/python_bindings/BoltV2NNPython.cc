@@ -107,6 +107,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("new_values"))
       .def("disable_sparse_parameter_updates",
            &model::Model::disableSparseParameterUpdates)
+      .def("enable_sparse_parameter_updates",
+           &model::Model::enableSparseParameterUpdates)
       .def("train_steps", &model::Model::trainSteps)
       .def("override_train_steps", &model::Model::overrideTrainSteps,
            py::arg("train_steps"))

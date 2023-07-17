@@ -104,6 +104,9 @@ class Op {
    */
   virtual void disableSparseParameterUpdates() = 0;
 
+
+  virtual void enableSparseParameterUpdates() = 0;
+
   /**
    * Returns references to all of the gradients of the op. Used for distributed
    * training.
