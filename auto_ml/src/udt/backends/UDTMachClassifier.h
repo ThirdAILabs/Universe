@@ -164,8 +164,8 @@ class UDTMachClassifier final : public UDTBackend {
     return _dataset_factory;
   }
 
-  void setDecodeParams(uint32_t min_num_eval_results,
-                       uint32_t top_k_per_eval_aggregation) final;
+  void setDecodeParams(uint32_t top_k_to_return,
+                       uint32_t num_buckets_to_eval) final;
 
   void verifyCanDistribute() const final {
     _dataset_factory->verifyCanDistribute();
@@ -269,8 +269,8 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
 
-  uint32_t _min_num_eval_results;
-  uint32_t _top_k_per_eval_aggregation;
+  uint32_t _default_top_k_to_return;
+  uint32_t _num_buckets_to_eval;
   float _mach_sampling_threshold;
 
   std::optional<RLHFSampler> _rlhf_sampler;

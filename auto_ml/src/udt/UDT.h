@@ -146,10 +146,8 @@ class UDT {
 
   void clearGraph() { return _backend->clearGraph(); }
 
-  void setDecodeParams(uint32_t min_num_eval_results,
-                       uint32_t top_k_per_eval_aggregation) {
-    return _backend->setDecodeParams(min_num_eval_results,
-                                     top_k_per_eval_aggregation);
+  void setDecodeParams(uint32_t top_k_to_return, uint32_t num_buckets_to_eval) {
+    return _backend->setDecodeParams(top_k_to_return, num_buckets_to_eval);
   }
 
   ModelPtr model() const { return _backend->model(); }

@@ -165,8 +165,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
       .def("clear_graph", &udt::UDT::clearGraph)
       .def("set_decode_params", &udt::UDT::setDecodeParams,
-           py::arg("min_num_eval_results"),
-           py::arg("top_k_per_eval_aggregation"))
+           py::arg("top_k_to_return"), py::arg("num_buckets_to_eval"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),

@@ -17,8 +17,7 @@ namespace thirdai::bolt::train::metrics {
 class MachRecall final : public Metric {
  public:
   MachRecall(dataset::mach::MachIndexPtr mach_index,
-             uint32_t top_k_per_eval_aggregation,
-             nn::autograd::ComputationPtr outputs,
+             uint32_t num_buckets_to_eval, nn::autograd::ComputationPtr outputs,
              nn::autograd::ComputationPtr labels, uint32_t k);
 
   void record(uint32_t index_in_batch) final;
@@ -33,7 +32,7 @@ class MachRecall final : public Metric {
 
  private:
   dataset::mach::MachIndexPtr _mach_index;
-  uint32_t _top_k_per_eval_aggregation;
+  uint32_t _num_buckets_to_eval;
 
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;

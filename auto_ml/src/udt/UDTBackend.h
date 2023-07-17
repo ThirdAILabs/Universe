@@ -237,10 +237,10 @@ class UDTBackend {
   /**
    * Used for UDTMachClassifier.
    */
-  virtual void setDecodeParams(uint32_t min_num_eval_results,
-                               uint32_t top_k_per_eval_aggregation) {
-    (void)min_num_eval_results;
-    (void)top_k_per_eval_aggregation;
+  virtual void setDecodeParams(uint32_t top_k_to_return,
+                               uint32_t num_buckets_to_eval) {
+    (void)top_k_to_return;
+    (void)num_buckets_to_eval;
     throw notSupported("set_decode_params");
   }
 

@@ -200,7 +200,7 @@ void defineMetrics(py::module_& train) {
       .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
                     nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
                     uint32_t>(),
-           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("mach_index"), py::arg("num_buckets_to_eval"),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   py::class_<metrics::MachRecall, std::shared_ptr<metrics::MachRecall>,
@@ -208,7 +208,7 @@ void defineMetrics(py::module_& train) {
       .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
                     nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
                     uint32_t>(),
-           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("mach_index"), py::arg("num_buckets_to_eval"),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 }
 
