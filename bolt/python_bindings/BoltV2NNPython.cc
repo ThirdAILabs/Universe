@@ -107,6 +107,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("params", &modelParams)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
+      // The next three function is used for distributed training.
       .def("disable_sparse_parameter_updates",
            &model::Model::disableSparseParameterUpdates)
       .def("get_gradients", &::thirdai::bolt::python::getGradients,
