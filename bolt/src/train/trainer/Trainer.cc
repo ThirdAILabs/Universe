@@ -325,7 +325,7 @@ std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
 std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
-      "{} | epoch {} | train_steps {} | train_batches {} | time {} ms",
+      "func {} | epoch {} | train_steps {} | train_batches {} | time {} ms",
       func_call, _epoch, _model->trainSteps(), batches, time);
 
   return logline;
