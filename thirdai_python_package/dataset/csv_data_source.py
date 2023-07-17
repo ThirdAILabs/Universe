@@ -1,13 +1,13 @@
 import os
 from io import BytesIO
 from typing import List, Optional
-# from urllib.parse import urlparse
+from urllib.parse import urlparse
 
 import pandas as pd
-from thirdai._thirdai.dataset import DataSource
+from thirdai.dataset.data_source import PyDataSource
 
 
-class CSVDataSource(DataSource):
+class CSVDataSource(PyDataSource):
     """CSV data source that can be used to load from a cloud
     storage instance such as s3 and GCS.
 
@@ -42,30 +42,30 @@ class CSVDataSource(DataSource):
         storage_path: str,
         gcs_credentials_path: str = None,
     ) -> None:
-        DataSource.__init__(self)
+        PyDataSource.__init__(self)
 
-        # if gcs_credentials_path:
-        #     # Pandas requires the GCS file system in order
-        #     # to authenticate a read request from a GCS bucket
-        #     import gcsfs
+        if gcs_credentials_path:
+            # Pandas requires the GCS file system in order
+            # to authenticate a read request from a GCS bucket
+            import gcsfs
 
-        # self._storage_path = storage_path
-        # self._gcs_credentials = gcs_credentials_path
+        self._storage_path = storage_path
+        self._gcs_credentials = gcs_credentials_path
 
-        # token = None
-        # if gcs_credentials_path:
-        #     token = gcs_credentials_path
-        # else:
-        #     if os.path.exists(self.FIRST_DEFAULT_GCS_CREDS_PATH):
-        #         token = self.FIRST_DEFAULT_GCS_CREDS_PATH
-        #     elif os.path.exists(self.SECOND_DEFAULT_GCS_CREDS_PATH):
-        #         token = self.SECOND_DEFAULT_GCS_CREDS_PATH
+        token = None
+        if gcs_credentials_path:
+            token = gcs_credentials_path
+        else:
+            if os.path.exists(self.FIRST_DEFAULT_GCS_CREDS_PATH):
+                token = self.FIRST_DEFAULT_GCS_CREDS_PATH
+            elif os.path.exists(self.SECOND_DEFAULT_GCS_CREDS_PATH):
+                token = self.SECOND_DEFAULT_GCS_CREDS_PATH
 
-        # self._storage_options = {"token": token}
+        self._storage_options = {"token": token}
 
-        # parsed_path = urlparse(self._storage_path, allow_fragments=False)
-        # self._cloud_instance_type = parsed_path.scheme
-        # self.restart()
+        parsed_path = urlparse(self._storage_path, allow_fragments=False)
+        self._cloud_instance_type = parsed_path.scheme
+        self.restart()
 
     def _get_line_iterator(self):
         if self._cloud_instance_type not in ["s3", "gcs"]:
@@ -82,22 +82,6 @@ class CSVDataSource(DataSource):
         ):
             for i in range(len(chunk)):
                 yield chunk.iloc[i : i + 1].to_csv(header=None, index=None).strip("\n")
-
-    def next_batch(self, target_batch_size) -> Optional[List[str]]:
-        lines = []
-        while len(lines) < target_batch_size:
-            next_line = self.next_line()
-            if next_line == None:
-                break
-            lines.append(next_line)
-
-        return lines if len(lines) else None
-
-    def next_line(self) -> Optional[str]:
-        return next(self._line_iterator, None)
-
-    def restart(self) -> None:
-        self._line_iterator = self._get_line_iterator()
 
     def resource_name(self) -> str:
         return self._storage_path

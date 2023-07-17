@@ -49,6 +49,8 @@ class FullyConnected final
 
   std::vector<std::vector<float>*> gradients() final;
 
+  std::vector<std::vector<float>*> parameters() final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
@@ -87,9 +89,16 @@ class FullyConnected final
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
+  /**
+   * Unfreezes all hash tables in the model.
+   */
+  void unfreezeHashTables();
+
   void setWeights(const float* new_weights);
 
   void setBiases(const float* new_biases);
+
+  void reBuildHashFunction();
 
   std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
   getHashTable() const;
@@ -111,6 +120,12 @@ class FullyConnected final
 
   void setSparsity(float sparsity, bool rebuild_hash_tables,
                    bool experimental_autotune);
+
+  uint32_t getRebuildHashTables() const { return _rebuild_hash_tables; }
+
+  uint32_t getReconstructHashFunctions() const {
+    return _reconstruct_hash_functions;
+  }
 
  private:
   FullyConnected(

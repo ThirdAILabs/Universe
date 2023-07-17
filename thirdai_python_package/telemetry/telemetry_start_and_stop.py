@@ -79,8 +79,8 @@ def _kill_background_telemetry_push_process():
 atexit.register(_kill_background_telemetry_push_process)
 
 
-# wrapped_start_method = telemetry.start
-# wrapped_stop_method = telemetry.stop
+wrapped_start_method = telemetry.start
+wrapped_stop_method = telemetry.stop
 
 
 def start(

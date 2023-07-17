@@ -224,9 +224,8 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         "nodes": [
             {
                 "name": "hidden",
-                "type": "fully_connected",
+                "type": "embedding",
                 "dim": 1024,
-                "sparsity": 1.0,
                 "activation": "relu",
                 "predecessor": "input",
             },

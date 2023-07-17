@@ -85,7 +85,6 @@ void FullyConnected::updateParameters(float learning_rate,
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
     _kernel->reBuildHashFunction();
-    _kernel->buildHashTables();
 
     _updates_since_rebuild_hash_tables = 0;
     _updates_since_reconstruct_hash_functions = 0;
@@ -116,6 +115,10 @@ std::vector<std::vector<float>*> FullyConnected::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }
 
+std::vector<std::vector<float>*> FullyConnected::parameters() {
+  return {&_kernel->weights(), &_kernel->biases()};
+}
+
 void FullyConnected::summary(std::ostream& summary,
                              const autograd::ComputationList& inputs,
                              const autograd::Computation* output) const {
@@ -141,6 +144,7 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
+void FullyConnected::reBuildHashFunction() { _kernel->reBuildHashFunction(); }
 void FullyConnected::registerModel(
     const std::weak_ptr<model::Model>& new_model) {
   bool found = false;
@@ -192,6 +196,8 @@ std::shared_ptr<FullyConnectedLayer> FullyConnected::kernel() const {
 void FullyConnected::freezeHashTables(bool insert_labels_if_not_found) {
   _kernel->freezeHashTables(insert_labels_if_not_found);
 }
+
+void FullyConnected::unfreezeHashTables() { _kernel->unfreezeHashTables(); }
 
 void FullyConnected::setWeights(const float* weights) {
   _kernel->setWeights(weights);

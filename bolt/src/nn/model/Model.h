@@ -25,13 +25,24 @@ namespace thirdai::bolt::nn::model {
  */
 class Model : public std::enable_shared_from_this<Model> {
  private:
+  /**
+   * The additional_labels allow for passing in a placeholder for labels that
+   * are not used in any loss function. This is useful because there could be a
+   * case (particularly in Mach) where metrics need to have access to labels
+   * that are not used in the loss function. Adding those labels here ensures
+   * that they are part of the model and can be accessed by the metrics. Note
+   * that the model does not require any relationship between the number of
+   * outputs, loss functions, and labels so it is ok to add additonal labels.
+   */
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
-        std::vector<loss::LossPtr> losses);
+        std::vector<loss::LossPtr> losses,
+        autograd::ComputationList additional_labels = {});
 
  public:
-  static std::shared_ptr<Model> make(autograd::ComputationList inputs,
-                                     autograd::ComputationList outputs,
-                                     std::vector<loss::LossPtr> losses);
+  static std::shared_ptr<Model> make(
+      autograd::ComputationList inputs, autograd::ComputationList outputs,
+      std::vector<loss::LossPtr> losses,
+      autograd::ComputationList additional_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -93,6 +104,13 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   autograd::ComputationList computationOrder() const;
 
+  autograd::ComputationList computationOrderWithoutInputs() const;
+
+  /**
+   * Returns the inputs of the model.
+   */
+  const autograd::ComputationList& inputs() const;
+
   /**
    * Returns the outputs of the model.
    */
@@ -135,6 +153,13 @@ class Model : public std::enable_shared_from_this<Model> {
   uint32_t trainSteps() const;
 
   /**
+   * Overrides the number of train steps in the model. This is used when porting
+   * parameters to new models to ensure that the training and parameter updates
+   * are consistent since this is used in Adam to do bias correction.
+   */
+  void overrideTrainSteps(uint32_t train_steps);
+
+  /**
    * Returns the dimensions of the inputs the model is expecting, in the order
    * they are expected.
    */
@@ -151,6 +176,18 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   std::vector<std::vector<float>*> gradients() const;
 
+  std::vector<std::vector<float>*> parameters() const;
+
+  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+
+  void setFlattenedGradients(const float* concatenated_values,
+                             uint64_t flattened_dim) const;
+
+  std::pair<const float*, uint64_t> getFlattenedParameters() const;
+
+  void setFlattenedParameters(const float* concatenated_values,
+                              uint64_t flattened_dim) const;
+
   /**
    * Freezes all hash tables in the model. The parameter
    * insert_labels_if_not_found controls if label neurons should be inserted
@@ -158,6 +195,11 @@ class Model : public std::enable_shared_from_this<Model> {
    * found during training.
    */
   void freezeHashTables(bool insert_labels_if_not_found);
+
+  /**
+   * Unfreezes all hash tables in the model.
+   */
+  void unfreezeHashTables();
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -175,6 +217,7 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   void checkpoint(const std::string& filename, bool save_metadata = true);
 
+  void disableSparseParameterUpdates();
   /**
    * Helper function to save the model to a stream.
    */
@@ -236,6 +279,13 @@ class Model : public std::enable_shared_from_this<Model> {
    * Registers the model with the ops that it uses.
    */
   void registerWithOps();
+
+  /**
+   * Names the computations in the model based on the order they are executed.
+   */
+  static void nameComputations(autograd::ComputationList& inputs,
+                               autograd::ComputationList& comps,
+                               autograd::ComputationList& labels);
 
   /**
    * Creates a metadata file which gives the thirdai version, model uuid, the

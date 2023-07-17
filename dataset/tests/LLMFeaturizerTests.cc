@@ -1,0 +1,208 @@
+#include "gtest/gtest.h"
+#include <bolt_vector/src/BoltVector.h>
+#include <bolt_vector/tests/BoltVectorTestUtils.h>
+#include <hashing/src/HashUtils.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
+#include <dataset/src/utils/TokenEncoding.h>
+#include <limits>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <unordered_set>
+
+namespace thirdai::dataset::tests {
+
+constexpr uint32_t LRC_LEN = 4, IRC_LEN = 3, SRC_LEN = 2, VOCAB_SIZE = 8;
+
+void verifyGeneratedSamples(
+    const std::vector<std::vector<thirdai::BoltVector>>& data,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
+  ASSERT_EQ(expected_indices.size(), data.size());
+
+  uint32_t num_inputs = expected_indices.size();
+  uint32_t num_samples = expected_indices.at(0).size();
+
+  for (uint32_t input_id = 0; input_id < num_inputs; input_id++) {
+    ASSERT_EQ(expected_indices.at(input_id).size(), data.at(input_id).size());
+
+    for (uint32_t sample_id = 0; sample_id < num_samples; sample_id++) {
+      const auto& vec = data.at(input_id).at(sample_id);
+      const auto& expected_vec_indices =
+          expected_indices.at(input_id).at(sample_id);
+
+      ASSERT_EQ(expected_vec_indices.size(), vec.len);
+
+      for (uint32_t i = 0; i < expected_vec_indices.size(); i++) {
+        ASSERT_EQ(expected_vec_indices.at(i), vec.active_neurons[i]);
+        ASSERT_EQ(vec.activations[i], 1.0);
+      }
+    }
+  }
+}
+
+void checkDataFeaturization(
+    const std::vector<std::string>& phrases,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
+  TextGenerationFeaturizer processor(/* lrc_len= */ LRC_LEN,
+                                     /* irc_len= */ IRC_LEN,
+                                     /* src_len= */ SRC_LEN,
+                                     /* vocab_size= */ VOCAB_SIZE);
+
+  auto data = processor.featurize(phrases);
+
+  verifyGeneratedSamples(data, expected_indices);
+}
+
+void checkInferenceFeaturization(
+    const std::vector<uint32_t>& prompt, const std::vector<uint32_t>& tokens,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
+  TextGenerationFeaturizer processor(/* lrc_len= */ LRC_LEN,
+                                     /* irc_len= */ IRC_LEN,
+                                     /* src_len= */ SRC_LEN,
+                                     /* vocab_size= */ VOCAB_SIZE);
+
+  auto vectors = processor.featurizeInferenceSample(prompt, tokens);
+
+  std::vector<std::vector<BoltVector>> data;
+  data.reserve(vectors.size());
+  for (const auto& vector : vectors) {
+    data.push_back({vector});
+  }
+
+  verifyGeneratedSamples(data, expected_indices);
+}
+
+std::vector<uint32_t> expectedPairgrams(std::vector<uint32_t> tokens) {
+  return token_encoding::unigramPreservingPairgrams(tokens.data(),
+                                                    tokens.size(), VOCAB_SIZE);
+}
+
+TEST(TextGenerationFeaturizerTest, Featurization) {
+  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}, {0}, {0}, {0}, {0}},
+      //  LRC context input
+      {{1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      // IRC context input
+      {
+          {1},
+          expectedPairgrams({1, 2}),
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+      },
+      // SRC context input
+      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}},
+      // Labels
+      {{2}, {3}, {4}, {5}, {6}}};
+
+  checkDataFeaturization(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, FeaturizationWithContext) {
+  std::vector<std::string> phrases = {
+      R"({"context": "1 2", "target": "3 4 5 6"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}, {0}, {0}},
+      //  LRC context input
+      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      // IRC context input
+      {
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+      },
+      // SRC context input
+      {{2, 3}, {3, 4}, {4, 5}},
+      // Labels
+      {{4}, {5}, {6}}};
+
+  checkDataFeaturization(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
+  std::vector<std::string> phrases = {
+      R"({"prompt": "1 2", "context": "3 4", "target": "5 6 7"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{1, 2}, {1, 2}},
+      //  LRC context input
+      {{3, 4, 5}, {3, 4, 5, 6}},
+      // IRC context input
+      {
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+      },
+      // SRC context input
+      {{4, 5}, {5, 6}},
+      // Labels
+      {{6}, {7}}};
+
+  checkDataFeaturization(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, InferenceFeaturization) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}},
+      //  LRC context input
+      {{2, 3, 4, 5}},
+      // IRC context input
+      {expectedPairgrams({3, 4, 5})},
+      // SRC context input
+      {{4, 5}}};
+
+  checkInferenceFeaturization({}, {1, 2, 3, 4, 5}, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, InferenceFeaturizationWithPrompt) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{7, 8, 9}},
+      //  LRC context input
+      {{1, 2}},
+      // IRC context input
+      {expectedPairgrams({1, 2})},
+      // SRC context input
+      {{1, 2}}};
+
+  checkInferenceFeaturization({7, 8, 9}, {1, 2}, expected_indices);
+}
+
+TEST(TextClassifierFeaturizerTest, Featurization) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      //  LRC context input
+      {{1, 2}, {1, 2, 3}, {1, 2, 3, 4}},
+      // IRC context input
+      {expectedPairgrams({1, 2}), expectedPairgrams({1, 2, 3}),
+       expectedPairgrams({2, 3, 4})},
+      // SRC context input
+      {{1, 2}, {2, 3}, {3, 4}},
+      // Label
+      {{0}, {1}, {2}}};
+
+  TextClassificationFeaturizer featurizer(
+      /* text_column= */ "text",
+      /* label_column= */ "label",
+      /* lrc_len= */ LRC_LEN,
+      /* irc_len= */ IRC_LEN,
+      /* src_len= */ SRC_LEN,
+      /* vocab_size= */ VOCAB_SIZE,
+      /* n_labels= */ 3, /* delimiter= */ ',',
+      /* label_delimiter= */ std::nullopt, /* integer_labels= */ true,
+      /* normalize_categories= */ true);
+
+  featurizer.processHeader("text,label");
+
+  auto data = featurizer.featurize({"1 2,0", "1 2 3,1", "1 2 3 4,2"});
+
+  verifyGeneratedSamples(data, expected_indices);
+}
+
+}  // namespace thirdai::dataset::tests

@@ -3,6 +3,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <utils/Logging.h>
+#include <iostream>
 #include <limits>
 #include <utility>
 
@@ -185,4 +186,9 @@ std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
 
   return batches;
 }
+
+void DatasetLoader::manuallyAddToBuffer(std::vector<BoltVector>&& vectors) {
+  _buffer.insert(std::move(vectors));
+}
+
 }  // namespace thirdai::dataset

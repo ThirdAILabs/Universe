@@ -31,6 +31,7 @@ TabularDatasetFactory::TabularDatasetFactory(
     bool force_parallel)
     : _data_types(std::move(data_types)),
       _label_col_names(std::move(label_col_names)),
+      _num_label_blocks(label_blocks.size()),
       _options(options) {
   _vectors_map = processAllMetadata(_data_types, options);
 
@@ -90,15 +91,20 @@ std::pair<TensorList, TensorList> TabularDatasetFactory::featurizeTrainingBatch(
   auto featurized = _labeled_featurizer->featurize(inputs_ref);
   auto dims = _labeled_featurizer->getDimensions();
 
-  TensorList data;
+  uint32_t num_data_blocks = dims.size() - _num_label_blocks;
 
-  for (uint32_t i = 0; i < dims.size(); i++) {
+  TensorList data;
+  for (uint32_t i = 0; i < num_data_blocks; i++) {
     data.push_back(bolt::nn::tensor::Tensor::convert(
         BoltBatch(std::move(featurized[i])), dims[i]));
   }
 
-  TensorList labels = {data.back()};
-  data.pop_back();
+  TensorList labels;
+  for (uint32_t i = num_data_blocks; i < num_data_blocks + _num_label_blocks;
+       i++) {
+    labels.push_back(bolt::nn::tensor::Tensor::convert(
+        BoltBatch(std::move(featurized[i])), dims[i]));
+  }
 
   return {std::move(data), std::move(labels)};
 }

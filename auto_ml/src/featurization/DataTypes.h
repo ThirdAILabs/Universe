@@ -80,7 +80,7 @@ dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string);
 struct TextDataType final : public DataType {
   explicit TextDataType(const std::string& tokenizer = "words",
                         const std::string& contextual_encoding = "none",
-                        bool use_lowercase = false)
+                        bool use_lowercase = true)
       : tokenizer(getTextTokenizerFromString(tokenizer)),
         encoder(getTextEncoderFromString(contextual_encoding)),
         lowercase(use_lowercase) {}

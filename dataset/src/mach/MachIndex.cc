@@ -2,8 +2,9 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <utils/Random.h>
+#include <random>
 #include <stdexcept>
 #include <string>
 
@@ -12,35 +13,40 @@ namespace thirdai::dataset::mach {
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
                      uint32_t num_elements)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
+  if (num_hashes > num_buckets) {
+    throw std::invalid_argument("Can't have more hashes than buckets");
+  }
+  std::mt19937 mt(341);
+  std::uniform_int_distribution<uint32_t> dist(0, num_buckets - 1);
   for (uint32_t element = 0; element < num_elements; element++) {
-    insert(element,
-           hashing::hashNTimesToOutputRange(element, num_hashes, num_buckets));
+    std::vector<uint32_t> hashes(num_hashes);
+    for (uint32_t i = 0; i < num_hashes; i++) {
+      auto hash = dist(mt);
+      while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
+        hash = dist(mt);
+      }
+      hashes[i] = hash;
+    }
+    insert(element, hashes);
   }
 }
 
 MachIndex::MachIndex(
-    std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes,
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
     uint32_t num_buckets, uint32_t num_hashes)
-    : _entity_to_hashes(std::move(entity_to_hashes)),
-      _buckets(num_buckets),
-      _num_hashes(num_hashes) {
-  for (auto [entity, hashes] : _entity_to_hashes) {
-    if (hashes.size() != num_hashes) {
-      throw std::invalid_argument("Num hashes for entity " +
-                                  std::to_string(entity) +
-                                  " is not equal to num_hashes.");
-    }
-
-    for (const uint32_t hash : hashes) {
-      verifyHash(hash);
-      _buckets[hash].push_back(entity);
-    }
+    : _buckets(num_buckets), _num_hashes(num_hashes) {
+  for (auto [entity, hashes] : entity_to_hashes) {
+    insert(entity, hashes);
   }
 }
 
 void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
   if (hashes.size() != _num_hashes) {
-    throw std::invalid_argument("Wrong number of hashes for index.");
+    std::stringstream error;
+    error << "Wrong number of hashes for entity " << entity << " expected "
+          << _num_hashes << " hashes but received " << hashes.size()
+          << " hashes.";
+    throw std::invalid_argument(error.str());
   }
 
   if (_entity_to_hashes.count(entity)) {
@@ -52,6 +58,7 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
   for (const auto& hash : hashes) {
     verifyHash(hash);
     _buckets[hash].push_back(entity);
+    _nonempty_buckets.insert(hash);
   }
 
   _entity_to_hashes[entity] = hashes;
@@ -71,7 +78,7 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
         auto hashes = getHashes(entity);
         float score = 0;
         for (const auto& hash : hashes) {
-          score += output.activations[hash];
+          score += output.findActiveNeuronNoTemplate(hash).activation;
         }
         entity_to_scores[entity] = score;
       }
@@ -106,7 +113,23 @@ void MachIndex::erase(uint32_t entity) {
     auto new_end_itr =
         std::remove(_buckets[hash].begin(), _buckets[hash].end(), entity);
     _buckets[hash].erase(new_end_itr, _buckets[hash].end());
+
+    if (_buckets[hash].empty()) {
+      _nonempty_buckets.erase(hash);
+    }
   }
+}
+
+float MachIndex::sparsity() const {
+  float guess;
+  uint32_t tries = 0;
+  do {
+    guess = static_cast<float>(nonemptyBuckets().size() + tries) / numBuckets();
+    tries++;
+  } while (static_cast<uint32_t>(guess * numBuckets()) <
+           nonemptyBuckets().size());
+
+  return guess;
 }
 
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
@@ -148,6 +171,12 @@ template void MachIndex::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void MachIndex::serialize(Archive& archive) {
   archive(_entity_to_hashes, _buckets, _num_hashes);
+
+  for (uint32_t bucket_id = 0; bucket_id < _buckets.size(); bucket_id++) {
+    if (!_buckets[bucket_id].empty()) {
+      _nonempty_buckets.insert(bucket_id);
+    }
+  }
 }
 
 void MachIndex::save(const std::string& filename) const {

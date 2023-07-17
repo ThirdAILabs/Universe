@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace thirdai::automl::udt::defaults {
 
@@ -17,8 +18,11 @@ constexpr bool FREEZE_HASH_TABLES = true;
 // Whether to use sigmoid and bce for the output layer in UDT
 constexpr bool USE_SIGMOID_BCE = false;
 
-// Whether there is bias in training in hidden layer
-constexpr bool USE_BIAS = true;
+// Whether the hidden layer has a bias
+constexpr bool HIDDEN_BIAS = true;
+
+// Whether the output layer has a bias
+constexpr bool OUTPUT_BIAS = true;
 
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;
@@ -76,6 +80,9 @@ constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 
+// When to switch to using the mach index for sparse inference
+constexpr float MACH_SAMPLING_THRESHOLD = 0.01;
+
 // Whether to use the experimental autotune for fully connected layer hash
 // tables
 constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
@@ -89,6 +96,9 @@ constexpr uint32_t MAX_BALANCING_DOCS = 1000;
 
 // Max samples to store per doc for rlhf balancing.
 constexpr uint32_t MAX_BALANCING_SAMPLES_PER_DOC = 10;
+
+// n-grams to use for query reformulation
+const std::vector<uint32_t> N_GRAMS_FOR_GENERATOR = {3, 4};
 
 // Batch size to use during associate.
 constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;

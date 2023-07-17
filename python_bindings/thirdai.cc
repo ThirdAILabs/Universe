@@ -6,9 +6,9 @@
 #include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
+#include <data/python_bindings/DataPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
-#include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
@@ -126,7 +126,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");
-  thirdai::data::python::createFeaturizationSubmodule(data_submodule);
+  thirdai::data::python::createDataSubmodule(data_submodule);
 
   // Hashing Submodule
   thirdai::hashing::python::createHashingSubmodule(m);

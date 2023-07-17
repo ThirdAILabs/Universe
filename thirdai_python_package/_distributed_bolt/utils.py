@@ -1,3 +1,4 @@
+import importlib
 import logging
 
 from thirdai import data
@@ -26,6 +27,15 @@ def get_num_cpus():
     except ImportError:
         print("Could not find num_cpus, setting num_cpus to DEFAULT=1")
         return 1
+
+
+def check_torch_installed():
+    try:
+        importlib.import_module("torch")
+    except ImportError as e:
+        raise ImportError(
+            "Distributed Bolt requires Torch Distributed as its communication backend. Please ensure that Torch is installed to enable distributed training with Bolt.t"
+        ) from e
 
 
 def _pandas_iterator(path, chunksize, node_index, num_nodes, sep):
