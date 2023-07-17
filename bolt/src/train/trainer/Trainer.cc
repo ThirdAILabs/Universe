@@ -74,27 +74,31 @@ metrics::History Trainer::train(
     utils::Timer epoch_timer;
 
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-      utils::Timer batch_timer;
       callbacks.onBatchBegin();
 
       const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
       const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
 
+      utils::Timer train_on_batch_timer;
       _model->trainOnBatch(inputs, labels);
 
+      train_on_batch_timer.stop();
+      std::string train_on_batch_log = formatFuncCallLogLine(
+          "train_on_batch", batch_idx, train_on_batch_timer.milliseconds());
+      logging::info(train_on_batch_log);
+
       if (comm) {
-        utils::Timer comm_timer;
-
         comm->communicate(_model);
-
-        comm_timer.stop();
-
-        std::string log_line = formatFuncCallLogLine("communication", batch_idx,
-                                                     comm_timer.milliseconds());
-        logging::info(log_line);
       }
 
+      utils::Timer update_param_timer;
       _model->updateParameters(train_state->learningRate());
+
+      update_param_timer.stop();
+
+      std::string update_parameter_log = formatFuncCallLogLine(
+          "update_parameter", batch_idx, update_param_timer.milliseconds());
+      logging::info(update_parameter_log);
 
       train_metrics.recordBatch(inputs.at(0)->batchSize());
 
@@ -122,11 +126,6 @@ metrics::History Trainer::train(
         return *_history;
       }
       checkInterrupt();
-
-      batch_timer.stop();
-      std::string log_line = formatFuncCallLogLine("train_batch", batch_idx,
-                                                   batch_timer.milliseconds());
-      logging::info(log_line);
     }
 
     epoch_timer.stop();
