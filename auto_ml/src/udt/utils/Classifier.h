@@ -11,6 +11,7 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <pybind11/pybind11.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
@@ -53,7 +54,7 @@ class Classifier {
 
   py::object predict(const bolt::nn::tensor::TensorList& inputs,
                      bool sparse_inference, bool return_predicted_class,
-                     bool single);
+                     bool single, std::optional<uint32_t> top_k = std::nullopt);
 
   py::object embedding(const bolt::nn::tensor::TensorList& inputs);
 
