@@ -69,6 +69,13 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t top_k,
     uint32_t num_buckets_to_eval) const {
   std::unordered_map<uint32_t, double> entity_to_scores;
+
+  /**
+   * We have seperate methods for scoring the entities for dense vs sparse
+   * because for sparse decoding it is faster to convert the sparse indices and
+   * values into a hash map for fast access since you can't directly access the
+   * score of a give neuron/bucket like you can in dense decoding.
+   */
   if (output.isDense()) {
     entity_to_scores = entityScoresDense(output, num_buckets_to_eval);
   } else {
