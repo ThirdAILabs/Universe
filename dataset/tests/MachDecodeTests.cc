@@ -11,11 +11,10 @@ void testMachDecode(const BoltVector& output) {
   mach::MachIndex index(entity_to_hash, /* num_buckets= */ 4,
                         /* num_hashes= */ 2);
 
-  uint32_t num_results = 3;
-  uint32_t top_k = 2;
-  auto results = index.decode(output, /* top_k = */ num_results,
-                              /* num_buckets_to_eval = */ top_k);
-  ASSERT_EQ(results.size(), num_results);
+  uint32_t top_k = 3;
+  auto results = index.decode(output, /* top_k = */ top_k,
+                              /* num_buckets_to_eval = */ 2);
+  ASSERT_EQ(results.size(), top_k);
 
   ASSERT_EQ(results[0].first, 2);
   ASSERT_NEAR(results[0].second, 0.9, 0.0001);
