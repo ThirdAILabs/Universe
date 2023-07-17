@@ -97,22 +97,22 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
-      .def("get_gradients", &::thirdai::bolt::python::getGradients,
-           py::return_value_policy::reference_internal)
-      .def("set_gradients", &::thirdai::bolt::python::setGradients,
-           py::arg("new_values"))
       .def("get_parameters", &::thirdai::bolt::python::getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &::thirdai::bolt::python::setParameters,
            py::arg("new_values"))
-      .def("disable_sparse_parameter_updates",
-           &model::Model::disableSparseParameterUpdates)
       .def("train_steps", &model::Model::trainSteps)
       .def("override_train_steps", &model::Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
+      .def("disable_sparse_parameter_updates",
+           &model::Model::disableSparseParameterUpdates)
+      .def("get_gradients", &::thirdai::bolt::python::getGradients,
+           py::return_value_policy::reference_internal)
+      .def("set_gradients", &::thirdai::bolt::python::setGradients,
+           py::arg("new_values"))
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)
