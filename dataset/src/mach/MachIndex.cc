@@ -149,10 +149,10 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
     const BoltVector& output, uint32_t num_buckets_to_eval) const {
   auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
 
-  // std::unordered_map<uint32_t, float> activations;
-  // for (uint32_t i = 0; i < output.len; i++) {
-  //   activations[output.active_neurons[i]] = output.activations[i];
-  // }
+  std::unordered_map<uint32_t, float> activations;
+  for (uint32_t i = 0; i < output.len; i++) {
+    activations[output.active_neurons[i]] = output.activations[i];
+  }
 
   std::unordered_map<uint32_t, double> entity_to_scores;
   while (!top_k.empty()) {
@@ -163,8 +163,7 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
         auto hashes = getHashes(entity);
         float score = 0;
         for (const auto& hash : hashes) {
-          score += output.findActiveNeuronNoTemplate(hash).activation;
-          // score += activations.count(hash) ? activations.at(hash) : 0.0;
+          score += activations.count(hash) ? activations.at(hash) : 0.0;
         }
         entity_to_scores[entity] = score;
       }
