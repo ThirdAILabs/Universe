@@ -70,7 +70,7 @@ def adds_distributed_v2_to_bolt():
         kwargs["comm"] = Communication()
         metrics = self.train(*args, **kwargs)
 
-        self.._get_model().enable_sparse_parameter_updates()
+        self._get_model().enable_sparse_parameter_updates()
 
         return metrics
 
@@ -82,7 +82,7 @@ def adds_distributed_v2_to_bolt():
         kwargs["comm"] = Communication()
         metrics = self.cold_start(*args, **kwargs)
 
-        self.._get_model().enable_sparse_parameter_updates()
+        self._get_model().enable_sparse_parameter_updates()
 
         return metrics
 

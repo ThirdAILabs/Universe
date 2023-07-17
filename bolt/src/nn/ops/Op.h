@@ -103,7 +103,7 @@ class Op {
    * parameters are being updated and dense updates are faster.
    */
   virtual void disableSparseParameterUpdates() = 0;
-  
+
   /**
    * Enables sparse parameter updates for updateParameters in the op. This is
    * used for distributed to enable sparse updates once distributed training is
