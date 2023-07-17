@@ -34,7 +34,7 @@ class UDTCheckPoint(Checkpoint):
             >>> model = checkpoint.get_model()
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            model.save(os.path.join(tmpdirname, MODEL_KEY))
+            model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
 
             checkpoint = cls.from_directory(tmpdirname)
             ckpt_dict = checkpoint.to_dict()
@@ -76,7 +76,7 @@ class BoltCheckPoint(Checkpoint):
             >>> model = checkpoint.get_model()
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            model.save(os.path.join(tmpdirname, MODEL_KEY))
+            model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
 
             checkpoint = cls.from_directory(tmpdirname)
             ckpt_dict = checkpoint.to_dict()
