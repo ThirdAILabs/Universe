@@ -7,8 +7,9 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
-#include <data/src/columns/VectorColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <string>
@@ -33,12 +34,12 @@ class TabularHashedFeatures : public Transformation {
         _use_pairgrams(use_pairgrams) {}
 
   ColumnMap apply(ColumnMap column_map) const final {
-    std::vector<TokenColumnPtr> columns;
+    std::vector<ValueColumnPtr<uint32_t>> columns;
     // we hash the name of each column here so we can combine hashes later on
     // and have unique values across columns
     std::vector<uint32_t> column_name_hashes;
     for (const auto& col_name : _input_column_names) {
-      columns.push_back(column_map.getTokenColumn(col_name));
+      columns.push_back(column_map.getValueColumn<uint32_t>(col_name));
       column_name_hashes.push_back(dataset::token_encoding::seededMurmurHash(
           /* key = */ col_name.c_str(), /* len = */ col_name.size()));
     }
@@ -50,12 +51,12 @@ class TabularHashedFeatures : public Transformation {
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::vector<uint32_t> salted_unigrams;
       uint32_t col_num = 0;
-      for (const TokenColumnPtr& column : columns) {
+      for (const ValueColumnPtr<uint32_t>& column : columns) {
         // TODO(david): it may be unnecessary to hash again but technically the
         // original uint32_t values may not be from the correct universal hash
         // distribution. We cast the uint32_t to char* so we can use murmur hash
         const char* val_to_hash =
-            reinterpret_cast<const char*>(&(column->at(row_idx)));
+            reinterpret_cast<const char*>(&(column->value(row_idx)));
         uint32_t hashed_col_val = dataset::token_encoding::seededMurmurHash(
             val_to_hash, /* len = */ 4);
         // to avoid two identical values in different columns from having the
@@ -81,8 +82,8 @@ class TabularHashedFeatures : public Transformation {
       }
     }
 
-    auto output_column = std::make_shared<CppTokenArrayColumn>(
-        std::move(tabular_hash_values), _output_range);
+    auto output_column =
+        TokenArrayColumn::make(std::move(tabular_hash_values), _output_range);
 
     column_map.setColumn(_output_column_name, output_column);
 

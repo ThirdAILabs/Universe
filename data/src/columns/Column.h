@@ -1,154 +1,88 @@
 #pragma once
 
-#include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
+#include <vector>
 
 namespace thirdai::data {
 
-struct DimensionInfo {
-  uint32_t dim;
+struct ColumnDimension {
+  size_t dim;
   bool is_dense;
+
+  ColumnDimension(size_t dim, size_t is_dense) : dim(dim), is_dense(is_dense) {}
+
+  friend bool operator==(const ColumnDimension& a, const ColumnDimension& b) {
+    return a.dim == b.dim && a.is_dense == b.is_dense;
+  }
+
+  friend bool operator!=(const ColumnDimension& a, const ColumnDimension& b) {
+    return !(a == b);
+  }
 };
 
 class Column {
  public:
-  virtual uint64_t numRows() const = 0;
+  virtual size_t numRows() const = 0;
 
-  /**
-   * This method returns information about the dimension of the column. This is
-   * used to concatenate columns into a bolt vector. Returning nullopt means
-   * that the column cannot be concatenated, this would be used things like
-   * string columns.
-   */
-  virtual std::optional<DimensionInfo> dimension() const = 0;
+  virtual std::optional<ColumnDimension> dimension() const = 0;
 
-  virtual void appendRowToVector(dataset::SegmentedFeatureVector& vector,
-                                 uint64_t row_idx) const = 0;
+  virtual void shuffle(const std::vector<size_t>& permutation) = 0;
+
+  virtual std::shared_ptr<Column> concat(std::shared_ptr<Column>&& other) = 0;
 
   virtual ~Column() = default;
 };
 
 using ColumnPtr = std::shared_ptr<Column>;
 
-// We use templates to create columns with different types because there are
-// very few types which we will need to support and almost all of the code for
-// the columns of different types is the same.
 template <typename T>
-class ValueColumn : public Column {
+class RowView {
  public:
-  virtual const T& at(uint64_t n) const = 0;
+  RowView(const T* data, size_t len) : _data(data), _len(len) {}
 
-  void appendRowToVector(dataset::SegmentedFeatureVector& vector,
-                         uint64_t row_idx) const final {
-    if constexpr (std::is_same<T, uint32_t>::value) {
-      vector.addSparseFeatureToSegment(this->at(row_idx), 1.0);
-      return;
+  const T& operator[](size_t i) const {
+    if (i >= _len) {
+      throw std::out_of_range("Cannot access element " + std::to_string(i) +
+                              " of Rowreference of length " +
+                              std::to_string(_len) + ".");
     }
-
-    if constexpr (std::is_same<T, float>::value) {
-      vector.addDenseFeatureToSegment(this->at(row_idx));
-      return;
-    }
-
-    if constexpr (std::is_same<T, std::pair<uint32_t, float>>::value) {
-      std::pair<uint32_t, float> index_value = this->at(row_idx);
-      vector.addSparseFeatureToSegment(index_value.first, index_value.second);
-      return;
-    }
-
-    // Need this void here because if none of the above constexprs match, then
-    // row_idx will be unused
-    (void)row_idx;
-
-    throw std::runtime_error(
-        "Cannot convert ValueColumn to BoltVector if its type is not int or "
-        "float.");
+    return _data[i];
   }
 
-  virtual ~ValueColumn() = default;
+  uint64_t size() const { return _len; }
+
+  const T* begin() const { return _data; }
+
+  const T* end() const { return _data + _len; }
+
+ private:
+  const T* _data;
+  size_t _len;
 };
 
-using TokenColumn = ValueColumn<uint32_t>;
-using DenseFeatureColumn = ValueColumn<float>;
-using SparseFeatureColumn = ValueColumn<std::pair<uint32_t, float>>;
-using StringColumn = ValueColumn<std::string>;
-
-using TokenColumnPtr = std::shared_ptr<TokenColumn>;
-using DenseFeatureColumnPtr = std::shared_ptr<DenseFeatureColumn>;
-using SparseFeatureColumnPtr = std::shared_ptr<SparseFeatureColumn>;
-using StringColumnPtr = std::shared_ptr<StringColumn>;
-
-// We use templates to create columns with different types because there are
-// very few types which we will need to support and almost all of the code for
-// the columns of different types is the same.
 template <typename T>
 class ArrayColumn : public Column {
  public:
-  class RowReference {
-   public:
-    RowReference(const T* data, uint64_t len) : _data(data), _len(len) {}
-
-    const T& operator[](uint64_t i) const {
-      if (i >= _len) {
-        throw std::out_of_range("Cannot access element " + std::to_string(i) +
-                                " of Rowreference of length " +
-                                std::to_string(_len) + ".");
-      }
-      return _data[i];
-    }
-
-    uint64_t size() const { return _len; }
-
-    const T* begin() const { return _data; }
-
-    const T* end() const { return _data + _len; }
-
-   private:
-    const T* _data;
-    uint64_t _len;
-  };
-
-  virtual RowReference at(uint64_t n) const = 0;
-
-  void appendRowToVector(dataset::SegmentedFeatureVector& vector,
-                         uint64_t row_idx) const final {
-    static_assert(std::is_same<T, uint32_t>::value ||
-                      std::is_same<T, float>::value ||
-                      std::is_same<T, std::pair<uint32_t, float>>::value,
-                  "Can only convert columns of type uint32, float32, or "
-                  "(uint32, float32) to BoltVector.");
-
-    if constexpr (std::is_same<T, uint32_t>::value) {
-      for (uint32_t index : this->at(row_idx)) {
-        vector.addSparseFeatureToSegment(index, 1.0);
-      }
-    }
-
-    if constexpr (std::is_same<T, float>::value) {
-      for (float value : this->at(row_idx)) {
-        vector.addDenseFeatureToSegment(value);
-      }
-    }
-
-    if constexpr (std::is_same<T, std::pair<uint32_t, float>>::value) {
-      for (const auto& [index, value] : this->at(row_idx)) {
-        vector.addSparseFeatureToSegment(index, value);
-      }
-    }
-  }
+  virtual RowView<T> row(size_t row) const = 0;
 
   virtual ~ArrayColumn() = default;
 };
 
-using TokenArrayColumn = ArrayColumn<uint32_t>;
-using DenseArrayColumn = ArrayColumn<float>;
-using SparseArrayColumn = ArrayColumn<std::pair<uint32_t, float>>;
+template <typename T>
+using ArrayColumnPtr = std::shared_ptr<ArrayColumn<T>>;
 
-using TokenArrayColumnPtr = std::shared_ptr<TokenArrayColumn>;
-using DenseArrayColumnPtr = std::shared_ptr<DenseArrayColumn>;
-using SparseArrayColumnPtr = std::shared_ptr<SparseArrayColumn>;
+template <typename T>
+class ValueColumn : public ArrayColumn<T> {
+ public:
+  virtual const T& value(size_t row) const = 0;
+
+  virtual ~ValueColumn() = default;
+};
+
+template <typename T>
+using ValueColumnPtr = std::shared_ptr<ValueColumn<T>>;
 
 }  // namespace thirdai::data

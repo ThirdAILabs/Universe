@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <auto_ml/src/Aliases.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 #include <utils/Random.h>
@@ -137,7 +138,7 @@ class ColdStartTextAugmentation final : public Transformation {
 
   ColumnMap apply(ColumnMap columns) const final;
 
-  std::vector<std::string> augmentMapInput(const dataset::MapInput& document);
+  std::vector<std::string> augmentMapInput(const automl::MapInput& document);
 
   /**
    * Helper method to perform the augmentation of a single row in the input.

@@ -17,27 +17,11 @@ class ColumnMap {
 
   uint64_t numRows() const { return _num_rows; }
 
-  // Converts each row in the dataset to a bolt vector by concatenating the
-  // values of the specified columns in the order they were specified.
-  dataset::BoltDatasetPtr convertToDataset(
-      const std::vector<std::string>& column_names, uint32_t batch_size) const;
+  template <typename T>
+  ArrayColumnPtr<T> getArrayColumn(const std::string& name) const;
 
-  // These methods get the column for the given name and use a dynamic cast to
-  // convert it to the desired type. They will throw if the name does not match
-  // any column or if the column does not have the specified type.
-  TokenColumnPtr getTokenColumn(const std::string& name) const;
-
-  DenseFeatureColumnPtr getDenseFeatureColumn(const std::string& name) const;
-
-  SparseFeatureColumnPtr getSparseFeatureColumn(const std::string& name) const;
-
-  StringColumnPtr getStringColumn(const std::string& name) const;
-
-  TokenArrayColumnPtr getTokenArrayColumn(const std::string& name) const;
-
-  DenseArrayColumnPtr getDenseArrayColumn(const std::string& name) const;
-
-  SparseArrayColumnPtr getSparseArrayColumn(const std::string& name) const;
+  template <typename T>
+  ValueColumnPtr<T> getValueColumn(const std::string& name) const;
 
   ColumnPtr getColumn(const std::string& name) const;
 

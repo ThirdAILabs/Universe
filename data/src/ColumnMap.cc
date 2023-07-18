@@ -1,5 +1,5 @@
 #include "ColumnMap.h"
-#include <data/src/columns/VectorColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/CsvParser.h>
@@ -28,77 +28,6 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
   _num_rows = num_rows.value();
 }
 
-dataset::BoltDatasetPtr ColumnMap::convertToDataset(
-    const std::vector<std::string>& column_names, uint32_t batch_size) const {
-  auto output_columns = selectColumns(column_names);
-
-  std::vector<BoltBatch> output_batches;
-  uint64_t num_batches = (numRows() + batch_size - 1) / batch_size;
-
-  bool all_cols_dense = true;
-  std::vector<uint32_t> column_dims;
-  for (const auto& col : output_columns) {
-    if (auto output_dimension = col->dimension()) {
-      all_cols_dense = all_cols_dense && output_dimension->is_dense;
-      column_dims.push_back(output_dimension->dim);
-    } else {
-      throw std::invalid_argument(
-          "Cannot convert column without dimension to dataset");
-    }
-  }
-
-  for (uint64_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    uint64_t curr_batch_size =
-        std::min<uint64_t>(batch_size, numRows() - batch_idx * batch_size);
-
-    std::vector<BoltVector> batch(curr_batch_size);
-
-    std::exception_ptr exception = nullptr;
-
-#pragma omp parallel for default(none)                             \
-    shared(batch, curr_batch_size, all_cols_dense, output_columns, \
-           column_dims, batch_idx, batch_size, exception)
-    for (uint64_t vec_idx = 0; vec_idx < curr_batch_size; vec_idx++) {
-      uint64_t row_idx = batch_idx * batch_size + vec_idx;
-
-      try {
-        if (all_cols_dense) {
-          // TODO(Nicholas/Geordie): Refactor this into a unified row builder
-          // class.
-          dataset::SegmentedDenseFeatureVector vector(
-              /* store_segment_feature_map= */ false);
-          for (uint32_t i = 0; i < output_columns.size(); i++) {
-            auto column = output_columns[i];
-            vector.addFeatureSegment(column_dims[i]);
-            column->appendRowToVector(vector, row_idx);
-          }
-          batch[vec_idx] = vector.toBoltVector();
-        } else {
-          dataset::SegmentedSparseFeatureVector vector(
-              /* store_segment_feature_map= */ false);
-          for (uint32_t i = 0; i < output_columns.size(); i++) {
-            auto column = output_columns[i];
-            vector.addFeatureSegment(column_dims[i]);
-            column->appendRowToVector(vector, row_idx);
-          }
-          batch[vec_idx] = vector.toBoltVector();
-        }
-      } catch (std::exception& e) {
-#pragma omp critical
-        exception = std::current_exception();
-      }
-    }
-
-    if (exception) {
-      std::rethrow_exception(exception);
-    }
-
-    output_batches.emplace_back(std::move(batch));
-  }
-
-  return std::make_shared<dataset::BoltDataset>(std::move(output_batches));
-}
-
 std::vector<ColumnPtr> ColumnMap::selectColumns(
     const std::vector<std::string>& column_names) const {
   std::vector<ColumnPtr> output_columns;
@@ -111,70 +40,22 @@ std::vector<ColumnPtr> ColumnMap::selectColumns(
   return output_columns;
 }
 
-TokenColumnPtr ColumnMap::getTokenColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<TokenColumn>(getColumn(name));
+template <typename T>
+ArrayColumnPtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<ArrayColumn<T>>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to SparseValueColumn.");
+                                "' cannot be converted to ArrayColumn.");
   }
   return column;
 }
 
-DenseFeatureColumnPtr ColumnMap::getDenseFeatureColumn(
-    const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<DenseFeatureColumn>(getColumn(name));
+template <typename T>
+ValueColumnPtr<T> ColumnMap::getValueColumn(const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<ValueColumn<T>>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to DenseValueColumn.");
-  }
-  return column;
-}
-
-SparseFeatureColumnPtr ColumnMap::getSparseFeatureColumn(
-    const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<SparseFeatureColumn>(getColumn(name));
-  if (!column) {
-    throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to IndexValueColumn.");
-  }
-  return column;
-}
-
-StringColumnPtr ColumnMap::getStringColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<StringColumn>(getColumn(name));
-  if (!column) {
-    throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to StringColumn.");
-  }
-  return column;
-}
-
-TokenArrayColumnPtr ColumnMap::getTokenArrayColumn(
-    const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<TokenArrayColumn>(getColumn(name));
-  if (!column) {
-    throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to SparseArrayColumn.");
-  }
-  return column;
-}
-
-DenseArrayColumnPtr ColumnMap::getDenseArrayColumn(
-    const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<DenseArrayColumn>(getColumn(name));
-  if (!column) {
-    throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to DenseArrayColumn.");
-  }
-  return column;
-}
-
-SparseArrayColumnPtr ColumnMap::getSparseArrayColumn(
-    const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
-  if (!column) {
-    throw std::invalid_argument(
-        "Column '" + name + "' cannot be converted to IndexValueArrayColumn.");
+                                "' cannot be converted to ValueColumn.");
   }
   return column;
 }
@@ -239,7 +120,7 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   std::unordered_map<std::string, ColumnPtr> column_map;
   for (size_t i = 0; i < columns.size(); i++) {
     column_map[std::string(header.at(i))] =
-        std::make_shared<CppStringColumn>(columns.at(i));
+        StringColumn::make(std::move(columns.at(i)));
   }
 
   return ColumnMap(column_map);

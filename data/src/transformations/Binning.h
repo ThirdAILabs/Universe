@@ -4,7 +4,6 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
-#include <data/src/columns/VectorColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <exception>
 #include <optional>

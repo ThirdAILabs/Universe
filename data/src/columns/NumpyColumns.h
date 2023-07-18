@@ -1,5 +1,6 @@
 #pragma once
 
+#include <_types/_uint32_t.h>
 #include <data/src/columns/Column.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
@@ -18,181 +19,94 @@ template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 template <typename T>
-static void checkArrayis1D(const NumpyArray<T>& array);
-
-template <typename T>
-static void checkArrayIs2D(const NumpyArray<T>& array);
-
-static void verifySparseArrayIndices(const NumpyArray<uint32_t>& array,
-                                     uint32_t dim);
-template <typename T>
-static const T& getItemHelper(const py::buffer_info& buffer, uint64_t n);
-
-template <typename T>
-static typename ArrayColumn<T>::RowReference getRowHelper(
-    const py::buffer_info& buffer, uint64_t n);
-
-class PyTokenColumn final : public TokenColumn {
+class NumpyValueColumn : public ValueColumn<T> {
  public:
-  PyTokenColumn(const NumpyArray<uint32_t>& array, std::optional<uint32_t> dim)
-      : _dim(dim) {
-    checkArrayis1D(array);
+  size_t numRows() const final { return _buffer_info.shape[0]; }
 
-    if (dim) {
-      verifySparseArrayIndices(array, *dim);
-    }
-
-    _buffer_info = array.request();
-  }
-
-  uint64_t numRows() const final { return _buffer_info.shape[0]; }
-
-  std::optional<DimensionInfo> dimension() const final {
+  std::optional<ColumnDimension> dimension() const final {
     if (!_dim) {
       return std::nullopt;
     }
     return {{*_dim, /* is_dense= */ false}};
   }
 
-  const uint32_t& at(uint64_t n) const final {
-    return getItemHelper<uint32_t>(_buffer_info, n);
+  RowView<T> row(size_t n) const final {
+    const T* ptr = static_cast<const T*>(_buffer_info.ptr) + n;
+    return {ptr, 1};
   }
 
- private:
+  const T& value(size_t n) const final {
+    return static_cast<const T*>(_buffer_info.ptr)[n];
+  }
+
+  void shuffle(const std::vector<size_t>& permutation) final {
+    (void)permutation;
+    throw std::runtime_error("Shuffling is not supported for numpy columns.");
+  }
+
+  ColumnPtr concat(ColumnPtr&& other) final {
+    (void)other;
+    throw std::runtime_error("Concat is not supported for numpy columns.");
+  }
+
+ protected:
   py::buffer_info _buffer_info;
-  std::optional<uint32_t> _dim;
+  std::optional<size_t> _dim;
 };
 
-class PyDenseFeatureColumn final : public DenseFeatureColumn {
+class NumpyTokenColumn final : public NumpyValueColumn<uint32_t> {
  public:
-  explicit PyDenseFeatureColumn(const NumpyArray<float>& array) {
-    checkArrayis1D(array);
-
-    _buffer_info = array.request();
-  }
-
-  uint64_t numRows() const final { return _buffer_info.shape[0]; }
-
-  std::optional<DimensionInfo> dimension() const final {
-    return {{/* dim= */ 1, /* is_dense= */ true}};
-  }
-
-  const float& at(uint64_t n) const final {
-    return getItemHelper<float>(_buffer_info, n);
-  }
-
- private:
-  py::buffer_info _buffer_info;
+  NumpyTokenColumn(const NumpyArray<uint32_t>& array,
+                   std::optional<size_t> dim);
 };
 
-class PyTokenArrayColumn final : public TokenArrayColumn {
+class NumpyDecimalColumn final : public NumpyValueColumn<float> {
  public:
-  PyTokenArrayColumn(const NumpyArray<uint32_t>& array,
-                     std::optional<uint32_t> dim)
-      : _dim(dim) {
-    checkArrayIs2D(array);
+  explicit NumpyDecimalColumn(const NumpyArray<uint32_t>& array);
+};
 
-    if (dim) {
-      verifySparseArrayIndices(array, *dim);
-    }
-
-    _buffer_info = array.request();
-  }
-
-  std::optional<DimensionInfo> dimension() const final {
+template <typename T>
+class NumpyArrayColumn : public ArrayColumn<T> {
+ public:
+  std::optional<ColumnDimension> dimension() const final {
     if (!_dim) {
       return std::nullopt;
     }
     return {{*_dim, /* is_dense= */ false}};
   }
 
-  uint64_t numRows() const final { return _buffer_info.shape[0]; }
+  size_t numRows() const final { return _buffer_info.shape[0]; }
 
-  /**
-   * The extra typename keyword here so that during parsing it is clear that
-   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
-   * something else) within the class.
-   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
-   * https://en.cppreference.com/w/cpp/language/qualified_lookup
-   */
-  typename ArrayColumn<uint32_t>::RowReference at(uint64_t n) const final {
-    return getRowHelper<uint32_t>(_buffer_info, n);
+  RowView<T> row(size_t n) const final {
+    uint64_t len = _buffer_info.shape[1];
+    const T* ptr = static_cast<const T*>(_buffer_info.ptr) + len * n;
+    return {ptr, len};
   }
 
- private:
+  void shuffle(const std::vector<size_t>& permutation) final {
+    (void)permutation;
+    throw std::runtime_error("Shuffling is not supported for numpy columns.");
+  }
+
+  ColumnPtr concat(ColumnPtr&& other) final {
+    (void)other;
+    throw std::runtime_error("Concat is not supported for numpy columns.");
+  }
+
+ protected:
   py::buffer_info _buffer_info;
-  std::optional<uint32_t> _dim;
+  std::optional<size_t> _dim;
 };
 
-class PyDenseArrayColumn final : public DenseArrayColumn {
+class NumpyTokenArrayColumn final : public NumpyValueColumn<uint32_t> {
  public:
-  explicit PyDenseArrayColumn(const NumpyArray<float>& array) {
-    checkArrayIs2D(array);
-
-    _buffer_info = array.request();
-  }
-
-  std::optional<DimensionInfo> dimension() const final {
-    uint32_t dim = _buffer_info.shape[1];
-    return {{dim, /* is_dense= */ true}};
-  }
-
-  uint64_t numRows() const final { return _buffer_info.shape[0]; }
-
-  /**
-   * The extra typename keyword here so that during parsing it is clear that
-   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
-   * something else) within the class.
-   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
-   * https://en.cppreference.com/w/cpp/language/qualified_lookup
-   */
-  typename ArrayColumn<float>::RowReference at(uint64_t n) const final {
-    return getRowHelper<float>(_buffer_info, n);
-  }
-
- private:
-  py::buffer_info _buffer_info;
+  NumpyTokenArrayColumn(const NumpyArray<uint32_t>& array,
+                        std::optional<size_t> dim);
 };
 
-template <typename T>
-static void checkArrayis1D(const NumpyArray<T>& array) {
-  if (array.ndim() != 1 && (array.ndim() != 2 || array.shape(1) != 1)) {
-    throw std::invalid_argument(
-        "Can only construct NumpyValueColumn from 1D numpy array.");
-  }
-}
-
-template <typename T>
-static void checkArrayIs2D(const NumpyArray<T>& array) {
-  if (array.ndim() != 2) {
-    throw std::invalid_argument(
-        "Can only construct NumpyArrayColumn from 2D numpy array.");
-  }
-}
-
-static void verifySparseArrayIndices(const NumpyArray<uint32_t>& array,
-                                     uint32_t dim) {
-  const uint32_t* data = array.data();
-  for (uint32_t i = 0; i < array.size(); i++) {
-    if (data[i] >= dim) {
-      throw std::out_of_range("Cannot have index " + std::to_string(data[i]) +
-                              " in Sparse Numpy Column of dimension " +
-                              std::to_string(dim) + ".");
-    }
-  }
-}
-
-template <typename T>
-static const T& getItemHelper(const py::buffer_info& buffer, uint64_t n) {
-  return static_cast<const T*>(buffer.ptr)[n];
-}
-
-template <typename T>
-static typename ArrayColumn<T>::RowReference getRowHelper(
-    const py::buffer_info& buffer, uint64_t n) {
-  uint64_t len = buffer.shape[1];
-  const T* ptr = static_cast<const T*>(buffer.ptr) + len * n;
-  return {ptr, len};
-}
+class NumpyDecimalArrayColumn final : public NumpyValueColumn<float> {
+ public:
+  explicit NumpyDecimalArrayColumn(const NumpyArray<uint32_t>& array);
+};
 
 }  // namespace thirdai::data

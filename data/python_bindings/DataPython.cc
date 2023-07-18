@@ -1,7 +1,8 @@
 #include "DataPython.h"
 #include "DataDocs.h"
+#include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/NumpyColumns.h>
-#include <data/src/columns/VectorColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/StringHash.h>
@@ -25,37 +26,37 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   py::class_<Column, ColumnPtr>(columns_submodule, "Column", docs::COLUMN_BASE)
       .def("dimension_info", &Column::dimension);
 
-  py::class_<DimensionInfo>(columns_submodule, "DimensionInfo",
-                            docs::DIMENSION_INFO)
-      .def_readonly("dim", &DimensionInfo::dim)
-      .def_readonly("is_dense", &DimensionInfo::is_dense);
+  py::class_<ColumnDimension>(columns_submodule, "Dimension",
+                              docs::DIMENSION_INFO)
+      .def_readonly("dim", &ColumnDimension::dim)
+      .def_readonly("is_dense", &ColumnDimension::is_dense);
 
-  py::class_<PyTokenColumn, Column, std::shared_ptr<PyTokenColumn>>(
+  py::class_<NumpyTokenColumn, Column, std::shared_ptr<NumpyTokenColumn>>(
       columns_submodule, "TokenColumn")
-      .def(py::init<const NumpyArray<uint32_t>&, std::optional<uint32_t>>(),
+      .def(py::init<const NumpyArray<uint32_t>&, std::optional<size_t>>(),
            py::arg("array"), py::arg("dim"), docs::TOKEN_COLUMN)
-      .def(("__getitem__"), &PyTokenColumn::at);
+      .def(("__getitem__"), &NumpyTokenColumn::value);
 
-  py::class_<PyDenseFeatureColumn, Column,
-             std::shared_ptr<PyDenseFeatureColumn>>(columns_submodule,
-                                                    "DenseFeatureColumn")
+  py::class_<NumpyDecimalColumn, Column, std::shared_ptr<NumpyDecimalColumn>>(
+      columns_submodule, "DenseFeatureColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"),
            docs::DENSE_FEATURE_COLUMN)
-      .def(("__getitem__"), &PyDenseFeatureColumn::at);
+      .def(("__getitem__"), &NumpyDecimalColumn::value);
 
-  py::class_<CppStringColumn, Column, std::shared_ptr<CppStringColumn>>(
+  py::class_<StringColumn, Column, std::shared_ptr<StringColumn>>(
       columns_submodule, "StringColumn")
-      .def(py::init<std::vector<std::string>>(), py::arg("values"),
-           docs::STRING_COLUMN)
-      .def("__getitem__", &CppStringColumn::at);
+      .def(py::init(&StringColumn::make), py::arg("data"), docs::STRING_COLUMN)
+      .def("__getitem__", &StringColumn::value);
 
-  py::class_<PyTokenArrayColumn, Column, std::shared_ptr<PyTokenArrayColumn>>(
-      columns_submodule, "TokenArrayColumn")
-      .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
+  py::class_<NumpyTokenArrayColumn, Column,
+             std::shared_ptr<NumpyTokenArrayColumn>>(columns_submodule,
+                                                     "TokenArrayColumn")
+      .def(py::init<const NumpyArray<uint32_t>&, size_t>(), py::arg("array"),
            py::arg("dim"), docs::TOKEN_ARRAY_COLUMN);
 
-  py::class_<PyDenseArrayColumn, Column, std::shared_ptr<PyDenseArrayColumn>>(
-      columns_submodule, "DenseArrayColumn")
+  py::class_<NumpyDecimalArrayColumn, Column,
+             std::shared_ptr<NumpyDecimalArrayColumn>>(columns_submodule,
+                                                       "DenseArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"),
            docs::DENSE_ARRAY_COLUMN);
 
@@ -150,9 +151,6 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap", docs::COLUMN_MAP_CLASS)
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
            py::arg("columns"), docs::COLUMN_MAP_INIT)
-      .def("convert_to_dataset", &ColumnMap::convertToDataset,
-           py::arg("columns"), py::arg("batch_size"),
-           docs::COLUMN_MAP_TO_DATASET)
       .def("num_rows", &ColumnMap::numRows)
       .def("__getitem__", &ColumnMap::getColumn)
       .def("columns", &ColumnMap::columns);

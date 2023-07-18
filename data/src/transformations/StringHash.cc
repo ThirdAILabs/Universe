@@ -1,21 +1,22 @@
 #include "StringHash.h"
 #include <hashing/src/MurmurHash.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/columns/ValueColumns.h>
 
 namespace thirdai::data {
 
 ColumnMap StringHash::apply(ColumnMap columns) const {
-  auto column = columns.getStringColumn(_input_column_name);
+  auto column = columns.getValueColumn<std::string>(_input_column_name);
 
   std::vector<uint32_t> hashed_values(column->numRows());
 
 #pragma omp parallel for default(none) shared(column, hashed_values)
   for (uint64_t i = 0; i < column->numRows(); i++) {
-    hashed_values[i] = hash(column->at(i));
+    hashed_values[i] = hash(column->value(i));
   }
 
   auto output_column =
-      std::make_shared<CppTokenColumn>(std::move(hashed_values), _output_range);
+      TokenColumn::make(std::move(hashed_values), _output_range);
 
   columns.setColumn(_output_column_name, output_column);
 

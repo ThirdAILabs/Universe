@@ -4,7 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
-#include <data/src/columns/VectorColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 
@@ -109,19 +109,20 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
                       strong_column_names.end());
 
   std::vector<std::string> samples;
-  auto label_column = dataset.getStringColumn(metadata->getLabelColumn());
+  auto label_column =
+      dataset.getValueColumn<std::string>(metadata->getLabelColumn());
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string output_sample;
     for (const auto& column_name : column_names) {
-      auto column = dataset.getStringColumn(column_name);
-      output_sample.append(column->at(row_id));
+      auto column = dataset.getValueColumn<std::string>(column_name);
+      output_sample.append(column->value(row_id));
       output_sample.append(" ");
     }
     samples.push_back(output_sample);
   }
 
-  thirdai::data::StringColumnPtr augmented_data_column =
-      std::make_shared<thirdai::data::CppStringColumn>(std::move(samples));
+  thirdai::data::ValueColumnPtr<std::string> augmented_data_column =
+      thirdai::data::StringColumn::make(std::move(samples));
 
   std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
   new_columns.emplace(metadata->getLabelColumn(), label_column);

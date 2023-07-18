@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
-#include <data/src/columns/VectorColumns.h>
 #include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
