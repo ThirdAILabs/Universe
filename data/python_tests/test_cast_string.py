@@ -7,7 +7,7 @@ pytestmark = [pytest.mark.unit]
 def test_cast_string_to_token():
     string_col = data.columns.StringColumn([str(i) for i in range(10)])
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.AsTokens("strings", "tokens")(columns)
+    columns = data.transformations.ToTokens("strings", "tokens")(columns)
     for i in range(10):
         assert columns["tokens"][i] == i
 
@@ -15,7 +15,7 @@ def test_cast_string_to_token():
         ValueError,
         match=r"Invalid index 5 for TokenColumn with dimension 5",
     ):
-        data.transformation.AsTokens("strings", "tokens", dim=5)(columns)
+        data.transformation.ToTokens("strings", "tokens", dim=5)(columns)
 
 
 def test_cast_string_to_token_array():
@@ -23,7 +23,7 @@ def test_cast_string_to_token_array():
         [" ".join(map(str, range(i, i + 2))) for i in range(10)]
     )
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.AsTokenArrays("strings", "tokens")(columns)
+    columns = data.transformations.ToTokenArrays("strings", "tokens")(columns)
     for i in range(10):
         assert columns["tokens"][i][0] == i
         assert columns["tokens"][i][1] == i + 1
@@ -32,13 +32,13 @@ def test_cast_string_to_token_array():
         ValueError,
         match=r"Invalid index 5 for TokenArrayColumn with dimension 5",
     ):
-        data.transformation.AsTokenArrays("strings", "tokens", dim=5)(columns)
+        data.transformation.ToTokenArrays("strings", "tokens", dim=5)(columns)
 
 
 def test_cast_string_to_decimal():
     string_col = data.columns.StringColumn([str(0.1 * i) for i in range(10)])
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.AsDecimals("strings", "decimals")(columns)
+    columns = data.transformations.ToDecimals("strings", "decimals")(columns)
     for i in range(10):
         assert columns["decimals"][i] == 0.1 * i
 
@@ -48,7 +48,7 @@ def test_cast_string_to_decimal_array():
         [" ".join([str(0.1 * j) for j in range(i, i + 2)]) for i in range(10)]
     )
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.AsDecimalArrays("strings", "decimals")(columns)
+    columns = data.transformations.ToDecimalArrays("strings", "decimals")(columns)
     for i in range(10):
         assert columns["tokens"][i][0] == i * 0.1
         assert columns["tokens"][i][1] == (i + 1) * 0.1
@@ -61,7 +61,7 @@ def test_cast_string_to_decimal_array():
             [" ".join([str(0.1 * j) for j in range(0, i)]) for i in range(10)]
         )
         columns = data.ColumnMap({"strings": string_col})
-        columns = data.transformations.AsDecimalArrays("strings", "decimals")(columns)
+        columns = data.transformations.ToDecimalArrays("strings", "decimals")(columns)
 
 
 def test_cast_string_to_timestamp():
@@ -69,7 +69,7 @@ def test_cast_string_to_timestamp():
         ["2023-07-" + str(date) for date in range(10, 20)]
     )
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.AsDecimalArrays("strings", "timestamps")(columns)
+    columns = data.transformations.ToDecimalArrays("strings", "timestamps")(columns)
 
     SECONDS_IN_A_DAY = 24 * 3600
 
