@@ -30,6 +30,8 @@ class ArrayColumnImpl : public ArrayColumn<T> {
 
   std::shared_ptr<Column> concat(std::shared_ptr<Column>&& other) final;
 
+  const auto& data() const { return _data; }
+
  protected:
   ArrayColumnImpl(std::vector<std::vector<T>>&& data,
                   std::optional<ColumnDimension> dimension)
@@ -78,6 +80,10 @@ class DecimalArrayColumn final : public ArrayColumnImpl<float> {
         }
       }
     }
+  }
+
+  static auto make(std::vector<std::vector<float>>&& data) {
+    return std::make_shared<DecimalArrayColumn>(std::move(data));
   }
 };
 

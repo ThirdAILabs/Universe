@@ -37,6 +37,8 @@ class ValueColumnImpl : public ValueColumn<T> {
 
   std::shared_ptr<Column> concat(std::shared_ptr<Column>&& other) final;
 
+  const auto& data() const { return _data; }
+
  protected:
   ValueColumnImpl(std::vector<T>&& data,
                   std::optional<ColumnDimension> dimension)
@@ -81,12 +83,20 @@ class DecimalColumn final : public ValueColumnImpl<float> {
  public:
   explicit DecimalColumn(std::vector<float>&& data)
       : ValueColumnImpl<float>(std::move(data), ColumnDimension(1, true)) {}
+
+  static auto make(std::vector<float>&& data) {
+    return std::make_shared<DecimalColumn>(std::move(data));
+  }
 };
 
 class TimestampColumn final : public ValueColumnImpl<int64_t> {
  public:
   explicit TimestampColumn(std::vector<int64_t>&& data)
       : ValueColumnImpl<int64_t>(std::move(data), std::nullopt) {}
+
+  static auto make(std::vector<int64_t>&& data) {
+    return std::make_shared<TimestampColumn>(std::move(data));
+  }
 };
 
 }  // namespace thirdai::data

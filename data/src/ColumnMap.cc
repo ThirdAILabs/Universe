@@ -4,6 +4,7 @@
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <cstdint>
 #include <exception>
 #include <stdexcept>
 #include <unordered_map>
@@ -50,6 +51,13 @@ ArrayColumnPtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
   return column;
 }
 
+template ArrayColumnPtr<uint32_t> ColumnMap::getArrayColumn(
+    const std::string&) const;
+template ArrayColumnPtr<float> ColumnMap::getArrayColumn(
+    const std::string&) const;
+template ArrayColumnPtr<std::string> ColumnMap::getArrayColumn(
+    const std::string&) const;
+
 template <typename T>
 ValueColumnPtr<T> ColumnMap::getValueColumn(const std::string& name) const {
   auto column = std::dynamic_pointer_cast<ValueColumn<T>>(getColumn(name));
@@ -59,6 +67,15 @@ ValueColumnPtr<T> ColumnMap::getValueColumn(const std::string& name) const {
   }
   return column;
 }
+
+template ValueColumnPtr<uint32_t> ColumnMap::getValueColumn(
+    const std::string&) const;
+template ValueColumnPtr<float> ColumnMap::getValueColumn(
+    const std::string&) const;
+template ValueColumnPtr<std::string> ColumnMap::getValueColumn(
+    const std::string&) const;
+template ValueColumnPtr<int64_t> ColumnMap::getValueColumn(
+    const std::string&) const;
 
 ColumnPtr ColumnMap::getColumn(const std::string& name) const {
   if (!_columns.count(name)) {
