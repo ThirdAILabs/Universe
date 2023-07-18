@@ -4,6 +4,7 @@
 #include <data/src/columns/NumpyColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
+#include <data/src/transformations/CastString.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
@@ -13,6 +14,7 @@
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/stl.h>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -100,6 +102,39 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("input_columns"), py::arg("output_column"),
            py::arg("output_range"), py::arg("use_pairgrams") = false,
            docs::COLUMN_PAIRGRAM);
+
+  py::class_<CastStringToToken, Transformation,
+             std::shared_ptr<CastStringToToken>>(transformations_submodule,
+                                                 "ToTokens")
+      .def(py::init<std::string, std::string, std::optional<uint32_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("dim") = std::nullopt);
+
+  py::class_<CastStringToTokenArray, Transformation,
+             std::shared_ptr<CastStringToTokenArray>>(transformations_submodule,
+                                                      "ToTokenArrays")
+      .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"), py::arg("dim") = std::nullopt);
+
+  py::class_<CastStringToDecimal, Transformation,
+             std::shared_ptr<CastStringToDecimal>>(transformations_submodule,
+                                                   "ToDecimals")
+      .def(py::init<std::string, std::string>(), py::arg("input_column"),
+           py::arg("output_column"));
+
+  py::class_<CastStringToDecimalArray, Transformation,
+             std::shared_ptr<CastStringToDecimalArray>>(
+      transformations_submodule, "ToDecimalArrays")
+      .def(py::init<std::string, std::string, char>(), py::arg("input_column"),
+           py::arg("output_column"), py::arg("delimiter"));
+
+  py::class_<CastStringToTimestamp, Transformation,
+             std::shared_ptr<CastStringToTimestamp>>(transformations_submodule,
+                                                     "ToTimestamps")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("format") = "%Y-%m-%d");
 
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
