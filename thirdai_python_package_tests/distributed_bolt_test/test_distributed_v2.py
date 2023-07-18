@@ -121,8 +121,14 @@ def test_udt_train_distributed_v2():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
+        # Ideally, we can just call thirdai.licensing.setup/set_license_path here
+        # and that should just work fine too, in place of this lambda.
+        config.get("licensing_lambda")()
+
         thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
+
         udt_model = get_clinc_udt_model(integer_target=True)
+
         udt_model = dist.prepare_model(udt_model)
         copy_file_or_folder(
             os.path.join(
@@ -146,12 +152,20 @@ def test_udt_train_distributed_v2():
             checkpoint=dist.UDTCheckPoint.from_model(udt_model),
         )
 
+    licensing_lambda = None
+    if hasattr(thirdai._thirdai, "licensing"):
+        license_state = thirdai._thirdai.licensing._get_license_state()
+        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+            license_state
+        )
+
     scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
         train_loop_config={
             "cur_dir": os.path.abspath(os.getcwd()),
+            "licensing_lambda": licensing_lambda,
         },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
