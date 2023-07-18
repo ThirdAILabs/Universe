@@ -61,15 +61,15 @@ class StringColumn final : public ValueColumnImpl<std::string> {
 class TokenColumn final : public ValueColumnImpl<uint32_t> {
  public:
   explicit TokenColumn(std::vector<uint32_t>&& data, std::optional<size_t> dim)
-      : ValueColumnImpl<uint32_t>(
-            std::move(data),
-            dim ? std::make_optional<ColumnDimension>(*dim, false)
-                : std::nullopt) {
-    for (uint32_t index : _data) {
-      if (index >= _dimension->dim) {
-        throw std::invalid_argument("Invalid index " + std::to_string(index) +
-                                    " for TokenColumn with dimension " +
-                                    std::to_string(_dimension->dim));
+      : ValueColumnImpl<uint32_t>(std::move(data),
+                                  ColumnDimension::sparse(dim)) {
+    if (_dimension) {
+      for (uint32_t index : _data) {
+        if (index >= _dimension->dim) {
+          throw std::invalid_argument("Invalid index " + std::to_string(index) +
+                                      " for TokenColumn with dimension " +
+                                      std::to_string(_dimension->dim) + ".");
+        }
       }
     }
   }
@@ -82,7 +82,7 @@ class TokenColumn final : public ValueColumnImpl<uint32_t> {
 class DecimalColumn final : public ValueColumnImpl<float> {
  public:
   explicit DecimalColumn(std::vector<float>&& data)
-      : ValueColumnImpl<float>(std::move(data), ColumnDimension(1, true)) {}
+      : ValueColumnImpl<float>(std::move(data), ColumnDimension::dense(1)) {}
 
   static auto make(std::vector<float>&& data) {
     return std::make_shared<DecimalColumn>(std::move(data));

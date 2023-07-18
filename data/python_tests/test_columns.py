@@ -1,0 +1,137 @@
+import random
+import string
+
+import numpy as np
+import pytest
+from thirdai import data
+
+pytestmark = [pytest.mark.unit]
+
+
+def test_token_column():
+    ROWS = 10000
+    tokens = list(range(ROWS))
+
+    columns = [
+        data.columns.TokenColumn(tokens, dim=ROWS),
+        data.columns.TokenColumn(np.array(tokens), dim=ROWS),
+    ]
+
+    for column in columns:
+        assert column.data() == tokens
+        assert column.dimension().dim == ROWS
+        assert not column.dimension().is_dense
+
+
+def test_decimal_column():
+    ROWS = 10000
+    decimals = [random.random() for _ in range(ROWS)]
+
+    columns = [
+        data.columns.DecimalColumn(decimals),
+        data.columns.DecimalColumn(np.array(decimals)),
+    ]
+
+    for column in columns:
+        assert np.allclose(column.data(), decimals)
+        assert column.dimension().dim == 1
+        assert column.dimension().is_dense
+
+
+def test_string_column():
+    ROWS = 10000
+    strings = [
+        "".join(random.choices(string.ascii_lowercase, k=10)) for _ in range(ROWS)
+    ]
+
+    column = data.columns.StringColumn(strings)
+
+    assert column.data() == strings
+    assert column.dimension() == None
+
+
+def test_timestamp_column():
+    ROWS = 10000
+    timestamps = list(range(ROWS))
+
+    column = data.columns.TimestampColumn(timestamps)
+
+    assert column.data() == timestamps
+    assert column.dimension() == None
+
+
+def test_token_array_column():
+    ROWS = 10000
+    COLS = 100
+
+    tokens = [[i * COLS + j for j in range(COLS)] for i in range(ROWS)]
+
+    columns = [
+        data.columns.TokenArrayColumn(tokens, dim=ROWS * COLS),
+        data.columns.TokenArrayColumn(np.array(tokens), dim=ROWS * COLS),
+    ]
+
+    for column in columns:
+        assert column.data() == tokens
+        assert column.dimension().dim == ROWS * COLS
+        assert not column.dimension().is_dense
+
+
+def test_decimal_array_column():
+    ROWS = 10000
+    COLS = 100
+
+    decimals = [[random.random() for _ in range(COLS)] for _ in range(ROWS)]
+
+    columns = [
+        data.columns.DecimalArrayColumn(decimals),
+        data.columns.DecimalArrayColumn(np.array(decimals)),
+    ]
+
+    for column in columns:
+        assert np.allclose(column.data(), decimals)
+        assert column.dimension().dim == COLS
+        assert column.dimension().is_dense
+
+
+def test_token_columns_without_dimension():
+    assert data.columns.TokenColumn([1, 2, 3]).dimension() == None
+
+    assert data.columns.TokenArrayColumn([[1], [2], [3]]).dimension() == None
+
+
+def test_token_columns_with_invalid_token():
+    with pytest.raises(
+        ValueError, match="Invalid index 10 for TokenColumn with dimension 5."
+    ):
+        data.columns.TokenColumn([10], dim=5)
+
+    with pytest.raises(
+        ValueError, match="Invalid index 10 for TokenArrayColumn with dimension 5."
+    ):
+        data.columns.TokenArrayColumn([[10]], dim=5)
+
+
+@pytest.mark.parametrize(
+    "column_type", [data.columns.TokenColumn, data.columns.DecimalColumn]
+)
+def test_pass_invalid_dimensions_to_value_column(column_type):
+    with pytest.raises(
+        ValueError, match="Expected 1D array when creating ValueColumn."
+    ):
+        column_type(np.array([[10, 20]]))
+
+
+@pytest.mark.parametrize(
+    "column_type", [data.columns.TokenArrayColumn, data.columns.DecimalArrayColumn]
+)
+def test_pass_invalid_dimensions_to_array_column(column_type):
+    with pytest.raises(
+        ValueError, match="Expected 2D array when creating ArrayColumn."
+    ):
+        column_type(np.array([10]))
+
+    with pytest.raises(
+        ValueError, match="Expected 2D array when creating ArrayColumn."
+    ):
+        column_type(np.array([[[1, 2], [2, 2]]])).data()

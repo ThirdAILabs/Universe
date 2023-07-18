@@ -45,16 +45,17 @@ class TokenArrayColumn final : public ArrayColumnImpl<uint32_t> {
  public:
   explicit TokenArrayColumn(std::vector<std::vector<uint32_t>>&& data,
                             std::optional<size_t> dim)
-      : ArrayColumnImpl<uint32_t>(
-            std::move(data),
-            dim ? std::make_optional<ColumnDimension>(*dim, false)
-                : std::nullopt) {
-    for (const auto& row : _data) {
-      for (uint32_t index : row) {
-        if (index >= _dimension->dim) {
-          throw std::invalid_argument("Invalid index " + std::to_string(index) +
-                                      " for TokenArrayColumn with dimension " +
-                                      std::to_string(_dimension->dim));
+      : ArrayColumnImpl<uint32_t>(std::move(data),
+                                  ColumnDimension::sparse(dim)) {
+    if (_dimension) {
+      for (const auto& row : _data) {
+        for (uint32_t index : row) {
+          if (index >= _dimension->dim) {
+            throw std::invalid_argument(
+                "Invalid index " + std::to_string(index) +
+                " for TokenArrayColumn with dimension " +
+                std::to_string(_dimension->dim) + ".");
+          }
         }
       }
     }
@@ -69,7 +70,7 @@ class TokenArrayColumn final : public ArrayColumnImpl<uint32_t> {
 class DecimalArrayColumn final : public ArrayColumnImpl<float> {
  public:
   explicit DecimalArrayColumn(std::vector<std::vector<float>>&& data)
-      : ArrayColumnImpl<float>(std::move(data), ColumnDimension(0, true)) {
+      : ArrayColumnImpl<float>(std::move(data), ColumnDimension::dense(0)) {
     if (!_data.empty()) {
       _dimension->dim = _data.front().size();
 

@@ -58,7 +58,7 @@ std::vector<T> fromNumpy1D(const NumpyArray<T>& array) {
 template <typename T>
 std::vector<std::vector<T>> fromNumpy2D(const NumpyArray<T>& array) {
   if (array.ndim() != 2) {
-    throw std::invalid_argument("Expected 1D array when creating ValueColumn.");
+    throw std::invalid_argument("Expected 2D array when creating ArrayColumn.");
   }
 
   size_t rows = array.shape(0), cols = array.shape(1);
@@ -102,8 +102,10 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<TokenColumn, Column, std::shared_ptr<TokenColumn>>(
       columns_submodule, "TokenColumn")
-      .def(py::init(&TokenColumn::make), py::arg("data"), py::arg("dim"))
-      .def(py::init(&tokenColumnFromNumpy), py::arg("data"), py::arg("dim"))
+      .def(py::init(&TokenColumn::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
+      .def(py::init(&tokenColumnFromNumpy), py::arg("data"),
+           py::arg("dim") = std::nullopt)
       .def(("__getitem__"), &TokenColumn::value)
       .def("data", &TokenColumn::data);
 
@@ -128,9 +130,10 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<TokenArrayColumn, Column, std::shared_ptr<TokenArrayColumn>>(
       columns_submodule, "TokenArrayColumn")
-      .def(py::init(&TokenArrayColumn::make), py::arg("data"), py::arg("dim"))
+      .def(py::init(&TokenArrayColumn::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
       .def(py::init(&tokenArrayColumnFromNumpy), py::arg("data"),
-           py::arg("dim"))
+           py::arg("dim") = std::nullopt)
       .def("__getitem__", &getRowNumpy<uint32_t, TokenArrayColumn>,
            py::return_value_policy::reference_internal)
       .def("data", &TokenArrayColumn::data);
