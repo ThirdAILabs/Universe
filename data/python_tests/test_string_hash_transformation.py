@@ -27,9 +27,7 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
 
     columns = featurizer(columns)
 
-    return columns.convert_to_dataset(
-        ["column1_hashes", "column2_hashes"], batch_size=col_length
-    )
+    return list(zip(columns["column1_hashes"].data(), columns["column2_hashes"].data()))
 
 
 # Tests that if we hash two columns and then turn them into a dataset, the sparse
@@ -39,12 +37,10 @@ def test_string_hash_consistency():
     col_length = 100
     output_range = 100
 
-    indices, _ = sparse_bolt_dataset_to_numpy(
-        get_two_col_hashed_string_dataset(col_length, output_range)
-    )
+    indices = get_two_col_hashed_string_dataset(col_length, output_range)
 
     for i1, i2 in indices:
-        assert i1 + output_range == i2
+        assert i1 == i2
 
 
 # Tests that each hash has about the number of values we expect (is within a
@@ -54,9 +50,7 @@ def test_string_hash_distribution():
     col_length = 10000
     output_range = 100
 
-    indices, _ = sparse_bolt_dataset_to_numpy(
-        get_two_col_hashed_string_dataset(col_length, output_range)
-    )
+    indices = get_two_col_hashed_string_dataset(col_length, output_range)
 
     hash_counts = [0 for _ in range(output_range)]
     for i1, _ in indices:
