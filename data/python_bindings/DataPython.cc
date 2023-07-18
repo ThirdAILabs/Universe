@@ -20,11 +20,28 @@ namespace thirdai::data::python {
 
 namespace py = pybind11;
 
+void createColumnsSubmodule(py::module_& dataset_submodule);
+
+void createTransformationsSubmodule(py::module_& dataset_submodule);
+
 void createDataSubmodule(py::module_& dataset_submodule) {
+  py::class_<ColumnMap>(dataset_submodule, "ColumnMap", docs::COLUMN_MAP_CLASS)
+      .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
+           py::arg("columns"), docs::COLUMN_MAP_INIT)
+      .def("num_rows", &ColumnMap::numRows)
+      .def("__getitem__", &ColumnMap::getColumn)
+      .def("columns", &ColumnMap::columns);
+
+  createColumnsSubmodule(dataset_submodule);
+
+  createTransformationsSubmodule(dataset_submodule);
+}
+
+void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
   py::class_<Column, ColumnPtr>(columns_submodule, "Column", docs::COLUMN_BASE)
-      .def("dimension_info", &Column::dimension);
+      .def("dimension", &Column::dimension);
 
   py::class_<ColumnDimension>(columns_submodule, "Dimension",
                               docs::DIMENSION_INFO)
@@ -38,7 +55,7 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(("__getitem__"), &NumpyTokenColumn::value);
 
   py::class_<NumpyDecimalColumn, Column, std::shared_ptr<NumpyDecimalColumn>>(
-      columns_submodule, "DenseFeatureColumn")
+      columns_submodule, "DecimalColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"),
            docs::DENSE_FEATURE_COLUMN)
       .def(("__getitem__"), &NumpyDecimalColumn::value);
@@ -52,14 +69,19 @@ void createDataSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NumpyTokenArrayColumn>>(columns_submodule,
                                                      "TokenArrayColumn")
       .def(py::init<const NumpyArray<uint32_t>&, size_t>(), py::arg("array"),
-           py::arg("dim"), docs::TOKEN_ARRAY_COLUMN);
+           py::arg("dim"), docs::TOKEN_ARRAY_COLUMN)
+      .def("__getitem__", &NumpyTokenArrayColumn::rowNumpy);
 
   py::class_<NumpyDecimalArrayColumn, Column,
              std::shared_ptr<NumpyDecimalArrayColumn>>(columns_submodule,
-                                                       "DenseArrayColumn")
+                                                       "DecimalArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"),
-           docs::DENSE_ARRAY_COLUMN);
+           docs::DENSE_ARRAY_COLUMN)
+      .def("__getitem__", &NumpyDecimalArrayColumn::rowNumpy);
+  
+}
 
+void createTransformationsSubmodule(py::module_& dataset_submodule) {
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
 
@@ -147,13 +169,6 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
 #endif
-
-  py::class_<ColumnMap>(dataset_submodule, "ColumnMap", docs::COLUMN_MAP_CLASS)
-      .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
-           py::arg("columns"), docs::COLUMN_MAP_INIT)
-      .def("num_rows", &ColumnMap::numRows)
-      .def("__getitem__", &ColumnMap::getColumn)
-      .def("columns", &ColumnMap::columns);
 }
 
 }  // namespace thirdai::data::python

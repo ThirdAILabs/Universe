@@ -18,6 +18,11 @@ template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 template <typename T>
+inline NumpyArray<T> rowViewToNumpy(const RowView<T>& row) {
+  return NumpyArray<T>(row.size(), row.data());
+}
+
+template <typename T>
 class NumpyValueColumn : public ValueColumn<T> {
  public:
   size_t numRows() const final { return _buffer_info.shape[0]; }
@@ -28,6 +33,8 @@ class NumpyValueColumn : public ValueColumn<T> {
     const T* ptr = static_cast<const T*>(_buffer_info.ptr) + n;
     return {ptr, 1};
   }
+
+  NumpyArray<T> rowNumpy(size_t n) const { return rowViewToNumpy(row(n)); }
 
   const T& value(size_t n) const final {
     return static_cast<const T*>(_buffer_info.ptr)[n];
@@ -71,6 +78,8 @@ class NumpyArrayColumn : public ArrayColumn<T> {
     const T* ptr = static_cast<const T*>(_buffer_info.ptr) + len * n;
     return {ptr, len};
   }
+
+  NumpyArray<T> rowNumpy(size_t n) const { return rowViewToNumpy(row(n)); }
 
   void shuffle(const std::vector<size_t>& permutation) final {
     (void)permutation;

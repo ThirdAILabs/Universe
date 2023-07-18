@@ -52,7 +52,9 @@ class RowView {
     return _data[i];
   }
 
-  uint64_t size() const { return _len; }
+  size_t size() const { return _len; }
+
+  const T* data() const { return _data; }
 
   const T* begin() const { return _data; }
 
