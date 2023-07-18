@@ -114,6 +114,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::return_value_policy::reference_internal)
       .def("set_gradients", &::thirdai::bolt::python::setGradients,
            py::arg("new_values"))
+      .def("enable_sparse_parameter_updates",
+           &model::Model::enableSparseParameterUpdates)
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)

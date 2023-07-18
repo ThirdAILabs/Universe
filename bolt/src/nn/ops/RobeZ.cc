@@ -79,6 +79,10 @@ void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+void RobeZ::enableSparseParameterUpdates() {
+  _kernel->enableSparseParameterUpdates();
+}
+
 std::vector<std::vector<float>*> RobeZ::gradients() {
   return {&_kernel->getRawEmbeddingBlockGradient()};
 }
