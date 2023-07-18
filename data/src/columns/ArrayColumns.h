@@ -79,6 +79,10 @@ class DecimalArrayColumn final : public ArrayColumnImpl<float> {
       }
     }
   }
+
+  static auto make(std::vector<std::vector<float>>&& data) {
+    return std::make_shared<DecimalArrayColumn>(std::move(data));
+  }
 };
 
 }  // namespace thirdai::data
