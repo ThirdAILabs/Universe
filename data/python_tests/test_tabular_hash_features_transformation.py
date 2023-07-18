@@ -1,11 +1,5 @@
 import pytest
-from dataset_utils import (
-    get_random_str_column,
-    nonzeros_from_sparse_bolt_dataset,
-    sparse_bolt_dataset_to_numpy,
-    verify_pairgrams_distribution,
-    verify_unigrams_distribution,
-)
+from dataset_utils import get_random_str_column, verify_hash_distribution
 from thirdai import data
 
 pytestmark = [pytest.mark.unit]
@@ -43,18 +37,14 @@ def create_and_tabular_hash_random_dataset(use_pairgrams):
 
     columns = featurizer(columns)
 
-    return columns.convert_to_dataset(["tabular_hash_features"], batch_size=NUM_ROWS)
+    return columns["tabular_hash_features"].data()
 
 
 def test_cross_column_pairgrams():
-    pairgram_nonzeros = nonzeros_from_sparse_bolt_dataset(
-        create_and_tabular_hash_random_dataset(use_pairgrams=True)
-    )
-    verify_pairgrams_distribution(pairgram_nonzeros, OUTPUT_RANGE)
+    pairgrams = create_and_tabular_hash_random_dataset(use_pairgrams=True)
+    verify_hash_distribution(pairgrams, OUTPUT_RANGE)
 
 
 def test_cross_column_unigrams():
-    unigram_dataset = sparse_bolt_dataset_to_numpy(
-        create_and_tabular_hash_random_dataset(use_pairgrams=False)
-    )
-    verify_unigrams_distribution(unigram_dataset, OUTPUT_RANGE, NUM_WORDS)
+    unigrams = create_and_tabular_hash_random_dataset(use_pairgrams=False)
+    verify_hash_distribution(unigrams, OUTPUT_RANGE)
