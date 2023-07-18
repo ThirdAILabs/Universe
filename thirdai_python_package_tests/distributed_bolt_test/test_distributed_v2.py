@@ -26,8 +26,6 @@ from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai.demos import download_clinc_dataset
 
-pytestmark = [pytest.mark.distributed]
-
 
 def setup_ray():
     # reserve one CPU for Ray Trainer
@@ -71,6 +69,7 @@ def training_loop_per_worker(config):
     trainer.model.save("trained.model")
 
 
+@pytest.mark.distributed
 def test_bolt_distributed_v2():
     scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
@@ -181,6 +180,7 @@ def test_udt_train_distributed_v2():
     ray.shutdown()
 
 
+@pytest.mark.distributed
 def test_udt_mach_distributed_v2(download_scifact_dataset):
     supervised_tst, n_target_classes = download_and_split_scifact_dataset(
         download_scifact_dataset
@@ -259,6 +259,7 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
     ray.shutdown()
 
 
+@pytest.mark.distributed
 def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sampled):
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
@@ -312,6 +313,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     ray.shutdown()
 
 
+@pytest.mark.distributed
 def test_distributed_fault_tolerance():
     import sys
 
