@@ -5,17 +5,21 @@
 namespace thirdai::data {
 
 template <typename T>
-inline void shuffleVector(std::vector<T>& vector,
-                          const std::vector<size_t>& permutation) {
+inline std::vector<T> shuffleVector(std::vector<T>&& vector,
+                                    const std::vector<size_t>& permutation) {
   if (permutation.size() != vector.size()) {
     throw std::invalid_argument(
         "Size of permutation must match the number of rows.");
   }
 
-#pragma omp parallel for default(none) shared(vector, permutation)
+  std::vector<T> new_vector(vector.size());
+
+#pragma omp parallel for default(none) shared(new_vector, vector, permutation)
   for (size_t i = 0; i < vector.size(); i++) {
-    std::swap(vector[i], vector[permutation[i]]);
+    std::swap(new_vector[i], vector[permutation[i]]);
   }
+
+  return new_vector;
 }
 
 template <typename T>

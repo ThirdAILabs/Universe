@@ -5,7 +5,7 @@ namespace thirdai::data {
 
 template <typename T>
 void ArrayColumnImpl<T>::shuffle(const std::vector<size_t>& permutation) {
-  shuffleVector(_data, permutation);
+  _data = shuffleVector(std::move(_data), permutation);
 }
 
 template class ArrayColumnImpl<uint32_t>;
