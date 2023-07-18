@@ -71,33 +71,21 @@ class CastStringToArray : public CastString<ArrayColumnT, std::vector<T>> {
   char _delimiter;
 };
 
-static uint32_t stringToToken(const std::string& string,
-                              std::optional<uint32_t> dim,
-                              const std::string& column_type) {
-  uint32_t token = text::toInteger(string.data());
-  if (dim && token >= *dim) {
-    throw std::invalid_argument("Invalid index " + std::to_string(token) +
-                                " for " + column_type + " with dimension " +
-                                std::to_string(*dim));
-  }
-  return token;
-}
-
 class CastStringToToken final : public CastString<TokenColumn, uint32_t> {
  public:
   CastStringToToken(std::string input_column, std::string output_column,
-                    std::optional<uint32_t> dim = std::nullopt)
+                    std::optional<uint32_t> dim)
       : CastString<TokenColumn, uint32_t>(std::move(input_column),
                                           std::move(output_column)),
         _dim(dim) {}
 
  private:
   uint32_t convert(const std::string& original) const final {
-    return stringToToken(original, _dim, "TokenColumn");
+    return text::toInteger(original.data());
   }
 
   Ptr<TokenColumn> makeColumn(std::vector<uint32_t>&& data) const final {
-    return TokenColumn::make(std::move(data), std::nullopt);
+    return TokenColumn::make(std::move(data), _dim);
   }
 
   std::optional<uint32_t> _dim;
@@ -107,20 +95,19 @@ class CastStringToTokenArray final
     : public CastStringToArray<TokenArrayColumn, uint32_t> {
  public:
   CastStringToTokenArray(std::string input_column, std::string output_column,
-                         char delimiter,
-                         std::optional<uint32_t> dim = std::nullopt)
+                         char delimiter, std::optional<uint32_t> dim)
       : CastStringToArray<TokenArrayColumn, uint32_t>(
             std::move(input_column), std::move(output_column), delimiter),
         _dim(dim) {}
 
  private:
   uint32_t convertSingle(const std::string& single) const final {
-    return stringToToken(single, _dim, "TokenColumn");
+    return text::toInteger(single.data());
   }
 
   Ptr<TokenArrayColumn> makeColumn(
       std::vector<std::vector<uint32_t>>&& data) const final {
-    return TokenArrayColumn::make(std::move(data), std::nullopt);
+    return TokenArrayColumn::make(std::move(data), _dim);
   }
 
   std::optional<uint32_t> _dim;
@@ -165,7 +152,7 @@ class CastStringToTimestamp final
     : public CastString<TimestampColumn, int64_t> {
  public:
   CastStringToTimestamp(std::string input_column, std::string output_column,
-                        std::string format = "%Y-%m-%d")
+                        std::string format)
       : CastString<TimestampColumn, int64_t>(std::move(input_column),
                                              std::move(output_column)),
         _format(std::move(format)) {}
