@@ -14,9 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [main, fix-windows-build]
 
   release:
     types:
