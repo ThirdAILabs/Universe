@@ -22,12 +22,7 @@ class NumpyValueColumn : public ValueColumn<T> {
  public:
   size_t numRows() const final { return _buffer_info.shape[0]; }
 
-  std::optional<ColumnDimension> dimension() const final {
-    if (!_dim) {
-      return std::nullopt;
-    }
-    return {{*_dim, /* is_dense= */ false}};
-  }
+  std::optional<ColumnDimension> dimension() const final { return _dimension; }
 
   RowView<T> row(size_t n) const final {
     const T* ptr = static_cast<const T*>(_buffer_info.ptr) + n;
@@ -50,7 +45,7 @@ class NumpyValueColumn : public ValueColumn<T> {
 
  protected:
   py::buffer_info _buffer_info;
-  std::optional<size_t> _dim;
+  std::optional<ColumnDimension> _dimension;
 };
 
 class NumpyTokenColumn final : public NumpyValueColumn<uint32_t> {
@@ -61,18 +56,13 @@ class NumpyTokenColumn final : public NumpyValueColumn<uint32_t> {
 
 class NumpyDecimalColumn final : public NumpyValueColumn<float> {
  public:
-  explicit NumpyDecimalColumn(const NumpyArray<uint32_t>& array);
+  explicit NumpyDecimalColumn(const NumpyArray<float>& array);
 };
 
 template <typename T>
 class NumpyArrayColumn : public ArrayColumn<T> {
  public:
-  std::optional<ColumnDimension> dimension() const final {
-    if (!_dim) {
-      return std::nullopt;
-    }
-    return {{*_dim, /* is_dense= */ false}};
-  }
+  std::optional<ColumnDimension> dimension() const final { return _dimension; }
 
   size_t numRows() const final { return _buffer_info.shape[0]; }
 
@@ -94,7 +84,7 @@ class NumpyArrayColumn : public ArrayColumn<T> {
 
  protected:
   py::buffer_info _buffer_info;
-  std::optional<size_t> _dim;
+  std::optional<ColumnDimension> _dimension;
 };
 
 class NumpyTokenArrayColumn final : public NumpyValueColumn<uint32_t> {
@@ -105,7 +95,7 @@ class NumpyTokenArrayColumn final : public NumpyValueColumn<uint32_t> {
 
 class NumpyDecimalArrayColumn final : public NumpyValueColumn<float> {
  public:
-  explicit NumpyDecimalArrayColumn(const NumpyArray<uint32_t>& array);
+  explicit NumpyDecimalArrayColumn(const NumpyArray<float>& array);
 };
 
 }  // namespace thirdai::data

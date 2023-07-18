@@ -1,4 +1,5 @@
 #include "NumpyColumns.h"
+#include <optional>
 
 namespace thirdai::data {
 
@@ -37,14 +38,15 @@ NumpyTokenColumn::NumpyTokenColumn(const NumpyArray<uint32_t>& array,
     verifySparseArrayIndices(array, *dim);
   }
 
-  _dim = dim;
+  _dimension =
+      dim ? std::make_optional<ColumnDimension>(*dim, false) : std::nullopt;
   _buffer_info = array.request();
 }
 
-NumpyDecimalColumn::NumpyDecimalColumn(const NumpyArray<uint32_t>& array) {
+NumpyDecimalColumn::NumpyDecimalColumn(const NumpyArray<float>& array) {
   checkArrayis1D(array);
 
-  _dim = 1;
+  _dimension = ColumnDimension(1, true);
   _buffer_info = array.request();
 }
 
@@ -56,15 +58,16 @@ NumpyTokenArrayColumn::NumpyTokenArrayColumn(const NumpyArray<uint32_t>& array,
     verifySparseArrayIndices(array, *dim);
   }
 
-  _dim = dim;
+  _dimension =
+      dim ? std::make_optional<ColumnDimension>(*dim, false) : std::nullopt;
   _buffer_info = array.request();
 }
 
 NumpyDecimalArrayColumn::NumpyDecimalArrayColumn(
-    const NumpyArray<uint32_t>& array) {
+    const NumpyArray<float>& array) {
   checkArrayIs2D(array);
 
-  _dim = array.shape(1);
+  _dimension = ColumnDimension(array.shape(1), true);
   _buffer_info = array.request();
 }
 
