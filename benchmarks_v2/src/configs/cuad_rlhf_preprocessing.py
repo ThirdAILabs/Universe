@@ -59,7 +59,7 @@ def get_paragraphs(df_data):
         chunk
         for para in df_data["paragraphs"][0]["context"]
         # Some paragraphs are separated by '\n\n' which causes empty strings after split.
-        # This ensures that the character count is preserved. 
+        # This ensures that the character count is preserved.
         .replace("\n\n", " \n").split("\n")
         for chunk in chunk_text(para + "\n")
     ]
