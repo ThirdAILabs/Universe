@@ -12,6 +12,10 @@ CHUNK_THRESHOLD = 150
 def chunk_text(text: str):
     sentences = sent_tokenize(text)
 
+    # We want to split hte text into phrases while preserving the original number
+    # of characters in the text because answers in the cuad dataset reference a
+    # location in the text using the character offset. We need the character count
+    # to be consistent so that we can deterimine which phrase an answer occurs in.
     start = 0
     for i, _ in enumerate(sentences):
         end = start + text[start:].index(sentences[i]) + len(sentences[i])
@@ -54,7 +58,8 @@ def get_paragraphs(df_data):
     paras = [
         chunk
         for para in df_data["paragraphs"][0]["context"]
-        # Some paragraphs are separated by '\n\n' which causes empty strings after split
+        # Some paragraphs are separated by '\n\n' which causes empty strings after split.
+        # This ensures that the character count is preserved. 
         .replace("\n\n", " \n").split("\n")
         for chunk in chunk_text(para + "\n")
     ]

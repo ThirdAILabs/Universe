@@ -1,7 +1,7 @@
 import os
 import random
 import shutil
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
 from typing import List
 
@@ -17,34 +17,28 @@ class RlhfConfig(ABC):
     dataset_name = None
 
     @classmethod
-    @abstractmethod
     def prepare_data(cls, path_prefix: str):
         pass
 
     @classmethod
-    @abstractmethod
     def pretrain_model(cls, path_prefix: str) -> bolt.UniversalDeepTransformer:
         pass
 
     @classmethod
-    @abstractmethod
     def get_predictions(
         cls, path_prefix: str, model: bolt.UniversalDeepTransformer
     ) -> List[int]:
         pass
 
     @classmethod
-    @abstractmethod
     def get_labels(cls, path_prefix: str) -> List[List[int]]:
         pass
 
     @classmethod
-    @abstractmethod
     def rlhf(cls, path_prefix: str, model: bolt.UniversalDeepTransformer):
         pass
 
     @classmethod
-    @abstractmethod
     def cleanup(cls):
         pass
 
@@ -53,11 +47,10 @@ class WayfairRlhfConfig(RlhfConfig):
     config_name = "wayfair_rlhf"
     dataset = "wayfair"
 
-    unsupervised_data = "wayfair/trn_unsupervised_cleaned.csv"
-    test_data = "wayfair/test_queries_match_unsupervised_subsampled.csv"
+    unsupervised_data = "wayfair/rlhf/trn_unsupervised_cleaned.csv"
+    test_data = "wayfair/rlhf/test_queries_cleaned_subsampled.csv"
 
     @classmethod
-    @abstractmethod
     def pretrain_model(cls, path_prefix: str) -> bolt.UniversalDeepTransformer:
         model = bolt.UniversalDeepTransformer(
             data_types={
@@ -86,7 +79,6 @@ class WayfairRlhfConfig(RlhfConfig):
         return model
 
     @classmethod
-    @abstractmethod
     def get_predictions(
         cls, path_prefix: str, model: bolt.UniversalDeepTransformer
     ) -> np.ndarray:
@@ -96,13 +88,11 @@ class WayfairRlhfConfig(RlhfConfig):
         return list(map(lambda x: x[0][0], preds))
 
     @classmethod
-    @abstractmethod
     def get_labels(cls, path_prefix: str) -> List[List[int]]:
         df = pd.read_csv(os.path.join(path_prefix, cls.test_data))
         return [list(map(int, labels.split(";"))) for labels in df["PRODUCT_ID"]]
 
     @classmethod
-    @abstractmethod
     def rlhf(cls, path_prefix: str, model: bolt.UniversalDeepTransformer):
         catalogue_df = pd.read_csv(os.path.join(path_prefix, cls.unsupervised_data))
         labels_to_descriptions = defaultdict(list)
@@ -155,7 +145,6 @@ class CuadRlhfConfig(RlhfConfig):
     contract_paragraphs_filename = "paragraphs.csv"
 
     @classmethod
-    @abstractmethod
     def prepare_data(cls, path_prefix: str):
         if os.path.exists(cls.preprocessed_data_dir):
             shutil.rmtree(cls.preprocessed_data_dir)
@@ -173,7 +162,6 @@ class CuadRlhfConfig(RlhfConfig):
         )
 
     @classmethod
-    @abstractmethod
     def pretrain_model(cls, path_prefix: str) -> bolt.UniversalDeepTransformer:
         model = bolt.UniversalDeepTransformer(
             data_types={
@@ -204,7 +192,6 @@ class CuadRlhfConfig(RlhfConfig):
         return model
 
     @classmethod
-    @abstractmethod
     def get_predictions(
         cls, path_prefix: str, model: bolt.UniversalDeepTransformer
     ) -> List[int]:
@@ -253,7 +240,6 @@ class CuadRlhfConfig(RlhfConfig):
         return predictions
 
     @classmethod
-    @abstractmethod
     def get_labels(cls, path_prefix: str) -> List[List[int]]:
         labels = []
         for contract in os.listdir(cls.per_contract_data_dirname):
@@ -270,7 +256,6 @@ class CuadRlhfConfig(RlhfConfig):
         return labels
 
     @classmethod
-    @abstractmethod
     def rlhf(cls, path_prefix: str, model: bolt.UniversalDeepTransformer):
         association_data = pd.read_csv(cls.association_samples_filename)
 
@@ -297,6 +282,5 @@ class CuadRlhfConfig(RlhfConfig):
             )
 
     @classmethod
-    @abstractmethod
     def cleanup(cls):
         shutil.rmtree(cls.preprocessed_data_dir)
