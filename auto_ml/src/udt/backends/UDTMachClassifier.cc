@@ -562,10 +562,6 @@ void UDTMachClassifier::introduceDocuments(
   const std::vector<uint32_t> source_hashes =
       getNRandomHashes(num_source_hashes);
 
-  // TODO(david) check source hashes not 0, check that its not bigger than num
-  // hashes and that num_random_hashes + num_source_hashes and assign some set
-  // of random hashes based on the document
-
   for (const auto& batch : doc_samples_tensors) {
     // Note: using sparse inference here could cause issues because the
     // mach index sampler will only return nonempty buckets, which could
