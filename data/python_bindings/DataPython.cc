@@ -10,9 +10,12 @@
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <pybind11/attr.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <utils/Random.h>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -31,7 +34,16 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("columns"))
       .def("num_rows", &ColumnMap::numRows)
       .def("__getitem__", &ColumnMap::getColumn)
-      .def("columns", &ColumnMap::columns);
+      .def(
+          "__iter__",
+          [](const ColumnMap& columns) {
+            return py::make_iterator(columns.begin(), columns.end());
+          },
+          py::keep_alive<0, 1>())
+      .def("columns", &ColumnMap::columns)
+      .def("shuffle", &ColumnMap::shuffle,
+           py::arg("seed") = global_random::nextSeed())
+      .def("concat", &ColumnMap::concat, py::arg("other"));
 
   createColumnsSubmodule(dataset_submodule);
 

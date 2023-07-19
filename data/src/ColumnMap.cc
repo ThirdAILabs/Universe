@@ -4,9 +4,13 @@
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <algorithm>
 #include <cstdint>
 #include <exception>
+#include <numeric>
+#include <random>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::data {
@@ -18,7 +22,7 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
         "Cannot construct ColumnMap from empty set of columns.");
   }
 
-  std::optional<uint64_t> num_rows = std::nullopt;
+  std::optional<size_t> num_rows = std::nullopt;
   for (auto& [_, column] : _columns) {
     if (num_rows && column->numRows() != num_rows.value()) {
       throw std::invalid_argument(
@@ -27,18 +31,6 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
     num_rows = column->numRows();
   }
   _num_rows = num_rows.value();
-}
-
-std::vector<ColumnPtr> ColumnMap::selectColumns(
-    const std::vector<std::string>& column_names) const {
-  std::vector<ColumnPtr> output_columns;
-  output_columns.reserve(column_names.size());
-
-  for (const auto& name : column_names) {
-    output_columns.push_back(getColumn(name));
-  }
-
-  return output_columns;
 }
 
 template <typename T>
@@ -102,6 +94,31 @@ std::vector<std::string> ColumnMap::columns() const {
     columns.push_back(map_entry.first);
   }
   return columns;
+}
+
+void ColumnMap::shuffle(uint32_t seed) {
+  std::vector<size_t> permutation(numRows());
+  std::iota(permutation.begin(), permutation.end(), 0);
+  std::shuffle(permutation.begin(), permutation.end(), std::mt19937{seed});
+
+  for (auto& [_, column] : _columns) {
+    column->shuffle(permutation);
+  }
+}
+
+ColumnMap ColumnMap::concat(ColumnMap& other) {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+
+  for (auto [name, column] : _columns) {
+    new_columns[name] = column->concat(other.getColumn(name));
+  }
+
+  _columns.clear();
+  _num_rows = 0;
+  other._columns.clear();
+  other._num_rows = 0;
+
+  return ColumnMap(std::move(new_columns));
 }
 
 ColumnMap ColumnMap::createStringColumnMapFromFile(

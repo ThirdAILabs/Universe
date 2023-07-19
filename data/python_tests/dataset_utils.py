@@ -32,3 +32,20 @@ def verify_hash_distribution(all_hashes, output_range):
     expected_count = sum(hash_counts) / output_range
     for count in hash_counts:
         assert count / expected_count < 2 and count / expected_count > 0.5
+
+
+def get_ascending_column_map(rows, offset=0):
+    end = rows + offset
+    return data.ColumnMap(
+        {
+            "token": data.columns.TokenColumn(list(range(offset, end))),
+            "decimal": data.columns.DecimalColumn(list(range(offset, end))),
+            "token_array": data.columns.TokenArrayColumn(
+                [list(range(i, i + 4)) for i in range(offset, end)]
+            ),
+            "decimal_array": data.columns.DecimalArrayColumn(
+                [list(range(i, i + 4)) for i in range(offset, end)]
+            ),
+            "string": data.columns.StringColumn([str(i) for i in range(offset, end)]),
+        }
+    )
