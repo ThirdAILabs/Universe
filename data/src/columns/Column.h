@@ -78,25 +78,25 @@ class RowView {
 };
 
 template <typename T>
-class ArrayColumn : public Column {
+class ArrayColumnBase : public Column {
  public:
   virtual RowView<T> row(size_t row) const = 0;
 
-  virtual ~ArrayColumn() = default;
+  virtual ~ArrayColumnBase() = default;
 };
 
 template <typename T>
-using ArrayColumnPtr = std::shared_ptr<ArrayColumn<T>>;
+using ArrayColumnBasePtr = std::shared_ptr<ArrayColumnBase<T>>;
 
 template <typename T>
-class ValueColumn : public ArrayColumn<T> {
+class ValueColumnBase : public ArrayColumnBase<T> {
  public:
   virtual const T& value(size_t row) const = 0;
 
-  virtual ~ValueColumn() = default;
+  virtual ~ValueColumnBase() = default;
 };
 
 template <typename T>
-using ValueColumnPtr = std::shared_ptr<ValueColumn<T>>;
+using ValueColumnBasePtr = std::shared_ptr<ValueColumnBase<T>>;
 
 }  // namespace thirdai::data

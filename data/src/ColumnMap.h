@@ -19,10 +19,10 @@ class ColumnMap {
   uint64_t numRows() const { return _num_rows; }
 
   template <typename T>
-  ArrayColumnPtr<T> getArrayColumn(const std::string& name) const;
+  ArrayColumnBasePtr<T> getArrayColumn(const std::string& name) const;
 
   template <typename T>
-  ValueColumnPtr<T> getValueColumn(const std::string& name) const;
+  ValueColumnBasePtr<T> getValueColumn(const std::string& name) const;
 
   ColumnPtr getColumn(const std::string& name) const;
 

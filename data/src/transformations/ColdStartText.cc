@@ -128,9 +128,9 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns) const {
   std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
   std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
 
-  auto augmented_label_column = StringColumn::make(std::move(augmented_labels));
+  auto augmented_label_column = makeStringColumn(std::move(augmented_labels));
 
-  auto augmented_data_column = StringColumn::make(std::move(augmented_data));
+  auto augmented_data_column = makeStringColumn(std::move(augmented_data));
 
   std::unordered_map<std::string, ColumnPtr> new_columns;
   new_columns.emplace(_label_column_name, augmented_label_column);

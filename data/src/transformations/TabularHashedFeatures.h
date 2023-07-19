@@ -34,7 +34,7 @@ class TabularHashedFeatures : public Transformation {
         _use_pairgrams(use_pairgrams) {}
 
   ColumnMap apply(ColumnMap column_map) const final {
-    std::vector<ValueColumnPtr<uint32_t>> columns;
+    std::vector<ValueColumnBasePtr<uint32_t>> columns;
     // we hash the name of each column here so we can combine hashes later on
     // and have unique values across columns
     std::vector<uint32_t> column_name_hashes;
@@ -51,7 +51,7 @@ class TabularHashedFeatures : public Transformation {
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::vector<uint32_t> salted_unigrams;
       uint32_t col_num = 0;
-      for (const ValueColumnPtr<uint32_t>& column : columns) {
+      for (const auto& column : columns) {
         // TODO(david): it may be unnecessary to hash again but technically the
         // original uint32_t values may not be from the correct universal hash
         // distribution. We cast the uint32_t to char* so we can use murmur hash
@@ -83,7 +83,7 @@ class TabularHashedFeatures : public Transformation {
     }
 
     auto output_column =
-        TokenArrayColumn::make(std::move(tabular_hash_values), _output_range);
+        makeTokenArrayColumn(std::move(tabular_hash_values), _output_range);
 
     column_map.setColumn(_output_column_name, output_column);
 

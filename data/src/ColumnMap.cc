@@ -34,8 +34,8 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
 }
 
 template <typename T>
-ArrayColumnPtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ArrayColumn<T>>(getColumn(name));
+ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<ArrayColumnBase<T>>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ArrayColumn.");
@@ -43,16 +43,16 @@ ArrayColumnPtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
   return column;
 }
 
-template ArrayColumnPtr<uint32_t> ColumnMap::getArrayColumn(
+template ArrayColumnBasePtr<uint32_t> ColumnMap::getArrayColumn(
     const std::string&) const;
-template ArrayColumnPtr<float> ColumnMap::getArrayColumn(
+template ArrayColumnBasePtr<float> ColumnMap::getArrayColumn(
     const std::string&) const;
-template ArrayColumnPtr<std::string> ColumnMap::getArrayColumn(
+template ArrayColumnBasePtr<std::string> ColumnMap::getArrayColumn(
     const std::string&) const;
 
 template <typename T>
-ValueColumnPtr<T> ColumnMap::getValueColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ValueColumn<T>>(getColumn(name));
+ValueColumnBasePtr<T> ColumnMap::getValueColumn(const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<ValueColumnBase<T>>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ValueColumn.");
@@ -60,13 +60,13 @@ ValueColumnPtr<T> ColumnMap::getValueColumn(const std::string& name) const {
   return column;
 }
 
-template ValueColumnPtr<uint32_t> ColumnMap::getValueColumn(
+template ValueColumnBasePtr<uint32_t> ColumnMap::getValueColumn(
     const std::string&) const;
-template ValueColumnPtr<float> ColumnMap::getValueColumn(
+template ValueColumnBasePtr<float> ColumnMap::getValueColumn(
     const std::string&) const;
-template ValueColumnPtr<std::string> ColumnMap::getValueColumn(
+template ValueColumnBasePtr<std::string> ColumnMap::getValueColumn(
     const std::string&) const;
-template ValueColumnPtr<int64_t> ColumnMap::getValueColumn(
+template ValueColumnBasePtr<int64_t> ColumnMap::getValueColumn(
     const std::string&) const;
 
 ColumnPtr ColumnMap::getColumn(const std::string& name) const {
@@ -154,7 +154,7 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   std::unordered_map<std::string, ColumnPtr> column_map;
   for (size_t i = 0; i < columns.size(); i++) {
     column_map[std::string(header.at(i))] =
-        StringColumn::make(std::move(columns.at(i)));
+        makeStringColumn(std::move(columns.at(i)));
   }
 
   return ColumnMap(column_map);

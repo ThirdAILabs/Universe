@@ -122,7 +122,7 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
   }
 
   thirdai::data::ValueColumnPtr<std::string> augmented_data_column =
-      thirdai::data::StringColumn::make(std::move(samples));
+      thirdai::data::makeStringColumn(std::move(samples));
 
   std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
   new_columns.emplace(metadata->getLabelColumn(), label_column);

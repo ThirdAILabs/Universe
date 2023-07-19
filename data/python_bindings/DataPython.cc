@@ -85,20 +85,20 @@ std::vector<std::vector<T>> fromNumpy2D(const NumpyArray<T>& array) {
 
 auto tokenColumnFromNumpy(const NumpyArray<uint32_t>& array,
                           std::optional<size_t> dim) {
-  return TokenColumn::make(fromNumpy1D(array), dim);
+  return makeTokenColumn(fromNumpy1D(array), dim);
 }
 
 auto decimalColumnFromNumpy(const NumpyArray<float>& array) {
-  return DecimalColumn::make(fromNumpy1D(array));
+  return makeDecimalColumn(fromNumpy1D(array));
 }
 
 auto tokenArrayColumnFromNumpy(const NumpyArray<uint32_t>& array,
                                std::optional<size_t> dim) {
-  return TokenArrayColumn::make(fromNumpy2D(array), dim);
+  return makeTokenArrayColumn(fromNumpy2D(array), dim);
 }
 
 auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array) {
-  return DecimalArrayColumn::make(fromNumpy2D(array));
+  return makeDecimalArrayColumn(fromNumpy2D(array));
 }
 
 void createColumnsSubmodule(py::module_& dataset_submodule) {
@@ -112,51 +112,51 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
       .def_readonly("dim", &ColumnDimension::dim)
       .def_readonly("is_dense", &ColumnDimension::is_dense);
 
-  py::class_<TokenColumn, Column, std::shared_ptr<TokenColumn>>(
+  py::class_<ValueColumn<uint32_t>, Column, ValueColumnPtr<uint32_t>>(
       columns_submodule, "TokenColumn")
-      .def(py::init(&TokenColumn::make), py::arg("data"),
+      .def(py::init(&makeTokenColumn), py::arg("data"),
            py::arg("dim") = std::nullopt)
       .def(py::init(&tokenColumnFromNumpy), py::arg("data"),
            py::arg("dim") = std::nullopt)
-      .def(("__getitem__"), &TokenColumn::value)
-      .def("data", &TokenColumn::data);
+      .def(("__getitem__"), &ValueColumn<uint32_t>::value)
+      .def("data", &ValueColumn<uint32_t>::data);
 
-  py::class_<DecimalColumn, Column, std::shared_ptr<DecimalColumn>>(
+  py::class_<ValueColumn<float>, Column, ValueColumnPtr<float>>(
       columns_submodule, "DecimalColumn")
-      .def(py::init(&DecimalColumn::make), py::arg("data"))
+      .def(py::init(&makeDecimalColumn), py::arg("data"))
       .def(py::init(&decimalColumnFromNumpy), py::arg("data"))
-      .def(("__getitem__"), &DecimalColumn::value)
-      .def("data", &DecimalColumn::data);
+      .def(("__getitem__"), &ValueColumn<float>::value)
+      .def("data", &ValueColumn<float>::data);
 
-  py::class_<StringColumn, Column, std::shared_ptr<StringColumn>>(
+  py::class_<ValueColumn<std::string>, Column, ValueColumnPtr<std::string>>(
       columns_submodule, "StringColumn")
-      .def(py::init(&StringColumn::make), py::arg("data"))
-      .def("__getitem__", &StringColumn::value)
-      .def("data", &StringColumn::data);
+      .def(py::init(&makeStringColumn), py::arg("data"))
+      .def("__getitem__", &ValueColumn<std::string>::value)
+      .def("data", &ValueColumn<std::string>::data);
 
-  py::class_<TimestampColumn, Column, std::shared_ptr<TimestampColumn>>(
+  py::class_<ValueColumn<int64_t>, Column, ValueColumnPtr<int64_t>>(
       columns_submodule, "TimestampColumn")
-      .def(py::init(&TimestampColumn::make), py::arg("data"))
-      .def("__getitem__", &TimestampColumn::value)
-      .def("data", &TimestampColumn::data);
+      .def(py::init(&makeTimestampColumn), py::arg("data"))
+      .def("__getitem__", &ValueColumn<int64_t>::value)
+      .def("data", &ValueColumn<int64_t>::data);
 
-  py::class_<TokenArrayColumn, Column, std::shared_ptr<TokenArrayColumn>>(
+  py::class_<ArrayColumn<uint32_t>, Column, ArrayColumnPtr<uint32_t>>(
       columns_submodule, "TokenArrayColumn")
-      .def(py::init(&TokenArrayColumn::make), py::arg("data"),
+      .def(py::init(&makeTokenArrayColumn), py::arg("data"),
            py::arg("dim") = std::nullopt)
       .def(py::init(&tokenArrayColumnFromNumpy), py::arg("data"),
            py::arg("dim") = std::nullopt)
-      .def("__getitem__", &getRowNumpy<uint32_t, TokenArrayColumn>,
+      .def("__getitem__", &getRowNumpy<uint32_t, ArrayColumn<uint32_t>>,
            py::return_value_policy::reference_internal)
-      .def("data", &TokenArrayColumn::data);
+      .def("data", &ArrayColumn<uint32_t>::data);
 
-  py::class_<DecimalArrayColumn, Column, std::shared_ptr<DecimalArrayColumn>>(
+  py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
       columns_submodule, "DecimalArrayColumn")
-      .def(py::init(&DecimalArrayColumn::make), py::arg("data"))
+      .def(py::init(&makeDecimalArrayColumn), py::arg("data"))
       .def(py::init(&decimalArrayColumnFromNumpy), py::arg("data"))
-      .def("__getitem__", &getRowNumpy<float, DecimalArrayColumn>,
+      .def("__getitem__", &getRowNumpy<float, ArrayColumn<float>>,
            py::return_value_policy::reference_internal)
-      .def("data", &DecimalArrayColumn::data);
+      .def("data", &ArrayColumn<float>::data);
 }
 
 void createTransformationsSubmodule(py::module_& dataset_submodule) {
