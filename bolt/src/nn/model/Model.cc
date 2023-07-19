@@ -19,6 +19,7 @@
 #include <numeric>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -46,11 +47,24 @@ Model::Model(autograd::ComputationList inputs,
   _computation_order =
       autograd::getComputationOrder(_inputs, _outputs, _losses);
 
+  nameComputations(_inputs, _computation_order, _labels);
+
   _allocation_manager = AllocationManager(_computation_order);
 
+  std::unordered_set<std::string> op_names;
   std::unordered_set<ops::OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.insert(comp->op());
+    std::string name = comp->op()->name();
+
+    // Check if we have found a new op with the same name.
+    if (op_names.count(name) && !ops.count(comp->op())) {
+      throw std::invalid_argument(
+          "Found multiple Ops in model with the name '" + name +
+          "'. All ops in a model must have unique names. The name of the op "
+          "can be updated with `op.name = 'op_name'`.");
+    }
+    op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
 
@@ -150,6 +164,12 @@ autograd::ComputationList Model::computationOrder() const {
                    _computation_order.end());
   return all_comps;
 }
+
+autograd::ComputationList Model::computationOrderWithoutInputs() const {
+  return _computation_order;
+}
+
+const autograd::ComputationList& Model::inputs() const { return _inputs; }
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
@@ -321,6 +341,12 @@ void Model::disableSparseParameterUpdates() {
   }
 }
 
+void Model::enableSparseParameterUpdates() {
+  for (const auto& op : _ops) {
+    op->enableSparseParameterUpdates();
+  }
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
@@ -479,6 +505,39 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
 void Model::registerWithOps() {
   for (auto& op : _ops) {
     op->registerModel(weak_from_this());
+  }
+}
+
+void Model::nameComputations(autograd::ComputationList& inputs,
+                             autograd::ComputationList& comps,
+                             autograd::ComputationList& labels) {
+  uint32_t comp_count = 0;
+  auto next_name = [&comp_count]() {
+    return "tensor_" + std::to_string(++comp_count);
+  };
+  std::unordered_set<autograd::ComputationPtr> visited;
+  for (auto& input : inputs) {
+    // The same computation might be referenced multiple times in the inputs.
+    if (!visited.count(input)) {
+      input->setName(next_name());
+      visited.insert(input);
+    }
+  }
+  for (auto& comp : comps) {
+    if (visited.count(comp)) {
+      throw std::invalid_argument(
+          "A computation must not be used multiple times in the computation "
+          "graph.");
+    }
+    comp->setName(next_name());
+    visited.insert(comp);
+  }
+  // The same computation might be referenced multiple times in the labels.
+  for (auto& label : labels) {
+    if (!visited.count(label)) {
+      label->setName(next_name());
+      visited.insert(label);
+    }
   }
 }
 

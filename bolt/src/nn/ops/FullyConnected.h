@@ -47,6 +47,8 @@ class FullyConnected final
 
   void disableSparseParameterUpdates() final;
 
+  void enableSparseParameterUpdates() final;
+
   std::vector<std::vector<float>*> gradients() final;
 
   std::vector<std::vector<float>*> parameters() final;
@@ -120,6 +122,12 @@ class FullyConnected final
 
   void setSparsity(float sparsity, bool rebuild_hash_tables,
                    bool experimental_autotune);
+
+  uint32_t getRebuildHashTables() const { return _rebuild_hash_tables; }
+
+  uint32_t getReconstructHashFunctions() const {
+    return _reconstruct_hash_functions;
+  }
 
  private:
   FullyConnected(

@@ -19,6 +19,9 @@ class MachIndex {
                 entity_to_hashes,
             uint32_t num_buckets, uint32_t num_hashes);
 
+  MachIndex(uint32_t num_buckets, uint32_t num_hashes)
+      : _buckets(num_buckets), _num_hashes(num_hashes) {}
+
   static auto make(uint32_t num_buckets, uint32_t num_hashes,
                    uint32_t num_elements) {
     return std::make_shared<MachIndex>(num_buckets, num_hashes, num_elements);
@@ -48,8 +51,8 @@ class MachIndex {
    * instead of those just in the top K activations.
    */
   std::vector<std::pair<uint32_t, double>> decode(
-      const BoltVector& output, uint32_t min_num_eval_results,
-      uint32_t top_k_per_eval_aggregation) const;
+      const BoltVector& output, uint32_t top_k,
+      uint32_t num_buckets_to_eval) const;
 
   void erase(uint32_t entity);
 
@@ -83,6 +86,12 @@ class MachIndex {
 
  private:
   void verifyHash(uint32_t hash) const;
+
+  std::unordered_map<uint32_t, double> entityScoresSparse(
+      const BoltVector& output, uint32_t num_buckets_to_eval) const;
+
+  std::unordered_map<uint32_t, double> entityScoresDense(
+      const BoltVector& output, uint32_t num_buckets_to_eval) const;
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;

@@ -23,7 +23,7 @@ def train_model():
         },
     )
 
-    model.train(QUERY_FILE, metrics=["precision@1"])
+    model.train(QUERY_FILE, metrics=["precision@1"], verbose=False)
 
     model.evaluate(QUERY_FILE, metrics=["precision@1"], use_sparse_inference=True)
 
@@ -80,11 +80,10 @@ def get_association_samples():
 
 def compare_predictions(model, original_samples, acronym_samples):
     correct = 0
-    for original, acronym in zip(original_samples, acronym_samples):
-        original_pred = model.predict(original)[0][0]
-        acronym_pred = model.predict(acronym)[0][0]
-
-        if original_pred == acronym_pred:
+    original_preds = model.predict_batch(original_samples)
+    acronym_preds = model.predict_batch(acronym_samples)
+    for original_pred, acronym_pred in zip(original_preds, acronym_preds):
+        if original_pred[0][0] == acronym_pred[0][0]:
             correct += 1
 
     return correct / len(original_samples)
@@ -101,10 +100,40 @@ def test_associate_acronyms():
     print(matches_before_associate)
     assert matches_before_associate <= 0.5
 
-    model.associate(associations, 4, epochs=10, learning_rate=0.01)
+    model.associate(associations, n_buckets=4, epochs=10, learning_rate=0.01)
 
     matches_after_associate = compare_predictions(
         model, original_samples, acronym_samples
     )
     print(matches_after_associate)
+    assert matches_after_associate >= 0.9
+
+
+def test_associate_train_acronyms():
+    model = train_model()
+
+    original_samples, acronym_samples, associations = get_association_samples()
+
+    matches_before_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_before_associate)
+    assert matches_before_associate <= 0.5
+
+    model.associate_train(
+        filename=QUERY_FILE,
+        source_target_samples=associations,
+        n_buckets=4,
+        n_association_samples=4,
+        epochs=20,  # We need more epochs in this test because we don't do the same sample replication
+        learning_rate=0.01,
+        verbose=False,
+        batch_size=100,
+    )
+
+    matches_after_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+
+    print(matches_after_associate)  # Accuracy should be around 0.98-1.0
     assert matches_after_associate >= 0.9

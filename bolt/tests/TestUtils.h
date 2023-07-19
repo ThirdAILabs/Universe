@@ -55,6 +55,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
   void disableSparseParameterUpdates() final {}
 
+  void enableSparseParameterUpdates() final {}
+
   std::vector<std::vector<float>*> gradients() final { return {}; }
 
   std::vector<std::vector<float>*> parameters() final { return {}; }

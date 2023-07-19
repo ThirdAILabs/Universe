@@ -4,12 +4,13 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
-from .documents import Document, DocumentManager, Reference
-from .models import Mach
+from .documents import CSV, Document, DocumentManager, Reference
+from .models import CancelState, Mach
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -88,9 +89,9 @@ class NeuralDB:
         self._user_id = user_id
         self._savable_state: Optional[State] = None
 
-    def from_scratch(self) -> None:
+    def from_scratch(self, **kwargs) -> None:
         self._savable_state = State(
-            model=Mach(id_col="id", query_col="query"),
+            model=Mach(id_col="id", query_col="query", **kwargs),
             logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
 
@@ -120,11 +121,18 @@ class NeuralDB:
     def from_udt(
         self,
         udt: bolt.UniversalDeepTransformer,
+        csv: Optional[str] = None,
+        csv_id_column: Optional[str] = None,
+        csv_strong_columns: Optional[List[str]] = None,
+        csv_weak_columns: Optional[List[str]] = None,
+        csv_reference_columns: Optional[List[str]] = None,
     ):
-        udt.clear_index()
+        if csv is None:
+            udt.clear_index()
+
         udt.enable_rlhf()
         udt.set_mach_sampling_threshold(0.01)
-        input_dim, emb_dim, out_dim = udt.model_dims()
+        fhr, emb_dim, out_dim = udt.model_dims()
         data_types = udt.data_types()
 
         if len(data_types) != 2:
@@ -149,13 +157,36 @@ class NeuralDB:
             id_col=id_col,
             id_delimiter=id_delimiter,
             query_col=query_col,
-            input_dim=input_dim,
-            hidden_dim=emb_dim,
+            fhr=fhr,
+            embedding_dimension=emb_dim,
             extreme_output_dim=out_dim,
         )
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
         self._savable_state = State(model=model, logger=logger)
+
+        if csv is not None:
+            if (
+                csv_id_column is None
+                or csv_strong_columns is None
+                or csv_weak_columns is None
+                or csv_reference_columns is None
+            ):
+                error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
+                error_msg += " - `csv_id_column`\n"
+                error_msg += " - `csv_strong_columns`\n"
+                error_msg += " - `csv_weak_columns`\n"
+                error_msg += " - `csv_reference_columns`\n"
+                raise ValueError(error_msg)
+            csv_doc = CSV(
+                path=csv,
+                id_column=csv_id_column,
+                strong_columns=csv_strong_columns,
+                weak_columns=csv_weak_columns,
+                reference_columns=csv_reference_columns,
+            )
+            self._savable_state.documents.add([csv_doc])
+            self._savable_state.model.set_n_ids(csv_doc.size)
 
     def in_session(self) -> bool:
         return self._savable_state is not None
@@ -176,10 +207,13 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
+        use_weak_columns: bool = False,
+        num_buckets_to_sample: int = 16,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = None,
         on_irrecoverable_error: Callable = None,
+        cancel_state: CancelState = None,
     ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
@@ -195,8 +229,11 @@ class NeuralDB:
             self._savable_state.model.index_documents(
                 intro_documents=intro_and_train.intro,
                 train_documents=intro_and_train.train,
+                num_buckets_to_sample=num_buckets_to_sample,
                 should_train=train,
+                use_weak_columns=use_weak_columns,
                 on_progress=on_progress,
+                cancel_state=cancel_state,
             )
 
             self._savable_state.logger.log(
@@ -242,31 +279,39 @@ class NeuralDB:
                 return []
             raise e
 
+    def _get_text(self, result_id) -> str:
+        return self._savable_state.documents.reference(result_id).text
+
     def text_to_result(self, text: str, result_id: int) -> None:
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query_id_pairs=[(text, result_id)],
+            query_id_para=[
+                (text, upvote_id, self._get_text(result_id))
+                for upvote_id in self._savable_state.documents.reference(
+                    result_id
+                ).upvote_ids
+            ],
         )
 
     def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
+        query_id_para = [
+            (query, upvote_id, self._get_text(result_id))
+            for query, result_id in text_id_pairs
+            for upvote_id in self._savable_state.documents.reference(
+                result_id
+            ).upvote_ids
+        ]
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            query_id_pairs=text_id_pairs,
+            query_id_para=query_id_para,
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
-        if strength == Strength.Weak:
-            top_k = 3
-        elif strength == Strength.Medium:
-            top_k = 5
-        elif strength == Strength.Strong:
-            top_k = 7
-        else:
-            top_k = 7
+        top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -278,14 +323,7 @@ class NeuralDB:
     def associate_batch(
         self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
     ):
-        if strength == Strength.Weak:
-            top_k = 3
-        elif strength == Strength.Medium:
-            top_k = 5
-        elif strength == Strength.Strong:
-            top_k = 7
-        else:
-            top_k = 7
+        top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -293,6 +331,16 @@ class NeuralDB:
             text_pairs=text_pairs,
             top_k=top_k,
         )
+
+    def _get_associate_top_k(self, strength):
+        if strength == Strength.Weak:
+            return 3
+        elif strength == Strength.Medium:
+            return 5
+        elif strength == Strength.Strong:
+            return 7
+        else:
+            return 7
 
     def supervised_train(
         self,
@@ -304,6 +352,52 @@ class NeuralDB:
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
             data_source=SupDataSource(doc_manager, query_col, data),
+            learning_rate=learning_rate,
+            epochs=epochs,
+        )
+
+    def get_associate_samples(self):
+        logs = self._savable_state.logger.get_logs()
+
+        associate_logs = logs[logs["action"] == "associate"]
+        associate_samples = []
+        for _, row in associate_logs.iterrows():
+            for source, target in row["args"]["pairs"]:
+                associate_samples.append((source, target))
+
+        return associate_samples
+
+    def get_upvote_samples(self):
+        logs = self._savable_state.logger.get_logs()
+
+        upvote_associate_samples = []
+        upvote_logs = logs[logs["action"] == "upvote"]
+        for _, row in upvote_logs.iterrows():
+            if "query_id_para" in row["args"]:
+                for source, _, target in row["args"]["query_id_para"]:
+                    upvote_associate_samples.append((source, target))
+
+        return upvote_associate_samples
+
+    def get_rlhf_samples(self):
+        return self.get_associate_samples() + self.get_upvote_samples()
+
+    def retrain(
+        self,
+        text_pairs: List[Tuple[str, str]] = [],
+        learning_rate: float = 0.0001,
+        epochs: int = 3,
+        strength: Strength = Strength.Strong,
+    ):
+        doc_manager = self._savable_state.documents
+
+        if not text_pairs:
+            text_pairs = self.get_rlhf_samples()
+
+        self._savable_state.model.retrain(
+            balancing_data=doc_manager.get_data_source(),
+            source_target_pairs=text_pairs,
+            n_buckets=self._get_associate_top_k(strength),
             learning_rate=learning_rate,
             epochs=epochs,
         )

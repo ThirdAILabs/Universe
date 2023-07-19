@@ -186,4 +186,9 @@ std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
 
   return batches;
 }
+
+void DatasetLoader::manuallyAddToBuffer(std::vector<BoltVector>&& vectors) {
+  _buffer.insert(std::move(vectors));
+}
+
 }  // namespace thirdai::dataset

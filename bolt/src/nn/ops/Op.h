@@ -105,6 +105,13 @@ class Op {
   virtual void disableSparseParameterUpdates() = 0;
 
   /**
+   * Enables sparse parameter updates for updateParameters in the op. This is
+   * used for distributed to enable sparse updates once distributed training is
+   * complete.
+   */
+  virtual void enableSparseParameterUpdates() = 0;
+
+  /**
    * Returns references to all of the gradients of the op. Used for distributed
    * training.
    */
@@ -140,6 +147,8 @@ class Op {
    * unique name.
    */
   const std::string& name() const { return _name; }
+
+  void setName(std::string name) { _name = std::move(name); }
 
   virtual ~Op() = default;
 

@@ -137,7 +137,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       nn_submodule, "HashTable")
       .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
       .def_static("load", &hashtable::SampledHashTable::load,
-                  py::arg("filename"));
+                  py::arg("filename"))
+      .def(getPickleFunction<hashtable::SampledHashTable>());
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")

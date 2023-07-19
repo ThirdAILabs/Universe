@@ -484,3 +484,14 @@ def test_data_types():
         assert isinstance(data_types["cat"], bolt.types.categorical)
         assert data_types["cat"].delimiter == ":"
         assert isinstance(data_types["text"], bolt.types.text)
+
+
+def test_top_k_predictions():
+    model = make_simple_trained_model(integer_label=False)
+    predictions = sorted(model.predict(single_sample()), reverse=True)
+    for topk in range(1, len(predictions)):
+        topk_predictions = model.predict(single_sample(), top_k=topk)
+        check_equal = all(
+            [predictions[i] == topk_predictions[1][i] for i in range(topk)]
+        )
+        assert check_equal

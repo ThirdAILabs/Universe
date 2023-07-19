@@ -1,5 +1,6 @@
 #include "BoltV2NNPython.h"
 #include "PybindUtils.h"
+#include <bolt/python_bindings/Porting.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -23,6 +24,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <utils/Random.h>
 #include <optional>
 #include <stdexcept>
 
@@ -108,7 +110,11 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("train_steps", &model::Model::trainSteps)
       .def("override_train_steps", &model::Model::overrideTrainSteps,
            py::arg("train_steps"))
+      .def("params", &modelParams)
+      .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
+      .def("enable_sparse_parameter_updates",
+           &model::Model::enableSparseParameterUpdates)
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)
@@ -162,7 +168,7 @@ void defineOps(py::module_& nn) {
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op")
       .def("dim", &ops::Op::dim)
-      .def("name", &ops::Op::name);
+      .def_property("name", &ops::Op::name, &ops::Op::setName);
 
   py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
       nn, "FullyConnected")
@@ -215,7 +221,8 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
-           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+           py::arg("seed") = global_random::nextSeed())
       .def("__call__", &ops::RobeZ::apply)
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
@@ -261,7 +268,7 @@ void defineOps(py::module_& nn) {
       .def("__call__", &ops::Concatenate::apply);
 
   py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
-      .def(py::init(&ops::LayerNorm::make))
+      .def(py::init(py::overload_cast<>(&ops::LayerNorm::make)))
       .def("__call__", &ops::LayerNorm::apply);
 
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")

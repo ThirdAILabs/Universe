@@ -52,6 +52,10 @@ class EmbeddingLayer {
     _disable_sparse_parameter_updates = true;
   }
 
+  void enableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = false;
+  };
+
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
   void saveWithOptimizer(bool should_save_optimizer) {
     _should_save_optimizer = should_save_optimizer;
@@ -64,6 +68,33 @@ class EmbeddingLayer {
   std::unique_ptr<EmbeddingLayer> duplicateWithNewReduction(
       const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input) const;
+
+  uint64_t numEmbeddingLookups() const { return _num_lookups_per_token; }
+
+  uint64_t lookupSize() const { return _lookup_size; }
+
+  uint64_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+
+  std::string reduction() const {
+    switch (_reduction) {
+      case EmbeddingReductionType::AVERAGE:
+        return "avg";
+      case EmbeddingReductionType::SUM:
+        return "sum";
+      case EmbeddingReductionType::CONCATENATION:
+        return "concat";
+      default:
+        return "";
+    }
+  }
+
+  std::optional<uint64_t> numTokensPerInput() const {
+    return _num_tokens_per_input;
+  }
+
+  uint64_t updateChunkSize() const { return _update_chunk_size; }
+
+  uint32_t hashSeed() const { return _hash_fn.seed(); }
 
   ~EmbeddingLayer() = default;
 

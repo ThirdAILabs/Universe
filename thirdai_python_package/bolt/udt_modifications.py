@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import thirdai
@@ -35,11 +35,11 @@ def _create_data_source(path):
 
 
 def _process_validation_and_options(
-    validation: Optional[bolt.Validation],
-    batch_size: Optional[int],
-    max_in_memory_batches: Optional[int],
-    verbose: bool,
-    logging_interval: Optional[int],
+    validation: Optional[bolt.Validation] = None,
+    batch_size: Optional[int] = None,
+    max_in_memory_batches: Optional[int] = None,
+    verbose: bool = True,
+    logging_interval: Optional[int] = None,
     shuffle_reservoir_size: int = 64000,
 ):
     train_options = bolt.TrainOptions()
@@ -80,6 +80,7 @@ def modify_udt():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
         shuffle_reservoir_size: int = 64000,
+        comm=None,
     ):
         data_source = _create_data_source(filename)
 
@@ -102,6 +103,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     def wrapped_train_on_data_source(
@@ -115,6 +117,7 @@ def modify_udt():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
+        comm=None,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -134,6 +137,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     def wrapped_evaluate(
@@ -186,6 +190,8 @@ def modify_udt():
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
         logging_interval: Optional[int] = None,
+        comm=None,
+        shuffle_reservoir_size: int = 64000,
     ):
         data_source = _create_data_source(filename)
 
@@ -195,6 +201,7 @@ def modify_udt():
             max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
             logging_interval=logging_interval,
+            shuffle_reservoir_size=shuffle_reservoir_size,
         )
 
         return original_cold_start(
@@ -209,6 +216,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     def wrapped_cold_start_on_data_source(
@@ -224,6 +232,7 @@ def modify_udt():
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
         logging_interval: Optional[int] = None,
+        comm=None,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -245,6 +254,7 @@ def modify_udt():
             val_metrics=val_metrics,
             callbacks=callbacks,
             options=train_options,
+            comm=comm,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")
@@ -275,6 +285,7 @@ def modify_mach_udt():
         num_buckets_to_sample: Optional[int] = None,
         num_random_hashes: int = 0,
         fast_approximation: bool = False,
+        verbose: bool = True,
     ):
         data_source = _create_data_source(filename)
 
@@ -286,6 +297,7 @@ def modify_mach_udt():
             num_buckets_to_sample,
             num_random_hashes,
             fast_approximation,
+            verbose,
         )
 
     delattr(bolt.UniversalDeepTransformer, "introduce_documents")
@@ -294,6 +306,65 @@ def modify_mach_udt():
     bolt.UniversalDeepTransformer.introduce_documents_on_data_source = (
         original_introduce_documents
     )
+
+    def wrapped_associate_train(
+        self,
+        filename: str,
+        source_target_samples: List[Tuple[Dict[str, str], Dict[str, str]]],
+        n_buckets: int,
+        n_association_samples: int = 3,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        metrics: List[str] = [],
+        batch_size: int = None,
+        verbose=True,
+    ):
+        return self.associate_train_data_source(
+            balancing_data=_create_data_source(filename),
+            source_target_samples=source_target_samples,
+            n_buckets=n_buckets,
+            n_association_samples=n_association_samples,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=metrics,
+            options=_process_validation_and_options(
+                batch_size=batch_size,
+                verbose=verbose,
+            )[-1],
+        )
+
+    def wrapped_associate_cold_start(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        source_target_samples: List[Tuple[Dict[str, str], Dict[str, str]]],
+        n_buckets: int,
+        n_association_samples: int = 3,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        metrics: List[str] = [],
+        batch_size: int = None,
+        verbose=True,
+    ):
+        return self.associate_cold_start_data_source(
+            balancing_data=_create_data_source(filename),
+            strong_column_names=strong_column_names,
+            weak_column_names=weak_column_names,
+            source_target_samples=source_target_samples,
+            n_buckets=n_buckets,
+            n_association_samples=n_association_samples,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=metrics,
+            options=_process_validation_and_options(
+                batch_size=batch_size,
+                verbose=verbose,
+            )[-1],
+        )
+
+    bolt.UniversalDeepTransformer.associate_train = wrapped_associate_train
+    bolt.UniversalDeepTransformer.associate_cold_start = wrapped_associate_cold_start
 
 
 def modify_graph_udt():

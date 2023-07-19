@@ -1,9 +1,10 @@
+import os
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
 from ray.air.checkpoint import Checkpoint
 from ray.air.config import RunConfig, ScalingConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
-from ray.train.torch import TorchConfig
+from thirdai._thirdai import logging
 
 if TYPE_CHECKING:
     from ray.data.preprocessor import Preprocessor
@@ -63,7 +64,7 @@ class BoltTrainer(DataParallelTrainer):
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
         *,
-        backend_config: TorchConfig = None,
+        backend_config=None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
         run_config: Optional[RunConfig] = None,

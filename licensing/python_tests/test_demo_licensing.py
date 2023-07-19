@@ -2,6 +2,7 @@ import os
 
 import pytest
 import thirdai
+from download_dataset_fixtures import download_clinc_dataset
 from licensing_utils import deactivate_license_at_start_of_demo_test
 
 # These lines use a hack where we can import functions from different test files
@@ -16,6 +17,7 @@ pytestmark = [pytest.mark.release]
 # I created this key on Keygen, it should be good only for the small census
 # dataset (the first 10 lines of the normal census training set)
 SMALL_CENSUS_KEY = "HKRW-4R97-KRLY-TMVY-79TW-3FHH-NRHR-HLYC"
+CLINC_DATASET_KEY = "PRCH-AAVV-3ART-3WY9-PM9H-KULT-PRW3-C399"
 
 
 def test_census_key_works_on_small_census():
@@ -63,3 +65,99 @@ def test_census_demo_key_fails_on_query_reformulation():
         model.train(temp_filename)
 
     os.remove(temp_filename)
+
+
+def simple_mach_model(target_column="label"):
+    return bolt.UniversalDeepTransformer(
+        data_types={
+            "query": bolt.types.text(),
+            target_column: bolt.types.categorical(),
+        },
+        target=target_column,
+        n_target_classes=10,
+        integer_target=True,
+        options={"extreme_classification": True, "extreme_output_dim": 100},
+    )
+
+
+def test_introduce_document_fails_on_demo_license():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+
+    temp_filename = "temp_data.txt"
+    with open(temp_filename, "w") as file:
+        file.writelines(["query,label\n", "input1,1\n", "input2,2\n"])
+
+    model = simple_mach_model()
+
+    model.clear_index()
+
+    with pytest.raises(
+        RuntimeError,
+        match="This dataset is not authorized under this license.",
+    ):
+        model.introduce_documents(
+            temp_filename, strong_column_names=[], weak_column_names=["query"]
+        )
+
+    with pytest.raises(
+        RuntimeError,
+        match="The license was found to be invalid: You must have a full license to perform this operation.",
+    ):
+        model.introduce_document(
+            {"text": "some text"},
+            strong_column_names=[],
+            weak_column_names=["text"],
+            label=1000,
+        )
+
+    with pytest.raises(
+        RuntimeError,
+        match="The license was found to be invalid: You must have a full license to perform this operation.",
+    ):
+        model.introduce_label(
+            [{"text": "some text"}],
+            label=1000,
+        )
+
+
+def test_introduce_documents_works_on_clinc(download_clinc_dataset):
+    thirdai.licensing.activate(CLINC_DATASET_KEY)
+
+    train_data, _, _ = download_clinc_dataset
+
+    model = simple_mach_model(target_column="category")
+    model.clear_index()
+
+    model.introduce_documents(
+        train_data, strong_column_names=[], weak_column_names=["text"]
+    )
+
+
+def test_get_set_index_fails_on_demo_license():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+
+    model = simple_mach_model()
+
+    with pytest.raises(
+        RuntimeError,
+        match="The license was found to be invalid: You must have a full license to perform this operation.",
+    ):
+        model.get_index()
+
+    with pytest.raises(
+        RuntimeError,
+        match="The license was found to be invalid: You must have a full license to perform this operation.",
+    ):
+        model.set_index(None)
+
+
+def test_upvote_fails_on_demo_license():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+
+    model = simple_mach_model()
+
+    with pytest.raises(
+        RuntimeError,
+        match="The license was found to be invalid: You must have a full license to perform this operation.",
+    ):
+        model.upvote([])

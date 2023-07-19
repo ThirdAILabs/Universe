@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <utils/Random.h>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
@@ -12,7 +13,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
-      uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
+      uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+      uint32_t seed = global_random::nextSeed());
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -30,6 +32,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   void disableSparseParameterUpdates() final;
 
+  void enableSparseParameterUpdates() final;
+
   std::vector<std::vector<float>*> gradients() final;
 
   std::vector<std::vector<float>*> parameters() final;
@@ -45,11 +49,13 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
       const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input);
 
+  const auto& kernel() const { return _kernel; }
+
  private:
   RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
         uint64_t log_embedding_block_size, const std::string& reduction,
         std::optional<uint64_t> num_tokens_per_input,
-        uint64_t update_chunk_size);
+        uint64_t update_chunk_size, uint32_t seed);
 
   RobeZ(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
       : Op(name), _kernel(std::move(kernel)) {}
