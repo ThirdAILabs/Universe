@@ -39,7 +39,9 @@ class ArrayColumn : public ArrayColumnBase<T> {
 
   void shuffle(const std::vector<size_t>& permutation) final;
 
-  std::shared_ptr<Column> concat(std::shared_ptr<Column>&& other) final;
+  ColumnPtr concat(ColumnPtr&& other) final;
+
+  std::pair<ColumnPtr, ColumnPtr> split(size_t offset) final;
 
   const auto& data() const { return _data; }
 

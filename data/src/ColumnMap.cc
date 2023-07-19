@@ -109,16 +109,41 @@ void ColumnMap::shuffle(uint32_t seed) {
 ColumnMap ColumnMap::concat(ColumnMap& other) {
   std::unordered_map<std::string, ColumnPtr> new_columns;
 
-  for (auto [name, column] : _columns) {
+  for (auto& [name, column] : _columns) {
     new_columns[name] = column->concat(other.getColumn(name));
   }
 
-  _columns.clear();
-  _num_rows = 0;
-  other._columns.clear();
-  other._num_rows = 0;
+  clear();
+  other.clear();
 
   return ColumnMap(std::move(new_columns));
+}
+
+std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t offset) {
+  if (offset >= numRows()) {
+    throw std::invalid_argument(
+        "invalid split offset " + std::to_string(offset) +
+        " for ColumnMap with " + std::to_string(numRows()) + " rows.");
+  }
+
+  std::unordered_map<std::string, ColumnPtr> front_columns;
+  std::unordered_map<std::string, ColumnPtr> back_columns;
+
+  for (auto& [name, column] : _columns) {
+    auto [front, back] = column->split(offset);
+    front_columns[name] = front;
+    back_columns[name] = back;
+  }
+
+  clear();
+
+  return {ColumnMap(std::move(front_columns)),
+          ColumnMap(std::move(back_columns))};
+}
+
+void ColumnMap::clear() {
+  _columns.clear();
+  _num_rows = 0;
 }
 
 ColumnMap ColumnMap::createStringColumnMapFromFile(

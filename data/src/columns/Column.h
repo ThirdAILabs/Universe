@@ -35,6 +35,9 @@ struct ColumnDimension {
   ColumnDimension(size_t dim, size_t is_dense) : dim(dim), is_dense(is_dense) {}
 };
 
+class Column;
+using ColumnPtr = std::shared_ptr<Column>;
+
 class Column {
  public:
   virtual size_t numRows() const = 0;
@@ -43,7 +46,9 @@ class Column {
 
   virtual void shuffle(const std::vector<size_t>& permutation) = 0;
 
-  virtual std::shared_ptr<Column> concat(std::shared_ptr<Column>&& other) = 0;
+  virtual ColumnPtr concat(ColumnPtr&& other) = 0;
+
+  virtual std::pair<ColumnPtr, ColumnPtr> split(size_t offset) = 0;
 
   virtual ~Column() = default;
 };

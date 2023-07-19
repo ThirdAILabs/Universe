@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace thirdai::data {
@@ -35,6 +38,23 @@ inline std::vector<T> concatVectors(std::vector<T>&& a, std::vector<T>&& b) {
   }
 
   return new_vec;
+}
+
+template <typename T>
+inline std::pair<std::vector<T>, std::vector<T>> splitVector(
+    std::vector<T>&& vector, size_t offset) {
+  if (offset >= vector.size()) {
+    throw std::invalid_argument(
+        "invalid split offset " + std::to_string(offset) +
+        " for column of length " + std::to_string(vector.size()) + ".");
+  }
+
+  std::vector<T> front(std::make_move_iterator(vector.begin()),
+                       std::make_move_iterator(vector.begin() + offset));
+  std::vector<T> back(std::make_move_iterator(vector.begin()) + offset,
+                      std::make_move_iterator(vector.end()));
+
+  return std::make_pair(std::move(front), std::move(back));
 }
 
 }  // namespace thirdai::data

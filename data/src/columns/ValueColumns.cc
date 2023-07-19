@@ -9,8 +9,7 @@ void ValueColumn<T>::shuffle(const std::vector<size_t>& permutation) {
 }
 
 template <typename T>
-std::shared_ptr<Column> ValueColumn<T>::concat(
-    std::shared_ptr<Column>&& other) {
+ColumnPtr ValueColumn<T>::concat(ColumnPtr&& other) {
   if (_dimension != other->dimension()) {
     throw std::invalid_argument(
         "Can only concatenate columns with the same dimension.");
@@ -32,6 +31,20 @@ std::shared_ptr<Column> ValueColumn<T>::concat(
   other_concrete->_dimension.reset();
 
   return new_column;
+}
+
+template <typename T>
+std::pair<ColumnPtr, ColumnPtr> ValueColumn<T>::split(size_t offset) {
+  auto [front, back] = splitVector(std::move(_data), offset);
+
+  auto front_col =
+      ValueColumnPtr<T>(new ValueColumn<T>(std::move(front), _dimension));
+  auto back_col =
+      ValueColumnPtr<T>(new ValueColumn<T>(std::move(back), _dimension));
+
+  _dimension.reset();
+
+  return {front_col, back_col};
 }
 
 template <>

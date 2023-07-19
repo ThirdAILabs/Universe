@@ -40,10 +40,12 @@ void createDataSubmodule(py::module_& dataset_submodule) {
             return py::make_iterator(columns.begin(), columns.end());
           },
           py::keep_alive<0, 1>())
+      .def("__len__", &ColumnMap::numRows)
       .def("columns", &ColumnMap::columns)
       .def("shuffle", &ColumnMap::shuffle,
            py::arg("seed") = global_random::nextSeed())
-      .def("concat", &ColumnMap::concat, py::arg("other"));
+      .def("concat", &ColumnMap::concat, py::arg("other"))
+      .def("split", &ColumnMap::split, py::arg("offset"));
 
   createColumnsSubmodule(dataset_submodule);
 

@@ -40,6 +40,10 @@ class ColumnMap {
 
   ColumnMap concat(ColumnMap& other);
 
+  std::pair<ColumnMap, ColumnMap> split(size_t offset);
+
+  void clear();
+
   static ColumnMap createStringColumnMapFromFile(
       const dataset::DataSourcePtr& source, char delimiter);
 

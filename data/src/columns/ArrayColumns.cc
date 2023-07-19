@@ -1,5 +1,6 @@
 #include "ArrayColumns.h"
 #include "ColumnUtils.h"
+#include <data/src/columns/Column.h>
 #include <memory>
 
 namespace thirdai::data {
@@ -13,8 +14,7 @@ template class ArrayColumn<uint32_t>;
 template class ArrayColumn<float>;
 
 template <typename T>
-std::shared_ptr<Column> ArrayColumn<T>::concat(
-    std::shared_ptr<Column>&& other) {
+ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {
   if (_dimension != other->dimension()) {
     throw std::invalid_argument(
         "Can only concatenate columns with the same dimension.");
@@ -29,13 +29,27 @@ std::shared_ptr<Column> ArrayColumn<T>::concat(
   auto new_data =
       concatVectors(std::move(_data), std::move(other_concrete->_data));
 
-  auto new_column = std::shared_ptr<ArrayColumn>(
-      new ArrayColumn<T>(std::move(new_data), _dimension));
+  auto new_column =
+      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), _dimension));
 
   _dimension.reset();
   other_concrete->_dimension.reset();
 
   return new_column;
+}
+
+template <typename T>
+std::pair<ColumnPtr, ColumnPtr> ArrayColumn<T>::split(size_t offset) {
+  auto [front, back] = splitVector(std::move(_data), offset);
+
+  auto front_col =
+      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(front), _dimension));
+  auto back_col =
+      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(back), _dimension));
+
+  _dimension.reset();
+
+  return {front_col, back_col};
 }
 
 template <>

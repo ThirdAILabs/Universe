@@ -49,3 +49,9 @@ def get_ascending_column_map(rows, offset=0):
             "string": data.columns.StringColumn([str(i) for i in range(offset, end)]),
         }
     )
+
+
+def check_column_maps_are_equal(column_map_a, column_map_b):
+    assert len(column_map_a.columns()) == len(column_map_b.columns())
+    for name, column in column_map_a:
+        assert column.data() == column_map_b[name].data()
