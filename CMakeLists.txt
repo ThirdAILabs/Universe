@@ -323,6 +323,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
+    bolt/src/nn/ops/RobeZ.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
@@ -333,6 +334,9 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/neuron_index/LshIndex.cc
+    bolt/src/neuron_index/RandomSampler.cc
+    bolt/src/neuron_index/MachNeuronIndex.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
@@ -340,6 +344,8 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/PrecisionAtK.cc
     bolt/src/train/metrics/RecallAtK.cc
     bolt/src/train/metrics/FMeasure.cc
+    bolt/src/train/metrics/MachPrecision.cc
+    bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc
@@ -359,7 +365,6 @@ set(THIRDAI_SOURCES
     bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/loss_functions/LossFunctions.cc
@@ -383,7 +388,9 @@ set(THIRDAI_SOURCES
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
-    dataset/src/featurizers/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextContextFeaturizer.cc
+    dataset/src/featurizers/llm/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextClassificationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
@@ -401,12 +408,12 @@ set(THIRDAI_SOURCES
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
     # telemetry/src/PrometheusClient.cc
-    new_dataset/src/featurization_pipeline/transformations/Binning.cc
-    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
-    new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
-    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
-    new_dataset/src/featurization_pipeline/ColumnMap.cc
-    new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
+    data/src/transformations/Binning.cc
+    data/src/transformations/StringHash.cc
+    data/src/transformations/TextTokenizer.cc
+    data/src/transformations/ColdStartText.cc
+    data/src/transformations/TransformationList.cc
+    data/src/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
@@ -468,14 +475,14 @@ pybind11_add_module(
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
   bolt/python_bindings/NumpyConversions.cc
+  bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
-  new_dataset/python_bindings/FeaturizationPython.cc
+  data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/src/embedding_prototype/TextEmbeddingModel.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc

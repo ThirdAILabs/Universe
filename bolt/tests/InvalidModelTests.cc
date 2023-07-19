@@ -27,8 +27,9 @@ TEST(InvalidModelTests, OutputInLossWithDependentOps) {
   CHECK_MODEL_EXCEPTION(
       model::Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
                          /* losses= */ {loss}),
-      "Outputs used in loss functions must not be inputs to any further ops. "
-      "Found output 'tensor_2' with a dependent op.");
+      "Computations used in loss functions must not be inputs to any further "
+      "ops. Found computation that is used in a loss function and as an input "
+      "to another computation.");
 }
 
 TEST(InvalidModelTests, AllOutputsUsedInLoss) {
@@ -43,7 +44,7 @@ TEST(InvalidModelTests, AllOutputsUsedInLoss) {
   CHECK_MODEL_EXCEPTION(
       model::Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
                          /* losses= */ {loss}),
-      "Specified output 'tensor_4' is not found in the computation graph "
+      "Model contains an output that is not found in the computation graph "
       "created from traversing backward from the specified loss functions.");
 }
 
@@ -71,11 +72,11 @@ TEST(InvalidModelTests, UnusedInput) {
 
   auto loss = MockLoss::make({comp_1});
 
-  CHECK_MODEL_EXCEPTION(
-      model::Model::make(/* inputs= */ {input_1, input_2},
-                         /* outputs= */ {comp_1},
-                         /* losses= */ {loss}),
-      "Input 'tensor_2' was not used by any computation in the model.");
+  CHECK_MODEL_EXCEPTION(model::Model::make(/* inputs= */ {input_1, input_2},
+                                           /* outputs= */ {comp_1},
+                                           /* losses= */ {loss}),
+                        "The input passed at index 1 was not used by any "
+                        "computation in the model.");
 }
 
 TEST(InvalidModelTests, MissingInput) {
@@ -89,8 +90,8 @@ TEST(InvalidModelTests, MissingInput) {
   CHECK_MODEL_EXCEPTION(
       model::Model::make(/* inputs= */ {input_1}, /* outputs= */ {comp_1},
                          /* losses= */ {loss}),
-      "Model computation depends on input 'tensor_2' that is not present in "
-      "the list of inputs to the model.");
+      "Model computation depends on an input that is not present in the list "
+      "of inputs to the model.");
 }
 
 }  // namespace thirdai::bolt::nn::tests

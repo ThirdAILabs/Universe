@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, dataset
+from thirdai import bolt, bolt_v2, dataset
 
 pytestmark = [pytest.mark.unit]
 
 
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
 OUTPUT_DIM = 100
+NUM_HASHES = 7
 
 
 def make_simple_test_file(invalid_data=False):
@@ -26,7 +27,12 @@ def make_simple_test_file(invalid_data=False):
 
 
 def train_simple_mach_udt(
-    invalid_data=False, embedding_dim=256, use_bias=True, rlhf_args={}
+    invalid_data=False,
+    embedding_dim=256,
+    use_bias=True,
+    rlhf_args={},
+    mach_sampling_threshold=0.2,
+    output_dim=OUTPUT_DIM,
 ):
     make_simple_test_file(invalid_data=invalid_data)
 
@@ -41,13 +47,17 @@ def train_simple_mach_udt(
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
-            "extreme_output_dim": OUTPUT_DIM,
-            "use_bias": use_bias,
+            "extreme_output_dim": output_dim,
+            "hidden_bias": use_bias,
+            "output_bias": use_bias,
             **rlhf_args,
+            "mach_sampling_threshold": mach_sampling_threshold,
         },
     )
 
-    model.train(SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001)
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
 
     os.remove(SIMPLE_TEST_FILE)
 
@@ -100,14 +110,7 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-def train_on_scifact(download_scifact_dataset, coldstart):
-    (
-        unsupervised_file,
-        supervised_trn,
-        supervised_tst,
-        n_target_classes,
-    ) = download_scifact_dataset
-
+def scifact_model(n_target_classes):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -118,6 +121,18 @@ def train_on_scifact(download_scifact_dataset, coldstart):
         integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
+    return model
+
+
+def train_on_scifact(download_scifact_dataset, coldstart):
+    (
+        unsupervised_file,
+        supervised_trn,
+        supervised_tst,
+        n_target_classes,
+    ) = download_scifact_dataset
+
+    model = scifact_model(n_target_classes=n_target_classes)
 
     if coldstart:
         metrics = model.cold_start(
@@ -152,12 +167,19 @@ def train_on_scifact(download_scifact_dataset, coldstart):
     return model, metrics, supervised_tst
 
 
-def test_mach_udt_on_scifact(download_scifact_dataset):
-    model, metrics, supervised_tst = train_on_scifact(
-        download_scifact_dataset, coldstart=True
-    )
+@pytest.fixture(scope="session")
+def train_mach_on_scifact_with_cold_start(download_scifact_dataset):
+    return train_on_scifact(download_scifact_dataset, coldstart=True)
+
+
+def test_mach_udt_on_scifact(train_mach_on_scifact_with_cold_start):
+    _, metrics, _ = train_mach_on_scifact_with_cold_start
 
     assert metrics["train_precision@1"][-1] > 0.45
+
+
+def test_mach_udt_on_scifact_save_load(train_mach_on_scifact_with_cold_start):
+    model, _, supervised_tst = train_mach_on_scifact_with_cold_start
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
@@ -172,6 +194,31 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     assert before_save_precision == after_save_precision
 
     os.remove(save_loc)
+
+
+def test_mach_udt_on_scifact_model_porting(
+    train_mach_on_scifact_with_cold_start, download_scifact_dataset
+):
+    _, _, _, n_classes = download_scifact_dataset
+    model, _, supervised_tst = train_mach_on_scifact_with_cold_start
+
+    before_porting_precision = evaluate_model(model, supervised_tst)
+
+    new_model = scifact_model(n_target_classes=n_classes)
+
+    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_model._set_model(new_bolt_model)
+
+    new_model.set_index(model.get_index())
+
+    # Check that the accuracy matches in the ported model.
+    assert before_porting_precision == evaluate_model(new_model, supervised_tst)
+
+    # Check that predictions match in the ported model.
+    test_df = pd.read_csv(supervised_tst)
+    batch = [{"QUERY": text} for text in test_df["QUERY"]]
+
+    assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
 def test_mach_udt_label_too_large():
@@ -223,6 +270,22 @@ def test_mach_udt_decode_params():
     model.set_decode_params(1, OUTPUT_DIM)
 
     assert len(model.predict({"text": "something"})) == 1
+
+
+def test_mach_udt_topk_predict():
+    model = train_simple_mach_udt()
+
+    model.set_decode_params(1, 5)
+
+    assert len(model.predict({"text": "something"})) == 1
+
+    assert len(model.predict({"text": "something"}, top_k=2)) == 2
+
+    with pytest.raises(
+        ValueError,
+        match=r"Cannot return more results than the model is trained to predict. Model currently can predict one of 3 classes.",
+    ):
+        model.predict({"text": "something"}, top_k=4)
 
 
 def test_mach_udt_introduce_and_forget():
@@ -307,7 +370,8 @@ def test_mach_udt_introduce_document():
     )
 
 
-def test_mach_udt_introduce_documents():
+@pytest.mark.parametrize("fast_approximation", [True, False])
+def test_mach_udt_introduce_documents(fast_approximation):
     model = train_simple_mach_udt()
 
     new_docs = "NEW_DOCS.csv"
@@ -320,35 +384,111 @@ def test_mach_udt_introduce_documents():
         new_docs,
         strong_column_names=["title"],
         weak_column_names=["description"],
+        fast_approximation=fast_approximation,
     )
 
     os.remove(new_docs)
 
 
 def test_mach_udt_hash_based_methods():
-    model = train_simple_mach_udt()
+    # Set mach_sampling_threshold = 1.0 to ensure that we use MACH index for
+    # active neuron selection.
+    model = train_simple_mach_udt(mach_sampling_threshold=1.0)
 
-    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    hashes = model.predict_hashes(
+        {"text": "testing hash based methods"},
+        sparse_inference=False,
+        force_non_empty=False,
+    )
     assert len(hashes) == 7
 
-    new_hash_set = set([93, 94, 95, 96, 97, 98, 99])
+    # All hashes in new_hash_set represent non-empty buckets since they are
+    # the hashes of an entity. This is important since we're using MACH index
+    # for active neuron selection.
+    model.introduce_label([{"text": "text that will map to different buckets"}], 1000)
+    new_hash_set = set(model.get_index().get_entity_hashes(1000))
     assert hashes != new_hash_set
 
     for _ in range(5):
         model.train_with_hashes(
-            [{"text": "testing hash based methods", "label": "93 94 95 96 97 98 99"}],
+            [
+                {
+                    "text": "testing hash based methods",
+                    "label": " ".join(map(str, new_hash_set)),
+                }
+            ],
             learning_rate=0.01,
         )
 
     new_hashes = model.predict_hashes({"text": "testing hash based methods"})
     assert set(new_hashes) == new_hash_set
 
+    # Now set mach_sampling_threshold = 0.0 to ensure that we use LSH index for
+    # active neuron selection.
+    model = train_simple_mach_udt(mach_sampling_threshold=0.0)
+
+    hashes = model.predict_hashes({"text": "testing hash based methods"})
+    assert len(hashes) == 7
+
+    # Hashes are empty buckets. This is fine since we are using LSH index for
+    # active neuron selection.
+    empty_hashes = [
+        i for i in range(100) if len(model.get_index().get_hash_to_entities(i)) == 0
+    ]
+    new_hash_set = set(empty_hashes[:7])
+    assert hashes != new_hash_set
+
+    for _ in range(10):
+        model.train_with_hashes(
+            [
+                {
+                    "text": "testing hash based methods",
+                    "label": " ".join(map(str, new_hash_set)),
+                }
+            ],
+            learning_rate=0.01,
+        )
+
+    new_hashes = model.predict_hashes(
+        {"text": "testing hash based methods"},
+        sparse_inference=False,
+        force_non_empty=False,
+    )
+    assert set(new_hashes) == new_hash_set
+
+
+def test_mach_output_correctness():
+    model = train_simple_mach_udt(output_dim=50)
+
+    # Suppose the label corresponding to the given text is 2.
+    predicted_hashes = model.predict_hashes(
+        {"text": "testing output correctness"},
+        force_non_empty=True,
+    )
+
+    mach_index = model.get_index()
+
+    original_hashes = mach_index.get_entity_hashes(2)
+
+    expected_ratio = len(set(predicted_hashes) & set(original_hashes)) / len(
+        original_hashes
+    )
+
+    num_correct_buckets = model.output_correctness(
+        [{"text": "testing output correctness"}], labels=[2]
+    )[0]
+
+    current_ratio = num_correct_buckets / (mach_index.num_hashes())
+
+    assert expected_ratio == current_ratio
+
 
 def test_mach_save_load_get_set_index():
     model = train_simple_mach_udt()
+    metrics = ["recall@5", "precision@5"]
 
     make_simple_test_file()
-    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+    metrics_before = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
     index = model.get_index()
     save_loc = "index.mach"
@@ -358,12 +498,9 @@ def test_mach_save_load_get_set_index():
     model.clear_index()
     model.set_index(index)
 
-    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=["categorical_accuracy"])
+    metrics_after = model.evaluate(SIMPLE_TEST_FILE, metrics=metrics)
 
-    assert (
-        metrics_before["val_categorical_accuracy"]
-        == metrics_after["val_categorical_accuracy"]
-    )
+    assert metrics_before == metrics_after
 
     os.remove(save_loc)
 
@@ -411,11 +548,8 @@ def test_mach_without_bias():
     hidden_layer = ops[0]  # hidden layer
     output_layer = ops[1]  # output layer
 
-    hidden_bias_all_zeros = np.all(hidden_layer.biases == 0)
-    output_bias_all_zeros = np.all(output_layer.biases == 0)
-
-    assert hidden_bias_all_zeros, "Error: Hidden layer biases should be all zeros."
-    assert not output_bias_all_zeros, "Error: All output layer biases are zeros."
+    assert np.all(hidden_layer.biases == 0)
+    assert np.all(output_layer.biases == 0)
 
 
 def test_load_balancing():
@@ -430,7 +564,7 @@ def test_load_balancing():
     )
 
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes(sample)
+    hash_locs = model.predict_hashes(sample, force_non_empty=False)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
@@ -475,6 +609,63 @@ def test_load_balancing():
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
 
 
+def test_mach_sparse_inference():
+    """
+    This test checks that if we create a mach index that with a number of non
+    empty buckets that puts it under the theshold for mach index sampling, only the
+    non empty buckets are returned by sparse inference. It then checks that the
+    returned buckets are updated as the index is modified, and then finally
+    checks that it no longer uses mach sampling after the index sufficient non
+    empty buckets.
+    """
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30]}, output_range=OUTPUT_DIM, num_hashes=1
+        )
+    )
+
+    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30])
+
+    model.set_index(
+        dataset.MachIndex(
+            {1: [10], 2: [20], 3: [30], 4: [40]},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 30, 40])
+
+    model.forget(label=3)
+
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert set(output.active_neurons[0]) == set([10, 20, 40])
+
+    # This is above the threshold for mach index sampling, so it should revert back to LSH
+    model.set_index(
+        dataset.MachIndex(
+            {i * 10: [i] for i in range(OUTPUT_DIM // 2)},
+            output_range=OUTPUT_DIM,
+            num_hashes=1,
+        )
+    )
+
+    # When we set an index with 50% sparsity it will autotune the sampling, it
+    # will decide to not use any sort of sampling for this level of sparsity and
+    # so the output should be dense.
+    output = model._get_model().forward([input_vec], use_sparsity=True)[0]
+    assert output.active_neurons == None
+    assert output.activations.shape == (1, OUTPUT_DIM)
+
+
 def test_associate():
     model = train_simple_mach_udt(
         rlhf_args={
@@ -514,3 +705,120 @@ def test_associate():
     new_intersection = len(new_target_hashes.intersection(new_source_hashes))
 
     assert new_intersection > original_intersection
+
+
+def test_upvote():
+    model = train_simple_mach_udt(
+        rlhf_args={
+            "rlhf": True,
+            "rlhf_balancing_docs": 100,
+            "rlhf_balancing_samples_per_doc": 10,
+        }
+    )
+
+    target_sample = {"text": "random sample text"}
+    model.introduce_label([target_sample], label=200)
+
+    source_sample = {"text": "tomato"}
+    model.introduce_label([source_sample], label=300)
+
+    predicted_label = model.predict(source_sample)[0][0]
+    for _ in range(10):
+        model.upvote([(source_sample, 300)], learning_rate=0.01)
+        predicted_label = model.predict(source_sample)[0][0]
+        if predicted_label != 200:
+            break
+
+    assert predicted_label != 200
+
+    for _ in range(10):
+        model.upvote([(source_sample, 200)], learning_rate=0.01)
+        predicted_label = model.predict(source_sample)[0][0]
+        if predicted_label == 200:
+            break
+
+    assert predicted_label == 200
+
+
+def test_enable_rlhf():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
+    ):
+        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+    model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
+
+    make_simple_test_file()
+
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
+
+    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+
+
+def regularized_introduce_helper(model, num_random_hashes):
+    """Returns an array counting the number of hashes in each bucket after
+    introducing three identical samples"""
+
+    for label in range(3):
+        model.introduce_label(
+            [{"text": "some text"}],
+            label,
+            num_buckets_to_sample=None,
+            num_random_hashes=num_random_hashes,
+        )
+
+    index = model.get_index()
+    load = np.zeros(OUTPUT_DIM, dtype=np.int32)
+    for i in range(len(load)):
+        load[i] = len(index.get_hash_to_entities(i))
+
+    return load
+
+
+def test_introduce_hash_regularization():
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    # without any regularization or balancing, introducing 3 labels with the
+    # same representative sample should yield 3 sets of identical hashes
+    load = regularized_introduce_helper(model, num_random_hashes=0)
+    assert np.sum(load > 0) == NUM_HASHES
+
+    model.clear_index()
+
+    # when 2 of the 7 hashes in every new doc are random there should be more
+    # than NUM_HASHES non-zeroes in the index's load
+    load = regularized_introduce_helper(model, num_random_hashes=2)
+    assert np.sum(load > 0) > NUM_HASHES
+
+
+def test_udt_mach_train_batch():
+    model = train_simple_mach_udt()
+
+    model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)
+
+
+def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        ValueError,
+        match=r"Sampling from fewer buckets than num_hashes is not supported. If you'd like to introduce using fewer hashes, please reset the number of hashes for the index.",
+    ):
+        model.introduce_label(
+            [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
+        )
+
+    new_index = dataset.MachIndex(num_hashes=NUM_HASHES - 1, output_range=OUTPUT_DIM)
+
+    model.set_index(new_index)
+
+    model.introduce_label(
+        [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
+    )

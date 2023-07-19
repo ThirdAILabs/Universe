@@ -4,8 +4,10 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -56,7 +58,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -67,20 +70,22 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
       uint32_t epochs, uint32_t batch_size,
       std::optional<uint32_t> max_in_memory_batches = std::nullopt,
-      const std::vector<std::string>& train_metrics = {},
+      const metrics::InputMetrics& train_metrics = {},
       const dataset::DatasetLoaderPtr& validation_data_loader = nullptr,
-      const std::vector<std::string>& validation_metrics = {},
+      const metrics::InputMetrics& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   /**
    * Performs evaluation on the model using the given validation data and
@@ -96,8 +101,13 @@ class Trainer {
 
   metrics::History validate_with_dataset_loader(
       const dataset::DatasetLoaderPtr& data,
-      const std::vector<std::string>& metrics = {}, bool use_sparsity = false,
+      const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
+
+  nn::model::ModelPtr getModel() { return _model; }
+  // Synchronizes the outer epoch count maintained by the distributed framework
+  // with the epoch count maintained within Bolt.
+  void incrementEpochCount() { _epoch++; }
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -124,6 +134,13 @@ class Trainer {
    * Invokes the autotuner for rehash and rebuild based on the size of the
    * dataset.
    */
+
+  /**
+   * Returns a formatted log line for function call
+   */
+  std::string formatFuncCallLogLine(const std::string& func_call,
+                                    uint32_t batches, int64_t time);
+
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
   // TODO(Nicholas): These are just wrappers to convert the datasets to tensors.

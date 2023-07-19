@@ -137,7 +137,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       nn_submodule, "HashTable")
       .def("save", &hashtable::SampledHashTable::save, py::arg("filename"))
       .def_static("load", &hashtable::SampledHashTable::load,
-                  py::arg("filename"));
+                  py::arg("filename"))
+      .def(getPickleFunction<hashtable::SampledHashTable>());
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
@@ -615,7 +616,7 @@ That's all for now, folks! More docs coming soon :)
            "this manually after setting the gradients of the wrapped model.")
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
-           py::arg("train_data"), py::arg("train_labels"),
+           py::arg("all_datasets"),
            "Sets the current train data and labels the wrapper class uses for "
            "computeAndStoreBatchGradients. We need this method instead of just "
            "passing in a single pair of training data and training labels at "
@@ -652,7 +653,9 @@ That's all for now, folks! More docs coming soon :)
            py::arg("should_save_optimizer"))
       .def("update_learning_rate",
            &thirdai::bolt::DistributedTrainingWrapper::updateLearningRate,
-           py::arg("learning_rate"));
+           py::arg("learning_rate"))
+      .def("increment_epoch_count",
+           &DistributedTrainingWrapper::incrementEpochCount);
 
   createLossesSubmodule(nn_submodule);
 }

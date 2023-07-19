@@ -9,7 +9,11 @@ import os
 
 import numpy as np
 import pytest
-from distributed_utils import mnist_distributed_split, ray_two_node_cluster_config
+from distributed_utils import (
+    check_model_parameters_match,
+    mnist_distributed_split,
+    ray_two_node_cluster_config,
+)
 from download_dataset_fixtures import download_mnist_dataset
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
@@ -37,15 +41,6 @@ def get_mnist_model():
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
 
     return model
-
-
-def check_model_parameters_match(distributed_model):
-    model_0 = distributed_model.get_model(0)
-    model_1 = distributed_model.get_model(1)
-
-    for op_0, op_1 in zip(model_0.ops(), model_1.ops()):
-        assert np.allclose(op_0.weights, op_1.weights)
-        assert np.allclose(op_0.biases, op_1.biases)
 
 
 def train_distributed_bolt_v2(ray_cluster_config, train_files, test_file):

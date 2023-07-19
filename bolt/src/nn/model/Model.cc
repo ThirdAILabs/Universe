@@ -19,6 +19,7 @@
 #include <numeric>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -26,7 +27,8 @@ namespace thirdai::bolt::nn::model {
 
 Model::Model(autograd::ComputationList inputs,
              autograd::ComputationList outputs,
-             std::vector<loss::LossPtr> losses)
+             std::vector<loss::LossPtr> losses,
+             autograd::ComputationList additional_labels)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -39,15 +41,30 @@ Model::Model(autograd::ComputationList inputs,
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
+  _labels.insert(_labels.end(), additional_labels.begin(),
+                 additional_labels.end());
 
   _computation_order =
       autograd::getComputationOrder(_inputs, _outputs, _losses);
 
+  nameComputations(_inputs, _computation_order, _labels);
+
   _allocation_manager = AllocationManager(_computation_order);
 
+  std::unordered_set<std::string> op_names;
   std::unordered_set<ops::OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.insert(comp->op());
+    std::string name = comp->op()->name();
+
+    // Check if we have found a new op with the same name.
+    if (op_names.count(name) && !ops.count(comp->op())) {
+      throw std::invalid_argument(
+          "Found multiple Ops in model with the name '" + name +
+          "'. All ops in a model must have unique names. The name of the op "
+          "can be updated with `op.name = 'op_name'`.");
+    }
+    op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
 
@@ -56,11 +73,13 @@ Model::Model(autograd::ComputationList inputs,
   verifyAllowedOutputDim();
 }
 
-std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
-                                   autograd::ComputationList outputs,
-                                   std::vector<loss::LossPtr> losses) {
+std::shared_ptr<Model> Model::make(
+    autograd::ComputationList inputs, autograd::ComputationList outputs,
+    std::vector<loss::LossPtr> losses,
+    autograd::ComputationList additional_labels) {
   auto model = std::shared_ptr<Model>(
-      new Model(std::move(inputs), std::move(outputs), std::move(losses)));
+      new Model(std::move(inputs), std::move(outputs), std::move(losses),
+                std::move(additional_labels)));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -146,6 +165,12 @@ autograd::ComputationList Model::computationOrder() const {
   return all_comps;
 }
 
+autograd::ComputationList Model::computationOrderWithoutInputs() const {
+  return _computation_order;
+}
+
+const autograd::ComputationList& Model::inputs() const { return _inputs; }
+
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
 const autograd::ComputationList& Model::labels() const { return _labels; }
@@ -197,6 +222,10 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
+void Model::overrideTrainSteps(uint32_t train_steps) {
+  _train_steps = train_steps;
+}
+
 std::vector<uint32_t> Model::inputDims() const {
   std::vector<uint32_t> dims;
   for (const auto& input : _inputs) {
@@ -224,12 +253,110 @@ std::vector<std::vector<float>*> Model::gradients() const {
   return grads;
 }
 
+std::vector<std::vector<float>*> Model::parameters() const {
+  std::vector<std::vector<float>*> params;
+
+  for (const auto& op : _ops) {
+    auto op_params = op->parameters();
+    params.insert(params.end(), op_params.begin(), op_params.end());
+  }
+
+  return params;
+}
+
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = 0;
+  for (const auto* value : values) {
+    total_dim += value->size();
+  }
+  return total_dim;
+}
+
+std::pair<const float*, uint64_t> concatenateValues(
+    const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  float* combined_values = new float[total_dim];
+  uint64_t offset = 0;
+  for (const auto* value : values) {
+    std::copy(value->data(), value->data() + value->size(),
+              combined_values + offset);
+    offset += value->size();
+  }
+
+  return {combined_values, total_dim};
+}
+
+void setValues(const std::vector<std::vector<float>*>& values,
+               const float* concatenated_values, uint64_t flattened_dim) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  if (total_dim != flattened_dim) {
+    std::stringstream error;
+    error << "Expected " << total_dim
+          << " parameters in setValues, but received " << flattened_dim
+          << " parameters.";
+    throw std::invalid_argument(error.str());
+  }
+
+  uint64_t offset = 0;
+  for (auto* value : values) {
+    std::copy(concatenated_values + offset,
+              concatenated_values + offset + value->size(), value->data());
+    offset += value->size();
+  }
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+  return concatenateValues(gradients());
+}
+
+std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
+  return concatenateValues(parameters());
+}
+
+void Model::setFlattenedGradients(const float* concatenated_values,
+                                  uint64_t flattened_dim) const {
+  setValues(gradients(), concatenated_values, flattened_dim);
+}
+
+void Model::setFlattenedParameters(const float* concatenated_values,
+                                   uint64_t flattened_dim) const {
+  setValues(parameters(), concatenated_values, flattened_dim);
+  /*
+   * Here, we are re-building the hash tables again, as the older weights
+   * seems to be redundant, when we all-reduce the weights while using
+   * distributed.
+   */
+  for (const auto& op : _ops) {
+    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+      fc->reBuildHashFunction();
+    }
+  }
+}
+
+void Model::disableSparseParameterUpdates() {
+  for (const auto& op : _ops) {
+    op->disableSparseParameterUpdates();
+  }
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->freezeHashTables(insert_labels_if_not_found);
+    }
+  }
+}
+
+void Model::unfreezeHashTables() {
+  for (auto& op : _ops) {
+    if (auto fc = ops::FullyConnected::cast(op)) {
+      // insert_labels_if_not_found will have no effect on non output layers
+      // because they will not have access to labels.
+      fc->unfreezeHashTables();
     }
   }
 }
@@ -372,6 +499,39 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
 void Model::registerWithOps() {
   for (auto& op : _ops) {
     op->registerModel(weak_from_this());
+  }
+}
+
+void Model::nameComputations(autograd::ComputationList& inputs,
+                             autograd::ComputationList& comps,
+                             autograd::ComputationList& labels) {
+  uint32_t comp_count = 0;
+  auto next_name = [&comp_count]() {
+    return "tensor_" + std::to_string(++comp_count);
+  };
+  std::unordered_set<autograd::ComputationPtr> visited;
+  for (auto& input : inputs) {
+    // The same computation might be referenced multiple times in the inputs.
+    if (!visited.count(input)) {
+      input->setName(next_name());
+      visited.insert(input);
+    }
+  }
+  for (auto& comp : comps) {
+    if (visited.count(comp)) {
+      throw std::invalid_argument(
+          "A computation must not be used multiple times in the computation "
+          "graph.");
+    }
+    comp->setName(next_name());
+    visited.insert(comp);
+  }
+  // The same computation might be referenced multiple times in the labels.
+  for (auto& label : labels) {
+    if (!visited.count(label)) {
+      label->setName(next_name());
+      visited.insert(label);
+    }
   }
 }
 

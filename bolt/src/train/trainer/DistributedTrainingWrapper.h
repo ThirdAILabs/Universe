@@ -34,9 +34,8 @@ class DistributedTrainingWrapper {
 
   uint64_t numBatches();
 
-  void setDatasets(const dataset::BoltDatasetList& train_data,
-                   const dataset::BoltDatasetPtr& train_labels) {
-    _train_data = convertLabeldData(train_data, train_labels);
+  void setDatasets(const dataset::BoltDatasetList& all_datasets) {
+    _train_data = convertLabeledData(all_datasets);
   }
 
   void freezeHashTables(bool insert_labels_if_not_found) {
@@ -62,13 +61,13 @@ class DistributedTrainingWrapper {
     _learning_rate = learning_rate;
   }
 
- private:
-  std::optional<LabeledDataset> convertLabeldData(
-      const dataset::BoltDatasetList& data,
-      const dataset::BoltDatasetPtr& labels);
+  // Synchronizes the outer epoch count maintained by the distributed framework
+  // with the epoch count maintained within Bolt.
+  void incrementEpochCount() { _trainer.incrementEpochCount(); }
 
-  static uint64_t sumFlattenedDims(
-      const std::vector<std::vector<float>*>& grads);
+ private:
+  std::optional<LabeledDataset> convertLabeledData(
+      const dataset::BoltDatasetList& all_datasets);
 
   bool shouldLogMetrics() const {
     return _worker_id == 0 && _logging_interval &&
@@ -89,6 +88,7 @@ class DistributedTrainingWrapper {
 
   std::optional<LabeledDataset> _train_data;
   std::optional<LabeledDataset> _validation_data;
+  Trainer _trainer;
 };
 
 using DistributedTrainingWrapperPtr =

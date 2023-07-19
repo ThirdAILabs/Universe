@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 namespace thirdai::automl::config {
 
@@ -43,8 +44,9 @@ class ArgumentMap {
   const auto& arguments() const { return _arguments; }
 
  private:
-  std::unordered_map<std::string,
-                     std::variant<bool, uint32_t, float, std::string>>
+  std::unordered_map<
+      std::string,
+      std::variant<bool, uint32_t, float, std::string, std::vector<int32_t>>>
       _arguments;
 };
 

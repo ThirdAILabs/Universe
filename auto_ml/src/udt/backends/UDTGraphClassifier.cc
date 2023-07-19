@@ -1,11 +1,11 @@
 #include "UDTGraphClassifier.h"
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/Concatenate.h>
-#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
-#include <auto_ml/src/udt/Validation.h>
+#include <bolt/src/nn/ops/RobeZ.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 
@@ -35,27 +35,23 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
 
 py::object UDTGraphClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<ValidationDataSource>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<CallbackPtr>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
-      data, /* shuffle = */ true);
+      data, /* shuffle = */ true, /* shuffle_config= */ options.shuffle_config);
 
-  ValidationDatasetLoader validation_dataset_loader;
-  if (validation) {
-    validation_dataset_loader = ValidationDatasetLoader(
-        _dataset_manager->indexAndGetLabeledDatasetLoader(
-            validation->first, /* shuffle = */ false),
-        validation->second);
+  dataset::DatasetLoaderPtr val_dataset_loader;
+  if (val_data) {
+    val_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+        val_data, /* shuffle = */ false);
   }
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
-                            validation_dataset_loader, batch_size_opt,
-                            max_in_memory_batches, metrics, callbacks, verbose,
-                            logging_interval);
+                            train_metrics, val_dataset_loader, val_metrics,
+                            callbacks, options, comm);
 }
 
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -97,7 +93,7 @@ ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
   auto neighbor_token_input = bolt::nn::ops::Input::make(input_dims.at(1));
 
   auto embedding_1 =
-      bolt::nn::ops::Embedding::make(
+      bolt::nn::ops::RobeZ::make(
           /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
           /* log_embedding_block_size = */ 20, /* reduction = */ "average")
           ->apply(neighbor_token_input);

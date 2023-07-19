@@ -90,11 +90,15 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
 }
 
 dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
-    const dataset::DataSourcePtr& data_source, bool shuffle) {
+    const dataset::DataSourcePtr& data_source, bool shuffle,
+    std::optional<dataset::DatasetShuffleConfig> shuffle_config) {
+  if (!shuffle_config.has_value()) {
+    shuffle_config = dataset::DatasetShuffleConfig();
+  }
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-  return std::make_unique<dataset::DatasetLoader>(csv_data_source,
-                                                  _labeled_featurizer,
-                                                  /* shuffle= */ shuffle);
+  return std::make_unique<dataset::DatasetLoader>(
+      csv_data_source, _labeled_featurizer,
+      /* shuffle= */ shuffle, shuffle_config.value());
 }
 
 TensorList RecurrentDatasetFactory::featurizeInput(const MapInput& sample) {
