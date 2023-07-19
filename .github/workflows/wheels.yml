@@ -61,7 +61,8 @@ jobs:
         working-directory: C:\vcpkg
         run: |
           $Env:VCPKG_BUILD_TYPE = 'release'
-          $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static' 
+          $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static'
+          $Env:VCPKG_ROOT = 'C:\'
           .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
         shell: powershell
