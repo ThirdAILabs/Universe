@@ -465,10 +465,8 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured "
-        "with a "
-        "single text input column and target column. The current model "
-        "is "
+        "Introducing documents can only be used when UDT is configured with a "
+        "single text input column and target column. The current model is "
         "configured with " +
         std::to_string(_dataset_factory->inputDataTypes().size()) +
         " input columns.");
@@ -511,12 +509,25 @@ void UDTMachClassifier::updateSamplingStrategy() {
   }
 }
 
+std::vector<uint32_t> UDTMachClassifier::getNRandomHashes(
+    uint32_t num_random_hashes) const {
+  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  std::mt19937 rand(global_random::nextSeed());
+  std::vector<uint32_t> hashes;
+  for (uint32_t i = 0; i < num_random_hashes; i++) {
+    hashes.push_back(int_dist(rand));
+  }
+  return hashes;
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+    uint32_t num_random_hashes, uint32_t num_source_hashes,
+    bool fast_approximation, bool verbose) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -548,6 +559,13 @@ void UDTMachClassifier::introduceDocuments(
 
   bolt::train::python::CtrlCCheck ctrl_c_check;
 
+  const std::vector<uint32_t> source_hashes =
+      getNRandomHashes(num_source_hashes);
+
+  // TODO(david) check source hashes not 0, check that its not bigger than num
+  // hashes and that num_random_hashes + num_source_hashes and assign some set
+  // of random hashes based on the document
+
   for (const auto& batch : doc_samples_tensors) {
     // Note: using sparse inference here could cause issues because the
     // mach index sampler will only return nonempty buckets, which could
@@ -566,7 +584,7 @@ void UDTMachClassifier::introduceDocuments(
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes);
+                                  num_random_hashes, source_hashes);
     _mach_label_block->index()->insert(doc, hashes);
 
     ctrl_c_check();
@@ -617,7 +635,8 @@ struct CompareBuckets {
 
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) const {
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes,
+    const std::vector<uint32_t>& source_hashes) const {
   const auto& mach_index = _mach_label_block->index();
 
   uint32_t num_hashes = mach_index->numHashes();
@@ -677,28 +696,36 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
               });
   }
 
-  std::vector<uint32_t> new_hashes;
-
-  // We can optionally specify the number of hashes we'd like to be
-  // random for a new document. This is to encourage an even distribution
-  // among buckets.
+  // We can optionally specify the number of hashes we'd like to be random for a
+  // new document. This is to encourage an even distribution among buckets.
   if (num_random_hashes > num_hashes) {
     throw std::invalid_argument(
         "num_random_hashes cannot be greater than num hashes.");
   }
 
-  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
-  for (uint32_t i = 0; i < num_informed_hashes; i++) {
-    auto [hash, freq_score_pair] = sorted_hashes[i];
-    new_hashes.push_back(hash);
+  // Additionally, in some situations we'd like the hashes of a document that
+  // all come from the same source to overlap somewhat, this is to give some
+  // weighting to which overarching file a document may come from.
+  if (source_hashes.size() > num_hashes) {
+    throw std::invalid_argument(
+        "num_source_hashes cannot be greater than num hashes.");
   }
 
-  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
-  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
-  std::mt19937 rand(global_random::nextSeed());
+  if (num_random_hashes + source_hashes.size() > num_hashes) {
+    throw std::invalid_argument(
+        "num_random_hashes + num_source_hashes cannot be greater than "
+        "num_hashes.");
+  }
 
-  for (uint32_t i = 0; i < num_random_hashes; i++) {
-    new_hashes.push_back(int_dist(rand));
+  std::vector<uint32_t> new_hashes = source_hashes;
+
+  std::vector<uint32_t> random_hashes = getNRandomHashes(num_random_hashes);
+  new_hashes.insert(new_hashes.end(), random_hashes.begin(),
+                    random_hashes.end());
+
+  for (uint32_t i = 0; new_hashes.size() < num_hashes; i++) {
+    auto [hash, _] = sorted_hashes[i];
+    new_hashes.push_back(hash);
   }
 
   return new_hashes;

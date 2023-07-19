@@ -1,6 +1,6 @@
 import os
 import random
-from collections import defaultdict
+import re
 
 import numpy as np
 import pandas as pd
@@ -370,10 +370,9 @@ def test_mach_udt_introduce_document():
     )
 
 
-@pytest.mark.parametrize("fast_approximation", [True, False])
-def test_mach_udt_introduce_documents(fast_approximation):
-    model = train_simple_mach_udt()
-
+def introduce_documents_helper(
+    model, num_source_hashes=0, num_random_hashes=0, fast_approximation=False
+):
     new_docs = "NEW_DOCS.csv"
     with open(new_docs, "w") as f:
         f.write("label,title,description\n")
@@ -384,10 +383,103 @@ def test_mach_udt_introduce_documents(fast_approximation):
         new_docs,
         strong_column_names=["title"],
         weak_column_names=["description"],
+        num_random_hashes=num_random_hashes,
+        num_source_hashes=num_source_hashes,
         fast_approximation=fast_approximation,
     )
 
     os.remove(new_docs)
+
+
+@pytest.mark.parametrize("fast_approximation", [True, False])
+def test_mach_udt_introduce_documents(fast_approximation):
+    model = train_simple_mach_udt()
+
+    introduce_documents_helper
+
+
+def regularized_introduce_helper(model, num_random_hashes):
+    """Returns an array counting the number of hashes in each bucket after
+    introducing three identical samples"""
+
+    for label in range(3):
+        model.introduce_label(
+            [{"text": "some text"}],
+            label,
+            num_buckets_to_sample=None,
+            num_random_hashes=num_random_hashes,
+        )
+
+    index = model.get_index()
+    load = np.zeros(OUTPUT_DIM, dtype=np.int32)
+    for i in range(len(load)):
+        load[i] = len(index.get_hash_to_entities(i))
+
+    return load
+
+
+def test_mach_udt_introduce_hash_regularization():
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    # without any regularization or balancing, introducing 3 labels with the
+    # same representative sample should yield 3 sets of identical hashes
+    load = regularized_introduce_helper(model, num_random_hashes=0)
+    assert np.sum(load > 0) == NUM_HASHES
+
+    model.clear_index()
+
+    # when 2 of the 7 hashes in every new doc are random there should be more
+    # than NUM_HASHES non-zeroes in the index's load
+    load = regularized_introduce_helper(model, num_random_hashes=2)
+    assert np.sum(load > 0) > NUM_HASHES
+
+
+def test_mach_udt_source_hashes():
+    model = train_simple_mach_udt()
+
+    model.clear_index()
+
+    num_source_hashes = 2
+
+    introduce_documents_helper(model, num_source_hashes=num_source_hashes)
+
+    index = model.get_index()
+
+    first_entity_hashes_set = set(index.get_entity_hashes(4))
+    second_entity_hashes_set = set(index.get_entity_hashes(5))
+
+    assert (
+        len(first_entity_hashes_set.union(second_entity_hashes_set))
+        >= num_source_hashes
+    )
+
+
+def test_mach_udt_num_source_and_random_hashes_is_proper():
+    model = train_simple_mach_udt()
+
+    with pytest.raises(
+        ValueError,
+        match=r"num_random_hashes cannot be greater than num hashes.",
+    ):
+        introduce_documents_helper(model, num_random_hashes=NUM_HASHES + 1)
+
+    with pytest.raises(
+        ValueError,
+        match=r"num_source_hashes cannot be greater than num hashes.",
+    ):
+        introduce_documents_helper(model, num_source_hashes=NUM_HASHES + 1)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "num_random_hashes + num_source_hashes cannot be greater than num_hashes."
+        ),
+    ):
+        introduce_documents_helper(
+            model, num_random_hashes=NUM_HASHES - 2, num_source_hashes=3
+        )
 
 
 def test_mach_udt_hash_based_methods():
@@ -457,7 +549,7 @@ def test_mach_udt_hash_based_methods():
     assert set(new_hashes) == new_hash_set
 
 
-def test_mach_output_correctness():
+def test_mach_udt_output_correctness():
     model = train_simple_mach_udt(output_dim=50)
 
     # Suppose the label corresponding to the given text is 2.
@@ -483,7 +575,7 @@ def test_mach_output_correctness():
     assert expected_ratio == current_ratio
 
 
-def test_mach_save_load_get_set_index():
+def test_mach_udt_save_load_get_set_index():
     model = train_simple_mach_udt()
     metrics = ["recall@5", "precision@5"]
 
@@ -505,7 +597,7 @@ def test_mach_save_load_get_set_index():
     os.remove(save_loc)
 
 
-def test_mach_manual_index_creation():
+def test_mach_udt_manual_index_creation():
     model = train_simple_mach_udt()
 
     model.set_decode_params(3, OUTPUT_DIM)
@@ -538,7 +630,7 @@ def test_mach_manual_index_creation():
         assert set(new_hashes) == set(entity_to_hashes[label])
 
 
-def test_mach_without_bias():
+def test_mach_udt_without_bias():
     model = train_simple_mach_udt(use_bias=False)
 
     bolt_model = model._get_model()
@@ -552,7 +644,7 @@ def test_mach_without_bias():
     assert np.all(output_layer.biases == 0)
 
 
-def test_load_balancing():
+def test_mach_udt_load_balancing():
     model = train_simple_mach_udt()
     num_hashes = 8
     half_num_hashes = 4
@@ -609,7 +701,7 @@ def test_load_balancing():
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
 
 
-def test_mach_sparse_inference():
+def test_mach_udt_sparse_inference():
     """
     This test checks that if we create a mach index that with a number of non
     empty buckets that puts it under the theshold for mach index sampling, only the
@@ -666,7 +758,7 @@ def test_mach_sparse_inference():
     assert output.activations.shape == (1, OUTPUT_DIM)
 
 
-def test_associate():
+def test_mach_udt_associate():
     model = train_simple_mach_udt(
         rlhf_args={
             "rlhf": True,
@@ -707,7 +799,7 @@ def test_associate():
     assert new_intersection > original_intersection
 
 
-def test_upvote():
+def test_mach_udt_upvote():
     model = train_simple_mach_udt(
         rlhf_args={
             "rlhf": True,
@@ -740,7 +832,7 @@ def test_upvote():
     assert predicted_label == 200
 
 
-def test_enable_rlhf():
+def test_mach_udt_enable_rlhf():
     model = train_simple_mach_udt()
 
     with pytest.raises(
@@ -758,44 +850,6 @@ def test_enable_rlhf():
     )
 
     model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
-
-
-def regularized_introduce_helper(model, num_random_hashes):
-    """Returns an array counting the number of hashes in each bucket after
-    introducing three identical samples"""
-
-    for label in range(3):
-        model.introduce_label(
-            [{"text": "some text"}],
-            label,
-            num_buckets_to_sample=None,
-            num_random_hashes=num_random_hashes,
-        )
-
-    index = model.get_index()
-    load = np.zeros(OUTPUT_DIM, dtype=np.int32)
-    for i in range(len(load)):
-        load[i] = len(index.get_hash_to_entities(i))
-
-    return load
-
-
-def test_introduce_hash_regularization():
-    model = train_simple_mach_udt()
-
-    model.clear_index()
-
-    # without any regularization or balancing, introducing 3 labels with the
-    # same representative sample should yield 3 sets of identical hashes
-    load = regularized_introduce_helper(model, num_random_hashes=0)
-    assert np.sum(load > 0) == NUM_HASHES
-
-    model.clear_index()
-
-    # when 2 of the 7 hashes in every new doc are random there should be more
-    # than NUM_HASHES non-zeroes in the index's load
-    load = regularized_introduce_helper(model, num_random_hashes=2)
-    assert np.sum(load > 0) > NUM_HASHES
 
 
 def test_udt_mach_train_batch():

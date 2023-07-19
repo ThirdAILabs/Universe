@@ -110,7 +110,8 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
+                          uint32_t num_random_hashes,
+                          uint32_t num_source_hashes, bool fast_approximation,
                           bool verbose) final;
 
   void introduceDocument(const MapInput& document,
@@ -227,10 +228,13 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0,
+      const std::vector<uint32_t>& source_hashes = {}) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
+
+  std::vector<uint32_t> getNRandomHashes(uint32_t num_random_hashes) const;
 
   static void warnOnNonHashBasedMetrics(
       const std::vector<std::string>& metrics);
