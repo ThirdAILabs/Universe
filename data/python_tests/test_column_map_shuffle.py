@@ -1,9 +1,8 @@
 import pytest
 from dataset_utils import get_ascending_column_map
 
-pytest.mark.unit()
 
-
+@pytest.mark.unit
 def test_column_map_shuffle():
     ROWS = 1000
     columns = get_ascending_column_map(ROWS)

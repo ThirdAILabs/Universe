@@ -1,9 +1,7 @@
 import pytest
 from dataset_utils import get_ascending_column_map
 
-pytest.mark.unit()
-
-
+@pytest.mark.unit
 def test_column_map_concat():
     ROWS = 1000
     first_half = get_ascending_column_map(ROWS)
