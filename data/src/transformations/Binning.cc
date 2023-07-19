@@ -27,7 +27,8 @@ ColumnMap BinningTransformation::apply(ColumnMap columns) const {
         ", " + std::to_string(_exclusive_max_value) + ").");
   }
 
-  auto output_column = makeTokenColumn(std::move(binned_values), _num_bins);
+  auto output_column =
+      ValueColumn<uint32_t>::make(std::move(binned_values), _num_bins);
 
   columns.setColumn(_output_column_name, output_column);
 

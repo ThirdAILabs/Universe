@@ -38,7 +38,8 @@ std::shared_ptr<Column> ArrayColumn<T>::concat(
   return new_column;
 }
 
-ArrayColumnPtr<uint32_t> makeTokenArrayColumn(
+template <>
+ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
     std::vector<std::vector<uint32_t>>&& data, std::optional<size_t> dim) {
   if (dim) {
     for (const auto& row : data) {
@@ -56,7 +57,8 @@ ArrayColumnPtr<uint32_t> makeTokenArrayColumn(
       new ArrayColumn<uint32_t>(std::move(data), ColumnDimension::sparse(dim)));
 }
 
-ArrayColumnPtr<float> makeDecimalArrayColumn(
+template <>
+ArrayColumnPtr<float> ArrayColumn<float>::make(
     std::vector<std::vector<float>>&& data) {
   size_t dim = 0;
   if (!data.empty()) {

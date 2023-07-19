@@ -85,20 +85,20 @@ std::vector<std::vector<T>> fromNumpy2D(const NumpyArray<T>& array) {
 
 auto tokenColumnFromNumpy(const NumpyArray<uint32_t>& array,
                           std::optional<size_t> dim) {
-  return makeTokenColumn(fromNumpy1D(array), dim);
+  return ValueColumn<uint32_t>::make(fromNumpy1D(array), dim);
 }
 
 auto decimalColumnFromNumpy(const NumpyArray<float>& array) {
-  return makeDecimalColumn(fromNumpy1D(array));
+  return ValueColumn<float>::make(fromNumpy1D(array));
 }
 
 auto tokenArrayColumnFromNumpy(const NumpyArray<uint32_t>& array,
                                std::optional<size_t> dim) {
-  return makeTokenArrayColumn(fromNumpy2D(array), dim);
+  return ArrayColumn<uint32_t>::make(fromNumpy2D(array), dim);
 }
 
 auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array) {
-  return makeDecimalArrayColumn(fromNumpy2D(array));
+  return ArrayColumn<float>::make(fromNumpy2D(array));
 }
 
 void createColumnsSubmodule(py::module_& dataset_submodule) {
@@ -114,8 +114,11 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ValueColumn<uint32_t>, Column, ValueColumnPtr<uint32_t>>(
       columns_submodule, "TokenColumn")
-      .def(py::init(&makeTokenColumn), py::arg("data"),
-           py::arg("dim") = std::nullopt)
+      .def(
+          py::init(
+              py::overload_cast<std::vector<uint32_t>&&, std::optional<size_t>>(
+                  &ValueColumn<uint32_t>::make)),
+          py::arg("data"), py::arg("dim") = std::nullopt)
       .def(py::init(&tokenColumnFromNumpy), py::arg("data"),
            py::arg("dim") = std::nullopt)
       .def(("__getitem__"), &ValueColumn<uint32_t>::value)
@@ -123,27 +126,35 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ValueColumn<float>, Column, ValueColumnPtr<float>>(
       columns_submodule, "DecimalColumn")
-      .def(py::init(&makeDecimalColumn), py::arg("data"))
+      .def(py::init(py::overload_cast<std::vector<float>&&>(
+               &ValueColumn<float>::make)),
+           py::arg("data"))
       .def(py::init(&decimalColumnFromNumpy), py::arg("data"))
       .def(("__getitem__"), &ValueColumn<float>::value)
       .def("data", &ValueColumn<float>::data);
 
   py::class_<ValueColumn<std::string>, Column, ValueColumnPtr<std::string>>(
       columns_submodule, "StringColumn")
-      .def(py::init(&makeStringColumn), py::arg("data"))
+      .def(py::init(py::overload_cast<std::vector<std::string>&&>(
+               &ValueColumn<std::string>::make)),
+           py::arg("data"))
       .def("__getitem__", &ValueColumn<std::string>::value)
       .def("data", &ValueColumn<std::string>::data);
 
   py::class_<ValueColumn<int64_t>, Column, ValueColumnPtr<int64_t>>(
       columns_submodule, "TimestampColumn")
-      .def(py::init(&makeTimestampColumn), py::arg("data"))
+      .def(py::init(py::overload_cast<std::vector<int64_t>&&>(
+               &ValueColumn<int64_t>::make)),
+           py::arg("data"))
       .def("__getitem__", &ValueColumn<int64_t>::value)
       .def("data", &ValueColumn<int64_t>::data);
 
   py::class_<ArrayColumn<uint32_t>, Column, ArrayColumnPtr<uint32_t>>(
       columns_submodule, "TokenArrayColumn")
-      .def(py::init(&makeTokenArrayColumn), py::arg("data"),
-           py::arg("dim") = std::nullopt)
+      .def(py::init(py::overload_cast<std::vector<std::vector<uint32_t>>&&,
+                                      std::optional<size_t>>(
+               &ArrayColumn<uint32_t>::make)),
+           py::arg("data"), py::arg("dim") = std::nullopt)
       .def(py::init(&tokenArrayColumnFromNumpy), py::arg("data"),
            py::arg("dim") = std::nullopt)
       .def("__getitem__", &getRowNumpy<uint32_t, ArrayColumn<uint32_t>>,
@@ -152,7 +163,9 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
       columns_submodule, "DecimalArrayColumn")
-      .def(py::init(&makeDecimalArrayColumn), py::arg("data"))
+      .def(py::init(py::overload_cast<std::vector<std::vector<float>>&&>(
+               &ArrayColumn<float>::make)),
+           py::arg("data"))
       .def(py::init(&decimalArrayColumnFromNumpy), py::arg("data"))
       .def("__getitem__", &getRowNumpy<float, ArrayColumn<float>>,
            py::return_value_policy::reference_internal)

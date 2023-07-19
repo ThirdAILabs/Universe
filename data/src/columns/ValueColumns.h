@@ -20,17 +20,12 @@ using ValueColumnPtr = std::shared_ptr<ValueColumn<T>>;
 
 template <typename T>
 class ValueColumn : public ValueColumnBase<T> {
-  friend ValueColumnPtr<uint32_t> makeTokenColumn(std::vector<uint32_t>&&,
-                                                  std::optional<size_t>);
-
-  friend ValueColumnPtr<float> makeDecimalColumn(std::vector<float>&&);
-
-  friend ValueColumnPtr<std::string> makeStringColumn(
-      std::vector<std::string>&&);
-
-  friend ValueColumnPtr<int64_t> makeTimestampColumn(std::vector<int64_t>&&);
-
  public:
+  static ValueColumnPtr<T> make(std::vector<T>&& data,
+                                std::optional<size_t> dim);
+
+  static ValueColumnPtr<T> make(std::vector<T>&& data);
+
   size_t numRows() const final { return _data.size(); }
 
   std::optional<ColumnDimension> dimension() const final { return _dimension; }
@@ -62,14 +57,5 @@ class ValueColumn : public ValueColumnBase<T> {
   std::vector<T> _data;
   std::optional<ColumnDimension> _dimension;
 };
-
-ValueColumnPtr<uint32_t> makeTokenColumn(std::vector<uint32_t>&& data,
-                                         std::optional<size_t> dim);
-
-ValueColumnPtr<float> makeDecimalColumn(std::vector<float>&& data);
-
-ValueColumnPtr<std::string> makeStringColumn(std::vector<std::string>&& data);
-
-ValueColumnPtr<int64_t> makeTimestampColumn(std::vector<int64_t>&& data);
 
 }  // namespace thirdai::data

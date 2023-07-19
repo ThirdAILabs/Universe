@@ -20,13 +20,12 @@ using ArrayColumnPtr = std::shared_ptr<ArrayColumn<T>>;
 
 template <typename T>
 class ArrayColumn : public ArrayColumnBase<T> {
-  friend ArrayColumnPtr<uint32_t> makeTokenArrayColumn(
-      std::vector<std::vector<uint32_t>>&&, std::optional<size_t>);
-
-  friend ArrayColumnPtr<float> makeDecimalArrayColumn(
-      std::vector<std::vector<float>>&&);
-
  public:
+  static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data,
+                                std::optional<size_t> dim);
+
+  static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data);
+
   size_t numRows() const final { return _data.size(); }
 
   std::optional<ColumnDimension> dimension() const final { return _dimension; }
@@ -52,11 +51,5 @@ class ArrayColumn : public ArrayColumnBase<T> {
   std::vector<std::vector<T>> _data;
   std::optional<ColumnDimension> _dimension;
 };
-
-ArrayColumnPtr<uint32_t> makeTokenArrayColumn(
-    std::vector<std::vector<uint32_t>>&& data, std::optional<size_t> dim);
-
-ArrayColumnPtr<float> makeDecimalArrayColumn(
-    std::vector<std::vector<float>>&& data);
 
 }  // namespace thirdai::data

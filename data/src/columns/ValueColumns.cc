@@ -34,8 +34,9 @@ std::shared_ptr<Column> ValueColumn<T>::concat(
   return new_column;
 }
 
-ValueColumnPtr<uint32_t> makeTokenColumn(std::vector<uint32_t>&& data,
-                                         std::optional<size_t> dim) {
+template <>
+ValueColumnPtr<uint32_t> ValueColumn<uint32_t>::make(
+    std::vector<uint32_t>&& data, std::optional<size_t> dim) {
   if (dim) {
     for (uint32_t index : data) {
       if (index >= *dim) {
@@ -50,19 +51,21 @@ ValueColumnPtr<uint32_t> makeTokenColumn(std::vector<uint32_t>&& data,
       new ValueColumn<uint32_t>(std::move(data), ColumnDimension::sparse(dim)));
 }
 
-ValueColumnPtr<float> makeDecimalColumn(std::vector<float>&& data) {
+template <>
+ValueColumnPtr<float> ValueColumn<float>::make(std::vector<float>&& data) {
   return ValueColumnPtr<float>(
       new ValueColumn<float>(std::move(data), ColumnDimension::dense(1)));
 }
 
-ValueColumnPtr<std::string> makeStringColumn(std::vector<std::string>&& data) {
-  return ValueColumnPtr<std::string>(
-      new ValueColumn<std::string>(std::move(data), std::nullopt));
+template <typename T>
+ValueColumnPtr<T> ValueColumn<T>::make(std::vector<T>&& data) {
+  return ValueColumnPtr<T>(new ValueColumn<T>(std::move(data), std::nullopt));
 }
 
-ValueColumnPtr<int64_t> makeTimestampColumn(std::vector<int64_t>&& data) {
-  return ValueColumnPtr<int64_t>(
-      new ValueColumn<int64_t>(std::move(data), std::nullopt));
-}
+template ValueColumnPtr<std::string> ValueColumn<std::string>::make(
+    std::vector<std::string>&&);
+
+template ValueColumnPtr<int64_t> ValueColumn<int64_t>::make(
+    std::vector<int64_t>&&);
 
 }  // namespace thirdai::data

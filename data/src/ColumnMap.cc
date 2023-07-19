@@ -154,7 +154,7 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   std::unordered_map<std::string, ColumnPtr> column_map;
   for (size_t i = 0; i < columns.size(); i++) {
     column_map[std::string(header.at(i))] =
-        makeStringColumn(std::move(columns.at(i)));
+        ValueColumn<std::string>::make(std::move(columns.at(i)));
   }
 
   return ColumnMap(column_map);

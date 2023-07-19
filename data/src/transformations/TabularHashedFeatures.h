@@ -82,8 +82,8 @@ class TabularHashedFeatures : public Transformation {
       }
     }
 
-    auto output_column =
-        makeTokenArrayColumn(std::move(tabular_hash_values), _output_range);
+    auto output_column = ArrayColumn<uint32_t>::make(
+        std::move(tabular_hash_values), _output_range);
 
     column_map.setColumn(_output_column_name, output_column);
 
