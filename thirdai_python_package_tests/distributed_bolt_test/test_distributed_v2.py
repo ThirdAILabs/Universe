@@ -120,6 +120,7 @@ def test_udt_train_distributed_v2():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
+        thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
         udt_model = get_clinc_udt_model(integer_target=True)
         udt_model = dist.prepare_model(udt_model)
         copy_file_or_folder(

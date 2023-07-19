@@ -61,6 +61,8 @@ std::optional<uint32_t> Input::nonzeros(const autograd::ComputationList& inputs,
 
 void Input::disableSparseParameterUpdates() {}
 
+void Input::enableSparseParameterUpdates() {}
+
 void Input::summary(std::ostream& summary,
                     const autograd::ComputationList& inputs,
                     const autograd::Computation* output) const {

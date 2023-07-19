@@ -79,10 +79,6 @@ def _kill_background_telemetry_push_process():
 atexit.register(_kill_background_telemetry_push_process)
 
 
-wrapped_start_method = telemetry.start
-wrapped_stop_method = telemetry.stop
-
-
 def start(
     port: Optional[int] = None,
     write_dir: Optional[str] = None,
@@ -107,9 +103,9 @@ def start(
         )
 
     if port:
-        telemetry_url = wrapped_start_method(port)
+        telemetry_url = telemetry.start(port)
     else:
-        telemetry_url = wrapped_start_method()
+        telemetry_url = telemetry.start()
 
     if write_dir == None:
         return telemetry_url
@@ -144,4 +140,4 @@ def stop():
     that no other code is running when this method is called.
     """
     _kill_background_telemetry_push_process()
-    wrapped_stop_method()
+    telemetry.stop()

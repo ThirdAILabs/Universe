@@ -28,8 +28,7 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
       {rows, cols}, data_copy, free_when_done);
 }
 
-py::object tensorToNumpy(const tensor::TensorPtr& tensor,
-                         bool single_row_to_vector) {
+void can_convert_tensor_to_numpy(const tensor::TensorPtr& tensor) {
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
     throw std::runtime_error(
@@ -40,7 +39,13 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
   if (!tensor->activationsPtr()) {
     throw std::runtime_error("Cannot convert ragged tensor to numpy.");
   }
+}
 
+py::object tensorToNumpy(const tensor::TensorPtr& tensor,
+                         bool single_row_to_vector) {
+  auto nonzeros = tensor->nonzeros();
+
+  can_convert_tensor_to_numpy(tensor);
   auto activations =
       createArrayCopy(/* data= */ tensor->activationsPtr(),
                       /* rows= */ tensor->batchSize(), /* cols= */ *nonzeros,
@@ -57,6 +62,25 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
   }
 
   return std::move(activations);
+}
+
+py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
+                             bool single_row_to_vector, uint32_t top_k) {
+  can_convert_tensor_to_numpy(tensor);
+
+  std::pair<std::vector<uint32_t>, std::vector<float> > topkIdxValuePair =
+      tensor->topKIndexValuePair(top_k);
+
+  const uint32_t* flattened_active_neurons = topkIdxValuePair.first.data();
+  const float* flattened_activations = topkIdxValuePair.second.data();
+
+  auto activations = createArrayCopy(flattened_activations, tensor->batchSize(),
+                                     top_k, single_row_to_vector);
+  auto active_neurons =
+      createArrayCopy(flattened_active_neurons, tensor->batchSize(), top_k,
+                      single_row_to_vector);
+  return std::move(
+      py::make_tuple(std::move(active_neurons), std::move(activations)));
 }
 
 }  // namespace thirdai::bolt::nn::python

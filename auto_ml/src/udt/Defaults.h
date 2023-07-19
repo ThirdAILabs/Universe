@@ -71,11 +71,11 @@ constexpr uint32_t MACH_DEFAULT_NUM_REPETITIONS = 7;
 constexpr uint32_t MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN = 25;
 
 // How many output buckets we restrict decoding to for UDT Mach Classifier.
-constexpr uint32_t MACH_TOP_K_PER_EVAL_AGGREGATION = 25;
+constexpr uint32_t MACH_NUM_BUCKETS_TO_EVAL = 25;
 
 // How many results we're required to decode from the above num buckets for UDT
 // Mach Classifier.
-constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
+constexpr uint32_t MACH_TOP_K_TO_RETURN = 5;
 
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;

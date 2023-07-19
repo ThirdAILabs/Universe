@@ -139,21 +139,18 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) {
-  (void)top_k;
   return _classifier->predict(_dataset_factory->featurizeInput(sample),
                               sparse_inference, return_predicted_class,
-                              /* single= */ true);
+                              /* single= */ true, top_k);
 }
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k) {
-  (void)top_k;
-
   return _classifier->predict(_dataset_factory->featurizeInputBatch(samples),
                               sparse_inference, return_predicted_class,
-                              /* single= */ false);
+                              /* single= */ false, top_k);
 }
 
 std::vector<dataset::Explanation> UDTClassifier::explain(
