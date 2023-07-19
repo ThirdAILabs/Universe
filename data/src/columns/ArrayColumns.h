@@ -16,7 +16,7 @@ template <typename T>
 class ArrayColumn;
 
 template <typename T>
-using ArrayColumnPtr = std::shared_ptr < ArrayColumn<T>>;
+using ArrayColumnPtr = std::shared_ptr<ArrayColumn<T>>;
 
 template <typename T>
 class ArrayColumn : public ArrayColumnBase<T> {
