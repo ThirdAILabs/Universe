@@ -162,7 +162,7 @@ void PosEmbedding::summary(std::ostream& summary,
   summary << "PosEmbedding(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name() << " [pos_kernel : ";
   _pos_kernel->buildLayerSummary(summary);
-  summary << "token_kernel : ";
+  summary << "; token_kernel : ";
   _token_kernel->buildLayerSummary(summary);
   summary << " sum_combination = " << (_sum_combination ? "True" : "False")
           << " ]";

@@ -48,8 +48,8 @@ void Transpose::backpropagate(autograd::ComputationList& inputs,
   BoltVector& input_vector = inputs[0]->tensor()->getVector(index_in_batch);
   BoltVector& output_vector = output->getVector(index_in_batch);
 
-  bolt_vector::transposeBoltVector(output_vector, input_vector, _rows,
-                                   _columns);
+  bolt_vector::transposeBoltVector(output_vector, input_vector, _columns,
+                                   _rows);
 }
 
 void Transpose::updateParameters(float learning_rate, uint32_t train_steps) {
@@ -75,7 +75,7 @@ void Transpose::summary(std::ostream& summary,
   summary << "Transpose(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name();
 
-  summary << "[rows: " << _rows << ", columns: " << _columns << "]";
+  summary << "[rows=" << _rows << ", columns=" << _columns << "]";
 }
 
 autograd::ComputationPtr Transpose::apply(autograd::ComputationPtr input) {
