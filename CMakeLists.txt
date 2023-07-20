@@ -304,6 +304,7 @@ include_directories(${CMAKE_BINARY_DIR})
 add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
+add_subdirectory(data)
 add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
@@ -417,7 +418,7 @@ set(THIRDAI_SOURCES
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
-    data/src/ColumnMap.cc
+    data/src/TensorConversion.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc

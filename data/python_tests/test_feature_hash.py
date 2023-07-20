@@ -22,7 +22,7 @@ def test_same_indices_in_column():
 
     assert len(rows) == 3
 
-    # Check that the same token gets mapped to the same value in the same column.
+    # Check that the same token gets hashed to the same location in the same column.
     for row in rows:
         assert len(set(row)) == 1
 
@@ -45,7 +45,7 @@ def test_different_indices_in_column():
 
     assert len(rows) == 3
 
-    # Check that the same token gets mapped to the same value in the same column.
+    # Check that different tokens get hashed to different locations in the same column.
     for row in rows:
         assert len(set(row)) == 2
 
@@ -71,7 +71,7 @@ def test_same_indices_in_different_columns():
 
     assert len(rows) == 3
 
-    # Check that the same token gets mapped to the same value in the same column.
+    # Check that the same token in different columns gets hashed to different locations.
     for row in rows:
         assert len(set(row)) == 2
 
@@ -100,5 +100,10 @@ def test_decimal_values_preserved():
 
     assert len(rows) == len(expected_rows)
 
+    # Check that all of the decimal values are present.
     for row, expected_row in zip(rows, expected_rows):
         assert set(row) == set(expected_row)
+
+    # Check that the indices hashed to are unique.
+    for row in columns["indices"].data():
+        assert len(set(row)) == 3
