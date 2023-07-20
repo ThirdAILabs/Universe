@@ -44,10 +44,10 @@ class RlhfRunner(Runner):
         acc_on_incorrect = num_improved / num_incorrect_before
 
         metrics = {
-            "p@1_before_rlhf": acc_before_rlhf,
-            "p@1_after_rlhf": acc_after_rlhf,
-            "p@1_on_correct": acc_on_correct,
-            "p@1_on_incorrect": acc_on_incorrect,
+            "p_at_1_before_rlhf": acc_before_rlhf,
+            "p_at_1_after_rlhf": acc_after_rlhf,
+            "p_at_1_on_correct": acc_on_correct,
+            "p_at_1_on_incorrect": acc_on_incorrect,
         }
         print(metrics)
 
