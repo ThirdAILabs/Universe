@@ -4,55 +4,56 @@
 
 namespace thirdai::data {
 
-std::vector<TensorList> convertToTensors(const ColumnMap& columns,
-                                         const std::string& indices_column,
-                                         const std::string& values_column,
-                                         size_t batch_size) {
+std::vector<TensorList> convertToTensors(
+    const ColumnMap& columns,
+    const std::vector<std::pair<std::string, std::string>>& columns_to_convert,
+    size_t batch_size) {
   size_t num_batches = (columns.numRows() + batch_size - 1) / batch_size;
-
-  auto indices = columns.getArrayColumn<uint32_t>(indices_column);
-  auto values = columns.getArrayColumn<float>(values_column);
-
   std::vector<TensorList> tensors(num_batches);
 
-  std::exception_ptr error;
+  for (const auto& [indices_column, values_column] : columns_to_convert) {
+    auto indices = columns.getArrayColumn<uint32_t>(indices_column);
+    auto values = columns.getArrayColumn<float>(values_column);
+
+    std::exception_ptr error;
 
 #pragma omp parallel for default(none) \
     shared(num_batches, batch_size, columns, indices, values, tensors, error)
-  for (size_t batch = 0; batch < num_batches; batch++) {
-    size_t batch_start = batch * batch_size;
-    size_t batch_end = std::min((batch + 1) * batch_size, columns.numRows());
+    for (size_t batch = 0; batch < num_batches; batch++) {
+      size_t batch_start = batch * batch_size;
+      size_t batch_end = std::min((batch + 1) * batch_size, columns.numRows());
 
-    std::vector<uint32_t> batch_indices;
-    std::vector<float> batch_values;
-    std::vector<size_t> batch_lens;
+      std::vector<uint32_t> batch_indices;
+      std::vector<float> batch_values;
+      std::vector<size_t> batch_lens;
 
-    for (size_t i = batch_start; i < batch_end; i++) {
-      auto indices_row = indices->row(i);
-      auto values_row = values->row(i);
+      for (size_t i = batch_start; i < batch_end; i++) {
+        auto indices_row = indices->row(i);
+        auto values_row = values->row(i);
 
-      if (indices_row.size() != values_row.size()) {
+        if (indices_row.size() != values_row.size()) {
 #pragma omp critical
-        error = std::make_exception_ptr(std::invalid_argument(
-            "Indices size does not batch values size in row " +
-            std::to_string(i) + "."));
-        break;
+          error = std::make_exception_ptr(std::invalid_argument(
+              "Indices size does not batch values size in row " +
+              std::to_string(i) + "."));
+          break;
+        }
+
+        batch_indices.insert(batch_indices.end(), indices_row.begin(),
+                             indices_row.end());
+        batch_values.insert(batch_values.end(), values_row.begin(),
+                            values_row.end());
+        batch_lens.push_back(indices_row.size());
       }
 
-      batch_indices.insert(batch_indices.end(), indices_row.begin(),
-                           indices_row.end());
-      batch_values.insert(batch_values.end(), values_row.begin(),
-                          values_row.end());
-      batch_lens.push_back(indices_row.size());
+      tensors[batch].emplace_back(bolt::nn::tensor::Tensor::sparse(
+          std::move(batch_indices), std::move(batch_values),
+          std::move(batch_lens), indices->dimension()->dim));
     }
 
-    tensors[batch].emplace_back(bolt::nn::tensor::Tensor::sparse(
-        std::move(batch_indices), std::move(batch_values),
-        std::move(batch_lens), indices->dimension()->dim));
-  }
-
-  if (error) {
-    std::rethrow_exception(error);
+    if (error) {
+      std::rethrow_exception(error);
+    }
   }
 
   return tensors;
