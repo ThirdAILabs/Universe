@@ -104,6 +104,7 @@ class NeuralDB:
         checkpoint_path = Path(checkpoint_path)
         try:
             obj._savable_state = State.load(checkpoint_path, on_progress)
+            obj._user_id = user_id
             if obj._savable_state.model and obj._savable_state.model.get_model():
                 obj._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
             if not isinstance(obj._savable_state.logger, loggers.LoggerList):
@@ -117,6 +118,8 @@ class NeuralDB:
                 on_error(error_msg=e.__str__())
             else:
                 raise e
+
+        return obj
 
     def from_udt(
         self,
