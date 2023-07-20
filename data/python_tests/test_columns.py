@@ -21,6 +21,10 @@ def test_token_column():
         assert column.data() == tokens
         assert column.dimension().dim == ROWS
         assert not column.dimension().is_dense
+        assert len(column) == ROWS
+
+        for i, token in enumerate(tokens):
+            assert column[i] == token
 
 
 def test_decimal_column():
@@ -36,6 +40,10 @@ def test_decimal_column():
         assert np.allclose(column.data(), decimals)
         assert column.dimension().dim == 1
         assert column.dimension().is_dense
+        assert len(column) == ROWS
+
+        for i, decimal in enumerate(decimals):
+            assert np.allclose([column[i]], [decimal])
 
 
 def test_string_column():
@@ -48,6 +56,10 @@ def test_string_column():
 
     assert column.data() == strings
     assert column.dimension() == None
+    assert len(column) == ROWS
+
+    for i, s in enumerate(strings):
+        assert column[i] == s
 
 
 def test_timestamp_column():
@@ -58,6 +70,9 @@ def test_timestamp_column():
 
     assert column.data() == timestamps
     assert column.dimension() == None
+    assert len(column) == ROWS
+    for i, t in enumerate(timestamps):
+        assert column[i] == t
 
 
 def test_token_array_column():
@@ -75,6 +90,26 @@ def test_token_array_column():
         assert column.data() == tokens
         assert column.dimension().dim == ROWS * COLS
         assert not column.dimension().is_dense
+        assert len(column) == ROWS
+
+        for i, row in enumerate(tokens):
+            assert np.array_equal(column[i], np.array(row))
+
+
+def test_token_array_column_non_uniform():
+    ROWS = 100
+
+    tokens = [list(range(i)) for i in range(ROWS)]
+
+    column = data.columns.TokenArrayColumn(tokens, dim=ROWS * ROWS)
+
+    assert column.data() == tokens
+    assert column.dimension().dim == ROWS * ROWS
+    assert not column.dimension().is_dense
+    assert len(column) == ROWS
+
+    for i, row in enumerate(tokens):
+        assert np.array_equal(column[i], np.array(row))
 
 
 def test_decimal_array_column():
@@ -92,6 +127,25 @@ def test_decimal_array_column():
         assert np.allclose(column.data(), decimals)
         assert column.dimension().dim == COLS
         assert column.dimension().is_dense
+        assert len(column) == ROWS
+
+        for i, row in enumerate(decimals):
+            assert np.allclose(column[i], np.array(row))
+
+
+def test_decimal_array_column_non_uniform():
+    ROWS = 100
+
+    decimals = [list(map(float, range(i))) for i in range(ROWS)]
+
+    column = data.columns.DecimalArrayColumn(decimals)
+
+    assert column.data() == decimals
+    assert column.dimension() == None
+    assert len(column) == ROWS
+
+    for i, row in enumerate(decimals):
+        assert np.allclose(column[i], np.array(row))
 
 
 def test_token_columns_without_dimension():

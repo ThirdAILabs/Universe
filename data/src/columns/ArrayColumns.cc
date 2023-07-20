@@ -1,7 +1,9 @@
 #include "ArrayColumns.h"
 #include "ColumnUtils.h"
 #include <data/src/columns/Column.h>
+#include <algorithm>
 #include <memory>
+#include <optional>
 
 namespace thirdai::data {
 
@@ -74,20 +76,21 @@ ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
 template <>
 ArrayColumnPtr<float> ArrayColumn<float>::make(
     std::vector<std::vector<float>>&& data) {
-  size_t dim = 0;
+  std::optional<ColumnDimension> dimension = std::nullopt;
   if (!data.empty()) {
-    dim = data.front().size();
+    size_t dim = data.front().size();
 
-    for (const auto& row : data) {
-      if (row.size() != dim) {
-        throw std::invalid_argument(
-            "Expected consistent dimension in DecimalArrayColumn.");
-      }
+    bool all_dims_match = std::all_of(
+        data.begin(), data.end(),
+        [dim](const std::vector<float>& row) { return row.size() == dim; });
+
+    if (all_dims_match) {
+      dimension = ColumnDimension::dense(dim);
     }
   }
 
   return ArrayColumnPtr<float>(
-      new ArrayColumn<float>(std::move(data), ColumnDimension::dense(dim)));
+      new ArrayColumn<float>(std::move(data), dimension));
 }
 
 }  // namespace thirdai::data
