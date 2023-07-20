@@ -1,11 +1,10 @@
 import os
 from collections import defaultdict
 
-import numpy as np
-import pandas as pd
-
 # This is to fix an error that occurred running on the aws machine.
 import nltk
+import numpy as np
+import pandas as pd
 
 nltk.download("punkt")
 from nltk.tokenize import sent_tokenize, word_tokenize
