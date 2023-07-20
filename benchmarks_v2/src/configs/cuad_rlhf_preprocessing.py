@@ -3,6 +3,8 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+import nltk
+nltk.download("punkt")
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 MIN_WORDS_PER_CHUNK = 50
