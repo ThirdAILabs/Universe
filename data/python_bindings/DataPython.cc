@@ -4,6 +4,7 @@
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -266,6 +267,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_text"), py::arg("weak_text"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+
+  py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
+      transformations_submodule, "MachLabel")
+      .def(py::init<std::string, std::string, MachIndexPtr>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("index"));
 #endif
 }
 
