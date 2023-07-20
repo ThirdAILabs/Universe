@@ -10,8 +10,8 @@ TEST(TensorConversionTest, TestColumnsToTensors) {
   std::vector<std::vector<uint32_t>> indices;
   std::vector<std::vector<float>> values;
 
-  // std::vector<size_t> row_lens = {4, 7, 6, 4, 12, 15, 8, 3};
-  std::vector<size_t> row_lens(8, 10);
+  std::vector<size_t> row_lens = {4, 7, 6, 4, 12, 15, 8, 3};
+
   size_t value = 0;
   for (size_t len : row_lens) {
     std::vector<uint32_t> row_indices(len);
