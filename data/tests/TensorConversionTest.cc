@@ -33,7 +33,7 @@ TEST(TensorConversionTest, TestColumnsToTensors) {
 
   ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
 
-  auto tensors = convertToTensors(columns, "indices", "values", 3);
+  auto tensors = convertToTensors(columns, {{"indices", "values"}}, 3);
 
   size_t row_cnt = 0;
   size_t value_cnt = 0;

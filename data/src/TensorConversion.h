@@ -7,9 +7,9 @@ namespace thirdai::data {
 
 using bolt::nn::tensor::TensorList;
 
-std::vector<TensorList> convertToTensors(const ColumnMap& columns,
-                                         const std::string& indices_column,
-                                         const std::string& values_column,
-                                         size_t batch_size);
+std::vector<TensorList> convertToTensors(
+    const ColumnMap& columns,
+    const std::vector<std::pair<std::string, std::string>>& columns_to_convert,
+    size_t batch_size);
 
 }  // namespace thirdai::data
