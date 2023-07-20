@@ -3,6 +3,11 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+
+# This is to fix an error that occurred running on the aws machine.
+import nltk
+
+nltk.download("punkt")
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 MIN_WORDS_PER_CHUNK = 50
