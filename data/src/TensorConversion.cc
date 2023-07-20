@@ -5,8 +5,7 @@
 namespace thirdai::data {
 
 std::vector<TensorList> convertToTensors(
-    const ColumnMap& columns,
-    const std::vector<std::pair<std::string, std::string>>& columns_to_convert,
+    const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
     size_t batch_size) {
   size_t num_batches = (columns.numRows() + batch_size - 1) / batch_size;
   std::vector<TensorList> tensors(num_batches);
