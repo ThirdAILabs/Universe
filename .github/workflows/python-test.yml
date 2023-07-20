@@ -42,7 +42,8 @@ jobs:
         run: bin/python-test.sh -m unit
 
   python-release-tests:
-    runs-on: ubuntu-latest
+    # distributed requires atleast 3 cores to run.
+    runs-on: ubuntu-latest-8-cores
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
