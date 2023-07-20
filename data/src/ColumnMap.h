@@ -16,7 +16,7 @@ class ColumnMap {
  public:
   explicit ColumnMap(std::unordered_map<std::string, ColumnPtr> columns);
 
-  uint64_t numRows() const { return _num_rows; }
+  size_t numRows() const { return _num_rows; }
 
   template <typename T>
   ArrayColumnBasePtr<T> getArrayColumn(const std::string& name) const;

@@ -3,6 +3,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -219,6 +220,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                                                   "TransformationList")
       .def(py::init<std::vector<TransformationPtr>>(),
            py::arg("transformations"));
+
+  py::class_<FeatureHash, Transformation, std::shared_ptr<FeatureHash>>(
+      transformations_submodule, "FeatureHash")
+      .def(py::init<std::vector<std::string>, std::string, std::string,
+                    size_t>(),
+           py::arg("columns"), py::arg("output_indices"),
+           py::arg("output_values"), py::arg("dim"));
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
