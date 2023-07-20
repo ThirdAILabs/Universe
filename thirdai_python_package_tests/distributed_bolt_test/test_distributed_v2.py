@@ -161,6 +161,7 @@ def test_udt_licensed_training():
     trainer.fit()
 
 
+@pytest.mark.distributed
 def test_udt_train_distributed_v2():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
