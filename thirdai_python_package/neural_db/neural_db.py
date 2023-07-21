@@ -85,35 +85,34 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(self, user_id: str = "user", **kwargs) -> None:
+    def __init__(self, user_id: str = "user", savable_state=None, **kwargs) -> None:
         self._user_id: str = user_id
-        self._savable_state: State = State(
-            model=Mach(id_col="id", query_col="query", **kwargs),
-            logger=loggers.LoggerList([loggers.InMemoryLogger()]),
-        )
+        if savable_state == None:
+            self._savable_state: State = State(
+                model=Mach(id_col="id", query_col="query", **kwargs),
+                logger=loggers.LoggerList([loggers.InMemoryLogger()]),
+            )
+        else:
+            self._savable_state = savable_state
 
-    @classmethod
+    @staticmethod
     def from_checkpoint(
-        cls,
         checkpoint_path: str,
         user_id: str = "user",
         on_progress: Callable = no_op,
     ):
-        obj = cls.__new__(cls)
         checkpoint_path = Path(checkpoint_path)
-        obj._savable_state = State.load(checkpoint_path, on_progress)
-        obj._user_id = user_id
-        if obj._savable_state.model and obj._savable_state.model.get_model():
-            obj._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
-        if not isinstance(obj._savable_state.logger, loggers.LoggerList):
+        savable_state = State.load(checkpoint_path, on_progress)
+        if savable_state.model and savable_state.model.get_model():
+            savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+        if not isinstance(savable_state.logger, loggers.LoggerList):
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
-            obj._savable_state.logger = loggers.LoggerList([obj._savable_state.logger])
+            savable_state.logger = loggers.LoggerList([savable_state.logger])
 
-        return obj
+        return NeuralDB(user_id, savable_state)
 
-    @classmethod
+    @staticmethod
     def from_udt(
-        cls,
         udt: bolt.UniversalDeepTransformer,
         user_id: str = "user",
         csv: Optional[str] = None,
@@ -122,9 +121,6 @@ class NeuralDB:
         csv_weak_columns: Optional[List[str]] = None,
         csv_reference_columns: Optional[List[str]] = None,
     ):
-        obj = cls.__new__(cls)
-        obj._user_id = user_id
-
         if csv is None:
             udt.clear_index()
 
@@ -161,7 +157,7 @@ class NeuralDB:
         )
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
-        obj._savable_state = State(model=model, logger=logger)
+        savable_state = State(model=model, logger=logger)
 
         if csv is not None:
             if (
@@ -183,8 +179,10 @@ class NeuralDB:
                 weak_columns=csv_weak_columns,
                 reference_columns=csv_reference_columns,
             )
-            obj._savable_state.documents.add([csv_doc])
-            obj._savable_state.model.set_n_ids(csv_doc.size)
+            savable_state.documents.add([csv_doc])
+            savable_state.model.set_n_ids(csv_doc.size)
+
+        return NeuralDB(user_id, savable_state)
 
     def in_session(self) -> bool:
         return self._savable_state is not None
