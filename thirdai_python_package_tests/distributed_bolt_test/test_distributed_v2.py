@@ -115,6 +115,8 @@ def test_bolt_distributed_v2():
     ray.shutdown()
 
 
+# We added this separately, as we don't need to add training for checking whether license
+# works as just initializing the model should work.
 @pytest.mark.release
 def test_udt_licensed_training():
     def udt_training_loop_per_worker(config):
