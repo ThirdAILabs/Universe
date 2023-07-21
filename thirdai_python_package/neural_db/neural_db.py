@@ -89,7 +89,7 @@ class NeuralDB:
         self, user_id: str = "user", savable_state: State = None, **kwargs
     ) -> None:
         self._user_id: str = user_id
-        if self._savable_state == None:
+        if savable_state == None:
             self._savable_state: State = State(
                 model=Mach(id_col="id", query_col="query", **kwargs),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
