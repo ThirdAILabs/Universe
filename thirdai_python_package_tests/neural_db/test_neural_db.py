@@ -26,8 +26,6 @@ def test_neural_db_save_load(create_simple_dataset):
         top_k=10,
     )
 
-    shutil.rmtree("temp")
-
     ndb.save("temp")
 
     new_ndb = neural_db.NeuralDB.from_checkpoint("temp")
