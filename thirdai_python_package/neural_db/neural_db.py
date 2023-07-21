@@ -85,15 +85,16 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(self, user_id: str = "user", savable_state=None, **kwargs) -> None:
+    def __init__(self, user_id: str = "user", savable_state: State = None, **kwargs) -> None:
         self._user_id: str = user_id
-        if savable_state == None:
+        if self._savable_state == None:
             self._savable_state: State = State(
                 model=Mach(id_col="id", query_col="query", **kwargs),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
             )
         else:
             self._savable_state = savable_state
+
 
     @staticmethod
     def from_checkpoint(
