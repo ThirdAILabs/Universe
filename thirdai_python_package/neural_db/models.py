@@ -118,7 +118,7 @@ class Model:
         raise NotImplementedError()
 
 
-class EarlyStop(bolt_v2.train.callbacks.Callback):
+class EarlyStop(bolt_v2.train.callbacks.Callback): #TODO use overfitting callback?
     def __init__(
         self,
         tracked_metric,
@@ -191,7 +191,7 @@ def unsupervised_train_on_docs(
 
     early_stop_callback = EarlyStop(
         tracked_metric=metric,
-        metric_threshold=0.9 if documents._size > SOME_THRESHOLD else 0.99,
+        metric_threshold=0.9 if documents._size > SOME_THRESHOLD else 0.99, # TODO autotune these over a few pdfs
     )
 
     progress_callback = ProgressUpdate(
