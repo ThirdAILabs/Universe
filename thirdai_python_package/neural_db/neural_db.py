@@ -220,41 +220,24 @@ class NeuralDB:
                 return []
             raise e
 
-        try:
-            self._savable_state.model.index_documents(
-                intro_documents=intro_and_train.intro,
-                train_documents=intro_and_train.train,
-                num_buckets_to_sample=num_buckets_to_sample,
-                should_train=train,
-                use_weak_columns=use_weak_columns,
-                on_progress=on_progress,
-                cancel_state=cancel_state,
-            )
+        self._savable_state.model.index_documents(
+            intro_documents=intro_and_train.intro,
+            train_documents=intro_and_train.train,
+            num_buckets_to_sample=num_buckets_to_sample,
+            should_train=train,
+            use_weak_columns=use_weak_columns,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
 
-            self._savable_state.logger.log(
-                session_id=self._user_id,
-                action="Train",
-                args={"files": intro_and_train.intro.resource_name()},
-            )
+        self._savable_state.logger.log(
+            session_id=self._user_id,
+            action="Train",
+            args={"files": intro_and_train.intro.resource_name()},
+        )
 
-            on_success()
-            return ids
-
-        except Exception as e:
-            # If we fail during training here it's hard to guarantee that we
-            # recover to a resumable state. E.g. if we're in the middle of
-            # introducing new documents, we may be in a weird state where half
-            # the documents are introduced while others aren't.
-            # At the same time, if we fail here, then there must be something
-            # wrong with the model, not how we used it, so it should be very
-            # rare and probably not worth saving.
-            self.clear_session()
-            if on_irrecoverable_error is not None:
-                on_irrecoverable_error(
-                    error_msg=f"Failed to train model on added files. {e.__str__()}"
-                )
-                return []
-            raise e
+        on_success()
+        return ids
 
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()
