@@ -18,8 +18,10 @@ Loader::Loader(ColumnMapIterator data_iterator,
       _shuffle_buffer(_data_iterator.emptyColumnMap()) {}
 
 std::optional<bolt::train::LabeledDataset> Loader::next() {
+  // Prevents overflow since sometimes we pass in max int to indicate loading
+  // all batches.
   size_t num_rows_to_load;
-  if (_max_batches == NO_LIMIT) {
+  if (_max_batches == NO_LIMIT || _batch_size == NO_LIMIT) {
     num_rows_to_load = NO_LIMIT;
   } else {
     num_rows_to_load = _shuffle_buffer_size + _batch_size * _max_batches;
