@@ -20,11 +20,13 @@ class TimeObject {
 
   TimeObject() : _time_object() {}
 
-  explicit TimeObject(const std::string_view& time_string) : _time_object() {
+  explicit TimeObject(const std::string_view& time_string,
+                      const std::string& format = "%Y-%m-%d")
+      : _time_object() {
     std::stringstream time_ss;
     time_ss << time_string;
 
-    if (time_ss >> std::get_time(&_time_object, "%Y-%m-%d")) {
+    if (time_ss >> std::get_time(&_time_object, format.data())) {
       return;
     }
 
