@@ -1,4 +1,5 @@
 #include "Loader.h"
+#include <limits>
 
 namespace thirdai::data {
 
@@ -17,7 +18,12 @@ Loader::Loader(ColumnMapIterator data_iterator,
       _shuffle_buffer(_data_iterator.emptyColumnMap()) {}
 
 std::optional<bolt::train::LabeledDataset> Loader::next() {
-  size_t num_rows_to_load = _shuffle_buffer_size + _batch_size * _max_batches;
+  size_t num_rows_to_load;
+  if (_max_batches == NO_LIMIT) {
+    num_rows_to_load = NO_LIMIT;
+  } else {
+    num_rows_to_load = _shuffle_buffer_size + _batch_size * _max_batches;
+  }
 
   ColumnMap loaded_rows = std::move(_shuffle_buffer);
 
@@ -54,7 +60,7 @@ std::optional<bolt::train::LabeledDataset> Loader::next() {
 }
 
 std::pair<ColumnMap, ColumnMap> Loader::splitIntoDataAndBuffer(
-    ColumnMap&& loaded_rows, size_t dataset_size) {
+    ColumnMap&& loaded_rows, size_t dataset_size) const {
   if (loaded_rows.numRows() <= dataset_size) {
     return std::make_pair(std::move(loaded_rows),
                           _data_iterator.emptyColumnMap());
