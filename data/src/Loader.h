@@ -30,8 +30,8 @@ class Loader {
   ColumnMapIterator _data_iterator;
   TransformationPtr _transformation;
 
-  std::vector<std::pair<std::string, std::string>> _input_columns;
-  std::vector<std::pair<std::string, std::string>> _label_columns;
+  IndexValueColumnList _input_columns;
+  IndexValueColumnList _label_columns;
 
   size_t _batch_size;
   size_t _max_batches;

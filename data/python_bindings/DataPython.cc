@@ -1,4 +1,6 @@
 #include "DataPython.h"
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/Loader.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
@@ -54,6 +56,19 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   createColumnsSubmodule(dataset_submodule);
 
   createTransformationsSubmodule(dataset_submodule);
+
+  py::class_<ColumnMapIterator>(dataset_submodule, "ColumnMapIterator")
+      .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
+           py::arg("delimiter"), py::arg("rows_per_load") = 10000);
+
+  py::class_<Loader>(dataset_submodule, "Loader")
+      .def(py::init<ColumnMapIterator, TransformationPtr, IndexValueColumnList,
+                    IndexValueColumnList, size_t, size_t, size_t>(),
+           py::arg("data_iterator"), py::arg("transformation"),
+           py::arg("input_columns"), py::arg("output_columns"),
+           py::arg("batch_size"), py::arg("max_batches") = Loader::NO_LIMIT,
+           py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE)
+      .def("next", &Loader::next);
 }
 
 template <typename T>
