@@ -16,7 +16,7 @@ ColumnMap StringHash::apply(ColumnMap columns) const {
   }
 
   auto output_column =
-      TokenColumn::make(std::move(hashed_values), _output_range);
+      ValueColumn<uint32_t>::make(std::move(hashed_values), _output_range);
 
   columns.setColumn(_output_column_name, output_column);
 

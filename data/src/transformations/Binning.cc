@@ -28,7 +28,7 @@ ColumnMap BinningTransformation::apply(ColumnMap columns) const {
   }
 
   auto output_column =
-      std::make_shared<TokenColumn>(std::move(binned_values), _num_bins);
+      ValueColumn<uint32_t>::make(std::move(binned_values), _num_bins);
 
   columns.setColumn(_output_column_name, output_column);
 

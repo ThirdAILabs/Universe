@@ -1,21 +1,28 @@
 #pragma once
 
+#include <iostream>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace thirdai::data {
 
 template <typename T>
-inline void shuffleVector(std::vector<T>& vector,
-                          const std::vector<size_t>& permutation) {
+inline std::vector<T> shuffleVector(std::vector<T>&& vector,
+                                    const std::vector<size_t>& permutation) {
   if (permutation.size() != vector.size()) {
     throw std::invalid_argument(
         "Size of permutation must match the number of rows.");
   }
 
-#pragma omp parallel for default(none) shared(vector, permutation)
+  std::vector<T> new_vector(vector.size());
+
+#pragma omp parallel for default(none) shared(new_vector, vector, permutation)
   for (size_t i = 0; i < vector.size(); i++) {
-    std::swap(vector[i], vector[permutation[i]]);
+    std::swap(new_vector[i], vector[permutation[i]]);
   }
+
+  return new_vector;
 }
 
 template <typename T>
@@ -31,6 +38,23 @@ inline std::vector<T> concatVectors(std::vector<T>&& a, std::vector<T>&& b) {
   }
 
   return new_vec;
+}
+
+template <typename T>
+inline std::pair<std::vector<T>, std::vector<T>> splitVector(
+    std::vector<T>&& vector, size_t offset) {
+  if (offset >= vector.size()) {
+    throw std::invalid_argument(
+        "invalid split offset " + std::to_string(offset) +
+        " for column of length " + std::to_string(vector.size()) + ".");
+  }
+
+  std::vector<T> front(std::make_move_iterator(vector.begin()),
+                       std::make_move_iterator(vector.begin() + offset));
+  std::vector<T> back(std::make_move_iterator(vector.begin()) + offset,
+                      std::make_move_iterator(vector.end()));
+
+  return std::make_pair(std::move(front), std::move(back));
 }
 
 }  // namespace thirdai::data

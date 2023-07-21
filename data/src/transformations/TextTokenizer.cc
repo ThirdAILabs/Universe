@@ -39,7 +39,7 @@ ColumnMap TextTokenizer::apply(ColumnMap columns) const {
     output_tokens[i] = std::move(indices);
   }
 
-  auto token_col = TokenArrayColumn::make(std::move(output_tokens), _dim);
+  auto token_col = ArrayColumn<uint32_t>::make(std::move(output_tokens), _dim);
 
   columns.setColumn(_output_column, token_col);
   return columns;

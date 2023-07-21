@@ -4,8 +4,13 @@
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <algorithm>
+#include <cstdint>
 #include <exception>
+#include <numeric>
+#include <random>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::data {
@@ -17,7 +22,7 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
         "Cannot construct ColumnMap from empty set of columns.");
   }
 
-  std::optional<uint64_t> num_rows = std::nullopt;
+  std::optional<size_t> num_rows = std::nullopt;
   for (auto& [_, column] : _columns) {
     if (num_rows && column->numRows() != num_rows.value()) {
       throw std::invalid_argument(
@@ -28,21 +33,9 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
   _num_rows = num_rows.value();
 }
 
-std::vector<ColumnPtr> ColumnMap::selectColumns(
-    const std::vector<std::string>& column_names) const {
-  std::vector<ColumnPtr> output_columns;
-  output_columns.reserve(column_names.size());
-
-  for (const auto& name : column_names) {
-    output_columns.push_back(getColumn(name));
-  }
-
-  return output_columns;
-}
-
 template <typename T>
-ArrayColumnPtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ArrayColumn<T>>(getColumn(name));
+ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<ArrayColumnBase<T>>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ArrayColumn.");
@@ -50,15 +43,31 @@ ArrayColumnPtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
   return column;
 }
 
+template ArrayColumnBasePtr<uint32_t> ColumnMap::getArrayColumn(
+    const std::string&) const;
+template ArrayColumnBasePtr<float> ColumnMap::getArrayColumn(
+    const std::string&) const;
+template ArrayColumnBasePtr<std::string> ColumnMap::getArrayColumn(
+    const std::string&) const;
+
 template <typename T>
-ValueColumnPtr<T> ColumnMap::getValueColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ValueColumn<T>>(getColumn(name));
+ValueColumnBasePtr<T> ColumnMap::getValueColumn(const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<ValueColumnBase<T>>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ValueColumn.");
   }
   return column;
 }
+
+template ValueColumnBasePtr<uint32_t> ColumnMap::getValueColumn(
+    const std::string&) const;
+template ValueColumnBasePtr<float> ColumnMap::getValueColumn(
+    const std::string&) const;
+template ValueColumnBasePtr<std::string> ColumnMap::getValueColumn(
+    const std::string&) const;
+template ValueColumnBasePtr<int64_t> ColumnMap::getValueColumn(
+    const std::string&) const;
 
 ColumnPtr ColumnMap::getColumn(const std::string& name) const {
   if (!_columns.count(name)) {
@@ -85,6 +94,56 @@ std::vector<std::string> ColumnMap::columns() const {
     columns.push_back(map_entry.first);
   }
   return columns;
+}
+
+void ColumnMap::shuffle(uint32_t seed) {
+  std::vector<size_t> permutation(numRows());
+  std::iota(permutation.begin(), permutation.end(), 0);
+  std::shuffle(permutation.begin(), permutation.end(), std::mt19937{seed});
+
+  for (auto& [_, column] : _columns) {
+    column->shuffle(permutation);
+  }
+}
+
+ColumnMap ColumnMap::concat(ColumnMap& other) {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+
+  for (auto& [name, column] : _columns) {
+    new_columns[name] = column->concat(other.getColumn(name));
+  }
+
+  clear();
+  other.clear();
+
+  return ColumnMap(std::move(new_columns));
+}
+
+std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t offset) {
+  if (offset >= numRows()) {
+    throw std::invalid_argument(
+        "invalid split offset " + std::to_string(offset) +
+        " for ColumnMap with " + std::to_string(numRows()) + " rows.");
+  }
+
+  std::unordered_map<std::string, ColumnPtr> front_columns;
+  std::unordered_map<std::string, ColumnPtr> back_columns;
+
+  for (auto& [name, column] : _columns) {
+    auto [front, back] = column->split(offset);
+    front_columns[name] = front;
+    back_columns[name] = back;
+  }
+
+  clear();
+
+  return {ColumnMap(std::move(front_columns)),
+          ColumnMap(std::move(back_columns))};
+}
+
+void ColumnMap::clear() {
+  _columns.clear();
+  _num_rows = 0;
 }
 
 ColumnMap ColumnMap::createStringColumnMapFromFile(
@@ -120,7 +179,7 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   std::unordered_map<std::string, ColumnPtr> column_map;
   for (size_t i = 0; i < columns.size(); i++) {
     column_map[std::string(header.at(i))] =
-        StringColumn::make(std::move(columns.at(i)));
+        ValueColumn<std::string>::make(std::move(columns.at(i)));
   }
 
   return ColumnMap(column_map);

@@ -50,8 +50,8 @@ class ColdStartDataSource final : public dataset::DataSource {
     return _label_column_name + _column_delimiter + _text_column_name;
   }
 
-  thirdai::data::ValueColumnPtr<std::string> _text_column;
-  thirdai::data::ValueColumnPtr<std::string> _label_column;
+  thirdai::data::ValueColumnBasePtr<std::string> _text_column;
+  thirdai::data::ValueColumnBasePtr<std::string> _label_column;
   uint64_t _row_idx;
 
   std::string _text_column_name;

@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <data/src/columns/Column.h>
 #include <dataset/src/Datasets.h>
+#include <utils/Random.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -15,13 +16,13 @@ class ColumnMap {
  public:
   explicit ColumnMap(std::unordered_map<std::string, ColumnPtr> columns);
 
-  uint64_t numRows() const { return _num_rows; }
+  size_t numRows() const { return _num_rows; }
 
   template <typename T>
-  ArrayColumnPtr<T> getArrayColumn(const std::string& name) const;
+  ArrayColumnBasePtr<T> getArrayColumn(const std::string& name) const;
 
   template <typename T>
-  ValueColumnPtr<T> getValueColumn(const std::string& name) const;
+  ValueColumnBasePtr<T> getValueColumn(const std::string& name) const;
 
   ColumnPtr getColumn(const std::string& name) const;
 
@@ -31,15 +32,24 @@ class ColumnMap {
 
   std::vector<std::string> columns() const;
 
+  auto begin() const { return _columns.begin(); }
+
+  auto end() const { return _columns.end(); }
+
+  void shuffle(uint32_t seed = global_random::nextSeed());
+
+  ColumnMap concat(ColumnMap& other);
+
+  std::pair<ColumnMap, ColumnMap> split(size_t offset);
+
+  void clear();
+
   static ColumnMap createStringColumnMapFromFile(
       const dataset::DataSourcePtr& source, char delimiter);
 
  private:
-  std::vector<ColumnPtr> selectColumns(
-      const std::vector<std::string>& column_names) const;
-
   std::unordered_map<std::string, ColumnPtr> _columns;
-  uint64_t _num_rows;
+  size_t _num_rows;
 };
 
 }  // namespace thirdai::data

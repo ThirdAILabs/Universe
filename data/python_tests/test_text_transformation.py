@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from dataset_utils import sparse_bolt_dataset_to_numpy
 from thirdai import data, dataset
 from transformers import BertTokenizer
 
@@ -19,9 +18,7 @@ def test_text_tokenizer_unigrams():
 
     columns = featurizer(columns)
 
-    tokens, _ = sparse_bolt_dataset_to_numpy(
-        columns.convert_to_dataset(["output"], batch_size=10)
-    )
+    tokens = np.array(columns["output"].data())
 
     assert tokens.shape == (3, 4)
 
@@ -65,8 +62,7 @@ def test_text_tokenizer_wordpiece(download_bert_base_uncased):
 
     columns = featurizer(columns)
 
-    tokens = columns.convert_to_dataset(["output"], batch_size=100)
-    tokens = [tokens[0][i].to_numpy()[0] for i in range(len(tokens[0]))]
+    tokens = [np.array(x) for x in columns["output"].data()]
 
     for text, tokens in zip(TEXT_SAMPLES, tokens):
         hf_tokens = huggingface_tokenizer.encode(text, add_special_tokens=False)
