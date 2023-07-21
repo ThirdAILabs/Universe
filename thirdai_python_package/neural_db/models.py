@@ -180,7 +180,6 @@ def unsupervised_train_on_docs(
     max_epochs: int,
     metric: str,
     learning_rate: float,
-    acc_to_stop: float,
     on_progress: Callable,
     freeze_before_train: bool,
     cancel_state: CancelState,
@@ -192,7 +191,7 @@ def unsupervised_train_on_docs(
 
     early_stop_callback = EarlyStop(
         tracked_metric=metric,
-        metric_threshold=acc_to_stop,
+        metric_threshold=0.9 if documents._size > SOME_THRESHOLD else 0.99,
     )
 
     progress_callback = ProgressUpdate(
@@ -318,7 +317,6 @@ class Mach(Model):
                 max_epochs=max_epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
-                acc_to_stop=0.95,
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
