@@ -1,4 +1,6 @@
 #include "TensorConversion.h"
+#include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
 #include <exception>
 #include <stdexcept>
 
@@ -12,7 +14,11 @@ std::vector<TensorList> convertToTensors(
 
   for (const auto& [indices_column, values_column] : columns_to_convert) {
     auto indices = columns.getArrayColumn<uint32_t>(indices_column);
-    auto values = columns.getArrayColumn<float>(values_column);
+
+    ArrayColumnBasePtr<float> values = nullptr;
+    if (values_column) {
+      values = columns.getArrayColumn<float>(*values_column);
+    }
 
     std::exception_ptr error;
 
@@ -28,20 +34,28 @@ std::vector<TensorList> convertToTensors(
 
       for (size_t i = batch_start; i < batch_end; i++) {
         auto indices_row = indices->row(i);
-        auto values_row = values->row(i);
 
-        if (indices_row.size() != values_row.size()) {
+        // Values are optional for converting sparse data. If not specified
+        // values are assumed to be 1.0.
+        if (values) {
+          auto values_row = values->row(i);
+          if (indices_row.size() != values_row.size()) {
 #pragma omp critical
-          error = std::make_exception_ptr(std::invalid_argument(
-              "Indices size does not batch values size in row " +
-              std::to_string(i) + "."));
-          break;
+            error = std::make_exception_ptr(std::invalid_argument(
+                "Indices size does not batch values size in row " +
+                std::to_string(i) + "."));
+            break;
+          }
+          batch_values.insert(batch_values.end(), values_row.begin(),
+                              values_row.end());
+        } else {
+          for (size_t j = 0; j < indices_row.size(); j++) {
+            batch_values.push_back(1.0);
+          }
         }
 
         batch_indices.insert(batch_indices.end(), indices_row.begin(),
                              indices_row.end());
-        batch_values.insert(batch_values.end(), values_row.begin(),
-                            values_row.end());
         batch_lens.push_back(indices_row.size());
       }
 
