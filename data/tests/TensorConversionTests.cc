@@ -6,7 +6,7 @@
 
 namespace thirdai::data::tests {
 
-TEST(TensorConversionTest, TestColumnsToTensors) {
+void runConversionTest(bool specify_values) {
   std::vector<std::vector<uint32_t>> indices;
   std::vector<std::vector<float>> values;
 
@@ -33,7 +33,9 @@ TEST(TensorConversionTest, TestColumnsToTensors) {
 
   ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
 
-  auto tensors = convertToTensors(columns, {{"indices", "values"}}, 3);
+  std::optional<std::string> values_col_name =
+      specify_values ? std::make_optional("values") : std::nullopt;
+  auto tensors = convertToTensors(columns, {{"indices", values_col_name}}, 3);
 
   size_t row_cnt = 0;
   size_t value_cnt = 0;
@@ -45,12 +47,24 @@ TEST(TensorConversionTest, TestColumnsToTensors) {
 
       for (size_t j = 0; j < vec.len; j++) {
         EXPECT_EQ(vec.active_neurons[j], value_cnt);
-        EXPECT_EQ(vec.activations[j], static_cast<float>(value_cnt));
+        if (specify_values) {
+          EXPECT_EQ(vec.activations[j], static_cast<float>(value_cnt));
+        } else {
+          EXPECT_EQ(vec.activations[i], 1.0);
+        }
         value_cnt++;
       }
       row_cnt++;
     }
   }
+}
+
+TEST(TensorConversionTests, WithValues) {
+  runConversionTest(/* specify_values= */ true);
+}
+
+TEST(TensorConversionTests, WithoutValues) {
+  runConversionTest(/* specify_values= */ false);
 }
 
 }  // namespace thirdai::data::tests
