@@ -7,7 +7,8 @@ namespace thirdai::data {
 
 using bolt::nn::tensor::TensorList;
 
-using IndexValueColumnList = std::vector<std::pair<std::string, std::string>>;
+using IndexValueColumnList =
+    std::vector<std::pair<std::string, std::optional<std::string>>>;
 
 std::vector<TensorList> convertToTensors(
     const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
