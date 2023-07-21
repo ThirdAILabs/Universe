@@ -14,6 +14,10 @@ class TransformationList final : public Transformation {
   explicit TransformationList(std::vector<TransformationPtr> transformations)
       : _transformations(std::move(transformations)) {}
 
+  static auto make(std::vector<TransformationPtr> transformations) {
+    return std::make_shared<TransformationList>(std::move(transformations));
+  }
+
   ColumnMap apply(ColumnMap columns) const final {
     for (const auto& transformation : _transformations) {
       // This is a shallow copy and not expensive since columns are stored as

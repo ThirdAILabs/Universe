@@ -1,0 +1,154 @@
+#include "gtest/gtest.h"
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/Loader.h>
+#include <data/src/transformations/CastString.h>
+#include <data/src/transformations/TransformationList.h>
+#include <optional>
+#include <sstream>
+#include <unordered_set>
+
+namespace thirdai::data::tests {
+
+class MockDataSource final : public dataset::DataSource {
+ public:
+  explicit MockDataSource(std::vector<std::string> lines)
+      : _lines(std::move(lines)) {}
+
+  std::string resourceName() const final { return "mock-data-source"; }
+
+  std::optional<std::vector<std::string>> nextBatch(
+      size_t target_batch_size) final {
+    std::vector<std::string> lines;
+
+    while (lines.size() < target_batch_size) {
+      if (auto line = nextLine()) {
+        lines.push_back(*line);
+      } else {
+        break;
+      }
+    }
+
+    if (lines.empty()) {
+      return std::nullopt;
+    }
+
+    return lines;
+  }
+
+  std::optional<std::string> nextLine() final {
+    if (_loc < _lines.size()) {
+      return _lines[_loc++];
+    }
+    return std::nullopt;
+  }
+
+  void restart() final { _loc = 0; }
+
+ private:
+  std::vector<std::string> _lines;
+  size_t _loc = 0;
+};
+
+DataSourcePtr getMockDataSource(size_t n_lines) {
+  std::vector<std::string> lines = {"token,tokens,decimal,decimals"};
+
+  for (size_t i = 0; i < n_lines; i++) {
+    // Token
+    std::stringstream line;
+    line << i << ",";
+
+    // Tokens
+    for (size_t j = 0; j < (i % 10); j++) {
+      if (j > 0) {
+        line << " ";
+      }
+      line << (i + j + 1);
+    }
+
+    // Decimal
+    line << "," << (static_cast<float>(i) / 4) << ",";
+
+    // Decimals
+    for (size_t j = 0; j < (i % 10); j++) {
+      if (j > 0) {
+        line << " ";
+      }
+      line << (static_cast<float>(i + j + 1) / 4);
+    }
+
+    lines.push_back(line.str());
+  }
+
+  return std::make_shared<MockDataSource>(std::move(lines));
+}
+
+TEST(DataLoaderTest, Streaming) {
+  size_t n_chunks = 4, n_batches = 10, batch_size = 20;
+  size_t n_rows = n_chunks * n_batches * batch_size;
+
+  ColumnMapIterator data_iterator(getMockDataSource(n_rows),
+                                  /* delimiter= */ ',', /* chunk_size= */ 64);
+
+  auto transformations = TransformationList::make({
+      std::make_shared<CastStringToToken>("token", "token_cast", n_rows),
+      std::make_shared<CastStringToTokenArray>("tokens", "tokens_cast", ' ',
+                                               n_rows + 10),
+      std::make_shared<CastStringToDecimal>("decimal", "decimal_cast"),
+      std::make_shared<CastStringToDecimalArray>("decimals", "decimals_cast",
+                                                 ' '),
+  });
+
+  Loader loader(data_iterator, transformations,
+                {{"tokens_cast", "decimals_cast"}},
+                {{"token_cast", "decimal_cast"}}, batch_size, n_batches, 50);
+
+  std::unordered_set<uint32_t> rows_seen;
+
+  for (size_t c = 0; c < n_chunks; c++) {
+    auto chunk = loader.next();
+    ASSERT_TRUE(chunk.has_value());
+
+    auto [data, labels] = std::move(*chunk);
+    ASSERT_EQ(data.size(), n_batches);
+    ASSERT_EQ(labels.size(), n_batches);
+
+    for (size_t b = 0; b < n_batches; b++) {
+      ASSERT_EQ(data[b].size(), 1);
+      ASSERT_EQ(labels[b].size(), 1);
+
+      ASSERT_EQ(data[b][0]->batchSize(), batch_size);
+      ASSERT_EQ(labels[b][0]->batchSize(), batch_size);
+
+      for (size_t i = 0; i < batch_size; i++) {
+        const BoltVector& data_vec = data[b][0]->getVector(i);
+        ASSERT_FALSE(data_vec.isDense());
+        ASSERT_FALSE(data_vec.hasGradients());
+
+        const BoltVector& label_vec = labels[b][0]->getVector(i);
+        ASSERT_FALSE(label_vec.isDense());
+        ASSERT_FALSE(label_vec.hasGradients());
+        ASSERT_EQ(label_vec.len, 1);
+
+        uint32_t row_id = label_vec.active_neurons[0];
+
+        ASSERT_EQ(label_vec.activations[0], static_cast<float>(row_id) / 4);
+
+        ASSERT_EQ(data_vec.len, row_id % 10);
+
+        for (size_t j = 0; j < data_vec.len; j++) {
+          ASSERT_EQ(data_vec.active_neurons[j], row_id + j + 1);
+          ASSERT_EQ(data_vec.activations[j],
+                    static_cast<float>(row_id + j + 1) / 4);
+        }
+
+        rows_seen.insert(row_id);
+      }
+    }
+  }
+
+  ASSERT_EQ(rows_seen.size(), n_rows);
+
+  ASSERT_FALSE(loader.next().has_value());
+}
+
+}  // namespace thirdai::data::tests
