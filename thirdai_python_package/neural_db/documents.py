@@ -31,10 +31,7 @@ class Document:
     @property
     def name(self) -> str:
         raise NotImplementedError()
-
-    def reference(self, element_id: int) -> Reference:
-        raise NotImplementedError()
-
+    
     @property
     def hash(self) -> str:
         sha1 = hashlib.sha1()
@@ -42,6 +39,9 @@ class Document:
         for i in range(self.size):
             sha1.update(bytes(self.reference(i).text, "utf-8"))
         return sha1.hexdigest()
+
+    def reference(self, element_id: int) -> Reference:
+        raise NotImplementedError()
 
     def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text
@@ -258,7 +258,7 @@ class DocumentManager:
 
 class CSV(Document):
     def __init__(
-        self, path, id_column, strong_columns, weak_columns, reference_columns
+        self, path, id_column, strong_columns, weak_columns, reference_columns, save_extra_info=True
     ) -> None:
         self.df = pd.read_csv(path)
         self.df = self.df.sort_values(id_column)
@@ -276,6 +276,12 @@ class CSV(Document):
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
 
+        # This attribute allows certain things to be saved or not saved during
+        # the pickling of a savable_state object. For example, if we set this
+        # to True for PDF docs, we will save the actual pdf file in the pickle.
+        # Utilize this property in __getstate__ and __setstate__ of document objs.
+        self._save_extra_info = save_extra_info
+
     @property
     def hash(self) -> str:
         return self._hash
@@ -286,7 +292,15 @@ class CSV(Document):
 
     @property
     def name(self) -> str:
-        return self.path.name
+        return self.path.name if self.path else "None"
+    
+    @property
+    def save_extra_info(self) -> bool:
+        return self._save_extra_info
+    
+    @save_extra_info.setter
+    def save_extra_info(self, value: bool):
+        self._save_extra_info = value
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -303,7 +317,7 @@ class CSV(Document):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.path.absolute()),
+            source=str(self.path.absolute()) if self.path else "None",
             metadata=row.to_dict(),
         )
 
@@ -316,6 +330,7 @@ class CSV(Document):
     def __getstate__(self):
         from .neural_db import NeuralDB
 
+        # End pickling functionality here to support old directory checkpoint save 
         if not NeuralDB.new_pickle_mode:
             return self.__dict__
 
@@ -325,33 +340,41 @@ class CSV(Document):
         del state["path"]
 
         # Save the filename so we can load it with the same name
-        state["filename"] = self.name
+        state["name"] = self.name
 
-        with open(self.path, "rb") as csv_file:
-            state["file_bytes"] = csv_file.read()
+        if self._save_extra_info:
+            with open(self.path, "rb") as csv_file:
+                state["file_bytes"] = csv_file.read()
 
         return state
 
     def __setstate__(self, state):
         from .neural_db import NeuralDB
 
+        # Add new attributes to state for older document object version backward compatibility
+        if "_save_extra_info" not in state:
+            state["_save_extra_info"] = True
+
+        # End pickling functionality here to support old directory checkpoint load 
         if not NeuralDB.new_pickle_mode:
             self.__dict__.update(state)
             return
 
         # Set value for path since it is not in the state
-        documents_dir = NeuralDB.cache_dir / "savable_state" / "documents"
-        save_path = documents_dir / str(uuid.uuid4()) / state["filename"]
+        documents_dir = NeuralDB.cache_dir / "documents"
+        save_path = documents_dir / str(uuid.uuid4()) / state["name"]
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
-        # Save file bytes to disk
-        with open(save_path, "wb") as csv_file:
-            csv_file.write(state["file_bytes"])
+        if state._save_extra_info and "file_bytes" in state:
+            # Save file bytes to disk
+            with open(save_path, "wb") as csv_file:
+                csv_file.write(state["file_bytes"])
 
-        # Remove unnecessary state attributes
-        del state["file_bytes"]
-        del state["filename"]
+            # Remove unnecessary state attributes
+            del state["file_bytes"]
+
+        del state["name"]
 
         # Set state
         self.__dict__.update(state)
@@ -371,10 +394,12 @@ class Extracted(Document):
     def __init__(
         self,
         path: str,
+        save_extra_info=True
     ):
         self.path = Path(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
+        self._save_extra_info = save_extra_info
 
     def process_data(
         self,
@@ -393,6 +418,14 @@ class Extracted(Document):
     @property
     def name(self) -> str:
         return self.path.name
+    
+    @property
+    def save_extra_info(self) -> bool:
+        return self._save_extra_info
+    
+    @save_extra_info.setter
+    def save_extra_info(self, value: bool):
+        self._save_extra_info = value
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -424,6 +457,7 @@ class Extracted(Document):
     def __getstate__(self):
         from .neural_db import NeuralDB
 
+        # End pickling functionality here to support old directory checkpoint save
         if not NeuralDB.new_pickle_mode:
             return self.__dict__
 
@@ -433,33 +467,41 @@ class Extracted(Document):
         del state["path"]
 
         # Save the filename so we can load it with the same name
-        state["filename"] = self.name
+        state["name"] = self.name
 
-        with open(self.path, "rb") as extracted_file:
-            state["file_bytes"] = extracted_file.read()
+        if self._save_extra_info:
+            with open(self.path, "rb") as extracted_file:
+                state["file_bytes"] = extracted_file.read()
 
         return state
 
     def __setstate__(self, state):
         from .neural_db import NeuralDB
 
+        # Add new attributes to state for older document object version backward compatibility
+        if "_save_extra_info" not in state:
+            state["_save_extra_info"] = True
+
+        # End pickling functionality here to support old directory checkpoint load
         if not NeuralDB.new_pickle_mode:
             self.__dict__.update(state)
             return
 
         # Set value for path since it is not in the state
-        documents_dir = NeuralDB.cache_dir / "savable_state" / "documents"
-        save_path = documents_dir / str(uuid.uuid4()) / state["filename"]
+        documents_dir = NeuralDB.cache_dir / "documents"
+        save_path = documents_dir / str(uuid.uuid4()) / state["name"]
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
-        # Save file bytes to disk
-        with open(save_path, "wb") as extracted_file:
-            extracted_file.write(state["file_bytes"])
+        if state._save_extra_info and "file_bytes" in state:
+            # Save file bytes to disk
+            with open(save_path, "wb") as extracted_file:
+                extracted_file.write(state["file_bytes"])
 
-        # Remove unnecessary state attributes
-        del state["file_bytes"]
-        del state["filename"]
+            # Remove unnecessary state attributes
+            del state["file_bytes"]
+
+        del state["name"]
 
         # Set state
         self.__dict__.update(state)

@@ -100,6 +100,11 @@ class NeuralDB:
         cls.cache_dir = Path(cache_dir)
 
     @classmethod
+    def clear_cache(cls):
+        if os.path.exists(cls.cache_dir):
+            shutil.rmtree(cls.cache_dir)
+
+    @classmethod
     def set_new_pickle_mode(cls, new_pickle_mode=True):
         cls.new_pickle_mode = new_pickle_mode
 
@@ -142,10 +147,6 @@ class NeuralDB:
         on_error: Callable = None,
     ):
         try:
-            savable_state_dir = NeuralDB.cache_dir / "savable_state"
-            if os.path.exists(savable_state_dir):
-                shutil.rmtree(savable_state_dir)
-            os.makedirs(savable_state_dir)
             with open(pkl_path, "rb") as pkl_file:
                 self._savable_state = pickle.load(pkl_file)
 
