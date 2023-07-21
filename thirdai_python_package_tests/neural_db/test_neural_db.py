@@ -1,3 +1,4 @@
+import os
 import shutil
 
 import pytest
@@ -26,7 +27,8 @@ def test_neural_db_save_load(create_simple_dataset):
         top_k=10,
     )
 
-    shutil.rmtree("temp")
+    if os.path.exists("temp"):
+        shutil.rmtree("temp")
 
     ndb.save("temp")
 
@@ -39,5 +41,3 @@ def test_neural_db_save_load(create_simple_dataset):
 
     for after, before in zip(after_save_results, before_save_results):
         assert after.text == before.text
-
-    shutil.rmtree("temp")
