@@ -83,11 +83,14 @@ DataSourcePtr getMockDataSource(size_t n_lines) {
 }
 
 TEST(DataLoaderTest, Streaming) {
-  size_t n_chunks = 4, n_batches = 10, batch_size = 20;
-  size_t n_rows = n_chunks * n_batches * batch_size;
+  size_t n_full_chunks = 4, n_batches = 10, batch_size = 20;
+  size_t partial_chunk_full_batches = 4, last_batch_size = 7;
+  size_t n_rows = n_full_chunks * n_batches * batch_size +
+                  partial_chunk_full_batches * batch_size + last_batch_size;
 
   ColumnMapIterator data_iterator(getMockDataSource(n_rows),
-                                  /* delimiter= */ ',', /* chunk_size= */ 64);
+                                  /* delimiter= */ ',',
+                                  /* rows_per_load= */ 64);
 
   auto transformations = TransformationList::make({
       std::make_shared<CastStringToToken>("token", "token_cast", n_rows),
@@ -100,26 +103,35 @@ TEST(DataLoaderTest, Streaming) {
 
   Loader loader(data_iterator, transformations,
                 {{"tokens_cast", "decimals_cast"}},
-                {{"token_cast", "decimal_cast"}}, batch_size, n_batches, 50);
+                {{"token_cast", "decimal_cast"}}, batch_size, n_batches,
+                /* shuffle_buffer_size= */ 50);
 
   std::unordered_set<uint32_t> rows_seen;
 
-  for (size_t c = 0; c < n_chunks; c++) {
+  for (size_t c = 0; c < n_full_chunks + 1; c++) {
     auto chunk = loader.next();
     ASSERT_TRUE(chunk.has_value());
 
     auto [data, labels] = std::move(*chunk);
-    ASSERT_EQ(data.size(), n_batches);
-    ASSERT_EQ(labels.size(), n_batches);
 
-    for (size_t b = 0; b < n_batches; b++) {
+    size_t expected_batches =
+        (c < n_full_chunks) ? n_batches : partial_chunk_full_batches + 1;
+    ASSERT_EQ(data.size(), expected_batches);
+    ASSERT_EQ(labels.size(), expected_batches);
+
+    for (size_t b = 0; b < data.size(); b++) {
       ASSERT_EQ(data[b].size(), 1);
       ASSERT_EQ(labels[b].size(), 1);
 
-      ASSERT_EQ(data[b][0]->batchSize(), batch_size);
-      ASSERT_EQ(labels[b][0]->batchSize(), batch_size);
+      size_t expected_batches =
+          (c < n_full_chunks || b < partial_chunk_full_batches)
+              ? batch_size
+              : last_batch_size;
 
-      for (size_t i = 0; i < batch_size; i++) {
+      ASSERT_EQ(data[b][0]->batchSize(), expected_batches);
+      ASSERT_EQ(labels[b][0]->batchSize(), expected_batches);
+
+      for (size_t i = 0; i < data[b][0]->batchSize(); i++) {
         const BoltVector& data_vec = data[b][0]->getVector(i);
         ASSERT_FALSE(data_vec.isDense());
         ASSERT_FALSE(data_vec.hasGradients());

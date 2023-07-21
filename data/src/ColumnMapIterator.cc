@@ -5,10 +5,10 @@
 namespace thirdai::data {
 
 ColumnMapIterator::ColumnMapIterator(DataSourcePtr data_source, char delimiter,
-                                     size_t chunk_size)
+                                     size_t rows_per_load)
     : _data_source(std::move(data_source)),
       _delimiter(delimiter),
-      _chunk_size(chunk_size) {
+      _rows_per_load(rows_per_load) {
   auto header = _data_source->nextLine();
   if (!header.has_value()) {
     throw std::invalid_argument("DataSource was found to be empty.");
@@ -17,7 +17,7 @@ ColumnMapIterator::ColumnMapIterator(DataSourcePtr data_source, char delimiter,
 }
 
 std::optional<ColumnMap> ColumnMapIterator::next() {
-  auto rows = _data_source->nextBatch(_chunk_size);
+  auto rows = _data_source->nextBatch(_rows_per_load);
   if (!rows) {
     return std::nullopt;
   }

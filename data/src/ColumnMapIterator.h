@@ -10,7 +10,7 @@ using dataset::DataSourcePtr;
 class ColumnMapIterator {
  public:
   ColumnMapIterator(DataSourcePtr data_source, char delimiter,
-                    size_t chunk_size);
+                    size_t rows_per_load);
 
   std::optional<ColumnMap> next();
 
@@ -22,7 +22,7 @@ class ColumnMapIterator {
 
   DataSourcePtr _data_source;
   char _delimiter;
-  size_t _chunk_size;
+  size_t _rows_per_load;
 
   std::vector<std::string> _column_names;
 };
