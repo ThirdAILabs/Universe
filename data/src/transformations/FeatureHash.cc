@@ -22,18 +22,21 @@ ColumnMap FeatureHash::apply(ColumnMap columns) const {
 
   uint32_t column_salt = 0;
 
-  // TODO(Nicholas): Parallelize this
   for (const auto& name : _columns) {
     auto column = columns.getColumn(name);
 
     if (auto tokens =
             std::dynamic_pointer_cast<ValueColumn<uint32_t>>(column)) {
+#pragma omp parallel for default(none) \
+    shared(tokens, indices, values, column_salt)
       for (size_t i = 0; i < tokens->numRows(); i++) {
         indices[i].push_back(hash(tokens->value(i), column_salt));
         values[i].push_back(1.0);
       }
     } else if (auto token_arrays =
                    std::dynamic_pointer_cast<ArrayColumn<uint32_t>>(column)) {
+#pragma omp parallel for default(none) \
+    shared(token_arrays, indices, values, column_salt)
       for (size_t i = 0; i < token_arrays->numRows(); i++) {
         for (uint32_t token : token_arrays->row(i)) {
           indices[i].push_back(hash(token, column_salt));
@@ -42,6 +45,8 @@ ColumnMap FeatureHash::apply(ColumnMap columns) const {
       }
     } else if (auto decimals =
                    std::dynamic_pointer_cast<ValueColumn<float>>(column)) {
+#pragma omp parallel for default(none) \
+    shared(decimals, indices, values, column_salt)
       for (size_t i = 0; i < decimals->numRows(); i++) {
         indices[i].push_back(hash(0, column_salt));
         values[i].push_back(decimals->value(i));
@@ -49,6 +54,8 @@ ColumnMap FeatureHash::apply(ColumnMap columns) const {
 
     } else if (auto decimal_arrays =
                    std::dynamic_pointer_cast<ArrayColumn<float>>(column)) {
+#pragma omp parallel for default(none) \
+    shared(decimal_arrays, indices, values, column_salt)
       for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
         size_t j = 0;
         for (float decimal : decimal_arrays->row(i)) {
