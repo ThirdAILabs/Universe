@@ -121,15 +121,20 @@ class NeuralDB:
 
         return obj
 
+    @classmethod
     def from_udt(
-        self,
+        cls,
         udt: bolt.UniversalDeepTransformer,
+        user_id: str = "user",
         csv: Optional[str] = None,
         csv_id_column: Optional[str] = None,
         csv_strong_columns: Optional[List[str]] = None,
         csv_weak_columns: Optional[List[str]] = None,
         csv_reference_columns: Optional[List[str]] = None,
     ):
+        obj = cls.__new__(cls)
+        obj._user_id = user_id
+
         if csv is None:
             udt.clear_index()
 
@@ -166,7 +171,7 @@ class NeuralDB:
         )
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
-        self._savable_state = State(model=model, logger=logger)
+        obj._savable_state = State(model=model, logger=logger)
 
         if csv is not None:
             if (
@@ -188,8 +193,8 @@ class NeuralDB:
                 weak_columns=csv_weak_columns,
                 reference_columns=csv_reference_columns,
             )
-            self._savable_state.documents.add([csv_doc])
-            self._savable_state.model.set_n_ids(csv_doc.size)
+            obj._savable_state.documents.add([csv_doc])
+            obj._savable_state.model.set_n_ids(csv_doc.size)
 
     def in_session(self) -> bool:
         return self._savable_state is not None
