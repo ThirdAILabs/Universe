@@ -118,27 +118,22 @@ class Model:
         raise NotImplementedError()
 
 
-class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
+class EarlyStop(bolt_v2.train.callbacks.Callback):
     def __init__(
         self,
-        min_epochs,
         tracked_metric,
         metric_threshold,
     ):
         super().__init__()
 
         self.epoch_count = 0
-        self.min_epochs = min_epochs
         self.tracked_metric = tracked_metric
         self.metric_threshold = metric_threshold
 
     def on_epoch_end(self):
         self.epoch_count += 1
 
-        if (
-            self.epoch_count > self.min_epochs
-            and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
-        ):
+        if self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold:
             self.train_state.stop_training()
 
 
@@ -182,7 +177,6 @@ class CancelTraining(bolt_v2.train.callbacks.Callback):
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
-    min_epochs: int,
     max_epochs: int,
     metric: str,
     learning_rate: float,
@@ -196,8 +190,7 @@ def unsupervised_train_on_docs(
 
     documents.restart()
 
-    early_stop_callback = EarlyStopWithMinEpochs(
-        min_epochs=min_epochs,
+    early_stop_callback = EarlyStop(
         tracked_metric=metric,
         metric_threshold=acc_to_stop,
     )
@@ -291,7 +284,6 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_before_train = False
-            min_epochs = 10
             max_epochs = 15
         else:
             if intro_documents.size > 0:
@@ -314,7 +306,6 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            min_epochs = 5
             max_epochs = 10
 
         self.n_ids += intro_documents.size
@@ -324,7 +315,6 @@ class Mach(Model):
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
-                min_epochs=min_epochs,
                 max_epochs=max_epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
