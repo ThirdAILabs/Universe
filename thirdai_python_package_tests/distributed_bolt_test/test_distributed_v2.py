@@ -116,7 +116,9 @@ def test_bolt_distributed_v2():
 
 
 # We added this separately, as we don't need to add training for checking whether license
-# works as just initializing the model should work.
+# works as just initializing the model should work. Also, `udt_training_loop_per_worker`
+# runs in a separate environment hence we need to pass in license state to its thirdai
+# namespace
 @pytest.mark.release
 def test_udt_licensed_training():
     def udt_training_loop_per_worker(config):
