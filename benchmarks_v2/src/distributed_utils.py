@@ -83,7 +83,10 @@ def setup_ray():
     ray.init(
         runtime_env={
             "working_dir": working_dir,
-            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
+            "env_vars": {
+                "OMP_NUM_THREADS": f"{num_cpu_per_node}",
+                "PYTHONPATH": "/home/mritunjay/Universe/",
+            },
         },
         ignore_reinit_error=True,
     )

@@ -26,7 +26,7 @@ class DistributedRunner_v2(Runner):
 
         model.coldstart_distributed_v2(
             filename=config["data_splits"][
-                f"unsupervised_part{session.get_world_rank()+1}"
+                f"unsupervised_{session.get_world_rank()+1}"
             ],
             strong_column_names=["TITLE"],
             weak_column_names=["TEXT"],
@@ -43,9 +43,7 @@ class DistributedRunner_v2(Runner):
         )
 
         metrics = model.train_distributed_v2(
-            filename=config["data_splits"][
-                f"supervised_part{session.get_world_rank()+1}"
-            ],
+            filename=config["data_splits"][f"supervised_{session.get_world_rank()+1}"],
             learning_rate=config["learning_rate"],
             epochs=config["num_epochs"],
             batch_size=8192,
