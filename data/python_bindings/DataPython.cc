@@ -1,6 +1,7 @@
 #include "DataPython.h"
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
@@ -38,6 +39,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
            py::arg("columns"))
+      .def(py::init(&ColumnMap::fromMapInput), py::arg("sample"))
+      .def(py::init(&ColumnMap::fromMapInputBatch), py::arg("samples"))
       .def("num_rows", &ColumnMap::numRows)
       .def("__getitem__", &ColumnMap::getColumn)
       .def(
@@ -69,6 +72,9 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("batch_size"), py::arg("max_batches") = Loader::NO_LIMIT,
            py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE)
       .def("next", &Loader::next);
+
+  dataset_submodule.def("to_tensors", &convertToTensors, py::arg("column_map"),
+                        py::arg("columns_to_convert"), py::arg("batch_size"));
 }
 
 template <typename T>

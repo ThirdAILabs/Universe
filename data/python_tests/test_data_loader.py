@@ -1,14 +1,19 @@
+import numpy as np
 import pytest
 from download_dataset_fixtures import download_clinc_dataset
 from thirdai import bolt_v2 as bolt
 from thirdai import data, dataset
 
 
+def text_transformation():
+    return data.transformations.Text(input_column="text", output_column="tokens")
+
+
 def load_data(filename):
     transformations = data.transformations.TransformationList(
         [
             data.transformations.ToTokens("category", "category_id", dim=150),
-            data.transformations.Text(input_column="text", output_column="tokens"),
+            text_transformation(),
         ]
     )
 
@@ -43,9 +48,9 @@ def build_model():
     return bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
 
-@pytest.mark.unit
-def test_data_loader_clinc(download_clinc_dataset):
-    train_file, test_file, _ = download_clinc_dataset
+@pytest.fixture(scope="session")
+def train_bolt_on_clinc(download_clinc_dataset):
+    train_file, test_file, inference_samples = download_clinc_dataset
 
     train_data = load_data(train_file)
     val_data = load_data(test_file)
@@ -62,4 +67,57 @@ def test_data_loader_clinc(download_clinc_dataset):
         validation_metrics=["categorical_accuracy"],
     )
 
+    return model, metrics, inference_samples
+
+
+@pytest.mark.unit
+def test_data_loader_clinc(train_bolt_on_clinc):
+    _, metrics, _ = train_bolt_on_clinc
+
     assert metrics["val_categorical_accuracy"][-1] >= 0.85
+
+
+@pytest.mark.unit
+def test_single_sample_featurization(train_bolt_on_clinc):
+    model, metrics, inference_samples = train_bolt_on_clinc
+
+    tokenizer = text_transformation()
+
+    correct = 0
+    for sample, label in inference_samples:
+        inputs = data.to_tensors(
+            column_map=tokenizer(data.ColumnMap(sample)),
+            columns_to_convert=[("tokens", None)],
+            batch_size=100,
+        )[0]
+
+        output = model.forward(inputs)[0]
+        pred = np.argmax(output.activations, axis=1)[0]
+        if pred == label:
+            correct += 1
+
+    acc = correct / len(inference_samples)
+    assert acc >= 0.85
+    assert np.isclose(acc, metrics["val_categorical_accuracy"][-1])
+
+
+@pytest.mark.unit
+def test_batch_featurization(train_bolt_on_clinc):
+    model, metrics, inference_samples = train_bolt_on_clinc
+
+    tokenizer = text_transformation()
+
+    batch = [x[0] for x in inference_samples]
+    labels = np.array([x[1] for x in inference_samples])
+    batch = data.to_tensors(
+        column_map=tokenizer(data.ColumnMap(batch)),
+        columns_to_convert=[("tokens", None)],
+        batch_size=10000,
+    )[0]
+
+    output = model.forward(batch)[0]
+    preds = np.argmax(output.activations, axis=1)
+
+    acc = np.mean(preds == labels)
+    assert np.mean(preds == labels) >= 0.85
+    assert np.isclose(acc, metrics["val_categorical_accuracy"][-1])

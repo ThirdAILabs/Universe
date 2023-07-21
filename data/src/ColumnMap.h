@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <data/src/columns/Column.h>
 #include <dataset/src/Datasets.h>
 #include <utils/Random.h>
@@ -15,6 +16,10 @@ namespace thirdai::data {
 class ColumnMap {
  public:
   explicit ColumnMap(std::unordered_map<std::string, ColumnPtr> columns);
+
+  static ColumnMap fromMapInput(const automl::MapInput& sample);
+
+  static ColumnMap fromMapInputBatch(const automl::MapInputBatch& samples);
 
   size_t numRows() const { return _num_rows; }
 

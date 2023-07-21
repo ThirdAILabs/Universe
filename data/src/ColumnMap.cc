@@ -1,4 +1,5 @@
 #include "ColumnMap.h"
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -31,6 +32,32 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
     num_rows = column->numRows();
   }
   _num_rows = num_rows.value();
+}
+
+ColumnMap ColumnMap::fromMapInput(const automl::MapInput& sample) {
+  std::unordered_map<std::string, ColumnPtr> columns;
+  for (const auto& [name, row] : sample) {
+    columns[name] = ValueColumn<std::string>::make({row});
+  }
+
+  return ColumnMap(std::move(columns));
+}
+
+ColumnMap ColumnMap::fromMapInputBatch(const automl::MapInputBatch& samples) {
+  std::unordered_map<std::string, std::vector<std::string>> columns;
+
+  for (const auto& sample : samples) {
+    for (const auto& [name, row] : sample) {
+      columns[name].push_back(row);
+    }
+  }
+
+  std::unordered_map<std::string, ColumnPtr> column_map;
+  for (auto& [name, samples] : columns) {
+    column_map[name] = ValueColumn<std::string>::make(std::move(samples));
+  }
+
+  return ColumnMap(std::move(column_map));
 }
 
 template <typename T>
