@@ -41,3 +41,6 @@ def test_neural_db_save_load(create_simple_dataset):
 
     for after, before in zip(after_save_results, before_save_results):
         assert after.text == before.text
+
+    if os.path.exists("temp"):
+        shutil.rmtree("temp")
