@@ -86,8 +86,8 @@ class SupDataSource(PyDataSource):
 
 class NeuralDB:
     def __init__(self, user_id: str = "user", **kwargs) -> None:
-        self._user_id: str = "user"
-        self._savable_state = State(
+        self._user_id: str = user_id
+        self._savable_state: State = State(
             model=Mach(id_col="id", query_col="query", **kwargs),
             logger=loggers.LoggerList([loggers.InMemoryLogger()]),
         )
@@ -98,26 +98,16 @@ class NeuralDB:
         checkpoint_path: str,
         user_id: str = "user",
         on_progress: Callable = no_op,
-        on_error: Callable = None,
     ):
         obj = cls.__new__(cls)
         checkpoint_path = Path(checkpoint_path)
-        try:
-            obj._savable_state = State.load(checkpoint_path, on_progress)
-            obj._user_id = user_id
-            if obj._savable_state.model and obj._savable_state.model.get_model():
-                obj._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
-            if not isinstance(obj._savable_state.logger, loggers.LoggerList):
-                # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
-                obj._savable_state.logger = loggers.LoggerList(
-                    [obj._savable_state.logger]
-                )
-        except Exception as e:
-            obj._savable_state = None
-            if on_error is not None:
-                on_error(error_msg=e.__str__())
-            else:
-                raise e
+        obj._savable_state = State.load(checkpoint_path, on_progress)
+        obj._user_id = user_id
+        if obj._savable_state.model and obj._savable_state.model.get_model():
+            obj._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+        if not isinstance(obj._savable_state.logger, loggers.LoggerList):
+            # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
+            obj._savable_state.logger = loggers.LoggerList([obj._savable_state.logger])
 
         return obj
 
@@ -201,9 +191,6 @@ class NeuralDB:
 
     def ready_to_search(self) -> bool:
         return self.in_session() and self._savable_state.ready()
-
-    def clear_session(self) -> None:
-        self._savable_state = None
 
     def sources(self) -> Dict[str, str]:
         return self._savable_state.documents.sources()
