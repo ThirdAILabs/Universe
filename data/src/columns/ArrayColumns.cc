@@ -41,8 +41,8 @@ ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {
 }
 
 template <typename T>
-std::pair<ColumnPtr, ColumnPtr> ArrayColumn<T>::split(size_t offset) {
-  auto [front, back] = splitVector(std::move(_data), offset);
+std::pair<ColumnPtr, ColumnPtr> ArrayColumn<T>::split(size_t starting_offset) {
+  auto [front, back] = splitVector(std::move(_data), starting_offset);
 
   auto front_col =
       ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(front), _dimension));
@@ -84,6 +84,8 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
         data.begin(), data.end(),
         [dim](const std::vector<float>& row) { return row.size() == dim; });
 
+    // For a dense column there can only be a dimension if all of the columns
+    // have the same length.
     if (all_dims_match) {
       dimension = ColumnDimension::dense(dim);
     }
