@@ -17,8 +17,9 @@ class Loader {
   static constexpr size_t DEFAULT_SHUFFLE_BUFFER_SIZE = 64000;
 
   Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
-         IndexValueColumnList input_columns, IndexValueColumnList label_columns,
-         size_t batch_size, size_t max_batches = NO_LIMIT,
+         StatePtr state, IndexValueColumnList input_columns,
+         IndexValueColumnList label_columns, size_t batch_size,
+         size_t max_batches = NO_LIMIT,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE);
 
   std::optional<bolt::train::LabeledDataset> next();
@@ -38,6 +39,8 @@ class Loader {
   size_t _shuffle_buffer_size;
 
   ColumnMap _shuffle_buffer;
+
+  StatePtr _state;
 };
 
 }  // namespace thirdai::data

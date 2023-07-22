@@ -65,11 +65,13 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("delimiter"), py::arg("rows_per_load") = 10000);
 
   py::class_<Loader>(dataset_submodule, "Loader")
-      .def(py::init<ColumnMapIterator, TransformationPtr, IndexValueColumnList,
-                    IndexValueColumnList, size_t, size_t, size_t>(),
+      .def(py::init<ColumnMapIterator, TransformationPtr, StatePtr,
+                    IndexValueColumnList, IndexValueColumnList, size_t, size_t,
+                    size_t>(),
            py::arg("data_iterator"), py::arg("transformation"),
-           py::arg("input_columns"), py::arg("output_columns"),
-           py::arg("batch_size"), py::arg("max_batches") = Loader::NO_LIMIT,
+           py::arg("state"), py::arg("input_columns"),
+           py::arg("output_columns"), py::arg("batch_size"),
+           py::arg("max_batches") = Loader::NO_LIMIT,
            py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE)
       .def("next", &Loader::next);
 
@@ -203,7 +205,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
 
-  py::class_<State>(transformations_submodule, "State")
+  py::class_<State, StatePtr>(transformations_submodule, "State")
       .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
 
   py::class_<Transformation, std::shared_ptr<Transformation>>(

@@ -1,10 +1,11 @@
 #include "Loader.h"
 #include <limits>
+#include <stdexcept>
 
 namespace thirdai::data {
 
 Loader::Loader(ColumnMapIterator data_iterator,
-               TransformationPtr transformation,
+               TransformationPtr transformation, StatePtr state,
                IndexValueColumnList input_columns,
                IndexValueColumnList label_columns, size_t batch_size,
                size_t max_batches, size_t shuffle_buffer_size)
@@ -15,7 +16,12 @@ Loader::Loader(ColumnMapIterator data_iterator,
       _batch_size(batch_size),
       _max_batches(max_batches),
       _shuffle_buffer_size(shuffle_buffer_size),
-      _shuffle_buffer(_data_iterator.emptyColumnMap()) {}
+      _shuffle_buffer(_data_iterator.emptyColumnMap()),
+      _state(std::move(state)) {
+  if (!_state) {
+    _state = std::make_shared<State>();
+  }
+}
 
 std::optional<bolt::train::LabeledDataset> Loader::next() {
   // Prevents overflow since sometimes we pass in max int to indicate loading
@@ -35,7 +41,8 @@ std::optional<bolt::train::LabeledDataset> Loader::next() {
       break;
     }
 
-    ColumnMap processed_chunk = _transformation->apply(std::move(*chunk));
+    ColumnMap processed_chunk =
+        _transformation->apply(std::move(*chunk), *_state);
 
     if (loaded_rows.numRows() > 0) {
       loaded_rows = loaded_rows.concat(processed_chunk);

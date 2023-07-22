@@ -101,7 +101,7 @@ TEST(DataLoaderTest, Streaming) {
                                                  ' '),
   });
 
-  Loader loader(data_iterator, transformations,
+  Loader loader(data_iterator, transformations, std::make_shared<State>(),
                 {{"tokens_cast", "decimals_cast"}},
                 {{"token_cast", "decimal_cast"}}, batch_size, n_batches,
                 /* shuffle_buffer_size= */ 50);

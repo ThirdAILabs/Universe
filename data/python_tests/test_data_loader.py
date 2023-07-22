@@ -24,6 +24,7 @@ def load_data(filename):
     loader = data.Loader(
         data_iterator=data_iter,
         transformation=transformations,
+        state=None,
         input_columns=[("tokens", None)],
         output_columns=[("category_id", None)],
         batch_size=2048,
