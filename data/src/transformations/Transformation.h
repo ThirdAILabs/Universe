@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
+#include <data/src/transformations/State.h>
 #include <memory>
 
 namespace thirdai::data {
@@ -24,7 +25,12 @@ class Transformation {
    * ColumnMap are distinct objects, but may share references to the same
    * columns.
    */
-  virtual ColumnMap apply(ColumnMap columns) const = 0;
+  virtual ColumnMap apply(ColumnMap columns, State& state) const = 0;
+
+  ColumnMap applyStateless(ColumnMap columns) const {
+    State state;
+    return apply(std::move(columns), state);
+  }
 
   virtual ~Transformation() = default;
 

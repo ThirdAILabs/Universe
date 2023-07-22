@@ -74,7 +74,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
       /* label_column_name= */ metadata->getLabelColumn(),
       /* output_column_name= */ text_column_name);
 
-  auto augmented_data = augmentation.apply(dataset);
+  auto augmented_data = augmentation.applyStateless(dataset);
 
   auto data_source = thirdai::dataset::cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,

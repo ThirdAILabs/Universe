@@ -28,7 +28,7 @@ class BinningTransformation final : public Transformation {
         _binsize((exclusive_max_value - inclusive_min_value) / num_bins),
         _num_bins(num_bins) {}
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   // Private constructor for cereal.

@@ -10,7 +10,7 @@ class FeatureHash final : public Transformation {
   FeatureHash(std::vector<std::string> columns, std::string output_indices,
               std::string output_values, size_t dim);
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {
