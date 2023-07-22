@@ -42,16 +42,17 @@ inline std::vector<T> concatVectors(std::vector<T>&& a, std::vector<T>&& b) {
 
 template <typename T>
 inline std::pair<std::vector<T>, std::vector<T>> splitVector(
-    std::vector<T>&& vector, size_t offset) {
-  if (offset >= vector.size()) {
+    std::vector<T>&& vector, size_t starting_offset) {
+  if (starting_offset >= vector.size()) {
     throw std::invalid_argument(
-        "invalid split offset " + std::to_string(offset) +
+        "invalid split offset " + std::to_string(starting_offset) +
         " for column of length " + std::to_string(vector.size()) + ".");
   }
 
-  std::vector<T> front(std::make_move_iterator(vector.begin()),
-                       std::make_move_iterator(vector.begin() + offset));
-  std::vector<T> back(std::make_move_iterator(vector.begin()) + offset,
+  std::vector<T> front(
+      std::make_move_iterator(vector.begin()),
+      std::make_move_iterator(vector.begin() + starting_offset));
+  std::vector<T> back(std::make_move_iterator(vector.begin()) + starting_offset,
                       std::make_move_iterator(vector.end()));
 
   return std::make_pair(std::move(front), std::move(back));
