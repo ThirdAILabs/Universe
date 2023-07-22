@@ -42,18 +42,36 @@ class Column {
  public:
   virtual size_t numRows() const = 0;
 
+  /**
+   * Returns the dimension of the column if the column has a known dimension.
+   * For some columns it may not be possible to assign a dimension, in which
+   * case this will also return nullptr. For example string columns, decimal
+   * columns with varying row sizes, or token columns without a max token value
+   * will not have a dimension.
+   */
   virtual std::optional<ColumnDimension> dimension() const = 0;
 
+  /**
+   * Applies the permutation to the column in place.
+   */
   virtual void shuffle(const std::vector<size_t>& permutation) = 0;
 
+  /**
+   * Concatenates the column with another column and returns a new column. Moves
+   * the values out of both of the original columns to avoid expensive copies.
+   */
   virtual ColumnPtr concat(ColumnPtr&& other) = 0;
 
-  virtual std::pair<ColumnPtr, ColumnPtr> split(size_t offset) = 0;
+  /**
+   * Splits the column into two columns. The first returned column will have
+   * elements [0, starting_offset) and the second column will have elements
+   * [starting_offset, num_rows). This will consume the current column and move
+   * its values to avoid copies.
+   */
+  virtual std::pair<ColumnPtr, ColumnPtr> split(size_t starting_offset) = 0;
 
   virtual ~Column() = default;
 };
-
-using ColumnPtr = std::shared_ptr<Column>;
 
 template <typename T>
 class RowView {

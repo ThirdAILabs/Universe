@@ -36,18 +36,32 @@ class ColumnMap {
 
   auto end() const { return _columns.end(); }
 
+  /**
+   * Shuffles the ColumnMap in place.
+   */
   void shuffle(uint32_t seed = global_random::nextSeed());
 
+  /**
+   * Concatenates with another ColumnMap, returning the result. This will
+   * consume both ColumnMaps so that values can be moved without copying when
+   * possible.
+   */
   ColumnMap concat(ColumnMap& other);
 
-  std::pair<ColumnMap, ColumnMap> split(size_t offset);
-
-  void clear();
+  /**
+   * Splits the ColumnMap in two, returning two new ColumnMaps. Consumes the
+   * ColumnMap it is called on so that values can be moved without copying when
+   * possible. The first ColumnMap will have rows [0, starting_offset), and the
+   * second will have rows [starting_offset, num_rows).
+   */
+  std::pair<ColumnMap, ColumnMap> split(size_t starting_offset);
 
   static ColumnMap createStringColumnMapFromFile(
       const dataset::DataSourcePtr& source, char delimiter);
 
  private:
+  void clear();
+
   std::unordered_map<std::string, ColumnPtr> _columns;
   size_t _num_rows;
 };

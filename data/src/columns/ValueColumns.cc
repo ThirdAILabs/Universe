@@ -34,8 +34,8 @@ ColumnPtr ValueColumn<T>::concat(ColumnPtr&& other) {
 }
 
 template <typename T>
-std::pair<ColumnPtr, ColumnPtr> ValueColumn<T>::split(size_t offset) {
-  auto [front, back] = splitVector(std::move(_data), offset);
+std::pair<ColumnPtr, ColumnPtr> ValueColumn<T>::split(size_t starting_offset) {
+  auto [front, back] = splitVector(std::move(_data), starting_offset);
 
   auto front_col =
       ValueColumnPtr<T>(new ValueColumn<T>(std::move(front), _dimension));
