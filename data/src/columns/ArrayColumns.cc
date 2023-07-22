@@ -85,7 +85,7 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
         [dim](const std::vector<float>& row) { return row.size() == dim; });
 
     // For a dense column there can only be a dimension if all of the columns
-    // have the same length. 
+    // have the same length.
     if (all_dims_match) {
       dimension = ColumnDimension::dense(dim);
     }

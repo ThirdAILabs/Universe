@@ -44,5 +44,3 @@ def create_and_tabular_hash_random_dataset(use_pairgrams):
 def test_tabular_hash_features_transformation(pairgrams):
     pairgrams = create_and_tabular_hash_random_dataset(use_pairgrams=pairgrams)
     verify_hash_distribution(pairgrams, OUTPUT_RANGE)
-
-
