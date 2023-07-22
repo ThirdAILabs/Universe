@@ -19,7 +19,9 @@ TextTokenizer::TextTokenizer(std::string input_column,
       _lowercase(lowercase),
       _dim(dim) {}
 
-ColumnMap TextTokenizer::apply(ColumnMap columns) const {
+ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
   auto text_col = columns.getValueColumn<std::string>(_input_column);
 
   std::vector<std::vector<uint32_t>> output_tokens(text_col->numRows());

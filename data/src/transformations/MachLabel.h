@@ -9,18 +9,11 @@ using dataset::mach::MachIndexPtr;
 
 class MachLabel final : public Transformation {
  public:
-  MachLabel(std::string input_column, std::string output_column,
-            MachIndexPtr index);
+  MachLabel(std::string input_column, std::string output_column);
 
-  ColumnMap apply(ColumnMap columns) const final;
-
-  MachIndexPtr index() const { return _index; }
-
-  void setIndex(const MachIndexPtr& index);
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
-  MachIndexPtr _index;
-
   std::string _input_column;
   std::string _output_column;
 };

@@ -22,7 +22,9 @@ class CastString : public Transformation {
       : _input_column_name(std::move(input_column)),
         _output_column_name(std::move(output_column)) {}
 
-  ColumnMap apply(ColumnMap columns) const final {
+  ColumnMap apply(ColumnMap columns, State& state) const final {
+    (void)state;
+
     std::vector<T> output_data(columns.numRows());
     auto input_column = columns.getValueColumn<std::string>(_input_column_name);
 

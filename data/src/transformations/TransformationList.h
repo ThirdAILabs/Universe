@@ -18,11 +18,11 @@ class TransformationList final : public Transformation {
     return std::make_shared<TransformationList>(std::move(transformations));
   }
 
-  ColumnMap apply(ColumnMap columns) const final {
+  ColumnMap apply(ColumnMap columns, State& state) const final {
     for (const auto& transformation : _transformations) {
       // This is a shallow copy and not expensive since columns are stored as
       // shared pointers.
-      columns = transformation->apply(columns);
+      columns = transformation->apply(columns, state);
     }
 
     return columns;

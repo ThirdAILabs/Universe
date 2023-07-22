@@ -3,7 +3,9 @@
 
 namespace thirdai::data {
 
-ColumnMap BinningTransformation::apply(ColumnMap columns) const {
+ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
   auto column = columns.getValueColumn<float>(_input_column_name);
 
   std::vector<uint32_t> binned_values(column->numRows());
