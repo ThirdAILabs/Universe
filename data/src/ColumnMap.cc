@@ -119,10 +119,10 @@ ColumnMap ColumnMap::concat(ColumnMap& other) {
   return ColumnMap(std::move(new_columns));
 }
 
-std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t offset) {
-  if (offset >= numRows()) {
+std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t starting_offset) {
+  if (starting_offset >= numRows()) {
     throw std::invalid_argument(
-        "invalid split offset " + std::to_string(offset) +
+        "invalid split offset " + std::to_string(starting_offset) +
         " for ColumnMap with " + std::to_string(numRows()) + " rows.");
   }
 
@@ -130,7 +130,7 @@ std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t offset) {
   std::unordered_map<std::string, ColumnPtr> back_columns;
 
   for (auto& [name, column] : _columns) {
-    auto [front, back] = column->split(offset);
+    auto [front, back] = column->split(starting_offset);
     front_columns[name] = front;
     back_columns[name] = back;
   }

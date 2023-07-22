@@ -40,11 +40,7 @@ def create_and_tabular_hash_random_dataset(use_pairgrams):
     return columns["tabular_hash_features"].data()
 
 
-def test_cross_column_pairgrams():
-    pairgrams = create_and_tabular_hash_random_dataset(use_pairgrams=True)
+@pytest.mark.parametrize("pairgrams", [True, False])
+def test_tabular_hash_features_transformation(pairgrams):
+    pairgrams = create_and_tabular_hash_random_dataset(use_pairgrams=pairgrams)
     verify_hash_distribution(pairgrams, OUTPUT_RANGE)
-
-
-def test_cross_column_unigrams():
-    unigrams = create_and_tabular_hash_random_dataset(use_pairgrams=False)
-    verify_hash_distribution(unigrams, OUTPUT_RANGE)
