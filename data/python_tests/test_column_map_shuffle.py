@@ -22,3 +22,15 @@ def test_column_map_shuffle():
 
     # Check that all rows are present.
     assert set(columns["token"].data()) == set(range(ROWS))
+
+    # Check that the rows are actually shuffled.
+    permutation = columns["token"].data()
+    assert len(permutation) == ROWS
+
+    not_shuffled = 0
+    for i, p in enumerate(permutation):
+        if i == p:
+            not_shuffled += 1
+
+    # << 1% of rows should not be shuffled, using 5% to ensure test is not flaky.
+    assert not_shuffled / ROWS < 0.05

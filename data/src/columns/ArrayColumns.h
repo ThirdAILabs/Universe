@@ -1,14 +1,7 @@
 #pragma once
 
 #include <data/src/columns/Column.h>
-#include <dataset/src/featurizers/ProcessorUtils.h>
-#include <dataset/src/utils/CsvParser.h>
-#include <cctype>
-#include <cstdlib>
-#include <memory>
-#include <optional>
 #include <stdexcept>
-#include <string_view>
 
 namespace thirdai::data {
 
@@ -32,7 +25,7 @@ class ArrayColumn : public ArrayColumnBase<T> {
 
   RowView<T> row(size_t i) const final {
     if (i >= _data.size()) {
-      throw std::out_of_range("CppArrayColumn::row");
+      throw std::out_of_range("ArrayColumn::row");
     }
     return {_data[i].data(), _data[i].size()};
   }
@@ -41,7 +34,7 @@ class ArrayColumn : public ArrayColumnBase<T> {
 
   ColumnPtr concat(ColumnPtr&& other) final;
 
-  std::pair<ColumnPtr, ColumnPtr> split(size_t offset) final;
+  std::pair<ColumnPtr, ColumnPtr> split(size_t starting_offset) final;
 
   const auto& data() const { return _data; }
 
