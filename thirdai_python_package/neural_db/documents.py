@@ -40,6 +40,18 @@ class Document:
             sha1.update(bytes(self.reference(i).text, "utf-8"))
         return sha1.hexdigest()
 
+    # This attribute allows certain things to be saved or not saved during
+    # the pickling of a savable_state object. For example, if we set this
+    # to True for CSV docs, we will save the actual csv file in the pickle.
+    # Utilize this property in __getstate__ and __setstate__ of document objs.
+    @property
+    def save_extra_info(self) -> bool:
+        return self._save_extra_info
+
+    @save_extra_info.setter
+    def save_extra_info(self, value: bool):
+        self._save_extra_info = value
+
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
@@ -281,11 +293,6 @@ class CSV(Document):
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
-
-        # This attribute allows certain things to be saved or not saved during
-        # the pickling of a savable_state object. For example, if we set this
-        # to True for CSV docs, we will save the actual csv file in the pickle.
-        # Utilize this property in __getstate__ and __setstate__ of document objs.
         self._save_extra_info = save_extra_info
 
     @property
@@ -575,10 +582,13 @@ class DOCX(Extracted):
 
 
 class URL(Document):
-    def __init__(self, url: str, url_response: Response = None):
+    def __init__(
+        self, url: str, url_response: Response = None, save_extra_info: bool = True
+    ):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)
+        self._save_extra_info = save_extra_info
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
