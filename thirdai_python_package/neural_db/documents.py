@@ -479,6 +479,10 @@ class Extracted(Document):
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
 
+        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        if "filename" in state:
+            del state["filename"]
+
         # Save the filename so we can load it with the same name
         state["name"] = self.name
 
