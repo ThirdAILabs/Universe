@@ -108,7 +108,6 @@ class NeuralDB:
     def set_new_pickle_mode(cls, new_pickle_mode=True):
         cls.new_pickle_mode = new_pickle_mode
 
-
     def __init__(
         self, user_id: str = "user", savable_state: State = None, **kwargs
     ) -> None:
@@ -136,7 +135,7 @@ class NeuralDB:
             savable_state.logger = loggers.LoggerList([savable_state.logger])
 
         return NeuralDB(user_id, savable_state)
-    
+
     @staticmethod
     def from_pkl(
         pkl_path: str,

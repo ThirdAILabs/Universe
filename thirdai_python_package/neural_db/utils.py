@@ -1,7 +1,7 @@
 import hashlib
 import math
-import random
 import os
+import random
 
 
 def clean_text(text):

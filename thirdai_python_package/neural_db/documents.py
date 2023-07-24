@@ -31,7 +31,7 @@ class Document:
     @property
     def name(self) -> str:
         raise NotImplementedError()
-    
+
     @property
     def hash(self) -> str:
         sha1 = hashlib.sha1()
@@ -258,7 +258,13 @@ class DocumentManager:
 
 class CSV(Document):
     def __init__(
-        self, path, id_column, strong_columns, weak_columns, reference_columns, save_extra_info=True
+        self,
+        path,
+        id_column,
+        strong_columns,
+        weak_columns,
+        reference_columns,
+        save_extra_info=True,
     ) -> None:
         self.df = pd.read_csv(path)
         self.df = self.df.sort_values(id_column)
@@ -293,11 +299,11 @@ class CSV(Document):
     @property
     def name(self) -> str:
         return self.path.name if self.path else "None"
-    
+
     @property
     def save_extra_info(self) -> bool:
         return self._save_extra_info
-    
+
     @save_extra_info.setter
     def save_extra_info(self, value: bool):
         self._save_extra_info = value
@@ -332,7 +338,7 @@ class CSV(Document):
     def __getstate__(self):
         from .neural_db import NeuralDB
 
-        # End pickling functionality here to support old directory checkpoint save 
+        # End pickling functionality here to support old directory checkpoint save
         if not NeuralDB.new_pickle_mode:
             return self.__dict__
 
@@ -357,7 +363,7 @@ class CSV(Document):
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
 
-        # End pickling functionality here to support old directory checkpoint load 
+        # End pickling functionality here to support old directory checkpoint load
         if not NeuralDB.new_pickle_mode:
             # "filename" is an attribute in older versions of documents
             # We need this line for backwards compatibility
@@ -372,7 +378,7 @@ class CSV(Document):
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
-        if state._save_extra_info and "file_bytes" in state:
+        if state["_save_extra_info"] and "file_bytes" in state:
             # Save file bytes to disk
             with open(save_path, "wb") as csv_file:
                 csv_file.write(state["file_bytes"])
@@ -397,11 +403,7 @@ class CSV(Document):
 
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
-    def __init__(
-        self,
-        path: str,
-        save_extra_info=True
-    ):
+    def __init__(self, path: str, save_extra_info=True):
         self.path = Path(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
@@ -424,11 +426,11 @@ class Extracted(Document):
     @property
     def name(self) -> str:
         return self.path.name
-    
+
     @property
     def save_extra_info(self) -> bool:
         return self._save_extra_info
-    
+
     @save_extra_info.setter
     def save_extra_info(self, value: bool):
         self._save_extra_info = value
@@ -503,7 +505,7 @@ class Extracted(Document):
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
-        if state._save_extra_info and "file_bytes" in state:
+        if state["_save_extra_info"] and "file_bytes" in state:
             # Save file bytes to disk
             with open(save_path, "wb") as extracted_file:
                 extracted_file.write(state["file_bytes"])
