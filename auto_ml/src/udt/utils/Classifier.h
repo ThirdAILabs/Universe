@@ -5,6 +5,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <data/src/Loader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
@@ -44,11 +45,23 @@ class Classifier {
                    TrainOptions options,
                    const bolt::train::DistributedCommPtr& comm);
 
+  py::object train(const thirdai::data::LoaderPtr& data, float learning_rate,
+                   uint32_t epochs, const InputMetrics& train_metrics,
+                   const thirdai::data::LoaderPtr& val_data,
+                   const InputMetrics& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options,
+                   const bolt::train::DistributedCommPtr& comm);
+
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose);
 
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
+                      const InputMetrics& metrics, bool sparse_inference,
+                      bool verbose);
+
+  py::object evaluate(const thirdai::data::LoaderPtr& dataset,
                       const InputMetrics& metrics, bool sparse_inference,
                       bool verbose);
 

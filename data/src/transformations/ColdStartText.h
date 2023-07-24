@@ -255,6 +255,8 @@ class ColdStartTextAugmentation final : public Transformation {
   }
 };
 
+using ColdStartTextAugmentationPtr = std::shared_ptr<ColdStartTextAugmentation>;
+
 }  // namespace thirdai::data
 
 CEREAL_REGISTER_TYPE(thirdai::data::ColdStartTextAugmentation)

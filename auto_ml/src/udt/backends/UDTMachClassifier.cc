@@ -162,16 +162,19 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::train::DistributedCommPtr& comm) {
-  dataset::DatasetLoaderPtr val_dataset_loader;
+  thirdai::data::LoaderPtr val_dataset_loader;
   if (val_data) {
-    val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-        val_data, /* shuffle= */ false);
+    val_dataset_loader = _data_factory.getDataLoader(
+        val_data, defaults::BATCH_SIZE, thirdai::data::Loader::NO_LIMIT, true,
+        options.shuffle_config, options.verbose);
   }
 
   addBalancingSamples(data);
 
-  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
+  auto train_dataset_loader = _data_factory.getDataLoader(
+      data, options.batch_size.value_or(defaults::BATCH_SIZE),
+      options.max_in_memory_batches.value_or(thirdai::data::Loader::NO_LIMIT),
+      true, options.shuffle_config, options.verbose);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
@@ -184,7 +187,8 @@ py::object UDTMachClassifier::trainBatch(
     const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
-  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+  auto [inputs, labels] =
+      _data_factory.featurizeTrainingBatch(batch, /* prehashed= */ false);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -201,8 +205,7 @@ py::object UDTMachClassifier::trainWithHashes(
   auto& model = _classifier->model();
 
   auto [inputs, labels] =
-      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
-  labels.push_back(placeholderDocIds(batch.size()));
+      _data_factory.featurizeTrainingBatch(batch, /* prehashed= */ true);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -219,8 +222,9 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto eval_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
+  auto eval_dataset_loader = _data_factory.getDataLoader(
+      data, defaults::BATCH_SIZE, thirdai::data::Loader::NO_LIMIT, true,
+      dataset::DatasetShuffleConfig(), verbose);
 
   return _classifier->evaluate(eval_dataset_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
@@ -244,7 +248,7 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
                                bool sparse_inference,
                                std::optional<uint32_t> top_k) {
   auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                     ->forward(_data_factory.featurizeInputBatch(samples),
                                sparse_inference)
                      .at(0);
 
@@ -310,7 +314,7 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
     const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
   auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                     ->forward(_data_factory.featurizeInputBatch(samples),
                                sparse_inference)
                      .at(0);
 
@@ -397,17 +401,29 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::train::DistributedCommPtr& comm) {
-  auto metadata = getColdStartMetaData();
+  thirdai::data::LoaderPtr val_dataset_loader;
+  if (val_data) {
+    val_dataset_loader = _data_factory.getDataLoader(
+        val_data, defaults::BATCH_SIZE, thirdai::data::Loader::NO_LIMIT, true,
+        options.shuffle_config, options.verbose);
+  }
 
-  auto data_source = cold_start::preprocessColdStartTrainSource(
-      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
+  addBalancingSamples(data);
 
-  return train(data_source, learning_rate, epochs, train_metrics, val_data,
-               val_metrics, callbacks, options, comm);
+  auto train_dataset_loader = _data_factory.getColdStartDataLoader(
+      data, options.batch_size.value_or(defaults::BATCH_SIZE),
+      options.max_in_memory_batches.value_or(thirdai::data::Loader::NO_LIMIT),
+      strong_column_names, weak_column_names, options.shuffle_config,
+      options.verbose);
+
+  return _classifier->train(train_dataset_loader, learning_rate, epochs,
+                            getMetrics(train_metrics, "train_"),
+                            val_dataset_loader, getMetrics(val_metrics, "val_"),
+                            callbacks, options, comm);
 }
 
 py::object UDTMachClassifier::embedding(const MapInput& sample) {
-  return _classifier->embedding(_dataset_factory->featurizeInput(sample));
+  return _classifier->embedding(_data_factory.featurizeInput(sample));
 }
 
 uint32_t expectInteger(const Label& label) {

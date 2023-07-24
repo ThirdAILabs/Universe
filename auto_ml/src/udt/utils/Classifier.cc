@@ -106,6 +106,35 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
+py::object Classifier::train(
+    const thirdai::data::LoaderPtr& data, float learning_rate, uint32_t epochs,
+    const InputMetrics& train_metrics, const thirdai::data::LoaderPtr& val_data,
+    const InputMetrics& val_metrics, const std::vector<CallbackPtr>& callbacks,
+    TrainOptions options, const bolt::train::DistributedCommPtr& comm) {
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+
+  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
+
+  auto history = trainer.train_with_data_loader(
+      /* train_data_loader= */ data,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* train_metrics= */ train_metrics,
+      /* validation_data_loader= */ val_data,
+      /* validation_metrics= */ val_metrics,
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ comm);
+
+  return py::cast(history);
+}
+
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
                                 bool sparse_inference, bool verbose) {
@@ -122,6 +151,18 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);
+
+  return py::cast(history);
+}
+
+py::object Classifier::evaluate(const thirdai::data::LoaderPtr& dataset,
+                                const InputMetrics& metrics,
+                                bool sparse_inference, bool verbose) {
+  bolt::train::Trainer trainer(_model, std::nullopt,
+                               bolt::train::python::CtrlCCheck{});
+
+  auto history = trainer.validate_with_data_loader(dataset, metrics,
+                                                   sparse_inference, verbose);
 
   return py::cast(history);
 }
