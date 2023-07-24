@@ -105,9 +105,7 @@ ColumnPtr ColumnMap::getColumn(const std::string& name) const {
 }
 
 void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
-  // _columns.begin() is safe because the constructor to ColumnMap throws if the
-  // supplied set of columns is empty.
-  if (column->numRows() != _columns.begin()->second->numRows()) {
+  if (column->numRows() != _num_rows) {
     throw std::invalid_argument(
         "Cannot insert a Column with a different number of rows into a "
         "ColumnMap.");
