@@ -1,8 +1,10 @@
 #include "gtest/gtest.h"
+#include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <numeric>
+#include <optional>
 
 namespace thirdai::data::tests {
 
@@ -40,6 +42,11 @@ void runConversionTest(bool specify_values) {
   size_t row_cnt = 0;
   size_t value_cnt = 0;
   for (const auto& batch : tensors) {
+    ASSERT_EQ(batch.size(), 1);
+    ASSERT_EQ(batch[0]->dim(), 1000);
+    ASSERT_FALSE(batch[0]->nonzeros().has_value());
+    ASSERT_GT(batch[0]->batchSize(), 0);
+
     for (size_t i = 0; i < batch[0]->batchSize(); i++) {
       const BoltVector& vec = batch[0]->getVector(i);
 
@@ -57,6 +64,8 @@ void runConversionTest(bool specify_values) {
       row_cnt++;
     }
   }
+
+  ASSERT_EQ(row_cnt, row_lens.size());
 }
 
 TEST(TensorConversionTests, WithValues) {
@@ -65,6 +74,54 @@ TEST(TensorConversionTests, WithValues) {
 
 TEST(TensorConversionTests, WithoutValues) {
   runConversionTest(/* specify_values= */ false);
+}
+
+using thirdai::tests::BoltVectorTestUtils;
+
+TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
+  auto indices_1 =
+      ArrayColumn<uint32_t>::make({{0, 1, 2}, {3, 4}, {5, 6, 7}}, 8);
+  auto values_1 = ArrayColumn<float>::make(
+      {{0.25, 1.25, 2.25}, {3.25, 4.25}, {5.25, 6.25, 7.25}});
+
+  auto indices_2 =
+      ArrayColumn<uint32_t>::make({{10, 20}, {30, 40}, {50, 60}}, 100);
+
+  ColumnMap columns({{"indices_1", indices_1},
+                     {"values_1", values_1},
+                     {"indices_2", indices_2}});
+
+  auto tensors = convertToTensors(
+      columns, {{"indices_1", "values_1"}, {"indices_2", std::nullopt}}, 2);
+
+  ASSERT_EQ(tensors.size(), 2);
+  ASSERT_EQ(tensors.at(0).size(), 2);
+  ASSERT_EQ(tensors.at(1).size(), 2);
+
+  ASSERT_EQ(tensors.at(0).at(0)->batchSize(), 2);
+  ASSERT_EQ(tensors.at(0).at(1)->batchSize(), 2);
+  ASSERT_EQ(tensors.at(1).at(0)->batchSize(), 1);
+  ASSERT_EQ(tensors.at(1).at(1)->batchSize(), 1);
+
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(0).at(0)->getVector(0),
+      BoltVector::makeSparseVector({0, 1, 2}, {0.25, 1.25, 2.25}));
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(0).at(0)->getVector(1),
+      BoltVector::makeSparseVector({3, 4}, {3.25, 4.25}));
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(1).at(0)->getVector(0),
+      BoltVector::makeSparseVector({5, 6, 7}, {5.25, 6.25, 7.25}));
+
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(0).at(1)->getVector(0),
+      BoltVector::makeSparseVector({10, 20}, {1.0, 1.0}));
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(0).at(1)->getVector(1),
+      BoltVector::makeSparseVector({30, 40}, {1.0, 1.0}));
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(1).at(1)->getVector(0),
+      BoltVector::makeSparseVector({50, 60}, {1.0, 1.0}));
 }
 
 }  // namespace thirdai::data::tests
