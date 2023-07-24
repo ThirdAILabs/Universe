@@ -108,15 +108,7 @@ class NeuralDB:
     def set_new_pickle_mode(cls, new_pickle_mode=True):
         cls.new_pickle_mode = new_pickle_mode
 
-    def __init__(self, user_id: str) -> None:
-        self._user_id = user_id
-        self._savable_state: Optional[State] = None
 
-    def from_scratch(self, **kwargs) -> None:
-        self._savable_state = State(
-            model=Mach(id_col="id", query_col="query", **kwargs),
-            logger=loggers.LoggerList([loggers.InMemoryLogger()]),
-        )
     def __init__(
         self, user_id: str = "user", savable_state: State = None, **kwargs
     ) -> None:
