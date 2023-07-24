@@ -20,13 +20,18 @@ class Loader {
          StatePtr state, IndexValueColumnList input_columns,
          IndexValueColumnList label_columns, size_t batch_size,
          size_t max_batches = NO_LIMIT,
-         size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE);
+         size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
+         bool verbose = true);
 
   std::optional<bolt::train::LabeledDataset> next();
 
  private:
   std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
       ColumnMap&& loaded_rows, size_t dataset_size) const;
+
+  void logLoadStart() const;
+
+  void logLoadEnd(size_t vectors, size_t batches, int64_t time) const;
 
   ColumnMapIterator _data_iterator;
   TransformationPtr _transformation;
@@ -37,6 +42,7 @@ class Loader {
   size_t _batch_size;
   size_t _max_batches;
   size_t _shuffle_buffer_size;
+  bool _verbose;
 
   ColumnMap _shuffle_buffer;
 

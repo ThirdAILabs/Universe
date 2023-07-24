@@ -1,4 +1,5 @@
 #include "Loader.h"
+#include <bolt/src/utils/Timer.h>
 #include <limits>
 #include <stdexcept>
 
@@ -8,7 +9,7 @@ Loader::Loader(ColumnMapIterator data_iterator,
                TransformationPtr transformation, StatePtr state,
                IndexValueColumnList input_columns,
                IndexValueColumnList label_columns, size_t batch_size,
-               size_t max_batches, size_t shuffle_buffer_size)
+               size_t max_batches, size_t shuffle_buffer_size, bool verbose)
     : _data_iterator(std::move(data_iterator)),
       _transformation(std::move(transformation)),
       _input_columns(std::move(input_columns)),
@@ -16,6 +17,7 @@ Loader::Loader(ColumnMapIterator data_iterator,
       _batch_size(batch_size),
       _max_batches(max_batches),
       _shuffle_buffer_size(shuffle_buffer_size),
+      _verbose(verbose),
       _shuffle_buffer(_data_iterator.emptyColumnMap()),
       _state(std::move(state)) {
   if (!_state) {
@@ -26,6 +28,10 @@ Loader::Loader(ColumnMapIterator data_iterator,
 std::optional<bolt::train::LabeledDataset> Loader::next() {
   // Prevents overflow since sometimes we pass in max int to indicate loading
   // all batches.
+
+  logLoadStart();
+  bolt::utils::Timer timer;
+
   size_t num_rows_to_load;
   if (_max_batches == NO_LIMIT || _batch_size == NO_LIMIT) {
     num_rows_to_load = NO_LIMIT;
@@ -52,6 +58,8 @@ std::optional<bolt::train::LabeledDataset> Loader::next() {
   }
 
   if (loaded_rows.numRows() == 0) {
+    timer.stop();
+    logLoadEnd(0, 0, timer.seconds());
     return std::nullopt;
   }
 
@@ -65,6 +73,9 @@ std::optional<bolt::train::LabeledDataset> Loader::next() {
   auto inputs = convertToTensors(dataset, _input_columns, _batch_size);
   auto labels = convertToTensors(dataset, _label_columns, _batch_size);
 
+  timer.stop();
+  logLoadEnd(dataset.numRows(), inputs.size(), timer.seconds());
+
   return std::make_pair(std::move(inputs), std::move(labels));
 }
 
@@ -75,6 +86,26 @@ std::pair<ColumnMap, ColumnMap> Loader::splitIntoDataAndBuffer(
                           _data_iterator.emptyColumnMap());
   }
   return loaded_rows.split(dataset_size);
+}
+
+void Loader::logLoadStart() const {
+#if THIRDAI_EXPOSE_ALL
+  if (_verbose) {
+    std::cout << "loading data | source '" << _data_iterator.resourceName()
+              << "'" << std::endl;
+  }
+#endif
+}
+
+void Loader::logLoadEnd(size_t vectors, size_t batches, int64_t time) const {
+#if THIRDAI_EXPOSE_ALL
+  if (_verbose) {
+    std::cout << "loading data | source '" << _data_iterator.resourceName()
+              << "' | vectors " << vectors << " | batches " << batches
+              << " | time " << time << "s | complete\n"
+              << std::endl;
+  }
+#endif
 }
 
 }  // namespace thirdai::data

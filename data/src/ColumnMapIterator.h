@@ -16,6 +16,8 @@ class ColumnMapIterator {
 
   ColumnMap emptyColumnMap() const;
 
+  std::string resourceName() const { return _data_source->resourceName(); }
+
  private:
   ColumnMap makeColumnMap(
       std::vector<std::vector<std::string>>&& columns) const;
