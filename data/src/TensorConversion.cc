@@ -72,4 +72,11 @@ std::vector<TensorList> convertToTensors(
   return tensors;
 }
 
+TensorList convertToTensorBatch(
+    const ColumnMap& columns, const IndexValueColumnList& columns_to_convert) {
+  return convertToTensors(columns, columns_to_convert,
+                          /* batch_size= */ columns.numRows())
+      .at(0);
+}
+
 }  // namespace thirdai::data

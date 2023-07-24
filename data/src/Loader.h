@@ -25,13 +25,12 @@ class Loader {
   static auto make(ColumnMapIterator data_iterator,
                    TransformationPtr transformation, StatePtr state,
                    IndexValueColumnList input_columns,
-                   IndexValueColumnList label_columns, size_t batch_size,
-                   size_t max_batches = NO_LIMIT,
+                   IndexValueColumnList label_columns,
                    size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
                    bool verbose = true) {
     return std::make_shared<Loader>(data_iterator, transformation, state,
-                                    input_columns, label_columns, batch_size,
-                                    max_batches, shuffle_buffer_size, verbose);
+                                    input_columns, label_columns,
+                                    shuffle_buffer_size, verbose);
   }
 
   std::optional<bolt::train::LabeledDataset> next(
