@@ -6,7 +6,7 @@ import string
 import uuid
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,7 @@ class Document:
         raise NotImplementedError()
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         raise NotImplementedError()
 
     @property
@@ -284,7 +284,7 @@ class CSV(Document):
 
         # This attribute allows certain things to be saved or not saved during
         # the pickling of a savable_state object. For example, if we set this
-        # to True for PDF docs, we will save the actual pdf file in the pickle.
+        # to True for CSV docs, we will save the actual csv file in the pickle.
         # Utilize this property in __getstate__ and __setstate__ of document objs.
         self._save_extra_info = save_extra_info
 
@@ -297,8 +297,8 @@ class CSV(Document):
         return len(self.df)
 
     @property
-    def name(self) -> str:
-        return self.path.name if self.path else "None"
+    def name(self) -> Optional[str]:
+        return self.path.name if self.path else None
 
     @property
     def save_extra_info(self) -> bool:
@@ -323,7 +323,7 @@ class CSV(Document):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.path.absolute()) if self.path else "None",
+            source=str(self.path.absolute()) if self.path else None,
             metadata=row.to_dict(),
         )
 
@@ -362,13 +362,11 @@ class CSV(Document):
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
+        if "filename" in state:
+            state["path"] = state["filename"]
 
         # End pickling functionality here to support old directory checkpoint load
         if not NeuralDB.new_pickle_mode:
-            # "filename" is an attribute in older versions of documents
-            # We need this line for backwards compatibility
-            if "filename" in state:
-                state["path"] = state["filename"]
             self.__dict__.update(state)
             return
 
@@ -424,7 +422,7 @@ class Extracted(Document):
         return len(self.df)
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self.path.name
 
     @property
@@ -449,7 +447,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.path.absolute()),
+            source=str(self.path.absolute()) if self.path else None,
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
@@ -489,13 +487,11 @@ class Extracted(Document):
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
+        if "filename" in state:
+            state["path"] = state["filename"]
 
         # End pickling functionality here to support old directory checkpoint load
         if not NeuralDB.new_pickle_mode:
-            # "filename" is an attribute in older versions of documents
-            # We need this line for backwards compatibility
-            if "filename" in state:
-                state["path"] = state["filename"]
             self.__dict__.update(state)
             return
 
@@ -604,7 +600,7 @@ class URL(Document):
         return len(self.df)
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self.url
 
     def strong_text(self, element_id: int) -> str:
@@ -639,14 +635,12 @@ class SentenceLevelExtracted(Extracted):
     sentence to increase recall.
     """
 
-    def __init__(
-        self,
-        path: str,
-    ):
+    def __init__(self, path: str, save_extra_info: bool = True):
         self.path = Path(path)
         self.df = self.parse_sentences(self.process_data(path))
         self.hash_val = hash_file(path)
         self.para_df = self.df["para"].unique()
+        self._save_extra_info = save_extra_info
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -711,8 +705,8 @@ class SentenceLevelExtracted(Extracted):
         return len(self.df)
 
     @property
-    def name(self) -> str:
-        return self.path.name
+    def name(self) -> Optional[str]:
+        return self.path.name if self.path else None
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -728,7 +722,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.path.absolute()),
+            source=str(self.path.absolute()) if self.path else None,
             metadata=self.df.iloc[element_id].to_dict(),
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
