@@ -145,27 +145,21 @@ class NeuralDB:
 
         return NeuralDB(user_id, savable_state)
     
+    @staticmethod
     def from_pkl(
-        self,
         pkl_path: str,
-        on_error: Callable = None,
+        user_id: str = "user",
     ):
-        try:
-            with open(pkl_path, "rb") as pkl_file:
-                self._savable_state = pickle.load(pkl_file)
+        with open(pkl_path, "rb") as pkl_file:
+            savable_state = pickle.load(pkl_file)
 
-            if self._savable_state.model and self._savable_state.model.get_model():
-                self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
-            if not isinstance(self._savable_state.logger, loggers.LoggerList):
-                self._savable_state.logger = loggers.LoggerList(
-                    [self._savable_state.logger]
-                )
-        except Exception as e:
-            self._savable_state = None
-            if on_error is not None:
-                on_error(error_msg=e.__str__())
-            else:
-                raise e
+        if savable_state.model and savable_state.model.get_model():
+            savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+        if not isinstance(savable_state.logger, loggers.LoggerList):
+            # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
+            savable_state.logger = loggers.LoggerList([savable_state.logger])
+
+        return NeuralDB(user_id, savable_state)
 
     @staticmethod
     def from_udt(

@@ -359,6 +359,10 @@ class CSV(Document):
 
         # End pickling functionality here to support old directory checkpoint load 
         if not NeuralDB.new_pickle_mode:
+            # "filename" is an attribute in older versions of documents
+            # We need this line for backwards compatibility
+            if "filename" in state:
+                state["path"] = state["filename"]
             self.__dict__.update(state)
             return
 
@@ -486,6 +490,10 @@ class Extracted(Document):
 
         # End pickling functionality here to support old directory checkpoint load
         if not NeuralDB.new_pickle_mode:
+            # "filename" is an attribute in older versions of documents
+            # We need this line for backwards compatibility
+            if "filename" in state:
+                state["path"] = state["filename"]
             self.__dict__.update(state)
             return
 
