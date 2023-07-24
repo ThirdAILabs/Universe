@@ -156,6 +156,8 @@ std::optional<uint32_t> LayerNorm::nonzeros(
 
 void LayerNorm::disableSparseParameterUpdates() {}
 
+void LayerNorm::enableSparseParameterUpdates() {}
+
 std::vector<std::vector<float>*> LayerNorm::gradients() {
   return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
 }

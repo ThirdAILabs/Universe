@@ -65,6 +65,8 @@ std::optional<uint32_t> Tanh::nonzeros(const autograd::ComputationList& inputs,
 
 void Tanh::disableSparseParameterUpdates() {}
 
+void Tanh::enableSparseParameterUpdates() {}
+
 std::vector<std::vector<float>*> Tanh::gradients() { return {}; }
 std::vector<std::vector<float>*> Tanh::parameters() { return {}; }
 

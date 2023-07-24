@@ -52,11 +52,11 @@ std::optional<std::string> ColdStartDataSource::getNextRowAsString() {
     return std::nullopt;
   }
 
-  std::string row = (*_label_column)[_row_idx];
+  std::string row = _label_column->at(_row_idx);
 
   row.push_back(_column_delimiter);
 
-  row.append((*_text_column)[_row_idx]);
+  row.append(_text_column->at(_row_idx));
 
   _row_idx++;
 

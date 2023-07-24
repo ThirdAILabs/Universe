@@ -237,15 +237,15 @@ class Mach(Model):
         id_col="DOC_ID",
         id_delimiter=None,
         query_col="QUERY",
-        input_dim=50_000,
-        hidden_dim=2048,
+        fhr=50_000,
+        embedding_dimension=2048,
         extreme_output_dim=50_000,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
         self.query_col = query_col
-        self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
+        self.fhr = fhr
+        self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
         self.n_ids = 0
         self.model = None
@@ -356,8 +356,8 @@ class Mach(Model):
             options={
                 "extreme_classification": True,
                 "extreme_output_dim": self.extreme_output_dim,
-                "fhr": self.input_dim,
-                "embedding_dimension": self.hidden_dim,
+                "fhr": self.fhr,
+                "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
         )

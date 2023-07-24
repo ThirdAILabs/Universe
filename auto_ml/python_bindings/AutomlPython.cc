@@ -124,7 +124,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
-           py::arg("options") = udt::TrainOptions(),
+           py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
@@ -145,16 +145,16 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
-      .def("output_correctness", &udt::UDT::outputCorrectness,
-           py::arg("samples"), py::arg("labels"),
-           py::arg("sparse_inference") = false,
-           py::arg("num_hashes") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"),
            py::arg("train_metrics"), py::arg("val_data"),
            py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
-           bolt::python::OutputRedirect())
+           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
+      .def("output_correctness", &udt::UDT::outputCorrectness,
+           py::arg("samples"), py::arg("labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("num_hashes") = std::nullopt)
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
@@ -165,8 +165,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
       .def("clear_graph", &udt::UDT::clearGraph)
       .def("set_decode_params", &udt::UDT::setDecodeParams,
-           py::arg("min_num_eval_results"),
-           py::arg("top_k_per_eval_aggregation"))
+           py::arg("top_k_to_return"), py::arg("num_buckets_to_eval"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),

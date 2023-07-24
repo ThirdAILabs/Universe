@@ -1,5 +1,6 @@
 #include "BoltV2TrainPython.h"
 #include "CtrlCCheck.h"
+#include "DistributedCommunicationPython.h"
 #include "PyCallback.h"
 #include "PybindUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
@@ -26,6 +27,7 @@
 #include <pybind11/stl_bind.h>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace py = pybind11;
 
@@ -132,7 +134,7 @@ void defineTrainer(py::module_& train) {
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
-           bolt::python::OutputRedirect())
+           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
       .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = std::vector<std::string>(),
@@ -144,7 +146,7 @@ void defineTrainer(py::module_& train) {
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
-           bolt::python::OutputRedirect())
+           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
@@ -200,7 +202,7 @@ void defineMetrics(py::module_& train) {
       .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
                     nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
                     uint32_t>(),
-           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("mach_index"), py::arg("num_buckets_to_eval"),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   py::class_<metrics::MachRecall, std::shared_ptr<metrics::MachRecall>,
@@ -208,7 +210,7 @@ void defineMetrics(py::module_& train) {
       .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
                     nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
                     uint32_t>(),
-           py::arg("mach_index"), py::arg("top_k_per_eval_aggregation"),
+           py::arg("mach_index"), py::arg("num_buckets_to_eval"),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 }
 
@@ -281,6 +283,10 @@ void defineCallbacks(py::module_& train) {
 }
 
 void defineDistributedTrainer(py::module_& train) {
+  py::class_<DistributedComm, PyDistributedComm, DistributedCommPtr>(
+      train, "Communication")
+      .def(py::init<>());
+
   py::class_<GradientReference>(train, "GradientReference")
       .def("get_gradients", &GradientReference::getGradients)
       .def("set_gradients", &GradientReference::setGradients,

@@ -54,6 +54,9 @@ class Tensor {
 
   const float* activationsPtr() const;
 
+  std::pair<std::vector<uint32_t>, std::vector<float> > topKIndexValuePair(
+      uint32_t topk);
+
   const float* gradientsPtr() const;
 
  private:

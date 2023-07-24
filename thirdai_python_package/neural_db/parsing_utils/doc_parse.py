@@ -27,7 +27,7 @@ def get_elements(filename):
 def create_train_df(elements):
     df = pd.DataFrame(
         index=range(len(elements)),
-        columns=["passage", "para", "filename", "page", "display"],
+        columns=["passage", "para", "filename", "display"],
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(str(elem[0]))
@@ -40,7 +40,6 @@ def create_train_df(elements):
             passage,
             passage,
             elem[1],
-            "0",
             str(elem[0].replace("\n", " ")),
         ]
     for column in ["passage", "para", "display"]:

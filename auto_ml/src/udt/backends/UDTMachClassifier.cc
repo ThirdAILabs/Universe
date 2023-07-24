@@ -17,6 +17,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -60,8 +61,8 @@ UDTMachClassifier::UDTMachClassifier(
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
-    : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
-      _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
+    : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
+      _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
   uint32_t input_dim = tabular_options.feature_hash_range;
 
   if (user_args.get<bool>("neural_db", "boolean", /* default_val= */ false)) {
@@ -159,7 +160,8 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
@@ -174,7 +176,7 @@ py::object UDTMachClassifier::train(
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
                             val_dataset_loader, getMetrics(val_metrics, "val_"),
-                            callbacks, options);
+                            callbacks, options, comm);
 }
 
 py::object UDTMachClassifier::trainBatch(
@@ -256,7 +258,7 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
         std::to_string(num_classes) + " classes.");
   }
 
-  uint32_t k = top_k.value_or(_min_num_eval_results);
+  uint32_t k = top_k.value_or(_default_top_k_to_return);
 
   uint32_t batch_size = outputs->batchSize();
 
@@ -268,8 +270,8 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
     const BoltVector& vector = outputs->getVector(i);
     auto predictions = _mach_label_block->index()->decode(
         /* output = */ vector,
-        /* min_num_eval_results = */ k,
-        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
+        /* top_k = */ k,
+        /* num_buckets_to_eval = */ _num_buckets_to_eval);
     predicted_entities[i] = predictions;
   }
 
@@ -393,14 +395,15 @@ py::object UDTMachClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   return train(data_source, learning_rate, epochs, train_metrics, val_data,
-               val_metrics, callbacks, options);
+               val_metrics, callbacks, options, comm);
 }
 
 py::object UDTMachClassifier::embedding(const MapInput& sample) {
@@ -553,7 +556,7 @@ void UDTMachClassifier::introduceDocuments(
     auto scores = _classifier->model()->forward(batch).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = std::stoi((*labels)[row_idx++]);
+      uint32_t label = std::stoi(labels->at(row_idx++));
       top_k_per_doc[label].push_back(
           scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
@@ -916,14 +919,14 @@ py::object UDTMachClassifier::associateTrain(
     BoltVector doc_id = BoltVector::singleElementSparseVector(0);
     for (uint32_t i = 0; i < n_association_samples; i++) {
       dataset->manuallyAddToBuffer(
-          {input_vec, doc_id, makeLabelFromHashes(hashes, n_buckets, rng)});
+          {input_vec, makeLabelFromHashes(hashes, n_buckets, rng), doc_id});
     }
   }
 
   return _classifier->train(dataset, learning_rate, epochs,
                             getMetrics(metrics, "train_"),
                             /* val_dataset */ nullptr, /* val_metrics= */ {},
-                            /* callbacks= */ {}, options);
+                            /* callbacks= */ {}, options, /*comm= */ nullptr);
 }
 
 py::object UDTMachClassifier::associateColdStart(
@@ -945,21 +948,21 @@ py::object UDTMachClassifier::associateColdStart(
                         metrics, options);
 }
 
-void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
-                                        uint32_t top_k_per_eval_aggregation) {
-  if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
+void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,
+                                        uint32_t num_buckets_to_eval) {
+  if (top_k_to_return == 0 || num_buckets_to_eval == 0) {
     throw std::invalid_argument("Params must not be 0.");
   }
 
   uint32_t num_buckets = _mach_label_block->index()->numBuckets();
-  if (top_k_per_eval_aggregation > num_buckets) {
+  if (num_buckets_to_eval > num_buckets) {
     throw std::invalid_argument(
-        "Cannot eval with top_k_per_eval_aggregation greater than " +
+        "Cannot eval with num_buckets_to_eval greater than " +
         std::to_string(num_buckets) + ".");
   }
 
   uint32_t num_classes = _mach_label_block->index()->numEntities();
-  if (min_num_eval_results > num_classes) {
+  if (top_k_to_return > num_classes) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
         "predict. "
@@ -967,8 +970,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
         std::to_string(num_classes) + " classes.");
   }
 
-  _min_num_eval_results = min_num_eval_results;
-  _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+  _default_top_k_to_return = top_k_to_return;
+  _num_buckets_to_eval = num_buckets_to_eval;
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
@@ -1003,12 +1006,12 @@ InputMetrics UDTMachClassifier::getMetrics(
     if (std::regex_match(name, std::regex("precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachPrecision>(
-          _mach_label_block->index(), _top_k_per_eval_aggregation, output,
+          _mach_label_block->index(), _num_buckets_to_eval, output,
           true_class_labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachRecall>(
-          _mach_label_block->index(), _top_k_per_eval_aggregation, output,
+          _mach_label_block->index(), _num_buckets_to_eval, output,
           true_class_labels, k);
     } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
@@ -1066,7 +1069,7 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
           _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _min_num_eval_results, _top_k_per_eval_aggregation,
+          _default_top_k_to_return, _num_buckets_to_eval,
           _mach_sampling_threshold, _rlhf_sampler);
 }
 
