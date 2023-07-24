@@ -42,6 +42,8 @@ std::optional<ColumnMap> ColumnMapIterator::next() {
   return makeColumnMap(std::move(columns));
 }
 
+void ColumnMapIterator::restart() { _data_source->restart(); }
+
 ColumnMap ColumnMapIterator::emptyColumnMap() const {
   return makeColumnMap(
       std::vector<std::vector<std::string>>(_column_names.size()));

@@ -27,10 +27,9 @@ def load_data(filename):
         state=None,
         input_columns=[("tokens", None)],
         output_columns=[("category_id", None)],
-        batch_size=2048,
     )
 
-    return loader.next()
+    return loader.next(batch_size=2048)
 
 
 def build_model():

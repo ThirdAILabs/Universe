@@ -103,13 +103,13 @@ TEST(DataLoaderTest, Streaming) {
 
   Loader loader(data_iterator, transformations, std::make_shared<State>(),
                 {{"tokens_cast", "decimals_cast"}},
-                {{"token_cast", "decimal_cast"}}, batch_size, n_batches,
+                {{"token_cast", "decimal_cast"}},
                 /* shuffle_buffer_size= */ 50);
 
   std::unordered_set<uint32_t> rows_seen;
 
   for (size_t c = 0; c < n_full_chunks + 1; c++) {
-    auto chunk = loader.next();
+    auto chunk = loader.next(batch_size, n_batches);
     ASSERT_TRUE(chunk.has_value());
 
     auto [data, labels] = std::move(*chunk);
@@ -160,7 +160,7 @@ TEST(DataLoaderTest, Streaming) {
 
   ASSERT_EQ(rows_seen.size(), n_rows);
 
-  ASSERT_FALSE(loader.next().has_value());
+  ASSERT_FALSE(loader.next(10).has_value());
 }
 
 }  // namespace thirdai::data::tests

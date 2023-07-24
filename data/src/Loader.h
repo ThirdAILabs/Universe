@@ -18,12 +18,27 @@ class Loader {
 
   Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
          StatePtr state, IndexValueColumnList input_columns,
-         IndexValueColumnList label_columns, size_t batch_size,
-         size_t max_batches = NO_LIMIT,
+         IndexValueColumnList label_columns,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
          bool verbose = true);
 
-  std::optional<bolt::train::LabeledDataset> next();
+  static auto make(ColumnMapIterator data_iterator,
+                   TransformationPtr transformation, StatePtr state,
+                   IndexValueColumnList input_columns,
+                   IndexValueColumnList label_columns,
+                   size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
+                   bool verbose = true) {
+    return std::make_shared<Loader>(data_iterator, transformation, state,
+                                    input_columns, label_columns,
+                                    shuffle_buffer_size, verbose);
+  }
+
+  std::optional<bolt::train::LabeledDataset> next(
+      size_t batch_size, size_t max_batches = NO_LIMIT);
+
+  bolt::train::LabeledDataset all(size_t batch_size);
+
+  void restart();
 
  private:
   std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
@@ -39,8 +54,6 @@ class Loader {
   IndexValueColumnList _input_columns;
   IndexValueColumnList _label_columns;
 
-  size_t _batch_size;
-  size_t _max_batches;
   size_t _shuffle_buffer_size;
   bool _verbose;
 
@@ -48,5 +61,7 @@ class Loader {
 
   StatePtr _state;
 };
+
+using LoaderPtr = std::shared_ptr<Loader>;
 
 }  // namespace thirdai::data

@@ -10,9 +10,11 @@ using dataset::DataSourcePtr;
 class ColumnMapIterator {
  public:
   ColumnMapIterator(DataSourcePtr data_source, char delimiter,
-                    size_t rows_per_load);
+                    size_t rows_per_load = 10000);
 
   std::optional<ColumnMap> next();
+
+  void restart();
 
   ColumnMap emptyColumnMap() const;
 
