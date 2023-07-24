@@ -14,4 +14,7 @@ std::vector<TensorList> convertToTensors(
     const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
     size_t batch_size);
 
+TensorList convertToTensorBatch(const ColumnMap& columns,
+                                const IndexValueColumnList& columns_to_convert);
+
 }  // namespace thirdai::data
