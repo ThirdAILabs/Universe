@@ -1,12 +1,10 @@
 import hashlib
 import os
-import pickle
 import shutil
 import string
-import uuid
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -29,7 +27,7 @@ class Document:
         raise NotImplementedError()
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         raise NotImplementedError()
 
     @property
@@ -43,7 +41,7 @@ class Document:
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
     # to True for CSV docs, we will save the actual csv file in the pickle.
-    # Utilize this property in __getstate__ and __setstate__ of document objs.
+    # Utilize this property in save_meta and load_meta of document objs.
     @property
     def save_extra_info(self) -> bool:
         return self._save_extra_info
@@ -304,8 +302,8 @@ class CSV(Document):
         return len(self.df)
 
     @property
-    def name(self) -> Optional[str]:
-        return self.path.name if self.path else None
+    def name(self) -> str:
+        return self.path.name
 
     @property
     def save_extra_info(self) -> bool:
@@ -330,7 +328,7 @@ class CSV(Document):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.path.absolute()) if self.path else None,
+            source=str(self.path.absolute()),
             metadata=row.to_dict(),
         )
 
@@ -399,7 +397,7 @@ class Extracted(Document):
         return len(self.df)
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self.path.name
 
     @property
@@ -424,7 +422,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.path.absolute()) if self.path else None,
+            source=str(self.path.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
@@ -555,7 +553,7 @@ class URL(Document):
         return len(self.df)
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self.url
 
     def strong_text(self, element_id: int) -> str:
@@ -660,7 +658,7 @@ class SentenceLevelExtracted(Extracted):
         return len(self.df)
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self.path.name if self.path else None
 
     def strong_text(self, element_id: int) -> str:
@@ -677,7 +675,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.path.absolute()) if self.path else None,
+            source=str(self.path.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
@@ -695,7 +693,8 @@ class SentenceLevelExtracted(Extracted):
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
-        shutil.copy(self.path, directory)
+        if self.save_extra_info:
+            shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
