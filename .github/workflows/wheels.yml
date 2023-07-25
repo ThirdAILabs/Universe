@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, fix-windows-wheel]
+    branches: [main]
 
   release:
     types:
