@@ -32,22 +32,21 @@ class DistributedRunner_v1(Runner):
             metrics=config.val_metrics,
         )
 
-        if hasattr(config, "unsupervised_file_1"):
-            metrics = model.cold_start_distributed(
-                cluster_config=cluster_config_fn(communication_type="linear"),
-                filenames=[
-                    os.path.join(path_prefix, config.unsupervised_file_1),
-                    os.path.join(path_prefix, config.unsupervised_file_2),
-                ],
-                batch_size=8192,
-                strong_column_names=["TITLE"],
-                weak_column_names=["TEXT"],
-                learning_rate=config.learning_rate,
-                epochs=config.num_epochs,
-                metrics=config.train_metrics,
-            )
+        metrics = model.cold_start_distributed(
+            cluster_config=cluster_config_fn(communication_type="linear"),
+            filenames=[
+                os.path.join(path_prefix, config.unsupervised_file_1),
+                os.path.join(path_prefix, config.unsupervised_file_2),
+            ],
+            batch_size=8192,
+            strong_column_names=["TITLE"],
+            weak_column_names=["TEXT"],
+            learning_rate=config.learning_rate,
+            epochs=config.num_epochs,
+            metrics=config.train_metrics,
+        )
 
-        if hasattr(config, "supervised_trn_1"):
+        if config.supervised_trn_1:
             metrics = model.train_distributed(
                 cluster_config=cluster_config_fn(communication_type="linear"),
                 filenames=[

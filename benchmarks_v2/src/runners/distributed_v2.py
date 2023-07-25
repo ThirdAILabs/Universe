@@ -24,7 +24,13 @@ class DistributedRunner_v2(Runner):
         )
         model = dist.prepare_model(model)
 
-        model.coldstart_distributed_v2(
+        validation = old_bolt.Validation(
+            filename=config["data_splits"]["validation"],
+            interval=10,
+            metrics=config["val_metrics"],
+        )
+
+        metrics = model.coldstart_distributed_v2(
             filename=config["data_splits"][
                 f"unsupervised_{session.get_world_rank()+1}"
             ],
@@ -34,22 +40,20 @@ class DistributedRunner_v2(Runner):
             epochs=config["num_epochs"],
             batch_size=8192,
             metrics=config["train_metrics"],
-        )
-
-        validation = old_bolt.Validation(
-            filename=config["data_splits"]["validation"],
-            interval=2,
-            metrics=config["val_metrics"],
-        )
-
-        metrics = model.train_distributed_v2(
-            filename=config["data_splits"][f"supervised_{session.get_world_rank()+1}"],
-            learning_rate=config["learning_rate"],
-            epochs=config["num_epochs"],
-            batch_size=8192,
-            metrics=config["train_metrics"],
             validation=validation,
         )
+
+        if config["data_splits"]["supervised_v1"]:
+            metrics = model.train_distributed_v2(
+                filename=config["data_splits"][
+                    f"supervised_{session.get_world_rank()+1}"
+                ],
+                learning_rate=config["learning_rate"],
+                epochs=config["num_epochs"],
+                batch_size=8192,
+                metrics=config["train_metrics"],
+                validation=validation,
+            )
 
         session.report(
             metrics,

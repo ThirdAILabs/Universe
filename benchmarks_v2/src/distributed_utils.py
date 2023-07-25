@@ -78,14 +78,15 @@ def setup_ray():
 
     assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
     working_dir = os.path.dirname(os.path.realpath(__file__))
-    # print("-------The working directory is : ", working_dir)
 
     ray.init(
         runtime_env={
             "working_dir": working_dir,
             "env_vars": {
                 "OMP_NUM_THREADS": f"{num_cpu_per_node}",
-                "PYTHONPATH": "/home/mritunjay/Universe/",
+                "PYTHONPATH": os.path.join(
+                    working_dir, "../../"
+                ),  # Change to your home directory where benchmarks_v2 module is present
             },
         },
         ignore_reinit_error=True,
