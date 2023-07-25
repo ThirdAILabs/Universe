@@ -203,7 +203,7 @@ setup(
             "moto[server]",
             "mlflow",
             "protobuf",
-            "datasets",
+            "datasets==2.13.1",
             "torch",
             "toml",
             "psutil",
