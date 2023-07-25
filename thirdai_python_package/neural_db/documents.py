@@ -305,14 +305,6 @@ class CSV(Document):
     def name(self) -> str:
         return self.path.name
 
-    @property
-    def save_extra_info(self) -> bool:
-        return self._save_extra_info
-
-    @save_extra_info.setter
-    def save_extra_info(self, value: bool):
-        self._save_extra_info = value
-
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
         return " ".join([row[col] for col in self.strong_columns])
@@ -399,14 +391,6 @@ class Extracted(Document):
     @property
     def name(self) -> str:
         return self.path.name
-
-    @property
-    def save_extra_info(self) -> bool:
-        return self._save_extra_info
-
-    @save_extra_info.setter
-    def save_extra_info(self, value: bool):
-        self._save_extra_info = value
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
