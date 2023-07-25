@@ -500,6 +500,7 @@ class Extracted(Document):
 
     def __setstate__(self, state):
         from .neural_db import NeuralDB
+
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
