@@ -345,17 +345,21 @@ class CSV(Document):
     def __getstate__(self):
         from .neural_db import NeuralDB
 
-        # End pickling functionality here to support old directory checkpoint save
-        if not NeuralDB.new_pickle_mode:
-            return self.__dict__
-
         state = self.__dict__.copy()
 
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
 
+        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        if "filename" in state:
+            del state["filename"]
+
         # Save the filename so we can load it with the same name
         state["name"] = self.name
+
+        # End pickling functionality here to support old directory checkpoint save
+        if not NeuralDB.new_pickle_mode:
+            return state
 
         if self._save_extra_info:
             with open(self.path, "rb") as csv_file:
@@ -403,7 +407,11 @@ class CSV(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
-        self.path = directory / self.path.name
+        if hasattr(self, "name"):
+            self.path = directory / self.name
+        else:
+            # deprecated, self.path should not be in self
+            self.path = directory / self.path.name
 
 
 # Base class for PDF and DOCX classes because they share the same logic.
@@ -470,10 +478,6 @@ class Extracted(Document):
     def __getstate__(self):
         from .neural_db import NeuralDB
 
-        # End pickling functionality here to support old directory checkpoint save
-        if not NeuralDB.new_pickle_mode:
-            return self.__dict__
-
         state = self.__dict__.copy()
 
         # Remove the path attribute because it is not cross platform compatible
@@ -485,6 +489,10 @@ class Extracted(Document):
 
         # Save the filename so we can load it with the same name
         state["name"] = self.name
+
+        # End pickling functionality here to support old directory checkpoint save
+        if not NeuralDB.new_pickle_mode:
+            return state
 
         if self._save_extra_info:
             with open(self.path, "rb") as extracted_file:
@@ -532,7 +540,11 @@ class Extracted(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.path = directory / self.path.name
+        if hasattr(self, "name"):
+            self.path = directory / self.name
+        else:
+            # deprecated, self.path should not be in self
+            self.path = directory / self.path.name
 
 
 def process_pdf(path: str) -> pd.DataFrame:
@@ -759,7 +771,11 @@ class SentenceLevelExtracted(Extracted):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.path = directory / self.path.name
+        if hasattr(self, "name"):
+            self.path = directory / self.name
+        else:
+            # deprecated, self.path should not be in self
+            self.path = directory / self.path.name
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
