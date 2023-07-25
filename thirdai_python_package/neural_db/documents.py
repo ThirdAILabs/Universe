@@ -406,7 +406,7 @@ class CSV(Document):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
         if hasattr(self, "doc_name"):
-            self.path = directory / self.name
+            self.path = directory / self.doc_name
         else:
             # deprecated, self.path should not be in self
             self.path = directory / self.path.name
@@ -500,13 +500,11 @@ class Extracted(Document):
 
     def __setstate__(self, state):
         from .neural_db import NeuralDB
-
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
         if "filename" in state:
             state["path"] = state["filename"]
-
         # End pickling functionality here to support old directory checkpoint load
         if not NeuralDB.new_pickle_mode:
             self.__dict__.update(state)
@@ -537,7 +535,7 @@ class Extracted(Document):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
         if hasattr(self, "doc_name"):
-            self.path = directory / self.name
+            self.path = directory / self.doc_name
         else:
             # deprecated, self.path should not be in self
             self.path = directory / self.path.name
@@ -768,7 +766,7 @@ class SentenceLevelExtracted(Extracted):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
         if hasattr(self, "doc_name"):
-            self.path = directory / self.name
+            self.path = directory / self.doc_name
         else:
             # deprecated, self.path should not be in self
             self.path = directory / self.path.name
