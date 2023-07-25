@@ -1,19 +1,58 @@
 #include "MachDatasetFactory.h"
 #include <data/src/TensorConversion.h>
+#include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/StringConcat.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <stdexcept>
 
 namespace thirdai::automl {
 
 data::LoaderPtr MachDatasetFactory::getDataLoader(
-    const dataset::DataSourcePtr& data_source, size_t batch_size,
-    size_t max_batches, bool include_mach_labels,
+    const dataset::DataSourcePtr& data_source, bool include_mach_labels,
     dataset::DatasetShuffleConfig shuffle_config, bool verbose) {
+  return getDataLoaderHelper(data_source, include_mach_labels, shuffle_config,
+                             verbose, nullptr);
+}
+
+thirdai::data::LoaderPtr MachDatasetFactory::getColdStartDataLoader(
+    const dataset::DataSourcePtr& data_source,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, bool include_mach_labels,
+    bool fast_approximation, dataset::DatasetShuffleConfig shuffle_config,
+    bool verbose) {
+  thirdai::data::TransformationPtr cold_start_transformation;
+  if (fast_approximation) {
+    std::vector<std::string> all_columns = weak_column_names;
+    all_columns.insert(all_columns.end(), strong_column_names.begin(),
+                       strong_column_names.end());
+    cold_start_transformation = std::make_shared<thirdai::data::StringConcat>(
+        all_columns, _cold_start_text_column);
+  } else {
+    cold_start_transformation =
+        std::make_shared<thirdai::data::ColdStartTextAugmentation>(
+            /* strong_column_names= */ strong_column_names,
+            /* weak_column_names= */ weak_column_names,
+            /* label_column_name= */ _cold_start_label_column,
+            /* output_column_name= */ _cold_start_text_column);
+  }
+
+  return getDataLoaderHelper(data_source, include_mach_labels, shuffle_config,
+                             verbose, cold_start_transformation);
+}
+
+thirdai::data::LoaderPtr MachDatasetFactory::getDataLoaderHelper(
+    const dataset::DataSourcePtr& data_source, bool include_mach_labels,
+    dataset::DatasetShuffleConfig shuffle_config, bool verbose,
+    thirdai::data::TransformationPtr cold_start_transformation) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
   data::ColumnMapIterator data_iter(data_source, _delimiter);
 
   std::vector<data::TransformationPtr> transformations;
+  if (cold_start_transformation) {
+    transformations.push_back(std::move(cold_start_transformation));
+  }
   transformations.push_back(_input_transformation);
   transformations.push_back(_entity_id_transformation);
   if (include_mach_labels) {
@@ -27,10 +66,9 @@ data::LoaderPtr MachDatasetFactory::getDataLoader(
   }
   label_column_outputs.emplace_back(_entity_id_column, std::nullopt);
 
-  return data::Loader::make(data_iter, transformation_list, _state,
-                            {{_input_column, std::nullopt}},
-                            label_column_outputs, batch_size, max_batches,
-                            shuffle_config.min_buffer_size, verbose);
+  return data::Loader::make(
+      data_iter, transformation_list, _state, {{_input_column, std::nullopt}},
+      label_column_outputs, shuffle_config.min_buffer_size, verbose);
 }
 
 bolt::nn::tensor::TensorList MachDatasetFactory::featurizeInput(

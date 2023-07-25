@@ -119,9 +119,13 @@ py::object Classifier::train(
   bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
                                bolt::train::python::CtrlCCheck{});
 
+  size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
+
   auto history = trainer.train_with_data_loader(
       /* train_data_loader= */ data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* batch_size= */ batch_size,
+      /* max_in_memory_batches= */ options.max_in_memory_batches,
       /* train_metrics= */ train_metrics,
       /* validation_data_loader= */ val_data,
       /* validation_metrics= */ val_metrics,

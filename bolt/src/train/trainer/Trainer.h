@@ -91,7 +91,9 @@ class Trainer {
 
   metrics::History train_with_data_loader(
       const data::LoaderPtr& train_data_loader, float learning_rate,
-      uint32_t epochs, const metrics::InputMetrics& train_metrics = {},
+      uint32_t epochs, size_t batch_size,
+      std::optional<size_t> max_in_memory_batches = std::nullopt,
+      const metrics::InputMetrics& train_metrics = {},
       const data::LoaderPtr& validation_data_loader = nullptr,
       const metrics::InputMetrics& validation_metrics = {},
       std::optional<uint32_t> steps_per_validation = std::nullopt,
@@ -118,9 +120,8 @@ class Trainer {
       bool verbose = true);
 
   metrics::History validate_with_data_loader(
-      const data::LoaderPtr& data,
-      const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
-      bool verbose = true);
+      const data::LoaderPtr& data, const metrics::InputMetrics& metrics = {},
+      bool use_sparsity = false, bool verbose = true);
 
   nn::model::ModelPtr getModel() { return _model; }
   // Synchronizes the outer epoch count maintained by the distributed framework

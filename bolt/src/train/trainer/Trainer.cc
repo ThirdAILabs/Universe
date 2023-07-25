@@ -245,7 +245,9 @@ metrics::History Trainer::train_with_dataset_loader(
 
 metrics::History Trainer::train_with_data_loader(
     const data::LoaderPtr& train_data_loader, float learning_rate,
-    uint32_t epochs, const metrics::InputMetrics& train_metrics,
+    uint32_t epochs, size_t batch_size,
+    std::optional<size_t> max_in_memory_batches,
+    const metrics::InputMetrics& train_metrics,
     const data::LoaderPtr& validation_data_loader,
     const metrics::InputMetrics& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
@@ -253,12 +255,12 @@ metrics::History Trainer::train_with_data_loader(
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
-  if (!train_data_loader->isStreaming()) {
-    auto train_data = train_data_loader->all();
+  if (!max_in_memory_batches) {
+    auto train_data = train_data_loader->all(batch_size);
 
     std::optional<LabeledDataset> validation_data = std::nullopt;
     if (validation_data_loader) {
-      validation_data = validation_data_loader->all();
+      validation_data = validation_data_loader->all(batch_size);
     }
 
     return train(train_data, learning_rate, epochs, train_metrics,
@@ -274,11 +276,12 @@ metrics::History Trainer::train_with_data_loader(
   // validation data.
   std::optional<LabeledDataset> validation_data = std::nullopt;
   if (validation_data_loader) {
-    validation_data = validation_data_loader->all();
+    validation_data = validation_data_loader->all(batch_size);
   }
 
   for (uint32_t e = 0; e < epochs; e++) {
-    while (auto train_chunk = train_data_loader->next()) {
+    while (auto train_chunk =
+               train_data_loader->next(batch_size, *max_in_memory_batches)) {
       train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
             validation_data, validation_metrics, steps_per_validation,
             use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
@@ -356,7 +359,8 @@ metrics::History Trainer::validate_with_dataset_loader(
 metrics::History Trainer::validate_with_data_loader(
     const data::LoaderPtr& data, const metrics::InputMetrics& metrics,
     bool use_sparsity, bool verbose) {
-  return validate(/* data= */ data->all(), /* metrics= */ metrics,
+  return validate(/* data= */ data->all(DEFAULT_BATCH_SIZE),
+                  /* metrics= */ metrics,
                   /* use_sparsity= */ use_sparsity, /* verbose= */ verbose);
 }
 

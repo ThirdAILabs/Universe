@@ -40,6 +40,8 @@ class Loader {
 
   void restart();
 
+  void addToShuffleBuffer(ColumnMap&& columns);
+
  private:
   std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
       ColumnMap&& loaded_rows, size_t dataset_size) const;

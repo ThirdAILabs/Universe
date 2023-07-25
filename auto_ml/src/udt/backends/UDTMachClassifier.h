@@ -207,8 +207,6 @@ class UDTMachClassifier final : public UDTBackend {
         /* label_column_name = */ _mach_label_block->columnName());
   }
 
-  std::string textColumnForDocumentIntroduction();
-
   void updateSamplingStrategy();
 
   void addBalancingSamples(const dataset::DataSourcePtr& data);

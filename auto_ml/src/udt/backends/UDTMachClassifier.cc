@@ -12,11 +12,14 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/ColumnMap.h>
+#include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
@@ -164,17 +167,16 @@ py::object UDTMachClassifier::train(
     const bolt::train::DistributedCommPtr& comm) {
   thirdai::data::LoaderPtr val_dataset_loader;
   if (val_data) {
-    val_dataset_loader = _data_factory.getDataLoader(
-        val_data, defaults::BATCH_SIZE, thirdai::data::Loader::NO_LIMIT, true,
-        options.shuffle_config, options.verbose);
+    val_dataset_loader =
+        _data_factory.getDataLoader(val_data, /* include_mach_labels= */ true,
+                                    options.shuffle_config, options.verbose);
   }
 
   addBalancingSamples(data);
 
-  auto train_dataset_loader = _data_factory.getDataLoader(
-      data, options.batch_size.value_or(defaults::BATCH_SIZE),
-      options.max_in_memory_batches.value_or(thirdai::data::Loader::NO_LIMIT),
-      true, options.shuffle_config, options.verbose);
+  auto train_dataset_loader =
+      _data_factory.getDataLoader(data, /* include_mach_labels= */ true,
+                                  options.shuffle_config, options.verbose);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
@@ -222,9 +224,9 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto eval_dataset_loader = _data_factory.getDataLoader(
-      data, defaults::BATCH_SIZE, thirdai::data::Loader::NO_LIMIT, true,
-      dataset::DatasetShuffleConfig(), verbose);
+  auto eval_dataset_loader =
+      _data_factory.getDataLoader(data, /* include_mach_labels= */ true,
+                                  dataset::DatasetShuffleConfig(), verbose);
 
   return _classifier->evaluate(eval_dataset_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
@@ -403,18 +405,17 @@ py::object UDTMachClassifier::coldstart(
     const bolt::train::DistributedCommPtr& comm) {
   thirdai::data::LoaderPtr val_dataset_loader;
   if (val_data) {
-    val_dataset_loader = _data_factory.getDataLoader(
-        val_data, defaults::BATCH_SIZE, thirdai::data::Loader::NO_LIMIT, true,
-        options.shuffle_config, options.verbose);
+    val_dataset_loader =
+        _data_factory.getDataLoader(val_data, /* include_mach_labels= */ true,
+                                    options.shuffle_config, options.verbose);
   }
 
   addBalancingSamples(data);
 
   auto train_dataset_loader = _data_factory.getColdStartDataLoader(
-      data, options.batch_size.value_or(defaults::BATCH_SIZE),
-      options.max_in_memory_batches.value_or(thirdai::data::Loader::NO_LIMIT),
-      strong_column_names, weak_column_names, options.shuffle_config,
-      options.verbose);
+      data, strong_column_names, weak_column_names,
+      /* include_mach_labels= */ true, /* fast_approximation= */ false,
+      options.shuffle_config, options.verbose);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
@@ -477,22 +478,6 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   return std::move(np_weights);
 }
 
-std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
-  if (_dataset_factory->inputDataTypes().size() != 1 ||
-      !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
-    throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured "
-        "with a "
-        "single text input column and target column. The current model "
-        "is "
-        "configured with " +
-        std::to_string(_dataset_factory->inputDataTypes().size()) +
-        " input columns.");
-  }
-
-  return _dataset_factory->inputDataTypes().begin()->first;
-}
-
 void UDTMachClassifier::updateSamplingStrategy() {
   auto mach_index = _mach_label_block->index();
 
@@ -528,34 +513,18 @@ void UDTMachClassifier::updateSamplingStrategy() {
 }
 
 void UDTMachClassifier::introduceDocuments(
-    const dataset::DataSourcePtr& data,
+    const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
-  auto metadata = getColdStartMetaData();
+  auto dataset_loader = _data_factory.getColdStartDataLoader(
+      data_source, strong_column_names, weak_column_names,
+      /* include_mach_labels= */ false,
+      /* fast_approximation= */ fast_approximation,
+      dataset::DatasetShuffleConfig(), verbose);
 
-  dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
-  if (fast_approximation) {
-    cold_start_data = cold_start::concatenatedDocumentDataSource(
-        data, strong_column_names, weak_column_names, _dataset_factory,
-        metadata);
-  } else {
-    cold_start_data = cold_start::preprocessColdStartTrainSource(
-        data, strong_column_names, weak_column_names, _dataset_factory,
-        metadata);
-  }
-
-  auto dataset_loader =
-      _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
-
-  auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE, verbose);
-
-  auto doc_samples_tensors = bolt::train::convertDatasets(
-      doc_samples, _classifier->model()->inputDims());
-
-  const auto& labels = cold_start_data->labelColumn();
-  uint32_t row_idx = 0;
+  auto [data, labels] = dataset_loader->all(defaults::BATCH_SIZE);
 
   uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
       _mach_label_block->index()->numHashes());
@@ -564,16 +533,18 @@ void UDTMachClassifier::introduceDocuments(
 
   bolt::train::python::CtrlCCheck ctrl_c_check;
 
-  for (const auto& batch : doc_samples_tensors) {
+  for (size_t batch_idx = 0; batch_idx < data.size(); batch_idx++) {
     // Note: using sparse inference here could cause issues because the
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
-    auto scores = _classifier->model()->forward(batch).at(0);
+    auto scores = _classifier->model()->forward(data.at(batch_idx)).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = std::stoi(labels->value(row_idx++));
-      top_k_per_doc[label].push_back(
+      const BoltVector& label = labels.at(batch_idx).at(0)->getVector(0);
+
+      uint32_t label_id = label.active_neurons[0];
+      top_k_per_doc[label_id].push_back(
           scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
 
@@ -588,7 +559,7 @@ void UDTMachClassifier::introduceDocuments(
     ctrl_c_check();
   }
 
-  addBalancingSamples(cold_start_data);
+  addBalancingSamples(data_source);
 
   updateSamplingStrategy();
 }
@@ -598,7 +569,7 @@ void UDTMachClassifier::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
-  std::string text_column_name = textColumnForDocumentIntroduction();
+  std::string text_column_name = _data_factory.coldStartTextColumnName();
 
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
@@ -729,8 +700,7 @@ void UDTMachClassifier::introduceLabel(
   // cause new docs to only be mapped to buckets already containing
   // entities.
   auto output = _classifier->model()
-                    ->forward(_dataset_factory->featurizeInputBatch(samples),
-                              /* use_sparsity = */ false)
+                    ->forward(_data_factory.featurizeInputBatch(samples))
                     .at(0);
 
   uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
@@ -764,28 +734,36 @@ void UDTMachClassifier::forget(const Label& label) {
 }
 
 void UDTMachClassifier::addBalancingSamples(
-    const dataset::DataSourcePtr& data) {
+    // TODO(Nicholas) this needs strong/weak cols passed in for cold start
+    const dataset::DataSourcePtr& data_source) {
   if (_rlhf_sampler) {
-    data->restart();
-    auto samples =
-        _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
-            ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                       /* num_batches= */ 1, /* verbose= */ false)
+    data_source->restart();
+    auto [data, labels] =
+        _data_factory
+            .getDataLoader(data_source, /* include_mach_labels= */ true,
+                           dataset::DatasetShuffleConfig(),
+                           /* verbose= */ false)
+            ->next(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
+                   /* max_batches= */ 1)
             .value();
 
-    for (uint32_t i = 0; i < samples.front()->len(); i++) {
-      const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
+    auto input_tensor = data.at(0).at(0);
+    auto label_tensor = labels.at(0).at(0);
+    auto doc_id_tensor = labels.at(0).at(1);
+
+    for (uint32_t i = 0; i < input_tensor->batchSize(); i++) {
+      const BoltVector& doc_id_vec = doc_id_tensor->getVector(i);
       if (doc_id_vec.len < 1) {
         continue;
       }
 
       uint32_t doc_id = doc_id_vec.active_neurons[0];
 
-      const BoltVector& input = samples.at(0)->at(0)[i];
-      const BoltVector& label = samples.at(1)->at(0)[i];
+      const BoltVector& input = input_tensor->getVector(i);
+      const BoltVector& label = label_tensor->getVector(i);
       _rlhf_sampler->addSample(doc_id, input, label);
     }
-    data->restart();
+    data_source->restart();
   }
 }
 
@@ -847,7 +825,7 @@ void UDTMachClassifier::teach(
 
   for (const auto& [source, target_hashes] : source_target_samples) {
     BoltVector source_vec =
-        _dataset_factory->featurizeInput(source).at(0)->getVector(0);
+        _data_factory.featurizeInput(source).at(0)->getVector(0);
     for (uint32_t i = 0; i < n_teaching_samples; i++) {
       samples.emplace_back(source_vec,
                            makeLabelFromHashes(target_hashes, n_buckets, rng));
@@ -922,22 +900,38 @@ py::object UDTMachClassifier::associateTrain(
     TrainOptions options) {
   warnOnNonHashBasedMetrics(metrics);
 
-  auto dataset = _dataset_factory->getLabeledDatasetLoader(balancing_data,
-                                                           /* shuffle= */ true);
+  auto dataset = _data_factory.getDataLoader(
+      balancing_data, /* include_mach_labels= */ true,
+      dataset::DatasetShuffleConfig(), options.verbose);
 
   auto associate_samples = getAssociateSamples(source_target_samples);
 
   std::mt19937 rng(global_random::nextSeed());
 
+  std::vector<MapInput> inputs;
+  std::vector<std::vector<uint32_t>> target_hashes;
+
   for (auto& [input, hashes] : associate_samples) {
     BoltVector input_vec =
-        _dataset_factory->featurizeInput(input).at(0)->getVector(0);
-    BoltVector doc_id = BoltVector::singleElementSparseVector(0);
+        _data_factory.featurizeInput(input).at(0)->getVector(0);
     for (uint32_t i = 0; i < n_association_samples; i++) {
-      dataset->manuallyAddToBuffer(
-          {input_vec, makeLabelFromHashes(hashes, n_buckets, rng), doc_id});
+      inputs.push_back(input);
+
+      std::vector<uint32_t> selected_hashes;
+      std::sample(hashes.begin(), hashes.end(),
+                  std::back_inserter(selected_hashes), n_buckets, rng);
+      target_hashes.push_back(selected_hashes);
     }
   }
+
+  auto columns = thirdai::data::ColumnMap::fromMapInputBatch(inputs);
+  columns = _data_factory.applyInputTransformation(std::move(columns));
+  columns.setColumn(
+      "whatever the entity hash col is",
+      thirdai::data::ArrayColumn<uint32_t>::make(
+          std::move(target_hashes), _mach_label_block->index()->numHashes()));
+
+  dataset->addToShuffleBuffer(std::move(columns));
 
   return _classifier->train(dataset, learning_rate, epochs,
                             getMetrics(metrics, "train_"),
@@ -1084,8 +1078,7 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _min_num_eval_results, _top_k_per_eval_aggregation,
+          _data_factory, _min_num_eval_results, _top_k_per_eval_aggregation,
           _mach_sampling_threshold, _rlhf_sampler);
 }
 
