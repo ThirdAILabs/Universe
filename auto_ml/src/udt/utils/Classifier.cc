@@ -128,13 +128,33 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 
 py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
                                bool sparse_inference,
-                               bool return_predicted_class, bool single) {
+                               bool return_predicted_class, bool single,
+                               std::optional<uint32_t> top_k) {
   auto output = _model->forward(inputs, sparse_inference).at(0);
-
   if (return_predicted_class) {
     return predictedClasses(output, single);
   }
 
+  auto nonzeros = output->nonzeros();
+
+  if (!nonzeros) {
+    throw std::runtime_error("Number of nonzeros is not fixed");
+  }
+  if (top_k) {
+    if (top_k.value() > *nonzeros || (top_k.value() == 0)) {
+      if (output->activeNeuronsPtr()) {
+        throw std::runtime_error(
+            "top_k value is invalid.  top_k <= number of target "
+            "classes * sparsity");
+      }
+      throw std::runtime_error(
+          "top_k value is invalid. top_k > 0 and top_k <= number of target "
+          "classes");
+    }
+    return bolt::nn::python::tensorToNumpyTopK(
+        output,
+        /* single_row_to_vector= */ single, top_k.value());
+  }
   return bolt::nn::python::tensorToNumpy(output,
                                          /* single_row_to_vector= */ single);
 }

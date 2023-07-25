@@ -63,26 +63,22 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class,
                                      std::optional<uint32_t> top_k) {
-  (void)top_k;
-
   auto inputs = bolt::train::convertVectors(
       {dataset::SvmDatasetLoader::toSparseVector(sample)},
       _classifier->model()->inputDims());
   return _classifier->predict(inputs, sparse_inference, return_predicted_class,
-                              /* single= */ true);
+                              /* single= */ true, top_k);
 }
 
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
                                           bool return_predicted_class,
                                           std::optional<uint32_t> top_k) {
-  (void)top_k;
-
   auto inputs = bolt::train::convertBatch(
       {dataset::SvmDatasetLoader::toSparseVectors(samples)},
       _classifier->model()->inputDims());
   return _classifier->predict(inputs, sparse_inference, return_predicted_class,
-                              /* single= */ false);
+                              /* single= */ false, top_k);
 }
 
 template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,

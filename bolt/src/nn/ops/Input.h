@@ -29,6 +29,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   void disableSparseParameterUpdates() final;
 
+  void enableSparseParameterUpdates() final;
+
   std::vector<std::vector<float>*> gradients() final { return {}; };
 
   std::vector<std::vector<float>*> parameters() final { return {}; };

@@ -6,6 +6,8 @@ from ray.air.constants import MODEL_KEY
 from thirdai._thirdai import bolt as old_bolt
 from thirdai._thirdai import bolt_v2 as bolt
 
+from ..utils import timed
+
 
 class UDTCheckPoint(Checkpoint):
     """A :py:class:`~ray.air.checkpoint.Checkpoint` with UDT-specific
@@ -15,6 +17,7 @@ class UDTCheckPoint(Checkpoint):
     """
 
     @classmethod
+    @timed
     def from_model(
         cls,
         model,
@@ -34,13 +37,14 @@ class UDTCheckPoint(Checkpoint):
             >>> model = checkpoint.get_model()
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            model.save(os.path.join(tmpdirname, MODEL_KEY))
+            model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
 
             checkpoint = cls.from_directory(tmpdirname)
             ckpt_dict = checkpoint.to_dict()
 
         return cls.from_dict(ckpt_dict)
 
+    @timed
     def get_model(self):
         """Retrieve the Bolt model stored in this checkpoint."""
         with self.as_directory() as checkpoint_path:
@@ -57,6 +61,7 @@ class BoltCheckPoint(Checkpoint):
     """
 
     @classmethod
+    @timed
     def from_model(
         cls,
         model,
@@ -76,13 +81,14 @@ class BoltCheckPoint(Checkpoint):
             >>> model = checkpoint.get_model()
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            model.save(os.path.join(tmpdirname, MODEL_KEY))
+            model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
 
             checkpoint = cls.from_directory(tmpdirname)
             ckpt_dict = checkpoint.to_dict()
 
         return cls.from_dict(ckpt_dict)
 
+    @timed
     def get_model(self):
         """Retrieve the Bolt model stored in this checkpoint."""
         with self.as_directory() as checkpoint_path:

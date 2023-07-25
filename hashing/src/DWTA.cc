@@ -5,6 +5,7 @@
 #include <dataset/src/utils/SafeFileIO.h>
 #include <algorithm>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <random>
 
@@ -29,19 +30,28 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   _bin_map = std::vector<uint32_t>(_dim * _permute);
   _positions = std::vector<uint32_t>(_dim * _permute);
 
-  uint32_t* n_array = new uint32_t[_dim];
-  for (uint32_t i = 0; i < _dim; i++) {
-    n_array[i] = i;
-  }
+  uint32_t n_bin_locs = _num_hashes * _binsize;
+  uint32_t n_rounds = (_dim * _permute + n_bin_locs - 1) / n_bin_locs;
 
-  for (uint32_t p = 0; p < _permute; p++) {
-    std::shuffle(n_array, n_array + _dim, gen);
-    for (uint32_t j = 0; j < _dim; j++) {
-      _bin_map[p * _dim + n_array[j]] = (p * _dim + j) / _binsize;
-      _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;
+  std::vector<uint32_t> bin_locs(n_rounds * n_bin_locs);
+
+  for (size_t i = 0; i < n_rounds; i++) {
+    auto start = bin_locs.begin() + i * n_bin_locs;
+    auto end = bin_locs.begin() + (i + 1) * n_bin_locs;
+    std::iota(start, end, 0);
+    if (i == n_rounds - 1) {
+      // Shuffle the last set of bin locations so that if all of them are not
+      // used, it is not biased towards lower bin locations.
+      std::shuffle(start, end, gen);
     }
   }
-  delete[] n_array;
+
+  std::shuffle(bin_locs.begin(), bin_locs.begin() + _dim * _permute, gen);
+
+  for (size_t i = 0; i < _permute * _dim; i++) {
+    _bin_map[i] = bin_locs[i] / _binsize;
+    _positions[i] = bin_locs[i] % _binsize;
+  }
 
   std::uniform_int_distribution<uint32_t> dis(
       1, std::numeric_limits<uint32_t>::max() - 1);

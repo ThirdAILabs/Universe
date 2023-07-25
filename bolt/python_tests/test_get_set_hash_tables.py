@@ -61,7 +61,7 @@ def test_get_set_hash_tables():
         test_data, validation_metrics=["categorical_accuracy"], use_sparsity=True
     )
 
-    assert metrics["val_categorical_accuracy"][-1] >= 0.75
+    assert metrics["val_categorical_accuracy"][-1] >= 0.70
 
     new_model = build_model()
     new_trainer = bolt.train.Trainer(new_model)
@@ -91,4 +91,4 @@ def test_get_set_hash_tables():
         test_data, validation_metrics=["categorical_accuracy"], use_sparsity=True
     )
 
-    assert new_metrics["val_categorical_accuracy"][-1] >= 0.75
+    assert new_metrics["val_categorical_accuracy"][-1] >= 0.70

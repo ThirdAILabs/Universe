@@ -26,8 +26,6 @@ from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai.demos import download_clinc_dataset
 
-pytestmark = [pytest.mark.distributed]
-
 
 def setup_ray():
     # reserve one CPU for Ray Trainer
@@ -71,6 +69,7 @@ def training_loop_per_worker(config):
     trainer.model.save("trained.model")
 
 
+@pytest.mark.distributed
 def test_bolt_distributed_v2():
     scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
@@ -116,11 +115,65 @@ def test_bolt_distributed_v2():
     ray.shutdown()
 
 
+# We added this separately, as we don't need to add training for checking whether license
+# works as just initializing the model should work. Also, `udt_training_loop_per_worker`
+# runs in a separate environment hence we need to pass in license state to its thirdai
+# namespace
+@pytest.mark.release
+def test_udt_licensed_training():
+    def udt_training_loop_per_worker(config):
+        # Ideally, we should just call thirdai.licensing.setup/set_license_path here
+        # and that should just work fine too, in place of this lambda. This lambda
+        # here is just for checking whether license works.
+        config.get("licensing_lambda")()
+
+        udt_model = get_clinc_udt_model(integer_target=True)
+        udt_model = dist.prepare_model(udt_model)
+
+        session.report(
+            {"demo_metric": 1},
+        )
+
+    licensing_lambda = None
+    if hasattr(thirdai._thirdai, "licensing"):
+        license_state = thirdai._thirdai.licensing._get_license_state()
+        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+            license_state
+        )
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={
+            "working_dir": working_dir,
+        },
+        ignore_reinit_error=True,
+    )
+
+    scaling_config = ScalingConfig(
+        num_workers=1,
+        resources_per_worker={"CPU": 1},
+    )
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=udt_training_loop_per_worker,
+        train_loop_config={
+            "licensing_lambda": licensing_lambda,
+        },
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )
+    trainer.fit()
+
+
+@pytest.mark.distributed
 def test_udt_train_distributed_v2():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
+        thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
+
         udt_model = get_clinc_udt_model(integer_target=True)
+
         udt_model = dist.prepare_model(udt_model)
         copy_file_or_folder(
             os.path.join(
@@ -165,6 +218,7 @@ def test_udt_train_distributed_v2():
     ray.shutdown()
 
 
+@pytest.mark.distributed
 def test_udt_mach_distributed_v2(download_scifact_dataset):
     supervised_tst, n_target_classes = download_and_split_scifact_dataset(
         download_scifact_dataset
@@ -243,6 +297,7 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
     ray.shutdown()
 
 
+@pytest.mark.distributed
 def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sampled):
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
@@ -296,6 +351,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
     ray.shutdown()
 
 
+@pytest.mark.distributed
 def test_distributed_fault_tolerance():
     import sys
 
