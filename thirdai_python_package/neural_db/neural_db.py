@@ -202,12 +202,11 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
-        use_weak_columns: bool = False,
-        num_buckets_to_sample: int = 16,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = None,
-        on_irrecoverable_error: Callable = None,
         cancel_state: CancelState = None,
     ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
@@ -224,8 +223,8 @@ class NeuralDB:
             intro_documents=intro_and_train.intro,
             train_documents=intro_and_train.train,
             num_buckets_to_sample=num_buckets_to_sample,
+            fast_approximation=fast_approximation,
             should_train=train,
-            use_weak_columns=use_weak_columns,
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
