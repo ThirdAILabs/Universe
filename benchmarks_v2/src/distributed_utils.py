@@ -70,8 +70,8 @@ def split_into_2(
 
 
 def setup_ray():
-    import thirdai.distributed_bolt as dist
     import ray
+    import thirdai.distributed_bolt as dist
 
     # reserve one CPU for Ray Trainer
     num_cpu_per_node = (dist.get_num_cpus() - 1) // 2

@@ -1,11 +1,10 @@
 import os
 
+import thirdai.distributed_bolt as dist
+from ray.air import session
+from ray.train.torch import TorchConfig
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
-import thirdai.distributed_bolt as dist
-
-from ray.train.torch import TorchConfig
-from ray.air import session
 
 from ..configs.distributed_configs import DistributedBenchmarkConfig
 from ..distributed_utils import create_udt_model, setup_ray
