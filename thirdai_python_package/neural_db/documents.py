@@ -343,64 +343,28 @@ class CSV(Document):
         )
 
     def __getstate__(self):
-        from .neural_db import NeuralDB
-
         state = self.__dict__.copy()
 
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
 
-        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
-        if "filename" in state:
-            del state["filename"]
-
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
 
         # End pickling functionality here to support old directory checkpoint save
-        if not NeuralDB.new_pickle_mode:
-            return state
-
-        if self._save_extra_info:
-            with open(self.path, "rb") as csv_file:
-                state["file_bytes"] = csv_file.read()
-
         return state
 
     def __setstate__(self, state):
-        from .neural_db import NeuralDB
-
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
-        if "filename" in state:
-            state["path"] = state["filename"]
 
-        # End pickling functionality here to support old directory checkpoint load
-        if not NeuralDB.new_pickle_mode:
-            self.__dict__.update(state)
-            return
-
-        # Set value for path since it is not in the state
-        documents_dir = NeuralDB.cache_dir / "documents"
-        save_path = documents_dir / str(uuid.uuid4()) / state["doc_name"]
-        os.makedirs(os.path.dirname(save_path))
-        state["path"] = save_path
-
-        if state["_save_extra_info"] and "file_bytes" in state:
-            # Save file bytes to disk
-            with open(save_path, "wb") as csv_file:
-                csv_file.write(state["file_bytes"])
-
-            # Remove unnecessary state attributes
-            del state["file_bytes"]
-
-        # Set state
         self.__dict__.update(state)
 
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
-        shutil.copy(self.path, directory)
+        if self.save_extra_info:
+            shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
@@ -408,7 +372,7 @@ class CSV(Document):
         if hasattr(self, "doc_name"):
             self.path = directory / self.doc_name
         else:
-            # deprecated, self.path should not be in self
+            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
             self.path = directory / self.path.name
 
 
@@ -474,8 +438,6 @@ class Extracted(Document):
         return "\n".join(rows["passage"])
 
     def __getstate__(self):
-        from .neural_db import NeuralDB
-
         state = self.__dict__.copy()
 
         # Remove the path attribute because it is not cross platform compatible
@@ -488,49 +450,21 @@ class Extracted(Document):
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
 
-        # End pickling functionality here to support old directory checkpoint save
-        if not NeuralDB.new_pickle_mode:
-            return state
-
-        if self._save_extra_info:
-            with open(self.path, "rb") as extracted_file:
-                state["file_bytes"] = extracted_file.read()
-
         return state
 
     def __setstate__(self, state):
-        from .neural_db import NeuralDB
-
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
         if "filename" in state:
             state["path"] = state["filename"]
-        # End pickling functionality here to support old directory checkpoint load
-        if not NeuralDB.new_pickle_mode:
-            self.__dict__.update(state)
-            return
 
-        # Set value for path since it is not in the state
-        documents_dir = NeuralDB.cache_dir / "documents"
-        save_path = documents_dir / str(uuid.uuid4()) / state["doc_name"]
-        os.makedirs(os.path.dirname(save_path))
-        state["path"] = save_path
-
-        if state["_save_extra_info"] and "file_bytes" in state:
-            # Save file bytes to disk
-            with open(save_path, "wb") as extracted_file:
-                extracted_file.write(state["file_bytes"])
-
-            # Remove unnecessary state attributes
-            del state["file_bytes"]
-
-        # Set state
         self.__dict__.update(state)
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
-        shutil.copy(self.path, directory)
+        if self.save_extra_info:
+            shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
@@ -538,7 +472,7 @@ class Extracted(Document):
         if hasattr(self, "doc_name"):
             self.path = directory / self.doc_name
         else:
-            # deprecated, self.path should not be in self
+            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
             self.path = directory / self.path.name
 
 
