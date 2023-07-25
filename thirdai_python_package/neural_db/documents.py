@@ -355,7 +355,7 @@ class CSV(Document):
             del state["filename"]
 
         # Save the filename so we can load it with the same name
-        state["name"] = self.name
+        state["doc_name"] = self.name
 
         # End pickling functionality here to support old directory checkpoint save
         if not NeuralDB.new_pickle_mode:
@@ -383,7 +383,7 @@ class CSV(Document):
 
         # Set value for path since it is not in the state
         documents_dir = NeuralDB.cache_dir / "documents"
-        save_path = documents_dir / str(uuid.uuid4()) / state["name"]
+        save_path = documents_dir / str(uuid.uuid4()) / state["doc_name"]
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
@@ -395,8 +395,6 @@ class CSV(Document):
             # Remove unnecessary state attributes
             del state["file_bytes"]
 
-        del state["name"]
-
         # Set state
         self.__dict__.update(state)
 
@@ -407,7 +405,7 @@ class CSV(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
-        if hasattr(self, "name"):
+        if hasattr(self, "doc_name"):
             self.path = directory / self.name
         else:
             # deprecated, self.path should not be in self
@@ -488,7 +486,7 @@ class Extracted(Document):
             del state["filename"]
 
         # Save the filename so we can load it with the same name
-        state["name"] = self.name
+        state["doc_name"] = self.name
 
         # End pickling functionality here to support old directory checkpoint save
         if not NeuralDB.new_pickle_mode:
@@ -516,7 +514,7 @@ class Extracted(Document):
 
         # Set value for path since it is not in the state
         documents_dir = NeuralDB.cache_dir / "documents"
-        save_path = documents_dir / str(uuid.uuid4()) / state["name"]
+        save_path = documents_dir / str(uuid.uuid4()) / state["doc_name"]
         os.makedirs(os.path.dirname(save_path))
         state["path"] = save_path
 
@@ -528,8 +526,6 @@ class Extracted(Document):
             # Remove unnecessary state attributes
             del state["file_bytes"]
 
-        del state["name"]
-
         # Set state
         self.__dict__.update(state)
 
@@ -540,7 +536,7 @@ class Extracted(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        if hasattr(self, "name"):
+        if hasattr(self, "doc_name"):
             self.path = directory / self.name
         else:
             # deprecated, self.path should not be in self
@@ -771,7 +767,7 @@ class SentenceLevelExtracted(Extracted):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        if hasattr(self, "name"):
+        if hasattr(self, "doc_name"):
             self.path = directory / self.name
         else:
             # deprecated, self.path should not be in self
