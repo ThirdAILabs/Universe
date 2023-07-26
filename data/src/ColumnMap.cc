@@ -92,16 +92,16 @@ template ValueColumnBasePtr<int64_t> ColumnMap::getValueColumn(
     const std::string&) const;
 
 ColumnPtr ColumnMap::getColumn(const std::string& name) const {
-  if (!_columns.count(name)) {
-    std::string cols = "[";
-    for (const auto& col : _columns) {
-      cols += col.first + " ";
-    }
-    cols += "]";
+  if (!containsColumn(name)) {
     throw std::invalid_argument("Unable to find column with name '" + name +
-                                "' only have columns " + cols + " .");
+                                "'. ColumnMap contains columns " +
+                                formatColumnNames() + ".");
   }
   return _columns.at(name);
+}
+
+bool ColumnMap::containsColumn(const std::string& name) const {
+  return _columns.count(name);
 }
 
 void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
@@ -132,6 +132,18 @@ void ColumnMap::shuffle(uint32_t seed) {
 }
 
 ColumnMap ColumnMap::concat(ColumnMap& other) {
+  if (this == &other) {
+    throw std::invalid_argument("Cannot concatenate a ColumnMap with itself.");
+  }
+
+  if (!containsSameColumns(other)) {
+    throw std::invalid_argument(
+        "Cannot call concat on ColumnMaps with different columns. One "
+        "ColumnMap has columns " +
+        formatColumnNames() + " and the other has columns " +
+        other.formatColumnNames() + ".");
+  }
+
   std::unordered_map<std::string, ColumnPtr> new_columns;
 
   for (auto& [name, column] : _columns) {
@@ -171,6 +183,16 @@ void ColumnMap::clear() {
   _num_rows = 0;
 }
 
+bool ColumnMap::containsSameColumns(const ColumnMap& other) const {
+  if (_columns.size() != other._columns.size()) {
+    return false;
+  }
+
+  return std::all_of(
+      _columns.begin(), _columns.end(),
+      [&other](const auto& col) { return other.containsColumn(col.first); });
+}
+
 ColumnMap ColumnMap::createStringColumnMapFromFile(
     const dataset::DataSourcePtr& source, char delimiter) {
   auto header_string = source->nextLine();
@@ -208,6 +230,19 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   }
 
   return ColumnMap(column_map);
+}
+
+std::string ColumnMap::formatColumnNames() const {
+  std::string column_names = "[";
+  for (const auto& [name, _] : _columns) {
+    column_names += "'" + name + "', ";
+  }
+  column_names.pop_back();  // remove last space
+  column_names.pop_back();  // remove last commas
+
+  column_names += "]";
+
+  return column_names;
 }
 
 }  // namespace thirdai::data

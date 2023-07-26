@@ -31,6 +31,8 @@ class ColumnMap {
 
   ColumnPtr getColumn(const std::string& name) const;
 
+  bool containsColumn(const std::string& name) const;
+
   // Inserts a new column into the ColumnMap. If a column with the supplied name
   // already exists in the ColumnMap it will be overwritten.
   void setColumn(const std::string& name, ColumnPtr column);
@@ -66,6 +68,10 @@ class ColumnMap {
 
  private:
   void clear();
+
+  bool containsSameColumns(const ColumnMap& other) const;
+
+  std::string formatColumnNames() const;
 
   std::unordered_map<std::string, ColumnPtr> _columns;
   size_t _num_rows;
