@@ -942,6 +942,9 @@ py::object UDTMachClassifier::associateTrainHelper(
                     thirdai::data::ValueColumn<uint32_t>::make(
                         std::vector<uint32_t>(columns.numRows(), 0),
                         std::numeric_limits<uint32_t>::max()));
+  columns.setColumn(_data_factory.coldStartLabelColumn(),
+                    thirdai::data::ValueColumn<std::string>::make(
+                        std::vector<std::string>(columns.numRows())));
 
   balancing_data->addToShuffleBuffer(std::move(columns));
 

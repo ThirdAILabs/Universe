@@ -75,6 +75,10 @@ class MachDatasetFactory {
     return _featurized_entity_id_column;
   }
 
+  const std::string& coldStartLabelColumn() const {
+    return _cold_start_label_column;
+  }
+
  private:
   thirdai::data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, bool include_mach_labels,
