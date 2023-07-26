@@ -30,14 +30,16 @@ void runConversionTest(bool specify_values) {
   auto indices_copy = indices;
   auto values_copy = values;
 
-  auto indices_col = ArrayColumn<uint32_t>::make(std::move(indices_copy), 1000);
+  auto indices_col =
+      ArrayColumn<uint32_t>::make(std::move(indices_copy), /* dim= */ 1000);
   auto values_col = ArrayColumn<float>::make(std::move(values_copy));
 
   ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
 
   std::optional<std::string> values_col_name =
       specify_values ? std::make_optional("values") : std::nullopt;
-  auto tensors = convertToTensors(columns, {{"indices", values_col_name}}, 3);
+  auto tensors = toTensorBatches(columns, {{"indices", values_col_name}},
+                                 /* batch_size= */ 3);
 
   size_t row_cnt = 0;
   size_t value_cnt = 0;
@@ -80,19 +82,20 @@ using thirdai::tests::BoltVectorTestUtils;
 
 TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
   auto indices_1 =
-      ArrayColumn<uint32_t>::make({{0, 1, 2}, {3, 4}, {5, 6, 7}}, 8);
+      ArrayColumn<uint32_t>::make({{0, 1, 2}, {3, 4}, {5, 6, 7}}, /* dim= */ 8);
   auto values_1 = ArrayColumn<float>::make(
       {{0.25, 1.25, 2.25}, {3.25, 4.25}, {5.25, 6.25, 7.25}});
 
-  auto indices_2 =
-      ArrayColumn<uint32_t>::make({{10, 20}, {30, 40}, {50, 60}}, 100);
+  auto indices_2 = ArrayColumn<uint32_t>::make({{10, 20}, {30, 40}, {50, 60}},
+                                               /* dim= */ 100);
 
   ColumnMap columns({{"indices_1", indices_1},
                      {"values_1", values_1},
                      {"indices_2", indices_2}});
 
-  auto tensors = convertToTensors(
-      columns, {{"indices_1", "values_1"}, {"indices_2", std::nullopt}}, 2);
+  auto tensors = toTensorBatches(
+      columns, {{"indices_1", "values_1"}, {"indices_2", std::nullopt}},
+      /* batch_size= */ 2);
 
   ASSERT_EQ(tensors.size(), 2);
   ASSERT_EQ(tensors.at(0).size(), 2);

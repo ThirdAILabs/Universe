@@ -100,15 +100,15 @@ TEST(TensorTests, SparseTensorFromIndicesValues) {
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
   size_t cnt = 0;
-  for (uint32_t batch_idx = 0; batch_idx < 3; batch_idx++) {
-    const BoltVector& vec = tensor->getVector(batch_idx);
-    EXPECT_EQ(vec.len, lens[batch_idx]);
+  for (uint32_t vec_idx = 0; vec_idx < 3; vec_idx++) {
+    const BoltVector& vec = tensor->getVector(vec_idx);
+    EXPECT_EQ(vec.len, lens[vec_idx]);
 
     EXPECT_FALSE(vec.isDense());
     EXPECT_FALSE(vec.hasGradients());
     EXPECT_EQ(vec.gradients, nullptr);
 
-    for (size_t i = 0; i < lens[batch_idx]; i++) {
+    for (size_t i = 0; i < lens[vec_idx]; i++) {
       EXPECT_EQ(vec.active_neurons[i], cnt);
       EXPECT_EQ(vec.activations[i], static_cast<float>(cnt));
       cnt++;
