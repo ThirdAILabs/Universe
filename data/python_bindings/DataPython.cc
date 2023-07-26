@@ -66,16 +66,18 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   py::class_<Loader>(dataset_submodule, "Loader")
       .def(py::init<ColumnMapIterator, TransformationPtr, StatePtr,
-                    IndexValueColumnList, IndexValueColumnList, size_t>(),
+                    IndexValueColumnList, IndexValueColumnList, bool, size_t,
+                    uint32_t>(),
            py::arg("data_iterator"), py::arg("transformation"),
            py::arg("state"), py::arg("input_columns"),
-           py::arg("output_columns"),
-           py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE)
+           py::arg("output_columns"), py::arg("verbose") = true,
+           py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE,
+           py::arg("shuffle_seed") = global_random::nextSeed())
       .def("next", &Loader::next, py::arg("batch_size"),
            py::arg("max_batches") = Loader::NO_LIMIT)
       .def("all", &Loader::all, py::arg("batch_size"));
 
-  dataset_submodule.def("to_tensors", &convertToTensors, py::arg("column_map"),
+  dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
                         py::arg("columns_to_convert"), py::arg("batch_size"));
 }
 
