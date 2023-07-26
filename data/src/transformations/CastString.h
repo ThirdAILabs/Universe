@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/base_class.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
@@ -41,12 +42,22 @@ class CastString : public Transformation {
     return columns;
   }
 
+ protected:
+  CastString() {}
+
  private:
   virtual T convert(const std::string& original) const = 0;
   virtual ColumnPtr makeColumn(std::vector<T>&& data) const = 0;
 
   std::string _input_column_name;
   std::string _output_column_name;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Transformation>(this), _input_column_name,
+            _output_column_name);
+  }
 };
 
 template <typename T>
@@ -57,6 +68,9 @@ class CastStringToArray : public CastString<std::vector<T>> {
       : CastString<std::vector<T>>(std::move(input_column),
                                    std::move(output_column)),
         _delimiter(delimiter) {}
+
+ protected:
+  CastStringToArray() {}
 
  private:
   std::vector<T> convert(const std::string& original) const final {
@@ -71,6 +85,12 @@ class CastStringToArray : public CastString<std::vector<T>> {
   virtual T convertSingle(const std::string& single) const = 0;
 
   char _delimiter;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CastString<std::vector<T>>>(this), _delimiter);
+  }
 };
 
 class CastStringToToken final : public CastString<uint32_t> {
@@ -90,6 +110,14 @@ class CastStringToToken final : public CastString<uint32_t> {
   }
 
   std::optional<uint32_t> _dim;
+
+  CastStringToToken() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CastString<uint32_t>>(this), _dim);
+  }
 };
 
 class CastStringToTokenArray final : public CastStringToArray<uint32_t> {
@@ -110,6 +138,14 @@ class CastStringToTokenArray final : public CastStringToArray<uint32_t> {
   }
 
   std::optional<uint32_t> _dim;
+
+  CastStringToTokenArray() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CastStringToArray<uint32_t>>(this), _dim);
+  }
 };
 
 class CastStringToDecimal final : public CastString<float> {
@@ -164,3 +200,9 @@ class CastStringToTimestamp final : public CastString<int64_t> {
 };
 
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::CastString<std::vector<uint32_t>>)
+CEREAL_REGISTER_TYPE(thirdai::data::CastString<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::data::CastStringToArray<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::data::CastStringToTokenArray)
+CEREAL_REGISTER_TYPE(thirdai::data::CastStringToToken)

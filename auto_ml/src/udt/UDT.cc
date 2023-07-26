@@ -79,9 +79,8 @@ UDT::UDT(data::ColumnDataTypes data_types,
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
       _backend = std::make_unique<UDTMachClassifier>(
-          data_types, temporal_tracking_relationships, target_col,
-          as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+          data_types, temporal_tracking_relationships, n_target_classes.value(),
+          integer_target, tabular_options, model_config, user_args);
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,

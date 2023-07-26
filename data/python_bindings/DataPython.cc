@@ -331,11 +331,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("weak_sample_reps") = 1,
            py::arg("strong_max_len") = std::nullopt,
            py::arg("strong_sample_num_words") = std::nullopt,
-           py::arg("seed") = 42803)
-      .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
-           py::arg("strong_text"), py::arg("weak_text"))
-      .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
-           py::arg("document"));
+           py::arg("seed") = 42803);
 
   py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
       transformations_submodule, "MachLabel")

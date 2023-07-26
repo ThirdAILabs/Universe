@@ -98,8 +98,13 @@ template ValueColumnBasePtr<int64_t> ColumnMap::getValueColumn(
 
 ColumnPtr ColumnMap::getColumn(const std::string& name) const {
   if (!_columns.count(name)) {
+    std::string cols = "[";
+    for (const auto& col : _columns) {
+      cols += col.first + " ";
+    }
+    cols += "]";
     throw std::invalid_argument("Unable to find column with name '" + name +
-                                "'.");
+                                "' only have columns " + cols + " .");
   }
   return _columns.at(name);
 }

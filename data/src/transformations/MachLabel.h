@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/base_class.hpp>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/mach/MachIndex.h>
 
@@ -16,6 +17,12 @@ class MachLabel final : public Transformation {
  private:
   std::string _input_column;
   std::string _output_column;
+
+  MachLabel() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

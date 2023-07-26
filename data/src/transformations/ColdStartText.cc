@@ -371,28 +371,4 @@ void ColdStartTextAugmentation::mergeStrongWithWeak(
   }
 }
 
-std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
-    const automl::MapInput& document) {
-  std::string strong_text;
-  for (const auto& strong_col : _strong_column_names) {
-    if (!document.count(strong_col)) {
-      throw std::invalid_argument(
-          "Strong column not found in the provided document.");
-    }
-    strong_text.append(document.at(strong_col));
-    strong_text.append(" ");
-  }
-  std::string weak_text;
-  for (const auto& weak_col : _weak_column_names) {
-    if (!document.count(weak_col)) {
-      throw std::invalid_argument(
-          "Weak column not found in the provided document.");
-    }
-    weak_text.append(document.at(weak_col));
-    weak_text.append(". ");
-  }
-
-  return augmentSingleRow(strong_text, weak_text);
-}
-
 }  // namespace thirdai::data

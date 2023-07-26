@@ -91,7 +91,11 @@ bolt::train::LabeledDataset Loader::all(size_t batch_size) {
 void Loader::restart() { _data_iterator.restart(); }
 
 void Loader::addToShuffleBuffer(ColumnMap&& columns) {
-  _shuffle_buffer.concat(columns);
+  if (_shuffle_buffer.numRows() == 0) {
+    _shuffle_buffer = std::move(columns);
+  } else {
+    _shuffle_buffer.concat(columns);
+  }
 }
 
 std::pair<ColumnMap, ColumnMap> Loader::splitIntoDataAndBuffer(

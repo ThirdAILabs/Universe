@@ -138,8 +138,7 @@ class ColdStartTextAugmentation final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
-  std::vector<std::string> augmentMapInput(const automl::MapInput& document);
-
+ private:
   /**
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
@@ -147,7 +146,6 @@ class ColdStartTextAugmentation final : public Transformation {
   std::vector<std::string> augmentSingleRow(std::string& strong_text,
                                             std::string& weak_text) const;
 
- private:
   typedef std::vector<std::string> Phrase;
   typedef std::vector<Phrase> PhraseCollection;
 

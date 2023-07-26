@@ -17,6 +17,7 @@
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <pybind11/pytypes.h>
+#include <cstddef>
 #include <optional>
 #include <stdexcept>
 
@@ -31,8 +32,6 @@ class UDTMachClassifier final : public UDTBackend {
   UDTMachClassifier(const data::ColumnDataTypes& input_data_types,
                     const data::UserProvidedTemporalRelationships&
                         temporal_tracking_relationships,
-                    const std::string& target_name,
-                    const data::CategoricalDataTypePtr& target,
                     uint32_t n_target_classes, bool integer_target,
                     const data::TabularOptions& tabular_options,
                     const std::optional<std::string>& model_config,
@@ -83,10 +82,6 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setModel(const ModelPtr& model) final;
 
-  data::ColumnDataTypes dataTypes() const final {
-    return _dataset_factory->dataTypes();
-  }
-
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,
@@ -128,7 +123,7 @@ class UDTMachClassifier final : public UDTBackend {
   void forget(const Label& label) final;
 
   void clearIndex() final {
-    _mach_label_block->index()->clear();
+    _data_factory.machIndex()->clear();
 
     updateSamplingStrategy();
 
@@ -164,18 +159,16 @@ class UDTMachClassifier final : public UDTBackend {
       TrainOptions options) final;
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
-    return _dataset_factory;
+    return nullptr;
   }
 
   void setDecodeParams(uint32_t min_num_eval_results,
                        uint32_t top_k_per_eval_aggregation) final;
 
-  void verifyCanDistribute() const final {
-    _dataset_factory->verifyCanDistribute();
-  }
+  void verifyCanDistribute() const final {}
 
   dataset::mach::MachIndexPtr getIndex() final {
-    return _mach_label_block->index();
+    return _data_factory.machIndex();
   }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
@@ -192,24 +185,31 @@ class UDTMachClassifier final : public UDTBackend {
       bool force_non_empty = true,
       std::optional<uint32_t> num_hashes = std::nullopt);
 
+  void introduceLabelHelper(const TensorList& samples, const Label& new_label,
+                            std::optional<uint32_t> num_buckets_to_sample,
+                            uint32_t num_random_hashes);
+
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
              uint32_t n_buckets, uint32_t n_teaching_samples,
              uint32_t n_balancing_samples, float learning_rate,
              uint32_t epochs);
 
+  py::object associateTrainHelper(
+      const thirdai::data::LoaderPtr& balancing_data,
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options);
+
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
 
-  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
-    return std::make_shared<cold_start::ColdStartMetaData>(
-        /* label_delimiter = */ _mach_label_block->delimiter(),
-        /* label_column_name = */ _mach_label_block->columnName());
-  }
-
   void updateSamplingStrategy();
 
-  void addBalancingSamples(const dataset::DataSourcePtr& data);
+  void addBalancingSamples(const dataset::DataSourcePtr& data,
+                           const std::vector<std::string>& strong_columns = {},
+                           const std::vector<std::string>& weak_columns = {});
 
   void requireRLHFSampler();
 
@@ -265,10 +265,6 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   std::shared_ptr<utils::Classifier> _classifier;
-
-  dataset::mach::MachBlockPtr _mach_label_block;
-  data::TabularDatasetFactoryPtr _dataset_factory;
-  data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
 
   MachDatasetFactory _data_factory;
 

@@ -22,7 +22,7 @@ constexpr uint32_t UDT_CLASSIFIER_VERSION = 1;
 
 constexpr uint32_t UDT_GRAPH_CLASSIFIER_VERSION = 1;
 
-constexpr uint32_t UDT_MACH_CLASSIFIER_VERSION = 5;
+constexpr uint32_t UDT_MACH_CLASSIFIER_VERSION = 6;
 
 constexpr uint32_t UDT_RECURRENT_CLASSIFIER_VERSION = 1;
 
