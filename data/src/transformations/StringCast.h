@@ -13,7 +13,7 @@ class CastToValue final : public Transformation {
 
   CastToValue(std::string input_column_name, std::string output_column_name);
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   T parse(const std::string& row) const;
@@ -40,7 +40,7 @@ class CastToArray final : public Transformation {
   CastToArray(std::string input_column_name, std::string output_column_name,
               char delimiter);
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   T parse(const std::string& item) const;
