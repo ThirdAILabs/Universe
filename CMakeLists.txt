@@ -413,6 +413,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/TextTokenizer.cc
     data/src/transformations/ColdStartText.cc
     data/src/transformations/TransformationList.cc
+    data/src/transformations/StringCast.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
