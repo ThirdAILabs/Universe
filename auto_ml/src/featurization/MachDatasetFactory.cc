@@ -122,8 +122,8 @@ bolt::nn::tensor::TensorList MachDatasetFactory::featurizeInput(
 
   columns = _input_transformation->apply(columns, *_state);
 
-  return thirdai::data::convertToTensorBatch(
-      columns, {{_featurized_input_column, std::nullopt}});
+  return thirdai::data::toTensors(columns,
+                                  {{_featurized_input_column, std::nullopt}});
 }
 
 bolt::nn::tensor::TensorList MachDatasetFactory::featurizeInputBatch(
@@ -132,8 +132,8 @@ bolt::nn::tensor::TensorList MachDatasetFactory::featurizeInputBatch(
 
   columns = _input_transformation->apply(columns, *_state);
 
-  return thirdai::data::convertToTensorBatch(
-      columns, {{_featurized_input_column, std::nullopt}});
+  return thirdai::data::toTensors(columns,
+                                  {{_featurized_input_column, std::nullopt}});
 }
 
 TensorList MachDatasetFactory::featurizeInputColdStart(
@@ -150,8 +150,8 @@ TensorList MachDatasetFactory::featurizeInputColdStart(
 
   columns = _input_transformation->apply(columns, *_state);
 
-  return thirdai::data::convertToTensorBatch(
-      columns, {{_featurized_input_column, std::nullopt}});
+  return thirdai::data::toTensors(columns,
+                                  {{_featurized_input_column, std::nullopt}});
 }
 
 std::pair<TensorList, TensorList> MachDatasetFactory::featurizeTrainingBatch(
@@ -166,10 +166,10 @@ std::pair<TensorList, TensorList> MachDatasetFactory::featurizeTrainingBatch(
     columns = _mach_label_transformation->apply(columns, *_state);
   }
 
-  auto data = thirdai::data::convertToTensorBatch(
+  auto data = thirdai::data::toTensors(
       columns, {{_featurized_input_column, std::nullopt}});
 
-  auto labels = thirdai::data::convertToTensorBatch(
+  auto labels = thirdai::data::toTensors(
       columns, {{_featurized_mach_label_column, std::nullopt},
                 {_featurized_entity_id_column, std::nullopt}});
 
