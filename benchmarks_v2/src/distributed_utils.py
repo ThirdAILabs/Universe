@@ -115,7 +115,6 @@ def create_udt_model(n_target_classes, output_dim, num_hashes, embedding_dimensi
             "embedding_dimension": embedding_dimension,
             "extreme_output_dim": output_dim,
             "extreme_num_hashes": num_hashes,
-            "hidden_bias": True,
         },
     )
     return model
