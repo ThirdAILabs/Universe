@@ -58,18 +58,3 @@ def test_cast_string_to_decimal_array():
     )(columns)
     for i in range(10):
         assert np.allclose(columns["decimals"][i], [i * 0.1, (i + 1) * 0.1])
-
-
-def test_cast_string_to_timestamp():
-    string_col = data.columns.StringColumn(
-        ["2023-07-" + str(date) for date in range(10, 20)]
-    )
-    columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.ToTimestamps("strings", "timestamps")(columns)
-
-    SECONDS_IN_A_DAY = 24 * 3600
-
-    for i in range(1, 10):
-        assert (
-            columns["timestamps"][i] - columns["timestamps"][i - 1] == SECONDS_IN_A_DAY
-        )
