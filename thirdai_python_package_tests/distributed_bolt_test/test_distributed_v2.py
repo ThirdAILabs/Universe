@@ -10,21 +10,111 @@ from distributed_utils import (
     gen_numpy_training_data,
     get_bolt_model,
     get_udt_cold_start_model,
-    remove_files,
+    split_into_2,
 )
 from ray.air import FailureConfig, RunConfig, ScalingConfig, session
 from ray.train.torch import TorchConfig
-from test_mock_cluster_cold_start import (
-    download_amazon_kaggle_product_catalog_sampled,
-    download_and_split_catalog_dataset,
-    download_and_split_scifact_dataset,
-    download_scifact_dataset,
-    get_udt_scifact_mach_model,
-)
-from test_mock_cluster_udt_clinc import get_clinc_udt_model
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai.demos import download_clinc_dataset
+from thirdai.demos import (
+    download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
+)
+from thirdai.demos import download_beir_dataset
+
+
+@pytest.fixture(scope="module")
+def download_amazon_kaggle_product_catalog_sampled():
+    return download_amazon_kaggle_product_catalog_sampled_wrapped()
+
+
+@pytest.fixture(scope="module")
+def download_scifact_dataset():
+    return download_beir_dataset("scifact")
+
+
+def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
+    import os
+
+    path = "amazon_product_catalog"
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
+
+    if not os.path.exists(f"{path}/part1") or not os.path.exists(f"{path}/part2"):
+        split_into_2(
+            file_to_split=catalog_file,
+            destination_file_1=f"{path}/part1",
+            destination_file_2=f"{path}/part2",
+            with_header=True,
+        )
+    return n_target_classes
+
+
+def download_and_split_scifact_dataset(download_scifact_dataset):
+    import os
+
+    path = "scifact"
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    (
+        unsupervised_file,
+        supervised_trn,
+        supervised_tst,
+        n_target_classes,
+    ) = download_scifact_dataset
+
+    if not os.path.exists(f"{path}/unsupervised_part1") or not os.path.exists(
+        f"{path}/unsupervised_part2"
+    ):
+        split_into_2(
+            file_to_split=unsupervised_file,
+            destination_file_1=f"{path}/unsupervised_part1",
+            destination_file_2=f"{path}/unsupervised_part2",
+            with_header=True,
+        )
+
+    if not os.path.exists(f"{path}/supervised_trn_part1") or not os.path.exists(
+        f"{path}/supervised_trn_part2"
+    ):
+        split_into_2(
+            file_to_split=supervised_trn,
+            destination_file_1=f"{path}/supervised_trn_part1",
+            destination_file_2=f"{path}/supervised_trn_part2",
+            with_header=True,
+        )
+
+    return os.path.join(os.getcwd(), supervised_tst), n_target_classes
+
+
+def get_udt_scifact_mach_model(n_target_classes):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+            "DOC_ID": bolt.types.categorical(delimiter=":"),
+        },
+        target="DOC_ID",
+        n_target_classes=n_target_classes,
+        integer_target=True,
+        options={"extreme_classification": True, "embedding_dimension": 1024},
+    )
+    return model
+
+
+def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
+    udt_model = old_bolt.UniversalDeepTransformer(
+        data_types={
+            "category": old_bolt.types.categorical(),
+            "text": old_bolt.types.text(),
+        },
+        target="category",
+        n_target_classes=151,
+        integer_target=integer_target,
+        options={"embedding_dimension": embedding_dimension},
+    )
+    return udt_model
 
 
 def setup_ray():
