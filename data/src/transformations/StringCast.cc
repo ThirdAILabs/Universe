@@ -8,9 +8,17 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <utils/StringManipulation.h>
+#include <exception>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::data {
+
+std::exception_ptr formatParseError(const std::string& row,
+                                    const std::string& column) {
+  return std::make_exception_ptr(std::invalid_argument(
+      "Invalid row '" + row + "' in column '" + column + "'."));
+}
 
 template <>
 CastToValue<uint32_t>::CastToValue(std::string input_column_name,
@@ -34,9 +42,20 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 
   std::vector<T> rows(str_column->numRows());
 
-#pragma omp parallel for default(none) shared(str_column, rows)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(str_column, rows, error)
   for (size_t i = 0; i < str_column->numRows(); i++) {
-    rows[i] = parse(str_column->value(i));
+    try {
+      rows[i] = parse(str_column->value(i));
+    } catch (...) {
+#pragma omp critical
+      error = formatParseError(str_column->value(i), _input_column_name);
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   auto output_column = makeColumn(std::move(rows));
@@ -106,11 +125,22 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::vector<T>> rows(str_column->numRows());
 
-#pragma omp parallel for default(none) shared(str_column, rows)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(str_column, rows, error)
   for (size_t i = 0; i < str_column->numRows(); i++) {
-    for (const auto& item : text::split(str_column->value(i), _delimiter)) {
-      rows[i].push_back(parse(item));
+    try {
+      for (const auto& item : text::split(str_column->value(i), _delimiter)) {
+        rows[i].push_back(parse(item));
+      }
+    } catch (...) {
+#pragma omp critical
+      error = formatParseError(str_column->value(i), _input_column_name);
     }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   auto output_column = makeColumn(std::move(rows));
