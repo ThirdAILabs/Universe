@@ -3,10 +3,10 @@
 #include <cereal/types/memory.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <data/src/TensorConversion.h>
-#include <data/src/transformations/CastString.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
@@ -37,18 +37,18 @@ MachDatasetFactory::MachDatasetFactory(
 
       if (categorical->delimiter) {
         _entity_id_transformation =
-            std::make_shared<thirdai::data::CastStringToTokenArray>(
+            std::make_shared<thirdai::data::StringToTokenArray>(
                 name, _featurized_entity_id_column, *categorical->delimiter,
                 std::numeric_limits<uint32_t>::max());
       } else {
         _entity_id_transformation =
-            std::make_shared<thirdai::data::CastStringToToken>(
+            std::make_shared<thirdai::data::StringToToken>(
                 name, _featurized_entity_id_column,
                 std::numeric_limits<uint32_t>::max());
       }
 
       _prehashed_label_transformation =
-          std::make_shared<thirdai::data::CastStringToTokenArray>(
+          std::make_shared<thirdai::data::StringToTokenArray>(
               name, _featurized_mach_label_column, ' ',
               mach_index->numBuckets());
     } else {
