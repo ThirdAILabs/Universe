@@ -16,8 +16,6 @@ class ColumnMapIterator {
 
   void restart();
 
-  ColumnMap emptyColumnMap() const;
-
   std::string resourceName() const { return _data_source->resourceName(); }
 
  private:
