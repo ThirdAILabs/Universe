@@ -147,7 +147,7 @@ def training_loop_per_worker(config):
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed_v2(
+    trainer.train_distributed(
         train_data=(train_x, train_y), learning_rate=0.005, epochs=1
     )
 
@@ -159,7 +159,7 @@ def training_loop_per_worker(config):
 
 
 @pytest.mark.distributed
-def test_bolt_distributed_v2():
+def test_bolt_distributed():
     scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
@@ -255,7 +255,7 @@ def test_udt_licensed_training():
 
 
 @pytest.mark.distributed
-def test_udt_train_distributed_v2():
+def test_udt_train_distributed():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
     def udt_training_loop_per_worker(config):
@@ -273,7 +273,7 @@ def test_udt_train_distributed_v2():
                 f"rank_{session.get_world_rank()}/clinc_train_{session.get_world_rank()}.csv",
             ),
         )
-        udt_model.train_distributed_v2(
+        udt_model.train_distributed(
             f"clinc_train_{session.get_world_rank()}.csv",
             epochs=1,
             learning_rate=0.02,
@@ -308,7 +308,7 @@ def test_udt_train_distributed_v2():
 
 
 @pytest.mark.distributed
-def test_udt_mach_distributed_v2(download_scifact_dataset):
+def test_udt_mach_distributed(download_scifact_dataset):
     supervised_tst, n_target_classes = download_and_split_scifact_dataset(
         download_scifact_dataset
     )
@@ -331,7 +331,7 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
                 f"rank_{session.get_world_rank()}/scifact",
             ),
         )
-        model.coldstart_distributed_v2(
+        model.coldstart_distributed(
             filename=f"scifact/unsupervised_part{session.get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["TEXT"],
@@ -349,7 +349,7 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
             metrics=["precision@1"],
         )
 
-        metrics = model.train_distributed_v2(
+        metrics = model.train_distributed(
             filename=f"scifact/supervised_trn_part{session.get_world_rank()+1}",
             learning_rate=0.001,
             epochs=10,
@@ -387,7 +387,7 @@ def test_udt_mach_distributed_v2(download_scifact_dataset):
 
 
 @pytest.mark.distributed
-def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sampled):
+def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sampled):
     n_target_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
     )
@@ -407,7 +407,7 @@ def test_udt_coldstart_distributed_v2(download_amazon_kaggle_product_catalog_sam
             ),
         )
 
-        metrics = udt_model.coldstart_distributed_v2(
+        metrics = udt_model.coldstart_distributed(
             filename=f"part{session.get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
@@ -471,7 +471,7 @@ def test_distributed_fault_tolerance():
         train_y = bolt.train.convert_dataset(train_y, dim=10)
 
         for epoch in range(starting_epoch, num_epochs):
-            trainer.train_distributed_v2(
+            trainer.train_distributed(
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 

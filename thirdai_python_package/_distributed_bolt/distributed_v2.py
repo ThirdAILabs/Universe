@@ -52,8 +52,8 @@ class Communication(bolt.train.Communication):
 # during sparse training, we only update the parameters selected by hash tables, rather we
 # need to update all the parameters, since during all-reduce some other neuron could be non-zero
 # too.
-def adds_distributed_v2_to_bolt():
-    def train_distributed_v2(self, *args, **kwargs):
+def adds_distributed_to_bolt():
+    def train_distributed(self, *args, **kwargs):
         self.model.disable_sparse_parameter_updates()
 
         kwargs["comm"] = Communication()
@@ -63,9 +63,9 @@ def adds_distributed_v2_to_bolt():
 
         return metrics
 
-    bolt.train.Trainer.train_distributed_v2 = train_distributed_v2
+    bolt.train.Trainer.train_distributed = train_distributed
 
-    def udt_train_distributed_v2(self, *args, **kwargs):
+    def udt_train_distributed(self, *args, **kwargs):
         self._get_model().disable_sparse_parameter_updates()
 
         kwargs["comm"] = Communication()
@@ -75,9 +75,9 @@ def adds_distributed_v2_to_bolt():
 
         return metrics
 
-    old_bolt.UniversalDeepTransformer.train_distributed_v2 = udt_train_distributed_v2
+    old_bolt.UniversalDeepTransformer.train_distributed = udt_train_distributed
 
-    def udt_coldstart_distributed_v2(self, *args, **kwargs):
+    def udt_coldstart_distributed(self, *args, **kwargs):
         self._get_model().disable_sparse_parameter_updates()
 
         kwargs["comm"] = Communication()
@@ -87,6 +87,4 @@ def adds_distributed_v2_to_bolt():
 
         return metrics
 
-    old_bolt.UniversalDeepTransformer.coldstart_distributed_v2 = (
-        udt_coldstart_distributed_v2
-    )
+    old_bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
