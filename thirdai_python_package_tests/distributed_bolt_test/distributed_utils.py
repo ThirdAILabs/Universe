@@ -119,3 +119,30 @@ def copy_file_or_folder(source_path, destination_path):
             print(f"Source '{source_path}' does not exist.")
     except PermissionError:
         print(f"Permission denied while copying '{source_path}'.")
+
+
+def setup_ray():
+    import ray
+    import thirdai.distributed_bolt as dist
+    from ray.air import ScalingConfig
+
+    # reserve one CPU for Ray Trainer
+    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
+
+    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={
+            "working_dir": working_dir,
+            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
+        },
+        ignore_reinit_error=True,
+    )
+    scaling_config = ScalingConfig(
+        num_workers=2,
+        use_gpu=False,
+        resources_per_worker={"CPU": num_cpu_per_node},
+        placement_strategy="PACK",
+    )
+    return scaling_config
