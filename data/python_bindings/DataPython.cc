@@ -257,8 +257,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "FeatureHash")
       .def(py::init<std::vector<std::string>, std::string, std::string,
                     size_t>(),
-           py::arg("columns"), py::arg("output_indices"),
-           py::arg("output_values"), py::arg("dim"));
+           py::arg("input_columns"), py::arg("output_indices_column"),
+           py::arg("output_values_column"), py::arg("hash_range"));
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
