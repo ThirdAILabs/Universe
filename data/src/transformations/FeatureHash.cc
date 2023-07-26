@@ -1,5 +1,6 @@
 #include "FeatureHash.h"
 #include <hashing/src/HashUtils.h>
+#include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <memory>
@@ -8,13 +9,13 @@
 
 namespace thirdai::data {
 
-FeatureHash::FeatureHash(std::vector<std::string> columns,
-                         std::string output_indices, std::string output_values,
-                         size_t dim)
-    : _dim(dim),
-      _columns(std::move(columns)),
-      _output_indices(std::move(output_indices)),
-      _output_values(std::move(output_values)) {}
+FeatureHash::FeatureHash(std::vector<std::string> input_columns,
+                         std::string output_indices_column,
+                         std::string output_values_column, size_t hash_range)
+    : _hash_range(hash_range),
+      _input_columns(std::move(input_columns)),
+      _output_indices_column(std::move(output_indices_column)),
+      _output_values_column(std::move(output_values_column)) {}
 
 ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -22,21 +23,14 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
   std::vector<std::vector<uint32_t>> indices(columns.numRows());
   std::vector<std::vector<float>> values(columns.numRows());
 
-  uint32_t column_salt = 0;
-
-  for (const auto& name : _columns) {
+  for (const auto& name : _input_columns) {
     auto column = columns.getColumn(name);
 
-    if (auto tokens =
-            std::dynamic_pointer_cast<ValueColumn<uint32_t>>(column)) {
-#pragma omp parallel for default(none) \
-    shared(tokens, indices, values, column_salt)
-      for (size_t i = 0; i < tokens->numRows(); i++) {
-        indices[i].push_back(hash(tokens->value(i), column_salt));
-        values[i].push_back(1.0);
-      }
-    } else if (auto token_arrays =
-                   std::dynamic_pointer_cast<ArrayColumn<uint32_t>>(column)) {
+    uint32_t column_salt =
+        hashing::MurmurHash(name.data(), name.size(), 932042);
+
+    if (auto token_arrays =
+            std::dynamic_pointer_cast<ArrayColumnBase<uint32_t>>(column)) {
 #pragma omp parallel for default(none) \
     shared(token_arrays, indices, values, column_salt)
       for (size_t i = 0; i < token_arrays->numRows(); i++) {
@@ -45,17 +39,8 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
           values[i].push_back(1.0);
         }
       }
-    } else if (auto decimals =
-                   std::dynamic_pointer_cast<ValueColumn<float>>(column)) {
-#pragma omp parallel for default(none) \
-    shared(decimals, indices, values, column_salt)
-      for (size_t i = 0; i < decimals->numRows(); i++) {
-        indices[i].push_back(hash(0, column_salt));
-        values[i].push_back(decimals->value(i));
-      }
-
     } else if (auto decimal_arrays =
-                   std::dynamic_pointer_cast<ArrayColumn<float>>(column)) {
+                   std::dynamic_pointer_cast<ArrayColumnBase<float>>(column)) {
 #pragma omp parallel for default(none) \
     shared(decimal_arrays, indices, values, column_salt)
       for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
@@ -74,11 +59,12 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
     column_salt++;
   }
 
-  auto indices_col = ArrayColumn<uint32_t>::make(std::move(indices), _dim);
+  auto indices_col =
+      ArrayColumn<uint32_t>::make(std::move(indices), _hash_range);
   auto values_col = ArrayColumn<float>::make(std::move(values));
 
-  return ColumnMap(
-      {{_output_indices, indices_col}, {_output_values, values_col}});
+  return ColumnMap({{_output_indices_column, indices_col},
+                    {_output_values_column, values_col}});
 }
 
 }  // namespace thirdai::data

@@ -10,11 +10,11 @@ using bolt::nn::tensor::TensorList;
 using IndexValueColumnList =
     std::vector<std::pair<std::string, std::optional<std::string>>>;
 
-std::vector<TensorList> convertToTensors(
+std::vector<TensorList> toTensorBatches(
     const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
     size_t batch_size);
 
-TensorList convertToTensorBatch(const ColumnMap& columns,
-                                const IndexValueColumnList& columns_to_convert);
+TensorList toTensors(const ColumnMap& columns,
+                     const IndexValueColumnList& columns_to_convert);
 
 }  // namespace thirdai::data
