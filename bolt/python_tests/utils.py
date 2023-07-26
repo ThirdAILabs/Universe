@@ -50,24 +50,6 @@ def get_categorical_acc(network, examples, labels, batch_size=64):
     return acc["categorical_accuracy"]
 
 
-def train_single_node_distributed_network(
-    network, train_data, train_labels, epochs, learning_rate=0.0005
-):
-    batch_size = network.prepareNodeForDistributedTraining(
-        train_data,
-        train_labels,
-        rehash=3000,
-        rebuild=10000,
-        verbose=True,
-    )
-    for epoch_num in range(epochs):
-        for batch_num in range(batch_size):
-            network.calculateGradientSingleNode(
-                batch_num, bolt.CategoricalCrossEntropyLoss()
-            )
-            network.updateParametersSingleNode(learning_rate)
-
-
 # Returns a model with a single node
 # input_dim=output_dim, 50% sparsity by default, and a softmax
 # activation
@@ -183,46 +165,6 @@ def build_simple_hidden_layer_model(
     model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
     return model
-
-
-def simple_bolt_model_in_distributed_training_wrapper(
-    train_data,
-    train_labels,
-    sparsity,
-    num_classes,
-    learning_rate=0.0001,
-    hidden_layer_dim=2000,
-    batch_size=64,
-):
-    train_data = dataset.from_numpy(train_data, batch_size=batch_size)
-    train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
-
-    input_layer = bolt.nn.Input(dim=num_classes)
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=hidden_layer_dim,
-        sparsity=sparsity,
-        activation="relu",
-    )(input_layer)
-    output_layer = bolt.nn.FullyConnected(dim=num_classes, activation="softmax")(
-        hidden_layer
-    )
-
-    train_config = (
-        bolt.TrainConfig(learning_rate=learning_rate, epochs=3)
-        .silence()
-        .with_rebuild_hash_tables(3000)
-        .with_reconstruct_hash_functions(10000)
-    )
-    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
-
-    wrapper = bolt.DistributedTrainingWrapper(
-        model=model,
-        train_config=train_config,
-        worker_id=0,
-    )
-    wrapper.set_datasets([train_data, train_labels])
-    return wrapper
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy
