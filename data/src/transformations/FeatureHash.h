@@ -5,23 +5,34 @@
 
 namespace thirdai::data {
 
+/**
+ * This transformation is intended to be used to aggregate multiple columns into
+ * a single indices column and and a single values column. This pair of indices,
+ * values can then be converted into a dataset to be passed to bolt. This is so
+ * that the logic to convert ColumnMaps to dataset can be specific to a single
+ * pair of columns instead of needing to take in a list of columns. It also
+ * seperates the logic so that we could add additional mechanisms for
+ * aggregating multiple columns, for instance concatentation. The aggregation is
+ * done by feature hashing.
+ */
 class FeatureHash final : public Transformation {
  public:
-  FeatureHash(std::vector<std::string> columns, std::string output_indices,
-              std::string output_values, size_t dim);
+  FeatureHash(std::vector<std::string> input_columns,
+              std::string output_indices_column,
+              std::string output_values_columns, size_t hash_range);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {
-    return hashing::combineHashes(index, column_salt) % _dim;
+    return hashing::combineHashes(index, column_salt) % _hash_range;
   }
 
-  size_t _dim;
+  size_t _hash_range;
 
-  std::vector<std::string> _columns;
-  std::string _output_indices;
-  std::string _output_values;
+  std::vector<std::string> _input_columns;
+  std::string _output_indices_column;
+  std::string _output_values_column;
 };
 
 }  // namespace thirdai::data

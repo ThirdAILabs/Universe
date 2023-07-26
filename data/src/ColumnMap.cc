@@ -18,11 +18,6 @@ namespace thirdai::data {
 
 ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
     : _columns(std::move(columns)) {
-  if (_columns.empty()) {
-    throw std::invalid_argument(
-        "Cannot construct ColumnMap from empty set of columns.");
-  }
-
   std::optional<size_t> num_rows = std::nullopt;
   for (auto& [_, column] : _columns) {
     if (num_rows && column->numRows() != num_rows.value()) {
@@ -31,7 +26,7 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
     }
     num_rows = column->numRows();
   }
-  _num_rows = num_rows.value();
+  _num_rows = num_rows.value_or(0);
 }
 
 ColumnMap ColumnMap::fromMapInput(const automl::MapInput& sample) {
