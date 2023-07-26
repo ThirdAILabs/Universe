@@ -27,6 +27,9 @@ inline std::vector<T> shuffleVector(std::vector<T>&& vector,
 
 template <typename T>
 inline std::vector<T> concatVectors(std::vector<T>&& a, std::vector<T>&& b) {
+  if (&a == &b) {
+    throw std::invalid_argument("Cannot concatenate a column with itself.");
+  }
   std::vector<T> new_vec(a.size() + b.size());
 
   for (size_t i = 0; i < a.size(); i++) {

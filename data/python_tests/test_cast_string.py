@@ -58,3 +58,28 @@ def test_cast_string_to_decimal_array():
     )(columns)
     for i in range(10):
         assert np.allclose(columns["decimals"][i], [i * 0.1, (i + 1) * 0.1])
+
+
+@pytest.mark.parametrize(
+    "conversion",
+    [data.transformations.ToTokens, data.transformations.ToDecimals],
+)
+def test_invalid_row_in_value_column(conversion):
+    columns = data.ColumnMap({"strings": data.columns.StringColumn(["1", "hello"])})
+
+    transformation = conversion("strings", "values")
+    with pytest.raises(ValueError, match="Invalid row 'hello' in column 'strings'."):
+        transformation(columns)
+
+
+@pytest.mark.parametrize(
+    "conversion",
+    [data.transformations.ToTokenArrays, data.transformations.ToDecimalArrays],
+)
+def test_invalid_row_in_array_column(conversion):
+    columns = data.ColumnMap({"strings": data.columns.StringColumn(["1,2", "1,hello"])})
+
+    transformation = conversion("strings", "arrays", delimiter=",")
+
+    with pytest.raises(ValueError, match="Invalid row '1,hello' in column 'strings'."):
+        transformation(columns)
