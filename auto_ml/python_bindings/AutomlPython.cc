@@ -261,7 +261,6 @@ void createModelsSubmodule(py::module_& module) {
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 }
 
-
 void createUDTTypesSubmodule(py::module_& module) {
   auto udt_types_submodule = module.def_submodule("types");
 

@@ -24,9 +24,7 @@
 
 namespace thirdai::bolt {
 
-
 class BoltGraph {
-
  public:
   /*
     The graph is constructed with a list of input layers, the order of these

@@ -593,7 +593,6 @@ That's all for now, folks! More docs coming soon :)
 #endif
       .def(getPickleFunction<BoltGraph>());
 
-
   createLossesSubmodule(nn_submodule);
 }
 

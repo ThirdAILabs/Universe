@@ -32,7 +32,6 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::train::python {
 
-
 void defineTrainer(py::module_& train);
 
 void defineMetrics(py::module_& train);
