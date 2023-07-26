@@ -17,14 +17,27 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
 
   const auto& index = state.machIndex();
 
-#pragma omp parallel for default(none) shared(entities_column, hashes, index)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) \
+    shared(entities_column, hashes, index, error)
   for (size_t i = 0; i < entities_column->numRows(); i++) {
     for (uint32_t entity : entities_column->row(i)) {
-      auto entity_hashes = index->getHashes(entity);
+      try {
+        auto entity_hashes = index->getHashes(entity);
 
-      hashes[i].insert(hashes[i].end(), entity_hashes.begin(),
-                       entity_hashes.end());
+        hashes[i].insert(hashes[i].end(), entity_hashes.begin(),
+                         entity_hashes.end());
+
+      } catch (...) {
+#pragma omp critical
+        error = std::current_exception();
+      }
     }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   auto output_column =
