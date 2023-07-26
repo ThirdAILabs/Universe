@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cereal/types/base_class.hpp>
+#include <cereal/access.hpp>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/mach/MachIndex.h>
 
@@ -10,13 +10,13 @@ using dataset::mach::MachIndexPtr;
 
 class MachLabel final : public Transformation {
  public:
-  MachLabel(std::string input_column, std::string output_column);
+  MachLabel(std::string input_column_name, std::string output_column_name);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
-  std::string _input_column;
-  std::string _output_column;
+  std::string _input_column_name;
+  std::string _output_column_name;
 
   MachLabel() {}
 

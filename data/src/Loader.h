@@ -5,8 +5,10 @@
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/Transformation.h>
+#include <utils/Random.h>
 #include <limits>
 #include <optional>
+#include <random>
 #include <stdexcept>
 
 namespace thirdai::data {
@@ -18,9 +20,9 @@ class Loader {
 
   Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
          StatePtr state, IndexValueColumnList input_columns,
-         IndexValueColumnList label_columns,
+         IndexValueColumnList label_columns, bool verbose = true,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
-         bool verbose = true);
+         uint32_t shuffle_seed = global_random::nextSeed());
 
   static auto make(ColumnMapIterator data_iterator,
                    TransformationPtr transformation, StatePtr state,
@@ -43,8 +45,8 @@ class Loader {
   void addToShuffleBuffer(ColumnMap&& columns);
 
  private:
-  std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
-      ColumnMap&& loaded_rows, size_t dataset_size) const;
+  static std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
+      ColumnMap&& loaded_rows, size_t dataset_size);
 
   void logLoadStart() const;
 
@@ -60,6 +62,7 @@ class Loader {
   bool _verbose;
 
   ColumnMap _shuffle_buffer;
+  std::mt19937 _rng;
 
   StatePtr _state;
 };

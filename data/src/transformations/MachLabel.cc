@@ -1,16 +1,18 @@
 #include "MachLabel.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
 
 namespace thirdai::data {
 
-MachLabel::MachLabel(std::string input_column, std::string output_column)
-    : _input_column(std::move(input_column)),
-      _output_column(std::move(output_column)) {}
+MachLabel::MachLabel(std::string input_column_name,
+                     std::string output_column_name)
+    : _input_column_name(std::move(input_column_name)),
+      _output_column_name(std::move(output_column_name)) {}
 
 ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
-  auto entities_column = columns.getArrayColumn<uint32_t>(_input_column);
+  auto entities_column = columns.getArrayColumn<uint32_t>(_input_column_name);
 
   std::vector<std::vector<uint32_t>> hashes(entities_column->numRows());
 
@@ -41,7 +43,7 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
 
   auto output_column =
       ArrayColumn<uint32_t>::make(std::move(hashes), index->numBuckets());
-  columns.setColumn(_output_column, output_column);
+  columns.setColumn(_output_column_name, output_column);
 
   return columns;
 }
@@ -51,8 +53,8 @@ template void MachLabel::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachLabel::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column,
-          _output_column);
+  archive(cereal::base_class<Transformation>(this), _input_column_name,
+          _output_column_name);
 }
 
 }  // namespace thirdai::data
