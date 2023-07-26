@@ -129,7 +129,7 @@ def test_tokens_and_decimals():
     COLS = 5
 
     tokens = [[i + j for j in range(COLS)] for i in range(ROWS)]
-    decimals = [[float(i + j) ** 2 for j in range(COLS)] for i in range(ROWS)]
+    decimals = [[float(i + j + 10) ** 2 for j in range(COLS)] for i in range(ROWS)]
 
     columns = data.ColumnMap(
         {
@@ -157,7 +157,7 @@ def test_tokens_and_decimals():
     assert len(decimal_indices) == COLS
 
     decimal_locs = [values[0].index(x) for x in decimals[0]]
-    decimal_indices = set([indices[0][i] for i in decimal_locs])
+    decimal_indices = set([columns["indices"][0][i] for i in decimal_locs])
 
     for i in range(ROWS):
         # Check that the row has the correct number of unique indices.
