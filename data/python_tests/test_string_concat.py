@@ -1,6 +1,6 @@
 import pytest
-from thirdai import data
 from dataset_utils import get_random_str_column
+from thirdai import data
 
 
 @pytest.mark.unit
