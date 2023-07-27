@@ -1,6 +1,5 @@
 import os
 import textwrap
-from functools import wraps
 from time import time
 from typing import Callable
 
@@ -8,17 +7,7 @@ import thirdai
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, bolt_v2, logging
 
-
-def timed(f):
-    @wraps(f)
-    def wrapper(*args, **kwds):
-        start = time()
-        result = f(*args, **kwds)
-        elapsed = time() - start
-        logging.info("func %s | time %d ms" % (f.__name__, elapsed * 1000))
-        return result
-
-    return wrapper
+from ..utils import timed
 
 
 class Worker:

@@ -4,7 +4,6 @@ from urllib.parse import urljoin
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize
 from trafilatura import extract
 from trafilatura.settings import use_config
@@ -22,7 +21,7 @@ config = use_config()
 config.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
 
 
-def get_all_urls(base_url, max_crawl_depth):
+def recursive_url_scrape(base_url, max_crawl_depth, match_url_prefix=True):
     crawled_urls = set()
     valid_urls = set()
     queue = deque([(base_url, 0)])
@@ -54,9 +53,8 @@ def get_all_urls(base_url, max_crawl_depth):
             href = a_tag["href"]
             next_url = url_normalize(urljoin(base_url, href))
 
-            url_exact_match = True
             if next_url not in crawled_urls and (
-                next_url[: len(base_url)] == base_url or not url_exact_match
+                next_url[: len(base_url)] == base_url or not match_url_prefix
             ):
                 crawled_urls.add(next_url)
                 queue.append((next_url, depth + 1))
@@ -66,6 +64,10 @@ def get_all_urls(base_url, max_crawl_depth):
 
 
 def process_url(url, response):
+    # This import fails in python3.7 because langchain only has python3.7 support
+    # up to version 0.0.27 and this was introduced in a later version of langchain.
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=75,

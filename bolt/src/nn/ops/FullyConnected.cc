@@ -111,6 +111,10 @@ void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+void FullyConnected::enableSparseParameterUpdates() {
+  _kernel->enableSparseParameterUpdates();
+}
+
 std::vector<std::vector<float>*> FullyConnected::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }

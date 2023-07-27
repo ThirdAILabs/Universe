@@ -1,7 +1,7 @@
 #pragma once
 
+#include <data/src/ColumnMap.h>
 #include <dataset/src/DataSource.h>
-#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -50,8 +50,8 @@ class ColdStartDataSource final : public dataset::DataSource {
     return _label_column_name + _column_delimiter + _text_column_name;
   }
 
-  thirdai::data::columns::StringColumnPtr _text_column;
-  thirdai::data::columns::StringColumnPtr _label_column;
+  thirdai::data::ValueColumnBasePtr<std::string> _text_column;
+  thirdai::data::ValueColumnBasePtr<std::string> _label_column;
   uint64_t _row_idx;
 
   std::string _text_column_name;

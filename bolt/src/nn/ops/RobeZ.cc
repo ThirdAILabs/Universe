@@ -16,7 +16,7 @@ std::string nextRobeZOpName() {
 RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
              uint64_t log_embedding_block_size, const std::string& reduction,
              std::optional<uint64_t> num_tokens_per_input,
-             uint64_t update_chunk_size)
+             uint64_t update_chunk_size, uint32_t seed)
     : Op(nextRobeZOpName()) {
   EmbeddingLayerConfig config(
       /* num_embedding_lookups= */ num_embedding_lookups,
@@ -25,7 +25,7 @@ RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
       /* update_chunk_size= */ update_chunk_size, /* reduction= */ reduction,
       /* num_tokens_per_input= */ num_tokens_per_input);
 
-  _kernel = std::make_unique<EmbeddingLayer>(config);
+  _kernel = std::make_unique<EmbeddingLayer>(config, seed);
 }
 
 std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
@@ -33,14 +33,14 @@ std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
                                    uint64_t log_embedding_block_size,
                                    const std::string& reduction,
                                    std::optional<uint64_t> num_tokens_per_input,
-                                   uint64_t update_chunk_size) {
+                                   uint64_t update_chunk_size, uint32_t seed) {
   return std::shared_ptr<RobeZ>(new RobeZ(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
       /* log_embedding_block_size= */ log_embedding_block_size,
       /* reduction= */ reduction,
       /* num_tokens_per_input= */ num_tokens_per_input,
-      /* update_chunk_size= */ update_chunk_size));
+      /* update_chunk_size= */ update_chunk_size, seed));
 }
 
 void RobeZ::forward(const autograd::ComputationList& inputs,
@@ -77,6 +77,10 @@ std::optional<uint32_t> RobeZ::nonzeros(const autograd::ComputationList& inputs,
 
 void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
+}
+
+void RobeZ::enableSparseParameterUpdates() {
+  _kernel->enableSparseParameterUpdates();
 }
 
 std::vector<std::vector<float>*> RobeZ::gradients() {

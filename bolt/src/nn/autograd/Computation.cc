@@ -8,21 +8,8 @@
 
 namespace thirdai::bolt::nn::autograd {
 
-std::string nextComputationName() {
-  static uint32_t constructed = 0;
-  /**
-   * We name this tensor because there is a symmetry between tensors and
-   * computations, each computation generates 1 tensor in the model. Calling it
-   * tensor makes it more intuitive when model summaries are displayed and keeps
-   * the computation class hidden from the user.
-   */
-  return "tensor_" + std::to_string(++constructed);
-}
-
 Computation::Computation(ops::OpPtr op, ComputationList inputs)
-    : _op(std::move(op)),
-      _inputs(std::move(inputs)),
-      _name(nextComputationName()) {}
+    : _op(std::move(op)), _inputs(std::move(inputs)) {}
 
 ComputationPtr Computation::make(ops::OpPtr op, ComputationList inputs) {
   return std::make_shared<Computation>(std::move(op), std::move(inputs));
@@ -84,7 +71,22 @@ void Computation::summary(std::ostream& summary) {
   _op->summary(summary, _inputs, this);
 }
 
-const std::string& Computation::name() const { return _name; }
+const std::string& Computation::name() const {
+  if (_name.empty()) {
+    throw std::runtime_error(
+        "Attempted to access name of unnamed computation.");
+  }
+  return _name;
+}
+
+void Computation::setName(const std::string& name) {
+  if (!_name.empty()) {
+    throw std::runtime_error(
+        "Computations should only be named by the model, and computations "
+        "should not be reused between models.");
+  }
+  _name = name;
+}
 
 template void Computation::serialize(cereal::BinaryInputArchive&);
 template void Computation::serialize(cereal::BinaryOutputArchive&);

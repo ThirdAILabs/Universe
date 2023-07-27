@@ -19,7 +19,8 @@ class UDTGraphClassifier final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options) final;
+                   TrainOptions options,
+                   const bolt::train::DistributedCommPtr& comm) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -29,20 +30,17 @@ class UDTGraphClassifier final : public UDTBackend {
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
                      std::optional<uint32_t> top_k) final {
-    (void)top_k;
     return _classifier->predict(_dataset_manager->featurizeInput(sample),
                                 sparse_inference, return_predicted_class,
-                                /* single= */ true);
+                                /* single= */ true, top_k);
   }
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final {
-    (void)top_k;
-
     return _classifier->predict(_dataset_manager->featurizeInputBatch(samples),
                                 sparse_inference, return_predicted_class,
-                                /* single= */ false);
+                                /* single= */ false, top_k);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {
