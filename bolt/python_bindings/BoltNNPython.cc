@@ -1,5 +1,6 @@
 #include "BoltNNPython.h"
 #include "PybindUtils.h"
+#include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
@@ -593,6 +594,61 @@ That's all for now, folks! More docs coming soon :)
 #endif
       .def(getPickleFunction<BoltGraph>());
 
+  py::class_<DistributedTrainingWrapper>(bolt_submodule,
+                                         "DistributedTrainingWrapper")
+      .def(py::init<BoltGraphPtr, TrainConfig, uint32_t>(), py::arg("model"),
+           py::arg("train_config"), py::arg("worker_id"))
+      .def("compute_and_store_batch_gradients",
+           &DistributedTrainingWrapper::computeAndStoreBatchGradients,
+           py::arg("batch_idx"),
+           "Uses the batch_idx'th batch of the currently "
+           "set dataset to accumulate a single batche's gradients in the "
+           "wrapped Bolt model.")
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters,
+           "Updates the parameters of the wrapped Bolt model. You should call "
+           "this manually after setting the gradients of the wrapped model.")
+      .def("num_batches", &DistributedTrainingWrapper::numBatches)
+      .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
+           py::arg("all_datasets"),
+           "Sets the current train data and labels the wrapper class uses for "
+           "computeAndStoreBatchGradients. We need this method instead of just "
+           "passing in a single pair of training data and training labels at "
+           "construction time because we might have a streaming dataset we "
+           "want to train on, which will entail switching out the current "
+           "datasets dynamically. If this is not the first time this method has"
+           "been called, the batch sizes of the passed in datasets must be the "
+           "same as when this method was called the first time.")
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
+      .def_property_readonly(
+          "model",
+          [](DistributedTrainingWrapper& node) { return node.getModel(); },
+          py::return_value_policy::reference_internal,
+          "The underlying Bolt model wrapped by this "
+          "DistributedTrainingWrapper.")
+      .def("freeze_hash_tables",
+           &thirdai::bolt::DistributedTrainingWrapper::freezeHashTables,
+           py::arg("insert_labels_if_not_found"))
+      .def(
+          "gradient_reference",
+          [](DistributedTrainingWrapper& node) {
+            return GradientReference(*node.getModel().get());
+          },
+          py::return_value_policy::reference_internal,
+          "Returns gradient reference for Distributed Training Wrapper")
+      .def("get_updated_metrics",
+           &thirdai::bolt::DistributedTrainingWrapper::getUpdatedMetrics,
+           bolt::python::OutputRedirect())
+      .def("validate_and_save_if_best",
+           &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
+           bolt::python::OutputRedirect())
+      .def("should_save_optimizer",
+           &thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer,
+           py::arg("should_save_optimizer"))
+      .def("update_learning_rate",
+           &thirdai::bolt::DistributedTrainingWrapper::updateLearningRate,
+           py::arg("learning_rate"))
+      .def("increment_epoch_count",
+           &DistributedTrainingWrapper::incrementEpochCount);
   createLossesSubmodule(nn_submodule);
 }
 

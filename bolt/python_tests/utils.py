@@ -167,6 +167,46 @@ def build_simple_hidden_layer_model(
     return model
 
 
+def simple_bolt_model_in_distributed_training_wrapper(
+    train_data,
+    train_labels,
+    sparsity,
+    num_classes,
+    learning_rate=0.0001,
+    hidden_layer_dim=2000,
+    batch_size=64,
+):
+    train_data = dataset.from_numpy(train_data, batch_size=batch_size)
+    train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
+
+    input_layer = bolt.nn.Input(dim=num_classes)
+    hidden_layer = bolt.nn.FullyConnected(
+        dim=hidden_layer_dim,
+        sparsity=sparsity,
+        activation="relu",
+    )(input_layer)
+    output_layer = bolt.nn.FullyConnected(dim=num_classes, activation="softmax")(
+        hidden_layer
+    )
+
+    train_config = (
+        bolt.TrainConfig(learning_rate=learning_rate, epochs=3)
+        .silence()
+        .with_rebuild_hash_tables(3000)
+        .with_reconstruct_hash_functions(10000)
+    )
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
+
+    wrapper = bolt.DistributedTrainingWrapper(
+        model=model,
+        train_config=train_config,
+        worker_id=0,
+    )
+    wrapper.set_datasets([train_data, train_labels])
+    return wrapper
+
+
 # Builds, trains, and does prediction on a model using numpy data and numpy
 # labels. The model must have the same input and output dimension. This function
 # returns the result of a call to model.predict.
