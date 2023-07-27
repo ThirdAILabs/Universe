@@ -19,12 +19,12 @@ def test_basic_pandas_to_columnmap():
     column_map = data.pandas_to_columnmap(df)
 
     assert isinstance(column_map["col1"], data.columns.StringColumn)
-    assert isinstance(column_map["col2"], data.columns.DenseFeatureColumn)
+    assert isinstance(column_map["col2"], data.columns.DecimalColumn)
     assert isinstance(column_map["col3"], data.columns.TokenColumn)
 
-    assert column_map["col1"].dimension_info() == None
-    assert column_map["col2"].dimension_info().dim == 1
-    assert column_map["col3"].dimension_info() == None
+    assert column_map["col1"].dimension() == None
+    assert column_map["col2"].dimension().dim == 1
+    assert column_map["col3"].dimension() == None
 
 
 def test_pandas_to_columnmap_int_cols():
@@ -41,12 +41,12 @@ def test_pandas_to_columnmap_int_cols():
     )
 
     assert isinstance(column_map["col1"], data.columns.TokenColumn)
-    assert isinstance(column_map["col2"], data.columns.DenseFeatureColumn)
+    assert isinstance(column_map["col2"], data.columns.DecimalColumn)
     assert isinstance(column_map["col3"], data.columns.TokenColumn)
 
-    assert column_map["col1"].dimension_info() == None
-    assert column_map["col2"].dimension_info().dim == 1
-    assert column_map["col3"].dimension_info().dim == 20
+    assert column_map["col1"].dimension() == None
+    assert column_map["col2"].dimension().dim == 1
+    assert column_map["col3"].dimension().dim == 20
 
 
 def test_pandas_bad_col():
