@@ -1,5 +1,6 @@
 try:
-    from . import model_bazaar, parsing_utils
+    from . import parsing_utils
+    from .model_bazaar import Bazaar
     from .documents import (
         CSV,
         DOCX,
