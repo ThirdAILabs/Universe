@@ -26,6 +26,8 @@ class Transpose final : public Op,
 
   void disableSparseParameterUpdates() final;
 
+  void enableSparseParameterUpdates() final;
+
   std::vector<std::vector<float>*> gradients() final;
 
   std::vector<std::vector<float>*> parameters() final;

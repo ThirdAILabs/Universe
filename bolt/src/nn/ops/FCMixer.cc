@@ -170,6 +170,10 @@ void FCMixer::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+void FCMixer::enableSparseParameterUpdates() {
+  _kernel->enableSparseParameterUpdates();
+}
+
 std::vector<std::vector<float>*> FCMixer::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }

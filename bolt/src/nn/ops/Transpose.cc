@@ -66,6 +66,8 @@ std::optional<uint32_t> Transpose::nonzeros(
 
 void Transpose::disableSparseParameterUpdates() {}
 
+void Transpose::enableSparseParameterUpdates() {}
+
 std::vector<std::vector<float>*> Transpose::gradients() { return {}; }
 std::vector<std::vector<float>*> Transpose::parameters() { return {}; }
 

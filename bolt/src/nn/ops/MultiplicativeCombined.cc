@@ -127,6 +127,11 @@ void MultiplicativeCombinedEmbedding::disableSparseParameterUpdates() {
   _token_kernel->disableSparseParameterUpdates();
 }
 
+void MultiplicativeCombinedEmbedding::enableSparseParameterUpdates() {
+  _pos_kernel->enableSparseParameterUpdates();
+  _token_kernel->enableSparseParameterUpdates();
+}
+
 std::vector<std::vector<float>*> MultiplicativeCombinedEmbedding::gradients() {
   return {&_pos_kernel->getRawEmbeddingBlockGradient(),
           &_token_kernel->getRawEmbeddingBlockGradient()};

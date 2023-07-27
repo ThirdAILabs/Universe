@@ -146,6 +146,11 @@ void PosEmbedding::disableSparseParameterUpdates() {
   _token_kernel->disableSparseParameterUpdates();
 }
 
+void PosEmbedding::enableSparseParameterUpdates() {
+  _pos_kernel->enableSparseParameterUpdates();
+  _token_kernel->enableSparseParameterUpdates();
+}
+
 std::vector<std::vector<float>*> PosEmbedding::gradients() {
   return {&_pos_kernel->getRawEmbeddingBlockGradient(),
           &_token_kernel->getRawEmbeddingBlockGradient()};

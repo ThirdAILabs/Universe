@@ -70,6 +70,8 @@ std::optional<uint32_t> Sigmoid::nonzeros(
 
 void Sigmoid::disableSparseParameterUpdates() {}
 
+void Sigmoid::enableSparseParameterUpdates() {}
+
 std::vector<std::vector<float>*> Sigmoid::gradients() { return {}; }
 std::vector<std::vector<float>*> Sigmoid::parameters() { return {}; }
 

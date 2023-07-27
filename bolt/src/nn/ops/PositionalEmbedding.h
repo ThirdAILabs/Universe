@@ -25,7 +25,10 @@ class PosEmbedding final : public Op,
 
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final;
+
   void disableSparseParameterUpdates() final;
+
+  void enableSparseParameterUpdates() final;
 
   std::vector<std::vector<float>*> gradients() final;
 

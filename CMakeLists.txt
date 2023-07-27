@@ -281,6 +281,34 @@ add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
+set(BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
+
+
+# ----------------------------------------------------------
+# FFTW
+# http://www.fftw.org/
+
+set(FFTW_DIR         "${BUILD_DIR}/fftw")
+set(FFTW_INCLUDE_DIR "${FFTW_DIR}/api")
+set(FFTW_BINARY_DIR  "${BUILD_DIR}/fftw-bin")
+
+include(FetchContent)
+
+FetchContent_Populate(fftw
+
+    TMP_DIR "${BUILD_DIR}/temp"
+    DOWNLOAD_DIR "${BUILD_DIR}/download"
+    SOURCE_DIR "${FFTW_DIR}"
+
+    URL "http://fftw.org/fftw-3.3.10.tar.gz"
+    URL_MD5 "8ccbf6a5ea78a16dbc3e1306e234cc5c"
+)
+
+add_subdirectory(${FFTW_DIR} ${FFTW_BINARY_DIR})
+
+
+include_directories(${FFTW_INCLUDE_DIR})
+
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
 # can work with vscode
@@ -335,6 +363,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Tanh.cc
     bolt/src/nn/ops/Sigmoid.cc
     bolt/src/nn/ops/Transpose.cc
+    bolt/src/nn/ops/FFTMixer.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -466,7 +495,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+                 prometheus-cpp::pull utf8proc fftw3)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
