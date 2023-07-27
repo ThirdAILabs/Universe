@@ -243,8 +243,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<StringToDecimalArray, Transformation,
              std::shared_ptr<StringToDecimalArray>>(transformations_submodule,
                                                     "ToDecimalArrays")
-      .def(py::init<std::string, std::string, char>(), py::arg("input_column"),
-           py::arg("output_column"), py::arg("delimiter"));
+      .def(py::init<std::string, std::string, char, std::optional<size_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"), py::arg("dim") = std::nullopt);
 
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
