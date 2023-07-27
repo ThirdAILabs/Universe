@@ -355,7 +355,7 @@ class Extracted(Document):
         return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["passage"].iloc[element_id]
+        return ""
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
@@ -379,7 +379,7 @@ class Extracted(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
-        return "\n".join(rows["passage"])
+        return "\n".join(rows["para"])
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
@@ -528,8 +528,7 @@ class SentenceLevelExtracted(Extracted):
         self,
         df: pd.DataFrame,
     ) -> pd.DataFrame:
-        df["sentences"] = df["passage"].apply(SentenceLevelExtracted.get_sentences)
-        df.drop("passage", axis=1, inplace=True)
+        df["sentences"] = df["para"].apply(SentenceLevelExtracted.get_sentences)
 
         num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
         df["id_offsets"] = np.zeros(len(df))
@@ -544,7 +543,7 @@ class SentenceLevelExtracted(Extracted):
         df = pd.DataFrame.from_records(
             [
                 {
-                    "passage": sentence,
+                    "sentence": sentence,
                     "para_id": para_id,
                     "sentence_id": i + record["id_offsets"],
                     "sentence_ids_in_para": get_ids(record),
@@ -578,7 +577,7 @@ class SentenceLevelExtracted(Extracted):
         return self.filename.name
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["passage"].iloc[element_id]
+        return self.df["sentence"].iloc[element_id]
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
