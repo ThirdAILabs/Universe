@@ -85,42 +85,38 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(self, user_id: str) -> None:
-        self._user_id = user_id
-        self._savable_state: Optional[State] = None
+    def __init__(
+        self, user_id: str = "user", savable_state: State = None, **kwargs
+    ) -> None:
+        self._user_id: str = user_id
+        if savable_state == None:
+            self._savable_state: State = State(
+                model=Mach(id_col="id", query_col="query", **kwargs),
+                logger=loggers.LoggerList([loggers.InMemoryLogger()]),
+            )
+        else:
+            self._savable_state = savable_state
 
-    def from_scratch(self, **kwargs) -> None:
-        self._savable_state = State(
-            model=Mach(id_col="id", query_col="query", **kwargs),
-            logger=loggers.LoggerList([loggers.InMemoryLogger()]),
-        )
-
+    @staticmethod
     def from_checkpoint(
-        self,
         checkpoint_path: str,
+        user_id: str = "user",
         on_progress: Callable = no_op,
-        on_error: Callable = None,
     ):
         checkpoint_path = Path(checkpoint_path)
-        try:
-            self._savable_state = State.load(checkpoint_path, on_progress)
-            if self._savable_state.model and self._savable_state.model.get_model():
-                self._savable_state.model.get_model().set_mach_sampling_threshold(0.01)
-            if not isinstance(self._savable_state.logger, loggers.LoggerList):
-                # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
-                self._savable_state.logger = loggers.LoggerList(
-                    [self._savable_state.logger]
-                )
-        except Exception as e:
-            self._savable_state = None
-            if on_error is not None:
-                on_error(error_msg=e.__str__())
-            else:
-                raise e
+        savable_state = State.load(checkpoint_path, on_progress)
+        if savable_state.model and savable_state.model.get_model():
+            savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+        if not isinstance(savable_state.logger, loggers.LoggerList):
+            # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
+            savable_state.logger = loggers.LoggerList([savable_state.logger])
 
+        return NeuralDB(user_id, savable_state)
+
+    @staticmethod
     def from_udt(
-        self,
         udt: bolt.UniversalDeepTransformer,
+        user_id: str = "user",
         csv: Optional[str] = None,
         csv_id_column: Optional[str] = None,
         csv_strong_columns: Optional[List[str]] = None,
@@ -132,7 +128,7 @@ class NeuralDB:
 
         udt.enable_rlhf()
         udt.set_mach_sampling_threshold(0.01)
-        input_dim, emb_dim, out_dim = udt.model_dims()
+        fhr, emb_dim, out_dim = udt.model_dims()
         data_types = udt.data_types()
 
         if len(data_types) != 2:
@@ -157,13 +153,13 @@ class NeuralDB:
             id_col=id_col,
             id_delimiter=id_delimiter,
             query_col=query_col,
-            input_dim=input_dim,
-            hidden_dim=emb_dim,
+            fhr=fhr,
+            embedding_dimension=emb_dim,
             extreme_output_dim=out_dim,
         )
         model.model = udt
         logger = loggers.LoggerList([loggers.InMemoryLogger()])
-        self._savable_state = State(model=model, logger=logger)
+        savable_state = State(model=model, logger=logger)
 
         if csv is not None:
             if (
@@ -185,8 +181,10 @@ class NeuralDB:
                 weak_columns=csv_weak_columns,
                 reference_columns=csv_reference_columns,
             )
-            self._savable_state.documents.add([csv_doc])
-            self._savable_state.model.set_n_ids(csv_doc.size)
+            savable_state.documents.add([csv_doc])
+            savable_state.model.set_n_ids(csv_doc.size)
+
+        return NeuralDB(user_id, savable_state)
 
     def in_session(self) -> bool:
         return self._savable_state is not None
@@ -194,13 +192,10 @@ class NeuralDB:
     def ready_to_search(self) -> bool:
         return self.in_session() and self._savable_state.ready()
 
-    def clear_session(self) -> None:
-        self._savable_state = None
-
     def sources(self) -> Dict[str, str]:
         return self._savable_state.documents.sources()
 
-    def save(self, save_to: str, on_progress: Callable = no_op) -> None:
+    def save(self, save_to: str, on_progress: Callable = no_op) -> str:
         return self._savable_state.save(Path(save_to), on_progress)
 
     def insert(
@@ -225,41 +220,24 @@ class NeuralDB:
                 return []
             raise e
 
-        try:
-            self._savable_state.model.index_documents(
-                intro_documents=intro_and_train.intro,
-                train_documents=intro_and_train.train,
-                num_buckets_to_sample=num_buckets_to_sample,
-                should_train=train,
-                use_weak_columns=use_weak_columns,
-                on_progress=on_progress,
-                cancel_state=cancel_state,
-            )
+        self._savable_state.model.index_documents(
+            intro_documents=intro_and_train.intro,
+            train_documents=intro_and_train.train,
+            num_buckets_to_sample=num_buckets_to_sample,
+            should_train=train,
+            use_weak_columns=use_weak_columns,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
 
-            self._savable_state.logger.log(
-                session_id=self._user_id,
-                action="Train",
-                args={"files": intro_and_train.intro.resource_name()},
-            )
+        self._savable_state.logger.log(
+            session_id=self._user_id,
+            action="Train",
+            args={"files": intro_and_train.intro.resource_name()},
+        )
 
-            on_success()
-            return ids
-
-        except Exception as e:
-            # If we fail during training here it's hard to guarantee that we
-            # recover to a resumable state. E.g. if we're in the middle of
-            # introducing new documents, we may be in a weird state where half
-            # the documents are introduced while others aren't.
-            # At the same time, if we fail here, then there must be something
-            # wrong with the model, not how we used it, so it should be very
-            # rare and probably not worth saving.
-            self.clear_session()
-            if on_irrecoverable_error is not None:
-                on_irrecoverable_error(
-                    error_msg=f"Failed to train model on added files. {e.__str__()}"
-                )
-                return []
-            raise e
+        on_success()
+        return ids
 
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()

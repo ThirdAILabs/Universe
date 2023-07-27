@@ -37,9 +37,6 @@ class CastToArray final : public Transformation {
   CastToArray(std::string input_column_name, std::string output_column_name,
               char delimiter, std::optional<size_t> dim);
 
-  CastToArray(std::string input_column_name, std::string output_column_name,
-              char delimiter);
-
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:

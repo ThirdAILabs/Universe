@@ -119,8 +119,8 @@ def test_decimal_array_column():
     decimals = [[random.random() for _ in range(COLS)] for _ in range(ROWS)]
 
     columns = [
-        data.columns.DecimalArrayColumn(decimals),
-        data.columns.DecimalArrayColumn(np.array(decimals)),
+        data.columns.DecimalArrayColumn(decimals, dim=COLS),
+        data.columns.DecimalArrayColumn(np.array(decimals), dim=COLS),
     ]
 
     for column in columns:
@@ -152,6 +152,10 @@ def test_token_columns_without_dimension():
     assert data.columns.TokenColumn([1, 2, 3]).dimension() == None
 
     assert data.columns.TokenArrayColumn([[1], [2], [3]]).dimension() == None
+
+
+def test_decimal_array_column_without_dimension():
+    assert data.columns.DecimalArrayColumn([[1.0], [2.0], [3.0]]).dimension() == None
 
 
 def test_token_columns_with_invalid_token():
