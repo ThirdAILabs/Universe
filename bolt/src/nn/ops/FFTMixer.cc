@@ -7,6 +7,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVectorUtils.h>
+#include <fftw3.h>
 
 
 
@@ -38,15 +39,19 @@ void FFTMixer::forward(const autograd::ComputationList& inputs,
     if (labels != nullptr) {
         throw std::logic_error("FCMixers should not have non null label pointers.");
     }
-    auto fftw_input_data = bolt_vector::fftwSegmentRowMajorActivations(inputs[0]->tensor()->getVector(index_in_batch),
+    auto fftwf_input_data = bolt_vector::fftwSegmentRowMajorActivations(inputs[0]->tensor()->getVector(index_in_batch),
                                          _rows, _columns);
-    float* fftw_output_data = (float*)fftwf_malloc(_columns * _rows * sizeof(float));
+    float* fftwf_output_data = (float*)fftwf_malloc(_columns * _rows * sizeof(float));
     
-    fftwf_plan plan = fftwf_plan_dft_1d(_columns, (fftwf_complex*)fftw_input_data, (fftwf_complex*)fftw_output_data, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftwf_plan plan = fftwf_plan_dft_1d(_columns, (fftwf_complex*)fftwf_input_data, (fftwf_complex*)fftwf_output_data, FFTW_FORWARD, FFTW_ESTIMATE);
 
     fftwf_execute(plan);
 
     std::memcpy(output->getVector(index_in_batch).activations, fftw_output_data, _rows * _columns * sizeof(float));
+    
+    fftwf_destroy_plan(plan);
+    fftwf_free(fftw_input_data);
+    fftwf_free(fftw_output_data);
 
 }
 
@@ -57,13 +62,17 @@ void FFTMixer::backpropagate(autograd::ComputationList& inputs,
 
     auto fftw_input_data = bolt_vector::fftwSegmentRowMajorActivations(output->getVector(index_in_batch),
                                          _rows, _columns);
-    float* fftw_output_data = (float*)fftwf_malloc(_columns * _rows * sizeof(float));
+    float* fftwf_output_data = (float*)fftwf_malloc(_columns * _rows * sizeof(float));
     
     fftwf_plan plan = fftwf_plan_dft_1d(_columns, (fftwf_complex*)fftw_input_data, (fftwf_complex*)fftw_output_data, FFTW_BACKWARD, FFTW_ESTIMATE);
 
     fftwf_execute(plan);
 
     std::memcpy(inputs[0]->tensor()->getVector(index_in_batch).gradients, fftw_output_data, _rows * _columns * sizeof(float));
+    
+    fftwf_destroy_plan(plan);
+    fftwf_free(fftw_input_data);
+    fftwf_free(fftw_output_data);
 
 }
 

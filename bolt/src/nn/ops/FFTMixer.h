@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fftw3.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
@@ -12,7 +11,7 @@ namespace thirdai::bolt::nn::ops {
 class FFTMixer final: public Op,
                 public std::enable_shared_from_this<FFTMixer> {
 public:
-    std::shared_ptr<FFTMixer> make(uint32_t rows, uint32_t columns);
+static std::shared_ptr<FFTMixer> make(uint32_t rows, uint32_t columns);
 
     void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,

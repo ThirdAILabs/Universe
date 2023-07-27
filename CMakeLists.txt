@@ -281,33 +281,16 @@ add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
-set(BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
-
-
-# ----------------------------------------------------------
-# FFTW
-# http://www.fftw.org/
-
-set(FFTW_DIR         "${BUILD_DIR}/fftw")
-set(FFTW_INCLUDE_DIR "${FFTW_DIR}/api")
-set(FFTW_BINARY_DIR  "${BUILD_DIR}/fftw-bin")
-
 include(FetchContent)
 
-FetchContent_Populate(fftw
+FetchContent_Declare(
+  fftw3
+  URL       http://fftw.org/fftw-3.3.10.tar.gz
+  URL_HASH  MD5=8ccbf6a5ea78a16dbc3e1306e234cc5c)
+FetchContent_MakeAvailable(fftw3)
 
-    TMP_DIR "${BUILD_DIR}/temp"
-    DOWNLOAD_DIR "${BUILD_DIR}/download"
-    SOURCE_DIR "${FFTW_DIR}"
+include_directories(${fftw3_SOURCE_DIR}/api)
 
-    URL "http://fftw.org/fftw-3.3.10.tar.gz"
-    URL_MD5 "8ccbf6a5ea78a16dbc3e1306e234cc5c"
-)
-
-add_subdirectory(${FFTW_DIR} ${FFTW_BINARY_DIR})
-
-
-include_directories(${FFTW_INCLUDE_DIR})
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
