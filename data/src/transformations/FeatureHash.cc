@@ -17,7 +17,9 @@ FeatureHash::FeatureHash(std::vector<std::string> input_columns,
       _output_indices_column(std::move(output_indices_column)),
       _output_values_column(std::move(output_values_column)) {}
 
-ColumnMap FeatureHash::apply(ColumnMap columns) const {
+ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
   std::vector<std::vector<uint32_t>> indices(columns.numRows());
   std::vector<std::vector<float>> values(columns.numRows());
 

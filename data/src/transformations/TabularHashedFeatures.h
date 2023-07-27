@@ -33,7 +33,9 @@ class TabularHashedFeatures : public Transformation {
         _output_range(output_range),
         _use_pairgrams(use_pairgrams) {}
 
-  ColumnMap apply(ColumnMap column_map) const final {
+  ColumnMap apply(ColumnMap column_map, State& state) const final {
+    (void)state;
+
     std::vector<ValueColumnBasePtr<uint32_t>> columns;
     // we hash the name of each column here so we can combine hashes later on
     // and have unique values across columns

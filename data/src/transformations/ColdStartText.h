@@ -136,7 +136,7 @@ class ColdStartTextAugmentation final : public Transformation {
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = global_random::nextSeed());
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
   std::vector<std::string> augmentMapInput(const automl::MapInput& document);
 

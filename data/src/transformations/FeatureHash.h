@@ -21,7 +21,7 @@ class FeatureHash final : public Transformation {
               std::string output_indices_column,
               std::string output_values_columns, size_t hash_range);
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {
