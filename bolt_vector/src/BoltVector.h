@@ -14,6 +14,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <fftw3.h>
 
 namespace thirdai {
 

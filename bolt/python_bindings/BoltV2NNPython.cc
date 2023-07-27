@@ -11,6 +11,7 @@
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FCMixer.h>
+#include <bolt/src/nn/ops/FFTMixer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
@@ -377,6 +378,10 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Transpose, ops::TransposePtr, ops::Op>(nn, "Transpose")
       .def(py::init(&ops::Transpose::make), py::arg("rows"), py::arg("columns"))
       .def("__call__", &ops::Transpose::apply);
+
+  py::class_<ops::FFTMixer, ops::FFTMixerPtr, ops::Op>(nn, "FFTMixer")
+      .def(py::init(&ops::FFTMixer::make), py::arg("rows"), py::arg("columns"))
+      .def("__call__", &ops::FFTMixer::apply);
 
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")
