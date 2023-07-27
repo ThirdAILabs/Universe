@@ -89,8 +89,8 @@ def download_and_split_scifact_dataset(download_scifact_dataset):
 def get_udt_scifact_mach_model(n_target_classes):
     model = old_bolt.UniversalDeepTransformer(
         data_types={
-            "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "QUERY": old_bolt.types.text(contextual_encoding="local"),
+            "DOC_ID": old_bolt.types.categorical(delimiter=":"),
         },
         target="DOC_ID",
         n_target_classes=n_target_classes,
