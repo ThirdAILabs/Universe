@@ -4,12 +4,12 @@
 
 namespace thirdai::data {
 
-class UserItemHistory final : public Transformation {
+class CategoricalTemporal final : public Transformation {
  public:
-  UserItemHistory(std::string user_column, std::string item_column,
-                  std::string timestamp_column, std::string output_column,
-                  size_t track_last_n, bool should_update_history,
-                  bool include_current_row, int64_t time_lag);
+  CategoricalTemporal(std::string user_column, std::string item_column,
+                      std::string timestamp_column, std::string output_column,
+                      size_t track_last_n, bool should_update_history,
+                      bool include_current_row, int64_t time_lag);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

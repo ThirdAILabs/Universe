@@ -2,6 +2,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
+#include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
@@ -259,6 +260,16 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     size_t>(),
            py::arg("input_columns"), py::arg("output_indices_column"),
            py::arg("output_values_column"), py::arg("hash_range"));
+
+  py::class_<CategoricalTemporal, Transformation,
+             std::shared_ptr<CategoricalTemporal>>(transformations_submodule,
+                                                   "CategoricalTemporal")
+      .def(py::init<std::string, std::string, std::string, std::string, size_t,
+                    bool, bool, int64_t>(),
+           py::arg("user_column"), py::arg("item_column"),
+           py::arg("timestamp_column"), py::arg("output_column"),
+           py::arg("track_last_n"), py::arg("should_update_history") = true,
+           py::arg("include_current_row") = false, py::arg("time_lag") = 0);
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,

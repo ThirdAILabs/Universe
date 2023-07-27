@@ -1,15 +1,14 @@
-#include "UserItemHistory.h"
+#include "CategoricalTemporal.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <optional>
 
 namespace thirdai::data {
 
-UserItemHistory::UserItemHistory(std::string user_column,
-                                 std::string item_column,
-                                 std::string timestamp_column,
-                                 std::string output_column, size_t track_last_n,
-                                 bool should_update_history,
-                                 bool include_current_row, int64_t time_lag)
+CategoricalTemporal::CategoricalTemporal(
+    std::string user_column, std::string item_column,
+    std::string timestamp_column, std::string output_column,
+    size_t track_last_n, bool should_update_history, bool include_current_row,
+    int64_t time_lag)
     : _user_column(std::move(user_column)),
       _item_column(std::move(item_column)),
       _timestamp_column(std::move(timestamp_column)),
@@ -19,7 +18,7 @@ UserItemHistory::UserItemHistory(std::string user_column,
       _include_current_row(include_current_row),
       _time_lag(time_lag) {}
 
-ColumnMap UserItemHistory::apply(ColumnMap columns, State& state) const {
+ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto user_col = columns.getValueColumn<std::string>(_user_column);
   auto item_col = columns.getArrayColumn<uint32_t>(_item_column);
   auto timestamp_col = columns.getValueColumn<int64_t>(_timestamp_column);
@@ -44,7 +43,7 @@ ColumnMap UserItemHistory::apply(ColumnMap columns, State& state) const {
       }
     }
 
-    auto& user_item_history = item_history_tracker->at(user_id);
+    auto& user_item_history = (*item_history_tracker)[user_id];
 
     size_t seen = 0;
     for (auto it = user_item_history.rbegin();
