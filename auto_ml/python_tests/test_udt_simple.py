@@ -462,26 +462,28 @@ def test_model_dims_mach():
 
 
 def test_data_types():
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "cat": bolt.types.categorical(delimiter=":"),
-            "text": bolt.types.text(),
-        },
-        target="cat",
-        n_target_classes=10,
-        integer_target=True,
-        options={
-            "input_dim": 8,
-            "embedding_dimension": 4,
-        },
-    )
+    for extreme_classification in [True, False]:
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "cat": bolt.types.categorical(delimiter=":"),
+                "text": bolt.types.text(),
+            },
+            target="cat",
+            n_target_classes=10,
+            integer_target=True,
+            options={
+                "input_dim": 8,
+                "embedding_dimension": 4,
+                "extreme_classification": extreme_classification,
+            },
+        )
 
-    data_types = model.data_types()
-    assert "cat" in data_types.keys()
-    assert "text" in data_types.keys()
-    assert isinstance(data_types["cat"], bolt.types.categorical)
-    assert data_types["cat"].delimiter == ":"
-    assert isinstance(data_types["text"], bolt.types.text)
+        data_types = model.data_types()
+        assert "cat" in data_types.keys()
+        assert "text" in data_types.keys()
+        assert isinstance(data_types["cat"], bolt.types.categorical)
+        assert data_types["cat"].delimiter == ":"
+        assert isinstance(data_types["text"], bolt.types.text)
 
 
 def test_top_k_predictions():

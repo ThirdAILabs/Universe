@@ -64,7 +64,7 @@ py::object UDTRecurrentClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::train::DistributedCommPtr& comm) {
-  size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
+  size_t batch_size = options.batchSize();
 
   dataset::DatasetLoaderPtr val_dataset = nullptr;
   if (val_data) {

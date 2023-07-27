@@ -11,81 +11,105 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
+#include <utils/UUID.h>
 #include <limits>
 #include <stdexcept>
 
 namespace thirdai::automl {
 
-MachDatasetFactory::MachDatasetFactory(
-    const data::ColumnDataTypes& input_data_types,
-    dataset::mach::MachIndexPtr mach_index, const data::TabularOptions& options)
-    : _delimiter(options.delimiter) {
-  if (input_data_types.size() != 2) {
+MachDatasetFactory::MachDatasetFactory(data::ColumnDataTypes input_data_types,
+                                       dataset::mach::MachIndexPtr mach_index,
+                                       const data::TabularOptions& options)
+    : _input_data_types(std::move(input_data_types)),
+      _delimiter(options.delimiter) {
+  _featurized_input_column_name = uniqueColumnName("__featurized_input__");
+  _entity_id_column_name = uniqueColumnName("__entity_ids__");
+  _mach_label_column_name = uniqueColumnName("__mach_labels__");
+
+  if (_input_data_types.size() != 2) {
     throw std::invalid_argument("Expected a single text and label column.");
   }
-  for (const auto& [name, dtype] : input_data_types) {
+  for (const auto& [name, dtype] : _input_data_types) {
     if (auto text = data::asText(dtype)) {
-      _cold_start_text_column = name;
-      _featurized_input_column = name + "_tokenized";
-      _input_transformation = std::make_shared<thirdai::data::TextTokenizer>(
-          name, _featurized_input_column, text->tokenizer, text->encoder,
-          text->lowercase, options.feature_hash_range);
+      _input_text_column_name = name;
+      _input_featurization = std::make_shared<thirdai::data::TextTokenizer>(
+          /* input_column= */ name,
+          /* output_column= */ _featurized_input_column_name,
+          /* tokenizer= */ text->tokenizer,
+          /* encoder= */ text->encoder,
+          /* lower_case= */ text->lowercase,
+          /* dim= */ options.feature_hash_range);
     } else if (auto categorical = data::asCategorical(dtype)) {
-      _cold_start_label_column = name;
-      _featurized_entity_id_column = name + "_entity_ids";
-      _featurized_mach_label_column = name + "_mach_labels";
+      _input_label_column_name = name;
 
       if (categorical->delimiter) {
-        _entity_id_transformation =
+        _strings_to_entity_ids =
             std::make_shared<thirdai::data::StringToTokenArray>(
-                name, _featurized_entity_id_column, *categorical->delimiter,
-                std::numeric_limits<uint32_t>::max());
+                /* input_column_name= */ name,
+                /* output_column_name= */ _entity_id_column_name,
+                /* delimiter= */ *categorical->delimiter,
+                /* dim= */ std::numeric_limits<uint32_t>::max());
       } else {
-        _entity_id_transformation =
-            std::make_shared<thirdai::data::StringToToken>(
-                name, _featurized_entity_id_column,
-                std::numeric_limits<uint32_t>::max());
+        _strings_to_entity_ids = std::make_shared<thirdai::data::StringToToken>(
+            /* input_column_name= */ name,
+            /* output_column_name= */ _entity_id_column_name,
+            /* dim= */ std::numeric_limits<uint32_t>::max());
       }
 
-      _prehashed_label_transformation =
+      _strings_to_prehashed_mach_labels =
           std::make_shared<thirdai::data::StringToTokenArray>(
-              name, _featurized_mach_label_column, ' ',
-              mach_index->numBuckets());
+              /* input_column_name= */ name,
+              /* output_column_name= */ _mach_label_column_name,
+              /* delimiter= */ ' ',
+              /* dim= */ mach_index->numBuckets());
     } else {
       throw std::invalid_argument("Unnsupported column datatype for column '" +
                                   name + "'.");
     }
   }
 
-  _mach_label_transformation = std::make_shared<thirdai::data::MachLabel>(
-      _featurized_entity_id_column, _featurized_mach_label_column);
+  _entity_ids_to_mach_labels = std::make_shared<thirdai::data::MachLabel>(
+      /* input_column_name= */ _entity_id_column_name,
+      /* output_column_name= */ _mach_label_column_name);
 
   _state = std::make_shared<thirdai::data::State>(std::move(mach_index));
 }
 
 thirdai::data::LoaderPtr MachDatasetFactory::getDataLoader(
     const dataset::DataSourcePtr& data_source, bool include_mach_labels,
-    dataset::DatasetShuffleConfig shuffle_config, bool verbose) {
-  return getDataLoaderHelper(data_source, include_mach_labels, shuffle_config,
-                             verbose, nullptr);
+    size_t batch_size, bool shuffle, bool verbose,
+    dataset::DatasetShuffleConfig shuffle_config) {
+  return getDataLoaderHelper(data_source,
+                             /* include_mach_labels= */ include_mach_labels,
+                             /* batch_size= */ batch_size,
+                             /* shuffle= */ shuffle,
+                             /* verbose= */ verbose,
+                             /* shuffle_config= */ shuffle_config,
+                             /* cold_start_transformation= */ nullptr);
 }
 
 thirdai::data::LoaderPtr MachDatasetFactory::getColdStartDataLoader(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, bool include_mach_labels,
-    bool fast_approximation, dataset::DatasetShuffleConfig shuffle_config,
-    bool verbose) {
+    const std::vector<std::string>& weak_column_names, bool fast_approximation,
+    bool include_mach_labels, size_t batch_size, bool shuffle, bool verbose,
+    dataset::DatasetShuffleConfig shuffle_config) {
   auto cold_start_transformation = createColdStartTransformation(
       strong_column_names, weak_column_names, fast_approximation);
 
-  return getDataLoaderHelper(data_source, include_mach_labels, shuffle_config,
-                             verbose, cold_start_transformation);
+  return getDataLoaderHelper(
+      data_source,
+      /* include_mach_labels= */ include_mach_labels,
+      /* batch_size= */ batch_size, /* shuffle= */ shuffle,
+      /* verbose= */ verbose,
+      /* shuffle_config= */ shuffle_config,
+      /* cold_start_transformation= */ cold_start_transformation);
 }
 
 thirdai::data::LoaderPtr MachDatasetFactory::getDataLoaderHelper(
     const dataset::DataSourcePtr& data_source, bool include_mach_labels,
-    dataset::DatasetShuffleConfig shuffle_config, bool verbose,
+    size_t batch_size, bool shuffle, bool verbose,
+    dataset::DatasetShuffleConfig shuffle_config,
     thirdai::data::TransformationPtr cold_start_transformation) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
@@ -95,52 +119,57 @@ thirdai::data::LoaderPtr MachDatasetFactory::getDataLoaderHelper(
   if (cold_start_transformation) {
     transformations.push_back(std::move(cold_start_transformation));
   }
-  transformations.push_back(_input_transformation);
-  transformations.push_back(_entity_id_transformation);
+  transformations.push_back(_input_featurization);
+  transformations.push_back(_strings_to_entity_ids);
   if (include_mach_labels) {
-    transformations.push_back(_mach_label_transformation);
+    transformations.push_back(_entity_ids_to_mach_labels);
   }
   auto transformation_list =
-      thirdai::data::TransformationList::make({transformations});
+      thirdai::data::TransformationList::make(transformations);
 
   thirdai::data::IndexValueColumnList label_column_outputs;
   if (include_mach_labels) {
-    label_column_outputs.emplace_back(_featurized_mach_label_column,
-                                      std::nullopt);
+    label_column_outputs.emplace_back(_mach_label_column_name, std::nullopt);
   }
-  label_column_outputs.emplace_back(_featurized_entity_id_column, std::nullopt);
+  label_column_outputs.emplace_back(_entity_id_column_name, std::nullopt);
 
-  return thirdai::data::Loader::make(data_iter, transformation_list, _state,
-                                     {{_featurized_input_column, std::nullopt}},
-                                     label_column_outputs,
-                                     shuffle_config.min_buffer_size, verbose);
+  return thirdai::data::Loader::make(
+      data_iter, transformation_list, _state,
+      {{_featurized_input_column_name, std::nullopt}}, label_column_outputs,
+      /* batch_size= */ batch_size, /* shuffle= */ shuffle,
+      /* verbose= */ verbose,
+      /* shuffle_buffer_size= */ shuffle_config.min_buffer_size,
+      /* shuffle_seed= */ shuffle_config.seed);
 }
 
 bolt::nn::tensor::TensorList MachDatasetFactory::featurizeInput(
     const MapInput& sample) {
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
 
-  columns = _input_transformation->apply(columns, *_state);
+  columns = _input_featurization->apply(columns, *_state);
 
-  return thirdai::data::toTensors(columns,
-                                  {{_featurized_input_column, std::nullopt}});
+  return thirdai::data::toTensors(
+      columns, {{_featurized_input_column_name, std::nullopt}});
 }
 
 bolt::nn::tensor::TensorList MachDatasetFactory::featurizeInputBatch(
     const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
-  columns = _input_transformation->apply(columns, *_state);
+  columns = _input_featurization->apply(columns, *_state);
 
-  return thirdai::data::toTensors(columns,
-                                  {{_featurized_input_column, std::nullopt}});
+  return thirdai::data::toTensors(
+      columns, {{_featurized_input_column_name, std::nullopt}});
 }
 
 TensorList MachDatasetFactory::featurizeInputColdStart(
     MapInput sample, const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
-  sample[_cold_start_label_column] =
-      "";  // Add dummy value for cold start transformation.
+  // Currently the cold start transformation expects a label column that it
+  // repeats when it maps a single set of phrases to multiple samples. In the
+  // future it should be extended to not require this, and just duplicate any
+  // other columns it finds.
+  sample[_input_label_column_name] = "";
 
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
 
@@ -148,30 +177,30 @@ TensorList MachDatasetFactory::featurizeInputColdStart(
       createColdStartTransformation(strong_column_names, weak_column_names)
           ->apply(columns, *_state);
 
-  columns = _input_transformation->apply(columns, *_state);
+  columns = _input_featurization->apply(columns, *_state);
 
-  return thirdai::data::toTensors(columns,
-                                  {{_featurized_input_column, std::nullopt}});
+  return thirdai::data::toTensors(
+      columns, {{_featurized_input_column_name, std::nullopt}});
 }
 
 std::pair<TensorList, TensorList> MachDatasetFactory::featurizeTrainingBatch(
     const MapInputBatch& samples, bool prehashed) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
-  columns = _input_transformation->apply(columns, *_state);
-  columns = _entity_id_transformation->apply(columns, *_state);
+  columns = _input_featurization->apply(columns, *_state);
+  columns = _strings_to_entity_ids->apply(columns, *_state);
   if (prehashed) {
-    columns = _prehashed_label_transformation->apply(columns, *_state);
+    columns = _strings_to_prehashed_mach_labels->apply(columns, *_state);
   } else {
-    columns = _mach_label_transformation->apply(columns, *_state);
+    columns = _entity_ids_to_mach_labels->apply(columns, *_state);
   }
 
   auto data = thirdai::data::toTensors(
-      columns, {{_featurized_input_column, std::nullopt}});
+      columns, {{_featurized_input_column_name, std::nullopt}});
 
   auto labels = thirdai::data::toTensors(
-      columns, {{_featurized_mach_label_column, std::nullopt},
-                {_featurized_entity_id_column, std::nullopt}});
+      columns, {{_mach_label_column_name, std::nullopt},
+                {_entity_id_column_name, std::nullopt}});
 
   return std::make_pair(std::move(data), std::move(labels));
 }
@@ -186,14 +215,22 @@ MachDatasetFactory::createColdStartTransformation(
     all_columns.insert(all_columns.end(), strong_column_names.begin(),
                        strong_column_names.end());
     return std::make_shared<thirdai::data::StringConcat>(
-        all_columns, _cold_start_text_column);
+        all_columns, _input_text_column_name);
   }
 
   return std::make_shared<thirdai::data::ColdStartTextAugmentation>(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _cold_start_label_column,
-      /* output_column_name= */ _cold_start_text_column);
+      /* label_column_name= */ _input_label_column_name,
+      /* output_column_name= */ _input_text_column_name);
+}
+
+std::string MachDatasetFactory::uniqueColumnName(std::string name) const {
+  while (_input_data_types.count(name)) {
+    name += utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 4);
+  }
+
+  return name;
 }
 
 template void MachDatasetFactory::serialize(cereal::BinaryInputArchive&);
@@ -201,11 +238,11 @@ template void MachDatasetFactory::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachDatasetFactory::serialize(Archive& archive) {
-  archive(_input_transformation, _entity_id_transformation,
-          _mach_label_transformation, _prehashed_label_transformation,
-          _delimiter, _featurized_input_column, _featurized_entity_id_column,
-          _featurized_mach_label_column, _cold_start_text_column,
-          _cold_start_label_column, _state);
+  archive(_input_featurization, _strings_to_entity_ids,
+          _entity_ids_to_mach_labels, _strings_to_prehashed_mach_labels,
+          _delimiter, _featurized_input_column_name, _entity_id_column_name,
+          _mach_label_column_name, _input_text_column_name,
+          _input_label_column_name, _state);
 }
 
 }  // namespace thirdai::automl

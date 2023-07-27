@@ -7,6 +7,7 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -32,6 +33,12 @@ struct TrainOptions {
   std::optional<uint32_t> logging_interval = std::nullopt;
   dataset::DatasetShuffleConfig shuffle_config =
       dataset::DatasetShuffleConfig();
+
+  size_t batchSize() const { return batch_size.value_or(defaults::BATCH_SIZE); }
+
+  size_t maxBatches() const {
+    return max_in_memory_batches.value_or(std::numeric_limits<size_t>::max());
+  }
 };
 
 /**

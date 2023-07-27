@@ -91,7 +91,7 @@ class Trainer {
 
   metrics::History train_with_data_loader(
       const data::LoaderPtr& train_data_loader, float learning_rate,
-      uint32_t epochs, size_t batch_size,
+      uint32_t epochs,
       std::optional<size_t> max_in_memory_batches = std::nullopt,
       const metrics::InputMetrics& train_metrics = {},
       const data::LoaderPtr& validation_data_loader = nullptr,
