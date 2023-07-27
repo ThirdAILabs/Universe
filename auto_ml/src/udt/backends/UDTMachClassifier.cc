@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -231,12 +232,15 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool return_predicted_class,
                                       std::optional<uint32_t> top_k) {
   if (return_predicted_class) {
-    throw std::invalid_argument(
-        "UDT Extreme Classification does not support the "
-        "return_predicted_class flag.");
+    return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
   }
 
-  return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
+  auto output =
+      _classifier->model()
+          ->forward(_dataset_factory->featurizeInput(sample), sparse_inference)
+          .at(0);
+
+  return bolt::nn::python::tensorToNumpy(output);
 }
 
 std::vector<std::vector<std::pair<uint32_t, double>>>

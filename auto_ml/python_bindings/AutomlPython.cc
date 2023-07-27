@@ -139,7 +139,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("top_k") = std::nullopt, bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false,
+           py::arg("return_predicted_class") = true,
            py::arg("top_k") = std::nullopt)
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
