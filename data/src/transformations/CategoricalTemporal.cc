@@ -35,8 +35,13 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     std::vector<uint32_t> user_last_n_items;
 
     if (_include_current_row) {
-      for (uint32_t item : item_col->row(i)) {
-        user_last_n_items.push_back(item);
+      auto row = item_col->row(i);
+      // The item history is LIFO, so we the last items added are the first
+      // popped. We add the current row's items in reverse order here so that
+      // it is consistent with the order they will be popped from the item
+      // history if should_update_history is true.
+      for (size_t i = 1; i <= row.size(); i++) {
+        user_last_n_items.push_back(row[row.size() - i]);
         if (user_last_n_items.size() >= _track_last_n) {
           break;
         }

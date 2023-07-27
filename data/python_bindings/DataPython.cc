@@ -183,6 +183,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       dataset_submodule.def_submodule("transformations");
 
   py::class_<State>(transformations_submodule, "State")
+      .def(py::init<>())
       .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
 
   py::class_<Transformation, std::shared_ptr<Transformation>>(
