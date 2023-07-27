@@ -76,22 +76,6 @@ ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
 
 template <>
 ArrayColumnPtr<float> ArrayColumn<float>::make(
-<<<<<<< HEAD
-    std::vector<std::vector<float>>&& data) {
-  std::optional<ColumnDimension> dimension = std::nullopt;
-  if (!data.empty()) {
-    size_t dim = data.front().size();
-
-    bool all_dims_match = std::all_of(
-        data.begin(), data.end(),
-        [dim](const std::vector<float>& row) { return row.size() == dim; });
-
-    // For a dense column there can only be a dimension if all of the columns
-    // have the same length.
-    if (all_dims_match) {
-      dimension = ColumnDimension::dense(dim);
-    }
-=======
     std::vector<std::vector<float>>&& data, std::optional<size_t> dim) {
   std::optional<ColumnDimension> dimension = std::nullopt;
   if (dim) {
@@ -105,7 +89,6 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
     }
 
     dimension = ColumnDimension::dense(*dim);
->>>>>>> be2a0b0c4b6c69d3931eee4322d3a202017ebc8c
   }
 
   return ArrayColumnPtr<float>(
