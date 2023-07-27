@@ -649,6 +649,7 @@ That's all for now, folks! More docs coming soon :)
            py::arg("learning_rate"))
       .def("increment_epoch_count",
            &DistributedTrainingWrapper::incrementEpochCount);
+
   createLossesSubmodule(nn_submodule);
 }
 
