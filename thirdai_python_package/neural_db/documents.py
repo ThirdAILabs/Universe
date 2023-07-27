@@ -315,7 +315,7 @@ class CSV(Document):
 
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
-        text = " ".join([row[col] for col in self.reference_columns])
+        text = " ".join([str(row[col]) for col in self.reference_columns])
         return Reference(
             document=self,
             element_id=element_id,
