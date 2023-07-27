@@ -35,7 +35,9 @@ CastToValue<float>::CastToValue(std::string input_column_name,
       _output_column_name(std::move(output_column_name)) {}
 
 template <typename T>
-ColumnMap CastToValue<T>::apply(ColumnMap columns) const {
+ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
   auto str_column = columns.getValueColumn<std::string>(_input_column_name);
 
   std::vector<T> rows(str_column->numRows());
@@ -116,7 +118,9 @@ CastToArray<float>::CastToArray(std::string input_column_name,
       _delimiter(delimiter) {}
 
 template <typename T>
-ColumnMap CastToArray<T>::apply(ColumnMap columns) const {
+ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
   auto str_column = columns.getValueColumn<std::string>(_input_column_name);
 
   std::vector<std::vector<T>> rows(str_column->numRows());

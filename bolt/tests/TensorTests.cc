@@ -3,6 +3,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/tests/BoltVectorTestUtils.h>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 
@@ -76,6 +77,43 @@ TEST(TensorTests, SparseTensor) {
 
   fillTensor(tensor);
   checkTensorContents(tensor);
+}
+
+TEST(TensorTests, SparseTensorFromIndicesValues) {
+  std::vector<uint32_t> indices(12);
+  std::iota(indices.begin(), indices.end(), 0);
+
+  std::vector<float> values(12);
+  std::iota(values.begin(), values.end(), 0);
+
+  std::vector<size_t> lens = {5, 3, 4};
+  auto lens_copy = lens;
+  auto tensor = tensor::Tensor::sparse(std::move(indices), std::move(values),
+                                       std::move(lens_copy), /* dim= */ 12);
+
+  EXPECT_EQ(tensor->batchSize(), 3);
+  EXPECT_EQ(tensor->dim(), 12);
+  EXPECT_FALSE(tensor->nonzeros().has_value());
+
+  EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->gradientsPtr(), nullptr);
+
+  size_t cnt = 0;
+  for (uint32_t vec_idx = 0; vec_idx < 3; vec_idx++) {
+    const BoltVector& vec = tensor->getVector(vec_idx);
+    EXPECT_EQ(vec.len, lens[vec_idx]);
+
+    EXPECT_FALSE(vec.isDense());
+    EXPECT_FALSE(vec.hasGradients());
+    EXPECT_EQ(vec.gradients, nullptr);
+
+    for (size_t i = 0; i < lens[vec_idx]; i++) {
+      EXPECT_EQ(vec.active_neurons[i], cnt);
+      EXPECT_EQ(vec.activations[i], static_cast<float>(cnt));
+      cnt++;
+    }
+  }
 }
 
 TEST(TensorTests, ConvertDenseBoltBatchToTensor) {

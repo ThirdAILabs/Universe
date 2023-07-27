@@ -19,7 +19,7 @@ class StringHash final : public Transformation {
         _output_range(output_range),
         _seed(seed) {}
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   // Private constructor for cereal.
