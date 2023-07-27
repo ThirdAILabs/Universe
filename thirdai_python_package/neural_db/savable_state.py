@@ -22,7 +22,7 @@ def unpickle_from(filepath: Path):
 
 
 def default_checkpoint_name():
-    return Path(f"checkpoint {datetime.datetime.now()}.3ai")
+    return Path(f"checkpoint_{datetime.datetime.now()}.ndb")
 
 
 class State:
@@ -65,7 +65,7 @@ class State:
         self,
         location=default_checkpoint_name(),
         on_progress: Callable = lambda **kwargs: None,
-    ):
+    ) -> str:
         total_steps = 7
 
         # make directory

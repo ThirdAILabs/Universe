@@ -12,15 +12,18 @@ struct ColumnDimension {
   size_t dim;
   bool is_dense;
 
-  static ColumnDimension dense(size_t dim) {
-    return ColumnDimension(dim, /* is_dense= */ true);
-  }
-
   static std::optional<ColumnDimension> sparse(std::optional<size_t> dim) {
     if (!dim) {
       return std::nullopt;
     }
     return ColumnDimension(*dim, /* is_dense= */ false);
+  }
+
+  static std::optional<ColumnDimension> dense(std::optional<size_t> dim) {
+    if (!dim) {
+      return std::nullopt;
+    }
+    return ColumnDimension(*dim, /* is_dense= */ true);
   }
 
   friend bool operator==(const ColumnDimension& a, const ColumnDimension& b) {

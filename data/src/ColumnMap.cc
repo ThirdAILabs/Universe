@@ -1,5 +1,4 @@
 #include "ColumnMap.h"
-#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -62,6 +61,7 @@ ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ArrayColumn.");
   }
+
   return column;
 }
 
@@ -79,6 +79,7 @@ ValueColumnBasePtr<T> ColumnMap::getValueColumn(const std::string& name) const {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ValueColumn.");
   }
+
   return column;
 }
 
@@ -97,6 +98,7 @@ ColumnPtr ColumnMap::getColumn(const std::string& name) const {
                                 "'. ColumnMap contains columns " +
                                 formatColumnNames() + ".");
   }
+
   return _columns.at(name);
 }
 
@@ -113,12 +115,19 @@ void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
   _columns[name] = std::move(column);
 }
 
-std::vector<std::string> ColumnMap::columns() const {
-  std::vector<std::string> columns;
-  for (auto const& map_entry : _columns) {
-    columns.push_back(map_entry.first);
+void ColumnMap::clear() {
+  _columns.clear();
+  _num_rows = 0;
+}
+
+bool ColumnMap::containsSameColumns(const ColumnMap& other) const {
+  if (_columns.size() != other._columns.size()) {
+    return false;
   }
-  return columns;
+
+  return std::all_of(
+      _columns.begin(), _columns.end(),
+      [&other](const auto& col) { return other.containsColumn(col.first); });
 }
 
 void ColumnMap::shuffle(uint32_t seed) {
@@ -176,21 +185,6 @@ std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t starting_offset) {
 
   return {ColumnMap(std::move(front_columns)),
           ColumnMap(std::move(back_columns))};
-}
-
-void ColumnMap::clear() {
-  _columns.clear();
-  _num_rows = 0;
-}
-
-bool ColumnMap::containsSameColumns(const ColumnMap& other) const {
-  if (_columns.size() != other._columns.size()) {
-    return false;
-  }
-
-  return std::all_of(
-      _columns.begin(), _columns.end(),
-      [&other](const auto& col) { return other.containsColumn(col.first); });
 }
 
 ColumnMap ColumnMap::createStringColumnMapFromFile(

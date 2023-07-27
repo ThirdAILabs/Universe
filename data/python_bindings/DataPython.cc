@@ -128,8 +128,9 @@ auto tokenArrayColumnFromNumpy(const NumpyArray<uint32_t>& array,
   return ArrayColumn<uint32_t>::make(fromNumpy2D(array), dim);
 }
 
-auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array) {
-  return ArrayColumn<float>::make(fromNumpy2D(array));
+auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
+                                 std::optional<size_t> dim) {
+  return ArrayColumn<float>::make(fromNumpy2D(array), dim);
 }
 
 void createColumnsSubmodule(py::module_& dataset_submodule) {
@@ -182,10 +183,8 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ArrayColumn<uint32_t>, Column, ArrayColumnPtr<uint32_t>>(
       columns_submodule, "TokenArrayColumn")
-      .def(py::init(py::overload_cast<std::vector<std::vector<uint32_t>>&&,
-                                      std::optional<size_t>>(
-               &ArrayColumn<uint32_t>::make)),
-           py::arg("data"), py::arg("dim") = std::nullopt)
+      .def(py::init(&ArrayColumn<uint32_t>::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
       .def(py::init(&tokenArrayColumnFromNumpy), py::arg("data"),
            py::arg("dim") = std::nullopt)
       .def("__getitem__", &getRowNumpy<uint32_t, ArrayColumn<uint32_t>>,
@@ -194,10 +193,10 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
       columns_submodule, "DecimalArrayColumn")
-      .def(py::init(py::overload_cast<std::vector<std::vector<float>>&&>(
-               &ArrayColumn<float>::make)),
-           py::arg("data"))
-      .def(py::init(&decimalArrayColumnFromNumpy), py::arg("data"))
+      .def(py::init(&ArrayColumn<float>::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
+      .def(py::init(&decimalArrayColumnFromNumpy), py::arg("data"),
+           py::arg("dim") = std::nullopt)
       .def("__getitem__", &getRowNumpy<float, ArrayColumn<float>>,
            py::return_value_policy::reference_internal)
       .def("data", &ArrayColumn<float>::data);
@@ -269,8 +268,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<StringToDecimalArray, Transformation,
              std::shared_ptr<StringToDecimalArray>>(transformations_submodule,
                                                     "ToDecimalArrays")
-      .def(py::init<std::string, std::string, char>(), py::arg("input_column"),
-           py::arg("output_column"), py::arg("delimiter"));
+      .def(py::init<std::string, std::string, char, std::optional<size_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"), py::arg("dim") = std::nullopt);
 
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,

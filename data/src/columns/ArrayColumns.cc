@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -75,20 +76,19 @@ ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
 
 template <>
 ArrayColumnPtr<float> ArrayColumn<float>::make(
-    std::vector<std::vector<float>>&& data) {
+    std::vector<std::vector<float>>&& data, std::optional<size_t> dim) {
   std::optional<ColumnDimension> dimension = std::nullopt;
-  if (!data.empty()) {
-    size_t dim = data.front().size();
-
+  if (dim) {
     bool all_dims_match = std::all_of(
         data.begin(), data.end(),
-        [dim](const std::vector<float>& row) { return row.size() == dim; });
+        [dim](const std::vector<float>& row) { return row.size() == *dim; });
 
-    // For a dense column there can only be a dimension if all of the columns
-    // have the same length.
-    if (all_dims_match) {
-      dimension = ColumnDimension::dense(dim);
+    if (!all_dims_match) {
+      throw std::invalid_argument(
+          "Not all rows in DecimalArray column match provided dimension.");
     }
+
+    dimension = ColumnDimension::dense(*dim);
   }
 
   return ArrayColumnPtr<float>(
