@@ -64,18 +64,16 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
            py::arg("delimiter"), py::arg("rows_per_load") = 10000);
 
-  py::class_<Loader>(dataset_submodule, "Loader")
-      .def(py::init<ColumnMapIterator, TransformationPtr, StatePtr,
-                    IndexValueColumnList, IndexValueColumnList, bool, size_t,
-                    uint32_t>(),
-           py::arg("data_iterator"), py::arg("transformation"),
-           py::arg("state"), py::arg("input_columns"),
-           py::arg("output_columns"), py::arg("verbose") = true,
+  py::class_<Loader, LoaderPtr>(dataset_submodule, "Loader")
+      .def(py::init(&Loader::make), py::arg("data_iterator"),
+           py::arg("transformation"), py::arg("state"),
+           py::arg("input_columns"), py::arg("output_columns"),
+           py::arg("batch_size"), py::arg("shuffle") = true,
+           py::arg("verbose") = true,
            py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE,
            py::arg("shuffle_seed") = global_random::nextSeed())
-      .def("next", &Loader::next, py::arg("batch_size"),
-           py::arg("max_batches") = Loader::NO_LIMIT)
-      .def("all", &Loader::all, py::arg("batch_size"));
+      .def("next", &Loader::next, py::arg("max_batches") = Loader::NO_LIMIT)
+      .def("all", &Loader::all);
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
                         py::arg("columns_to_convert"), py::arg("batch_size"));

@@ -1,6 +1,7 @@
 #include "ColumnMapIterator.h"
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/utils/CsvParser.h>
+#include <exception>
 
 namespace thirdai::data {
 
@@ -9,6 +10,7 @@ ColumnMapIterator::ColumnMapIterator(DataSourcePtr data_source, char delimiter,
     : _data_source(std::move(data_source)),
       _delimiter(delimiter),
       _rows_per_load(rows_per_load) {
+  _data_source->restart();
   auto header = _data_source->nextLine();
   if (!header.has_value()) {
     throw std::invalid_argument("DataSource was found to be empty.");
@@ -22,27 +24,43 @@ std::optional<ColumnMap> ColumnMapIterator::next() {
     return std::nullopt;
   }
 
-  std::vector<std::vector<std::string>> columns(_column_names.size());
+  std::vector<std::vector<std::string>> columns(
+      _column_names.size(), std::vector<std::string>(rows->size()));
 
-  // TODO(Nicholas): Should this be parallelized?
-  for (const auto& row : *rows) {
-    auto row_columns = dataset::parsers::CSV::parseLine(row, _delimiter);
-    if (row_columns.size() != _column_names.size()) {
-      throw std::invalid_argument(
-          "Expected " + std::to_string(_column_names.size()) +
-          " columns. But received row '" + row + "' with " +
-          std::to_string(row.size()) + " columns.");
-    }
+  std::exception_ptr error;
 
-    for (size_t i = 0; i < columns.size(); i++) {
-      columns[i].push_back(row_columns[i]);
+#pragma omp parallel for default(none) shared(rows, columns, error)
+  for (size_t row_idx = 0; row_idx < rows->size(); row_idx++) {
+    try {
+      const auto& row = rows->at(row_idx);
+      auto row_columns = dataset::parsers::CSV::parseLine(row, _delimiter);
+      if (row_columns.size() != _column_names.size()) {
+        throw std::invalid_argument(
+            "Expected " + std::to_string(_column_names.size()) +
+            " columns. But received row '" + row + "' with " +
+            std::to_string(row.size()) + " columns.");
+      }
+
+      for (size_t i = 0; i < columns.size(); i++) {
+        columns[i][row_idx] = std::move(row_columns[i]);
+      }
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return makeColumnMap(std::move(columns));
 }
 
-void ColumnMapIterator::restart() { _data_source->restart(); }
+void ColumnMapIterator::restart() {
+  _data_source->restart();
+  _data_source->nextLine();  // To clear the header.
+}
 
 ColumnMap ColumnMapIterator::makeColumnMap(
     std::vector<std::vector<std::string>>&& columns) const {

@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
-#include <data/src/transformations/CastString.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/TransformationList.h>
 #include <optional>
 #include <sstream>
@@ -49,31 +49,37 @@ class MockDataSource final : public dataset::DataSource {
   size_t _loc = 0;
 };
 
+uint32_t tokenValue(size_t row, size_t col) { return row + col; }
+
+float decimalValue(size_t row, size_t col) {
+  return static_cast<float>(row + col + 1) / 4;
+}
+
 DataSourcePtr getMockDataSource(size_t n_lines) {
   std::vector<std::string> lines = {"token,tokens,decimal,decimals"};
 
   for (size_t i = 0; i < n_lines; i++) {
     // Token
     std::stringstream line;
-    line << i << ",";
+    line << tokenValue(i, 0) << ",";
 
     // Tokens
     for (size_t j = 0; j < (i % 10); j++) {
       if (j > 0) {
         line << " ";
       }
-      line << (i + j + 1);
+      line << tokenValue(i, j + 1);
     }
 
     // Decimal
-    line << "," << (static_cast<float>(i) / 4) << ",";
+    line << "," << decimalValue(i, 0) << ",";
 
     // Decimals
     for (size_t j = 0; j < (i % 10); j++) {
       if (j > 0) {
         line << " ";
       }
-      line << (static_cast<float>(i + j + 1) / 4);
+      line << decimalValue(i, j + 1);
     }
 
     lines.push_back(line.str());
@@ -93,23 +99,23 @@ TEST(DataLoaderTest, Streaming) {
                                   /* rows_per_load= */ 64);
 
   auto transformations = TransformationList::make({
-      std::make_shared<CastStringToToken>("token", "token_cast", n_rows),
-      std::make_shared<CastStringToTokenArray>("tokens", "tokens_cast", ' ',
-                                               n_rows + 10),
-      std::make_shared<CastStringToDecimal>("decimal", "decimal_cast"),
-      std::make_shared<CastStringToDecimalArray>("decimals", "decimals_cast",
-                                                 ' '),
+      std::make_shared<StringToToken>("token", "token_cast", n_rows),
+      std::make_shared<StringToTokenArray>("tokens", "tokens_cast", ' ',
+                                           n_rows + 10),
+      std::make_shared<StringToDecimal>("decimal", "decimal_cast"),
+      std::make_shared<StringToDecimalArray>("decimals", "decimals_cast", ' '),
   });
 
-  Loader loader(data_iterator, transformations, std::make_shared<State>(),
-                {{"tokens_cast", "decimals_cast"}},
-                {{"token_cast", "decimal_cast"}},
-                /* shuffle_buffer_size= */ 50);
+  auto loader = Loader::make(
+      data_iterator, transformations, std::make_shared<State>(),
+      {{"tokens_cast", "decimals_cast"}}, {{"token_cast", "decimal_cast"}},
+      batch_size, /* shuffle= */ true, /* verbose= */ true,
+      /* shuffle_buffer_size= */ 50);
 
   std::unordered_set<uint32_t> rows_seen;
 
   for (size_t c = 0; c < n_full_chunks + 1; c++) {
-    auto chunk = loader.next(batch_size, n_batches);
+    auto chunk = loader->next(n_batches);
     ASSERT_TRUE(chunk.has_value());
 
     auto [data, labels] = std::move(*chunk);
@@ -143,14 +149,13 @@ TEST(DataLoaderTest, Streaming) {
 
         uint32_t row_id = label_vec.active_neurons[0];
 
-        ASSERT_EQ(label_vec.activations[0], static_cast<float>(row_id) / 4);
+        ASSERT_EQ(label_vec.activations[0], decimalValue(row_id, 0));
 
         ASSERT_EQ(data_vec.len, row_id % 10);
 
         for (size_t j = 0; j < data_vec.len; j++) {
-          ASSERT_EQ(data_vec.active_neurons[j], row_id + j + 1);
-          ASSERT_EQ(data_vec.activations[j],
-                    static_cast<float>(row_id + j + 1) / 4);
+          ASSERT_EQ(data_vec.active_neurons[j], tokenValue(i, j + 1));
+          ASSERT_EQ(data_vec.activations[j], decimalValue(row_id, j + 1));
         }
 
         rows_seen.insert(row_id);
@@ -160,7 +165,7 @@ TEST(DataLoaderTest, Streaming) {
 
   ASSERT_EQ(rows_seen.size(), n_rows);
 
-  ASSERT_FALSE(loader.next(10).has_value());
+  ASSERT_FALSE(loader->next(10).has_value());
 }
 
 }  // namespace thirdai::data::tests

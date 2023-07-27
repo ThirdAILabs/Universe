@@ -20,25 +20,27 @@ class Loader {
 
   Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
          StatePtr state, IndexValueColumnList input_columns,
-         IndexValueColumnList label_columns, bool verbose = true,
+         IndexValueColumnList label_columns, size_t batch_size, bool shuffle,
+         bool verbose = true,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
          uint32_t shuffle_seed = global_random::nextSeed());
 
   static auto make(ColumnMapIterator data_iterator,
                    TransformationPtr transformation, StatePtr state,
                    IndexValueColumnList input_columns,
-                   IndexValueColumnList label_columns,
+                   IndexValueColumnList label_columns, size_t batch_size,
+                   bool shuffle, bool verbose = true,
                    size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
-                   bool verbose = true) {
-    return std::make_shared<Loader>(data_iterator, transformation, state,
-                                    input_columns, label_columns,
-                                    shuffle_buffer_size, verbose);
+                   uint32_t shuffle_seed = global_random::nextSeed()) {
+    return std::make_shared<Loader>(
+        data_iterator, transformation, state, input_columns, label_columns,
+        batch_size, shuffle, verbose, shuffle_buffer_size, shuffle_seed);
   }
 
   std::optional<bolt::train::LabeledDataset> next(
-      size_t batch_size, size_t max_batches = NO_LIMIT);
+      size_t max_batches = NO_LIMIT);
 
-  bolt::train::LabeledDataset all(size_t batch_size);
+  bolt::train::LabeledDataset all();
 
   void restart();
 
@@ -56,11 +58,13 @@ class Loader {
   IndexValueColumnList _input_columns;
   IndexValueColumnList _label_columns;
 
-  size_t _shuffle_buffer_size;
+  size_t _batch_size;
   bool _verbose;
+  bool _shuffle;
+  size_t _shuffle_buffer_size;
+  std::mt19937 _rng;
 
   ColumnMap _shuffle_buffer;
-  std::mt19937 _rng;
 
   StatePtr _state;
 };
