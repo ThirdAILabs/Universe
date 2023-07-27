@@ -45,7 +45,7 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
     num_rows_to_return = NO_LIMIT;
   } else {
     num_rows_to_load = _shuffle_buffer_size + _batch_size * max_batches;
-    num_rows_to_return = NO_LIMIT;
+    num_rows_to_return = _batch_size * max_batches;
   }
 
   ColumnMap loaded_rows = std::move(_shuffle_buffer);

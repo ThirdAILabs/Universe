@@ -103,13 +103,14 @@ TEST(DataLoaderTest, Streaming) {
       std::make_shared<StringToTokenArray>("tokens", "tokens_cast", ' ',
                                            n_rows + 10),
       std::make_shared<StringToDecimal>("decimal", "decimal_cast"),
-      std::make_shared<StringToDecimalArray>("decimals", "decimals_cast", ' '),
+      std::make_shared<StringToDecimalArray>("decimals", "decimals_cast", ' ',
+                                             std::nullopt),
   });
 
   auto loader = Loader::make(
       data_iterator, transformations, std::make_shared<State>(),
       {{"tokens_cast", "decimals_cast"}}, {{"token_cast", "decimal_cast"}},
-      batch_size, /* shuffle= */ true, /* verbose= */ true,
+      /* batch_size= */ batch_size, /* shuffle= */ true, /* verbose= */ true,
       /* shuffle_buffer_size= */ 50);
 
   std::unordered_set<uint32_t> rows_seen;
@@ -154,7 +155,7 @@ TEST(DataLoaderTest, Streaming) {
         ASSERT_EQ(data_vec.len, row_id % 10);
 
         for (size_t j = 0; j < data_vec.len; j++) {
-          ASSERT_EQ(data_vec.active_neurons[j], tokenValue(i, j + 1));
+          ASSERT_EQ(data_vec.active_neurons[j], tokenValue(row_id, j + 1));
           ASSERT_EQ(data_vec.activations[j], decimalValue(row_id, j + 1));
         }
 
