@@ -64,8 +64,8 @@ UDTMachClassifier::UDTMachClassifier(
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
-    : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
-      _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
+    : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
+      _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
   if (!temporal_tracking_relationships.empty()) {
     throw std::invalid_argument(
         "Temporal tracking is not supported for this model type.");
@@ -237,7 +237,7 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
         std::to_string(num_classes) + " classes.");
   }
 
-  uint32_t k = top_k.value_or(_min_num_eval_results);
+  uint32_t k = top_k.value_or(_default_top_k_to_return);
 
   uint32_t batch_size = outputs->batchSize();
 
@@ -249,8 +249,8 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
     const BoltVector& vector = outputs->getVector(i);
     auto predictions = _data_factory.machIndex()->decode(
         /* output = */ vector,
-        /* min_num_eval_results = */ k,
-        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
+        /* top_k = */ k,
+        /* num_buckets_to_eval = */ _num_buckets_to_eval);
     predicted_entities[i] = predictions;
   }
 
@@ -954,21 +954,21 @@ py::object UDTMachClassifier::associateTrainHelper(
                             /* callbacks= */ {}, options, /*comm= */ nullptr);
 }
 
-void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
-                                        uint32_t top_k_per_eval_aggregation) {
-  if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
+void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,
+                                        uint32_t num_buckets_to_eval) {
+  if (top_k_to_return == 0 || num_buckets_to_eval == 0) {
     throw std::invalid_argument("Params must not be 0.");
   }
 
   uint32_t num_buckets = _data_factory.machIndex()->numBuckets();
-  if (top_k_per_eval_aggregation > num_buckets) {
+  if (num_buckets_to_eval > num_buckets) {
     throw std::invalid_argument(
-        "Cannot eval with top_k_per_eval_aggregation greater than " +
+        "Cannot eval with num_buckets_to_eval greater than " +
         std::to_string(num_buckets) + ".");
   }
 
   uint32_t num_classes = _data_factory.machIndex()->numEntities();
-  if (min_num_eval_results > num_classes) {
+  if (top_k_to_return > num_classes) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
         "predict. "
@@ -976,8 +976,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
         std::to_string(num_classes) + " classes.");
   }
 
-  _min_num_eval_results = min_num_eval_results;
-  _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+  _default_top_k_to_return = top_k_to_return;
+  _num_buckets_to_eval = num_buckets_to_eval;
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
@@ -1012,12 +1012,12 @@ InputMetrics UDTMachClassifier::getMetrics(
     if (std::regex_match(name, std::regex("precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachPrecision>(
-          _data_factory.machIndex(), _top_k_per_eval_aggregation, output,
+          _data_factory.machIndex(), _num_buckets_to_eval, output,
           true_class_labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachRecall>(
-          _data_factory.machIndex(), _top_k_per_eval_aggregation, output,
+          _data_factory.machIndex(), _num_buckets_to_eval, output,
           true_class_labels, k);
     } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
@@ -1074,7 +1074,7 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _data_factory,
-          _min_num_eval_results, _top_k_per_eval_aggregation,
+          _default_top_k_to_return, _num_buckets_to_eval,
           _mach_sampling_threshold, _rlhf_sampler);
 }
 

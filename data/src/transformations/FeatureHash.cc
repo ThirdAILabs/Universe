@@ -4,6 +4,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -61,7 +62,7 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
 
   auto indices_col =
       ArrayColumn<uint32_t>::make(std::move(indices), _hash_range);
-  auto values_col = ArrayColumn<float>::make(std::move(values));
+  auto values_col = ArrayColumn<float>::make(std::move(values), std::nullopt);
 
   return ColumnMap({{_output_indices_column, indices_col},
                     {_output_values_column, values_col}});
