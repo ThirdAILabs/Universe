@@ -273,7 +273,7 @@ def mach_metric_test_helper(metric, expected_values):
     model, metrics = build_metrics_test_model(
         metric,
         metric_name,
-        {"mach_index": mach_index, "top_k_per_eval_aggregation": 3, "k": 2},
+        {"mach_index": mach_index, "num_buckets_to_eval": 3, "k": 2},
     )
 
     test_cases = [

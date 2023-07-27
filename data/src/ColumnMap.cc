@@ -1,5 +1,4 @@
 #include "ColumnMap.h"
-#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>

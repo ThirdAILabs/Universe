@@ -203,7 +203,7 @@ setup(
             "moto[server]",
             "mlflow",
             "protobuf",
-            "datasets",
+            "datasets==2.13.1",
             "torch",
             "toml",
             "psutil",
@@ -232,6 +232,7 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
+            "nltk",
         ],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],

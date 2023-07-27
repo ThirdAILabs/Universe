@@ -112,10 +112,12 @@ CastToArray<uint32_t>::CastToArray(std::string input_column_name,
 
 template <>
 CastToArray<float>::CastToArray(std::string input_column_name,
-                                std::string output_column_name, char delimiter)
+                                std::string output_column_name, char delimiter,
+                                std::optional<size_t> dim)
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)),
-      _delimiter(delimiter) {}
+      _delimiter(delimiter),
+      _dim(dim) {}
 
 template <typename T>
 ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
@@ -159,16 +161,9 @@ float CastToArray<float>::parse(const std::string& row) const {
   return std::stof(row);
 }
 
-template <>
-ColumnPtr CastToArray<uint32_t>::makeColumn(
-    std::vector<std::vector<uint32_t>>&& rows) const {
-  return ArrayColumn<uint32_t>::make(std::move(rows), _dim);
-}
-
-template <>
-ColumnPtr CastToArray<float>::makeColumn(
-    std::vector<std::vector<float>>&& rows) const {
-  return ArrayColumn<float>::make(std::move(rows));
+template <typename T>
+ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
+  return ArrayColumn<T>::make(std::move(rows), _dim);
 }
 
 template <typename T>

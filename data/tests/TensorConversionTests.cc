@@ -32,7 +32,8 @@ void runConversionTest(bool specify_values) {
 
   auto indices_col =
       ArrayColumn<uint32_t>::make(std::move(indices_copy), /* dim= */ 1000);
-  auto values_col = ArrayColumn<float>::make(std::move(values_copy));
+  auto values_col =
+      ArrayColumn<float>::make(std::move(values_copy), /* dim= */ std::nullopt);
 
   ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
 
@@ -84,7 +85,8 @@ TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
   auto indices_1 =
       ArrayColumn<uint32_t>::make({{0, 1, 2}, {3, 4}, {5, 6, 7}}, /* dim= */ 8);
   auto values_1 = ArrayColumn<float>::make(
-      {{0.25, 1.25, 2.25}, {3.25, 4.25}, {5.25, 6.25, 7.25}});
+      {{0.25, 1.25, 2.25}, {3.25, 4.25}, {5.25, 6.25, 7.25}},
+      /* dim= */ std::nullopt);
 
   auto indices_2 = ArrayColumn<uint32_t>::make({{10, 20}, {30, 40}, {50, 60}},
                                                /* dim= */ 100);
