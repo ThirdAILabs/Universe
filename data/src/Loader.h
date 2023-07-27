@@ -10,6 +10,7 @@
 #include <optional>
 #include <random>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace thirdai::data {
 
@@ -45,6 +46,10 @@ class Loader {
   void restart();
 
  private:
+  void recordReturnedColumns(const IndexValueColumnList& index_value_columns);
+
+  ColumnMap removeIntermediateColumns(ColumnMap&& columns) const;
+
   static std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
       ColumnMap&& loaded_rows, size_t dataset_size);
 
@@ -57,6 +62,7 @@ class Loader {
 
   IndexValueColumnList _input_columns;
   IndexValueColumnList _label_columns;
+  std::unordered_set<std::string> _columns_returned;
 
   size_t _batch_size;
   bool _verbose;

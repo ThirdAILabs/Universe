@@ -3,6 +3,8 @@
 #include <data/src/TensorConversion.h>
 #include <limits>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::data {
 
@@ -26,6 +28,9 @@ Loader::Loader(ColumnMapIterator data_iterator,
   if (!_state) {
     _state = std::make_shared<State>();
   }
+
+  recordReturnedColumns(_input_columns);
+  recordReturnedColumns(_label_columns);
 }
 
 std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
@@ -51,8 +56,8 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
       break;
     }
 
-    ColumnMap processed_chunk =
-        _transformation->apply(std::move(*chunk), *_state);
+    ColumnMap processed_chunk = removeIntermediateColumns(
+        _transformation->apply(std::move(*chunk), *_state));
 
     if (loaded_rows.numRows() > 0) {
       loaded_rows = loaded_rows.concat(processed_chunk);
@@ -97,6 +102,27 @@ bolt::train::LabeledDataset Loader::all() {
 }
 
 void Loader::restart() { _data_iterator.restart(); }
+
+void Loader::recordReturnedColumns(
+    const IndexValueColumnList& index_value_columns) {
+  for (const auto& [indices, values] : index_value_columns) {
+    _columns_returned.insert(indices);
+    if (values) {
+      _columns_returned.insert(*values);
+    }
+  }
+}
+
+ColumnMap Loader::removeIntermediateColumns(ColumnMap&& columns) const {
+  std::unordered_map<std::string, ColumnPtr> returned_columns;
+  for (const auto& [name, column] : columns) {
+    if (_columns_returned.count(name)) {
+      returned_columns[name] = column;
+    }
+  }
+
+  return ColumnMap(returned_columns);
+}
 
 std::pair<ColumnMap, ColumnMap> Loader::splitIntoDataAndBuffer(
     ColumnMap&& loaded_rows, size_t dataset_size) {
