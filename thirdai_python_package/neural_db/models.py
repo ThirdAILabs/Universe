@@ -302,7 +302,7 @@ class Mach(Model):
                     )
 
                 num_buckets_to_sample = num_buckets_to_sample or int(
-                    self.model.get_index().num_hashes() * 1.5
+                    self.model.get_index().num_hashes() * 2.0
                 )
 
                 self.model.introduce_documents_on_data_source(
