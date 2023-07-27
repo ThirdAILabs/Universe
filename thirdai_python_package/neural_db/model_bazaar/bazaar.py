@@ -3,9 +3,9 @@ import os
 import shutil
 from pathlib import Path
 from urllib.parse import urljoin
-from thirdai import neural_db
 
 from pydantic import BaseModel
+from thirdai import neural_db
 
 from .utils import get_directory_size, hash_path, http_get_with_error
 
