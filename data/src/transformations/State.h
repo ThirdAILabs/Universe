@@ -9,6 +9,15 @@ namespace thirdai::data {
 
 using dataset::mach::MachIndexPtr;
 
+struct ItemRecord {
+  uint32_t item;
+  int64_t timestamp;
+};
+
+using ItemHistoryTracker =
+    std::unordered_map<std::string, std::deque<ItemRecord>>;
+using ItemHistoryTrackerPtr = std::shared_ptr<ItemHistoryTracker>;
+
 class State {
  public:
   explicit State(MachIndexPtr mach_index)
@@ -36,8 +45,20 @@ class State {
     _mach_index = std::move(new_index);
   }
 
+  const ItemHistoryTrackerPtr& getItemHistoryTracker(
+      const std::string& user_column, const std::string& item_column,
+      const std::string& timestamp_column) {
+    std::string name = user_column + "_" + item_column + "_" + timestamp_column;
+    if (!_item_history_trackers.count(name)) {
+      _item_history_trackers[name] = std::make_shared<ItemHistoryTracker>();
+    }
+    return _item_history_trackers.at(name);
+  }
+
  private:
   MachIndexPtr _mach_index = nullptr;
+
+  std::unordered_map<std::string, ItemHistoryTrackerPtr> _item_history_trackers;
 
   friend class cereal::access;
   template <class Archive>
