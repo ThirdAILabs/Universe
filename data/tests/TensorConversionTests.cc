@@ -32,12 +32,8 @@ void runConversionTest(bool specify_values) {
 
   auto indices_col =
       ArrayColumn<uint32_t>::make(std::move(indices_copy), /* dim= */ 1000);
-<<<<<<< HEAD
-  auto values_col = ArrayColumn<float>::make(std::move(values_copy));
-=======
   auto values_col =
       ArrayColumn<float>::make(std::move(values_copy), /* dim= */ std::nullopt);
->>>>>>> be2a0b0c4b6c69d3931eee4322d3a202017ebc8c
 
   ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
 
