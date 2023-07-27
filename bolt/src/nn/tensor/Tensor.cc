@@ -35,6 +35,24 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
   }
 }
 
+Tensor::Tensor(std::vector<uint32_t>&& indices, std::vector<float>&& values,
+               std::vector<size_t>&& lens, uint32_t dim)
+    : _dim(dim),
+      _nonzeros(std::nullopt),
+      _active_neurons(std::move(indices)),
+      _activations(std::move(values)) {
+  _vectors.reserve(lens.size());
+
+  size_t offset = 0;
+  for (size_t len : lens) {
+    _vectors.emplace_back(BoltVector(
+        /* an= */ _active_neurons.data() + offset,
+        /* a= */ _activations.data() + offset, /* g= */ nullptr,
+        /* l= */ len));
+    offset += len;
+  }
+}
+
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
     : _dim(dim), _nonzeros(std::nullopt) {
   checkBatchContents(batch, _dim);
@@ -96,6 +114,14 @@ std::shared_ptr<Tensor> Tensor::sparse(uint32_t batch_size, uint32_t dim,
                                        uint32_t nonzeros) {
   return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
                                   /* nonzeros= */ nonzeros);
+}
+
+std::shared_ptr<Tensor> Tensor::sparse(std::vector<uint32_t>&& indices,
+                                       std::vector<float>&& values,
+                                       std::vector<size_t>&& lens,
+                                       uint32_t dim) {
+  return std::make_shared<Tensor>(std::move(indices), std::move(values),
+                                  std::move(lens), dim);
 }
 
 std::shared_ptr<Tensor> Tensor::copy(const BoltBatch& batch, uint32_t dim) {

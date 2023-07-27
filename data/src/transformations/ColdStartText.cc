@@ -77,7 +77,10 @@ void ColdStartTextAugmentation::validateGreaterThanZero(
   }
 }
 
-ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns) const {
+ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns,
+                                           State& state) const {
+  (void)state;
+
   auto label_column = columns.getValueColumn<std::string>(_label_column_name);
 
   std::vector<std::string> augmented_labels;

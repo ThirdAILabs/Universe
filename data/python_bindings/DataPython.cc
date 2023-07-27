@@ -3,6 +3,9 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -16,6 +19,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -177,9 +181,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
 
+  py::class_<State>(transformations_submodule, "State")
+      .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
+
   py::class_<Transformation, std::shared_ptr<Transformation>>(
       transformations_submodule, "Transformation")
-      .def("__call__", &Transformation::apply, py::arg("columns"));
+      .def("__call__", &Transformation::applyStateless, py::arg("columns"))
+      .def("__call__", &Transformation::apply, py::arg("columns"),
+           py::arg("state"));
 
   py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
       transformations_submodule, "Text")
@@ -213,11 +222,42 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_columns"), py::arg("output_column"),
            py::arg("output_range"), py::arg("use_pairgrams") = false);
 
+  py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
+      transformations_submodule, "ToTokens")
+      .def(py::init<std::string, std::string, std::optional<uint32_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("dim") = std::nullopt);
+
+  py::class_<StringToTokenArray, Transformation,
+             std::shared_ptr<StringToTokenArray>>(transformations_submodule,
+                                                  "ToTokenArrays")
+      .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"), py::arg("dim") = std::nullopt);
+
+  py::class_<StringToDecimal, Transformation, std::shared_ptr<StringToDecimal>>(
+      transformations_submodule, "ToDecimals")
+      .def(py::init<std::string, std::string>(), py::arg("input_column"),
+           py::arg("output_column"));
+
+  py::class_<StringToDecimalArray, Transformation,
+             std::shared_ptr<StringToDecimalArray>>(transformations_submodule,
+                                                    "ToDecimalArrays")
+      .def(py::init<std::string, std::string, char>(), py::arg("input_column"),
+           py::arg("output_column"), py::arg("delimiter"));
+
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
                                                   "TransformationList")
       .def(py::init<std::vector<TransformationPtr>>(),
            py::arg("transformations"));
+
+  py::class_<FeatureHash, Transformation, std::shared_ptr<FeatureHash>>(
+      transformations_submodule, "FeatureHash")
+      .def(py::init<std::vector<std::string>, std::string, std::string,
+                    size_t>(),
+           py::arg("input_columns"), py::arg("output_indices_column"),
+           py::arg("output_values_column"), py::arg("hash_range"));
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
@@ -257,6 +297,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_text"), py::arg("weak_text"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+
+  py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
+      transformations_submodule, "MachLabel")
+      .def(py::init<std::string, std::string>(), py::arg("input_column"),
+           py::arg("output_column"));
 #endif
 }
 

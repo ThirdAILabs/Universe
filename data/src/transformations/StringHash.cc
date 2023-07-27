@@ -5,7 +5,9 @@
 
 namespace thirdai::data {
 
-ColumnMap StringHash::apply(ColumnMap columns) const {
+ColumnMap StringHash::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
   auto column = columns.getValueColumn<std::string>(_input_column_name);
 
   std::vector<uint32_t> hashed_values(column->numRows());
