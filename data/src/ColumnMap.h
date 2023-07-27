@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <data/src/columns/Column.h>
 #include <dataset/src/Datasets.h>
+#include <utils/Random.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -15,31 +16,17 @@ class ColumnMap {
  public:
   explicit ColumnMap(std::unordered_map<std::string, ColumnPtr> columns);
 
-  uint64_t numRows() const { return _num_rows; }
+  size_t numRows() const { return _num_rows; }
 
-  // Converts each row in the dataset to a bolt vector by concatenating the
-  // values of the specified columns in the order they were specified.
-  dataset::BoltDatasetPtr convertToDataset(
-      const std::vector<std::string>& column_names, uint32_t batch_size) const;
+  template <typename T>
+  ArrayColumnBasePtr<T> getArrayColumn(const std::string& name) const;
 
-  // These methods get the column for the given name and use a dynamic cast to
-  // convert it to the desired type. They will throw if the name does not match
-  // any column or if the column does not have the specified type.
-  TokenColumnPtr getTokenColumn(const std::string& name) const;
-
-  DenseFeatureColumnPtr getDenseFeatureColumn(const std::string& name) const;
-
-  SparseFeatureColumnPtr getSparseFeatureColumn(const std::string& name) const;
-
-  StringColumnPtr getStringColumn(const std::string& name) const;
-
-  TokenArrayColumnPtr getTokenArrayColumn(const std::string& name) const;
-
-  DenseArrayColumnPtr getDenseArrayColumn(const std::string& name) const;
-
-  SparseArrayColumnPtr getSparseArrayColumn(const std::string& name) const;
+  template <typename T>
+  ValueColumnBasePtr<T> getValueColumn(const std::string& name) const;
 
   ColumnPtr getColumn(const std::string& name) const;
+
+  bool containsColumn(const std::string& name) const;
 
   // Inserts a new column into the ColumnMap. If a column with the supplied name
   // already exists in the ColumnMap it will be overwritten.
@@ -47,15 +34,42 @@ class ColumnMap {
 
   std::vector<std::string> columns() const;
 
+  auto begin() const { return _columns.begin(); }
+
+  auto end() const { return _columns.end(); }
+
+  /**
+   * Shuffles the ColumnMap in place.
+   */
+  void shuffle(uint32_t seed = global_random::nextSeed());
+
+  /**
+   * Concatenates with another ColumnMap, returning the result. This will
+   * consume both ColumnMaps so that values can be moved without copying when
+   * possible.
+   */
+  ColumnMap concat(ColumnMap& other);
+
+  /**
+   * Splits the ColumnMap in two, returning two new ColumnMaps. Consumes the
+   * ColumnMap it is called on so that values can be moved without copying when
+   * possible. The first ColumnMap will have rows [0, starting_offset), and the
+   * second will have rows [starting_offset, num_rows).
+   */
+  std::pair<ColumnMap, ColumnMap> split(size_t starting_offset);
+
   static ColumnMap createStringColumnMapFromFile(
       const dataset::DataSourcePtr& source, char delimiter);
 
  private:
-  std::vector<ColumnPtr> selectColumns(
-      const std::vector<std::string>& column_names) const;
+  void clear();
+
+  bool containsSameColumns(const ColumnMap& other) const;
+
+  std::string formatColumnNames() const;
 
   std::unordered_map<std::string, ColumnPtr> _columns;
-  uint64_t _num_rows;
+  size_t _num_rows;
 };
 
 }  // namespace thirdai::data

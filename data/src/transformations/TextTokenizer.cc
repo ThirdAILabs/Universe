@@ -3,7 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <data/src/columns/VectorColumns.h>
+#include <data/src/columns/ArrayColumns.h>
 
 namespace thirdai::data {
 
@@ -19,14 +19,16 @@ TextTokenizer::TextTokenizer(std::string input_column,
       _lowercase(lowercase),
       _dim(dim) {}
 
-ColumnMap TextTokenizer::apply(ColumnMap columns) const {
-  StringColumnPtr text_col = columns.getStringColumn(_input_column);
+ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
+  auto text_col = columns.getValueColumn<std::string>(_input_column);
 
   std::vector<std::vector<uint32_t>> output_tokens(text_col->numRows());
 
 #pragma omp parallel for default(none) shared(text_col, output_tokens)
   for (size_t i = 0; i < text_col->numRows(); i++) {
-    std::string string = text_col->at(i);
+    std::string string = text_col->value(i);
 
     if (_lowercase) {
       string = text::lower(string);
@@ -39,8 +41,7 @@ ColumnMap TextTokenizer::apply(ColumnMap columns) const {
     output_tokens[i] = std::move(indices);
   }
 
-  auto token_col =
-      std::make_shared<CppTokenArrayColumn>(std::move(output_tokens), _dim);
+  auto token_col = ArrayColumn<uint32_t>::make(std::move(output_tokens), _dim);
 
   columns.setColumn(_output_column, token_col);
   return columns;
@@ -56,3 +57,5 @@ void TextTokenizer::serialize(Archive& archive) {
 }
 
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::TextTokenizer)

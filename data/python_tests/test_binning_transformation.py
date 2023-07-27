@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from dataset_utils import sparse_bolt_dataset_to_numpy
 from thirdai import data
 
 pytestmark = [pytest.mark.unit]
@@ -15,8 +14,8 @@ def test_binning_transformation():
     column2_np = np.arange(start=10, stop=n_rows + 10, dtype=np.float32)
     np.random.shuffle(column2_np)
 
-    column1 = data.columns.DenseFeatureColumn(column1_np)
-    column2 = data.columns.DenseFeatureColumn(column2_np)
+    column1 = data.columns.DecimalColumn(column1_np)
+    column2 = data.columns.DecimalColumn(column2_np)
 
     columns = data.ColumnMap({"column1": column1, "column2": column2})
 
@@ -31,7 +30,7 @@ def test_binning_transformation():
             ),
             data.transformations.Binning(
                 input_column="column2",
-                output_column="column2",
+                output_column="column2_binned",
                 inclusive_min=10,
                 exclusive_max=110,
                 num_bins=20,
@@ -41,23 +40,13 @@ def test_binning_transformation():
 
     columns = featurizer(columns)
 
-    indices, values = sparse_bolt_dataset_to_numpy(
-        columns.convert_to_dataset(["column1_binned", "column2"], batch_size=29)
-    )
+    column1_bins = np.array(columns["column1_binned"].data())
+    column2_bins = np.array(columns["column2_binned"].data())
 
     # We need to reshape the arrays so we can concatenate them on the correct axis.
-    column1_bins = (np.reshape(column1_np, newshape=(n_rows, 1)) / 20).astype(np.uint32)
-    column2_bins = ((np.reshape(column2_np, newshape=(n_rows, 1)) - 10) / 5).astype(
-        np.uint32
-    )
+    expected_column1_bins = (column1_np / 20).astype(np.uint32)
+    expected_column2_bins = ((column2_np - 10) / 5).astype(np.uint32)
 
-    expected_bins = np.concatenate(
-        # We shift column2_bins by 5 to account for the dimension of the sparse values from column1.
-        [column1_bins, column2_bins + 5],
-        axis=1,
-        dtype=np.uint32,
-    )
+    assert np.array_equal(column1_bins, expected_column1_bins)
 
-    assert np.array_equal(indices, expected_bins)
-
-    assert np.array_equal(values, np.ones(shape=(n_rows, 2)))
+    assert np.array_equal(column2_bins, expected_column2_bins)

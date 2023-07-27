@@ -1,5 +1,6 @@
 #include "ColdStartText.h"
-#include <data/src/columns/VectorColumns.h>
+#include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <algorithm>
 #include <iterator>
 #include <numeric>
@@ -76,8 +77,11 @@ void ColdStartTextAugmentation::validateGreaterThanZero(
   }
 }
 
-ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns) const {
-  auto label_column = columns.getStringColumn(_label_column_name);
+ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns,
+                                           State& state) const {
+  (void)state;
+
+  auto label_column = columns.getValueColumn<std::string>(_label_column_name);
 
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
@@ -88,7 +92,7 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns) const {
     shared(label_column, columns, augmented_data, augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
-      std::string labels = label_column->at(row_id);
+      std::string labels = label_column->value(row_id);
 
       std::string weak_text = concatenateStringColumnEntries(
           columns, row_id, _weak_column_names, /* delimiter= */ ". ");
@@ -127,11 +131,11 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns) const {
   std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
   std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
 
-  StringColumnPtr augmented_label_column =
-      std::make_shared<CppStringColumn>(augmented_labels);
+  auto augmented_label_column =
+      ValueColumn<std::string>::make(std::move(augmented_labels));
 
-  StringColumnPtr augmented_data_column =
-      std::make_shared<CppStringColumn>(augmented_data);
+  auto augmented_data_column =
+      ValueColumn<std::string>::make(std::move(augmented_data));
 
   std::unordered_map<std::string, ColumnPtr> new_columns;
   new_columns.emplace(_label_column_name, augmented_label_column);
@@ -321,8 +325,8 @@ std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
     const std::string& delimiter) {
   std::string output_text;
   for (const auto& column_name : column_names) {
-    auto column = columns.getStringColumn(column_name);
-    output_text.append(column->at(row_num));
+    auto column = columns.getValueColumn<std::string>(column_name);
+    output_text.append(column->value(row_num));
     output_text.append(delimiter);
   }
   return output_text;
@@ -368,7 +372,7 @@ void ColdStartTextAugmentation::mergeStrongWithWeak(
 }
 
 std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
-    const dataset::MapInput& document) {
+    const automl::MapInput& document) {
   std::string strong_text;
   for (const auto& strong_col : _strong_column_names) {
     if (!document.count(strong_col)) {
