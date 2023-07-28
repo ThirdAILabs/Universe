@@ -101,7 +101,6 @@ def test_concat_values_dragon_vector():
 # Tests compressed training by compressing and decompressing weights between
 # every batch update
 def test_compressed_dragon_vector_training():
-
     acc = compressed_training(
         compression_scheme="dragon",
         compression_density=0.2,

@@ -328,7 +328,6 @@ def compressed_training(
     batch_size=64,
     use_compression=True,
 ):
-
     model = build_simple_model_for_compression(n_classes)
 
     train_data, train_labels = gen_numpy_training_data(
