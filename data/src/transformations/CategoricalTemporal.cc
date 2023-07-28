@@ -1,6 +1,8 @@
 #include "CategoricalTemporal.h"
 #include <data/src/columns/ArrayColumns.h>
+#include <limits>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -23,8 +25,8 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto item_col = columns.getArrayColumn<uint32_t>(_item_column);
   auto timestamp_col = columns.getValueColumn<int64_t>(_timestamp_column);
 
-  auto item_history_tracker = state.getItemHistoryTracker(
-      _user_column, _item_column, _timestamp_column);
+  auto& item_history_tracker = state.getItemHistoryTracker(
+      _user_column, _item_column, _timestamp_column, _output_column);
 
   std::vector<std::vector<uint32_t>> last_n_items(user_col->numRows());
 
@@ -32,14 +34,20 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     const std::string& user_id = user_col->value(i);
     int64_t timestamp = timestamp_col->value(i);
 
+    if (timestamp < item_history_tracker.last_timestamp) {
+      throw std::invalid_argument("Expected increasing timestamps in column '" +
+                                  _timestamp_column + "'.");
+    }
+    item_history_tracker.last_timestamp = timestamp;
+
     std::vector<uint32_t> user_last_n_items;
 
-    if (_include_current_row) {
+    if (_include_current_row && _time_lag == 0) {
       auto row = item_col->row(i);
-      // The item history is LIFO, so we the last items added are the first
-      // popped. We add the current row's items in reverse order here so that
-      // it is consistent with the order they will be popped from the item
-      // history if should_update_history is true.
+      // The item history is LIFO, so the last items added are the first popped.
+      // We add the current row's items in reverse order here so that it is
+      // consistent with the order they will be popped from the item history if
+      // should_update_history is true.
       for (size_t i = 1; i <= row.size(); i++) {
         user_last_n_items.push_back(row[row.size() - i]);
         if (user_last_n_items.size() >= _track_last_n) {
@@ -48,7 +56,7 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
       }
     }
 
-    auto& user_item_history = (*item_history_tracker)[user_id];
+    auto& user_item_history = item_history_tracker.trackers[user_id];
 
     size_t seen = 0;
     for (auto it = user_item_history.rbegin();
