@@ -9,7 +9,6 @@ def test_cross_column_pairgrams_consistency():
     N = 20
 
     """
-
     This creates a column map that looks like this (this is if N=10 to save space):
 
     [ 0  1  2  3  4  5  6  7  8  9]
