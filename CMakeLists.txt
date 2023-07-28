@@ -281,15 +281,41 @@ add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
+
+### FFTW3F
+set(BUILD_DIR "${CMAKE_BINARY_DIR}")
+set(LIBS_DIR "${CMAKE_SOURCE_DIR}/libs")
+
+set(FFTW_DIR         "${LIBS_DIR}/fftw")
+set(FFTW_INCLUDE_DIR "${FFTW_DIR}/api")
+set(FFTW_BINARY_DIR  "${BUILD_DIR}/fftw")
+
 include(FetchContent)
 
-FetchContent_Declare(
-  fftw3
-  URL       http://fftw.org/fftw-3.3.10.tar.gz
-  URL_HASH  MD5=8ccbf6a5ea78a16dbc3e1306e234cc5c)
-FetchContent_MakeAvailable(fftw3)
+FetchContent_Populate(fftw
 
-include_directories(${fftw3_SOURCE_DIR}/api)
+    TMP_DIR "${BUILD_DIR}/temp"
+    DOWNLOAD_DIR "${BUILD_DIR}/download"
+    SOURCE_DIR "${FFTW_DIR}"
+
+    URL "http://fftw.org/fftw-3.3.10.tar.gz"
+    URL_MD5 "8ccbf6a5ea78a16dbc3e1306e234cc5c"
+)
+
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
+set(BUILD_TESTS       OFF CACHE INTERNAL "" FORCE)
+set(ENABLE_OPENMP     OFF CACHE INTERNAL "" FORCE)
+set(ENABLE_THREADS    OFF CACHE INTERNAL "" FORCE)
+set(ENABLE_FLOAT      ON  CACHE INTERNAL "" FORCE)
+set(ENABLE_SSE        OFF CACHE INTERNAL "" FORCE)
+set(ENABLE_SSE2       OFF CACHE INTERNAL "" FORCE)
+set(ENABLE_AVX        ON  CACHE INTERNAL "" FORCE)
+set(ENABLE_AVX2       OFF CACHE INTERNAL "" FORCE)
+
+add_subdirectory(${FFTW_DIR} ${FFTW_BINARY_DIR})
+include_directories(${FFTW_INCLUDE_DIR})
+
+
 
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
@@ -478,7 +504,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc fftw3)
+                 prometheus-cpp::pull utf8proc fftw3f)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
