@@ -125,6 +125,8 @@ struct NumericalDataType final : public DataType {
         range.first, range.second, granularity);
   }
 
+  uint32_t numBins() const;
+
  private:
   friend class cereal::access;
   template <class Archive>
