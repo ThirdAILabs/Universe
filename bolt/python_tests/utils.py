@@ -2,7 +2,7 @@ import math
 import os
 
 import numpy as np
-from thirdai import bolt, dataset
+from thirdai import bolt, bolt_v2, dataset
 
 
 # Generates easy training data: the ground truth function is f(x_i) = i, where
@@ -314,6 +314,23 @@ def set_compressed_weight_gradients(
     ):
         if hasattr(layer, "weight_gradients"):
             layer.weight_gradients.set(weight_gradient)
+            
+def build_simple_model_for_compression(n_classes):
+    input_layer = bolt_v2.nn.Input(dim=n_classes)
+
+    output_layer = bolt_v2.nn.FullyConnected(
+        dim=n_classes, input_dim=input_layer.dim(), activation="softmax"
+    )(input_layer)
+
+    labels = bolt_v2.nn.Input(dim=n_classes)
+
+    loss = bolt_v2.nn.losses.CategoricalCrossEntropy(
+        activations=output_layer, labels=labels
+    )
+
+    model = bolt_v2.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+
+    return model
 
 
 def compressed_training(
@@ -322,53 +339,57 @@ def compressed_training(
     sample_population_size,
     learning_rate=0.002,
     n_classes=10,
-    hidden_dim=10,
     epochs=30,
     batch_size=64,
+    use_compression=True,
 ):
+    
+    model = build_simple_model_for_compression(n_classes)
+    
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=n_classes, n_samples=1000, convert_to_bolt_dataset=False
+        n_classes=n_classes, n_samples=10000, convert_to_bolt_dataset=False
     )
     test_data, test_labels = gen_numpy_training_data(
         n_classes=n_classes, n_samples=100, convert_to_bolt_dataset=False
     )
 
-    num_training_batches = math.ceil(len(train_data) / batch_size)
-
-    wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
-        train_data=train_data,
-        train_labels=train_labels,
-        sparsity=0.2,
-        num_classes=n_classes,
-        learning_rate=learning_rate,
-        hidden_layer_dim=hidden_dim,
-        batch_size=batch_size,
+    train_dataset = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(train_data, batch_size=batch_size), dim=n_classes
     )
 
-    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+    train_labels = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(train_labels, batch_size=batch_size), dim=n_classes
+    )
+
+    test_dataset = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(test_data, batch_size=batch_size), dim=n_classes
+    )
+
+    test_labels = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(test_labels, batch_size=batch_size), dim=n_classes
+    )
+
     for epochs in range(epochs):
-        for batch_num in range(num_training_batches):
-            wrapped_model.compute_and_store_batch_gradients(batch_num)
-            compressed_weight_grads = get_compressed_weight_gradients(
-                wrapped_model,
-                compression_scheme=compression_scheme,
-                compression_density=compression_density,
-                seed_for_hashing=np.random.randint(100),
-                sample_population_size=sample_population_size,
-            )
-            set_compressed_weight_gradients(
-                wrapped_model,
-                compressed_weight_grads=compressed_weight_grads,
-            )
-            wrapped_model.update_parameters()
+        for x, y in zip(train_dataset, train_labels):
+            model.train_on_batch(x, y)
+            if use_compression:
+                old_model_weights = np.array(model.get_gradients())
+                compressed_weights = bolt_v2.nn.compression.compress(
+                    old_model_weights,
+                    compression_scheme,
+                    compression_density,
+                    seed_for_hashing=42,
+                    sample_population_size=sample_population_size,
+                )
+                new_model_weights = bolt_v2.nn.compression.decompress(compressed_weights)
+                model.set_gradients(new_model_weights)
+            model.update_parameters(learning_rate)
 
-    wrapped_model.finish_training()
-
-    model = wrapped_model.model
-    acc = model.evaluate(
-        test_data=dataset.from_numpy(test_data, batch_size=64),
-        test_labels=dataset.from_numpy(test_labels, batch_size=64),
-        eval_config=eval_config,
+    trainer = bolt_v2.train.Trainer(model)
+    validation_results = trainer.validate(
+        validation_data=[test_dataset, test_labels],
+        validation_metrics=["categorical_accuracy", "loss"],
     )
 
+    acc = validation_results["val_categorical_accuracy"][0]
     return acc
