@@ -418,6 +418,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/CrossColumnPairgrams.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc

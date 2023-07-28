@@ -4,11 +4,11 @@
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
-#include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -20,6 +20,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -217,12 +218,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
 
-  py::class_<TabularHashedFeatures, Transformation,
-             std::shared_ptr<TabularHashedFeatures>>(transformations_submodule,
-                                                     "TabularHashedFeatures")
-      .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
+  py::class_<CrossColumnPairgrams, Transformation,
+             std::shared_ptr<CrossColumnPairgrams>>(transformations_submodule,
+                                                    "CrossColumnPairgrams")
+      .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
            py::arg("input_columns"), py::arg("output_column"),
-           py::arg("output_range"), py::arg("use_pairgrams") = false);
+           py::arg("hash_range") = std::numeric_limits<size_t>::max());
 
   py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
       transformations_submodule, "ToTokens")
