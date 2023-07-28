@@ -138,10 +138,6 @@ void Loader::logLoadStart() const {
     std::cout << "loading data | source '" << _data_iterator.resourceName()
               << "'" << std::endl;
   }
-#else
-  (void)vectors;
-  (void)batches;
-  (void)time;
 #endif
 }
 
