@@ -17,6 +17,8 @@
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <compression/python_bindings/ConversionUtils.h>
+#include <compression/src/CompressionFactory.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -34,6 +36,52 @@ namespace thirdai::bolt::nn::python {
 
 template <typename T>
 using NumpyArray = thirdai::bolt::python::NumpyArray<T>;
+
+using SerializedCompressedVector =
+    py::array_t<char, py::array::c_style | py::array::forcecast>;
+
+using FloatCompressedVector =
+    std::variant<thirdai::compression::DragonVector<float>,
+                 thirdai::compression::CountSketch<float>>;
+
+template <typename T>
+SerializedCompressedVector compress(const py::array_t<T>& data,
+                                    const std::string& compression_scheme,
+                                    float compression_density,
+                                    uint32_t seed_for_hashing,
+                                    uint32_t sample_population_size) {
+  FloatCompressedVector compressed_vector = thirdai::compression::compress(
+      data.data(), static_cast<uint32_t>(data.size()), compression_scheme,
+      compression_density, seed_for_hashing, sample_population_size);
+
+  uint32_t serialized_size =
+      std::visit(thirdai::compression::SizeVisitor<float>(), compressed_vector);
+
+  char* serialized_compressed_vector = new char[serialized_size];
+
+  std::visit(thirdai::compression::SerializeVisitor<float>(
+                 serialized_compressed_vector),
+             compressed_vector);
+
+  py::capsule free_when_done(serialized_compressed_vector,
+                             [](void* ptr) { delete static_cast<char*>(ptr); });
+
+  return SerializedCompressedVector(
+      serialized_size, serialized_compressed_vector, free_when_done);
+}
+
+template <typename T>
+py::array_t<T> decompress(SerializedCompressedVector& new_params) {
+  const char* serialized_data =
+      py::cast<SerializedCompressedVector>(new_params).data();
+  FloatCompressedVector compressed_vector =
+      thirdai::compression::python::deserializeCompressedVector<float>(
+          serialized_data);
+  std::vector<float> full_gradients = std::visit(
+      thirdai::compression::DecompressVisitor<float>(), compressed_vector);
+
+  return py::array_t<T>(full_gradients.size(), full_gradients.data());
+}
 
 template <typename T>
 py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
@@ -69,9 +117,25 @@ void defineOps(py::module_& nn);
 
 void defineLosses(py::module_& nn);
 
+void createCompressionSubmodule(py::module_& module) {
+  auto compression = module.def_submodule("compression");
+
+  compression.def(
+      "compress", &compress<float>, py::arg("data"),
+      py::arg("compression_scheme"), py::arg("compression_density"),
+      py::arg("seed_for_hashing"), py::arg("sample_population_size"),
+      "Returns a char array representing a compressed vector. "
+      "sample_population_size is the number of random samples you take "
+      "for estimating a threshold for dragon compression or the number "
+      "of sketches needed for count_sketch");
+
+  compression.def("decompress", &decompress<float>, py::arg("new_params"));
+}
+
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
+  createCompressionSubmodule(nn);
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**
