@@ -54,11 +54,7 @@ def train_single_node_distributed_network(
     network, train_data, train_labels, epochs, learning_rate=0.0005
 ):
     batch_size = network.prepareNodeForDistributedTraining(
-        train_data,
-        train_labels,
-        rehash=3000,
-        rebuild=10000,
-        verbose=True,
+        train_data, train_labels, rehash=3000, rebuild=10000, verbose=True
     )
     for epoch_num in range(epochs):
         for batch_num in range(batch_size):
@@ -119,9 +115,7 @@ def get_simple_concat_model(
     input_layer = bolt.nn.Input(dim=num_classes)
 
     hidden_layer_top = bolt.nn.FullyConnected(
-        dim=hidden_layer_top_dim,
-        sparsity=hidden_layer_top_sparsity,
-        activation="relu",
+        dim=hidden_layer_top_dim, sparsity=hidden_layer_top_sparsity, activation="relu"
     )(input_layer)
 
     hidden_layer_bottom = bolt.nn.FullyConnected(
@@ -164,17 +158,12 @@ def remove_files(files):
         os.remove(file)
 
 
-def build_simple_hidden_layer_model(
-    input_dim=10,
-    hidden_dim=10,
-    output_dim=10,
-):
+def build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10):
     input_layer = bolt.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=hidden_dim,
-        activation="relu",
-    )(input_layer)
+    hidden_layer = bolt.nn.FullyConnected(dim=hidden_dim, activation="relu")(
+        input_layer
+    )
 
     output_layer = bolt.nn.FullyConnected(dim=output_dim, activation="softmax")(
         hidden_layer
@@ -199,9 +188,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
 
     input_layer = bolt.nn.Input(dim=num_classes)
     hidden_layer = bolt.nn.FullyConnected(
-        dim=hidden_layer_dim,
-        sparsity=sparsity,
-        activation="relu",
+        dim=hidden_layer_dim, sparsity=sparsity, activation="relu"
     )(input_layer)
     output_layer = bolt.nn.FullyConnected(dim=num_classes, activation="softmax")(
         hidden_layer
@@ -217,9 +204,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
     model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
     wrapper = bolt.DistributedTrainingWrapper(
-        model=model,
-        train_config=train_config,
-        worker_id=0,
+        model=model, train_config=train_config, worker_id=0
     )
     wrapper.set_datasets([train_data, train_labels])
     return wrapper
@@ -301,10 +286,7 @@ def get_compressed_weight_gradients(
 
 
 # Assumes that the model has only two layers
-def set_compressed_weight_gradients(
-    wrapped_model,
-    compressed_weight_grads,
-):
+def set_compressed_weight_gradients(wrapped_model, compressed_weight_grads):
     model = wrapped_model.model
     nodes_with_weight_gradients = [
         layer for layer in model.nodes() if hasattr(layer, "weight_gradients")
@@ -314,7 +296,8 @@ def set_compressed_weight_gradients(
     ):
         if hasattr(layer, "weight_gradients"):
             layer.weight_gradients.set(weight_gradient)
-            
+
+
 def build_simple_model_for_compression(n_classes):
     input_layer = bolt_v2.nn.Input(dim=n_classes)
 
@@ -328,7 +311,9 @@ def build_simple_model_for_compression(n_classes):
         activations=output_layer, labels=labels
     )
 
-    model = bolt_v2.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+    model = bolt_v2.nn.Model(
+        inputs=[input_layer], outputs=[output_layer], losses=[loss]
+    )
 
     return model
 
@@ -343,9 +328,9 @@ def compressed_training(
     batch_size=64,
     use_compression=True,
 ):
-    
+
     model = build_simple_model_for_compression(n_classes)
-    
+
     train_data, train_labels = gen_numpy_training_data(
         n_classes=n_classes, n_samples=10000, convert_to_bolt_dataset=False
     )
@@ -381,7 +366,9 @@ def compressed_training(
                     seed_for_hashing=42,
                     sample_population_size=sample_population_size,
                 )
-                new_model_weights = bolt_v2.nn.compression.decompress(compressed_weights)
+                new_model_weights = bolt_v2.nn.compression.decompress(
+                    compressed_weights
+                )
                 model.set_gradients(new_model_weights)
             model.update_parameters(learning_rate)
 

@@ -3,7 +3,7 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 import numpy as np
-from thirdai import bolt, bolt_v2
+from thirdai import bolt
 
 from utils import build_simple_hidden_layer_model, compressed_training
 
@@ -101,11 +101,11 @@ def test_concat_values_dragon_vector():
 # Tests compressed training by compressing and decompressing weights between
 # every batch update
 def test_compressed_dragon_vector_training():
-    
+
     acc = compressed_training(
         compression_scheme="dragon",
         compression_density=0.2,
         sample_population_size=100,
-        num_epochs = 35
+        num_epochs=35,
     )
     assert acc >= ACCURACY_THRESHOLD
