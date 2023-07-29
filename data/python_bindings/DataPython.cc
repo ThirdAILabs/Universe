@@ -5,6 +5,7 @@
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
+#include <data/src/transformations/Date.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Sequence.h>
@@ -29,302 +30,319 @@
 
 namespace thirdai::data::python {
 
-namespace py = pybind11;
+  namespace py = pybind11;
 
-void createColumnsSubmodule(py::module_& dataset_submodule);
+  void createColumnsSubmodule(py::module_ & dataset_submodule);
 
-void createTransformationsSubmodule(py::module_& dataset_submodule);
+  void createTransformationsSubmodule(py::module_ & dataset_submodule);
 
-void createDataSubmodule(py::module_& dataset_submodule) {
-  py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
-      .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
-           py::arg("columns"))
-      .def("num_rows", &ColumnMap::numRows)
-      .def("__getitem__", &ColumnMap::getColumn)
-      .def(
-          "__iter__",
-          [](const ColumnMap& columns) {
-            return py::make_iterator(columns.begin(), columns.end());
-          },
-          py::keep_alive<0, 1>())
-      .def("__len__", &ColumnMap::numRows)
-      .def("columns", &ColumnMap::columns)
-      .def("shuffle", &ColumnMap::shuffle,
-           py::arg("seed") = global_random::nextSeed())
-      .def("concat", &ColumnMap::concat, py::arg("other"))
-      .def("split", &ColumnMap::split, py::arg("offset"));
+  void createDataSubmodule(py::module_ & dataset_submodule) {
+    py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
+        .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
+             py::arg("columns"))
+        .def("num_rows", &ColumnMap::numRows)
+        .def("__getitem__", &ColumnMap::getColumn)
+        .def(
+            "__iter__",
+            [](const ColumnMap& columns) {
+              return py::make_iterator(columns.begin(), columns.end());
+            },
+            py::keep_alive<0, 1>())
+        .def("__len__", &ColumnMap::numRows)
+        .def("columns", &ColumnMap::columns)
+        .def("shuffle", &ColumnMap::shuffle,
+             py::arg("seed") = global_random::nextSeed())
+        .def("concat", &ColumnMap::concat, py::arg("other"))
+        .def("split", &ColumnMap::split, py::arg("offset"));
 
-  createColumnsSubmodule(dataset_submodule);
+    createColumnsSubmodule(dataset_submodule);
 
-  createTransformationsSubmodule(dataset_submodule);
-}
-
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
-
-template <typename T, class COL>
-NumpyArray<T> getRowNumpy(const std::shared_ptr<COL>& column, size_t n) {
-  RowView<T> row = column->row(n);
-  return NumpyArray<T>(row.size(), row.data());
-}
-
-template <typename T>
-std::vector<T> fromNumpy1D(const NumpyArray<T>& array) {
-  if (array.ndim() != 1) {
-    throw std::invalid_argument("Expected 1D array when creating ValueColumn.");
-  }
-  return std::vector<T>(array.data(), array.data() + array.size());
-}
-
-template <typename T>
-std::vector<std::vector<T>> fromNumpy2D(const NumpyArray<T>& array) {
-  if (array.ndim() != 2) {
-    throw std::invalid_argument("Expected 2D array when creating ArrayColumn.");
+    createTransformationsSubmodule(dataset_submodule);
   }
 
-  size_t rows = array.shape(0), cols = array.shape(1);
+  template <typename T>
+  using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-  std::vector<std::vector<T>> vector(array.shape(0));
-  for (size_t i = 0; i < rows; i++) {
-    vector[i] = std::vector<T>(array.data(i), array.data(i) + cols);
+  template <typename T, class COL>
+  NumpyArray<T> getRowNumpy(const std::shared_ptr<COL>& column, size_t n) {
+    RowView<T> row = column->row(n);
+    return NumpyArray<T>(row.size(), row.data());
   }
 
-  return vector;
-}
+  template <typename T>
+  std::vector<T> fromNumpy1D(const NumpyArray<T>& array) {
+    if (array.ndim() != 1) {
+      throw std::invalid_argument(
+          "Expected 1D array when creating ValueColumn.");
+    }
+    return std::vector<T>(array.data(), array.data() + array.size());
+  }
 
-auto tokenColumnFromNumpy(const NumpyArray<uint32_t>& array,
-                          std::optional<size_t> dim) {
-  return ValueColumn<uint32_t>::make(fromNumpy1D(array), dim);
-}
+  template <typename T>
+  std::vector<std::vector<T>> fromNumpy2D(const NumpyArray<T>& array) {
+    if (array.ndim() != 2) {
+      throw std::invalid_argument(
+          "Expected 2D array when creating ArrayColumn.");
+    }
 
-auto decimalColumnFromNumpy(const NumpyArray<float>& array) {
-  return ValueColumn<float>::make(fromNumpy1D(array));
-}
+    size_t rows = array.shape(0), cols = array.shape(1);
 
-auto tokenArrayColumnFromNumpy(const NumpyArray<uint32_t>& array,
-                               std::optional<size_t> dim) {
-  return ArrayColumn<uint32_t>::make(fromNumpy2D(array), dim);
-}
+    std::vector<std::vector<T>> vector(array.shape(0));
+    for (size_t i = 0; i < rows; i++) {
+      vector[i] = std::vector<T>(array.data(i), array.data(i) + cols);
+    }
 
-auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
+    return vector;
+  }
+
+  auto tokenColumnFromNumpy(const NumpyArray<uint32_t>& array,
+                            std::optional<size_t> dim) {
+    return ValueColumn<uint32_t>::make(fromNumpy1D(array), dim);
+  }
+
+  auto decimalColumnFromNumpy(const NumpyArray<float>& array) {
+    return ValueColumn<float>::make(fromNumpy1D(array));
+  }
+
+  auto tokenArrayColumnFromNumpy(const NumpyArray<uint32_t>& array,
                                  std::optional<size_t> dim) {
-  return ArrayColumn<float>::make(fromNumpy2D(array), dim);
-}
+    return ArrayColumn<uint32_t>::make(fromNumpy2D(array), dim);
+  }
 
-void createColumnsSubmodule(py::module_& dataset_submodule) {
-  auto columns_submodule = dataset_submodule.def_submodule("columns");
+  auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
+                                   std::optional<size_t> dim) {
+    return ArrayColumn<float>::make(fromNumpy2D(array), dim);
+  }
 
-  py::class_<Column, ColumnPtr>(columns_submodule, "Column")
-      .def("dimension", &Column::dimension)
-      .def("__len__", &Column::numRows);
+  void createColumnsSubmodule(py::module_ & dataset_submodule) {
+    auto columns_submodule = dataset_submodule.def_submodule("columns");
 
-  py::class_<ColumnDimension>(columns_submodule, "Dimension")
-      .def_readonly("dim", &ColumnDimension::dim)
-      .def_readonly("is_dense", &ColumnDimension::is_dense);
+    py::class_<Column, ColumnPtr>(columns_submodule, "Column")
+        .def("dimension", &Column::dimension)
+        .def("__len__", &Column::numRows);
 
-  py::class_<ValueColumn<uint32_t>, Column, ValueColumnPtr<uint32_t>>(
-      columns_submodule, "TokenColumn")
-      .def(
-          py::init(
-              py::overload_cast<std::vector<uint32_t>&&, std::optional<size_t>>(
-                  &ValueColumn<uint32_t>::make)),
-          py::arg("data"), py::arg("dim") = std::nullopt)
-      .def(py::init(&tokenColumnFromNumpy), py::arg("data"),
-           py::arg("dim") = std::nullopt)
-      .def(("__getitem__"), &ValueColumn<uint32_t>::value)
-      .def("data", &ValueColumn<uint32_t>::data);
+    py::class_<ColumnDimension>(columns_submodule, "Dimension")
+        .def_readonly("dim", &ColumnDimension::dim)
+        .def_readonly("is_dense", &ColumnDimension::is_dense);
 
-  py::class_<ValueColumn<float>, Column, ValueColumnPtr<float>>(
-      columns_submodule, "DecimalColumn")
-      .def(py::init(py::overload_cast<std::vector<float>&&>(
-               &ValueColumn<float>::make)),
-           py::arg("data"))
-      .def(py::init(&decimalColumnFromNumpy), py::arg("data"))
-      .def(("__getitem__"), &ValueColumn<float>::value)
-      .def("data", &ValueColumn<float>::data);
+    py::class_<ValueColumn<uint32_t>, Column, ValueColumnPtr<uint32_t>>(
+        columns_submodule, "TokenColumn")
+        .def(py::init(py::overload_cast<std::vector<uint32_t>&&,
+                                        std::optional<size_t>>(
+                 &ValueColumn<uint32_t>::make)),
+             py::arg("data"), py::arg("dim") = std::nullopt)
+        .def(py::init(&tokenColumnFromNumpy), py::arg("data"),
+             py::arg("dim") = std::nullopt)
+        .def(("__getitem__"), &ValueColumn<uint32_t>::value)
+        .def("data", &ValueColumn<uint32_t>::data);
 
-  py::class_<ValueColumn<std::string>, Column, ValueColumnPtr<std::string>>(
-      columns_submodule, "StringColumn")
-      .def(py::init(py::overload_cast<std::vector<std::string>&&>(
-               &ValueColumn<std::string>::make)),
-           py::arg("data"))
-      .def("__getitem__", &ValueColumn<std::string>::value)
-      .def("data", &ValueColumn<std::string>::data);
+    py::class_<ValueColumn<float>, Column, ValueColumnPtr<float>>(
+        columns_submodule, "DecimalColumn")
+        .def(py::init(py::overload_cast<std::vector<float>&&>(
+                 &ValueColumn<float>::make)),
+             py::arg("data"))
+        .def(py::init(&decimalColumnFromNumpy), py::arg("data"))
+        .def(("__getitem__"), &ValueColumn<float>::value)
+        .def("data", &ValueColumn<float>::data);
 
-  py::class_<ValueColumn<int64_t>, Column, ValueColumnPtr<int64_t>>(
-      columns_submodule, "TimestampColumn")
-      .def(py::init(py::overload_cast<std::vector<int64_t>&&>(
-               &ValueColumn<int64_t>::make)),
-           py::arg("data"))
-      .def("__getitem__", &ValueColumn<int64_t>::value)
-      .def("data", &ValueColumn<int64_t>::data);
+    py::class_<ValueColumn<std::string>, Column, ValueColumnPtr<std::string>>(
+        columns_submodule, "StringColumn")
+        .def(py::init(py::overload_cast<std::vector<std::string>&&>(
+                 &ValueColumn<std::string>::make)),
+             py::arg("data"))
+        .def("__getitem__", &ValueColumn<std::string>::value)
+        .def("data", &ValueColumn<std::string>::data);
 
-  py::class_<ArrayColumn<uint32_t>, Column, ArrayColumnPtr<uint32_t>>(
-      columns_submodule, "TokenArrayColumn")
-      .def(py::init(&ArrayColumn<uint32_t>::make), py::arg("data"),
-           py::arg("dim") = std::nullopt)
-      .def(py::init(&tokenArrayColumnFromNumpy), py::arg("data"),
-           py::arg("dim") = std::nullopt)
-      .def("__getitem__", &getRowNumpy<uint32_t, ArrayColumn<uint32_t>>,
-           py::return_value_policy::reference_internal)
-      .def("data", &ArrayColumn<uint32_t>::data);
+    py::class_<ValueColumn<int64_t>, Column, ValueColumnPtr<int64_t>>(
+        columns_submodule, "TimestampColumn")
+        .def(py::init(py::overload_cast<std::vector<int64_t>&&>(
+                 &ValueColumn<int64_t>::make)),
+             py::arg("data"))
+        .def("__getitem__", &ValueColumn<int64_t>::value)
+        .def("data", &ValueColumn<int64_t>::data);
 
-  py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
-      columns_submodule, "DecimalArrayColumn")
-      .def(py::init(&ArrayColumn<float>::make), py::arg("data"),
-           py::arg("dim") = std::nullopt)
-      .def(py::init(&decimalArrayColumnFromNumpy), py::arg("data"),
-           py::arg("dim") = std::nullopt)
-      .def("__getitem__", &getRowNumpy<float, ArrayColumn<float>>,
-           py::return_value_policy::reference_internal)
-      .def("data", &ArrayColumn<float>::data);
-}
+    py::class_<ArrayColumn<uint32_t>, Column, ArrayColumnPtr<uint32_t>>(
+        columns_submodule, "TokenArrayColumn")
+        .def(py::init(&ArrayColumn<uint32_t>::make), py::arg("data"),
+             py::arg("dim") = std::nullopt)
+        .def(py::init(&tokenArrayColumnFromNumpy), py::arg("data"),
+             py::arg("dim") = std::nullopt)
+        .def("__getitem__", &getRowNumpy<uint32_t, ArrayColumn<uint32_t>>,
+             py::return_value_policy::reference_internal)
+        .def("data", &ArrayColumn<uint32_t>::data);
 
-void createTransformationsSubmodule(py::module_& dataset_submodule) {
-  auto transformations_submodule =
-      dataset_submodule.def_submodule("transformations");
+    py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
+        columns_submodule, "DecimalArrayColumn")
+        .def(py::init(&ArrayColumn<float>::make), py::arg("data"),
+             py::arg("dim") = std::nullopt)
+        .def(py::init(&decimalArrayColumnFromNumpy), py::arg("data"),
+             py::arg("dim") = std::nullopt)
+        .def("__getitem__", &getRowNumpy<float, ArrayColumn<float>>,
+             py::return_value_policy::reference_internal)
+        .def("data", &ArrayColumn<float>::data);
+  }
 
-  py::class_<State>(transformations_submodule, "State")
-      .def(py::init<>())
-      .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
+  void createTransformationsSubmodule(py::module_ & dataset_submodule) {
+    auto transformations_submodule =
+        dataset_submodule.def_submodule("transformations");
 
-  py::class_<Transformation, std::shared_ptr<Transformation>>(
-      transformations_submodule, "Transformation")
-      .def("__call__", &Transformation::applyStateless, py::arg("columns"))
-      .def("__call__", &Transformation::apply, py::arg("columns"),
-           py::arg("state"));
+    py::class_<State>(transformations_submodule, "State")
+        .def(py::init<>())
+        .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
 
-  py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
-      transformations_submodule, "Text")
-      .def(py::init<std::string, std::string, dataset::TextTokenizerPtr,
-                    dataset::TextEncoderPtr, bool, size_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
-           py::arg("encoder") = dataset::NGramEncoder(1),
-           py::arg("lowercase") = false,
-           py::arg("dim") = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
+    py::class_<Transformation, std::shared_ptr<Transformation>>(
+        transformations_submodule, "Transformation")
+        .def("__call__", &Transformation::applyStateless, py::arg("columns"))
+        .def("__call__", &Transformation::apply, py::arg("columns"),
+             py::arg("state"));
 
-  py::class_<BinningTransformation, Transformation,
-             std::shared_ptr<BinningTransformation>>(transformations_submodule,
-                                                     "Binning")
-      .def(py::init<std::string, std::string, float, float, uint32_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("inclusive_min"), py::arg("exclusive_max"),
-           py::arg("num_bins"));
+    py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
+        transformations_submodule, "Text")
+        .def(py::init<std::string, std::string, dataset::TextTokenizerPtr,
+                      dataset::TextEncoderPtr, bool, size_t>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
+             py::arg("encoder") = dataset::NGramEncoder(1),
+             py::arg("lowercase") = false,
+             py::arg("dim") =
+                 dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
 
-  py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
-      transformations_submodule, "StringHash")
-      .def(py::init<std::string, std::string, std::optional<uint32_t>,
-                    uint32_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
+    py::class_<BinningTransformation, Transformation,
+               std::shared_ptr<BinningTransformation>>(
+        transformations_submodule, "Binning")
+        .def(py::init<std::string, std::string, float, float, uint32_t>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("inclusive_min"), py::arg("exclusive_max"),
+             py::arg("num_bins"));
 
-  py::class_<CrossColumnPairgrams, Transformation,
-             std::shared_ptr<CrossColumnPairgrams>>(transformations_submodule,
-                                                    "CrossColumnPairgrams")
-      .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
-           py::arg("input_columns"), py::arg("output_column"),
-           py::arg("hash_range") = std::numeric_limits<size_t>::max());
+    py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
+        transformations_submodule, "StringHash")
+        .def(py::init<std::string, std::string, std::optional<uint32_t>,
+                      uint32_t>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
 
-  py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
-      transformations_submodule, "ToTokens")
-      .def(py::init<std::string, std::string, std::optional<uint32_t>>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("dim") = std::nullopt);
+    py::class_<CrossColumnPairgrams, Transformation,
+               std::shared_ptr<CrossColumnPairgrams>>(transformations_submodule,
+                                                      "CrossColumnPairgrams")
+        .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
+             py::arg("input_columns"), py::arg("output_column"),
+             py::arg("hash_range") = std::numeric_limits<size_t>::max());
 
-  py::class_<StringToTokenArray, Transformation,
-             std::shared_ptr<StringToTokenArray>>(transformations_submodule,
-                                                  "ToTokenArrays")
-      .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("delimiter"), py::arg("dim") = std::nullopt);
+    py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
+        transformations_submodule, "ToTokens")
+        .def(py::init<std::string, std::string, std::optional<uint32_t>>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("dim") = std::nullopt);
 
-  py::class_<StringToDecimal, Transformation, std::shared_ptr<StringToDecimal>>(
-      transformations_submodule, "ToDecimals")
-      .def(py::init<std::string, std::string>(), py::arg("input_column"),
-           py::arg("output_column"));
+    py::class_<StringToTokenArray, Transformation,
+               std::shared_ptr<StringToTokenArray>>(transformations_submodule,
+                                                    "ToTokenArrays")
+        .def(
+            py::init<std::string, std::string, char, std::optional<uint32_t>>(),
+            py::arg("input_column"), py::arg("output_column"),
+            py::arg("delimiter"), py::arg("dim") = std::nullopt);
 
-  py::class_<StringToDecimalArray, Transformation,
-             std::shared_ptr<StringToDecimalArray>>(transformations_submodule,
-                                                    "ToDecimalArrays")
-      .def(py::init<std::string, std::string, char, std::optional<size_t>>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("delimiter"), py::arg("dim") = std::nullopt);
+    py::class_<StringToDecimal, Transformation,
+               std::shared_ptr<StringToDecimal>>(transformations_submodule,
+                                                 "ToDecimals")
+        .def(py::init<std::string, std::string>(), py::arg("input_column"),
+             py::arg("output_column"));
 
-  py::class_<TransformationList, Transformation,
-             std::shared_ptr<TransformationList>>(transformations_submodule,
-                                                  "TransformationList")
-      .def(py::init<std::vector<TransformationPtr>>(),
-           py::arg("transformations"));
+    py::class_<StringToDecimalArray, Transformation,
+               std::shared_ptr<StringToDecimalArray>>(transformations_submodule,
+                                                      "ToDecimalArrays")
+        .def(py::init<std::string, std::string, char, std::optional<size_t>>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("delimiter"), py::arg("dim") = std::nullopt);
 
-  py::class_<FeatureHash, Transformation, std::shared_ptr<FeatureHash>>(
-      transformations_submodule, "FeatureHash")
-      .def(py::init<std::vector<std::string>, std::string, std::string,
-                    size_t>(),
-           py::arg("input_columns"), py::arg("output_indices_column"),
-           py::arg("output_values_column"), py::arg("hash_range"));
+    py::class_<StringToTimestamp, Transformation,
+               std::shared_ptr<StringToTimestamp>>(transformations_submodule,
+                                                   "ToTimestamps")
+        .def(py::init<std::string, std::string, std::string>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("format") = "%Y-%m-%d");
 
-  py::class_<CategoricalTemporal, Transformation,
-             std::shared_ptr<CategoricalTemporal>>(transformations_submodule,
-                                                   "CategoricalTemporal")
-      .def(py::init<std::string, std::string, std::string, std::string, size_t,
-                    bool, bool, int64_t>(),
-           py::arg("user_column"), py::arg("item_column"),
-           py::arg("timestamp_column"), py::arg("output_column"),
-           py::arg("track_last_n"), py::arg("should_update_history") = true,
-           py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+    py::class_<TransformationList, Transformation,
+               std::shared_ptr<TransformationList>>(transformations_submodule,
+                                                    "TransformationList")
+        .def(py::init<std::vector<TransformationPtr>>(),
+             py::arg("transformations"));
 
-  py::class_<Sequence, Transformation, std::shared_ptr<Sequence>>(
-      transformations_submodule, "Sequence")
-      .def(py::init<std::string, std::string, char, size_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("delimiter"),
-           py::arg("dim") = std::numeric_limits<uint32_t>::max());
+    py::class_<FeatureHash, Transformation, std::shared_ptr<FeatureHash>>(
+        transformations_submodule, "FeatureHash")
+        .def(py::init<std::vector<std::string>, std::string, std::string,
+                      size_t>(),
+             py::arg("input_columns"), py::arg("output_indices_column"),
+             py::arg("output_values_column"), py::arg("hash_range"));
+
+    py::class_<CategoricalTemporal, Transformation,
+               std::shared_ptr<CategoricalTemporal>>(transformations_submodule,
+                                                     "CategoricalTemporal")
+        .def(py::init<std::string, std::string, std::string, std::string,
+                      size_t, bool, bool, int64_t>(),
+             py::arg("user_column"), py::arg("item_column"),
+             py::arg("timestamp_column"), py::arg("output_column"),
+             py::arg("track_last_n"), py::arg("should_update_history") = true,
+             py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+
+    py::class_<Sequence, Transformation, std::shared_ptr<Sequence>>(
+        transformations_submodule, "Sequence")
+        .def(py::init<std::string, std::string, char, size_t>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("delimiter"),
+             py::arg("dim") = std::numeric_limits<uint32_t>::max());
+
+    py::class_<Date, Transformation, std::shared_ptr<Date>>(
+        transformations_submodule, "Date")
+        .def(py::init<std::string, std::string, std::string>(),
+             py::arg("input_column"), py::arg("output_column"),
+             py::arg("format") = "%Y-%m-%d");
 
 #if THIRDAI_EXPOSE_ALL
-  py::class_<ColdStartTextAugmentation, Transformation,
-             std::shared_ptr<ColdStartTextAugmentation>>(
-      transformations_submodule, "ColdStartText")
-      .def(py::init([](std::vector<std::string> strong_column_names,
-                       std::vector<std::string> weak_column_names,
-                       std::string label_column_name,
-                       std::string output_column_name,
-                       std::optional<uint32_t> weak_min_len,
-                       std::optional<uint32_t> weak_max_len,
-                       std::optional<uint32_t> weak_chunk_len,
-                       std::optional<uint32_t> weak_sample_num_words,
-                       uint32_t weak_sample_reps,
-                       std::optional<uint32_t> strong_max_len,
-                       std::optional<uint32_t> strong_sample_num_words,
-                       uint32_t seed) {
-             return std::make_shared<ColdStartTextAugmentation>(
-                 std::move(strong_column_names), std::move(weak_column_names),
-                 std::move(label_column_name), std::move(output_column_name),
-                 ColdStartConfig(weak_min_len, weak_max_len, weak_chunk_len,
-                                 weak_sample_num_words, weak_sample_reps,
-                                 strong_max_len, strong_sample_num_words),
-                 seed);
-           }),
-           py::arg("strong_columns"), py::arg("weak_columns"),
-           py::arg("label_column"), py::arg("output_column"),
-           py::arg("weak_min_len") = std::nullopt,
-           py::arg("weak_max_len") = std::nullopt,
-           py::arg("weak_chunk_len") = std::nullopt,
-           py::arg("weak_sample_num_words") = std::nullopt,
-           py::arg("weak_sample_reps") = 1,
-           py::arg("strong_max_len") = std::nullopt,
-           py::arg("strong_sample_num_words") = std::nullopt,
-           py::arg("seed") = 42803)
-      .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
-           py::arg("strong_text"), py::arg("weak_text"))
-      .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
-           py::arg("document"));
+    py::class_<ColdStartTextAugmentation, Transformation,
+               std::shared_ptr<ColdStartTextAugmentation>>(
+        transformations_submodule, "ColdStartText")
+        .def(py::init([](std::vector<std::string> strong_column_names,
+                         std::vector<std::string> weak_column_names,
+                         std::string label_column_name,
+                         std::string output_column_name,
+                         std::optional<uint32_t> weak_min_len,
+                         std::optional<uint32_t> weak_max_len,
+                         std::optional<uint32_t> weak_chunk_len,
+                         std::optional<uint32_t> weak_sample_num_words,
+                         uint32_t weak_sample_reps,
+                         std::optional<uint32_t> strong_max_len,
+                         std::optional<uint32_t> strong_sample_num_words,
+                         uint32_t seed) {
+               return std::make_shared<ColdStartTextAugmentation>(
+                   std::move(strong_column_names), std::move(weak_column_names),
+                   std::move(label_column_name), std::move(output_column_name),
+                   ColdStartConfig(weak_min_len, weak_max_len, weak_chunk_len,
+                                   weak_sample_num_words, weak_sample_reps,
+                                   strong_max_len, strong_sample_num_words),
+                   seed);
+             }),
+             py::arg("strong_columns"), py::arg("weak_columns"),
+             py::arg("label_column"), py::arg("output_column"),
+             py::arg("weak_min_len") = std::nullopt,
+             py::arg("weak_max_len") = std::nullopt,
+             py::arg("weak_chunk_len") = std::nullopt,
+             py::arg("weak_sample_num_words") = std::nullopt,
+             py::arg("weak_sample_reps") = 1,
+             py::arg("strong_max_len") = std::nullopt,
+             py::arg("strong_sample_num_words") = std::nullopt,
+             py::arg("seed") = 42803)
+        .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
+             py::arg("strong_text"), py::arg("weak_text"))
+        .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
+             py::arg("document"));
 
-  py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
-      transformations_submodule, "MachLabel")
-      .def(py::init<std::string, std::string>(), py::arg("input_column"),
-           py::arg("output_column"));
+    py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
+        transformations_submodule, "MachLabel")
+        .def(py::init<std::string, std::string>(), py::arg("input_column"),
+             py::arg("output_column"));
 #endif
-}
+  }
 
 }  // namespace thirdai::data::python

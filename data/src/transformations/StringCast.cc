@@ -7,6 +7,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <dataset/src/utils/TimeUtils.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <stdexcept>
@@ -33,6 +34,14 @@ CastToValue<float>::CastToValue(std::string input_column_name,
                                 std::string output_column_name)
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)) {}
+
+template <>
+CastToValue<int64_t>::CastToValue(std::string input_column_name,
+                                  std::string output_column_name,
+                                  std::string format)
+    : _input_column_name(std::move(input_column_name)),
+      _output_column_name(std::move(output_column_name)),
+      _format(std::move(format)) {}
 
 template <typename T>
 ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
@@ -75,14 +84,19 @@ float CastToValue<float>::parse(const std::string& row) const {
 }
 
 template <>
+int64_t CastToValue<int64_t>::parse(const std::string& row) const {
+  return dataset::TimeObject(row, _format).secondsSinceEpoch();
+}
+
+template <>
 ColumnPtr CastToValue<uint32_t>::makeColumn(
     std::vector<uint32_t>&& rows) const {
   return ValueColumn<uint32_t>::make(std::move(rows), _dim);
 }
 
-template <>
-ColumnPtr CastToValue<float>::makeColumn(std::vector<float>&& rows) const {
-  return ValueColumn<float>::make(std::move(rows));
+template <typename T>
+ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
+  return ValueColumn<T>::make(std::move(rows));
 }
 
 template <typename T>
@@ -98,8 +112,12 @@ template void CastToValue<uint32_t>::serialize(cereal::BinaryOutputArchive&);
 template void CastToValue<float>::serialize(cereal::BinaryInputArchive&);
 template void CastToValue<float>::serialize(cereal::BinaryOutputArchive&);
 
+template void CastToValue<int64_t>::serialize(cereal::BinaryInputArchive&);
+template void CastToValue<int64_t>::serialize(cereal::BinaryOutputArchive&);
+
 template class CastToValue<uint32_t>;
 template class CastToValue<float>;
+template class CastToValue<int64_t>;
 
 template <typename T>
 CastToArray<T>::CastToArray(std::string input_column_name,
@@ -179,3 +197,4 @@ CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
+CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)

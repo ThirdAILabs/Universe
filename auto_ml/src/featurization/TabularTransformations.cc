@@ -3,7 +3,10 @@
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
+#include <data/src/transformations/Date.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Sequence.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
@@ -76,6 +79,28 @@ CreatedTransformation binningTranformation(
   return {transformation, output_name};
 }
 
+CreatedTransformation sequenceTransformation(
+    const data::ColumnDataTypes& data_types, const std::string& column_name,
+    const data::SequenceDataTypePtr& sequence) {
+  std::string output_name = "__" + column_name + "_sequenced__";
+
+  auto transformation = std::make_shared<thirdai::data::Sequence>(
+      column_name, uniqueColumnName(output_name, data_types),
+      sequence->delimiter);
+
+  return {transformation, output_name};
+}
+
+CreatedTransformation dateTransformation(
+    const data::ColumnDataTypes& data_types, const std::string& column_name) {
+  std::string output_name = "__" + column_name + "_date__";
+
+  auto transformation = std::make_shared<thirdai::data::Date>(
+      column_name, uniqueColumnName(output_name, data_types));
+
+  return {transformation, output_name};
+}
+
 CreatedTransformations nonTemporalTransformations(
     const data::ColumnDataTypes& data_types,
     const data::TabularOptions& options) {
@@ -109,7 +134,18 @@ CreatedTransformations nonTemporalTransformations(
       tabular_columns.push_back(output_name);
     }
 
-    // TODO(Nicholas): Sequence, Date
+    if (auto sequence = data::asSequence(data_type)) {
+      auto [transformation, output_name] =
+          sequenceTransformation(data_types, name, sequence);
+      transformations.push_back(transformation);
+      output_columns.push_back(output_name);
+    }
+
+    if (auto date = data::asDate(data_type)) {
+      auto [transformation, output_name] = dateTransformation(data_types, name);
+      transformations.push_back(transformation);
+      output_columns.push_back(output_name);
+    }
   }
 
   if (!tabular_columns.empty()) {
@@ -147,8 +183,13 @@ CreatedTransformation timestampTransformation(
         "There has to be a timestamp column in order to use temporal "
         "tracking relationships.");
   }
-  // TODO(Nicholas): add str -> timestamp cast.
-  return {nullptr, ""};
+
+  std::string output_name = "__" + *timestamp_column + "_timestamp__";
+
+  auto transformation = std::make_shared<thirdai::data::StringToTimestamp>(
+      *timestamp_column, output_name);
+
+  return {transformation, output_name};
 }
 
 CreatedTransformations temporalTransformations(

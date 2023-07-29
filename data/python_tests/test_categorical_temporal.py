@@ -40,7 +40,7 @@ def test_categorical_temporal_ascending_item_ids(include_current_row):
     items = []
     user_occurences = defaultdict(int)
     for user in users:
-        item_id = int(user) * OCCURENCES_PER_USER + user_occurences[user]
+        item_id = int(user) * OCCURENCES_PER_USER * 2 + user_occurences[user]
         items.append([item_id, item_id + 1])
         user_occurences[user] += 2
 
@@ -60,8 +60,10 @@ def test_categorical_temporal_ascending_item_ids(include_current_row):
     for user, histories in user_histories.items():
         assert len(histories) == OCCURENCES_PER_USER
 
+        # Because we group the samples by user, and the timestamps are strictly
+        # increasing we can make assertions about what items are in each sample.
         for i, h in enumerate(histories):
-            user_start = int(user) * OCCURENCES_PER_USER
+            user_start = int(user) * OCCURENCES_PER_USER * 2
             curr_start = user_start + i * 2
             if include_current_row:
                 expected = list(
@@ -109,33 +111,24 @@ def test_without_updating_history(include_current_row):
 
 
 def test_non_increasing_timestamps():
-    users = ["user_1", "user_2", "user_2", "user_1", "user_2", "user_1"]
-    items = [[0, 1], [10, 11], [12, 13], [2, 3], [14, 15], [4, 5]]
-    timestamps = [0, 3, 1, 4, 5, 2]
+    users = ["user_1", "user_2", "user_1"]
+    items = [[0, 1], [10, 11], [12, 13]]
+    timestamps = [2, 3, 1]
 
     columns = make_column_map(users, items, timestamps)
 
     transformation = categorical_temporal(include_current_row=True)
 
-    columns = transformation(columns)
-
-    expected_rows = [
-        [0, 1],  # First items for user_1.
-        [10, 11],  # First items for user_2.
-        [12, 13],  # Second items for user_2, but timestamp is before the first items.
-        [0, 1, 2, 3],  # Second items for user_1, timestamp is after first items.
-        [12, 13, 14, 15],  # Third items for user_2, timestamp is after previous items.
-        [0, 1, 4, 5],  # Third items for user_1, timestamp is between first and second.
-    ]
-
-    for row, expected_row in zip(columns["history"].data(), expected_rows):
-        assert set(row) == set(expected_row)
+    with pytest.raises(
+        ValueError, match="Expected increasing timestamps in column 'timestamps'."
+    ):
+        transformation(columns)
 
 
 def test_time_lag():
-    users = ["user_1", "user_2", "user_2", "user_1", "user_2", "user_1"]
-    items = [[0, 1], [10, 11], [12, 13], [2, 3], [14, 15], [4, 5]]
-    timestamps = [0, 0, 1, 1, 2, 2]
+    users = ["user_1", "user_2", "user_2", "user_1", "user_2", "user_1", "user_2"]
+    items = [[0, 1], [10, 11], [12, 13], [2, 3], [14, 15], [4, 5], [16, 17]]
+    timestamps = [0, 0, 1, 1, 2, 2, 3]
 
     columns = make_column_map(users, items, timestamps)
 
@@ -144,12 +137,13 @@ def test_time_lag():
     columns = transformation(columns)
 
     expected_rows = [
-        [0, 1],  # First items for user_1.
-        [10, 11],  # First items for user_2.
-        [12, 13],  # Second items for user_2, but time lag rules out first.
-        [2, 3],  # Second items for user_1, but time lag rules out first.
-        [10, 11, 14, 15],  # Third items for user_2, but time lag rules out second.
-        [0, 1, 4, 5],  # Third items for user_1,  but time lag rules out second.
+        [],  # First items for user_1.
+        [],  # First items for user_2.
+        [],  # Second items for user_2, but time lag rules out first.
+        [],  # Second items for user_1, but time lag rules out first.
+        [10, 11],  # Third items for user_2, but time lag rules out second.
+        [0, 1],  # Third items for user_1,  but time lag rules out second.
+        [10, 11, 12, 13],  # Fourth items for user_2, but time lag rules out third.
     ]
 
     for row, expected_row in zip(columns["history"].data(), expected_rows):

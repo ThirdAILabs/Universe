@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <dataset/src/mach/MachIndex.h>
+#include <limits>
 #include <stdexcept>
 
 namespace thirdai::data {
@@ -14,9 +15,10 @@ struct ItemRecord {
   int64_t timestamp;
 };
 
-using ItemHistoryTracker =
-    std::unordered_map<std::string, std::deque<ItemRecord>>;
-using ItemHistoryTrackerPtr = std::shared_ptr<ItemHistoryTracker>;
+struct ItemHistoryTracker {
+  std::unordered_map<std::string, std::deque<ItemRecord>> trackers;
+  int64_t last_timestamp = std::numeric_limits<int64_t>::min();
+};
 
 class State {
  public:
@@ -45,20 +47,19 @@ class State {
     _mach_index = std::move(new_index);
   }
 
-  const ItemHistoryTrackerPtr& getItemHistoryTracker(
-      const std::string& user_column, const std::string& item_column,
-      const std::string& timestamp_column) {
-    std::string name = user_column + "_" + item_column + "_" + timestamp_column;
-    if (!_item_history_trackers.count(name)) {
-      _item_history_trackers[name] = std::make_shared<ItemHistoryTracker>();
-    }
-    return _item_history_trackers.at(name);
+  ItemHistoryTracker& getItemHistoryTracker(const std::string& user_column,
+                                            const std::string& item_column,
+                                            const std::string& timestamp_column,
+                                            const std::string& output_column) {
+    std::string name = user_column + "_" + item_column + "_" +
+                       timestamp_column + "_" + output_column;
+    return _item_history_trackers[name];
   }
 
  private:
   MachIndexPtr _mach_index = nullptr;
 
-  std::unordered_map<std::string, ItemHistoryTrackerPtr> _item_history_trackers;
+  std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
 
   friend class cereal::access;
   template <class Archive>
