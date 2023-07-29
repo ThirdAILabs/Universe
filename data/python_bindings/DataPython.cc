@@ -7,6 +7,7 @@
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/Sequence.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -272,6 +273,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("timestamp_column"), py::arg("output_column"),
            py::arg("track_last_n"), py::arg("should_update_history") = true,
            py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+
+  py::class_<Sequence, Transformation, std::shared_ptr<Sequence>>(
+      transformations_submodule, "Sequence")
+      .def(py::init<std::string, std::string, char, size_t>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"),
+           py::arg("dim") = std::numeric_limits<uint32_t>::max());
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
