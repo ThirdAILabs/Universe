@@ -4,6 +4,7 @@
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/Date.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
@@ -249,6 +250,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("delimiter"), py::arg("dim") = std::nullopt);
 
+  py::class_<StringToTimestamp, Transformation,
+             std::shared_ptr<StringToTimestamp>>(transformations_submodule,
+                                                 "ToTimestamps")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("format") = "%Y-%m-%d");
+
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
                                                   "TransformationList")
@@ -271,6 +279,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("timestamp_column"), py::arg("output_column"),
            py::arg("track_last_n"), py::arg("should_update_history") = true,
            py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+
+  py::class_<Date, Transformation, std::shared_ptr<Date>>(
+      transformations_submodule, "Date")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("format") = "%Y-%m-%d");
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
