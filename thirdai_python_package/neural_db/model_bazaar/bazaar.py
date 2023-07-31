@@ -195,9 +195,7 @@ class Bazaar:
         return list(self._registry.keys())
 
     def neuraldb_object(self, checkpoint_path: str):
-        db = ndb.NeuralDB(user_id="user")
-        db.from_checkpoint(checkpoint_path)
-        return db
+        return ndb.NeuralDB.from_checkpoint(checkpoint_path, user_id="")
 
     def get_neuraldb(
         self,
