@@ -1,7 +1,3 @@
-import random
-import string
-
-import numpy as np
 import pytest
 from thirdai import data
 
@@ -103,14 +99,9 @@ def test_duplicated_natural_separators():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
-    # Verify that new_dataset consists of two entries, all having the same value
 
-    data_list = []
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id]
-            data_list.append(row.to_numpy()[0])
+    # Verify that new_dataset consists of two entries, all having the same value
+    data_list = new_columns["unigrams"].data()
     # Assert that we produced ["weak", "weak weak"] as the output data.
     # Because the data are shuffled internally, we can't count on the order
     # of terms in the output being the same as the input order.
@@ -148,14 +139,9 @@ def test_long_input():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
-    # Verify that new_dataset consists of two entries, all having the same value
 
-    data_list = []
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id].to_numpy()[0]
-            assert len(row) == 4  # 1 for the strong words, 3 for the phrase.
+    for row in new_columns["unigrams"].data():
+        assert len(row) == 4  # 1 for the strong words, 3 for the phrase.
 
 
 def test_sample_strong_words():
@@ -181,13 +167,9 @@ def test_sample_strong_words():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
-    data_list = []
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id].to_numpy()[0]
-            assert len(row) == 5  # 2 chosen from strong, 3 from weak.
+    for row in new_columns["unigrams"].data():
+        assert len(row) == 5  # 2 chosen from strong, 3 from weak.
 
 
 def test_shuffle_correct():
@@ -215,13 +197,11 @@ def test_shuffle_correct():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    unigrams_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
-    for unigram_batch in unigrams_dataset:
-        for row_id in range(len(unigram_batch)):
-            row = unigram_batch[row_id].to_numpy()[0]
-            label = int(new_columns["labels"][row_id])
-            assert len(row) == label + 1
+    for label, unigrams in zip(
+        new_columns["labels"].data(), new_columns["unigrams"].data()
+    ):
+        assert len(unigrams) == int(label) + 1
 
 
 def test_sample_weak_words():
@@ -250,14 +230,11 @@ def test_sample_weak_words():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
     num_data = 0
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id].to_numpy()[0]
-            assert len(row) == 3  # 1 from strong, 2 chosen from weak.
-            num_data += 1
+    for row in new_columns["unigrams"].data():
+        assert len(row) == 3  # 1 from strong, 2 chosen from weak.
+        num_data += 1
     assert num_data == num_examples_per_phrase
 
 
@@ -282,14 +259,11 @@ def test_long_strong_phrase():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
     num_data = 0
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id].to_numpy()[0]
-            num_data += 1
-            assert len(row) == 6  # 3 from strong, 3 from weak.
+    for row in new_columns["unigrams"].data():
+        num_data += 1
+        assert len(row) == 6  # 3 from strong, 3 from weak.
     assert num_data == 1
 
 
@@ -330,13 +304,8 @@ def test_multiple_weak_columns():
         label_list,
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
-    num_data = 0
-    for batch in new_dataset:
-        num_data += len(batch)
-    # There are 12 total natural phrases in the three weak columns.
-    assert num_data == 12
+    assert len(new_columns["unigrams"].data()) == 12
 
 
 def test_multiple_strong_columns():
@@ -371,12 +340,9 @@ def test_multiple_strong_columns():
         label_list,
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id].to_numpy()[0]
-            assert len(row) == 4  # 3 from strong, 1 sampled from weak.
+    for row in new_columns["unigrams"].data():
+        assert len(row) == 4  # 3 from strong, 1 sampled from weak.
 
 
 def test_real_input():
@@ -406,16 +372,13 @@ def test_real_input():
         {"strong": strong_list, "weak": weak_list}, label_list
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
-    new_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
 
     num_data = 0
     num_valid_data = 0
-    for batch in new_dataset:
-        for row_id in range(len(batch)):
-            row = batch[row_id].to_numpy()[0]
-            num_data += 1
-            if expected_min_length <= len(row) <= expected_max_length:
-                num_valid_data += 1
+    for row in new_columns["unigrams"].data():
+        num_data += 1
+        if expected_min_length <= len(row) <= expected_max_length:
+            num_valid_data += 1
     # This assertion checks that we get more than 2 but less than 100 phrases
     # per row of input. If we are getting more than 100 phrases, this is a
     # problem as it results in a very big pre-training task (100x larger).

@@ -22,7 +22,7 @@ def unpickle_from(filepath: Path):
 
 
 def default_checkpoint_name():
-    return Path(f"checkpoint {datetime.datetime.now()}.3ai")
+    return Path(f"checkpoint_{datetime.datetime.now()}.ndb")
 
 
 class State:

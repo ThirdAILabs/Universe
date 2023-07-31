@@ -1,9 +1,12 @@
 #include "Binning.h"
+#include <data/src/columns/ValueColumns.h>
 
 namespace thirdai::data {
 
-ColumnMap BinningTransformation::apply(ColumnMap columns) const {
-  auto column = columns.getDenseFeatureColumn(_input_column_name);
+ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
+  (void)state;
+
+  auto column = columns.getValueColumn<float>(_input_column_name);
 
   std::vector<uint32_t> binned_values(column->numRows());
 
@@ -11,11 +14,11 @@ ColumnMap BinningTransformation::apply(ColumnMap columns) const {
 #pragma omp parallel for default(none) \
     shared(column, binned_values, invalid_value)
   for (uint64_t i = 0; i < column->numRows(); i++) {
-    if (auto bin = getBin(column->at(i))) {
+    if (auto bin = getBin(column->value(i))) {
       binned_values[i] = *bin;
     } else {
 #pragma omp critical
-      invalid_value = column->at(i);
+      invalid_value = column->value(i);
     }
   }
 
@@ -27,7 +30,7 @@ ColumnMap BinningTransformation::apply(ColumnMap columns) const {
   }
 
   auto output_column =
-      std::make_shared<CppTokenColumn>(std::move(binned_values), _num_bins);
+      ValueColumn<uint32_t>::make(std::move(binned_values), _num_bins);
 
   columns.setColumn(_output_column_name, output_column);
 
