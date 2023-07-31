@@ -25,8 +25,7 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto item_col = columns.getArrayColumn<uint32_t>(_item_column);
   auto timestamp_col = columns.getValueColumn<int64_t>(_timestamp_column);
 
-  auto& item_history_tracker = state.getItemHistoryTracker(
-      _user_column, _item_column, _timestamp_column, _output_column);
+  auto& item_history_tracker = state.getItemHistoryTracker(trackerKey());
 
   std::vector<std::vector<uint32_t>> last_n_items(user_col->numRows());
 

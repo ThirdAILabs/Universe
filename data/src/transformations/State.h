@@ -20,6 +20,14 @@ struct ItemHistoryTracker {
   int64_t last_timestamp = std::numeric_limits<int64_t>::min();
 };
 
+/**
+ * The purpose of this state object is to have a central location where stateful
+ * information is stored in the data pipeline. Having a unique owner for all the
+ * stateful information simplifies the serialization because the information is
+ * only serialized from, and deserialized to a single place. The state object is
+ * passed to each transformation's apply method so that they can access any of
+ * the information stored in the state.
+ */
 class State {
  public:
   explicit State(MachIndexPtr mach_index)
@@ -47,13 +55,8 @@ class State {
     _mach_index = std::move(new_index);
   }
 
-  ItemHistoryTracker& getItemHistoryTracker(const std::string& user_column,
-                                            const std::string& item_column,
-                                            const std::string& timestamp_column,
-                                            const std::string& output_column) {
-    std::string name = user_column + "_" + item_column + "_" +
-                       timestamp_column + "_" + output_column;
-    return _item_history_trackers[name];
+  ItemHistoryTracker& getItemHistoryTracker(const std::string& tracker_key) {
+    return _item_history_trackers[tracker_key];
   }
 
  private:

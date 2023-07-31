@@ -14,6 +14,11 @@ class CategoricalTemporal final : public Transformation {
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
+  std::string trackerKey() const {
+    return _user_column + "_" + _item_column + "_" + _timestamp_column + "_" +
+           _output_column;
+  }
+
   std::string _user_column;
   std::string _item_column;
   std::string _timestamp_column;
