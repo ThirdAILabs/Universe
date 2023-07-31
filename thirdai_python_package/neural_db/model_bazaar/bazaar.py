@@ -6,9 +6,9 @@ from typing import Callable, List, Optional
 from urllib.parse import urljoin
 
 import requests
-from neural_db.neural_db import NeuralDB as ndb
 from pydantic import BaseModel
 from requests.auth import HTTPBasicAuth
+from thirdai import neural_db as ndb
 from tqdm import tqdm
 
 from .utils import (
@@ -195,7 +195,7 @@ class Bazaar:
         return list(self._registry.keys())
 
     def neuraldb_object(self, checkpoint_path: str):
-        db = ndb(user_id="user")
+        db = ndb.NeuralDB(user_id="user")
         db.from_checkpoint(checkpoint_path)
         return db
 
