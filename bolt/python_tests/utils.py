@@ -159,17 +159,17 @@ def remove_files(files):
 
 
 def build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10):
-    input_layer = bolt_v2.nn.Input(dim=input_dim)
+    input_layer = bolt.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt_v2.nn.FullyConnected(dim=hidden_dim, activation="relu")(
+    hidden_layer = bolt.nn.FullyConnected(dim=hidden_dim, activation="relu")(
         input_layer
     )
 
-    output_layer = bolt_v2.nn.FullyConnected(dim=output_dim, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation="softmax")(
         hidden_layer
     )
 
-    model = bolt_v2.nn.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
     return model
 
