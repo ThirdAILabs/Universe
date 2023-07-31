@@ -1,6 +1,7 @@
 import os
 
 import thirdai.distributed_bolt as dist
+import ray
 from ray.air import session
 from ray.train.torch import TorchConfig
 from thirdai import bolt as old_bolt
@@ -11,7 +12,7 @@ from ..distributed_utils import create_udt_model, setup_ray
 from ..runners.runner import Runner
 
 
-class DistributedRunner_v2(Runner):
+class DistributedRunner(Runner):
     config_type = DistributedBenchmarkConfig
 
     def training_loop_per_worker(config):

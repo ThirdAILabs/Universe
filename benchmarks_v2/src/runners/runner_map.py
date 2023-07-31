@@ -23,7 +23,6 @@ runner_map = {
     "mini_benchmark_udt": MiniBenchmarkUDTRunner,
     "mini_benchmark_query_reformulation": MiniBenchmarkQueryReformulationRunner,
     "mini_benchmark_temporal": MiniBenchmarkTemporalRunner,
-    "distributed_v1": DistributedRunner_v1,
-    "distributed_v2": DistributedRunner_v2,
+    "distributed": DistributedRunner,
     "rlhf": RlhfRunner,
 }
