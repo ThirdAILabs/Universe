@@ -54,6 +54,8 @@ class Loader {
   static std::pair<ColumnMap, ColumnMap> splitIntoDataAndBuffer(
       ColumnMap&& loaded_rows, size_t dataset_size);
 
+  std::pair<size_t, size_t> determineLoadSize(size_t max_batches) const;
+
   void logLoadStart() const;
 
   void logLoadEnd(size_t vectors, size_t batches, int64_t time) const;

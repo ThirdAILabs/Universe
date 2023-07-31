@@ -37,16 +37,7 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
   logLoadStart();
   bolt::utils::Timer timer;
 
-  // Prevents overflow since sometimes we pass in max int to indicate loading
-  // all batches.
-  size_t num_rows_to_load, num_rows_to_return;
-  if (max_batches == NO_LIMIT || _batch_size == NO_LIMIT) {
-    num_rows_to_load = NO_LIMIT;
-    num_rows_to_return = NO_LIMIT;
-  } else {
-    num_rows_to_load = _shuffle_buffer_size + _batch_size * max_batches;
-    num_rows_to_return = _batch_size * max_batches;
-  }
+  auto [num_rows_to_load, num_rows_to_return] = determineLoadSize(max_batches);
 
   ColumnMap loaded_rows = std::move(_shuffle_buffer);
 
@@ -130,6 +121,19 @@ std::pair<ColumnMap, ColumnMap> Loader::splitIntoDataAndBuffer(
     return std::make_pair(std::move(loaded_rows), ColumnMap({}));
   }
   return loaded_rows.split(dataset_size);
+}
+
+std::pair<size_t, size_t> Loader::determineLoadSize(size_t max_batches) const {
+  // This is to prevent overflow. We want the following to avoid overflow:
+  // (batch_size * max_batches) + shuffle_buffer_size < INT_MAX
+  // We can rewrite this to avoid computations that will result in overflow:
+  // (INT_MAX - shuffle_buffer_size) / batch_size < max_batches
+
+  if ((NO_LIMIT - _shuffle_buffer_size) / _batch_size < max_batches) {
+    return {/*num_rows_to_load=*/NO_LIMIT, /*num_rows_to_return=*/NO_LIMIT};
+  }
+  return {/*num_rows_to_load=*/max_batches * _batch_size + _shuffle_buffer_size,
+          /*num_rows_to_return=*/max_batches * _batch_size};
 }
 
 void Loader::logLoadStart() const {
