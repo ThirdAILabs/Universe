@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <exception>
 #include <string>
 
 namespace thirdai::data {
@@ -27,23 +28,34 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::vector<uint32_t>> date_attributes(columns.numRows());
 
-#pragma omp parallel for default(none) shared(dates, date_attributes)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(dates, date_attributes, error)
   for (size_t i = 0; i < dates->numRows(); i++) {
-    TimeObject time(dates->value(i), _format);
+    try {
+      TimeObject time(dates->value(i), _format);
 
-    uint32_t day_of_week =
-        (time.secondsSinceEpoch() / TimeObject::SECONDS_IN_DAY) % 7;
+      uint32_t day_of_week =
+          (time.secondsSinceEpoch() / TimeObject::SECONDS_IN_DAY) % 7;
 
-    uint32_t month = time.month();
-    month += DAYS_IN_WEEK;
+      uint32_t month = time.month();
+      month += DAYS_IN_WEEK;
 
-    uint32_t week_of_month = time.dayOfMonthZeroIndexed() / 7;
-    week_of_month += DAYS_IN_WEEK + MONTHS_IN_YEAR;
+      uint32_t week_of_month = time.dayOfMonthZeroIndexed() / 7;
+      week_of_month += DAYS_IN_WEEK + MONTHS_IN_YEAR;
 
-    uint32_t week_of_year = time.dayOfYear() / 7;
-    week_of_year += DAYS_IN_WEEK + MONTHS_IN_YEAR + WEEKS_IN_MONTH;
+      uint32_t week_of_year = time.dayOfYear() / 7;
+      week_of_year += DAYS_IN_WEEK + MONTHS_IN_YEAR + WEEKS_IN_MONTH;
 
-    date_attributes[i] = {day_of_week, month, week_of_month, week_of_year};
+      date_attributes[i] = {day_of_week, month, week_of_month, week_of_year};
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   auto output = ArrayColumn<uint32_t>::make(
