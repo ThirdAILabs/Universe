@@ -27,144 +27,102 @@ using CreatedTransformations =
     std::pair<std::vector<thirdai::data::TransformationPtr>,
               std::vector<std::string>>;
 
-std::string uniqueColumnName(std::string name,
-                             const data::ColumnDataTypes& data_types) {
-  while (data_types.count(name)) {
-    name += utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 4);
-  }
-  return name;
-}
+using UniqueColumnNamer = std::function<std::string(std::string)>;
 
-CreatedTransformation textT(const data::ColumnDataTypes& data_types,
-                            const std::string& column_name,
+CreatedTransformation textT(const std::string& column_name,
                             const data::TextDataTypePtr& text,
+                            const UniqueColumnNamer& column_namer,
                             size_t dim = std::numeric_limits<uint32_t>::max()) {
-  std::string output_name = "__" + column_name + "_text_t__";
+  std::string output = column_namer("__" + column_name + "_tokenized__");
 
   auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-      column_name, uniqueColumnName(output_name, data_types), text->tokenizer,
-      text->encoder, text->lowercase, dim);
+      /* input_column= */ column_name, /* output_column= */ output,
+      /* tokenizer= */ text->tokenizer, /* encoder= */ text->encoder,
+      /* lowercase= */ text->lowercase, /* dim= */ dim);
 
-  return {transformation, output_name};
+  return {transformation, output};
 }
 
 CreatedTransformation categoricalT(
-    const data::ColumnDataTypes& data_types, const std::string& column_name,
-    const data::CategoricalDataTypePtr& categorical) {
-  std::string output_name = "__" + column_name + "_categorical_t__";
+    const std::string& column_name,
+    const data::CategoricalDataTypePtr& categorical,
+    const UniqueColumnNamer& column_namer) {
+  std::string output = column_namer("__" + column_name + "_categorical__");
 
   if (categorical->delimiter) {
+    auto tok = dataset::NaiveSplitTokenizer::make(*categorical->delimiter);
+    auto enc = dataset::NGramEncoder::make(/* n = */ 1);
+
     auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-        column_name, uniqueColumnName(output_name, data_types),
-        dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
-        dataset::NGramEncoder::make(/* n = */ 1), /* lower_case= */ false,
+        /* input_column= */ column_name, /* output_column= */ output,
+        /* tokenizer= */ tok, /* encoder= */ enc, /* lowercase= */ false,
         /* dim= */ std::numeric_limits<uint32_t>::max());
-    return {transformation, output_name};
+
+    return {transformation, output};
   }
 
-  auto transformation =
-      std::make_shared<thirdai::data::StringHash>(column_name, output_name);
+  auto transformation = std::make_shared<thirdai::data::StringHash>(
+      /* input_column_name= */ column_name, /* output_column_name= */ output);
 
-  return {transformation, output_name};
+  return {transformation, output};
 }
 
-CreatedTransformation binningT(const data::ColumnDataTypes& data_types,
-                               const std::string& column_name,
-                               const data::NumericalDataTypePtr& numerical) {
-  std::string output_name = "__" + column_name + "_binning_t__";
+CreatedTransformation binningT(const std::string& column_name,
+                               const data::NumericalDataTypePtr& numerical,
+                               const UniqueColumnNamer& column_namer) {
+  std::string output = column_namer("__" + column_name + "_binned__");
 
   auto transformation = std::make_shared<thirdai::data::BinningTransformation>(
-      column_name, uniqueColumnName(output_name, data_types),
-      numerical->range.first, numerical->range.second, numerical->numBins());
+      /* input_column_name= */ column_name, /* output_column_name= */ output,
+      /* inclusive_min_value= */ numerical->range.first,
+      /* exlusive_max_value= */ numerical->range.second,
+      /* num_bins= */ numerical->numBins());
 
-  return {transformation, output_name};
+  return {transformation, output};
 }
 
-CreatedTransformation sequenceT(const data::ColumnDataTypes& data_types,
-                                const std::string& column_name,
-                                const data::SequenceDataTypePtr& sequence) {
-  std::string output_name = "__" + column_name + "_sequence_t__";
+CreatedTransformation sequenceT(const std::string& column_name,
+                                const data::SequenceDataTypePtr& sequence,
+                                const UniqueColumnNamer& column_namer) {
+  std::string output = column_namer("__" + column_name + "_sequence__");
 
   auto transformation = std::make_shared<thirdai::data::Sequence>(
-      column_name, uniqueColumnName(output_name, data_types),
-      sequence->delimiter);
+      /* input_column_name= */
+      column_name,
+      /* output_column_name= */ output,
+      /* delimiter= */ sequence->delimiter);
 
-  return {transformation, output_name};
+  return {transformation, output};
 }
 
-CreatedTransformation dateT(const data::ColumnDataTypes& data_types,
-                            const std::string& column_name) {
-  std::string output_name = "__" + column_name + "_date_t__";
+CreatedTransformation dateT(const std::string& column_name,
+                            const data::DateDataTypePtr& date,
+                            const UniqueColumnNamer& column_namer) {
+  (void)date;
+
+  std::string output = column_namer("__" + column_name + "_date__");
 
   auto transformation = std::make_shared<thirdai::data::Date>(
-      column_name, uniqueColumnName(output_name, data_types));
+      /* input_column_name= */ column_name, /* output_column_name= */ output);
 
-  return {transformation, output_name};
+  return {transformation, output};
 }
 
-CreatedTransformations nonTemporalTransformations(
-    const data::ColumnDataTypes& data_types,
-    const data::TabularOptions& options) {
-  std::vector<thirdai::data::TransformationPtr> transformations;
-  std::vector<std::string> output_columns;
-  std::vector<std::string> tabular_columns;
+CreatedTransformation crossColumnPaigramsT(
+    const std::vector<std::string>& tabular_columns,
+    const UniqueColumnNamer& column_namer) {
+  std::string output = column_namer("__contextual_columns__");
 
-  for (const auto& [name, data_type] : data_types) {
-    if (auto text = data::asText(data_type)) {
-      auto [transform, output] = textT(data_types, name, text);
-      transformations.push_back(transform);
-      output_columns.push_back(output);
-    }
+  auto transformation = std::make_shared<thirdai::data::CrossColumnPairgrams>(
+      /* input_column_names= */ tabular_columns,
+      /* output_column_name= */ output,
+      /* hash_range= */ std::numeric_limits<uint32_t>::max());
 
-    if (auto categorical = data::asCategorical(data_type)) {
-      auto [transform, output] = categoricalT(data_types, name, categorical);
-      transformations.push_back(transform);
-      if (!categorical->delimiter) {
-        tabular_columns.push_back(output);
-      } else {
-        output_columns.push_back(output);
-      }
-    }
-
-    if (auto numerical = data::asNumerical(data_type)) {
-      auto [transform, output] = binningT(data_types, name, numerical);
-      transformations.push_back(transform);
-      tabular_columns.push_back(output);
-    }
-
-    if (auto sequence = data::asSequence(data_type)) {
-      auto [transform, output] = sequenceT(data_types, name, sequence);
-      transformations.push_back(transform);
-      output_columns.push_back(output);
-    }
-
-    if (auto date = data::asDate(data_type)) {
-      auto [transform, output] = dateT(data_types, name);
-      transformations.push_back(transform);
-      output_columns.push_back(output);
-    }
-  }
-
-  if (!tabular_columns.empty()) {
-    if (options.contextual_columns) {
-      std::string output_name = "__contextual_columns_t__";
-      auto transformation =
-          std::make_shared<thirdai::data::CrossColumnPairgrams>(
-              tabular_columns, uniqueColumnName(output_name, data_types),
-              std::numeric_limits<uint32_t>::max());
-
-      transformations.push_back(transformation);
-      output_columns.push_back(output_name);
-    } else {
-      output_columns.insert(output_columns.end(), tabular_columns.begin(),
-                            tabular_columns.end());
-    }
-  }
-
-  return {transformations, output_columns};
+  return {transformation, output};
 }
 
-CreatedTransformation timestampT(const data::ColumnDataTypes& data_types) {
+CreatedTransformation timestampT(const data::ColumnDataTypes& data_types,
+                                 const UniqueColumnNamer& column_namer) {
   std::optional<std::string> timestamp_column;
   for (const auto& [col_name, data_type] : data_types) {
     if (asDate(data_type)) {
@@ -180,25 +138,85 @@ CreatedTransformation timestampT(const data::ColumnDataTypes& data_types) {
         "tracking relationships.");
   }
 
-  std::string output_name = "__" + *timestamp_column + "_timestamp_t__";
+  std::string output = column_namer("__" + *timestamp_column + "_timestamp__");
 
   auto transformation = std::make_shared<thirdai::data::StringToTimestamp>(
-      *timestamp_column, output_name, /* format= */ "%Y-%m-%d");
+      /* input_column_name= */ *timestamp_column,
+      /* output_column_name= */ output, /* format= */ "%Y-%m-%d");
 
-  return {transformation, output_name};
+  return {transformation, output};
+}
+
+CreatedTransformations nonTemporalTransformations(
+    const data::ColumnDataTypes& data_types,
+    const data::TabularOptions& options,
+    const UniqueColumnNamer& column_namer) {
+  std::vector<thirdai::data::TransformationPtr> transformations;
+  std::vector<std::string> output_columns;
+  std::vector<std::string> tabular_columns;
+
+  for (const auto& [name, data_type] : data_types) {
+    if (auto text = data::asText(data_type)) {
+      auto [transform, output] = textT(name, text, column_namer);
+      transformations.push_back(transform);
+      output_columns.push_back(output);
+    }
+
+    if (auto categorical = data::asCategorical(data_type)) {
+      auto [transform, output] = categoricalT(name, categorical, column_namer);
+      transformations.push_back(transform);
+      if (!categorical->delimiter) {
+        tabular_columns.push_back(output);
+      } else {
+        output_columns.push_back(output);
+      }
+    }
+
+    if (auto numerical = data::asNumerical(data_type)) {
+      auto [transform, output] = binningT(name, numerical, column_namer);
+      transformations.push_back(transform);
+      tabular_columns.push_back(output);
+    }
+
+    if (auto sequence = data::asSequence(data_type)) {
+      auto [transform, output] = sequenceT(name, sequence, column_namer);
+      transformations.push_back(transform);
+      output_columns.push_back(output);
+    }
+
+    if (auto date = data::asDate(data_type)) {
+      auto [transform, output] = dateT(name, date, column_namer);
+      transformations.push_back(transform);
+      output_columns.push_back(output);
+    }
+  }
+
+  if (!tabular_columns.empty()) {
+    if (options.contextual_columns) {
+      auto [xcol, output] = crossColumnPaigramsT(tabular_columns, column_namer);
+      transformations.push_back(xcol);
+      output_columns.push_back(output);
+    } else {
+      output_columns.insert(output_columns.end(), tabular_columns.begin(),
+                            tabular_columns.end());
+    }
+  }
+
+  return {transformations, output_columns};
 }
 
 CreatedTransformations temporalTransformations(
     const data::ColumnDataTypes& data_types, const std::string& label_column,
     const data::TemporalRelationships& temporal_relationships,
-    const data::TabularOptions& options, bool should_update_history) {
+    const data::TabularOptions& options, bool should_update_history,
+    const UniqueColumnNamer& column_namer) {
   if (temporal_relationships.empty()) {
     return {{}, {}};
   }
 
   uint32_t temporal_id = 0;
 
-  auto [timestamp_cast, timestamp_column] = timestampT(data_types);
+  auto [timestamp_cast, timestamp_col] = timestampT(data_types, column_namer);
 
   std::vector<thirdai::data::TransformationPtr> transformations = {
       timestamp_cast};
@@ -238,16 +256,22 @@ CreatedTransformations temporalTransformations(
           categorical_temporal.include_current_row &&
           (categorical_temporal.column_name != label_column);
 
-      std::string output_name =
-          "__categorical_temporal_t_" + std::to_string(temporal_id++) + "__";
+      std::string output = column_namer("__categorical_temporal_" +
+                                        std::to_string(temporal_id++) + "__");
+
       auto transformation =
           std::make_shared<thirdai::data::CategoricalTemporal>(
-              key_column, categorical_temporal.column_name, timestamp_column,
-              output_name, categorical_temporal.track_last_n,
-              should_update_history, include_current_row, options.timeLag());
+              /* user_column= */ key_column,
+              /* item_column= */ categorical_temporal.column_name,
+              /* timestamp_column= */ timestamp_col,
+              /* output_column= */ output,
+              /* track_last_n= */ categorical_temporal.track_last_n,
+              /* should_update_history= */ should_update_history,
+              /* include_current_row= */ include_current_row,
+              /* time_lag= */ options.timeLag());
 
       transformations.push_back(transformation);
-      output_columns.push_back(output_name);
+      output_columns.push_back(output);
     }
   }
 
@@ -268,6 +292,14 @@ data::ColumnDataTypes removeTrackedColumns(
   return data_types;
 }
 
+std::string uniqueColumnName(std::string name,
+                             const data::ColumnDataTypes& data_types) {
+  while (data_types.count(name)) {
+    name += utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 4);
+  }
+  return name;
+}
+
 std::pair<thirdai::data::TransformationPtr, thirdai::data::IndexValueColumnList>
 inputTransformations(const data::ColumnDataTypes& data_types,
                      const std::string& label_column,
@@ -285,6 +317,10 @@ inputTransformations(const data::ColumnDataTypes& data_types,
     non_temporal_input_data_types.erase(label_column);
   }
 
+  UniqueColumnNamer column_namer = [&data_types](const std::string& name) {
+    return uniqueColumnName(name, data_types);
+  };
+
   if (non_temporal_input_data_types.size() == 1 &&
       temporal_relationships.empty()) {
     // If we only have a single text input then we can skip additional feature
@@ -293,19 +329,20 @@ inputTransformations(const data::ColumnDataTypes& data_types,
 
     if (auto text = data::asText(text_column.second)) {
       auto [transformation, output_name] =
-          textT(data_types, text_column.first, text,
+          textT(text_column.first, text, column_namer,
                 /* dim= */ options.feature_hash_range);
 
       return {transformation, {{output_name, std::nullopt}}};
     }
   }
 
-  auto [transformations, output_columns] =
-      nonTemporalTransformations(non_temporal_input_data_types, options);
+  auto [transformations, output_columns] = nonTemporalTransformations(
+      non_temporal_input_data_types, options, column_namer);
 
   auto [temporal_transformations, temporal_outputs] =
       temporalTransformations(data_types, label_column, temporal_relationships,
-                              options, should_update_history);
+                              options, should_update_history, column_namer);
+
   transformations.insert(transformations.end(),
                          temporal_transformations.begin(),
                          temporal_transformations.end());
@@ -313,14 +350,14 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   output_columns.insert(output_columns.end(), temporal_outputs.begin(),
                         temporal_outputs.end());
 
-  std::string output_indices =
-      uniqueColumnName("__featurized_input_indices__", data_types);
-  std::string output_values =
-      uniqueColumnName("__featurized_input_values__", data_types);
+  std::string output_indices = column_namer("__featurized_input_indices__");
+  std::string output_values = column_namer("__featurized_input_values__");
 
   auto feature_hash = std::make_shared<thirdai::data::FeatureHash>(
-      output_columns, output_indices, output_values,
-      options.feature_hash_range);
+      /* input_columns= */ output_columns,
+      /* output_indices_column= */ output_indices,
+      /* output_values_column= */ output_values,
+      /* hash_range= */ options.feature_hash_range);
 
   transformations.push_back(feature_hash);
 

@@ -29,7 +29,7 @@ TEST(TabularTransformationTests, TextOnlyTransformation) {
 
   ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).first, "__text_text_t__");
+  ASSERT_EQ(outputs.at(0).first, "__text_tokenized__");
   ASSERT_FALSE(outputs.at(0).second.has_value());
 }
 
@@ -92,8 +92,8 @@ TEST(TabularTransformationTests, TabularTransformations) {
   // then decide if these columns are feature hashed or passed through cross
   // column pairgrams.
   std::vector<std::string> expected_fh_cols = {
-      "__a_text_t__", "__c_categorical_t__", "__e_sequence_t__",
-      "__f_date_t__", "__b_categorical_t__", "__d_binning_t__",
+      "__a_tokenized__", "__c_categorical__", "__e_sequence__",
+      "__f_date__", "__b_categorical__", "__d_binned__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
 }
@@ -128,8 +128,8 @@ TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
           ->inputColumns();
 
   std::vector<std::string> expected_ccp_cols = {
-      "__b_categorical_t__",
-      "__d_binning_t__",
+      "__b_categorical__",
+      "__d_binned__",
   };
   ASSERT_EQ(ccp_cols, expected_ccp_cols);
 
@@ -142,8 +142,8 @@ TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
   // then decide if these columns are feature hashed or passed through cross
   // column pairgrams.
   std::vector<std::string> expected_fh_cols = {
-      "__a_text_t__", "__c_categorical_t__",      "__e_sequence_t__",
-      "__f_date_t__", "__contextual_columns_t__",
+      "__a_tokenized__", "__c_categorical__",      "__e_sequence__",
+      "__f_date__", "__contextual_columns__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
 }
@@ -186,8 +186,8 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
           ->inputColumns();
 
   std::vector<std::string> expected_ccp_cols = {
-      "__b_categorical_t__",
-      "__d_binning_t__",
+      "__b_categorical__",
+      "__d_binned__",
   };
   ASSERT_EQ(ccp_cols, expected_ccp_cols);
 
@@ -200,12 +200,12 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   // then decide if these columns are feature hashed or passed through cross
   // column pairgrams.
   std::vector<std::string> expected_fh_cols = {
-      "__a_text_t__",
-      "__e_sequence_t__",
-      "__f_date_t__",
-      "__contextual_columns_t__",
-      "__categorical_temporal_t_0__",
-      "__categorical_temporal_t_1__",
+      "__a_tokenized__",
+      "__e_sequence__",
+      "__f_date__",
+      "__contextual_columns__",
+      "__categorical_temporal_0__",
+      "__categorical_temporal_1__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
 }
