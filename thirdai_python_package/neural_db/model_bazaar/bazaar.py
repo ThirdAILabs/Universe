@@ -6,7 +6,12 @@ from typing import Callable, List, Optional
 from urllib.parse import urljoin
 
 import requests
-from model_bazaar.utils import (
+from neural_db.neural_db import NeuralDB as ndb
+from pydantic import BaseModel
+from requests.auth import HTTPBasicAuth
+from tqdm import tqdm
+
+from .utils import (
     get_directory_size,
     get_file_size,
     hash_path,
@@ -15,10 +20,6 @@ from model_bazaar.utils import (
     upload_file,
     zip_folder,
 )
-from neural_db.neural_db import NeuralDB as ndb
-from pydantic import BaseModel
-from requests.auth import HTTPBasicAuth
-from tqdm import tqdm
 
 
 class BazaarEntry(BaseModel):
