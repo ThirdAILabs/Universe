@@ -1,6 +1,5 @@
 from .bolt_fc import BoltFullyConnectedRunner, BoltV2FullyConnectedRunner
-from .distributed_v1 import DistributedRunner_v1
-from .distributed_v2 import DistributedRunner_v2
+from .distributed import DistributedRunner
 from .dlrm import DLRMRunner, DLRMV2Runner
 from .mini_benchmark_runners.query_reformulation import (
     MiniBenchmarkQueryReformulationRunner,
