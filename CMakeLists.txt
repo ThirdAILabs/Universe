@@ -286,22 +286,24 @@ add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 set(BUILD_DIR "${CMAKE_BINARY_DIR}")
 set(LIBS_DIR "${CMAKE_SOURCE_DIR}/libs")
 
-set(FFTW_DIR         "${LIBS_DIR}/fftw")
-set(FFTW_INCLUDE_DIR "${FFTW_DIR}/api")
-set(FFTW_BINARY_DIR  "${BUILD_DIR}/fftw")
+#set(FFTW_DIR         "${LIBS_DIR}/fftw")
+#set(FFTW_INCLUDE_DIR "${FFTW_DIR}/api")
+#set(FFTW_BINARY_DIR  "${BUILD_DIR}/fftw")
 
 include(FetchContent)
 
 FetchContent_Populate(fftw
 
-    TMP_DIR "${BUILD_DIR}/temp"
-    DOWNLOAD_DIR "${BUILD_DIR}/download"
-    SOURCE_DIR "${FFTW_DIR}"
+#    TMP_DIR "${BUILD_DIR}/temp"
+#    DOWNLOAD_DIR "${BUILD_DIR}/download"
+#    SOURCE_DIR "${FFTW_DIR}"
 
     URL "http://fftw.org/fftw-3.3.10.tar.gz"
     URL_MD5 "8ccbf6a5ea78a16dbc3e1306e234cc5c"
 )
 
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE INTERNAL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(BUILD_TESTS       OFF CACHE INTERNAL "" FORCE)
 set(ENABLE_OPENMP     OFF CACHE INTERNAL "" FORCE)
@@ -312,10 +314,9 @@ set(ENABLE_SSE2       OFF CACHE INTERNAL "" FORCE)
 set(ENABLE_AVX        ON  CACHE INTERNAL "" FORCE)
 set(ENABLE_AVX2       OFF CACHE INTERNAL "" FORCE)
 
-add_subdirectory(${FFTW_DIR} ${FFTW_BINARY_DIR})
-include_directories(${FFTW_INCLUDE_DIR})
+add_subdirectory(${fftw_SOURCE_DIR} ${fftw_BINARY_DIR})
 
-
+include_directories(${fftw_SOURCE_DIR}/api)
 
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
