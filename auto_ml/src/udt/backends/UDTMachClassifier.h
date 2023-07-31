@@ -139,7 +139,8 @@ class UDTMachClassifier final : public UDTBackend {
   void associate(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      float label_weight) final;
 
   void vote(
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,

@@ -796,11 +796,12 @@ BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
 void UDTMachClassifier::associate(
     const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    float label_weight) {
   auto teaching_samples = getAssociateSamples(source_target_samples);
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
-        learning_rate, epochs, /* label_weight = */ 1.0);
+        learning_rate, epochs, label_weight);
 }
 
 void UDTMachClassifier::vote(

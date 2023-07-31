@@ -196,7 +196,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("label_weight") = 1.0)
       .def("vote", &udt::UDT::vote, py::arg("source_target_samples"),
            py::arg("n_vote_samples") = 16, py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,

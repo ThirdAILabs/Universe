@@ -363,13 +363,15 @@ class UDTBackend {
   virtual void associate(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      float label_weight) {
     (void)source_target_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
     (void)learning_rate;
     (void)epochs;
+    (void)label_weight;
     throw notSupported("associate");
   }
 

@@ -227,9 +227,11 @@ class UDT {
   void associate(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      float label_weight) {
     _backend->associate(source_target_samples, n_buckets, n_association_samples,
-                        n_balancing_samples, learning_rate, epochs);
+                        n_balancing_samples, learning_rate, epochs,
+                        label_weight);
   }
 
   void vote(
@@ -238,8 +240,8 @@ class UDT {
       float learning_rate, uint32_t epochs, float label_weight) {
     licensing::entitlements().verifyFullAccess();
 
-    _backend->vote(source_target_samples, n_upvote_samples,
-                     n_balancing_samples, learning_rate, epochs, label_weight);
+    _backend->vote(source_target_samples, n_upvote_samples, n_balancing_samples,
+                   learning_rate, epochs, label_weight);
   }
 
   py::object associateTrain(
