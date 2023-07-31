@@ -376,16 +376,17 @@ class UDTBackend {
   /**
    * Used for fine tuning in UDTMachClassifier.
    */
-  virtual void upvote(
+  virtual void vote(
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
+      float learning_rate, uint32_t epochs, float label_weight) {
     (void)source_target_samples;
     (void)n_upvote_samples;
     (void)n_balancing_samples;
     (void)learning_rate;
     (void)epochs;
-    throw notSupported("upvote");
+    (void)label_weight;
+    throw notSupported("vote");
   }
 
   virtual py::object associateTrain(

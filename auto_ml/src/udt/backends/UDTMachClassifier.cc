@@ -783,13 +783,14 @@ void UDTMachClassifier::requireRLHFSampler() {
 }
 
 BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
-                               uint32_t n_buckets, std::mt19937& rng) {
+                               uint32_t n_buckets, std::mt19937& rng,
+                               float label_weight = 1.0) {
   std::vector<uint32_t> indices;
   std::sample(hashes.begin(), hashes.end(), std::back_inserter(indices),
               n_buckets, rng);
 
-  return BoltVector::makeSparseVector(indices,
-                                      std::vector<float>(indices.size(), 1.0));
+  return BoltVector::makeSparseVector(
+      indices, std::vector<float>(indices.size(), label_weight));
 }
 
 void UDTMachClassifier::associate(
@@ -799,13 +800,13 @@ void UDTMachClassifier::associate(
   auto teaching_samples = getAssociateSamples(source_target_samples);
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, /* label_weight = */ 1.0);
 }
 
-void UDTMachClassifier::upvote(
+void UDTMachClassifier::vote(
     const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
     uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-    float learning_rate, uint32_t epochs) {
+    float learning_rate, uint32_t epochs, float label_weight) {
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
   for (const auto& [source, target] : source_target_samples) {
@@ -814,14 +815,15 @@ void UDTMachClassifier::upvote(
   }
   uint32_t n_buckets = _mach_label_block->index()->numHashes();
   teach(teaching_samples, n_buckets, n_upvote_samples, n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, label_weight);
 }
 
 void UDTMachClassifier::teach(
     const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
         source_target_samples,
     uint32_t n_buckets, uint32_t n_teaching_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    float label_weight) {
   requireRLHFSampler();
 
   auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
@@ -833,8 +835,9 @@ void UDTMachClassifier::teach(
     BoltVector source_vec =
         _dataset_factory->featurizeInput(source).at(0)->getVector(0);
     for (uint32_t i = 0; i < n_teaching_samples; i++) {
-      samples.emplace_back(source_vec,
-                           makeLabelFromHashes(target_hashes, n_buckets, rng));
+      samples.emplace_back(
+          source_vec,
+          makeLabelFromHashes(target_hashes, n_buckets, rng, label_weight));
     }
   }
 

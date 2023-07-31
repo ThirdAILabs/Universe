@@ -141,10 +141,10 @@ class UDTMachClassifier final : public UDTBackend {
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
 
-  void upvote(
+  void vote(
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) final;
+      float learning_rate, uint32_t epochs, float label_weight) final;
 
   py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
@@ -194,8 +194,8 @@ class UDTMachClassifier final : public UDTBackend {
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
              uint32_t n_buckets, uint32_t n_teaching_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
+             uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+             float label_weight = 1.0);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);

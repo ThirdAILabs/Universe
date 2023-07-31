@@ -232,14 +232,14 @@ class UDT {
                         n_balancing_samples, learning_rate, epochs);
   }
 
-  void upvote(
+  void vote(
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
+      float learning_rate, uint32_t epochs, float label_weight) {
     licensing::entitlements().verifyFullAccess();
 
-    _backend->upvote(source_target_samples, n_upvote_samples,
-                     n_balancing_samples, learning_rate, epochs);
+    _backend->vote(source_target_samples, n_upvote_samples,
+                     n_balancing_samples, learning_rate, epochs, label_weight);
   }
 
   py::object associateTrain(
