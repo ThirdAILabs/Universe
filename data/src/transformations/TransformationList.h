@@ -24,6 +24,8 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
+  const auto& transformations() const { return _transformations; }
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;

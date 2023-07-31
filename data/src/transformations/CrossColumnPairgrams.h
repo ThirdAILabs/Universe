@@ -12,6 +12,8 @@ class CrossColumnPairgrams : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  const auto& inputColumns() const { return _input_column_names; }
+
  private:
   static uint32_t hashToken(uint32_t token, uint32_t column_seed);
 

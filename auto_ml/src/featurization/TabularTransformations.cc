@@ -10,6 +10,7 @@
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <utils/UUID.h>
 #include <limits>
@@ -38,7 +39,7 @@ CreatedTransformation textT(const data::ColumnDataTypes& data_types,
                             const std::string& column_name,
                             const data::TextDataTypePtr& text,
                             size_t dim = std::numeric_limits<uint32_t>::max()) {
-  std::string output_name = "__" + column_name + "_tokenized__";
+  std::string output_name = "__" + column_name + "_text_t__";
 
   auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
       column_name, uniqueColumnName(output_name, data_types), text->tokenizer,
@@ -50,7 +51,7 @@ CreatedTransformation textT(const data::ColumnDataTypes& data_types,
 CreatedTransformation categoricalT(
     const data::ColumnDataTypes& data_types, const std::string& column_name,
     const data::CategoricalDataTypePtr& categorical) {
-  std::string output_name = "__" + column_name + "_categories__";
+  std::string output_name = "__" + column_name + "_categorical_t__";
 
   if (categorical->delimiter) {
     auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
@@ -70,7 +71,7 @@ CreatedTransformation categoricalT(
 CreatedTransformation binningT(const data::ColumnDataTypes& data_types,
                                const std::string& column_name,
                                const data::NumericalDataTypePtr& numerical) {
-  std::string output_name = "__" + column_name + "_binned__";
+  std::string output_name = "__" + column_name + "_binning_t__";
 
   auto transformation = std::make_shared<thirdai::data::BinningTransformation>(
       column_name, uniqueColumnName(output_name, data_types),
@@ -82,7 +83,7 @@ CreatedTransformation binningT(const data::ColumnDataTypes& data_types,
 CreatedTransformation sequenceT(const data::ColumnDataTypes& data_types,
                                 const std::string& column_name,
                                 const data::SequenceDataTypePtr& sequence) {
-  std::string output_name = "__" + column_name + "_sequenced__";
+  std::string output_name = "__" + column_name + "_sequence_t__";
 
   auto transformation = std::make_shared<thirdai::data::Sequence>(
       column_name, uniqueColumnName(output_name, data_types),
@@ -93,7 +94,7 @@ CreatedTransformation sequenceT(const data::ColumnDataTypes& data_types,
 
 CreatedTransformation dateT(const data::ColumnDataTypes& data_types,
                             const std::string& column_name) {
-  std::string output_name = "__" + column_name + "_date__";
+  std::string output_name = "__" + column_name + "_date_t__";
 
   auto transformation = std::make_shared<thirdai::data::Date>(
       column_name, uniqueColumnName(output_name, data_types));
@@ -146,7 +147,7 @@ CreatedTransformations nonTemporalTransformations(
 
   if (!tabular_columns.empty()) {
     if (options.contextual_columns) {
-      std::string output_name = "__contextual_columns__";
+      std::string output_name = "__contextual_columns_t__";
       auto transformation =
           std::make_shared<thirdai::data::CrossColumnPairgrams>(
               tabular_columns, uniqueColumnName(output_name, data_types),
@@ -163,8 +164,7 @@ CreatedTransformations nonTemporalTransformations(
   return {transformations, output_columns};
 }
 
-CreatedTransformation timestampTransformation(
-    const data::ColumnDataTypes& data_types) {
+CreatedTransformation timestampT(const data::ColumnDataTypes& data_types) {
   std::optional<std::string> timestamp_column;
   for (const auto& [col_name, data_type] : data_types) {
     if (asDate(data_type)) {
@@ -180,10 +180,10 @@ CreatedTransformation timestampTransformation(
         "tracking relationships.");
   }
 
-  std::string output_name = "__" + *timestamp_column + "_timestamp__";
+  std::string output_name = "__" + *timestamp_column + "_timestamp_t__";
 
   auto transformation = std::make_shared<thirdai::data::StringToTimestamp>(
-      *timestamp_column, output_name);
+      *timestamp_column, output_name, /* format= */ "%Y-%m-%d");
 
   return {transformation, output_name};
 }
@@ -192,9 +192,13 @@ CreatedTransformations temporalTransformations(
     const data::ColumnDataTypes& data_types, const std::string& label_column,
     const data::TemporalRelationships& temporal_relationships,
     const data::TabularOptions& options, bool should_update_history) {
+  if (temporal_relationships.empty()) {
+    return {{}, {}};
+  }
+
   uint32_t temporal_id = 0;
 
-  auto [timestamp_cast, timestamp_column] = timestampTransformation(data_types);
+  auto [timestamp_cast, timestamp_column] = timestampT(data_types);
 
   std::vector<thirdai::data::TransformationPtr> transformations = {
       timestamp_cast};
@@ -235,7 +239,7 @@ CreatedTransformations temporalTransformations(
           (categorical_temporal.column_name != label_column);
 
       std::string output_name =
-          "__categorical_temporal_" + std::to_string(temporal_id++) + "__";
+          "__categorical_temporal_t_" + std::to_string(temporal_id++) + "__";
       auto transformation =
           std::make_shared<thirdai::data::CategoricalTemporal>(
               key_column, categorical_temporal.column_name, timestamp_column,
@@ -277,15 +281,19 @@ inputTransformations(const data::ColumnDataTypes& data_types,
 
   auto non_temporal_input_data_types =
       removeTrackedColumns(data_types, temporal_relationships);
-  non_temporal_input_data_types.erase(label_column);
+  if (non_temporal_input_data_types.count(label_column)) {
+    non_temporal_input_data_types.erase(label_column);
+  }
 
   if (non_temporal_input_data_types.size() == 1 &&
       temporal_relationships.empty()) {
     // If we only have a single text input then we can skip additional feature
     // hashing and just have a single text transformation.
-    if (auto text = data::asText(data_types.begin()->second)) {
+    auto text_column = *non_temporal_input_data_types.begin();
+
+    if (auto text = data::asText(text_column.second)) {
       auto [transformation, output_name] =
-          textT(data_types, data_types.begin()->first, text,
+          textT(data_types, text_column.first, text,
                 /* dim= */ options.feature_hash_range);
 
       return {transformation, {{output_name, std::nullopt}}};
@@ -314,7 +322,12 @@ inputTransformations(const data::ColumnDataTypes& data_types,
       output_columns, output_indices, output_values,
       options.feature_hash_range);
 
-  return {feature_hash, {{output_indices, output_values}}};
+  transformations.push_back(feature_hash);
+
+  auto t_list =
+      std::make_shared<thirdai::data::TransformationList>(transformations);
+
+  return {t_list, {{output_indices, output_values}}};
 }
 
 }  // namespace thirdai::automl
