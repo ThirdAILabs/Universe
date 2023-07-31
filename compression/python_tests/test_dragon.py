@@ -21,6 +21,7 @@ def test_get_set_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
     )
+
     model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     first_layer = model.get_layer("fc_1")
@@ -101,7 +102,6 @@ def test_concat_values_dragon_vector():
 # Tests compressed training by compressing and decompressing weights between
 # every batch update
 def test_compressed_dragon_vector_training():
-
     acc = compressed_training(
         compression_scheme="dragon",
         compression_density=0.2,

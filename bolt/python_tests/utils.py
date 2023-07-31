@@ -159,17 +159,17 @@ def remove_files(files):
 
 
 def build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10):
-    input_layer = bolt.nn.Input(dim=input_dim)
+    input_layer = bolt_v2.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt.nn.FullyConnected(dim=hidden_dim, activation="relu")(
+    hidden_layer = bolt_v2.nn.FullyConnected(dim=hidden_dim, activation="relu")(
         input_layer
     )
 
-    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation="softmax")(
+    output_layer = bolt_v2.nn.FullyConnected(dim=output_dim, activation="softmax")(
         hidden_layer
     )
 
-    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model = bolt_v2.nn.Model(inputs=[input_layer], output=output_layer)
 
     return model
 
@@ -328,7 +328,6 @@ def compressed_training(
     batch_size=64,
     use_compression=True,
 ):
-
     model = build_simple_model_for_compression(n_classes)
 
     train_data, train_labels = gen_numpy_training_data(
@@ -358,18 +357,16 @@ def compressed_training(
         for x, y in zip(train_dataset, train_labels):
             model.train_on_batch(x, y)
             if use_compression:
-                old_model_weights = np.array(model.get_gradients())
-                compressed_weights = bolt_v2.nn.compression.compress(
-                    old_model_weights,
+                old_gradients = np.array(model.get_gradients())
+                compressed_weights = bolt_v2.compression.compress(
+                    old_gradients,
                     compression_scheme,
                     compression_density,
                     seed_for_hashing=42,
                     sample_population_size=sample_population_size,
                 )
-                new_model_weights = bolt_v2.nn.compression.decompress(
-                    compressed_weights
-                )
-                model.set_gradients(new_model_weights)
+                new_gradients = bolt_v2.compression.decompress(compressed_weights)
+                model.set_gradients(new_gradients)
             model.update_parameters(learning_rate)
 
     trainer = bolt_v2.train.Trainer(model)
