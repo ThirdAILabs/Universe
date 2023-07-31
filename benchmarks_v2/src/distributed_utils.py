@@ -1,6 +1,23 @@
 import os
 
 
+def split_into_2(
+    file_to_split, destination_file_1, destination_file_2, with_header=False
+):
+    with open(file_to_split, "r") as input_file:
+        with open(destination_file_1, "w+") as f_1:
+            with open(destination_file_2, "w+") as f_2:
+                for i, line in enumerate(input_file):
+                    if with_header and i == 0:
+                        f_1.write(line)
+                        f_2.write(line)
+                        continue
+                    if i % 2 == 0:
+                        f_1.write(line)
+                    else:
+                        f_2.write(line)
+
+
 def setup_ray():
     import ray
     import thirdai.distributed_bolt as dist
