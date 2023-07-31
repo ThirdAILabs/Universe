@@ -161,6 +161,7 @@ neural_db_deps = [
     "url-normalize",
     "nltk",
     "unidecode",
+    "pydantic",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
