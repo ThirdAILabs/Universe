@@ -96,6 +96,5 @@ class DistributedRunner(Runner):
 
         trainer.fit()
 
+        # shutdown the ray cluster
         ray.shutdown()
-
-    pass
