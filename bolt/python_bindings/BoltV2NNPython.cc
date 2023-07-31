@@ -7,6 +7,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/ContextualRobeZ.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FCMixer.h>
@@ -276,6 +277,17 @@ void defineOps(py::module_& nn) {
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
+
+  py::class_<ops::ContextualRobeZ, ops::ContextualRobeZPtr, ops::Op>(
+      nn, "ContextualRobeZ")
+      .def(py::init(&ops::ContextualRobeZ::make),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"), py::arg("num_tokens_per_input"),
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::ContextualRobeZ::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::ContextualRobeZ::duplicateWithNewReduction,
+           py::arg("reduction"), py::arg("num_tokens_per_input"));
 
   py::class_<ops::PosEmbedding, ops::PosEmbeddingPtr, ops::Op>(nn,
                                                                "PosEmbedding")
