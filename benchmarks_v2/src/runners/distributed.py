@@ -1,7 +1,7 @@
 import os
 
-import thirdai.distributed_bolt as dist
 import ray
+import thirdai.distributed_bolt as dist
 from ray.air import session
 from ray.train.torch import TorchConfig
 from thirdai import bolt as old_bolt
