@@ -149,6 +149,15 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   // Now that we have both the weak and strong text, pass them into the
   // phrase generation pipeline to self-supervised (label, phrase) pairs.
   Phrase strong_phrase = getStrongPhrase(strong_text);
+
+  if (weak_text.empty()) {
+    // If we have no weak columns, treat the strong columns as the weak text. We
+    // do this to attempt to generate similar number of augmented samples per
+    // label (even for labels without weak text). Similar number of samples per
+    // label helps prevent bias in the model.
+    weak_text = strong_text;
+  }
+
   PhraseCollection phrases = getWeakPhrases(weak_text);
   mergeStrongWithWeak(phrases, strong_phrase);
 
@@ -335,13 +344,6 @@ std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
 void ColdStartTextAugmentation::mergeStrongWithWeak(
     ColdStartTextAugmentation::PhraseCollection& weak_phrases,
     Phrase& strong_phrase) const {
-  if (weak_phrases.empty()) {
-    // TODO(any) evaluate alternatives for if we have no weak phrases. Maybe
-    // sampling from the title?
-    weak_phrases = {strong_phrase};
-    return;
-  }
-
   ColdStartTextAugmentation::PhraseCollection downsampled_strong_phrases;
   if (_strong_sample_num_words) {
     // If we have to sample from the strong phrase, we create N independently
