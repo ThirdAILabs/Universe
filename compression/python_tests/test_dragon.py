@@ -3,9 +3,9 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 import numpy as np
-from thirdai import bolt
+from thirdai import bolt_v2 as bolt
 
-from utils import build_simple_hidden_layer_model, compressed_training
+from utils import compressed_training
 
 INPUT_DIM = 100
 HIDDEN_DIM = 100
