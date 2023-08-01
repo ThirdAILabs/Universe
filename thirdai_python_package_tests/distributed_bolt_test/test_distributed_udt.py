@@ -14,20 +14,12 @@ from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
-from thirdai.demos import (
-    download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
+
+from thirdai.demos import download_clinc_dataset
+from auto_ml.python_tests.download_dataset_fixtures import (
+    download_amazon_kaggle_product_catalog_sampled,
+    download_scifact_dataset,
 )
-from thirdai.demos import download_beir_dataset, download_clinc_dataset
-
-
-@pytest.fixture(scope="module")
-def download_amazon_kaggle_product_catalog_sampled():
-    return download_amazon_kaggle_product_catalog_sampled_wrapped()
-
-
-@pytest.fixture(scope="module")
-def download_scifact_dataset():
-    return download_beir_dataset("scifact")
 
 
 def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
