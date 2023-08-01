@@ -268,11 +268,7 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
 
-set(BUILD_DIR "${CMAKE_BINARY_DIR}")
 
-set(FFTW_DIR         "deps/fftw")
-set(FFTW_INCLUDE_DIR "${FFTW_DIR}/api")
-set(FFTW_BINARY_DIR  "${BUILD_DIR}/fftw")
 
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(BUILD_TESTS       OFF CACHE INTERNAL "" FORCE)
@@ -285,8 +281,7 @@ set(ENABLE_AVX        OFF  CACHE INTERNAL "" FORCE)
 set(ENABLE_AVX2       OFF CACHE INTERNAL "" FORCE)
 
 
-add_subdirectory(${FFTW_DIR} ${FFTW_BINARY_DIR})
-include_directories(${FFTW_INCLUDE_DIR})
+add_subdirectory(deps/fftw "${PROJECT_SOURCE_DIR}/deps/fftw")
 
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
@@ -517,6 +512,8 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
                  prometheus-cpp::pull utf8proc fftw3f)
+
+target_include_directories(thirdai PUBLIC ${PROJECT_SOURCE_DIR}/deps/fftw/api)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
