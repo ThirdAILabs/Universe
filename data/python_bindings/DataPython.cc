@@ -5,7 +5,9 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
+#include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/Date.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
@@ -206,6 +208,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       dataset_submodule.def_submodule("transformations");
 
   py::class_<State, StatePtr>(transformations_submodule, "State")
+      .def(py::init<>())
       .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
 
   py::class_<Transformation, std::shared_ptr<Transformation>>(
@@ -271,6 +274,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("delimiter"), py::arg("dim") = std::nullopt);
 
+  py::class_<StringToTimestamp, Transformation,
+             std::shared_ptr<StringToTimestamp>>(transformations_submodule,
+                                                 "ToTimestamps")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("format") = "%Y-%m-%d");
+
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
                                                   "TransformationList")
@@ -283,6 +293,23 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     size_t>(),
            py::arg("input_columns"), py::arg("output_indices_column"),
            py::arg("output_values_column"), py::arg("hash_range"));
+
+  py::class_<CategoricalTemporal, Transformation,
+             std::shared_ptr<CategoricalTemporal>>(transformations_submodule,
+                                                   "CategoricalTemporal")
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::string, size_t, bool, bool, int64_t>(),
+           py::arg("user_column"), py::arg("item_column"),
+           py::arg("timestamp_column"), py::arg("output_column"),
+           py::arg("tracker_key"), py::arg("track_last_n"),
+           py::arg("should_update_history") = true,
+           py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+
+  py::class_<Date, Transformation, std::shared_ptr<Date>>(
+      transformations_submodule, "Date")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("format") = "%Y-%m-%d");
 
   py::class_<StringConcat, Transformation, std::shared_ptr<StringConcat>>(
       transformations_submodule, "StringConcat")
