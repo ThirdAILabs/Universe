@@ -10,14 +10,14 @@ namespace thirdai::data {
 
 Loader::Loader(ColumnMapIterator data_iterator,
                TransformationPtr transformation, StatePtr state,
-               IndexValueColumnList input_columns,
-               IndexValueColumnList label_columns, size_t batch_size,
+               IndexValueColumnList model_input_columns,
+               IndexValueColumnList model_label_columns, size_t batch_size,
                bool shuffle, bool verbose, size_t shuffle_buffer_size,
                uint32_t shuffle_seed)
     : _data_iterator(std::move(data_iterator)),
       _transformation(std::move(transformation)),
-      _input_columns(std::move(input_columns)),
-      _label_columns(std::move(label_columns)),
+      _model_input_columns(std::move(model_input_columns)),
+      _model_label_columns(std::move(model_label_columns)),
       _batch_size(batch_size),
       _verbose(verbose),
       _shuffle(shuffle),
@@ -29,8 +29,8 @@ Loader::Loader(ColumnMapIterator data_iterator,
     _state = std::make_shared<State>();
   }
 
-  recordReturnedColumns(_input_columns);
-  recordReturnedColumns(_label_columns);
+  recordReturnedColumns(_model_input_columns);
+  recordReturnedColumns(_model_label_columns);
 }
 
 std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
@@ -47,8 +47,9 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
       break;
     }
 
-    ColumnMap processed_chunk = removeIntermediateColumns(
-        _transformation->apply(std::move(*chunk), *_state));
+    ColumnMap processed_chunk =
+        _transformation->apply(std::move(*chunk), *_state);
+    processed_chunk = removeIntermediateColumns(std::move(processed_chunk));
 
     if (loaded_rows.numRows() > 0) {
       loaded_rows = loaded_rows.concat(processed_chunk);
@@ -73,8 +74,8 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
 
   _shuffle_buffer = std::move(new_buffer);
 
-  auto inputs = toTensorBatches(dataset, _input_columns, _batch_size);
-  auto labels = toTensorBatches(dataset, _label_columns, _batch_size);
+  auto inputs = toTensorBatches(dataset, _model_input_columns, _batch_size);
+  auto labels = toTensorBatches(dataset, _model_label_columns, _batch_size);
 
   timer.stop();
   logLoadEnd(dataset.numRows(), inputs.size(), timer.seconds());

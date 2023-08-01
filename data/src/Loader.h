@@ -63,8 +63,8 @@ class Loader {
   ColumnMapIterator _data_iterator;
   TransformationPtr _transformation;
 
-  IndexValueColumnList _input_columns;
-  IndexValueColumnList _label_columns;
+  IndexValueColumnList _model_input_columns;
+  IndexValueColumnList _model_label_columns;
   std::unordered_set<std::string> _columns_returned;
 
   size_t _batch_size;

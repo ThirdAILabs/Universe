@@ -80,6 +80,10 @@ def test_data_loader_clinc(train_bolt_on_clinc):
     assert metrics["val_categorical_accuracy"][-1] >= 0.85
 
 
+# Checks that the features produced by the data loader are consistent with the
+# features produced by directly transforming the input samples. This is accomplished
+# by asserting that a model trained with the data loader performs well on inference
+# samples that have been transformed directly.
 @pytest.mark.unit
 def test_single_sample_featurization(train_bolt_on_clinc):
     model, metrics, inference_samples = train_bolt_on_clinc
@@ -104,6 +108,10 @@ def test_single_sample_featurization(train_bolt_on_clinc):
     assert np.isclose(acc, metrics["val_categorical_accuracy"][-1])
 
 
+# Checks that the features produced by the data loader are consistent with the
+# features produced by directly transforming the input samples. This is accomplished
+# by asserting that a model trained with the data loader performs well on inference
+# samples that have been transformed directly.
 @pytest.mark.unit
 def test_batch_featurization(train_bolt_on_clinc):
     model, metrics, inference_samples = train_bolt_on_clinc
