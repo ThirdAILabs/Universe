@@ -25,12 +25,12 @@ struct ItemHistoryTracker {
 };
 
 /**
- * The purpose of this state object is to have a central location where
- * stateful information is stored in the data pipeline. Having a unique owner
- * for all the stateful information simplifies the serialization because the
- * information is only serialized from, and deserialized to a single place.
- * The state object is passed to each transformation's apply method so that
- * they can access any of the information stored in the state.
+ * The purpose of this state object is to have a central location where stateful
+ * information is stored in the data pipeline. Having a unique owner for all the
+ * stateful information simplifies the serialization because the information is
+ * only serialized from, and deserialized to a single place. The state object is
+ * passed to each transformation's apply method so that they can access any of
+ * the information stored in the state.
  *
  * Comment on design: We chose to store different types of state as explicit
  * fields instead of in a map with a state interface for the following
@@ -46,8 +46,8 @@ struct ItemHistoryTracker {
  *    4. It simplifies handling namespaces between different types of state,
  *       i.e. avoid key collisions. Especially for things like a Mach Index
  *       where we only need one for a given state object. With this design it
- *       can just be accessed directly instead of needing to be retrieved from
- * a map.
+ *       can just be accessed directly instead of needing to be retrieved from a
+ *       map.
  *    5. At least when this decision was made, there are only a few types of
  *       state we actually have, so having a field for each is not an issue.
  */
@@ -69,8 +69,7 @@ class State {
   void setMachIndex(MachIndexPtr new_index) {
     if (_mach_index->numBuckets() != new_index->numBuckets()) {
       throw std::invalid_argument(
-          "Output range mismatch in new index. Index output range should "
-          "be " +
+          "Output range mismatch in new index. Index output range should be " +
           std::to_string(_mach_index->numBuckets()) +
           " but provided an index with range = " +
           std::to_string(new_index->numBuckets()) + ".");
