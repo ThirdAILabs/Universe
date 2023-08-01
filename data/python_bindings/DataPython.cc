@@ -1,4 +1,7 @@
 #include "DataPython.h"
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/Loader.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
@@ -8,6 +11,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -38,6 +42,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
            py::arg("columns"))
+      .def(py::init(&ColumnMap::fromMapInput), py::arg("sample"))
+      .def(py::init(&ColumnMap::fromMapInputBatch), py::arg("samples"))
       .def("num_rows", &ColumnMap::numRows)
       .def("__getitem__", &ColumnMap::getColumn)
       .def(
@@ -56,6 +62,24 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   createColumnsSubmodule(dataset_submodule);
 
   createTransformationsSubmodule(dataset_submodule);
+
+  py::class_<ColumnMapIterator>(dataset_submodule, "ColumnMapIterator")
+      .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
+           py::arg("delimiter"), py::arg("rows_per_load") = 10000);
+
+  py::class_<Loader, LoaderPtr>(dataset_submodule, "Loader")
+      .def(py::init(&Loader::make), py::arg("data_iterator"),
+           py::arg("transformation"), py::arg("state"),
+           py::arg("input_columns"), py::arg("output_columns"),
+           py::arg("batch_size"), py::arg("shuffle") = true,
+           py::arg("verbose") = true,
+           py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE,
+           py::arg("shuffle_seed") = global_random::nextSeed())
+      .def("next", &Loader::next, py::arg("max_batches") = Loader::NO_LIMIT)
+      .def("all", &Loader::all);
+
+  dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
+                        py::arg("columns_to_convert"), py::arg("batch_size"));
 }
 
 template <typename T>
@@ -183,7 +207,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
 
-  py::class_<State>(transformations_submodule, "State")
+  py::class_<State, StatePtr>(transformations_submodule, "State")
       .def(py::init<>())
       .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
 
@@ -286,6 +310,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::string, std::string, std::string>(),
            py::arg("input_column"), py::arg("output_column"),
            py::arg("format") = "%Y-%m-%d");
+
+  py::class_<StringConcat, Transformation, std::shared_ptr<StringConcat>>(
+      transformations_submodule, "StringConcat")
+      .def(py::init<std::vector<std::string>, std::string, std::string>(),
+           py::arg("input_columns"), py::arg("output_column"),
+           py::arg("seperator") = "");
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,

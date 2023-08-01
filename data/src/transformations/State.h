@@ -89,4 +89,6 @@ class State {
   }
 };
 
+using StatePtr = std::shared_ptr<State>;
+
 }  // namespace thirdai::data

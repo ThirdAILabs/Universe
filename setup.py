@@ -161,6 +161,7 @@ neural_db_deps = [
     "url-normalize",
     "nltk",
     "unidecode",
+    "pydantic",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -210,7 +211,7 @@ setup(
             "transformers",
             "pandas>=1.2.0",
             "cryptography",
-            "tokenizers==0.11.6",
+            "tokenizers",
             "pyarrow",
             "prometheus_client",
             "gcsfs",
