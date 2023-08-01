@@ -8,63 +8,57 @@
 
 namespace thirdai::bolt::nn::ops {
 
-class FFTMixer final: public Op,
-                public std::enable_shared_from_this<FFTMixer> {
-public:
-static std::shared_ptr<FFTMixer> make(uint32_t rows, uint32_t columns);
+class FFTMixer final : public Op,
+                       public std::enable_shared_from_this<FFTMixer> {
+ public:
+  static std::shared_ptr<FFTMixer> make(uint32_t rows, uint32_t columns);
 
-    void forward(const autograd::ComputationList& inputs,
+  void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
 
-    void backpropagate(autograd::ComputationList& inputs,
+  void backpropagate(autograd::ComputationList& inputs,
                      tensor::TensorPtr& output, uint32_t index_in_batch) final;
 
-    void updateParameters(float learning_rate, uint32_t train_steps) final;
-    
-    uint32_t dim() const final {return _rows * _columns;};
+  void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-    void disableSparseParameterUpdates() final {}
+  uint32_t dim() const final { return _rows * _columns; };
 
-    void enableSparseParameterUpdates() final {}
+  void disableSparseParameterUpdates() final {}
 
+  void enableSparseParameterUpdates() final {}
 
-    std::vector<std::vector<float>*> gradients() final {
-        return {};
-    }
+  std::vector<std::vector<float>*> gradients() final { return {}; }
 
-    std::vector<std::vector<float>*> parameters() final {
-        return {};
-    }
+  std::vector<std::vector<float>*> parameters() final { return {}; }
 
-    void summary(std::ostream& summary, const autograd::ComputationList& inputs,
+  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
-    std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final {
-        return inputs.at(0)->nonzeros(use_sparsity);
-    }
-    
-    uint32_t inputDim() const  { return _rows * _columns; }
+    return inputs.at(0)->nonzeros(use_sparsity);
+  }
 
-    /**
-    * Applies the op to an input tensor and yields a new output tensor. Used to
-    * add the op to a computation graph.
-    */
-    autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  uint32_t inputDim() const { return _rows * _columns; }
 
-private:
-    FFTMixer() {}
+  /**
+   * Applies the op to an input tensor and yields a new output tensor. Used to
+   * add the op to a computation graph.
+   */
+  autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
-    FFTMixer(uint32_t rows, uint32_t columns);
+ private:
+  FFTMixer() {}
 
-    bool _disable_sparse_parameter_updates;
-    uint32_t _rows, _columns;
+  FFTMixer(uint32_t rows, uint32_t columns);
 
-    friend class cereal::access;
-    template <class Archive>
-    void serialize(Archive& archive);
+  bool _disable_sparse_parameter_updates;
+  uint32_t _rows, _columns;
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 using FFTMixerPtr = std::shared_ptr<FFTMixer>;
 

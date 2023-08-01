@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <fftw3.h>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -14,7 +15,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <fftw3.h>
 
 namespace thirdai {
 
