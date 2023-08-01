@@ -286,8 +286,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<StringConcat, Transformation, std::shared_ptr<StringConcat>>(
       transformations_submodule, "StringConcat")
-      .def(py::init<std::vector<std::string>, std::string>(),
-           py::arg("input_columns"), py::arg("output_column"));
+      .def(py::init<std::vector<std::string>, std::string, std::string>(),
+           py::arg("input_columns"), py::arg("output_column"),
+           py::arg("seperator") = "");
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,

@@ -18,8 +18,11 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
 #pragma omp parallel for default(none) shared(output, columns, input_columns)
   for (size_t i = 0; i < columns.numRows(); i++) {
     std::string concat;
-    for (const auto& col : input_columns) {
-      concat.append(col->value(i)).push_back(' ');
+    for (size_t col_idx = 0; col_idx < input_columns.size(); col_idx++) {
+      if (col_idx > 0) {
+        concat.append(_seperator);
+      }
+      concat.append(input_columns[col_idx]->value(i));
     }
     output[i] = std::move(concat);
   }

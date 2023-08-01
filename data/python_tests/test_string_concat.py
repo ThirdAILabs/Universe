@@ -11,10 +11,12 @@ def test_string_concat():
     input_columns = list(columns.keys())
     columns = data.ColumnMap(columns)
 
-    transformation = data.transformations.StringConcat(input_columns, "output")
+    transformation = data.transformations.StringConcat(
+        input_columns, "output", seperator="#"
+    )
 
     columns = transformation(columns)
 
     for i in range(ROWS):
-        expected = " ".join([columns[col][i] for col in input_columns]) + " "
+        expected = "#".join([columns[col][i] for col in input_columns])
         assert columns["output"][i] == expected
