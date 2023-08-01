@@ -33,8 +33,7 @@ struct ItemHistoryTracker {
  * the information stored in the state.
  *
  * Comment on design: We chose to store different types of state as explicit
- * fields instead of in a map with a state interface for the following
- * reasons:
+ * fields instead of in a map with a state interface for the following reasons:
  *    1. No common behavior or properties makes strange to have a unifying
  *       interface for different types of state.
  *    2. This design simplifies using the state because it won't require a lot
