@@ -8,6 +8,7 @@ from nltk.tokenize import sent_tokenize
 from trafilatura import extract
 from trafilatura.settings import use_config
 from url_normalize import url_normalize
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from .utils import ensure_valid_encoding
 
@@ -64,9 +65,6 @@ def recursive_url_scrape(base_url, max_crawl_depth, match_url_prefix=True):
 
 
 def process_url(url, response):
-    # This import fails in python3.7 because langchain only has python3.7 support
-    # up to version 0.0.27 and this was introduced in a later version of langchain.
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
