@@ -209,7 +209,7 @@ setup(
             "toml",
             "psutil",
             "transformers",
-            "pandas>=1.2.0",
+            "pandas>=2.0.0",
             "cryptography",
             "tokenizers",
             "pyarrow",
