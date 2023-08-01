@@ -4,21 +4,18 @@
 
 namespace thirdai::data {
 
-class StringLookup final : public Transformation {
+class StringIDLookup final : public Transformation {
  public:
-  StringLookup(std::string input_column_name, std::string output_column_name,
-               std::optional<size_t> max_vocab_size,
-               std::optional<char> delimiter);
+  StringIDLookup(std::string input_column_name, std::string output_column_name,
+                 std::string vocab_key, std::optional<size_t> max_vocab_size,
+                 std::optional<char> delimiter);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
-  std::string vocabKey() const {
-    return _input_column_name + "_" + _output_column_name;
-  }
-
   std::string _input_column_name;
   std::string _output_column_name;
+  std::string _vocab_key;
 
   std::optional<size_t> _max_vocab_size;
   std::optional<char> _delimiter;

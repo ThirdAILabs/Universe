@@ -1,4 +1,4 @@
-#include "StringLookup.h"
+#include "StringIDLookup.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/CsvParser.h>
 
@@ -8,25 +8,26 @@ using dataset::ThreadSafeVocabulary;
 
 using dataset::parsers::CSV::parseLine;
 
-StringLookup::StringLookup(std::string input_column_name,
-                           std::string output_column_name,
-                           std::optional<size_t> max_vocab_size,
-                           std::optional<char> delimiter)
+StringIDLookup::StringIDLookup(std::string input_column_name,
+                               std::string output_column_name,
+                               std::string vocab_key,
+                               std::optional<size_t> max_vocab_size,
+                               std::optional<char> delimiter)
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)),
+      _vocab_key(std::move(vocab_key)),
       _max_vocab_size(max_vocab_size),
       _delimiter(delimiter) {}
 
-ColumnMap StringLookup::apply(ColumnMap columns, State& state) const {
+ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
   auto strings = columns.getValueColumn<std::string>(_input_column_name);
 
   std::vector<std::vector<uint32_t>> ids(strings->numRows());
 
-  std::string vocab_key = vocabKey();
-  if (!state.containsVocab(vocab_key)) {
-    state.addVocab(vocab_key, ThreadSafeVocabulary::make(_max_vocab_size));
+  if (!state.containsVocab(_vocab_key)) {
+    state.addVocab(_vocab_key, ThreadSafeVocabulary::make(_max_vocab_size));
   }
-  ThreadSafeVocabularyPtr& vocab = state.getVocab(vocab_key);
+  ThreadSafeVocabularyPtr& vocab = state.getVocab(_vocab_key);
 
   std::exception_ptr error;
 

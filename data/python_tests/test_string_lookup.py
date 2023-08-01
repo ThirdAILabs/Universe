@@ -9,7 +9,9 @@ def test_repeating_values():
         {"strings": data.columns.StringColumn(["a", "b", "b,c", "a", "a,c", "c"])}
     )
 
-    transformation = data.transformations.StringLookup("strings", "ids", delimiter=",")
+    transformation = data.transformations.StringLookup(
+        "strings", "ids", vocab_key="ids", delimiter=","
+    )
 
     columns = transformation(columns)
 
@@ -37,7 +39,9 @@ def test_large_column():
         }
     )
 
-    transformation = data.transformations.StringLookup("strings", "ids", delimiter=",")
+    transformation = data.transformations.StringLookup(
+        "strings", "ids", vocab_key="ids", delimiter=","
+    )
 
     columns = transformation(columns)
 
