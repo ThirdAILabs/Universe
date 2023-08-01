@@ -340,3 +340,52 @@ def test_udt_licensed_training():
         backend_config=TorchConfig(backend="gloo"),
     )
     trainer.fit()
+
+
+# We added this separately, as we don't need to add training for checking whether license
+# works as just initializing the model should work. Also, `udt_training_loop_per_worker`
+# runs in a separate environment hence we need to pass in license state to its thirdai
+# namespace
+@pytest.mark.release
+def test_udt_licensed_fail():
+    def udt_training_loop_per_worker(config):
+        udt_model = get_clinc_udt_model(integer_target=True)
+        udt_model = dist.prepare_model(udt_model)
+
+        session.report(
+            {"demo_metric": 1},
+        )
+
+    licensing_lambda = None
+    if hasattr(thirdai._thirdai, "licensing"):
+        license_state = thirdai._thirdai.licensing._get_license_state()
+        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+            license_state
+        )
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={
+            "working_dir": working_dir,
+        },
+        ignore_reinit_error=True,
+    )
+
+    scaling_config = ScalingConfig(
+        num_workers=1,
+        resources_per_worker={"CPU": 1},
+    )
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=udt_training_loop_per_worker,
+        train_loop_config={
+            "licensing_lambda": licensing_lambda,
+        },
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"Unable to find column with name 'SOME RANDOM NAME'.",
+    ):
+        trainer.fit()
