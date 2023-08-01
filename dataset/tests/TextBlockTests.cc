@@ -1,12 +1,15 @@
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/text/Text.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <random>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -172,7 +175,8 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
       /* encoder = */ PairGramEncoder::make(), /* lowercase = */ false,
       /* dim = */ dim_for_encodings));
   blocks.push_back(TextBlock::make(
-      /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
+      /* col= */ 2,
+      /* tokenizer = */ CharKGramTokenizer::make(k_chars, /* stride= */ 1),
       /* lowercase = */ false, /* dim = */ dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
@@ -256,10 +260,12 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
       /* encoder = */ PairGramEncoder::make(), /* lowercase = */ false,
       /* dim = */ dim_for_encodings));
   blocks_1.push_back(TextBlock::make(
-      /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
+      /* col= */ 2,
+      /* tokenizer = */ CharKGramTokenizer::make(k_chars, /* stride= */ 1),
       /* lowercase = */ false, /* dim = */ dim_for_encodings));
   blocks_2.push_back(TextBlock::make(
-      /* col= */ 2, /* tokenizer = */ CharKGramTokenizer::make(k_chars),
+      /* col= */ 2,
+      /* tokenizer = */ CharKGramTokenizer::make(k_chars, /* stride= */ 1),
       /* lowercase = */ false, /* dim = */ dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs_1 =
@@ -311,6 +317,33 @@ TEST_F(TextBlockTest, TextUnigramBlockWithDelimiter) {
 
     ASSERT_EQ(total, words_per_row);
   }
+}
+
+TEST_F(TextBlockTest, CharKGramTokenizerWithNonOverlappingStride) {
+  // We call getTextTokenizerFromString instead of
+  // CharKGramTokenizer::make(/* k= */ 3, /* stride= */ 3) to check that
+  // this method works correctly.
+  auto tokenizer = automl::data::getTextTokenizerFromString("char-3-3");
+
+  auto no_char_tokens = tokenizer->tokenize("");
+  ASSERT_EQ(no_char_tokens.size(), 0);
+
+  auto nine_char_tokens = tokenizer->tokenize("abcdefghi");
+  ASSERT_EQ(nine_char_tokens.size(), 3);
+
+  auto eight_char_tokens = tokenizer->tokenize("abcdefgh");
+  ASSERT_EQ(eight_char_tokens.size(), 3);
+
+  std::unordered_set<uint32_t> nine_char_tokens_set(nine_char_tokens.begin(),
+                                                    nine_char_tokens.end());
+
+  uint32_t intersection_size = 0;
+  for (uint32_t token : eight_char_tokens) {
+    if (nine_char_tokens_set.count(token)) {
+      intersection_size++;
+    }
+  }
+  ASSERT_EQ(intersection_size, 2);
 }
 
 }  // namespace thirdai::dataset

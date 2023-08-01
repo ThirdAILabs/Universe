@@ -94,20 +94,21 @@ class WordPunctTokenizer : public TextTokenizer {
 
 class CharKGramTokenizer : public TextTokenizer {
  public:
-  explicit CharKGramTokenizer(uint32_t k) : _k(k) {}
+  explicit CharKGramTokenizer(uint32_t k, uint32_t stride)
+      : _k(k), _stride(stride) {}
 
-  static auto make(uint32_t k) {
-    return std::make_shared<CharKGramTokenizer>(k);
+  static auto make(uint32_t k, uint32_t stride) {
+    return std::make_shared<CharKGramTokenizer>(k, stride);
   }
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
-    return token_encoding::hashTokens(text::charKGrams(input, _k));
+    return token_encoding::hashTokens(text::charKGrams(input, _k, _stride));
   }
 
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
-    auto map =
-        token_encoding::buildUnigramHashToWordMap(text::charKGrams(input, _k));
+    auto map = token_encoding::buildUnigramHashToWordMap(
+        text::charKGrams(input, _k, _stride));
 
     if (!map.count(source_token)) {
       // should never get here since RCA should have only returned a valid token
@@ -117,14 +118,14 @@ class CharKGramTokenizer : public TextTokenizer {
   }
 
  private:
-  uint32_t _k;
+  uint32_t _k, _stride;
 
   CharKGramTokenizer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextTokenizer>(this), _k);
+    archive(cereal::base_class<TextTokenizer>(this), _k, _stride);
   }
 };
 

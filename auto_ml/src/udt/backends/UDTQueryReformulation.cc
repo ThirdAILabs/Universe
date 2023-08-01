@@ -344,7 +344,8 @@ dataset::BlockList UDTQueryReformulation::ngramBlockList(
   for (auto n_gram : n_grams) {
     input_blocks.emplace_back(dataset::TextBlock::make(
         /* col = */ column_name,
-        /* tokenizer= */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
+        /* tokenizer= */
+        dataset::CharKGramTokenizer::make(/* k = */ n_gram, /* stride= */ 1),
         /* lowercase= */ true,
         /* dim = */ std::numeric_limits<uint32_t>::max()));
   }

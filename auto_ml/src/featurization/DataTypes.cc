@@ -7,7 +7,14 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
     const std::string& string) {
   if (std::regex_match(string, std::regex("char-[1-9]\\d*"))) {
     uint32_t k = std::strtol(string.data() + 5, nullptr, 10);
-    return dataset::CharKGramTokenizer::make(/* k = */ k);
+    return dataset::CharKGramTokenizer::make(/* k = */ k, /* stride= */ 1);
+  }
+
+  if (std::regex_match(string, std::regex("char-[1-9]\\d*-[1-9]\\d*"))) {
+    char* end;
+    uint32_t k = std::strtol(string.data() + 5, &end, 10);
+    uint32_t stride = std::strtol(end + 1, nullptr, 10);
+    return dataset::CharKGramTokenizer::make(/* k = */ k, /* stride= */ stride);
   }
 
   if (string == "words") {

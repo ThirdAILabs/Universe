@@ -70,16 +70,16 @@ std::vector<std::string> tokenizeSentence(const std::string_view& sentence) {
   return tokens;
 }
 
-std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
+std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k,
+                                    uint32_t stride) {
   std::string text_str(text);
   if (text_str.empty()) {
     return {};
   }
 
   std::vector<std::string> char_k_grams;
-  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
-  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
-  for (uint32_t offset = 0; offset < n_kgrams; offset++) {
+  for (uint32_t offset = 0; offset < text_str.size(); offset += stride) {
+    size_t len = std::min(text_str.size() - offset, static_cast<size_t>(k));
     char_k_grams.push_back(text_str.substr(offset, len));
   }
 
