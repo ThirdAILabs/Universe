@@ -27,7 +27,7 @@ def bolt_e5_model():
 
     output_dim = 50000
     output_op = bolt.nn.FullyConnected(
-        dim=output_dim, sparsity=0.01, input_dim=hidden_dim, activation="softmax"
+        dim=output_dim, sparsity=0.01, input_dim=hidden_dim, activation="sigmoid"
     )
 
     text_output1 = output_op(text_hidden1)
