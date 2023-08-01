@@ -9,6 +9,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -282,6 +283,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     size_t>(),
            py::arg("input_columns"), py::arg("output_indices_column"),
            py::arg("output_values_column"), py::arg("hash_range"));
+
+  py::class_<StringConcat, Transformation, std::shared_ptr<StringConcat>>(
+      transformations_submodule, "StringConcat")
+      .def(py::init<std::vector<std::string>, std::string, std::string>(),
+           py::arg("input_columns"), py::arg("output_column"),
+           py::arg("seperator") = "");
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
