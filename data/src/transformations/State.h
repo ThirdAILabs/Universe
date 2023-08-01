@@ -3,9 +3,15 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::data {
+
+using dataset::ThreadSafeVocabulary;
+using ThreadSafeVocabularyPtr = std::unique_ptr<ThreadSafeVocabulary>;
 
 using dataset::mach::MachIndexPtr;
 
@@ -36,8 +42,25 @@ class State {
     _mach_index = std::move(new_index);
   }
 
+  bool containsVocab(const std::string& key) const {
+    return _vocabs.count(key);
+  }
+
+  void addVocab(const std::string& key, ThreadSafeVocabularyPtr&& vocab) {
+    _vocabs.emplace(key, std::move(vocab));
+  }
+
+  ThreadSafeVocabularyPtr& getVocab(const std::string& key) {
+    if (!_vocabs.count(key)) {
+      throw std::invalid_argument("Cannot find vocab for key '" + key + "'.");
+    }
+    return _vocabs.at(key);
+  }
+
  private:
   MachIndexPtr _mach_index = nullptr;
+
+  std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   friend class cereal::access;
   template <class Archive>

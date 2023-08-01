@@ -7,6 +7,7 @@
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
+#include <data/src/transformations/StringLookup.h>
 #include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
@@ -259,6 +260,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     size_t>(),
            py::arg("input_columns"), py::arg("output_indices_column"),
            py::arg("output_values_column"), py::arg("hash_range"));
+
+  py::class_<StringLookup, Transformation, std::shared_ptr<StringLookup>>(
+      transformations_submodule, "StringLookup")
+      .def(py::init<std::string, std::string, std::optional<size_t>,
+                    std::optional<char>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("max_vocab_size") = std::nullopt,
+           py::arg("delimiter") = std::nullopt);
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
