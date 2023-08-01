@@ -24,8 +24,7 @@ ColumnMap StringLookup::apply(ColumnMap columns, State& state) const {
 
   std::string vocab_key = vocabKey();
   if (!state.containsVocab(vocab_key)) {
-    state.addVocab(vocab_key,
-                   std::make_unique<ThreadSafeVocabulary>(_max_vocab_size));
+    state.addVocab(vocab_key, ThreadSafeVocabulary::make(_max_vocab_size));
   }
   ThreadSafeVocabularyPtr& vocab = state.getVocab(vocab_key);
 

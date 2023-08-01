@@ -10,9 +10,7 @@
 
 namespace thirdai::data {
 
-using dataset::ThreadSafeVocabulary;
-using ThreadSafeVocabularyPtr = std::unique_ptr<ThreadSafeVocabulary>;
-
+using dataset::ThreadSafeVocabularyPtr;
 using dataset::mach::MachIndexPtr;
 
 class State {
