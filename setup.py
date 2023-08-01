@@ -211,7 +211,7 @@ setup(
             "transformers",
             "pandas>=1.2.0",
             "cryptography",
-            "tokenizers==0.11.6",
+            "tokenizers",
             "pyarrow",
             "prometheus_client",
             "gcsfs",
