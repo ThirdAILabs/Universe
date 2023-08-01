@@ -218,41 +218,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("__call__", &Transformation::apply, py::arg("columns"),
            py::arg("state"));
 
-#if !THIRDAI_EXPOSE_ALL
-  return;
-#endif
-
-  py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
-      transformations_submodule, "Text")
-      .def(py::init<std::string, std::string, dataset::TextTokenizerPtr,
-                    dataset::TextEncoderPtr, bool, size_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
-           py::arg("encoder") = dataset::NGramEncoder(1),
-           py::arg("lowercase") = false,
-           py::arg("dim") = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
-
-  py::class_<BinningTransformation, Transformation,
-             std::shared_ptr<BinningTransformation>>(transformations_submodule,
-                                                     "Binning")
-      .def(py::init<std::string, std::string, float, float, uint32_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("inclusive_min"), py::arg("exclusive_max"),
-           py::arg("num_bins"));
-
-  py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
-      transformations_submodule, "StringHash")
-      .def(py::init<std::string, std::string, std::optional<uint32_t>,
-                    uint32_t>(),
-           py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
-
-  py::class_<TabularHashedFeatures, Transformation,
-             std::shared_ptr<TabularHashedFeatures>>(transformations_submodule,
-                                                     "TabularHashedFeatures")
-      .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
-           py::arg("input_columns"), py::arg("output_column"),
-           py::arg("output_range"), py::arg("use_pairgrams") = false);
+  py::class_<TransformationList, Transformation,
+             std::shared_ptr<TransformationList>>(transformations_submodule,
+                                                  "TransformationList")
+      .def(py::init<std::vector<TransformationPtr>>(),
+           py::arg("transformations"));
 
   py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
       transformations_submodule, "ToTokens")
@@ -286,11 +256,38 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("format") = "%Y-%m-%d");
 
-  py::class_<TransformationList, Transformation,
-             std::shared_ptr<TransformationList>>(transformations_submodule,
-                                                  "TransformationList")
-      .def(py::init<std::vector<TransformationPtr>>(),
-           py::arg("transformations"));
+#if THIRDAI_EXPOSE_ALL
+  py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
+      transformations_submodule, "Text")
+      .def(py::init<std::string, std::string, dataset::TextTokenizerPtr,
+                    dataset::TextEncoderPtr, bool, size_t>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
+           py::arg("encoder") = dataset::NGramEncoder(1),
+           py::arg("lowercase") = false,
+           py::arg("dim") = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
+
+  py::class_<BinningTransformation, Transformation,
+             std::shared_ptr<BinningTransformation>>(transformations_submodule,
+                                                     "Binning")
+      .def(py::init<std::string, std::string, float, float, uint32_t>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("inclusive_min"), py::arg("exclusive_max"),
+           py::arg("num_bins"));
+
+  py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
+      transformations_submodule, "StringHash")
+      .def(py::init<std::string, std::string, std::optional<uint32_t>,
+                    uint32_t>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
+
+  py::class_<TabularHashedFeatures, Transformation,
+             std::shared_ptr<TabularHashedFeatures>>(transformations_submodule,
+                                                     "TabularHashedFeatures")
+      .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
+           py::arg("input_columns"), py::arg("output_column"),
+           py::arg("output_range"), py::arg("use_pairgrams") = false);
 
   py::class_<FeatureHash, Transformation, std::shared_ptr<FeatureHash>>(
       transformations_submodule, "FeatureHash")
@@ -330,7 +327,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_columns"), py::arg("output_column"),
            py::arg("seperator") = "");
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<ColdStartTextAugmentation, Transformation,
              std::shared_ptr<ColdStartTextAugmentation>>(
       transformations_submodule, "ColdStartText")
