@@ -14,19 +14,24 @@ def test_date_transformation():
 
     date_infos = columns["date_info"].data()
 
-    print(date_infos)
+    feature_offset = 0
 
     # Day of week
-    assert (date_infos[1][0] - date_infos[0][0]) % 7 == 2
+    assert 0 <= date_infos[0][0] < 7
+    assert 0 <= date_infos[1][0] < 7
+    assert (date_infos[1][0] - date_infos[0][0]) % 7 == 2  # Should be two days apart
+    feature_offset += 7  # 7 days in a week
 
     # Month
-    assert date_infos[0][1] == (7 + 0)
-    assert date_infos[1][1] == (7 + 9)
+    assert date_infos[0][1] == (feature_offset + 0)
+    assert date_infos[1][1] == (feature_offset + 9)
+    feature_offset += 12  # 12 months in a year
 
     # Week of month
-    assert date_infos[0][2] == (7 + 12 + 0)
-    assert date_infos[1][2] == (7 + 12 + 1)
+    assert date_infos[0][2] == (feature_offset + 0)
+    assert date_infos[1][2] == (feature_offset + 1)
+    feature_offset += 5  # up to 5 weeks in a month
 
     # Week of year
-    assert date_infos[0][3] == (7 + 12 + 5 + 0)
-    assert date_infos[1][3] == (7 + 12 + 5 + 40)
+    assert date_infos[0][3] == (feature_offset + 0)
+    assert date_infos[1][3] == (feature_offset + 40)

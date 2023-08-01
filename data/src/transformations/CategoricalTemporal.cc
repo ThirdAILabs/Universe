@@ -9,12 +9,13 @@ namespace thirdai::data {
 CategoricalTemporal::CategoricalTemporal(
     std::string user_column, std::string item_column,
     std::string timestamp_column, std::string output_column,
-    size_t track_last_n, bool should_update_history, bool include_current_row,
-    int64_t time_lag)
+    std::string tracker_key, size_t track_last_n, bool should_update_history,
+    bool include_current_row, int64_t time_lag)
     : _user_column(std::move(user_column)),
       _item_column(std::move(item_column)),
       _timestamp_column(std::move(timestamp_column)),
       _output_column(std::move(output_column)),
+      _tracker_key(std::move(tracker_key)),
       _track_last_n(track_last_n),
       _should_update_history(should_update_history),
       _include_current_row(include_current_row),
@@ -25,7 +26,7 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto item_col = columns.getArrayColumn<uint32_t>(_item_column);
   auto timestamp_col = columns.getValueColumn<int64_t>(_timestamp_column);
 
-  auto& item_history_tracker = state.getItemHistoryTracker(trackerKey());
+  auto& item_history_tracker = state.getItemHistoryTracker(_tracker_key);
 
   std::vector<std::vector<uint32_t>> last_n_items(user_col->numRows());
 

@@ -13,6 +13,7 @@ def categorical_temporal(include_current_row, should_update_history=True, time_l
         item_column="items",
         timestamp_column="timestamps",
         output_column="history",
+        tracker_key="users_to_items",
         track_last_n=4,
         include_current_row=include_current_row,
         should_update_history=should_update_history,
@@ -100,6 +101,10 @@ def test_without_updating_history(include_current_row):
 
     columns = make_column_map(users, items, timestamps)
 
+    # Here we invoke the non updating transformation on a new list of samples.
+    # The same users occur multiple times in this new list of samples. This tests
+    # the non-updating property because we check that these featurized samples
+    # only contain history from the samples indexed with the updating transformation.
     columns = nonupdating_transformation(columns, state)
 
     if include_current_row:

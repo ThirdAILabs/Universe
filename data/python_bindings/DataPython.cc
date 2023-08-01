@@ -273,11 +273,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<CategoricalTemporal, Transformation,
              std::shared_ptr<CategoricalTemporal>>(transformations_submodule,
                                                    "CategoricalTemporal")
-      .def(py::init<std::string, std::string, std::string, std::string, size_t,
-                    bool, bool, int64_t>(),
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::string, size_t, bool, bool, int64_t>(),
            py::arg("user_column"), py::arg("item_column"),
            py::arg("timestamp_column"), py::arg("output_column"),
-           py::arg("track_last_n"), py::arg("should_update_history") = true,
+           py::arg("tracker_key"), py::arg("track_last_n"),
+           py::arg("should_update_history") = true,
            py::arg("include_current_row") = false, py::arg("time_lag") = 0);
 
   py::class_<Date, Transformation, std::shared_ptr<Date>>(

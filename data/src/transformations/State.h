@@ -27,6 +27,24 @@ struct ItemHistoryTracker {
  * only serialized from, and deserialized to a single place. The state object is
  * passed to each transformation's apply method so that they can access any of
  * the information stored in the state.
+ *
+ * Comment on design: We chose to store different types of state as explicit
+ * fields instead of in a map with a state interface for the following reasons:
+ *    1. No common behavior or properties makes strange to have a unifying
+ *       interface for different types of state.
+ *    2. This design simplifies using the state because it won't require a lot
+ *       of dynamic casting to get the correct state types from the map.
+ *    3. Similarly it reduces sources of error because the types are explicit
+ *       and clear, there are fewer possible sources of error when fields of a
+ *       particular type are accessed directly, rather than having to access,
+ *       check types, and cast.
+ *    4. It simplifies handling namespaces between different types of state,
+ *       i.e. avoid key collisions. Especially for things like a Mach Index
+ *       where we only need one for a given state object. With this design it
+ *       can just be accessed directly instead of needing to be retrieved from a
+ *       map.
+ *    5. At least when this decision was made, there are only a few types of
+ *       state we actually have, so having a field for each is not an issue.
  */
 class State {
  public:
