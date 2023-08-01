@@ -205,6 +205,41 @@ CreatedTransformations nonTemporalTransformations(
   return {transformations, output_columns};
 }
 
+void checkKeyColumn(const std::string& key_column,
+                    const data::ColumnDataTypes& data_types,
+                    const std::string& label_column) {
+  if (!data_types.count(key_column)) {
+    throw std::invalid_argument("Tracking key column '" + key_column +
+                                "' is not specified in data_types.");
+  }
+  if (key_column == label_column) {
+    throw std::invalid_argument(
+        "Tracking key column cannot be the label column.");
+  }
+}
+
+void checkTemporalConfig(const data::TemporalConfig& temporal_config,
+                         const data::ColumnDataTypes& data_types) {
+  if (!temporal_config.isCategorical()) {
+    throw std::invalid_argument(
+        "Only categorical temporal tracking is supported.");
+  }
+
+  auto categorical_temporal = temporal_config.asCategorical();
+
+  if (!data_types.count(categorical_temporal.column_name)) {
+    throw std::invalid_argument("Tracked column '" +
+                                categorical_temporal.column_name +
+                                "' is not specified in data_types.");
+  }
+
+  if (!data::asCategorical(data_types.at(categorical_temporal.column_name))) {
+    throw std::invalid_argument("Expected the tracked column '" +
+                                categorical_temporal.column_name +
+                                "' to be categorical.");
+  }
+}
+
 CreatedTransformations temporalTransformations(
     const data::ColumnDataTypes& data_types, const std::string& label_column,
     const data::TemporalRelationships& temporal_relationships,
@@ -223,35 +258,15 @@ CreatedTransformations temporalTransformations(
   std::vector<std::string> output_columns;
 
   for (const auto& [key_column, relationships] : temporal_relationships) {
-    if (!data_types.count(key_column)) {
-      throw std::invalid_argument("Tracking key column '" + key_column +
-                                  "' is not specified in data_types.");
-    }
-    if (key_column == label_column) {
-      throw std::invalid_argument(
-          "Tracking key column cannot be the label column.");
-    }
+    checkKeyColumn(key_column, data_types, label_column);
+
     for (const auto& temporal_config : relationships) {
-      if (temporal_config.isNumerical()) {
-        throw std::invalid_argument(
-            "Temporal tracking on numerical columns is not supported.");
-      }
+      checkTemporalConfig(temporal_config, data_types);
 
       auto categorical_temporal = temporal_config.asCategorical();
 
-      if (!data_types.count(categorical_temporal.column_name)) {
-        throw std::invalid_argument("Tracked column '" +
-                                    categorical_temporal.column_name +
-                                    "' is not specified in data_types.");
-      }
-
-      if (!data::asCategorical(
-              data_types.at(categorical_temporal.column_name))) {
-        throw std::invalid_argument("Expected the tracked column '" +
-                                    categorical_temporal.column_name +
-                                    "' to be categorical.");
-      }
-
+      // This is just an additional check to ensure that we don't leak labels if
+      // the tracked column is the labels.
       bool include_current_row =
           categorical_temporal.include_current_row &&
           (categorical_temporal.column_name != label_column);
