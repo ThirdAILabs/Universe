@@ -143,6 +143,8 @@ void Loader::logLoadStart() const {
     std::cout << "loading data | source '" << _data_iterator.resourceName()
               << "'" << std::endl;
   }
+#else
+  (void)_verbose;
 #endif
 }
 
@@ -155,6 +157,7 @@ void Loader::logLoadEnd(size_t vectors, size_t batches, int64_t time) const {
               << std::endl;
   }
 #else
+  (void)_verbose;
   (void)vectors;
   (void)batches;
   (void)time;
