@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
+#include "proto/hashing.pb.h"
 #include <utils/Random.h>
 #include <vector>
 
@@ -52,6 +53,8 @@ class DWTAHashFunction final : public HashFunction {
   uint32_t getBinsize() const { return _binsize; }
 
   uint32_t getHashesPerTable() const { return _hashes_per_table; }
+
+  hashing_proto::HashFunction toProto() const final;
 
   void save(const std::string& filename) const;
 

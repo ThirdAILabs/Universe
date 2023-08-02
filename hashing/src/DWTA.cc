@@ -3,6 +3,7 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <proto/hashing.pb.h>
 #include <algorithm>
 #include <limits>
 #include <numeric>
@@ -138,6 +139,25 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     }
     final_hashes[i] = index;
   }
+}
+
+hashing_proto::HashFunction DWTAHashFunction::toProto() const {
+  hashing_proto::HashFunction hash_fn;
+
+  auto* dwta = hash_fn.mutable_dwta();
+  dwta->set_num_tables(_num_tables);
+  dwta->set_num_hashes(_num_hashes);
+  dwta->set_binsize(_binsize);
+  dwta->set_log_binsize(_log_binsize);
+  dwta->set_input_dim(_dim);
+  dwta->set_permutations(_permute);
+
+  dwta->mutable_bin_map()->Assign(_bin_map.begin(), _bin_map.end());
+  dwta->mutable_positions()->Assign(_positions.begin(), _positions.end());
+
+  dwta->set_random_double_hash_seed(_rand_double_hash_seed);
+
+  return hash_fn;
 }
 
 void DWTAHashFunction::save(const std::string& filename) const {

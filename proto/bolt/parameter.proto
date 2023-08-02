@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package bolt_proto;
+
+message Parameter {
+  repeated float data = 1;
+}

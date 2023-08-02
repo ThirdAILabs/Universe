@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bolt_proto;
+
+import "hashing.proto";
+import "hashtable.proto";
+
+message LSHNeuronIndex {
+  hashing_proto.HashFunction hash_function = 1;
+  hashtable_proto.SampledHashTable hash_table = 2;
+}
+
+message RandomNeuronIndex {
+  uint32 seed = 1;
+}
+
+message NeuronIndex {
+  oneof index {
+    LSHNeuronIndex lsh = 1;
+    RandomNeuronIndex random = 2;
+  }
+}

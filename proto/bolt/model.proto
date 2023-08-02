@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package bolt_proto;
+
+import "loss.proto";
+import "ops.proto";
+
+message Placeholder {
+  string name = 1;
+  uint64 dim = 2;
+}
+
+message Computation {
+  string name = 1;
+  string op = 2;
+  repeated string inputs = 3;
+}
+
+message ModelMetadata {
+  uint64 train_steps = 1;
+  uint64 total_training_samples = 2;
+  string uuid = 3;
+}
+
+message Model {
+  repeated Op ops = 1;
+
+  repeated Placeholder inputs = 2;
+  repeated Placeholder labels = 3;
+  repeated Computation computation_graph = 4;
+  repeated Loss losses = 5;
+  repeated string outputs = 6;
+
+  ModelMetadata metadata = 7;
+}

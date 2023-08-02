@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package bolt_proto;
+
+message CategoricalCrossEntropy {
+  string output = 1;
+  string labels = 2;
+}
+
+message BinaryCrossEntropy {
+  string output = 1;
+  string labels = 2;
+}
+
+message Loss {
+  oneof loss {
+    CategoricalCrossEntropy categorical_cross_entropy = 1;
+    BinaryCrossEntropy binary_cross_entropy = 2;
+  }
+}

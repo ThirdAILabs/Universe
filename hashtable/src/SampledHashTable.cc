@@ -3,6 +3,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <proto/hashtable.pb.h>
 #include <cassert>
 #include <limits>
 #include <memory>
@@ -188,6 +189,20 @@ uint32_t SampledHashTable::maxElement() const {
   }
 
   return max_elem;
+}
+
+hashtable_proto::SampledHashTable SampledHashTable::toProto() const {
+  hashtable_proto::SampledHashTable hashtable;
+
+  hashtable.set_num_tables(_num_tables);
+  hashtable.set_reservoir_size(_reservoir_size);
+  hashtable.set_range(_range);
+
+  hashtable.mutable_data()->Assign(_data.begin(), _data.end());
+  hashtable.mutable_counters()->Assign(_counters.begin(), _counters.end());
+  hashtable.mutable_gen_rand()->Assign(_gen_rand.begin(), _gen_rand.end());
+
+  return hashtable;
 }
 
 void SampledHashTable::save(const std::string& filename) const {

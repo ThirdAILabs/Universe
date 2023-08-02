@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package bolt_proto;
+
+import "parameter.proto";
+
+message Adam {
+  Parameter momentum = 1;
+  Parameter velocity = 2;
+
+  float beta1 = 3;
+  float beta2 = 4;
+  float eps = 5;
+}
+
+message Optimizer {
+  oneof optimizer {
+    Adam adam = 1;
+  }
+}

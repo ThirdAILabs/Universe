@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashTable.h"
+#include "proto/hashtable.pb.h"
 #include <utils/Random.h>
 #include <iostream>
 #include <memory>
@@ -127,6 +128,8 @@ class SampledHashTable final : public HashTable<uint32_t> {
   inline uint64_t tableRange() const override { return _range; };
 
   uint32_t maxElement() const;
+
+  hashtable_proto::SampledHashTable toProto() const;
 
   void summarize(std::ostream& summary) const {
     summary << "num_tables=" << _num_tables << ", range=" << _range
