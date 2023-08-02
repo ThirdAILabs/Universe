@@ -405,6 +405,7 @@ def test_udt_cold_start_on_csv_document():
     assert metrics["train_categorical_accuracy"][-1] > 0.5
 
 
+@pytest.mark.unit
 def test_csv_doc_autotuning():
     filename = "simple.csv"
     with open(filename, "w") as file:
