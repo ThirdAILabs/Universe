@@ -43,6 +43,10 @@ class Embedding final : public Op,
     _disable_sparse_parameter_updates = true;
   }
 
+  void enableSparseParameterUpdates() final {
+    _disable_sparse_parameter_updates = false;
+  }
+
   std::vector<std::vector<float>*> gradients() final {
     return {&_embedding_optimizer->gradients, &_bias_optimizer->gradients};
   }

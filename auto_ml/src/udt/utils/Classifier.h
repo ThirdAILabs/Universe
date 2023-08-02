@@ -11,6 +11,7 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <pybind11/pybind11.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
@@ -32,14 +33,16 @@ class Classifier {
                    const dataset::DatasetLoaderPtr& val_dataset,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options);
+                   TrainOptions options,
+                   const bolt::train::DistributedCommPtr& comm);
 
   py::object train(const dataset::DatasetLoaderPtr& data, float learning_rate,
                    uint32_t epochs, const InputMetrics& train_metrics,
                    const dataset::DatasetLoaderPtr& val_data,
                    const InputMetrics& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options);
+                   TrainOptions options,
+                   const bolt::train::DistributedCommPtr& comm);
 
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
@@ -51,7 +54,7 @@ class Classifier {
 
   py::object predict(const bolt::nn::tensor::TensorList& inputs,
                      bool sparse_inference, bool return_predicted_class,
-                     bool single);
+                     bool single, std::optional<uint32_t> top_k = std::nullopt);
 
   py::object embedding(const bolt::nn::tensor::TensorList& inputs);
 

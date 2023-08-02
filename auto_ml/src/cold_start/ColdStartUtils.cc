@@ -3,10 +3,10 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <data/src/ColumnMap.h>
+#include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
-#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
-#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 
 namespace thirdai::automl::cold_start {
 
@@ -74,7 +74,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
       /* label_column_name= */ metadata->getLabelColumn(),
       /* output_column_name= */ text_column_name);
 
-  auto augmented_data = augmentation.apply(dataset);
+  auto augmented_data = augmentation.applyStateless(dataset);
 
   auto data_source = thirdai::dataset::cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,
@@ -86,8 +86,6 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
 
   return data_source;
 }
-
-namespace columns = thirdai::data::columns;
 
 dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
     const dataset::DataSourcePtr& data,
@@ -111,22 +109,22 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
                       strong_column_names.end());
 
   std::vector<std::string> samples;
-  auto label_column = dataset.getStringColumn(metadata->getLabelColumn());
+  auto label_column =
+      dataset.getValueColumn<std::string>(metadata->getLabelColumn());
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string output_sample;
     for (const auto& column_name : column_names) {
-      auto column = dataset.getStringColumn(column_name);
-      output_sample.append((*column)[row_id]);
+      auto column = dataset.getValueColumn<std::string>(column_name);
+      output_sample.append(column->value(row_id));
       output_sample.append(" ");
     }
     samples.push_back(output_sample);
   }
 
-  thirdai::data::columns::StringColumnPtr augmented_data_column =
-      std::make_shared<thirdai::data::columns::CppStringColumn>(
-          std::move(samples));
+  thirdai::data::ValueColumnPtr<std::string> augmented_data_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(samples));
 
-  std::unordered_map<std::string, columns::ColumnPtr> new_columns;
+  std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
   new_columns.emplace(metadata->getLabelColumn(), label_column);
   new_columns.emplace(text_column_name, augmented_data_column);
   thirdai::data::ColumnMap new_column_map(new_columns);

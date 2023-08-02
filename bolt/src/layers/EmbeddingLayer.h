@@ -52,6 +52,10 @@ class EmbeddingLayer {
     _disable_sparse_parameter_updates = true;
   }
 
+  void enableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = false;
+  };
+
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
   void saveWithOptimizer(bool should_save_optimizer) {
     _should_save_optimizer = should_save_optimizer;

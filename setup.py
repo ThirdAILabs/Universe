@@ -161,6 +161,7 @@ neural_db_deps = [
     "url-normalize",
     "nltk",
     "unidecode",
+    "pydantic",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -203,14 +204,14 @@ setup(
             "moto[server]",
             "mlflow",
             "protobuf",
-            "datasets",
+            "datasets==2.13.1",
             "torch",
             "toml",
             "psutil",
             "transformers",
             "pandas>=1.2.0",
             "cryptography",
-            "tokenizers==0.11.6",
+            "tokenizers",
             "pyarrow",
             "prometheus_client",
             "gcsfs",
@@ -232,6 +233,7 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
+            "nltk",
         ],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],

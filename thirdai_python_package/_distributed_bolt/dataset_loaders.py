@@ -287,8 +287,8 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
         column_map_generator: data.ColumnMapGenerator,
-        x_featurizer: data.FeaturizationPipeline,
-        y_featurizer: data.FeaturizationPipeline,
+        x_featurizer: data.transformations.TransformationList,
+        y_featurizer: data.transformations.TransformationList,
         x_cols: List[str],
         y_col: str,
         batch_size: int,
@@ -308,8 +308,8 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         if load == None:
             return None
 
-        featurized_x = self.x_featurizer.featurize(load)
-        featurized_y = self.y_featurizer.featurize(load)
+        featurized_x = self.x_featurizer(load)
+        featurized_y = self.y_featurizer(load)
 
         x_data = featurized_x.convert_to_dataset(
             self.x_cols, batch_size=self.batch_size

@@ -13,6 +13,9 @@ class Tensor {
  public:
   Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
 
+  Tensor(std::vector<uint32_t>&& indices, std::vector<float>&& values,
+         std::vector<size_t>&& lens, uint32_t dim);
+
   Tensor(BoltBatch&& batch, uint32_t dim);
 
   Tensor(const BoltBatch& batch, uint32_t dim);
@@ -21,6 +24,11 @@ class Tensor {
 
   static std::shared_ptr<Tensor> sparse(uint32_t batch_size, uint32_t dim,
                                         uint32_t nonzeros);
+
+  static std::shared_ptr<Tensor> sparse(std::vector<uint32_t>&& indices,
+                                        std::vector<float>&& values,
+                                        std::vector<size_t>&& lens,
+                                        uint32_t dim);
 
   static std::shared_ptr<Tensor> copy(const BoltBatch& batch, uint32_t dim);
 
@@ -53,6 +61,9 @@ class Tensor {
   const uint32_t* activeNeuronsPtr() const;
 
   const float* activationsPtr() const;
+
+  std::pair<std::vector<uint32_t>, std::vector<float> > topKIndexValuePair(
+      uint32_t topk);
 
   const float* gradientsPtr() const;
 

@@ -62,7 +62,8 @@ py::object UDTRecurrentClassifier::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::train::DistributedCommPtr& comm) {
   size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   dataset::DatasetLoaderPtr val_dataset = nullptr;
@@ -96,7 +97,8 @@ py::object UDTRecurrentClassifier::train(
       /* use_sparsity_in_validation= */ options.sparse_validation,
       /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ true, /* verbose= */ options.verbose,
-      /* logging_interval= */ options.logging_interval);
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ comm);
 
   return py::cast(history);
 }

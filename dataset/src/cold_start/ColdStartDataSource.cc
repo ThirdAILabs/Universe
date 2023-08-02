@@ -9,8 +9,8 @@ ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
                                          char column_delimiter,
                                          std::optional<char> label_delimiter,
                                          std::string resource_name)
-    : _text_column(column_map.getStringColumn(text_column_name)),
-      _label_column(column_map.getStringColumn(label_column_name)),
+    : _text_column(column_map.getValueColumn<std::string>(text_column_name)),
+      _label_column(column_map.getValueColumn<std::string>(label_column_name)),
       _row_idx(0),
       _text_column_name(std::move(text_column_name)),
       _label_column_name(std::move(label_column_name)),
@@ -52,11 +52,11 @@ std::optional<std::string> ColdStartDataSource::getNextRowAsString() {
     return std::nullopt;
   }
 
-  std::string row = (*_label_column)[_row_idx];
+  std::string row = _label_column->value(_row_idx);
 
   row.push_back(_column_delimiter);
 
-  row.append((*_text_column)[_row_idx]);
+  row.append(_text_column->value(_row_idx));
 
   _row_idx++;
 

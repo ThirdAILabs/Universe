@@ -89,7 +89,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity"))
+           py::arg("inputs"), py::arg("use_sparsity") = false)
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
       .def("ops", &model::Model::opExecutionOrder)
@@ -97,22 +97,25 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
-      .def("get_gradients", &::thirdai::bolt::python::getGradients,
-           py::return_value_policy::reference_internal)
-      .def("set_gradients", &::thirdai::bolt::python::setGradients,
-           py::arg("new_values"))
       .def("get_parameters", &::thirdai::bolt::python::getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &::thirdai::bolt::python::setParameters,
            py::arg("new_values"))
-      .def("disable_sparse_parameter_updates",
-           &model::Model::disableSparseParameterUpdates)
       .def("train_steps", &model::Model::trainSteps)
       .def("override_train_steps", &model::Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
+      // The next three functions are used for distributed training.
+      .def("disable_sparse_parameter_updates",
+           &model::Model::disableSparseParameterUpdates)
+      .def("get_gradients", &::thirdai::bolt::python::getGradients,
+           py::return_value_policy::reference_internal)
+      .def("set_gradients", &::thirdai::bolt::python::setGradients,
+           py::arg("new_values"))
+      .def("enable_sparse_parameter_updates",
+           &model::Model::enableSparseParameterUpdates)
       .def("freeze_hash_tables", &model::Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)

@@ -2,14 +2,17 @@ import hashlib
 import os
 import shutil
 import string
+from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
+from thirdai import bolt
+from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
 from .parsing_utils import doc_parse, pdf_parse, url_parse
@@ -29,9 +32,6 @@ class Document:
     def name(self) -> str:
         raise NotImplementedError()
 
-    def reference(self, element_id: int) -> Reference:
-        raise NotImplementedError()
-
     @property
     def hash(self) -> str:
         sha1 = hashlib.sha1()
@@ -39,6 +39,21 @@ class Document:
         for i in range(self.size):
             sha1.update(bytes(self.reference(i).text, "utf-8"))
         return sha1.hexdigest()
+
+    # This attribute allows certain things to be saved or not saved during
+    # the pickling of a savable_state object. For example, if we set this
+    # to True for CSV docs, we will save the actual csv file in the pickle.
+    # Utilize this property in save_meta and load_meta of document objs.
+    @property
+    def save_extra_info(self) -> bool:
+        return self._save_extra_info
+
+    @save_extra_info.setter
+    def save_extra_info(self, value: bool):
+        self._save_extra_info = value
+
+    def reference(self, element_id: int) -> Reference:
+        raise NotImplementedError()
 
     def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text
@@ -76,6 +91,7 @@ class Reference:
         self._source = source
         self._metadata = metadata
         self._context_fn = lambda radius: document.context(element_id, radius)
+        self._score = 0
 
     @property
     def id(self):
@@ -96,6 +112,10 @@ class Reference:
     @property
     def metadata(self):
         return self._metadata
+
+    @property
+    def score(self):
+        return self._score
 
     def context(self, radius: int):
         return self._context_fn(radius)
@@ -167,14 +187,15 @@ class DocumentManager:
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
-        self.registry: Dict[str, Tuple[Document, int]] = {}
-        self.id_sorted_docs: List[Tuple[Document, int]] = []
+
+        # After python 3.8, we don't need to use OrderedDict as Dict is ordered by default
+        self.registry: OrderedDict[str, Tuple[Document, int]] = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
 
     def _next_id(self):
-        if len(self.id_sorted_docs) == 0:
+        if len(self.registry) == 0:
             return 0
-        doc, start_id = self.id_sorted_docs[-1]
+        doc, start_id = next(reversed(self.registry.values()))
         return start_id + doc.size
 
     def add(self, documents: List[Document]):
@@ -184,11 +205,8 @@ class DocumentManager:
             doc_hash = doc.hash
             if doc_hash not in self.registry:
                 start_id = self._next_id()
-                # Adding this tuple to two data structures does not double the
-                # memory usage because Python uses references.
                 doc_and_id = (doc, start_id)
                 self.registry[doc_hash] = doc_and_id
-                self.id_sorted_docs.append(doc_and_id)
                 self.source_id_prefix_trie[doc_hash] = doc_hash
                 intro.add(doc, start_id)
             doc, start_id = self.registry[doc_hash]
@@ -210,17 +228,15 @@ class DocumentManager:
         return self.registry[source_id]
 
     def clear(self):
-        self.registry = {}
-        self.id_sorted_docs = []
+        self.registry = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
 
     def _get_doc_and_start_id(self, element_id: int):
-        # Iterate through docs in reverse order
-        for i in range(len(self.id_sorted_docs) - 1, -1, -1):
-            doc, start_id = self.id_sorted_docs[i]
+        for doc, start_id in reversed(self.registry.values()):
             if start_id <= element_id:
-                return self.id_sorted_docs[i]
-        raise ValueError(f"Unable to find document that has id {id}.")
+                return doc, start_id
+
+        raise ValueError(f"Unable to find document that has id {element_id}.")
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
@@ -240,28 +256,55 @@ class DocumentManager:
             weak_column=self.weak_column,
         )
 
-        for doc, start_id in self.id_sorted_docs:
+        for doc, start_id in self.registry.values():
             data_source.add(document=doc, start_id=start_id)
 
         return data_source
 
     def save_meta(self, directory: Path):
-        for i, (doc, _) in enumerate(self.id_sorted_docs):
+        for i, (doc, _) in enumerate(self.registry.values()):
             subdir = directory / str(i)
             os.mkdir(subdir)
             doc.save_meta(subdir)
 
     def load_meta(self, directory: Path):
-        for i, (doc, _) in enumerate(self.id_sorted_docs):
+        for i, (doc, _) in enumerate(self.registry.values()):
             subdir = directory / str(i)
             doc.load_meta(subdir)
 
 
 class CSV(Document):
     def __init__(
-        self, path, id_column, strong_columns, weak_columns, reference_columns
+        self,
+        path: str,
+        id_column: Optional[str] = None,
+        strong_columns: Optional[List[str]] = None,
+        weak_columns: Optional[List[str]] = None,
+        reference_columns: Optional[List[str]] = None,
+        save_extra_info=True,
     ) -> None:
         self.df = pd.read_csv(path)
+
+        if reference_columns == None:
+            reference_columns = list(self.df.columns)
+
+        if id_column == None:
+            id_column = "thirdai_index"
+            self.df[id_column] = range(self.df.shape[0])
+
+        if strong_columns == None and weak_columns == None:
+            # autotune column types
+            text_col_names = []
+            for col_name, udt_col_type in get_udt_col_types(path).items():
+                if type(udt_col_type) == type(bolt.types.text()):
+                    text_col_names.append(col_name)
+            strong_columns = text_col_names
+            weak_columns = []
+        elif strong_columns == None:
+            strong_columns = []
+        elif weak_columns == None:
+            weak_columns = []
+
         self.df = self.df.sort_values(id_column)
         assert len(self.df[id_column].unique()) == len(self.df[id_column])
         assert self.df[id_column].min() == 0
@@ -276,6 +319,7 @@ class CSV(Document):
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
+        self._save_extra_info = save_extra_info
 
     @property
     def hash(self) -> str:
@@ -299,7 +343,7 @@ class CSV(Document):
 
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
-        text = " ".join([row[col] for col in self.reference_columns])
+        text = " ".join([str(row[col]) for col in self.reference_columns])
         return Reference(
             document=self,
             element_id=element_id,
@@ -312,31 +356,55 @@ class CSV(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
-        return " ".join([row[col] for col in self.reference_columns for row in rows])
+        return " ".join(
+            [row[col] for col in self.reference_columns for _, row in rows.iterrows()]
+        )
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
+
+        # Save the filename so we can load it with the same name
+        state["doc_name"] = self.name
+
+        # End pickling functionality here to support old directory checkpoint save
+        return state
+
+    def __setstate__(self, state):
+        # Add new attributes to state for older document object version backward compatibility
+        if "_save_extra_info" not in state:
+            state["_save_extra_info"] = True
+
+        self.__dict__.update(state)
 
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
-        shutil.copy(self.path, directory)
+        if self.save_extra_info:
+            shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
-        self.path = directory / self.path.name
+        if hasattr(self, "doc_name"):
+            self.path = directory / self.doc_name
+        else:
+            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
+            self.path = directory / self.path.name
 
 
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
-    def __init__(
-        self,
-        filename: str,
-    ):
-        self.filename = Path(filename)
-        self.df = self.process_data(filename)
-        self.hash_val = hash_file(filename)
+    def __init__(self, path: str, save_extra_info=True):
+        self.path = Path(path)
+        self.df = self.process_data(path)
+        self.hash_val = hash_file(path)
+        self._save_extra_info = save_extra_info
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
         raise NotImplementedError()
 
@@ -350,7 +418,7 @@ class Extracted(Document):
 
     @property
     def name(self) -> str:
-        return self.filename.name
+        return self.path.name
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -366,7 +434,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.filename.absolute()),
+            source=str(self.path.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
         )
 
@@ -379,32 +447,61 @@ class Extracted(Document):
         ]
         return "\n".join(rows["passage"])
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
+
+        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        if "filename" in state:
+            del state["filename"]
+
+        # Save the filename so we can load it with the same name
+        state["doc_name"] = self.name
+
+        return state
+
+    def __setstate__(self, state):
+        # Add new attributes to state for older document object version backward compatibility
+        if "_save_extra_info" not in state:
+            state["_save_extra_info"] = True
+        if "filename" in state:
+            state["path"] = state["filename"]
+
+        self.__dict__.update(state)
+
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
-        shutil.copy(self.filename, directory)
+        if self.save_extra_info:
+            shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.filename = directory / self.filename.name
+        if hasattr(self, "doc_name"):
+            self.path = directory / self.doc_name
+        else:
+            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
+            self.path = directory / self.path.name
 
 
-def process_pdf(filename: str) -> pd.DataFrame:
-    elements, success = pdf_parse.process_pdf_file(filename)
+def process_pdf(path: str) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(path)
 
     if not success:
-        raise ValueError(f"Could not read PDF file: {filename}")
+        raise ValueError(f"Could not read PDF file: {path}")
 
     elements_df = pdf_parse.create_train_df(elements)
 
     return elements_df
 
 
-def process_docx(filename: str) -> pd.DataFrame:
-    elements, success = doc_parse.get_elements(filename)
+def process_docx(path: str) -> pd.DataFrame:
+    elements, success = doc_parse.get_elements(path)
 
     if not success:
-        raise ValueError(f"Could not read DOCX file: {filename}")
+        raise ValueError(f"Could not read DOCX file: {path}")
 
     elements_df = doc_parse.create_train_df(elements)
 
@@ -414,36 +511,39 @@ def process_docx(filename: str) -> pd.DataFrame:
 class PDF(Extracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_pdf(filename)
+        return process_pdf(path)
 
 
 class DOCX(Extracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_docx(filename)
+        return process_docx(path)
 
 
 class URL(Document):
-    def __init__(self, url: str, url_response: Response = None):
+    def __init__(
+        self, url: str, url_response: Response = None, save_extra_info: bool = True
+    ):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)
+        self._save_extra_info = save_extra_info
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -456,12 +556,15 @@ class URL(Document):
 
         return elements_df
 
+    @property
     def hash(self) -> str:
         return self.hash_val
 
+    @property
     def size(self) -> int:
         return len(self.df)
 
+    @property
     def name(self) -> str:
         return self.url
 
@@ -497,14 +600,12 @@ class SentenceLevelExtracted(Extracted):
     sentence to increase recall.
     """
 
-    def __init__(
-        self,
-        filename: str,
-    ):
-        self.filename = Path(filename)
-        self.df = self.parse_sentences(self.process_data(filename))
-        self.hash_val = hash_file(filename)
+    def __init__(self, path: str, save_extra_info: bool = True):
+        self.path = Path(path)
+        self.df = self.parse_sentences(self.process_data(path))
+        self.hash_val = hash_file(path)
         self.para_df = self.df["para"].unique()
+        self._save_extra_info = save_extra_info
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -556,7 +657,7 @@ class SentenceLevelExtracted(Extracted):
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
         raise NotImplementedError()
 
@@ -570,7 +671,7 @@ class SentenceLevelExtracted(Extracted):
 
     @property
     def name(self) -> str:
-        return self.filename.name
+        return self.path.name if self.path else None
 
     def strong_text(self, element_id: int) -> str:
         return self.df["passage"].iloc[element_id]
@@ -586,7 +687,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
-            source=str(self.filename.absolute()),
+            source=str(self.path.absolute()),
             metadata=self.df.iloc[element_id].to_dict(),
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
@@ -604,37 +705,42 @@ class SentenceLevelExtracted(Extracted):
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
-        shutil.copy(self.filename, directory)
+        if self.save_extra_info:
+            shutil.copy(self.path, directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        self.filename = directory / self.filename.name
+        if hasattr(self, "doc_name"):
+            self.path = directory / self.doc_name
+        else:
+            # deprecated, self.path should not be in self
+            self.path = directory / self.path.name
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_pdf(filename)
+        return process_pdf(path)
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
     def __init__(
         self,
-        filename: str,
+        path: str,
     ):
-        super().__init__(filename=filename)
+        super().__init__(path=path)
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
-        return process_docx(filename)
+        return process_docx(path)

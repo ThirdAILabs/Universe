@@ -83,6 +83,8 @@ class TreqCovidConfig(DistributedBenchmarkConfig):
     dataset_name = "trec-covid"
     unsupervised_file_1 = "trec-covid/unsupervised_1.csv"
     unsupervised_file_2 = "trec-covid/unsupervised_2.csv"
+    supervised_trn_1 = ""  # This dataset doesn't have supervised file
+    supervised_trn_2 = ""  # This dataset doesn't have supervised file
     supervised_tst = "trec-covid/tst_supervised.csv"
 
     learning_rate = 0.001

@@ -257,7 +257,7 @@ def test_mach_udt_decode_params():
 
     with pytest.raises(
         ValueError,
-        match=r"Cannot eval with top_k_per_eval_aggregation greater than 100.",
+        match=r"Cannot eval with num_buckets_to_eval greater than 100.",
     ):
         model.set_decode_params(1, 1000)
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -51,7 +52,8 @@ class UDT {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options);
+                   TrainOptions options,
+                   const bolt::train::DistributedCommPtr& comm);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
@@ -91,7 +93,8 @@ class UDT {
                        const dataset::DataSourcePtr& val_data,
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options);
+                       TrainOptions options,
+                       const bolt::train::DistributedCommPtr& comm);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
@@ -146,10 +149,8 @@ class UDT {
 
   void clearGraph() { return _backend->clearGraph(); }
 
-  void setDecodeParams(uint32_t min_num_eval_results,
-                       uint32_t top_k_per_eval_aggregation) {
-    return _backend->setDecodeParams(min_num_eval_results,
-                                     top_k_per_eval_aggregation);
+  void setDecodeParams(uint32_t top_k_to_return, uint32_t num_buckets_to_eval) {
+    return _backend->setDecodeParams(top_k_to_return, num_buckets_to_eval);
   }
 
   ModelPtr model() const { return _backend->model(); }
@@ -166,6 +167,8 @@ class UDT {
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
                           bool verbose) {
+    licensing::entitlements().verifyDataSource(data);
+
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
                                  num_buckets_to_sample, num_random_hashes,
                                  fast_approximation, verbose);
@@ -175,9 +178,10 @@ class UDT {
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
-
                          std::optional<uint32_t> num_buckets_to_sample,
                          uint32_t num_random_hashes) {
+    licensing::entitlements().verifyFullAccess();
+
     _backend->introduceDocument(document, strong_column_names,
                                 weak_column_names, new_label,
                                 num_buckets_to_sample, num_random_hashes);
@@ -187,6 +191,8 @@ class UDT {
                       const std::variant<uint32_t, std::string>& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
                       uint32_t num_random_hashes) {
+    licensing::entitlements().verifyFullAccess();
+
     _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
                              num_random_hashes);
   }
@@ -199,6 +205,8 @@ class UDT {
 
   py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
                              const std::vector<std::string>& metrics) {
+    licensing::entitlements().verifyFullAccess();
+
     return _backend->trainWithHashes(batch, learning_rate, metrics);
   }
 
@@ -228,6 +236,8 @@ class UDT {
       const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
       float learning_rate, uint32_t epochs) {
+    licensing::entitlements().verifyFullAccess();
+
     _backend->upvote(source_target_samples, n_upvote_samples,
                      n_balancing_samples, learning_rate, epochs);
   }
@@ -266,10 +276,16 @@ class UDT {
     _backend->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
 
-  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
+  dataset::mach::MachIndexPtr getIndex() {
+    licensing::entitlements().verifyFullAccess();
+
+    return _backend->getIndex();
+  }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) {
-    return _backend->setIndex(index);
+    licensing::entitlements().verifyFullAccess();
+
+    _backend->setIndex(index);
   }
 
   void setMachSamplingThreshold(float threshold) {

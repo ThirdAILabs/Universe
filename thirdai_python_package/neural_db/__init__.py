@@ -1,4 +1,5 @@
 try:
+    from . import parsing_utils
     from .documents import (
         CSV,
         DOCX,
@@ -9,6 +10,7 @@ try:
         SentenceLevelDOCX,
         SentenceLevelPDF,
     )
+    from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
 except ImportError as error:
     raise ImportError(

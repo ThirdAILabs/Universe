@@ -35,6 +35,24 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
   }
 }
 
+Tensor::Tensor(std::vector<uint32_t>&& indices, std::vector<float>&& values,
+               std::vector<size_t>&& lens, uint32_t dim)
+    : _dim(dim),
+      _nonzeros(std::nullopt),
+      _active_neurons(std::move(indices)),
+      _activations(std::move(values)) {
+  _vectors.reserve(lens.size());
+
+  size_t offset = 0;
+  for (size_t len : lens) {
+    _vectors.emplace_back(BoltVector(
+        /* an= */ _active_neurons.data() + offset,
+        /* a= */ _activations.data() + offset, /* g= */ nullptr,
+        /* l= */ len));
+    offset += len;
+  }
+}
+
 Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
     : _dim(dim), _nonzeros(std::nullopt) {
   checkBatchContents(batch, _dim);
@@ -98,6 +116,14 @@ std::shared_ptr<Tensor> Tensor::sparse(uint32_t batch_size, uint32_t dim,
                                   /* nonzeros= */ nonzeros);
 }
 
+std::shared_ptr<Tensor> Tensor::sparse(std::vector<uint32_t>&& indices,
+                                       std::vector<float>&& values,
+                                       std::vector<size_t>&& lens,
+                                       uint32_t dim) {
+  return std::make_shared<Tensor>(std::move(indices), std::move(values),
+                                  std::move(lens), dim);
+}
+
 std::shared_ptr<Tensor> Tensor::copy(const BoltBatch& batch, uint32_t dim) {
   return std::make_shared<Tensor>(batch, dim);
 }
@@ -128,6 +154,35 @@ const uint32_t* Tensor::activeNeuronsPtr() const {
 
 const float* Tensor::activationsPtr() const {
   return _activations.empty() ? nullptr : _activations.data();
+}
+
+std::pair<std::vector<uint32_t>, std::vector<float> >
+Tensor::topKIndexValuePair(uint32_t topk) {
+  std::vector<float> topk_activations;
+  std::vector<uint32_t> topk_active_neurons;
+
+  uint32_t batch_size = batchSize();
+  uint32_t total_size = batch_size * topk;
+
+  topk_activations.resize(total_size);
+  topk_active_neurons.resize(total_size);
+
+  for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
+    int idx_ = topk - 1;
+    TopKActivationsQueue topk_activations_queue =
+        getVector(batch_idx).findKLargestActivations(topk);
+
+    while (!topk_activations_queue.empty() && idx_ >= 0) {
+      ValueIndexPair val_idx_pair = topk_activations_queue.top();
+
+      topk_activations[batch_idx * topk + idx_] = val_idx_pair.first;
+      topk_active_neurons[batch_idx * topk + idx_] = val_idx_pair.second;
+
+      topk_activations_queue.pop();
+      idx_--;
+    }
+  }
+  return std::make_pair(topk_active_neurons, topk_activations);
 }
 
 const float* Tensor::gradientsPtr() const {
