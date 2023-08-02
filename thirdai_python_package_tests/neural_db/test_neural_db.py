@@ -30,7 +30,7 @@ def test_neural_db_save_load(train_simple_neural_db):
 
     for after, before in zip(after_save_results, before_save_results):
         assert after.text == before.text
-        assert after.score == before.text
+        assert after.score == before.score
 
     if os.path.exists("temp"):
         shutil.rmtree("temp")
