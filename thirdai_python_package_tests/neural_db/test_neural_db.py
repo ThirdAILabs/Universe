@@ -2,7 +2,7 @@ import os
 import shutil
 
 import pytest
-from ndb_utils import train_simple_neural_db
+from ndb_utils import create_simple_dataset, train_simple_neural_db
 from thirdai import neural_db
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
