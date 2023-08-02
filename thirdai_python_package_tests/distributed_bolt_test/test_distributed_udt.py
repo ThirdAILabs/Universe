@@ -14,8 +14,6 @@ from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
-
-from thirdai.demos import download_clinc_dataset
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
@@ -359,11 +357,10 @@ def test_udt_licensed_training():
 @pytest.mark.release
 def test_udt_licensed_fail():
     def udt_training_loop_per_worker(config):
-        
         with pytest.raises(
             RuntimeError,
             match=r"The license was found to be invalid: Please first call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
-        ):  
+        ):
             udt_model = get_clinc_udt_model(integer_target=True)
 
         session.report(
