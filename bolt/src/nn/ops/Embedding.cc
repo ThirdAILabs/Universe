@@ -6,6 +6,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/utils/ProtobufUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
 #include <ios>
@@ -227,6 +228,32 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
       _embedding_optimizer->gradients[index] = 0;
     }
   }
+}
+
+bolt_proto::Op Embedding::toProto(bool with_optimizer) const {
+  bolt_proto::Op op;
+  op.set_name(name());
+
+  auto* emb = op.mutable_embedding();
+
+  emb->set_dim(_dim);
+  emb->set_input_dim(_input_dim);
+  emb->set_activation(utils::activationToProto(_act_func));
+
+  emb->set_use_bias(_bias);
+
+  emb->set_allocated_embeddings(utils::parametersToProto(_embeddings));
+  emb->set_allocated_bias(utils::parametersToProto(_biases));
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    emb->set_allocated_embeddings_optimizer(
+        utils::optimizerToProto(*_embedding_optimizer, _input_dim, _dim));
+
+    emb->set_allocated_bias_optimizer(
+        utils::optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+  }
+
+  return op;
 }
 
 void Embedding::summary(std::ostream& summary,

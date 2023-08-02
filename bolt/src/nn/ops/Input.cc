@@ -63,6 +63,11 @@ void Input::disableSparseParameterUpdates() {}
 
 void Input::enableSparseParameterUpdates() {}
 
+bolt_proto::Op Input::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toProto should not be called on Input.");
+}
+
 void Input::summary(std::ostream& summary,
                     const autograd::ComputationList& inputs,
                     const autograd::Computation* output) const {

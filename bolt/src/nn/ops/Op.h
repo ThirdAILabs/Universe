@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <proto/ops.pb.h>
 #include <memory>
 
 namespace thirdai::bolt::nn::autograd {
@@ -122,10 +123,12 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
+  virtual bolt_proto::Op toProto(bool with_optimizer) const = 0;
+
   /**
-   * Appends a line to the summary to describe the op when applied to the given
-   * inputs and yielding the given output. Ideally this should be in the form:
-   * OpType(op name): input(s) -> output(s) [op parameters]
+   * Appends a line to the summary to describe the op when applied to the
+   * given inputs and yielding the given output. Ideally this should be in
+   * the form: OpType(op name): input(s) -> output(s) [op parameters]
    */
   virtual void summary(std::ostream& summary,
                        const autograd::ComputationList& inputs,

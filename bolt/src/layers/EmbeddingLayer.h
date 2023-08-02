@@ -88,9 +88,15 @@ class EmbeddingLayer {
     }
   }
 
+  EmbeddingReductionType reductionType() const { return _reduction; }
+
+  const auto& optimizer() const { return _optimizer; }
+
   std::optional<uint64_t> numTokensPerInput() const {
     return _num_tokens_per_input;
   }
+
+  uint64_t numEmbeddingChunks() const { return _embedding_chunks_used.size(); }
 
   uint64_t updateChunkSize() const { return _update_chunk_size; }
 

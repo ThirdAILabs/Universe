@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/utils/ProtobufUtils.h>
 
 namespace thirdai::bolt::nn::ops {
 
@@ -89,6 +90,46 @@ std::vector<std::vector<float>*> RobeZ::gradients() {
 
 std::vector<std::vector<float>*> RobeZ::parameters() {
   return {&_kernel->getRawEmbeddingBlock()};
+}
+
+bolt_proto::Op RobeZ::toProto(bool with_optimizer) const {
+  bolt_proto::Op op;
+  op.set_name(name());
+
+  auto* robez = op.mutable_robez();
+
+  robez->set_num_lookups_per_token(_kernel->numEmbeddingLookups());
+  robez->set_lookup_size(_kernel->lookupSize());
+  robez->set_log_embedding_block_size(_kernel->logEmbeddingBlockSize());
+
+  switch (_kernel->reductionType()) {
+    case EmbeddingReductionType::CONCATENATION:
+      robez->set_reduction(bolt_proto::EmbeddingReduction::CONCAT);
+      break;
+    case EmbeddingReductionType::SUM:
+      robez->set_reduction(bolt_proto::EmbeddingReduction::SUM);
+      break;
+    case EmbeddingReductionType::AVERAGE:
+      robez->set_reduction(bolt_proto::EmbeddingReduction::AVG);
+      break;
+  }
+
+  if (_kernel->numTokensPerInput()) {
+    robez->set_num_tokens_per_input(*_kernel->numTokensPerInput());
+  }
+  robez->set_update_chunk_size(_kernel->updateChunkSize());
+  robez->set_hash_seed(_kernel->hashSeed());
+
+  robez->set_allocated_embedding_block(
+      utils::parametersToProto(_kernel->getRawEmbeddingBlock()));
+
+  const auto& optimizer = _kernel->optimizer();
+  if (with_optimizer && optimizer) {
+    robez->set_allocated_embedding_block_optimizer(utils::optimizerToProto(
+        *optimizer, _kernel->numEmbeddingChunks(), _kernel->updateChunkSize()));
+  }
+
+  return op;
 }
 
 void RobeZ::summary(std::ostream& summary,

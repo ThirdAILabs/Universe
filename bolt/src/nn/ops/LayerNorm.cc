@@ -6,6 +6,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/utils/ProtobufUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cmath>
 #include <stdexcept>
@@ -164,6 +165,26 @@ std::vector<std::vector<float>*> LayerNorm::gradients() {
 
 std::vector<std::vector<float>*> LayerNorm::parameters() {
   return {&_gamma, &_beta};
+}
+
+bolt_proto::Op LayerNorm::toProto(bool with_optimizer) const {
+  bolt_proto::Op op;
+  op.set_name(name());
+
+  auto* layer_norm = op.mutable_layer_norm();
+
+  layer_norm->set_allocated_gamma(utils::parametersToProto(_gamma));
+  layer_norm->set_allocated_beta(utils::parametersToProto(_beta));
+
+  if (with_optimizer) {
+    layer_norm->set_allocated_gamma_optimizer(
+        utils::optimizerToProto(_gamma_optimizer, /* rows= */ 1, dim()));
+
+    layer_norm->set_allocated_beta_optimizer(
+        utils::optimizerToProto(_beta_optimizer, /* rows= */ 1, dim()));
+  }
+
+  return op;
 }
 
 void LayerNorm::summary(std::ostream& summary,

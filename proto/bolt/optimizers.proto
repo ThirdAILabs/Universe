@@ -8,9 +8,12 @@ message Adam {
   Parameter momentum = 1;
   Parameter velocity = 2;
 
-  float beta1 = 3;
-  float beta2 = 4;
-  float eps = 5;
+  uint64 rows = 3;
+  uint64 cols = 4;
+
+  float beta1 = 5;
+  float beta2 = 6;
+  float eps = 7;
 }
 
 message Optimizer {

@@ -68,7 +68,19 @@ void Tanh::disableSparseParameterUpdates() {}
 void Tanh::enableSparseParameterUpdates() {}
 
 std::vector<std::vector<float>*> Tanh::gradients() { return {}; }
+
 std::vector<std::vector<float>*> Tanh::parameters() { return {}; }
+
+bolt_proto::Op Tanh::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  bolt_proto::Op op;
+
+  op.set_name(name());
+  op.mutable_tanh();
+
+  return op;
+}
 
 void Tanh::summary(std::ostream& summary,
                    const autograd::ComputationList& inputs,

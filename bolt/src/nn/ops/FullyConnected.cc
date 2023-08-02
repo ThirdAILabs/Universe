@@ -8,6 +8,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/utils/ProtobufUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cstring>
 #include <memory>
@@ -121,6 +122,41 @@ std::vector<std::vector<float>*> FullyConnected::gradients() {
 
 std::vector<std::vector<float>*> FullyConnected::parameters() {
   return {&_kernel->weights(), &_kernel->biases()};
+}
+
+bolt_proto::Op FullyConnected::toProto(bool with_optimizer) const {
+  bolt_proto::Op op;
+  op.set_name(name());
+
+  auto* fc = op.mutable_fully_connected();
+
+  fc->set_dim(_kernel->getDim());
+  fc->set_input_dim(_kernel->getInputDim());
+  fc->set_sparsity(_kernel->getSparsity());
+  fc->set_activation(
+      utils::activationToProto(_kernel->getActivationFunction()));
+
+  fc->set_use_bias(_kernel->useBias());
+
+  fc->set_allocated_weights(utils::parametersToProto(_kernel->weights()));
+  fc->set_allocated_bias(utils::parametersToProto(_kernel->biases()));
+
+  fc->set_rebuild_hash_tables(_rebuild_hash_tables);
+  fc->set_reconstruct_hash_functions(_reconstruct_hash_functions);
+
+  // Neuron index
+
+  if (with_optimizer && _kernel->weightOptimizer() &&
+      _kernel->biasOptimizer()) {
+    fc->set_allocated_weight_optimizer(
+        utils::optimizerToProto(*_kernel->weightOptimizer(), _kernel->getDim(),
+                                _kernel->getInputDim()));
+
+    fc->set_allocated_bias_optimizer(utils::optimizerToProto(
+        *_kernel->biasOptimizer(), /* rows= */ 1, _kernel->getDim()));
+  }
+
+  return op;
 }
 
 void FullyConnected::summary(std::ostream& summary,

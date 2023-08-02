@@ -130,6 +130,10 @@ class FullyConnectedLayer final {
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
+  const auto& weightOptimizer() const {return _weight_optimizer;};
+
+  const auto& biasOptimizer() const {return _bias_optimizer;};
+
   std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
   getHashTable();
 

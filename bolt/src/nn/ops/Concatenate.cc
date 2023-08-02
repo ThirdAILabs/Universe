@@ -107,6 +107,17 @@ std::optional<uint32_t> Concatenate::nonzeros(
   return total_num_nonzeros;
 }
 
+bolt_proto::Op Concatenate::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  bolt_proto::Op op;
+
+  op.set_name(name());
+  op.mutable_concatenate();
+
+  return op;
+}
+
 void Concatenate::summary(std::ostream& summary,
                           const autograd::ComputationList& inputs,
                           const autograd::Computation* output) const {
