@@ -91,6 +91,7 @@ class Reference:
         self._source = source
         self._metadata = metadata
         self._context_fn = lambda radius: document.context(element_id, radius)
+        self._score = 0
 
     @property
     def id(self):
@@ -111,6 +112,10 @@ class Reference:
     @property
     def metadata(self):
         return self._metadata
+
+    @property
+    def score(self):
+        return self._score
 
     def context(self, radius: int):
         return self._context_fn(radius)
