@@ -16,10 +16,20 @@ from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 
 from thirdai.demos import download_clinc_dataset
-from auto_ml.python_tests.download_dataset_fixtures import (
-    download_amazon_kaggle_product_catalog_sampled,
-    download_scifact_dataset,
+from thirdai.demos import (
+    download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
+from thirdai.demos import download_beir_dataset, download_clinc_dataset
+
+
+@pytest.fixture(scope="module")
+def download_amazon_kaggle_product_catalog_sampled():
+    return download_amazon_kaggle_product_catalog_sampled_wrapped()
+
+
+@pytest.fixture(scope="module")
+def download_scifact_dataset():
+    return download_beir_dataset("scifact")
 
 
 def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
@@ -349,19 +359,17 @@ def test_udt_licensed_training():
 @pytest.mark.release
 def test_udt_licensed_fail():
     def udt_training_loop_per_worker(config):
-        udt_model = get_clinc_udt_model(integer_target=True)
-        udt_model = dist.prepare_model(udt_model)
+        
+        with pytest.raises(
+            RuntimeError,
+            match=r"The license was found to be invalid: Please first call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
+        ):  
+            udt_model = get_clinc_udt_model(integer_target=True)
 
         session.report(
             {"demo_metric": 1},
         )
 
-    licensing_lambda = None
-    if hasattr(thirdai._thirdai, "licensing"):
-        license_state = thirdai._thirdai.licensing._get_license_state()
-        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
-            license_state
-        )
     working_dir = os.path.dirname(os.path.realpath(__file__))
 
     ray.init(
@@ -378,14 +386,9 @@ def test_udt_licensed_fail():
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
-        train_loop_config={
-            "licensing_lambda": licensing_lambda,
-        },
+        train_loop_config={},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
     )
-    with pytest.raises(
-        ValueError,
-        match=r"Unable to find column with name 'SOME RANDOM NAME'.",
-    ):
-        trainer.fit()
+
+    trainer.fit()
