@@ -1,11 +1,10 @@
 import random
 import string
 
-import numpy as np
 from thirdai import data
 
 
-def random_word(length=4):
+def random_word(length=8):
     return "".join(random.choice(string.ascii_lowercase) for _ in range(length))
 
 

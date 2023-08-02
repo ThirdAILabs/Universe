@@ -89,7 +89,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity"))
+           py::arg("inputs"), py::arg("use_sparsity") = false)
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
       .def("ops", &model::Model::opExecutionOrder)
