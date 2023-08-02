@@ -11,10 +11,11 @@ def create_simple_dataset():
         file.writelines(
             [
                 "text,id\n",
-                "apples are red,0\n",
+                "apples are green,0\n",
                 "spinach is green,1\n",
                 "bananas are yellow,2\n",
                 "oranges are orange,3\n",
+                "apples are red,4\n",
             ]
         )
 
