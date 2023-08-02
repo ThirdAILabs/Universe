@@ -1,6 +1,5 @@
 import os
 
-
 import pytest
 import ray
 import thirdai
@@ -267,9 +266,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
             checkpoint=dist.UDTCheckPoint.from_model(model),
         )
 
-    from auto_ml.python_tests.download_dataset_fixtures import (
-        download_scifact_dataset,
-    )
+    from auto_ml.python_tests.download_dataset_fixtures import download_scifact_dataset
 
     supervised_tst, n_target_classes = download_and_split_scifact_dataset(
         download_scifact_dataset
