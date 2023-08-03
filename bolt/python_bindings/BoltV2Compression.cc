@@ -2,7 +2,6 @@
 #include "PybindUtils.h"
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressionFactory.h>
-#include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
