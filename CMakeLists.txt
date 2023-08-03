@@ -416,11 +416,17 @@ set(THIRDAI_SOURCES
     data/src/transformations/FeatureHash.cc
     data/src/transformations/TransformationList.cc
     data/src/transformations/MachLabel.cc
+    data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
+    data/src/transformations/StringIDLookup.cc
+    data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Date.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
     data/src/TensorConversion.cc
+    data/src/Loader.cc
+    data/src/ColumnMapIterator.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc

@@ -83,3 +83,18 @@ def test_invalid_row_in_array_column(conversion):
 
     with pytest.raises(ValueError, match="Invalid row '1,hello' in column 'strings'."):
         transformation(columns)
+
+
+def test_cast_string_to_timestamp():
+    string_col = data.columns.StringColumn(
+        ["2023-07-" + str(date) for date in range(10, 20)]
+    )
+    columns = data.ColumnMap({"strings": string_col})
+    columns = data.transformations.ToTimestamps("strings", "timestamps")(columns)
+
+    SECONDS_IN_A_DAY = 24 * 3600
+
+    for i in range(1, 10):
+        assert (
+            columns["timestamps"][i] - columns["timestamps"][i - 1] == SECONDS_IN_A_DAY
+        )
