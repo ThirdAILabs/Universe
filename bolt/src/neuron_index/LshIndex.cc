@@ -9,6 +9,7 @@
 #include <utils/Random.h>
 #include <algorithm>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::bolt::nn {
 
@@ -23,9 +24,20 @@ LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
 }
 
 LshIndex::LshIndex(const proto::bolt::LSHNeuronIndex& lsh_proto)
-    : _rand_neurons(lsh_proto.random_neurons().begin(),
+    : _hash_table(std::make_shared<hashtable::SampledHashTable>(
+          lsh_proto.hash_table())),
+      _rand_neurons(lsh_proto.random_neurons().begin(),
                     lsh_proto.random_neurons().end()),
-      _insert_labels_when_not_found(lsh_proto.insert_labels_when_not_found()) {}
+      _insert_labels_when_not_found(lsh_proto.insert_labels_when_not_found()) {
+  switch (lsh_proto.hash_function().type_case()) {
+    case proto::hashing::HashFunction::kDwta:
+      _hash_fn = std::make_shared<hashing::DWTAHashFunction>(
+          lsh_proto.hash_function().dwta());
+      break;
+    case proto::hashing::HashFunction::TYPE_NOT_SET:
+      throw std::invalid_argument("HashFunction not set in fromProto.");
+  }
+}
 
 void LshIndex::query(const BoltVector& input, BoltVector& output,
                      const BoltVector* labels) const {

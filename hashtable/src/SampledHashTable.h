@@ -73,6 +73,9 @@ class SampledHashTable final : public HashTable<uint32_t> {
                    uint32_t seed = global_random::nextSeed(),
                    uint64_t max_rand = HashTable<uint32_t>::DEFAULT_MAX_RAND);
 
+  explicit SampledHashTable(
+      const proto::hashtable::SampledHashTable& hashtable_proto);
+
   SampledHashTable(const SampledHashTable& other) = delete;
 
   SampledHashTable& operator=(const SampledHashTable& other) = delete;

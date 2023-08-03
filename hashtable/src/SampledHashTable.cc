@@ -29,6 +29,18 @@ SampledHashTable::SampledHashTable(uint64_t num_tables, uint64_t reservoir_size,
   }
 }
 
+SampledHashTable::SampledHashTable(
+    const proto::hashtable::SampledHashTable& hashtable_proto)
+    : _num_tables(hashtable_proto.num_tables()),
+      _reservoir_size(hashtable_proto.reservoir_size()),
+      _range(hashtable_proto.range()),
+      _max_rand(hashtable_proto.gen_rand_size()),
+      _data(hashtable_proto.data().begin(), hashtable_proto.data().end()),
+      _counters(hashtable_proto.counters().begin(),
+                hashtable_proto.counters().end()),
+      _gen_rand(hashtable_proto.gen_rand().begin(),
+                hashtable_proto.gen_rand().end()) {}
+
 void SampledHashTable::insert(uint64_t n, const uint32_t* labels,
                               const uint32_t* hashes) {
 #pragma omp parallel for default(none) shared(n, labels, hashes)

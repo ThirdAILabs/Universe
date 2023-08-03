@@ -60,6 +60,20 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   _rand_double_hash_seed = dis(gen);
 }
 
+DWTAHashFunction::DWTAHashFunction(const proto::hashing::DWTA& dwta_proto)
+    : HashFunction(
+          dwta_proto.num_tables(),
+          1 << (dwta_proto.hashes_per_table() * dwta_proto.log_binsize())),
+      _hashes_per_table(dwta_proto.hashes_per_table()),
+      _num_hashes(dwta_proto.num_tables() * dwta_proto.hashes_per_table()),
+      _dim(dwta_proto.input_dim()),
+      _binsize(dwta_proto.binsize()),
+      _log_binsize(dwta_proto.log_binsize()),
+      _permute(dwta_proto.permutations()),
+      _bin_map(dwta_proto.bin_map().begin(), dwta_proto.bin_map().end()),
+      _positions(dwta_proto.positions().begin(), dwta_proto.positions().end()),
+      _rand_double_hash_seed(dwta_proto.random_double_hash_seed()) {}
+
 void DWTAHashFunction::hashSingleDense(const float* values, uint32_t dim,
                                        uint32_t* output) const {
   uint32_t* hashes = new uint32_t[_num_hashes];
@@ -146,7 +160,7 @@ proto::hashing::HashFunction* DWTAHashFunction::toProto() const {
 
   auto* dwta = hash_fn->mutable_dwta();
   dwta->set_num_tables(_num_tables);
-  dwta->set_num_hashes(_num_hashes);
+  dwta->set_hashes_per_table(_hashes_per_table);
   dwta->set_binsize(_binsize);
   dwta->set_log_binsize(_log_binsize);
   dwta->set_input_dim(_dim);

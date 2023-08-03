@@ -31,6 +31,8 @@ class DWTAHashFunction final : public HashFunction {
                    std::optional<uint32_t> permutations,
                    uint32_t seed = global_random::nextSeed());
 
+  explicit DWTAHashFunction(const proto::hashing::DWTA& dwta_proto);
+
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
 
