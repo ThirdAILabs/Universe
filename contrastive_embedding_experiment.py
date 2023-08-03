@@ -36,3 +36,27 @@ def bolt_v2_e5_model():
         outputs=[text_output1, text_output2],
         losses=[contrastive_loss],
     )
+
+
+# def create_model():
+from thirdai import bolt
+model  = bolt.UniversalDeepTransformer(
+    data_types={
+        "QUERY": bolt.types.text(),
+        "DOC_ID": bolt.types.categorical(delimiter=":"),
+    },
+    target="DOC_ID",
+    n_target_classes=20,
+    integer_target=True,
+    options={
+        "extreme_classification": True,
+        "extreme_num_hashes": 16,
+        "use_tanh": True,
+        "hidden_bias": True,
+        "output_bias": True,
+        "extreme_output_dim": 4000,
+        "embedding_dimension": 100,
+        "rlhf": True,
+    },
+)
+model.train_contrastive("queries.csv", "responses.csv")

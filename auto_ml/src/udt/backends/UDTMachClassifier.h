@@ -43,7 +43,9 @@ class UDTMachClassifier final : public UDTBackend {
                               const std::vector<std::string>& train_metrics,
                               const std::vector<CallbackPtr>& callbacks,
                               TrainOptions options,
-                              uint32_t freeze_hash_tables_epoch);
+                              uint32_t freeze_hash_tables_epoch) final;
+
+  void transferContrastiveWeights() final;
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -279,6 +281,7 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
+  data::TabularDatasetFactoryPtr _contrastive_dataset_factory;
 
   uint32_t _default_top_k_to_return;
   uint32_t _num_buckets_to_eval;

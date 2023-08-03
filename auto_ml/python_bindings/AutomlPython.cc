@@ -126,6 +126,15 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
            py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
+      .def("train_contrastive", &udt::UDT::trainContrastive, py::arg("queries"),
+           py::arg("responses"), py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
+           py::arg("options") = udt::TrainOptions(),
+           py::arg("freeze_hash_tables_epoch") = 1,
+           bolt::python::OutputRedirect())
+      .def("transfer_contrastive_weights",
+           &udt::UDT::transferContrastiveWeights)
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},

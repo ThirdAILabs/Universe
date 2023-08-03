@@ -307,6 +307,39 @@ def modify_mach_udt():
         original_introduce_documents
     )
 
+    original_train_contrastive = bolt.UniversalDeepTransformer.train_contrastive
+
+    def wrapped_train_contrastive(
+        self,
+        queries_filename,
+        responses_filename,
+        learning_rate = 0.001,
+        epochs = 5,
+        train_metrics = [],
+        freeze_hash_tables_epoch = 1,
+    ):
+        train_options = bolt.TrainOptions()
+
+        train_options.verbose = True
+        train_options.shuffle_config = dataset.ShuffleConfig(
+            min_vecs_in_buffer=64000
+        )
+
+        return original_train_contrastive(
+            self,
+            queries=_create_data_source(queries_filename),
+            responses=_create_data_source(responses_filename),
+            learning_rate=learning_rate,
+            epochs=epochs,
+            train_metrics=train_metrics,
+            options=train_options,
+            freeze_hash_tables_epoch=freeze_hash_tables_epoch,
+        )
+
+    delattr(bolt.UniversalDeepTransformer, "train_contrastive")
+
+    bolt.UniversalDeepTransformer.train_contrastive = wrapped_train_contrastive
+
     def wrapped_associate_train(
         self,
         filename: str,

@@ -307,6 +307,7 @@ metrics::History Trainer::validate_with_dataset_loader(
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
+  std::cout << data.first.size() << " " << data.second.size();
   if (data.first.size() != data.second.size()) {
     throw std::invalid_argument(
         "Data and labels must have same number of batches.");

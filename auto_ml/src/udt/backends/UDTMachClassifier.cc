@@ -21,6 +21,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/cast.h>
@@ -170,6 +171,19 @@ UDTMachClassifier::UDTMachClassifier(
   _contrastive_model = utils::contrastiveModel(
       input_dim, hidden_dim, num_buckets, use_tanh, hidden_bias, output_bias,
       dissimilar_cutoff_distance);
+
+  auto similarity_processing_block = dataset::DenseArrayBlock::makeSingle(
+      dataset::ColumnIdentifier("similarity"));
+
+  auto new_types = input_data_types;
+  new_types.erase(target_name);
+
+  _contrastive_dataset_factory = data::TabularDatasetFactory::make(
+      /* input_data_types = */ new_types,
+      /* provided_temporal_relationships = */ temporal_tracking_relationships,
+      /* label_blocks = */ {dataset::BlockList({similarity_processing_block})},
+      /* label_col_names = */ std::set<std::string>{"similarity"},
+      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 }
 
 py::object UDTMachClassifier::trainContrastive(
@@ -179,11 +193,12 @@ py::object UDTMachClassifier::trainContrastive(
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     uint32_t freeze_hash_tables_epoch) {
   auto query_dataset_loader =
-      _dataset_factory->getUnLabeledDatasetLoader(queries);
+      _contrastive_dataset_factory->getUnLabeledDatasetLoader(queries);
 
   auto response_and_labels_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(responses,
-                                                /* shuffle= */ false);
+      _contrastive_dataset_factory->getLabeledDatasetLoader(
+          responses,
+          /* shuffle= */ false);
 
   bolt::train::Trainer trainer(_contrastive_model, freeze_hash_tables_epoch,
                                bolt::train::python::CtrlCCheck{});
@@ -192,25 +207,70 @@ py::object UDTMachClassifier::trainContrastive(
 
   auto query_old_dataset =
       query_dataset_loader->loadAll(batch_size, /* verbose= */ true);
-  auto response_old_dataset =
-      response_dataset_loader->loadAll(batch_size, /* verbose= */ true);
+
+  auto response_and_labels_old_dataset =
+      response_and_labels_dataset_loader->loadAll(batch_size,
+                                                  /* verbose= */ true);
+
 
   uint32_t input_dim = _contrastive_model->inputDims().at(0);
+  uint32_t label_dim = _contrastive_model->labelDims().at(0);
 
-  auto query_new_dataset =
+  auto query_dataset =
       bolt::train::convertDatasets(query_old_dataset, {input_dim},
                                    /* copy= */ false);
-  auto response_new_dataset =
-      bolt::train::convertDatasets(response_old_dataset, {input_dim},
-                                   /* copy= */ false);
 
-  bolt::train::Dataset query_response_dataset = {query_new_dataset.at(0),
-                                                 response_new_dataset.at(0)};
+  auto response_dataset = bolt::train::convertDatasets(
+      {response_and_labels_old_dataset[0]}, {input_dim},
+      /* copy= */ false);
+  auto label_dataset = bolt::train::convertDatasets(
+      {response_and_labels_old_dataset[1]}, {label_dim},
+      /* copy= */ false);
 
-  auto final_labeled_dataset = LabeledDataset(query_response_dataset, labels);
+  bolt::train::Dataset query_response_dataset = {query_dataset.at(0),
+                                                 response_dataset.at(0)};
+
+  bolt::train::LabeledDataset final_labeled_dataset =
+      std::make_pair(query_response_dataset, label_dataset);
+
+  return py::cast(trainer.train(
+      final_labeled_dataset,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* train_metrics= */ getMetrics(train_metrics, "train_"),
+      /* validation_data= */ std::nullopt,
+      /* validation_metrics= */ {},
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ nullptr));
 }
 
-void transferContrastiveWeights() {}
+void UDTMachClassifier::transferContrastiveWeights() {
+  // TODO(david) is this [1] index correct for the hidden layer?
+  auto contrastive_hidden_layer = bolt::nn::ops::FullyConnected::cast(
+      _contrastive_model->opExecutionOrder()[1]);
+
+  auto classifier_hidden_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder()[1]);
+
+  float* hidden_weights = contrastive_hidden_layer->kernel()->getWeights();
+  float* hidden_biases = contrastive_hidden_layer->kernel()->getBiases();
+  classifier_hidden_layer->kernel()->setWeights(hidden_weights);
+  classifier_hidden_layer->kernel()->setBiases(hidden_biases);
+
+  auto contrastive_output_layer = bolt::nn::ops::FullyConnected::cast(
+      _contrastive_model->opExecutionOrder().back());
+
+  auto classifier_output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  float* output_weights = contrastive_output_layer->kernel()->getWeights();
+  float* output_biases = contrastive_output_layer->kernel()->getBiases();
+  classifier_output_layer->kernel()->setWeights(output_weights);
+  classifier_output_layer->kernel()->setBiases(output_biases);
+}
 
 py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,

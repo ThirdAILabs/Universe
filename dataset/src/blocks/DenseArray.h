@@ -30,12 +30,19 @@ class DenseArrayBlock final : public Block {
   DenseArrayBlock(uint32_t start_col, uint32_t dim)
       : _start_col(start_col), _dim(dim) {}
 
+  DenseArrayBlock(ColumnIdentifier start_col, uint32_t dim)
+      : _start_col(std::move(start_col)), _dim(dim) {}
+
   static auto make(uint32_t start_col, uint32_t dim) {
     return std::make_shared<DenseArrayBlock>(start_col, dim);
   }
 
   static auto makeSingle(uint32_t start_col) {
     return std::make_shared<DenseArrayBlock>(start_col, /* dim= */ 1);
+  }
+
+  static auto makeSingle(ColumnIdentifier col) {
+    return std::make_shared<DenseArrayBlock>(col, /* dim= */ 1);
   }
 
   uint32_t featureDim() const final { return _dim; };

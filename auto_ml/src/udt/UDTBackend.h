@@ -45,6 +45,25 @@ struct TrainOptions {
  */
 class UDTBackend {
  public:
+  virtual py::object trainContrastive(
+      const dataset::DataSourcePtr& queries,
+      const dataset::DataSourcePtr& responses, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      uint32_t freeze_hash_tables_epoch) {
+    (void)queries;
+    (void)responses;
+    (void)learning_rate;
+    (void)epochs;
+    (void)train_metrics;
+    (void)callbacks;
+    (void)options;
+    (void)freeze_hash_tables_epoch;
+    throw notSupported("train_contrastive");
+  };
+
+  virtual void transferContrastiveWeights(){};
+
   /**
    * Trains the model on the given dataset.
    */
