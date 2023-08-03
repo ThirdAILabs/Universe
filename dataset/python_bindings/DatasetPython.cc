@@ -139,7 +139,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<CharKGramTokenizer, TextTokenizer,
              std::shared_ptr<CharKGramTokenizer>>(dataset_submodule,
                                                   "CharKGramTokenizer")
-      .def(py::init<uint32_t>(), py::arg("k"), py::arg("stride") = 1);
+      .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("stride") = 1);
 
   py::class_<NaiveSplitTokenizer, TextTokenizer,
              std::shared_ptr<NaiveSplitTokenizer>>(dataset_submodule,
