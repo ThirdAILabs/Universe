@@ -129,7 +129,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-macox_arm64"
+          CIBW_SKIP: "cp36-* cp37-*"
 
 
       - name: Upload wheels
