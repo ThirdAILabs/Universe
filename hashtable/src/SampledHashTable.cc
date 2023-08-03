@@ -191,16 +191,17 @@ uint32_t SampledHashTable::maxElement() const {
   return max_elem;
 }
 
-hashtable_proto::SampledHashTable SampledHashTable::toProto() const {
-  hashtable_proto::SampledHashTable hashtable;
+proto::hashtable::SampledHashTable* SampledHashTable::toProto() const {
+  proto::hashtable::SampledHashTable* hashtable =
+      new proto::hashtable::SampledHashTable();
 
-  hashtable.set_num_tables(_num_tables);
-  hashtable.set_reservoir_size(_reservoir_size);
-  hashtable.set_range(_range);
+  hashtable->set_num_tables(_num_tables);
+  hashtable->set_reservoir_size(_reservoir_size);
+  hashtable->set_range(_range);
 
-  hashtable.mutable_data()->Assign(_data.begin(), _data.end());
-  hashtable.mutable_counters()->Assign(_counters.begin(), _counters.end());
-  hashtable.mutable_gen_rand()->Assign(_gen_rand.begin(), _gen_rand.end());
+  hashtable->mutable_data()->Assign(_data.begin(), _data.end());
+  hashtable->mutable_counters()->Assign(_counters.begin(), _counters.end());
+  hashtable->mutable_gen_rand()->Assign(_gen_rand.begin(), _gen_rand.end());
 
   return hashtable;
 }

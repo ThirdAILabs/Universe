@@ -29,7 +29,7 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = global_random::nextSeed());
 
-  explicit EmbeddingLayer(const bolt_proto::RobeZ& robez_proto);
+  explicit EmbeddingLayer(const proto::bolt::RobeZ& robez_proto);
 
   void forward(const BoltVector& tokens, BoltVector& output);
 
@@ -99,7 +99,7 @@ class EmbeddingLayer {
 
   uint32_t hashSeed() const { return _hash_fn.seed(); }
 
-  bolt_proto::RobeZ* toProto(bool with_optimizer) const;
+  proto::bolt::RobeZ* toProto(bool with_optimizer) const;
 
   ~EmbeddingLayer() = default;
 

@@ -123,7 +123,7 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
-  virtual bolt_proto::Op toProto(bool with_optimizer) const = 0;
+  virtual proto::bolt::Op toProto(bool with_optimizer) const = 0;
 
   /**
    * Appends a line to the summary to describe the op when applied to the

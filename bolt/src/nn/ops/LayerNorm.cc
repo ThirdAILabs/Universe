@@ -28,7 +28,7 @@ LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
       _beta_optimizer(dim) {}
 
 LayerNorm::LayerNorm(const std::string& name,
-                     const bolt_proto::LayerNorm& layer_norm_proto)
+                     const proto::bolt::LayerNorm& layer_norm_proto)
     : Op(name),
       _gamma(utils::parametersFromProto(layer_norm_proto.gamma())),
       _beta(utils::parametersFromProto(layer_norm_proto.beta())) {
@@ -55,7 +55,7 @@ std::shared_ptr<LayerNorm> LayerNorm::make(const float* gamma,
 }
 
 std::shared_ptr<LayerNorm> LayerNorm::fromProto(
-    const std::string& name, const bolt_proto::LayerNorm& layer_norm_proto) {
+    const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto) {
   return std::shared_ptr<LayerNorm>(new LayerNorm(name, layer_norm_proto));
 }
 
@@ -190,8 +190,8 @@ std::vector<std::vector<float>*> LayerNorm::parameters() {
   return {&_gamma, &_beta};
 }
 
-bolt_proto::Op LayerNorm::toProto(bool with_optimizer) const {
-  bolt_proto::Op op;
+proto::bolt::Op LayerNorm::toProto(bool with_optimizer) const {
+  proto::bolt::Op op;
   op.set_name(name());
 
   auto* layer_norm = op.mutable_layer_norm();

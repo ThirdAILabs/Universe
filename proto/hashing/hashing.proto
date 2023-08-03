@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package hashing_proto;
+package proto.hashing;
 
 message DWTA {
   uint64 num_tables = 1;
@@ -16,24 +16,8 @@ message DWTA {
   uint32 random_double_hash_seed = 9;
 }
 
-message FastSRP {
-  uint64 hashes_per_table = 1;
-  uint64 num_hashes = 2;
-  uint64 log_num_hashes = 3;
-  uint64 input_dim = 4;
-  uint64 binsize = 5;
-  uint64 permutations = 6;
-
-  repeated uint32 bin_map = 7;
-  repeated uint32 positions = 8;
-  bytes rand_bits = 9;
-
-  uint32 random_double_hash_seed = 10;
-}
-
 message HashFunction {
   oneof type {
     DWTA dwta = 1;
-    FastSRP fast_srp = 2;
   }
 }

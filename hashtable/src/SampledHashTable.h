@@ -129,7 +129,7 @@ class SampledHashTable final : public HashTable<uint32_t> {
 
   uint32_t maxElement() const;
 
-  hashtable_proto::SampledHashTable toProto() const;
+  proto::hashtable::SampledHashTable* toProto() const;
 
   void summarize(std::ostream& summary) const {
     summary << "num_tables=" << _num_tables << ", range=" << _range

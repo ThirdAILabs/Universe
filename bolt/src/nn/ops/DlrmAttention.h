@@ -55,7 +55,7 @@ class DlrmAttention final : public Op,
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
-  bolt_proto::Op toProto(bool with_optimizer) const final;
+  proto::bolt::Op toProto(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;

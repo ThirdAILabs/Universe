@@ -11,7 +11,7 @@ class Concatenate final : public Op,
   static std::shared_ptr<Concatenate> make();
 
   static std::shared_ptr<Concatenate> fromProto(
-      const std::string& name, const bolt_proto::Concatenate& concat_proto);
+      const std::string& name, const proto::bolt::Concatenate& concat_proto);
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -38,7 +38,7 @@ class Concatenate final : public Op,
 
   std::vector<std::vector<float>*> parameters() final { return {}; };
 
-  bolt_proto::Op toProto(bool with_optimizer) const final;
+  proto::bolt::Op toProto(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
@@ -49,7 +49,7 @@ class Concatenate final : public Op,
   Concatenate();
 
   Concatenate(const std::string& name,
-              const bolt_proto::Concatenate& concat_proto);
+              const proto::bolt::Concatenate& concat_proto);
 
   std::vector<uint32_t> _input_dims;
   std::vector<uint32_t> _neuron_offsets;

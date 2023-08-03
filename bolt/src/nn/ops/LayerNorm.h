@@ -16,7 +16,7 @@ class LayerNorm final : public Op,
                                          size_t dim);
 
   static std::shared_ptr<LayerNorm> fromProto(
-      const std::string& name, const bolt_proto::LayerNorm& layer_norm_proto);
+      const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto);
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -40,7 +40,7 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
-  bolt_proto::Op toProto(bool with_optimizer) const final;
+  proto::bolt::Op toProto(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
@@ -57,7 +57,7 @@ class LayerNorm final : public Op,
   LayerNorm(const float* gamma, const float* beta, size_t dim);
 
   LayerNorm(const std::string& name,
-            const bolt_proto::LayerNorm& layer_norm_proto);
+            const proto::bolt::LayerNorm& layer_norm_proto);
 
   template <bool DENSE>
   void forward(const BoltVector& input, BoltVector& output);

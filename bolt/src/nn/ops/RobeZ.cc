@@ -29,7 +29,7 @@ RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
   _kernel = std::make_unique<EmbeddingLayer>(config, seed);
 }
 
-RobeZ::RobeZ(const std::string& name, const bolt_proto::RobeZ& robez_proto)
+RobeZ::RobeZ(const std::string& name, const proto::bolt::RobeZ& robez_proto)
     : Op(name), _kernel(std::make_unique<EmbeddingLayer>(robez_proto)) {}
 
 std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
@@ -48,7 +48,7 @@ std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
 }
 
 std::shared_ptr<RobeZ> RobeZ::fromProto(const std::string& name,
-                                        const bolt_proto::RobeZ& robez_proto) {
+                                        const proto::bolt::RobeZ& robez_proto) {
   return std::shared_ptr<RobeZ>(new RobeZ(name, robez_proto));
 }
 
@@ -100,8 +100,8 @@ std::vector<std::vector<float>*> RobeZ::parameters() {
   return {&_kernel->getRawEmbeddingBlock()};
 }
 
-bolt_proto::Op RobeZ::toProto(bool with_optimizer) const {
-  bolt_proto::Op op;
+proto::bolt::Op RobeZ::toProto(bool with_optimizer) const {
+  proto::bolt::Op op;
   op.set_name(name());
 
   // TODO(Nicholas) move everything into this class so we don't have to deal

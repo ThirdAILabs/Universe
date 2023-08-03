@@ -14,7 +14,7 @@ class Embedding final : public Op,
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
             bool bias);
 
-  Embedding(const std::string& name, const bolt_proto::Embedding& emb_proto);
+  Embedding(const std::string& name, const proto::bolt::Embedding& emb_proto);
 
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
@@ -24,7 +24,7 @@ class Embedding final : public Op,
   }
 
   static auto fromProto(const std::string& name,
-                        const bolt_proto::Embedding& emb_proto) {
+                        const proto::bolt::Embedding& emb_proto) {
     return std::shared_ptr<Embedding>(new Embedding(name, emb_proto));
   }
 
@@ -62,7 +62,7 @@ class Embedding final : public Op,
     return {&_embeddings, &_biases};
   }
 
-  bolt_proto::Op toProto(bool with_optimizer) const final;
+  proto::bolt::Op toProto(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;

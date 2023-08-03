@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package bolt_proto;
+package proto.bolt;
 
 import "neuron_index.proto";
 import "optimizers.proto";
@@ -28,7 +28,7 @@ message FullyConnected {
   uint64 rebuild_hash_tables = 8;
   uint64 reconstruct_hash_functions = 9;
 
-  NeuronIndex neuron_index = 10;
+  optional NeuronIndex neuron_index = 10;
   bool index_frozen = 11;
 
   optional Optimizer weight_optimizer = 12;

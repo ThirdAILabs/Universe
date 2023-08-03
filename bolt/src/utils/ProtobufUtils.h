@@ -10,75 +10,75 @@
 
 namespace thirdai::bolt::utils {
 
-inline bolt_proto::ActivationFunction activationToProto(
+inline proto::bolt::ActivationFunction activationToProto(
     ActivationFunction activation) {
   switch (activation) {
     case ActivationFunction::ReLU:
-      return bolt_proto::ActivationFunction::RELU;
+      return proto::bolt::ActivationFunction::RELU;
     case ActivationFunction::Softmax:
-      return bolt_proto::ActivationFunction::SOFTMAX;
+      return proto::bolt::ActivationFunction::SOFTMAX;
     case ActivationFunction::Sigmoid:
-      return bolt_proto::ActivationFunction::SIGMOID;
+      return proto::bolt::ActivationFunction::SIGMOID;
     case ActivationFunction::Tanh:
-      return bolt_proto::ActivationFunction::TANH;
+      return proto::bolt::ActivationFunction::TANH;
     case ActivationFunction::Linear:
-      return bolt_proto::ActivationFunction::LINEAR;
+      return proto::bolt::ActivationFunction::LINEAR;
   }
 }
 
 inline ActivationFunction activationFromProto(
-    bolt_proto::ActivationFunction activation) {
+    proto::bolt::ActivationFunction activation) {
   switch (activation) {
-    case bolt_proto::ActivationFunction::RELU:
+    case proto::bolt::ActivationFunction::RELU:
       return ActivationFunction::ReLU;
-    case bolt_proto::ActivationFunction::SOFTMAX:
+    case proto::bolt::ActivationFunction::SOFTMAX:
       return ActivationFunction::Softmax;
-    case bolt_proto::ActivationFunction::SIGMOID:
+    case proto::bolt::ActivationFunction::SIGMOID:
       return ActivationFunction::Sigmoid;
-    case bolt_proto::ActivationFunction::TANH:
+    case proto::bolt::ActivationFunction::TANH:
       return ActivationFunction::Tanh;
-    case bolt_proto::ActivationFunction::LINEAR:
+    case proto::bolt::ActivationFunction::LINEAR:
       return ActivationFunction::Linear;
     default:
       throw std::invalid_argument("Invalid activation function in fromProto.");
   }
 }
 
-inline bolt_proto::EmbeddingReduction reductionToProto(
+inline proto::bolt::EmbeddingReduction reductionToProto(
     EmbeddingReductionType reduction) {
   switch (reduction) {
     case EmbeddingReductionType::CONCATENATION:
-      return bolt_proto::EmbeddingReduction::CONCAT;
+      return proto::bolt::EmbeddingReduction::CONCAT;
     case EmbeddingReductionType::SUM:
-      return bolt_proto::EmbeddingReduction::SUM;
+      return proto::bolt::EmbeddingReduction::SUM;
     case EmbeddingReductionType::AVERAGE:
-      return bolt_proto::EmbeddingReduction::AVG;
+      return proto::bolt::EmbeddingReduction::AVG;
   }
 }
 
 inline EmbeddingReductionType reductionFromProto(
-    bolt_proto::EmbeddingReduction reduction) {
+    proto::bolt::EmbeddingReduction reduction) {
   switch (reduction) {
-    case bolt_proto::EmbeddingReduction::CONCAT:
+    case proto::bolt::EmbeddingReduction::CONCAT:
       return EmbeddingReductionType::CONCATENATION;
-    case bolt_proto::EmbeddingReduction::SUM:
+    case proto::bolt::EmbeddingReduction::SUM:
       return EmbeddingReductionType::SUM;
-    case bolt_proto::EmbeddingReduction::AVG:
+    case proto::bolt::EmbeddingReduction::AVG:
       return EmbeddingReductionType::AVERAGE;
     default:
       throw std::invalid_argument("Invalid reduction type in fromProto.");
   }
 }
 
-inline bolt_proto::Parameter* parametersToProto(
+inline proto::bolt::Parameter* parametersToProto(
     const std::vector<float>& parameters) {
-  bolt_proto::Parameter* proto = new bolt_proto::Parameter();
+  proto::bolt::Parameter* proto = new proto::bolt::Parameter();
   proto->mutable_data()->Assign(parameters.begin(), parameters.end());
   return proto;
 }
 
 inline std::vector<float> parametersFromProto(
-    const bolt_proto::Parameter& proto) {
+    const proto::bolt::Parameter& proto) {
   return {proto.data().begin(), proto.data().end()};
 }
 
@@ -87,12 +87,12 @@ inline std::vector<float> parametersFromProto(
 // Optimizer PR can be loaded with the new design. For example beta1/beta2
 // become optimizer parameters instead of global constants, so they are
 // serialized here.
-inline bolt_proto::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
-                                               size_t rows, size_t cols) {
+inline proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
+                                                size_t rows, size_t cols) {
   if (optimizer.momentum.size() != (rows * cols)) {
     throw std::runtime_error("Rows and columns do not match optimizer size.");
   }
-  bolt_proto::Optimizer* proto_opt = new bolt_proto::Optimizer();
+  proto::bolt::Optimizer* proto_opt = new proto::bolt::Optimizer();
 
   auto* adam = proto_opt->mutable_adam();
 
@@ -110,7 +110,7 @@ inline bolt_proto::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
 }
 
 inline AdamOptimizer optimizerFromProto(
-    const bolt_proto::Optimizer& opt_proto) {
+    const proto::bolt::Optimizer& opt_proto) {
   if (!opt_proto.has_adam()) {
     throw std::invalid_argument("Expected adam optimizer.");
   }

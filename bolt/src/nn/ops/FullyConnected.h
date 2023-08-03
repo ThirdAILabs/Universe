@@ -7,6 +7,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <proto/ops.pb.h>
 #include <limits>
 #include <memory>
 
@@ -24,6 +25,9 @@ class FullyConnected final
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
       bool use_bias = true, uint32_t rebuild_hash_tables = 4,
       uint32_t reconstruct_hash_functions = 100);
+
+  static std::shared_ptr<FullyConnected> fromProto(
+      const std::string& name, const proto::bolt::FullyConnected& fc_proto);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
@@ -53,7 +57,7 @@ class FullyConnected final
 
   std::vector<std::vector<float>*> parameters() final;
 
-  bolt_proto::Op toProto(bool with_optimizer) const final;
+  proto::bolt::Op toProto(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
@@ -139,6 +143,9 @@ class FullyConnected final
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
+
+  FullyConnected(const std::string& name,
+                 const proto::bolt::FullyConnected& fc_proto);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 

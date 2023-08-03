@@ -90,7 +90,7 @@ class HashFunction {
 
   virtual std::unique_ptr<HashFunction> copyWithNewSeeds() const = 0;
 
-  virtual hashing_proto::HashFunction toProto() const {
+  virtual proto::hashing::HashFunction* toProto() const {
     throw std::invalid_argument(
         "toProto is not supported for this hash function.");
   }

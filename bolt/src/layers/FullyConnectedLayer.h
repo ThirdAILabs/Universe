@@ -37,6 +37,8 @@ class FullyConnectedLayer final {
                       bool disable_sparse_parameter_updates = false,
                       bool use_bias = true);
 
+  explicit FullyConnectedLayer(const proto::bolt::FullyConnected& fc_proto);
+
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
 
@@ -137,7 +139,7 @@ class FullyConnectedLayer final {
   void setHashTable(hashing::HashFunctionPtr hash_fn,
                     hashtable::SampledHashTablePtr hash_table);
 
-  bolt_proto::FullyConnected* toProto(bool with_optimizer) const;
+  proto::bolt::FullyConnected* toProto(bool with_optimizer) const;
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 

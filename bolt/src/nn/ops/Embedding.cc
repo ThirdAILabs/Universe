@@ -46,7 +46,7 @@ Embedding::Embedding(size_t dim, size_t input_dim,
 }
 
 Embedding::Embedding(const std::string& name,
-                     const bolt_proto::Embedding& emb_proto)
+                     const proto::bolt::Embedding& emb_proto)
     : Op(name),
       _dim(emb_proto.dim()),
       _input_dim(emb_proto.dim()),
@@ -254,8 +254,8 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
   }
 }
 
-bolt_proto::Op Embedding::toProto(bool with_optimizer) const {
-  bolt_proto::Op op;
+proto::bolt::Op Embedding::toProto(bool with_optimizer) const {
+  proto::bolt::Op op;
   op.set_name(name());
 
   auto* emb = op.mutable_embedding();

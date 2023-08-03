@@ -18,7 +18,7 @@ std::string nextTanhOpName() {
 
 Tanh::Tanh() : Op(nextTanhOpName()) {}
 
-Tanh::Tanh(const std::string& name, const bolt_proto::Tanh& tanh_proto)
+Tanh::Tanh(const std::string& name, const proto::bolt::Tanh& tanh_proto)
     : Op(name) {
   (void)tanh_proto;
 }
@@ -26,7 +26,7 @@ Tanh::Tanh(const std::string& name, const bolt_proto::Tanh& tanh_proto)
 std::shared_ptr<Tanh> Tanh::make() { return std::shared_ptr<Tanh>(new Tanh()); }
 
 std::shared_ptr<Tanh> Tanh::fromProto(const std::string& name,
-                                      const bolt_proto::Tanh& tanh_proto) {
+                                      const proto::bolt::Tanh& tanh_proto) {
   return std::shared_ptr<Tanh>(new Tanh(name, tanh_proto));
 }
 
@@ -81,10 +81,10 @@ std::vector<std::vector<float>*> Tanh::gradients() { return {}; }
 
 std::vector<std::vector<float>*> Tanh::parameters() { return {}; }
 
-bolt_proto::Op Tanh::toProto(bool with_optimizer) const {
+proto::bolt::Op Tanh::toProto(bool with_optimizer) const {
   (void)with_optimizer;
 
-  bolt_proto::Op op;
+  proto::bolt::Op op;
 
   op.set_name(name());
   op.mutable_tanh();

@@ -141,10 +141,10 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
   }
 }
 
-hashing_proto::HashFunction DWTAHashFunction::toProto() const {
-  hashing_proto::HashFunction hash_fn;
+proto::hashing::HashFunction* DWTAHashFunction::toProto() const {
+  proto::hashing::HashFunction* hash_fn = new proto::hashing::HashFunction();
 
-  auto* dwta = hash_fn.mutable_dwta();
+  auto* dwta = hash_fn->mutable_dwta();
   dwta->set_num_tables(_num_tables);
   dwta->set_num_hashes(_num_hashes);
   dwta->set_binsize(_binsize);

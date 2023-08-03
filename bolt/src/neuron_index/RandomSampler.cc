@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <proto/neuron_index.pb.h>
 #include <utils/Random.h>
 #include <random>
 
@@ -55,6 +56,17 @@ void RandomSampler::query(const BoltVector& input, BoltVector& output,
                  /* dest= */ output.active_neurons + label_len,
                  /* copy_size= */ neurons_to_sample,
                  /* starting_offset= */ random_offset);
+}
+
+proto::bolt::NeuronIndex* RandomSampler::toProto() const {
+  proto::bolt::NeuronIndex* index = new proto::bolt::NeuronIndex();
+
+  auto* rand_index = index->mutable_random();
+
+  rand_index->mutable_random_neurons()->Assign(_rand_neurons.begin(),
+                                               _rand_neurons.end());
+
+  return index;
 }
 
 template void RandomSampler::serialize(cereal::BinaryInputArchive&);

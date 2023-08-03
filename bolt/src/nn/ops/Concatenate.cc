@@ -20,7 +20,7 @@ std::string nextConcatenateOpName() {
 Concatenate::Concatenate() : Op(nextConcatenateOpName()) {}
 
 Concatenate::Concatenate(const std::string& name,
-                         const bolt_proto::Concatenate& concat_proto)
+                         const proto::bolt::Concatenate& concat_proto)
     : Op(name) {
   (void)concat_proto;
 }
@@ -30,7 +30,7 @@ std::shared_ptr<Concatenate> Concatenate::make() {
 }
 
 std::shared_ptr<Concatenate> Concatenate::fromProto(
-    const std::string& name, const bolt_proto::Concatenate& concat_proto) {
+    const std::string& name, const proto::bolt::Concatenate& concat_proto) {
   return std::shared_ptr<Concatenate>(new Concatenate(name, concat_proto));
 }
 
@@ -118,10 +118,10 @@ std::optional<uint32_t> Concatenate::nonzeros(
   return total_num_nonzeros;
 }
 
-bolt_proto::Op Concatenate::toProto(bool with_optimizer) const {
+proto::bolt::Op Concatenate::toProto(bool with_optimizer) const {
   (void)with_optimizer;
 
-  bolt_proto::Op op;
+  proto::bolt::Op op;
 
   op.set_name(name());
   op.mutable_concatenate();

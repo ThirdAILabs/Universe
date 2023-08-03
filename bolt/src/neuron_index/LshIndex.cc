@@ -5,6 +5,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <hashing/src/HashUtils.h>
+#include <proto/neuron_index.pb.h>
 #include <utils/Random.h>
 #include <algorithm>
 #include <random>
@@ -134,6 +135,22 @@ void LshIndex::summarize(std::ostream& summary) const {
             << "hashes_per_table= " << dwta_hasher->getHashesPerTable() << ", ";
   }
   _hash_table->summarize(summary);
+}
+
+proto::bolt::NeuronIndex* LshIndex::toProto() const {
+  proto::bolt::NeuronIndex* index = new proto::bolt::NeuronIndex();
+
+  auto* lsh_index = index->mutable_lsh();
+
+  lsh_index->set_allocated_hash_function(_hash_fn->toProto());
+  lsh_index->set_allocated_hash_table(_hash_table->toProto());
+
+  lsh_index->mutable_random_neurons()->Assign(_rand_neurons.begin(),
+                                              _rand_neurons.end());
+
+  lsh_index->set_insert_labels_when_not_found(_insert_labels_when_not_found);
+
+  return index;
 }
 
 template void LshIndex::serialize(cereal::BinaryInputArchive&);

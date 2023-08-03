@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package bolt_proto;
+package proto.bolt;
 
 import "loss.proto";
 import "ops.proto";

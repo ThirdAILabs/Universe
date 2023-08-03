@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package hashtable_proto;
+package proto.hashtable;
 
 message SampledHashTable {
   uint64 num_tables = 1;

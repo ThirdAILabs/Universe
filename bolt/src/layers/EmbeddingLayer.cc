@@ -63,7 +63,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
-EmbeddingLayer::EmbeddingLayer(const bolt_proto::RobeZ& robez_proto)
+EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
     : _num_lookups_per_token(robez_proto.num_lookups_per_token()),
       _lookup_size(robez_proto.lookup_size()),
       _total_embedding_dim(robez_proto.lookup_size() *
@@ -253,8 +253,8 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
   }
 }
 
-bolt_proto::RobeZ* EmbeddingLayer::toProto(bool with_optimizer) const {
-  bolt_proto::RobeZ* robez = new bolt_proto::RobeZ();
+proto::bolt::RobeZ* EmbeddingLayer::toProto(bool with_optimizer) const {
+  proto::bolt::RobeZ* robez = new proto::bolt::RobeZ();
 
   robez->set_num_lookups_per_token(_num_lookups_per_token);
   robez->set_lookup_size(_lookup_size);

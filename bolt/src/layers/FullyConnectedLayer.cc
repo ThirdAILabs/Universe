@@ -6,6 +6,7 @@
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <proto/neuron_index.pb.h>
 #include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
@@ -53,6 +54,49 @@ FullyConnectedLayer::FullyConnectedLayer(
   initOptimizer();
 
   initActiveNeuronsTrackers();
+}
+
+FullyConnectedLayer::FullyConnectedLayer(
+    const proto::bolt::FullyConnected& fc_proto)
+    : _dim(fc_proto.dim()),
+      _prev_dim(fc_proto.input_dim()),
+      _sparse_dim(fc_proto.dim() * fc_proto.sparsity()),
+      _sparsity(fc_proto.sparsity()),
+      _act_func(utils::activationFromProto(fc_proto.activation())),
+      _weights(utils::parametersFromProto(fc_proto.weights())),
+      _biases(utils::parametersFromProto(fc_proto.bias())),
+      _index_frozen(fc_proto.index_frozen()),
+      _disable_sparse_parameter_updates(
+          fc_proto.disable_sparse_parameter_updates()),
+      _should_save_optimizer(false),
+      _use_bias(fc_proto.use_bias()),
+      _prev_is_active(fc_proto.input_dim(), false),
+      _is_active(fc_proto.dim(), false) {
+  switch (fc_proto.neuron_index().index_case()) {
+    case proto::bolt::NeuronIndex::kLsh:
+      _neuron_index = nn::LshIndex::fromProto(fc_proto.neuron_index().lsh());
+      break;
+    case proto::bolt::NeuronIndex::kRandom:
+      _neuron_index =
+          nn::RandomSampler::fromProto(fc_proto.neuron_index().random());
+      break;
+    case proto::bolt::NeuronIndex::INDEX_NOT_SET:
+      if (_sparsity < 1.0) {
+        _neuron_index =
+            DWTASamplingConfig::autotune(_dim, _sparsity,
+                                         /* experimental_autotune= */ false)
+                ->getNeuronIndex(_dim, _prev_dim);
+      }
+      break;
+  }
+
+  if (fc_proto.has_weight_optimizer() && fc_proto.has_bias_optimizer()) {
+    _weight_optimizer = utils::optimizerFromProto(fc_proto.weight_optimizer());
+    _bias_optimizer = utils::optimizerFromProto(fc_proto.bias_optimizer());
+  } else {
+    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+  }
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
@@ -695,9 +739,9 @@ void FullyConnectedLayer::setHashTable(
       nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
 }
 
-bolt_proto::FullyConnected* FullyConnectedLayer::toProto(
+proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
     bool with_optimizer) const {
-  bolt_proto::FullyConnected* fc = new bolt_proto::FullyConnected();
+  proto::bolt::FullyConnected* fc = new proto::bolt::FullyConnected();
 
   fc->set_dim(_dim);
   fc->set_input_dim(_prev_dim);
@@ -709,7 +753,14 @@ bolt_proto::FullyConnected* FullyConnectedLayer::toProto(
   fc->set_allocated_weights(utils::parametersToProto(_weights));
   fc->set_allocated_bias(utils::parametersToProto(_biases));
 
-  // Neuron index
+  if (_neuron_index) {
+    if (auto lsh_index = nn::LshIndex::cast(_neuron_index)) {
+      fc->set_allocated_neuron_index(lsh_index->toProto());
+    } else if (auto rand_index = nn::RandomSampler::cast(_neuron_index)) {
+      fc->set_allocated_neuron_index(rand_index->toProto());
+    }
+  }
+  fc->set_index_frozen(_index_frozen);
 
   if (with_optimizer && _weight_optimizer && _bias_optimizer) {
     fc->set_allocated_weight_optimizer(

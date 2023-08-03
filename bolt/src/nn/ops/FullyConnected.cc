@@ -42,6 +42,15 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
       config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
 
+FullyConnected::FullyConnected(const std::string& name,
+                               const proto::bolt::FullyConnected& fc_proto)
+    : Op(name),
+      _kernel(std::make_unique<FullyConnectedLayer>(fc_proto)),
+      _rebuild_hash_tables(fc_proto.rebuild_hash_tables()),
+      _reconstruct_hash_functions(fc_proto.reconstruct_hash_functions()),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {}
+
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
     const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
@@ -49,6 +58,11 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
   return std::shared_ptr<FullyConnected>(new FullyConnected(
       dim, input_dim, sparsity, activation, std::move(sampling), use_bias,
       rebuild_hash_tables, reconstruct_hash_functions));
+}
+
+std::shared_ptr<FullyConnected> FullyConnected::fromProto(
+    const std::string& name, const proto::bolt::FullyConnected& fc_proto) {
+  return std::shared_ptr<FullyConnected>(new FullyConnected(name, fc_proto));
 }
 
 void FullyConnected::forward(const autograd::ComputationList& inputs,
@@ -124,8 +138,8 @@ std::vector<std::vector<float>*> FullyConnected::parameters() {
   return {&_kernel->weights(), &_kernel->biases()};
 }
 
-bolt_proto::Op FullyConnected::toProto(bool with_optimizer) const {
-  bolt_proto::Op op;
+proto::bolt::Op FullyConnected::toProto(bool with_optimizer) const {
+  proto::bolt::Op op;
   op.set_name(name());
 
   // TODO(Nicholas) move everything into this class so we don't have to deal

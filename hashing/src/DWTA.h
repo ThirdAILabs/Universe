@@ -54,7 +54,7 @@ class DWTAHashFunction final : public HashFunction {
 
   uint32_t getHashesPerTable() const { return _hashes_per_table; }
 
-  hashing_proto::HashFunction toProto() const final;
+  proto::hashing::HashFunction* toProto() const final;
 
   void save(const std::string& filename) const;
 
