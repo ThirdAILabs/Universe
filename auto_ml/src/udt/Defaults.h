@@ -25,7 +25,7 @@ constexpr bool HIDDEN_BIAS = true;
 constexpr bool OUTPUT_BIAS = true;
 
 // Whether to have layer normalization between hidden layer and output layer
-constexpr bool USE_LAYER_NORM = false;
+constexpr bool NORMALIZE_EMBEDDINGS = false;
 
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;
