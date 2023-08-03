@@ -20,6 +20,7 @@ from thirdai.demos import (
 from thirdai.demos import download_beir_dataset, download_clinc_dataset
 
 
+# TODO(pratik): Could we directly import it from global Universe module?
 @pytest.fixture(scope="module")
 def download_amazon_kaggle_product_catalog_sampled():
     return download_amazon_kaggle_product_catalog_sampled_wrapped()
