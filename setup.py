@@ -221,7 +221,6 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
-            "torch",
         ]
         + neural_db_deps,
         "benchmark": [

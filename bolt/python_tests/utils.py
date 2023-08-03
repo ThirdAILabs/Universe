@@ -50,24 +50,6 @@ def get_categorical_acc(network, examples, labels, batch_size=64):
     return acc["categorical_accuracy"]
 
 
-def train_single_node_distributed_network(
-    network, train_data, train_labels, epochs, learning_rate=0.0005
-):
-    batch_size = network.prepareNodeForDistributedTraining(
-        train_data,
-        train_labels,
-        rehash=3000,
-        rebuild=10000,
-        verbose=True,
-    )
-    for epoch_num in range(epochs):
-        for batch_num in range(batch_size):
-            network.calculateGradientSingleNode(
-                batch_num, bolt.CategoricalCrossEntropyLoss()
-            )
-            network.updateParametersSingleNode(learning_rate)
-
-
 # Returns a model with a single node
 # input_dim=output_dim, 50% sparsity by default, and a softmax
 # activation
