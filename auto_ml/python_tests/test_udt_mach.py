@@ -50,12 +50,10 @@ def train_simple_mach_udt(
             "extreme_output_dim": output_dim,
             "hidden_bias": use_bias,
             "output_bias": use_bias,
-            "use_layer_norm": True
             **rlhf_args,
             "mach_sampling_threshold": mach_sampling_threshold,
         },
     )
-    model._get_model().summary()
 
     model.train(
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
