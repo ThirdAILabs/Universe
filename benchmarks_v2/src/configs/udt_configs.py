@@ -230,6 +230,11 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
                 "predecessor": "input",
             },
             {
+                "name": "layer",  
+                "type": "layernorm",
+                "predecessor": "hidden",
+            },
+            {
                 "name": "output",
                 "type": "fully_connected",
                 "dim": {"param_name": "output_dim"},
@@ -243,7 +248,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
                     "reservoir_size": 64,
                     "permutations": 8,
                 },
-                "predecessor": "hidden",
+                "predecessor": "layer",
             },
         ],
         "output": "output",

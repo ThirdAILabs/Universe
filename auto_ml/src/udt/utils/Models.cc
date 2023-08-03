@@ -66,12 +66,14 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                                      /* bias= */ hidden_bias)
           ->apply(input);
 
+  auto layer_norm = bolt::nn::ops::LayerNorm::make()->apply(hidden);
+
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::nn::ops::FullyConnected::make(
-                    output_dim, hidden->dim(), sparsity, activation,
+                    output_dim, layer_norm->dim(), sparsity, activation,
                     /* sampling= */ nullptr, /* use_bias= */ output_bias)
-                    ->apply(hidden);
+                    ->apply(layer_norm);
 
   auto labels = bolt::nn::ops::Input::make(output_dim);
 
