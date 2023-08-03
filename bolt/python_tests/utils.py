@@ -355,17 +355,16 @@ def compressed_training(
     for epochs in range(epochs):
         for x, y in zip(train_dataset, train_labels):
             model.train_on_batch(x, y)
-            if use_compression:
-                old_gradients = np.array(model.get_gradients())
-                compressed_weights = bolt_v2.compression.compress(
-                    old_gradients,
-                    compression_scheme,
-                    compression_density,
-                    seed_for_hashing=42,
-                    sample_population_size=sample_population_size,
-                )
-                new_gradients = bolt_v2.compression.decompress(compressed_weights)
-                model.set_gradients(new_gradients)
+            old_gradients = np.array(model.get_gradients())
+            compressed_weights = bolt_v2.compression.compress(
+                old_gradients,
+                compression_scheme,
+                compression_density,
+                seed_for_hashing=42,
+                sample_population_size=sample_population_size,
+            )
+            new_gradients = bolt_v2.compression.decompress(compressed_weights)
+            model.set_gradients(new_gradients)
             model.update_parameters(learning_rate)
 
     trainer = bolt_v2.train.Trainer(model)
