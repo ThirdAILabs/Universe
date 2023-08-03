@@ -27,6 +27,24 @@ LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
       _gamma_optimizer(dim),
       _beta_optimizer(dim) {}
 
+LayerNorm::LayerNorm(const std::string& name,
+                     const bolt_proto::LayerNorm& layer_norm_proto)
+    : Op(name),
+      _gamma(utils::parametersFromProto(layer_norm_proto.gamma())),
+      _beta(utils::parametersFromProto(layer_norm_proto.beta())) {
+  if (layer_norm_proto.has_gamma_optimizer() &&
+      layer_norm_proto.has_beta_optimizer()) {
+    _gamma_optimizer =
+        utils::optimizerFromProto(layer_norm_proto.gamma_optimizer());
+
+    _beta_optimizer =
+        utils::optimizerFromProto(layer_norm_proto.beta_optimizer());
+  } else {
+    _gamma_optimizer = AdamOptimizer(dim());
+    _beta_optimizer = AdamOptimizer(dim());
+  }
+}
+
 std::shared_ptr<LayerNorm> LayerNorm::make() {
   return std::shared_ptr<LayerNorm>(new LayerNorm());
 }
@@ -34,6 +52,11 @@ std::shared_ptr<LayerNorm> LayerNorm::make() {
 std::shared_ptr<LayerNorm> LayerNorm::make(const float* gamma,
                                            const float* beta, size_t dim) {
   return std::shared_ptr<LayerNorm>(new LayerNorm(gamma, beta, dim));
+}
+
+std::shared_ptr<LayerNorm> LayerNorm::fromProto(
+    const std::string& name, const bolt_proto::LayerNorm& layer_norm_proto) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(name, layer_norm_proto));
 }
 
 void LayerNorm::forward(const autograd::ComputationList& inputs,

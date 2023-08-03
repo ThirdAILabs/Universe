@@ -9,6 +9,9 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
  public:
   static std::shared_ptr<Tanh> make();
 
+  static std::shared_ptr<Tanh> fromProto(const std::string& name,
+                                         const bolt_proto::Tanh& tanh_proto);
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -40,6 +43,8 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
 
  private:
   Tanh();
+
+  Tanh(const std::string& name, const bolt_proto::Tanh& tanh_proto);
 
   friend class cereal::access;
   template <class Archive>

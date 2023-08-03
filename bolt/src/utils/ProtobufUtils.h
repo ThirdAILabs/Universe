@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <proto/ops.pb.h>
@@ -43,6 +44,32 @@ inline ActivationFunction activationFromProto(
   }
 }
 
+inline bolt_proto::EmbeddingReduction reductionToProto(
+    EmbeddingReductionType reduction) {
+  switch (reduction) {
+    case EmbeddingReductionType::CONCATENATION:
+      return bolt_proto::EmbeddingReduction::CONCAT;
+    case EmbeddingReductionType::SUM:
+      return bolt_proto::EmbeddingReduction::SUM;
+    case EmbeddingReductionType::AVERAGE:
+      return bolt_proto::EmbeddingReduction::AVG;
+  }
+}
+
+inline EmbeddingReductionType reductionFromProto(
+    bolt_proto::EmbeddingReduction reduction) {
+  switch (reduction) {
+    case bolt_proto::EmbeddingReduction::CONCAT:
+      return EmbeddingReductionType::CONCATENATION;
+    case bolt_proto::EmbeddingReduction::SUM:
+      return EmbeddingReductionType::SUM;
+    case bolt_proto::EmbeddingReduction::AVG:
+      return EmbeddingReductionType::AVERAGE;
+    default:
+      throw std::invalid_argument("Invalid reduction type in fromProto.");
+  }
+}
+
 inline bolt_proto::Parameter* parametersToProto(
     const std::vector<float>& parameters) {
   bolt_proto::Parameter* proto = new bolt_proto::Parameter();
@@ -62,6 +89,9 @@ inline std::vector<float> parametersFromProto(
 // serialized here.
 inline bolt_proto::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
                                                size_t rows, size_t cols) {
+  if (optimizer.momentum.size() != (rows * cols)) {
+    throw std::runtime_error("Rows and columns do not match optimizer size.");
+  }
   bolt_proto::Optimizer* proto_opt = new bolt_proto::Optimizer();
 
   auto* adam = proto_opt->mutable_adam();
@@ -77,6 +107,27 @@ inline bolt_proto::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
   adam->set_eps(EPS);
 
   return proto_opt;
+}
+
+inline AdamOptimizer optimizerFromProto(
+    const bolt_proto::Optimizer& opt_proto) {
+  if (!opt_proto.has_adam()) {
+    throw std::invalid_argument("Expected adam optimizer.");
+  }
+
+  AdamOptimizer opt(0);
+
+  opt.momentum = parametersFromProto(opt_proto.adam().momentum());
+  opt.velocity = parametersFromProto(opt_proto.adam().velocity());
+
+  if (opt.momentum.size() != opt.velocity.size()) {
+    throw std::runtime_error(
+        "Expected momentum and velocity to have the same size.");
+  }
+
+  opt.gradients.assign(opt.momentum.size(), 0.0);
+
+  return opt;
 }
 
 }  // namespace thirdai::bolt::utils

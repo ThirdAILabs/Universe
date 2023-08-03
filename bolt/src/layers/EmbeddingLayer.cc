@@ -1,10 +1,20 @@
 #include "EmbeddingLayer.h"
+#include <bolt/src/utils/ProtobufUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <algorithm>
+#include <optional>
 #include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
+
+std::pair<uint64_t, uint64_t> computeBlockSizeAndNumChunks(
+    uint64_t log_block_size, uint64_t lookup_size, uint64_t chunk_size) {
+  uint64_t block_size = (1ULL << log_block_size) + lookup_size;
+  uint64_t n_chunks = (block_size + chunk_size - 1) / chunk_size;
+
+  return {n_chunks * chunk_size, n_chunks};
+}
 
 EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
@@ -35,22 +45,61 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
-  _embedding_block_size = (1ULL << _log_embedding_block_size) + _lookup_size;
-  uint64_t n_chunks =
-      (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
-  _embedding_block_size = n_chunks * _update_chunk_size;
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
   _embedding_block =
       std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
   initOptimizer();
 
-  _embedding_chunks_used = std::vector<bool>(n_chunks, false);
+  _embedding_chunks_used = std::vector<bool>(n_emb_chunks, false);
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
 
   std::generate(_embedding_block->begin(), _embedding_block->end(),
                 [&]() { return dist(gen); });
+}
+
+EmbeddingLayer::EmbeddingLayer(const bolt_proto::RobeZ& robez_proto)
+    : _num_lookups_per_token(robez_proto.num_lookups_per_token()),
+      _lookup_size(robez_proto.lookup_size()),
+      _total_embedding_dim(robez_proto.lookup_size() *
+                           robez_proto.num_lookups_per_token()),
+      _log_embedding_block_size(robez_proto.log_embedding_block_size()),
+      _update_chunk_size(robez_proto.update_chunk_size()),
+      _reduction(utils::reductionFromProto(robez_proto.reduction())),
+      _num_tokens_per_input(
+          robez_proto.has_num_tokens_per_input()
+              ? std::make_optional(robez_proto.num_tokens_per_input())
+              : std::nullopt),
+      _hash_fn(robez_proto.hash_seed()),
+      _disable_sparse_parameter_updates(
+          robez_proto.disable_sparse_parameter_updates()),
+      _should_save_optimizer(false) {
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
+
+  _embedding_block = std::make_shared<std::vector<float>>(
+      utils::parametersFromProto(robez_proto.embedding_block()));
+
+  if (_embedding_block->size() != _embedding_block_size) {
+    throw std::runtime_error(
+        "Embedding block in protobuf object does not have expected size.");
+  }
+
+  _embedding_chunks_used.assign(n_emb_chunks, false);
+
+  if (robez_proto.has_embedding_block_optimizer()) {
+    _optimizer =
+        utils::optimizerFromProto(robez_proto.embedding_block_optimizer());
+  } else {
+    _optimizer = AdamOptimizer(_embedding_block_size);
+  }
 }
 
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
@@ -202,6 +251,35 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
       _optimizer->gradients[n] = 0;
     }
   }
+}
+
+bolt_proto::RobeZ* EmbeddingLayer::toProto(bool with_optimizer) const {
+  bolt_proto::RobeZ* robez = new bolt_proto::RobeZ();
+
+  robez->set_num_lookups_per_token(_num_lookups_per_token);
+  robez->set_lookup_size(_lookup_size);
+  robez->set_log_embedding_block_size(_log_embedding_block_size);
+
+  robez->set_reduction(utils::reductionToProto(_reduction));
+
+  if (_num_tokens_per_input) {
+    robez->set_num_tokens_per_input(*_num_tokens_per_input);
+  }
+  robez->set_update_chunk_size(_update_chunk_size);
+  robez->set_hash_seed(_hash_fn.seed());
+
+  robez->set_allocated_embedding_block(
+      utils::parametersToProto(*_embedding_block));
+
+  if (with_optimizer && _optimizer) {
+    robez->set_allocated_embedding_block_optimizer(utils::optimizerToProto(
+        *_optimizer, _embedding_chunks_used.size(), _update_chunk_size));
+  }
+
+  robez->set_disable_sparse_parameter_updates(
+      _disable_sparse_parameter_updates);
+
+  return robez;
 }
 
 void EmbeddingLayer::buildLayerSummary(std::ostream& summary) const {

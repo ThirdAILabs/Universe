@@ -29,6 +29,9 @@ RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
   _kernel = std::make_unique<EmbeddingLayer>(config, seed);
 }
 
+RobeZ::RobeZ(const std::string& name, const bolt_proto::RobeZ& robez_proto)
+    : Op(name), _kernel(std::make_unique<EmbeddingLayer>(robez_proto)) {}
+
 std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
                                    uint64_t lookup_size,
                                    uint64_t log_embedding_block_size,
@@ -42,6 +45,11 @@ std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
       /* reduction= */ reduction,
       /* num_tokens_per_input= */ num_tokens_per_input,
       /* update_chunk_size= */ update_chunk_size, seed));
+}
+
+std::shared_ptr<RobeZ> RobeZ::fromProto(const std::string& name,
+                                        const bolt_proto::RobeZ& robez_proto) {
+  return std::shared_ptr<RobeZ>(new RobeZ(name, robez_proto));
 }
 
 void RobeZ::forward(const autograd::ComputationList& inputs,
@@ -96,38 +104,10 @@ bolt_proto::Op RobeZ::toProto(bool with_optimizer) const {
   bolt_proto::Op op;
   op.set_name(name());
 
-  auto* robez = op.mutable_robez();
-
-  robez->set_num_lookups_per_token(_kernel->numEmbeddingLookups());
-  robez->set_lookup_size(_kernel->lookupSize());
-  robez->set_log_embedding_block_size(_kernel->logEmbeddingBlockSize());
-
-  switch (_kernel->reductionType()) {
-    case EmbeddingReductionType::CONCATENATION:
-      robez->set_reduction(bolt_proto::EmbeddingReduction::CONCAT);
-      break;
-    case EmbeddingReductionType::SUM:
-      robez->set_reduction(bolt_proto::EmbeddingReduction::SUM);
-      break;
-    case EmbeddingReductionType::AVERAGE:
-      robez->set_reduction(bolt_proto::EmbeddingReduction::AVG);
-      break;
-  }
-
-  if (_kernel->numTokensPerInput()) {
-    robez->set_num_tokens_per_input(*_kernel->numTokensPerInput());
-  }
-  robez->set_update_chunk_size(_kernel->updateChunkSize());
-  robez->set_hash_seed(_kernel->hashSeed());
-
-  robez->set_allocated_embedding_block(
-      utils::parametersToProto(_kernel->getRawEmbeddingBlock()));
-
-  const auto& optimizer = _kernel->optimizer();
-  if (with_optimizer && optimizer) {
-    robez->set_allocated_embedding_block_optimizer(utils::optimizerToProto(
-        *optimizer, _kernel->numEmbeddingChunks(), _kernel->updateChunkSize()));
-  }
+  // TODO(Nicholas) move everything into this class so we don't have to deal
+  // with the kernel. This will be easier to do once protobufs are added so it
+  // doesn't break compatability.
+  op.set_allocated_robez(_kernel->toProto(with_optimizer));
 
   return op;
 }

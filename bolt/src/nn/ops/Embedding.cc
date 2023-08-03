@@ -45,6 +45,30 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   _bias_optimizer = AdamOptimizer(_dim);
 }
 
+Embedding::Embedding(const std::string& name,
+                     const bolt_proto::Embedding& emb_proto)
+    : Op(name),
+      _dim(emb_proto.dim()),
+      _input_dim(emb_proto.dim()),
+      _bias(emb_proto.use_bias()),
+      _act_func(utils::activationFromProto(emb_proto.activation())),
+      _embeddings(utils::parametersFromProto(emb_proto.embeddings())),
+      _biases(utils::parametersFromProto(emb_proto.bias())),
+      _disable_sparse_parameter_updates(
+          emb_proto.disable_sparse_parameter_updates()),
+      _should_serialize_optimizer(false),
+      _embeddings_used(emb_proto.input_dim(), false) {
+  if (emb_proto.has_embeddings_optimizer() && emb_proto.has_bias_optimizer()) {
+    _embedding_optimizer =
+        utils::optimizerFromProto(emb_proto.embeddings_optimizer());
+
+    _bias_optimizer = utils::optimizerFromProto(emb_proto.bias_optimizer());
+  } else {
+    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+  }
+}
+
 void Embedding::forward(const autograd::ComputationList& inputs,
                         tensor::TensorPtr& output, uint32_t index_in_batch,
                         bool training) {
@@ -252,6 +276,8 @@ bolt_proto::Op Embedding::toProto(bool with_optimizer) const {
     emb->set_allocated_bias_optimizer(
         utils::optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
   }
+
+  emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
 
   return op;
 }

@@ -10,6 +10,9 @@ class Concatenate final : public Op,
  public:
   static std::shared_ptr<Concatenate> make();
 
+  static std::shared_ptr<Concatenate> fromProto(
+      const std::string& name, const bolt_proto::Concatenate& concat_proto);
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -44,6 +47,9 @@ class Concatenate final : public Op,
 
  private:
   Concatenate();
+
+  Concatenate(const std::string& name,
+              const bolt_proto::Concatenate& concat_proto);
 
   std::vector<uint32_t> _input_dims;
   std::vector<uint32_t> _neuron_offsets;

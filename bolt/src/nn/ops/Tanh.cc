@@ -18,7 +18,17 @@ std::string nextTanhOpName() {
 
 Tanh::Tanh() : Op(nextTanhOpName()) {}
 
+Tanh::Tanh(const std::string& name, const bolt_proto::Tanh& tanh_proto)
+    : Op(name) {
+  (void)tanh_proto;
+}
+
 std::shared_ptr<Tanh> Tanh::make() { return std::shared_ptr<Tanh>(new Tanh()); }
+
+std::shared_ptr<Tanh> Tanh::fromProto(const std::string& name,
+                                      const bolt_proto::Tanh& tanh_proto) {
+  return std::shared_ptr<Tanh>(new Tanh(name, tanh_proto));
+}
 
 void Tanh::forward(const autograd::ComputationList& inputs,
                    tensor::TensorPtr& output, uint32_t index_in_batch,

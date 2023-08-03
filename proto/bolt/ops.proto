@@ -20,7 +20,7 @@ message FullyConnected {
   float sparsity = 3;
   ActivationFunction activation = 4;
 
-  optional bool use_bias = 5;
+  bool use_bias = 5;
 
   Parameter weights = 6;
   Parameter bias = 7;
@@ -29,9 +29,11 @@ message FullyConnected {
   uint64 reconstruct_hash_functions = 9;
 
   NeuronIndex neuron_index = 10;
+  bool index_frozen = 11;
 
-  optional Optimizer weight_optimizer = 11;
-  optional Optimizer bias_optimizer = 12;
+  optional Optimizer weight_optimizer = 12;
+  optional Optimizer bias_optimizer = 13;
+  bool disable_sparse_parameter_updates = 14;
 }
 
 message Embedding {
@@ -39,13 +41,14 @@ message Embedding {
   uint64 input_dim = 2;
   ActivationFunction activation = 3;
 
-  optional bool use_bias = 4;
+  bool use_bias = 4;
 
   Parameter embeddings = 5;
   Parameter bias = 6;
 
   optional Optimizer embeddings_optimizer = 7;
   optional Optimizer bias_optimizer = 8;
+  bool disable_sparse_parameter_updates = 9;
 }
 
 enum EmbeddingReduction {
@@ -68,6 +71,7 @@ message RobeZ {
   Parameter embedding_block = 8;
 
   optional Optimizer embedding_block_optimizer = 9;
+  bool disable_sparse_parameter_updates = 10;
 }
 
 message LayerNorm {

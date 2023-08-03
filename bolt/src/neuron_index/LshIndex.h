@@ -3,6 +3,7 @@
 #include <bolt/src/neuron_index/NeuronIndex.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <proto/neuron_index.pb.h>
 #include <memory>
 #include <random>
 
@@ -35,6 +36,8 @@ class LshIndex final : public NeuronIndex {
   const auto& hashTable() const { return _hash_table; }
 
   void insertLabelsIfNotFound() final { _insert_labels_when_not_found = true; }
+
+  bolt_proto::LSHNeuronIndex toProto() const;
 
   static auto cast(const NeuronIndexPtr& index) {
     return std::dynamic_pointer_cast<LshIndex>(index);

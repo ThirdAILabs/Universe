@@ -8,10 +8,14 @@ import "hashtable.proto";
 message LSHNeuronIndex {
   hashing_proto.HashFunction hash_function = 1;
   hashtable_proto.SampledHashTable hash_table = 2;
+  bool insert_labels_when_not_found = 3;
+  uint64 layer_dim = 4;
+  uint32 seed = 5;
 }
 
 message RandomNeuronIndex {
-  uint32 seed = 1;
+  uint64 layer_dim = 1;
+  uint32 seed = 2;
 }
 
 message NeuronIndex {

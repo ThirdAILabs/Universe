@@ -15,6 +15,9 @@ class LayerNorm final : public Op,
   static std::shared_ptr<LayerNorm> make(const float* gamma, const float* beta,
                                          size_t dim);
 
+  static std::shared_ptr<LayerNorm> fromProto(
+      const std::string& name, const bolt_proto::LayerNorm& layer_norm_proto);
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -52,6 +55,9 @@ class LayerNorm final : public Op,
   LayerNorm();
 
   LayerNorm(const float* gamma, const float* beta, size_t dim);
+
+  LayerNorm(const std::string& name,
+            const bolt_proto::LayerNorm& layer_norm_proto);
 
   template <bool DENSE>
   void forward(const BoltVector& input, BoltVector& output);

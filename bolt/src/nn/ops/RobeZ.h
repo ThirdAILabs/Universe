@@ -16,6 +16,9 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
       uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
       uint32_t seed = global_random::nextSeed());
 
+  static std::shared_ptr<RobeZ> fromProto(const std::string& name,
+                                     const bolt_proto::RobeZ& robez_proto);
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -61,6 +64,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   RobeZ(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
       : Op(name), _kernel(std::move(kernel)) {}
+
+  RobeZ(const std::string& name, const bolt_proto::RobeZ& robez_proto);
 
   std::unique_ptr<EmbeddingLayer> _kernel;
 

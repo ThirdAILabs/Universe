@@ -19,8 +19,19 @@ std::string nextConcatenateOpName() {
 
 Concatenate::Concatenate() : Op(nextConcatenateOpName()) {}
 
+Concatenate::Concatenate(const std::string& name,
+                         const bolt_proto::Concatenate& concat_proto)
+    : Op(name) {
+  (void)concat_proto;
+}
+
 std::shared_ptr<Concatenate> Concatenate::make() {
   return std::shared_ptr<Concatenate>(new Concatenate());
+}
+
+std::shared_ptr<Concatenate> Concatenate::fromProto(
+    const std::string& name, const bolt_proto::Concatenate& concat_proto) {
+  return std::shared_ptr<Concatenate>(new Concatenate(name, concat_proto));
 }
 
 void Concatenate::forward(const autograd::ComputationList& inputs,

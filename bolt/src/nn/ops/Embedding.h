@@ -14,11 +14,18 @@ class Embedding final : public Op,
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
             bool bias);
 
+  Embedding(const std::string& name, const bolt_proto::Embedding& emb_proto);
+
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
                    bool bias = true) {
     return std::shared_ptr<Embedding>(
         new Embedding(dim, input_dim, activation, bias));
+  }
+
+  static auto fromProto(const std::string& name,
+                        const bolt_proto::Embedding& emb_proto) {
+    return std::shared_ptr<Embedding>(new Embedding(name, emb_proto));
   }
 
   void forward(const autograd::ComputationList& inputs,

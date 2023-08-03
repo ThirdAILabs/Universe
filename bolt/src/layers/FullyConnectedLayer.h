@@ -10,6 +10,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <proto/ops.pb.h>
 #include <cstdint>
 #include <optional>
 #include <random>
@@ -130,15 +131,13 @@ class FullyConnectedLayer final {
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
-  const auto& weightOptimizer() const {return _weight_optimizer;};
-
-  const auto& biasOptimizer() const {return _bias_optimizer;};
-
   std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
   getHashTable();
 
   void setHashTable(hashing::HashFunctionPtr hash_fn,
                     hashtable::SampledHashTablePtr hash_table);
+
+  bolt_proto::FullyConnected* toProto(bool with_optimizer) const;
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 

@@ -8,6 +8,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <proto/ops.pb.h>
 #include <utils/Random.h>
 #include <cmath>
 #include <ctime>
@@ -27,6 +28,8 @@ class EmbeddingLayer {
  public:
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = global_random::nextSeed());
+
+  explicit EmbeddingLayer(const bolt_proto::RobeZ& robez_proto);
 
   void forward(const BoltVector& tokens, BoltVector& output);
 
@@ -88,19 +91,15 @@ class EmbeddingLayer {
     }
   }
 
-  EmbeddingReductionType reductionType() const { return _reduction; }
-
-  const auto& optimizer() const { return _optimizer; }
-
   std::optional<uint64_t> numTokensPerInput() const {
     return _num_tokens_per_input;
   }
 
-  uint64_t numEmbeddingChunks() const { return _embedding_chunks_used.size(); }
-
   uint64_t updateChunkSize() const { return _update_chunk_size; }
 
   uint32_t hashSeed() const { return _hash_fn.seed(); }
+
+  bolt_proto::RobeZ* toProto(bool with_optimizer) const;
 
   ~EmbeddingLayer() = default;
 

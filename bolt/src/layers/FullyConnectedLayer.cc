@@ -2,6 +2,7 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt/src/utils/ProtobufUtils.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -692,6 +693,35 @@ void FullyConnectedLayer::setHashTable(
 
   _neuron_index =
       nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
+}
+
+bolt_proto::FullyConnected* FullyConnectedLayer::toProto(
+    bool with_optimizer) const {
+  bolt_proto::FullyConnected* fc = new bolt_proto::FullyConnected();
+
+  fc->set_dim(_dim);
+  fc->set_input_dim(_prev_dim);
+  fc->set_sparsity(_sparsity);
+  fc->set_activation(utils::activationToProto(_act_func));
+
+  fc->set_use_bias(_use_bias);
+
+  fc->set_allocated_weights(utils::parametersToProto(_weights));
+  fc->set_allocated_bias(utils::parametersToProto(_biases));
+
+  // Neuron index
+
+  if (with_optimizer && _weight_optimizer && _bias_optimizer) {
+    fc->set_allocated_weight_optimizer(
+        utils::optimizerToProto(*_weight_optimizer, _dim, _prev_dim));
+
+    fc->set_allocated_bias_optimizer(
+        utils::optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+  }
+
+  fc->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
+
+  return fc;
 }
 
 void FullyConnectedLayer::initOptimizer() {
