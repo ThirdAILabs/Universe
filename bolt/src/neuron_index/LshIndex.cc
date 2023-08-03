@@ -22,6 +22,11 @@ LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rng);
 }
 
+LshIndex::LshIndex(const proto::bolt::LSHNeuronIndex& lsh_proto)
+    : _rand_neurons(lsh_proto.random_neurons().begin(),
+                    lsh_proto.random_neurons().end()),
+      _insert_labels_when_not_found(lsh_proto.insert_labels_when_not_found()) {}
+
 void LshIndex::query(const BoltVector& input, BoltVector& output,
                      const BoltVector* labels) const {
   assert(!output.isDense());

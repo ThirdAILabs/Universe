@@ -63,7 +63,7 @@ void Input::disableSparseParameterUpdates() {}
 
 void Input::enableSparseParameterUpdates() {}
 
-proto::bolt::Op Input::toProto(bool with_optimizer) const {
+proto::bolt::Op* Input::toProto(bool with_optimizer) const {
   (void)with_optimizer;
   throw std::runtime_error("toProto should not be called on Input.");
 }

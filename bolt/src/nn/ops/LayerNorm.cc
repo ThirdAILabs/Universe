@@ -190,11 +190,11 @@ std::vector<std::vector<float>*> LayerNorm::parameters() {
   return {&_gamma, &_beta};
 }
 
-proto::bolt::Op LayerNorm::toProto(bool with_optimizer) const {
-  proto::bolt::Op op;
-  op.set_name(name());
+proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
 
-  auto* layer_norm = op.mutable_layer_norm();
+  auto* layer_norm = op->mutable_layer_norm();
 
   layer_norm->set_allocated_gamma(utils::parametersToProto(_gamma));
   layer_norm->set_allocated_beta(utils::parametersToProto(_beta));

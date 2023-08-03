@@ -29,6 +29,17 @@ float BinaryCrossEntropy::singleGradient(float activation, float label,
   return (label - activation) / batch_size;
 }
 
+proto::bolt::Loss* BinaryCrossEntropy::toProto() const {
+  proto::bolt::Loss* loss = new proto::bolt::Loss();
+
+  auto* bce = loss->mutable_binary_cross_entropy();
+
+  bce->set_output(outputName());
+  bce->set_labels(labelName());
+
+  return loss;
+}
+
 template void BinaryCrossEntropy::serialize(cereal::BinaryInputArchive&);
 template void BinaryCrossEntropy::serialize(cereal::BinaryOutputArchive&);
 

@@ -118,13 +118,13 @@ std::optional<uint32_t> Concatenate::nonzeros(
   return total_num_nonzeros;
 }
 
-proto::bolt::Op Concatenate::toProto(bool with_optimizer) const {
+proto::bolt::Op* Concatenate::toProto(bool with_optimizer) const {
   (void)with_optimizer;
 
-  proto::bolt::Op op;
+  proto::bolt::Op* op = new proto::bolt::Op();
 
-  op.set_name(name());
-  op.mutable_concatenate();
+  op->set_name(name());
+  op->mutable_concatenate();
 
   return op;
 }

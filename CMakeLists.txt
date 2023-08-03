@@ -345,6 +345,8 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/nn/ops/protobuf_utils/FromProto.cc
+    bolt/src/nn/loss/protobuf_utils/FromProto.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc

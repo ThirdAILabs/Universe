@@ -24,7 +24,6 @@ message ModelMetadata {
 
 message Model {
   repeated Op ops = 1;
-
   repeated Placeholder inputs = 2;
   repeated Placeholder labels = 3;
   repeated Computation computation_graph = 4;

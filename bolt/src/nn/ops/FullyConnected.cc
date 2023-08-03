@@ -138,9 +138,9 @@ std::vector<std::vector<float>*> FullyConnected::parameters() {
   return {&_kernel->weights(), &_kernel->biases()};
 }
 
-proto::bolt::Op FullyConnected::toProto(bool with_optimizer) const {
-  proto::bolt::Op op;
-  op.set_name(name());
+proto::bolt::Op* FullyConnected::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
 
   // TODO(Nicholas) move everything into this class so we don't have to deal
   // with the kernel stuff. This will be easier to do once protobufs are added

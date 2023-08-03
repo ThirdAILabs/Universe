@@ -7,6 +7,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <proto/model.pb.h>
 #include <utils/UUID.h>
 #include <memory>
 #include <vector>
@@ -220,6 +221,11 @@ class Model : public std::enable_shared_from_this<Model> {
   void disableSparseParameterUpdates();
 
   void enableSparseParameterUpdates();
+
+  proto::bolt::Model toProto(bool with_optimizer) const;
+
+  static std::shared_ptr<Model> fromProto(
+      const proto::bolt::Model& model_proto);
 
   /**
    * Helper function to save the model to a stream.

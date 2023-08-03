@@ -3,6 +3,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <proto/loss.pb.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -44,6 +45,8 @@ class Loss {
    * instance a classical label vector, or even per sample weights for the loss.
    */
   virtual autograd::ComputationList labels() const = 0;
+
+  virtual proto::bolt::Loss* toProto() const = 0;
 
   virtual ~Loss() = default;
 

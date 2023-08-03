@@ -81,13 +81,13 @@ std::vector<std::vector<float>*> Tanh::gradients() { return {}; }
 
 std::vector<std::vector<float>*> Tanh::parameters() { return {}; }
 
-proto::bolt::Op Tanh::toProto(bool with_optimizer) const {
+proto::bolt::Op* Tanh::toProto(bool with_optimizer) const {
   (void)with_optimizer;
 
-  proto::bolt::Op op;
+  proto::bolt::Op* op = new proto::bolt::Op();
 
-  op.set_name(name());
-  op.mutable_tanh();
+  op->set_name(name());
+  op->mutable_tanh();
 
   return op;
 }

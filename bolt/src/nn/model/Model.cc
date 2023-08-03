@@ -4,8 +4,11 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/loss/protobuf_utils/FromProto.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/protobuf_utils/FromProto.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -345,6 +348,104 @@ void Model::enableSparseParameterUpdates() {
   for (const auto& op : _ops) {
     op->enableSparseParameterUpdates();
   }
+}
+
+proto::bolt::Model Model::toProto(bool with_optimizer) const {
+  proto::bolt::Model model;
+
+  for (const auto& op : ops()) {
+    model.mutable_ops()->AddAllocated(op->toProto(with_optimizer));
+  }
+
+  for (const auto& input : _inputs) {
+    auto* placeholder = model.add_inputs();
+    placeholder->set_name(input->name());
+    placeholder->set_dim(input->dim());
+  }
+
+  for (const auto& label : _labels) {
+    auto* placeholder = model.add_labels();
+    placeholder->set_name(label->name());
+    placeholder->set_dim(label->dim());
+  }
+
+  for (const auto& comp : _computation_order) {
+    auto* comp_proto = model.mutable_computation_graph()->Add();
+    comp_proto->set_name(comp->name());
+    comp_proto->set_op(comp->op()->name());
+    for (const auto& input : comp->inputs()) {
+      comp_proto->add_inputs()->assign(input->name());
+    }
+  }
+
+  for (const auto& loss : _losses) {
+    model.mutable_losses()->AddAllocated(loss->toProto());
+  }
+
+  for (const auto& output : _outputs) {
+    model.add_outputs()->assign(output->name());
+  }
+
+  auto* meta = model.mutable_metadata();
+  meta->set_train_steps(_train_steps);
+  meta->set_total_training_samples(_total_training_samples);
+  meta->set_uuid(_model_uuid);
+
+  return model;
+}
+
+std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
+  std::unordered_map<std::string, std::pair<ops::OpPtr, ops::OpApplyFunc>> ops;
+
+  for (const auto& op_proto : model_proto.ops()) {
+    ops[op_proto.name()] = ops::fromProto(op_proto);
+  }
+
+  autograd::ComputationList inputs;
+  autograd::ComputationList labels;
+  std::unordered_map<std::string, autograd::ComputationPtr> computations;
+
+  for (const auto& input_proto : model_proto.inputs()) {
+    auto input = ops::Input::make(input_proto.dim());
+    computations[input_proto.name()] = input;
+    inputs.push_back(input);
+  }
+
+  for (const auto& label_proto : model_proto.labels()) {
+    auto label = ops::Input::make(label_proto.dim());
+    computations[label_proto.name()] = label;
+    labels.push_back(label);
+  }
+
+  for (const auto& comp_proto : model_proto.computation_graph()) {
+    auto [op, apply] = ops.at(comp_proto.op());
+
+    autograd::ComputationList op_inputs;
+    for (const auto& input : comp_proto.inputs()) {
+      op_inputs.push_back(computations.at(input));
+    }
+
+    computations[comp_proto.name()] = apply(op, op_inputs);
+  }
+
+  std::vector<loss::LossPtr> losses;
+  for (const auto& loss : model_proto.losses()) {
+    losses.push_back(loss::fromProto(loss, computations));
+  }
+
+  autograd::ComputationList outputs;
+  for (const auto& output : model_proto.outputs()) {
+    outputs.push_back(computations.at(output));
+  }
+
+  auto model = Model::make(inputs, outputs, losses);
+
+  model->_model_uuid = model_proto.metadata().uuid();
+  model->_train_steps = model_proto.metadata().train_steps();
+  model->_total_training_samples =
+      model_proto.metadata().total_training_samples();
+
+  return model;
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {

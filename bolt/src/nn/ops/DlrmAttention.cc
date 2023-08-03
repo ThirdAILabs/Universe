@@ -106,7 +106,7 @@ std::optional<uint32_t> DlrmAttention::nonzeros(
   return dim();
 }
 
-proto::bolt::Op DlrmAttention::toProto(bool with_optimizer) const {
+proto::bolt::Op* DlrmAttention::toProto(bool with_optimizer) const {
   (void)with_optimizer;
 
   throw std::invalid_argument("toProto is not implemented for DlrmAttention.");

@@ -16,6 +16,10 @@ RandomSampler::RandomSampler(uint32_t layer_dim) : _rand_neurons(layer_dim) {
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rng);
 }
 
+RandomSampler::RandomSampler(const proto::bolt::RandomNeuronIndex& rand_proto)
+    : _rand_neurons(rand_proto.random_neurons().begin(),
+                    rand_proto.random_neurons().end()) {}
+
 static void wrapAroundCopy(const uint32_t* const src, uint64_t src_len,
                            uint32_t* const dest, uint64_t copy_size,
                            uint64_t starting_offset) {

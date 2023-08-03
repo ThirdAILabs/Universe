@@ -62,7 +62,7 @@ class Embedding final : public Op,
     return {&_embeddings, &_biases};
   }
 
-  proto::bolt::Op toProto(bool with_optimizer) const final;
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;

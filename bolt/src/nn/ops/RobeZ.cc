@@ -100,14 +100,14 @@ std::vector<std::vector<float>*> RobeZ::parameters() {
   return {&_kernel->getRawEmbeddingBlock()};
 }
 
-proto::bolt::Op RobeZ::toProto(bool with_optimizer) const {
-  proto::bolt::Op op;
-  op.set_name(name());
+proto::bolt::Op* RobeZ::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
 
   // TODO(Nicholas) move everything into this class so we don't have to deal
   // with the kernel. This will be easier to do once protobufs are added so it
   // doesn't break compatability.
-  op.set_allocated_robez(_kernel->toProto(with_optimizer));
+  op->set_allocated_robez(_kernel->toProto(with_optimizer));
 
   return op;
 }
