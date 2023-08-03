@@ -20,6 +20,7 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
 
   uint32_t dim() const final;
 
+  std::vector<std::vector<float>*> parameters() final { return {}; }
   std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
                                    bool use_sparsity) const final;
 

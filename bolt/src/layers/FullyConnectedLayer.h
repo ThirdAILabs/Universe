@@ -84,6 +84,11 @@ class FullyConnectedLayer final {
            _sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions;
   }
 
+
+  std::vector<float>& weights() { return _weights; }
+
+  std::vector<float>& biases() { return _biases; }
+  
   void buildHashTables();
 
   void reBuildHashFunction();

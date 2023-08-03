@@ -29,6 +29,8 @@ class Concatenate final : public Op,
 
   void disableSparseParameterUpdates() final {}
 
+   std::vector<std::vector<float>*> parameters() final { return {}; };
+
   std::vector<std::vector<float>*> gradients() final { return {}; };
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,

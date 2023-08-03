@@ -28,6 +28,10 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::nn::python {
 
+
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 template <typename T>
 py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
   if (data) {
@@ -63,6 +67,15 @@ void defineOps(py::module_& nn);
 
 void defineLosses(py::module_& nn);
 
+NumpyArray<float> getParameter(const nn::model::ModelPtr& model) {
+  auto [grads, flattened_dim] = model->getFlattenedParameters();
+
+  py::capsule free_when_done(
+      grads, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+}
+
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
@@ -90,6 +103,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("get_parameters", &getParameter,
+           py::return_value_policy::reference_internal)
 #endif
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)

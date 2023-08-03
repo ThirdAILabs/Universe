@@ -225,6 +225,45 @@ void Model::freezeHashTables(bool insert_labels_if_not_found) {
   }
 }
 
+uint64_t sumFlattenedDims(const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = 0;
+  for (const auto* value : values) {
+    total_dim += value->size();
+  }
+  return total_dim;
+}
+
+std::vector<std::vector<float>*> Model::parameters() const {
+  std::vector<std::vector<float>*> params;
+
+  for (const auto& op : _ops) {
+    auto op_params = op->parameters();
+    params.insert(params.end(), op_params.begin(), op_params.end());
+  }
+
+  return params;
+}
+std::pair<const float*, uint64_t> concatenateValues(
+    const std::vector<std::vector<float>*>& values) {
+  uint64_t total_dim = sumFlattenedDims(values);
+
+  float* combined_values = new float[total_dim];
+  uint64_t offset = 0;
+  for (const auto* value : values) {
+    std::copy(value->data(), value->data() + value->size(),
+              combined_values + offset);
+    offset += value->size();
+  }
+
+  return {combined_values, total_dim};
+}
+
+
+
+std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
+  return concatenateValues(parameters());
+}
+
 std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
 Model::outputLabelPairs() const {
   std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>

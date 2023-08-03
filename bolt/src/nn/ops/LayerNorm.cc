@@ -73,6 +73,10 @@ void LayerNorm::backpropagate(autograd::ComputationList& inputs,
   }
 }
 
+std::vector<std::vector<float>*> LayerNorm::parameters() {
+  return {&_gamma, &_beta};
+}
+
 template <bool DENSE>
 void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
   assert(input.len == output.len);

@@ -42,6 +42,12 @@ class Model {
   tensor::TensorList forward(const tensor::TensorList& inputs,
                              bool use_sparsity);
 
+  std::vector<std::vector<float>*> parameters() const;
+
+
+  std::pair<const float*, uint64_t> getFlattenedParameters() const;
+
+
   /**
    * Performs the foward and backward pass through the model for the given
    * training batch. There is no intermediate thread synchronization between ops

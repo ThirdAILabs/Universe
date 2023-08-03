@@ -147,6 +147,10 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
+std::vector<std::vector<float>*> FullyConnected::parameters() {
+  return {&_kernel->weights(), &_kernel->biases()};
+}
+
 uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
 
 const float* FullyConnected::weightsPtr() const {

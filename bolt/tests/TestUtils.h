@@ -29,6 +29,7 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)index_in_batch;
     (void)training;
   }
+  std::vector<std::vector<float>*> parameters() final { return {}; }
 
   void backpropagate(autograd::ComputationList& inputs,
                      tensor::TensorPtr& output, uint32_t index_in_batch) final {

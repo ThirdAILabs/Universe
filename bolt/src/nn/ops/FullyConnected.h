@@ -85,6 +85,9 @@ class FullyConnected final
   void setWeightsAndBiases(const float* weights_to_set,
                            const float* biases_to_set);
 
+  
+  std::vector<std::vector<float>*> parameters() final;
+  
   /**
    * Autotunes how often the hash tables and hash functions are rebuilt using
    * the number of batches in the dataset and the batch size.
