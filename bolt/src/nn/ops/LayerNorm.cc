@@ -6,7 +6,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/utils/ProtobufUtils.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cmath>
 #include <stdexcept>
@@ -30,15 +30,13 @@ LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
 LayerNorm::LayerNorm(const std::string& name,
                      const proto::bolt::LayerNorm& layer_norm_proto)
     : Op(name),
-      _gamma(utils::parametersFromProto(layer_norm_proto.gamma())),
-      _beta(utils::parametersFromProto(layer_norm_proto.beta())) {
+      _gamma(parametersFromProto(layer_norm_proto.gamma())),
+      _beta(parametersFromProto(layer_norm_proto.beta())) {
   if (layer_norm_proto.has_gamma_optimizer() &&
       layer_norm_proto.has_beta_optimizer()) {
-    _gamma_optimizer =
-        utils::optimizerFromProto(layer_norm_proto.gamma_optimizer());
+    _gamma_optimizer = optimizerFromProto(layer_norm_proto.gamma_optimizer());
 
-    _beta_optimizer =
-        utils::optimizerFromProto(layer_norm_proto.beta_optimizer());
+    _beta_optimizer = optimizerFromProto(layer_norm_proto.beta_optimizer());
   } else {
     _gamma_optimizer = AdamOptimizer(dim());
     _beta_optimizer = AdamOptimizer(dim());
@@ -196,15 +194,15 @@ proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
 
   auto* layer_norm = op->mutable_layer_norm();
 
-  layer_norm->set_allocated_gamma(utils::parametersToProto(_gamma));
-  layer_norm->set_allocated_beta(utils::parametersToProto(_beta));
+  layer_norm->set_allocated_gamma(parametersToProto(_gamma));
+  layer_norm->set_allocated_beta(parametersToProto(_beta));
 
   if (with_optimizer) {
     layer_norm->set_allocated_gamma_optimizer(
-        utils::optimizerToProto(_gamma_optimizer, /* rows= */ 1, dim()));
+        optimizerToProto(_gamma_optimizer, /* rows= */ 1, dim()));
 
     layer_norm->set_allocated_beta_optimizer(
-        utils::optimizerToProto(_beta_optimizer, /* rows= */ 1, dim()));
+        optimizerToProto(_beta_optimizer, /* rows= */ 1, dim()));
   }
 
   return op;
@@ -218,6 +216,15 @@ void LayerNorm::summary(std::ostream& summary,
 }
 
 autograd::ComputationPtr LayerNorm::apply(
+    const autograd::ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("LayerNorm op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+autograd::ComputationPtr LayerNorm::applyUnary(
     const autograd::ComputationPtr& input) {
   if (dim() == 0) {
     _gamma.assign(input->dim(), 1.0);

@@ -39,7 +39,9 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
-  autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
+  autograd::ComputationPtr applyUnary(autograd::ComputationPtr input);
 
  private:
   Tanh();

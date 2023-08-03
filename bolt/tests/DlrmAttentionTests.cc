@@ -31,7 +31,7 @@ TEST(DlrmAttentionTests, TestSetMembership) {
   auto fc_hidden = ops::FullyConnected::make(
                        /* dim= */ 20, /* input_dim= */ dense_input->dim(),
                        /* sparsity= */ 1.0, /* activation= */ "relu")
-                       ->apply(dense_input);
+                       ->applyUnary(dense_input);
 
   auto token_input = ops::Input::make(/* dim= */ n_ids);
 
@@ -40,14 +40,15 @@ TEST(DlrmAttentionTests, TestSetMembership) {
                        /* log_embedding_block_size= */ 14,
                        /* reduction= */ "concatenation",
                        /* num_tokens_per_input= */ n_tokens)
-                       ->apply(token_input);
+                       ->applyUnary(token_input);
 
-  auto dlrm_attention = ops::DlrmAttention::make()->apply(fc_hidden, embedding);
+  auto dlrm_attention =
+      ops::DlrmAttention::make()->applyBinary(fc_hidden, embedding);
 
   auto output = ops::FullyConnected::make(
                     /* dim= */ 2, /* input_dim= */ dlrm_attention->dim(),
                     /* sparsity= */ 1.0, /* activation= */ "softmax")
-                    ->apply(dlrm_attention);
+                    ->applyUnary(dlrm_attention);
 
   auto labels = ops::Input::make(/* dim= */ 2);
   auto loss = loss::CategoricalCrossEntropy::make(output, labels);

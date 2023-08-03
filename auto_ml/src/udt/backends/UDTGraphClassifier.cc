@@ -96,14 +96,14 @@ ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
       bolt::nn::ops::RobeZ::make(
           /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
           /* log_embedding_block_size = */ 20, /* reduction = */ "average")
-          ->apply(neighbor_token_input);
+          ->applyUnary(neighbor_token_input);
 
   auto hidden_1 =
       bolt::nn::ops::FullyConnected::make(
           /* dim = */ 256,
           /* input_dim= */ node_features_input->dim(), /* sparsity = */ 1.0,
           /* activation = */ "relu")
-          ->apply(node_features_input);
+          ->applyUnary(node_features_input);
 
   auto concat_node =
       bolt::nn::ops::Concatenate::make()->apply({hidden_1, embedding_1});
@@ -113,12 +113,12 @@ ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
           /* dim = */ 256, /* input_dim= */ concat_node->dim(),
           /* sparsity = */ 0.5, /* activation = */ "relu",
           /* sampling = */ std::make_shared<bolt::RandomSamplingConfig>())
-          ->apply(concat_node);
+          ->applyUnary(concat_node);
 
   auto output = bolt::nn::ops::FullyConnected::make(
                     /* dim = */ output_dim, /* input_dim= */ hidden_3->dim(),
                     /* sparsity = */ 1, /* activation =*/"softmax")
-                    ->apply(hidden_3);
+                    ->applyUnary(hidden_3);
 
   auto labels = bolt::nn::ops::Input::make(output_dim);
 

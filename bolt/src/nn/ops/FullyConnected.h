@@ -70,7 +70,9 @@ class FullyConnected final
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.
    */
-  autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
+  autograd::ComputationPtr applyUnary(autograd::ComputationPtr input);
 
   /**
    * Returns the input dim of the fully connected layer.

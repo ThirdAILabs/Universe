@@ -40,6 +40,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
  private:
   Input(uint32_t dim, std::optional<uint32_t> nonzeros);
 

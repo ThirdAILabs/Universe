@@ -17,7 +17,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     return std::shared_ptr<Noop>(new Noop(std::move(name), dim, num_nonzeros));
   }
 
-  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) {
+  autograd::ComputationPtr apply(
+      const autograd::ComputationList& inputs) final {
     return autograd::Computation::make(shared_from_this(), inputs);
   }
 
@@ -61,6 +62,11 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
+  proto::bolt::Op* toProto(bool with_optimizer) const final {
+    (void)with_optimizer;
+    return nullptr;
+  }
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final {
     (void)inputs;
@@ -98,6 +104,8 @@ class MockLoss final : public loss::Loss {
   autograd::ComputationList outputsUsed() const final { return _outputs_used; }
 
   autograd::ComputationList labels() const final { return {}; }
+
+  proto::bolt::Loss* toProto() const final { return nullptr; }
 
  private:
   autograd::ComputationList _outputs_used;

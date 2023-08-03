@@ -163,6 +163,15 @@ void DlrmAttention::embeddingDotProductBackward(
 }
 
 autograd::ComputationPtr DlrmAttention::apply(
+    const autograd::ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("DlrmAttention op expects two inputs.");
+  }
+
+  return applyBinary(inputs.at(0), inputs.at(1));
+}
+
+autograd::ComputationPtr DlrmAttention::applyBinary(
     autograd::ComputationPtr fc_input, autograd::ComputationPtr emb_input) {
   uint32_t fc_dim = fc_input->dim();
   uint32_t emb_dim = emb_input->dim();

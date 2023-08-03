@@ -45,7 +45,9 @@ class LayerNorm final : public Op,
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
-  autograd::ComputationPtr apply(const autograd::ComputationPtr& input);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
+  autograd::ComputationPtr applyUnary(const autograd::ComputationPtr& input);
 
   const auto& gamma() const { return _gamma; }
 

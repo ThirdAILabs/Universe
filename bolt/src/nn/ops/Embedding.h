@@ -71,7 +71,9 @@ class Embedding final : public Op,
     _should_serialize_optimizer = should_serialize_optimizer;
   }
 
-  autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
+  autograd::ComputationPtr applyUnary(autograd::ComputationPtr input);
 
   uint32_t inputDim() const { return _input_dim; }
 

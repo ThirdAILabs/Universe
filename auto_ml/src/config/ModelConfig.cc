@@ -109,7 +109,7 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
   auto layer = bolt::nn::ops::FullyConnected::make(
       dim, predecessor->dim(), sparsity, activation, sampling_config, use_bias);
 
-  return layer->apply(predecessor);
+  return layer->applyUnary(predecessor);
 }
 
 /**
@@ -139,7 +139,7 @@ bolt::nn::autograd::ComputationPtr buildRobeZ(
       bolt::nn::ops::RobeZ::make(num_lookups, lookup_size, log_block_size,
                                  reduction, num_tokens_per_input);
 
-  return layer->apply(getPredecessor(config, created_comps));
+  return layer->applyUnary(getPredecessor(config, created_comps));
 }
 
 bolt::nn::autograd::ComputationPtr buildEmbedding(
@@ -159,7 +159,7 @@ bolt::nn::autograd::ComputationPtr buildEmbedding(
   auto layer = bolt::nn::ops::Embedding::make(dim, predecessor->dim(),
                                               activation, use_bias);
 
-  return layer->apply(predecessor);
+  return layer->applyUnary(predecessor);
 }
 
 /**

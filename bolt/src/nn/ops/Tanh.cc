@@ -99,7 +99,14 @@ void Tanh::summary(std::ostream& summary,
           << output->name();
 }
 
-autograd::ComputationPtr Tanh::apply(autograd::ComputationPtr input) {
+autograd::ComputationPtr Tanh::apply(const autograd::ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Tanh op expects a single input.");
+  }
+  return applyUnary(inputs.at(0));
+}
+
+autograd::ComputationPtr Tanh::applyUnary(autograd::ComputationPtr input) {
   if (dim() == 0) {
     _dim = input->dim();
   } else {

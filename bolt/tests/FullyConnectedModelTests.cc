@@ -28,10 +28,11 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
         /* sampling= */
         DWTASamplingConfig::autotune(dim, sparsity,
                                      /* experimental_autotune=*/false),
+        /* use_bias= */ true,
         /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20);
 
     input_dim_to_last_layer = dim;
-    input_to_output_layer = hidden->apply(input);
+    input_to_output_layer = hidden->applyUnary(input);
   } else {
     input_dim_to_last_layer = n_classes;
     input_to_output_layer = input;
@@ -46,7 +47,7 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
         /* activation*/ "softmax",
         /* sampling= */ nullptr);
 
-    outputs.push_back(output->apply(input_to_output_layer));
+    outputs.push_back(output->applyUnary(input_to_output_layer));
 
     auto label = ops::Input::make(/* dim= */ n_classes);
     losses.push_back(
@@ -187,7 +188,7 @@ TEST(FullyConnectedModelTests, SparseOutput) {
                     /* sparsity= */ 1.0,
                     /* activation*/ "relu",
                     /* sampling= */ nullptr)
-                    ->apply(input);
+                    ->applyUnary(input);
 
   auto output =
       ops::FullyConnected::make(
@@ -198,8 +199,10 @@ TEST(FullyConnectedModelTests, SparseOutput) {
           DWTASamplingConfig::autotune(/* layer_dim=*/N_CLASSES,
                                        /* sparsity=*/0.1,
                                        /* experimental_autotune=*/false),
-          /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20)
-          ->apply(hidden);
+          /* use_bias= */ true,
+          /* rebuild_hash_tables= */ 4,
+          /* reconstruct_hash_functions= */ 20)
+          ->applyUnary(hidden);
 
   auto label = ops::Input::make(/* dim= */ N_CLASSES);
   auto model = model::Model::make(

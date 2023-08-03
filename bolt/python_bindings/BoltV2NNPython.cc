@@ -178,7 +178,7 @@ void defineOps(py::module_& nn) {
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
            py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
-      .def("__call__", &ops::FullyConnected::apply)
+      .def("__call__", &ops::FullyConnected::applyUnary)
       .def("dim", &ops::FullyConnected::dim)
       .def("get_sparsity", &ops::FullyConnected::getSparsity)
       .def("set_sparsity", &ops::FullyConnected::setSparsity,
@@ -224,7 +224,7 @@ void defineOps(py::module_& nn) {
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
            py::arg("seed") = global_random::nextSeed())
-      .def("__call__", &ops::RobeZ::apply)
+      .def("__call__", &ops::RobeZ::applyUnary)
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
@@ -232,7 +232,7 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
       .def(py::init(&ops::Embedding::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("activation"), py::arg("bias") = true)
-      .def("__call__", &ops::Embedding::apply)
+      .def("__call__", &ops::Embedding::applyUnary)
       .def_property_readonly(
           "weights",
           [](const ops::EmbeddingPtr& op) {
@@ -274,12 +274,12 @@ void defineOps(py::module_& nn) {
 
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
-      .def("__call__", &ops::Tanh::apply);
+      .def("__call__", &ops::Tanh::applyUnary);
 
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")
       .def(py::init(&ops::DlrmAttention::make))
-      .def("__call__", &ops::DlrmAttention::apply);
+      .def("__call__", &ops::DlrmAttention::applyBinary);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 }

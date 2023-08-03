@@ -75,6 +75,11 @@ void Input::summary(std::ostream& summary,
   summary << "Input(" << name() << ") -> " << output->name();
 }
 
+autograd::ComputationPtr Input::apply(const autograd::ComputationList& inputs) {
+  (void)inputs;
+  throw std::runtime_error("Input::apply should not be called directly.");
+}
+
 template void Input::serialize(cereal::BinaryInputArchive&);
 template void Input::serialize(cereal::BinaryOutputArchive&);
 

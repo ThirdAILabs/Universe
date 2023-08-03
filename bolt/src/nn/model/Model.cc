@@ -374,7 +374,7 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
     comp_proto->set_name(comp->name());
     comp_proto->set_op(comp->op()->name());
     for (const auto& input : comp->inputs()) {
-      comp_proto->add_inputs()->assign(input->name());
+      comp_proto->add_inputs(input->name());
     }
   }
 
@@ -383,7 +383,7 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
   }
 
   for (const auto& output : _outputs) {
-    model.add_outputs()->assign(output->name());
+    model.add_outputs(output->name());
   }
 
   auto* meta = model.mutable_metadata();
@@ -395,7 +395,7 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
 }
 
 std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
-  std::unordered_map<std::string, std::pair<ops::OpPtr, ops::OpApplyFunc>> ops;
+  std::unordered_map<std::string, ops::OpPtr> ops;
 
   for (const auto& op_proto : model_proto.ops()) {
     ops[op_proto.name()] = ops::fromProto(op_proto);
@@ -418,14 +418,13 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   }
 
   for (const auto& comp_proto : model_proto.computation_graph()) {
-    auto [op, apply] = ops.at(comp_proto.op());
-
     autograd::ComputationList op_inputs;
     for (const auto& input : comp_proto.inputs()) {
       op_inputs.push_back(computations.at(input));
     }
 
-    computations[comp_proto.name()] = apply(op, op_inputs);
+    auto op = ops.at(comp_proto.op());
+    computations[comp_proto.name()] = op->apply(op_inputs);
   }
 
   std::vector<loss::LossPtr> losses;

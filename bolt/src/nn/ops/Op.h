@@ -125,6 +125,9 @@ class Op {
 
   virtual proto::bolt::Op* toProto(bool with_optimizer) const = 0;
 
+  virtual autograd::ComputationPtr apply(
+      const autograd::ComputationList& inputs) = 0;
+
   /**
    * Appends a line to the summary to describe the op when applied to the
    * given inputs and yielding the given output. Ideally this should be in

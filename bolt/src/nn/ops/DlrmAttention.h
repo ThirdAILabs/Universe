@@ -60,8 +60,10 @@ class DlrmAttention final : public Op,
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
-  autograd::ComputationPtr apply(autograd::ComputationPtr fc_input,
-                                 autograd::ComputationPtr emb_input);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
+  autograd::ComputationPtr applyBinary(autograd::ComputationPtr fc_input,
+                                      autograd::ComputationPtr emb_input);
 
  private:
   DlrmAttention() {}

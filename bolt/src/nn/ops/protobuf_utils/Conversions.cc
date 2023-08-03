@@ -1,16 +1,9 @@
-#pragma once
-
-#include <bolt/src/layers/LayerConfig.h>
-#include <bolt/src/layers/LayerUtils.h>
-#include <bolt/src/layers/Optimizer.h>
-#include <proto/ops.pb.h>
-#include <proto/optimizers.pb.h>
-#include <proto/parameter.pb.h>
+#include "Conversions.h"
 #include <stdexcept>
 
-namespace thirdai::bolt::utils {
+namespace thirdai::bolt::nn::ops {
 
-inline proto::bolt::ActivationFunction activationToProto(
+proto::bolt::ActivationFunction activationToProto(
     ActivationFunction activation) {
   switch (activation) {
     case ActivationFunction::ReLU:
@@ -26,7 +19,7 @@ inline proto::bolt::ActivationFunction activationToProto(
   }
 }
 
-inline ActivationFunction activationFromProto(
+ActivationFunction activationFromProto(
     proto::bolt::ActivationFunction activation) {
   switch (activation) {
     case proto::bolt::ActivationFunction::RELU:
@@ -44,7 +37,7 @@ inline ActivationFunction activationFromProto(
   }
 }
 
-inline proto::bolt::EmbeddingReduction reductionToProto(
+proto::bolt::EmbeddingReduction reductionToProto(
     EmbeddingReductionType reduction) {
   switch (reduction) {
     case EmbeddingReductionType::CONCATENATION:
@@ -56,7 +49,7 @@ inline proto::bolt::EmbeddingReduction reductionToProto(
   }
 }
 
-inline EmbeddingReductionType reductionFromProto(
+EmbeddingReductionType reductionFromProto(
     proto::bolt::EmbeddingReduction reduction) {
   switch (reduction) {
     case proto::bolt::EmbeddingReduction::CONCAT:
@@ -70,15 +63,14 @@ inline EmbeddingReductionType reductionFromProto(
   }
 }
 
-inline proto::bolt::Parameter* parametersToProto(
+proto::bolt::Parameter* parametersToProto(
     const std::vector<float>& parameters) {
   proto::bolt::Parameter* proto = new proto::bolt::Parameter();
   proto->mutable_data()->Assign(parameters.begin(), parameters.end());
   return proto;
 }
 
-inline std::vector<float> parametersFromProto(
-    const proto::bolt::Parameter& proto) {
+std::vector<float> parametersFromProto(const proto::bolt::Parameter& proto) {
   return {proto.data().begin(), proto.data().end()};
 }
 
@@ -87,8 +79,8 @@ inline std::vector<float> parametersFromProto(
 // Optimizer PR can be loaded with the new design. For example beta1/beta2
 // become optimizer parameters instead of global constants, so they are
 // serialized here.
-inline proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
-                                                size_t rows, size_t cols) {
+proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
+                                         size_t rows, size_t cols) {
   if (optimizer.momentum.size() != (rows * cols)) {
     throw std::runtime_error("Rows and columns do not match optimizer size.");
   }
@@ -109,8 +101,7 @@ inline proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
   return proto_opt;
 }
 
-inline AdamOptimizer optimizerFromProto(
-    const proto::bolt::Optimizer& opt_proto) {
+AdamOptimizer optimizerFromProto(const proto::bolt::Optimizer& opt_proto) {
   if (!opt_proto.has_adam()) {
     throw std::invalid_argument("Expected adam optimizer.");
   }
@@ -130,4 +121,4 @@ inline AdamOptimizer optimizerFromProto(
   return opt;
 }
 
-}  // namespace thirdai::bolt::utils
+}  // namespace thirdai::bolt::nn::ops

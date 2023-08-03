@@ -34,7 +34,7 @@ void testRootCauseAnalysis(const train::LabeledDataset& train_data,
       ops::FullyConnected::make(
           /* dim= */ 50, /* input_dim= */ N_CLASSES, /* sparsity= */ 1.0,
           /* activation*/ "softmax")
-          ->apply(input);
+          ->applyUnary(input);
 
   auto labels = ops::Input::make(/* dim= */ N_CLASSES);
 

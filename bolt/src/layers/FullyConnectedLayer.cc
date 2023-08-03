@@ -2,7 +2,7 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
-#include <bolt/src/utils/ProtobufUtils.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -62,9 +62,9 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(fc_proto.input_dim()),
       _sparse_dim(fc_proto.dim() * fc_proto.sparsity()),
       _sparsity(fc_proto.sparsity()),
-      _act_func(utils::activationFromProto(fc_proto.activation())),
-      _weights(utils::parametersFromProto(fc_proto.weights())),
-      _biases(utils::parametersFromProto(fc_proto.bias())),
+      _act_func(nn::ops::activationFromProto(fc_proto.activation())),
+      _weights(nn::ops::parametersFromProto(fc_proto.weights())),
+      _biases(nn::ops::parametersFromProto(fc_proto.bias())),
       _index_frozen(fc_proto.index_frozen()),
       _disable_sparse_parameter_updates(
           fc_proto.disable_sparse_parameter_updates()),
@@ -91,8 +91,9 @@ FullyConnectedLayer::FullyConnectedLayer(
   }
 
   if (fc_proto.has_weight_optimizer() && fc_proto.has_bias_optimizer()) {
-    _weight_optimizer = utils::optimizerFromProto(fc_proto.weight_optimizer());
-    _bias_optimizer = utils::optimizerFromProto(fc_proto.bias_optimizer());
+    _weight_optimizer =
+        nn::ops::optimizerFromProto(fc_proto.weight_optimizer());
+    _bias_optimizer = nn::ops::optimizerFromProto(fc_proto.bias_optimizer());
   } else {
     _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
     _bias_optimizer = AdamOptimizer(_dim);
@@ -746,12 +747,12 @@ proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
   fc->set_dim(_dim);
   fc->set_input_dim(_prev_dim);
   fc->set_sparsity(_sparsity);
-  fc->set_activation(utils::activationToProto(_act_func));
+  fc->set_activation(nn::ops::activationToProto(_act_func));
 
   fc->set_use_bias(_use_bias);
 
-  fc->set_allocated_weights(utils::parametersToProto(_weights));
-  fc->set_allocated_bias(utils::parametersToProto(_biases));
+  fc->set_allocated_weights(nn::ops::parametersToProto(_weights));
+  fc->set_allocated_bias(nn::ops::parametersToProto(_biases));
 
   if (_neuron_index) {
     if (auto lsh_index = nn::LshIndex::cast(_neuron_index)) {
@@ -764,10 +765,10 @@ proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
 
   if (with_optimizer && _weight_optimizer && _bias_optimizer) {
     fc->set_allocated_weight_optimizer(
-        utils::optimizerToProto(*_weight_optimizer, _dim, _prev_dim));
+        nn::ops::optimizerToProto(*_weight_optimizer, _dim, _prev_dim));
 
     fc->set_allocated_bias_optimizer(
-        utils::optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+        nn::ops::optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
   }
 
   fc->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);

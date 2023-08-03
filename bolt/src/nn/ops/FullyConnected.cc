@@ -7,8 +7,8 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <bolt/src/utils/ProtobufUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cstring>
 #include <memory>
@@ -201,7 +201,17 @@ void FullyConnected::registerModel(
   }
 }
 
-autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
+autograd::ComputationPtr FullyConnected::apply(
+    const autograd::ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("FullyConnected op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+autograd::ComputationPtr FullyConnected::applyUnary(
+    autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("

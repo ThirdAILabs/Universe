@@ -6,7 +6,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
-#include <bolt/src/utils/ProtobufUtils.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
 #include <ios>
@@ -51,18 +51,17 @@ Embedding::Embedding(const std::string& name,
       _dim(emb_proto.dim()),
       _input_dim(emb_proto.dim()),
       _bias(emb_proto.use_bias()),
-      _act_func(utils::activationFromProto(emb_proto.activation())),
-      _embeddings(utils::parametersFromProto(emb_proto.embeddings())),
-      _biases(utils::parametersFromProto(emb_proto.bias())),
+      _act_func(activationFromProto(emb_proto.activation())),
+      _embeddings(parametersFromProto(emb_proto.embeddings())),
+      _biases(parametersFromProto(emb_proto.bias())),
       _disable_sparse_parameter_updates(
           emb_proto.disable_sparse_parameter_updates()),
       _should_serialize_optimizer(false),
       _embeddings_used(emb_proto.input_dim(), false) {
   if (emb_proto.has_embeddings_optimizer() && emb_proto.has_bias_optimizer()) {
-    _embedding_optimizer =
-        utils::optimizerFromProto(emb_proto.embeddings_optimizer());
+    _embedding_optimizer = optimizerFromProto(emb_proto.embeddings_optimizer());
 
-    _bias_optimizer = utils::optimizerFromProto(emb_proto.bias_optimizer());
+    _bias_optimizer = optimizerFromProto(emb_proto.bias_optimizer());
   } else {
     _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
     _bias_optimizer = AdamOptimizer(_dim);
@@ -262,19 +261,19 @@ proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
 
   emb->set_dim(_dim);
   emb->set_input_dim(_input_dim);
-  emb->set_activation(utils::activationToProto(_act_func));
+  emb->set_activation(activationToProto(_act_func));
 
   emb->set_use_bias(_bias);
 
-  emb->set_allocated_embeddings(utils::parametersToProto(_embeddings));
-  emb->set_allocated_bias(utils::parametersToProto(_biases));
+  emb->set_allocated_embeddings(parametersToProto(_embeddings));
+  emb->set_allocated_bias(parametersToProto(_biases));
 
   if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
     emb->set_allocated_embeddings_optimizer(
-        utils::optimizerToProto(*_embedding_optimizer, _input_dim, _dim));
+        optimizerToProto(*_embedding_optimizer, _input_dim, _dim));
 
     emb->set_allocated_bias_optimizer(
-        utils::optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+        optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
   }
 
   emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
@@ -291,7 +290,16 @@ void Embedding::summary(std::ostream& summary,
           << ", bias=" << std::boolalpha << _bias << "]";
 }
 
-autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
+autograd::ComputationPtr Embedding::apply(
+    const autograd::ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Embedding op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+autograd::ComputationPtr Embedding::applyUnary(autograd::ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(
         "Input has too large of a dimension for embedding.");

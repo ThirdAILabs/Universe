@@ -43,7 +43,7 @@ class Concatenate final : public Op,
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
-  autograd::ComputationPtr apply(const autograd::ComputationList& inputs);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
 
  private:
   Concatenate();

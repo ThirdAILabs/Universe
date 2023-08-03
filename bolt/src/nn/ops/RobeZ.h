@@ -48,7 +48,9 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+
+  autograd::ComputationPtr applyUnary(autograd::ComputationPtr input);
 
   std::shared_ptr<RobeZ> duplicateWithNewReduction(
       const std::string& reduction,

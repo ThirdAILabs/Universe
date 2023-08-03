@@ -64,14 +64,14 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   auto hidden =
       bolt::nn::ops::Embedding::make(hidden_dim, input_dim, hidden_activation,
                                      /* bias= */ hidden_bias)
-          ->apply(input);
+          ->applyUnary(input);
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::nn::ops::FullyConnected::make(
                     output_dim, hidden->dim(), sparsity, activation,
                     /* sampling= */ nullptr, /* use_bias= */ output_bias)
-                    ->apply(hidden);
+                    ->applyUnary(hidden);
 
   auto labels = bolt::nn::ops::Input::make(output_dim);
 

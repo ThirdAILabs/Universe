@@ -5,7 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/utils/ProtobufUtils.h>
+#include <stdexcept>
 
 namespace thirdai::bolt::nn::ops {
 
@@ -125,7 +125,15 @@ void RobeZ::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
-autograd::ComputationPtr RobeZ::apply(autograd::ComputationPtr input) {
+autograd::ComputationPtr RobeZ::apply(const autograd::ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("RobeZ op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+autograd::ComputationPtr RobeZ::applyUnary(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
