@@ -1,6 +1,5 @@
 import os
 
-
 import pytest
 import ray
 import thirdai
@@ -15,7 +14,20 @@ from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
-from thirdai.demos import download_clinc_dataset
+from thirdai.demos import (
+    download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
+)
+from thirdai.demos import download_beir_dataset, download_clinc_dataset
+
+
+@pytest.fixture(scope="module")
+def download_amazon_kaggle_product_catalog_sampled():
+    return download_amazon_kaggle_product_catalog_sampled_wrapped()
+
+
+@pytest.fixture(scope="module")
+def download_scifact_dataset():
+    return download_beir_dataset("scifact")
 
 
 def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sampled):
@@ -104,6 +116,10 @@ def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
 
 @pytest.mark.distributed
 def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sampled):
+    n_target_classes = download_and_split_catalog_dataset(
+        download_amazon_kaggle_product_catalog_sampled
+    )
+
     def udt_coldstart_loop_per_worker(config):
         n_target_classes = config.get("n_target_classes")
         udt_model = get_udt_cold_start_model(n_target_classes)
@@ -134,13 +150,6 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
             checkpoint=dist.UDTCheckPoint.from_model(udt_model),
         )
 
-    from auto_ml.python_tests.download_dataset_fixtures import (
-        download_amazon_kaggle_product_catalog_sampled,
-    )
-
-    n_target_classes = download_and_split_catalog_dataset(
-        download_amazon_kaggle_product_catalog_sampled
-    )
     scaling_config = setup_ray()
 
     trainer = dist.BoltTrainer(
@@ -214,6 +223,10 @@ def test_udt_train_distributed():
 
 @pytest.mark.distributed
 def test_udt_mach_distributed(download_scifact_dataset):
+    supervised_tst, n_target_classes = download_and_split_scifact_dataset(
+        download_scifact_dataset
+    )
+
     def udt_mach_loop_per_worker(config):
         thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
 
@@ -266,14 +279,6 @@ def test_udt_mach_distributed(download_scifact_dataset):
             metrics,
             checkpoint=dist.UDTCheckPoint.from_model(model),
         )
-
-    from auto_ml.python_tests.download_dataset_fixtures import (
-        download_scifact_dataset,
-    )
-
-    supervised_tst, n_target_classes = download_and_split_scifact_dataset(
-        download_scifact_dataset
-    )
 
     scaling_config = setup_ray()
 
