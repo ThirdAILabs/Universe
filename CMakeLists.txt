@@ -349,7 +349,6 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
-    bolt/src/train/trainer/DistributedTrainingWrapper.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
