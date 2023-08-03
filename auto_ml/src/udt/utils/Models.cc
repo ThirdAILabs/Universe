@@ -37,8 +37,8 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   bool output_bias =
       args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
 
-  bool normalize_embeddings =
-      args.get<bool>("normalize_embeddings", "bool", defaults::NORMALIZE_EMBEDDINGS);
+  bool normalize_embeddings = args.get<bool>("normalize_embeddings", "bool",
+                                             defaults::NORMALIZE_EMBEDDINGS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, /* hidden_bias= */ hidden_bias,
                              /* output_bias= */ output_bias, /* mach= */ mach,
