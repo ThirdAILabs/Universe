@@ -325,8 +325,7 @@ def compressed_training(
     learning_rate=0.002,
     n_classes=10,
     epochs=30,
-    batch_size=64,
-    use_compression=True,
+    batch_size=64
 ):
     model = build_simple_model_for_compression(n_classes)
 
