@@ -36,12 +36,13 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
       args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
   bool output_bias =
       args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
-  
-  bool use_layer_norm = 
+
+  bool use_layer_norm =
       args.get<bool>("use_layer_norm", "bool", defaults::USE_LAYER_NORM);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, /* hidden_bias= */ hidden_bias,
-                             /* output_bias= */ output_bias, /* mach= */ mach, /* use_layer_norm= */ use_layer_norm);
+                             /* output_bias= */ output_bias, /* mach= */ mach,
+                             /* use_layer_norm= */ use_layer_norm);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -59,7 +60,8 @@ float autotuneSparsity(uint32_t dim) {
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
-                      bool hidden_bias, bool output_bias, bool mach, bool use_layer_norm) {
+                      bool hidden_bias, bool output_bias, bool mach,
+                      bool use_layer_norm) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
@@ -69,7 +71,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                                      /* bias= */ hidden_bias)
           ->apply(input);
 
-  if(use_layer_norm){
+  if (use_layer_norm) {
     hidden = bolt::nn::ops::LayerNorm::make()->apply(hidden);
   }
 
