@@ -153,7 +153,64 @@ UDTMachClassifier::UDTMachClassifier(
     _rlhf_sampler = std::make_optional<RLHFSampler>(
         num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  // CONTRASTIVE MODEL STUFF
+  uint32_t hidden_dim = user_args.get<uint32_t>(
+      "embedding_dimension", "integer", defaults::HIDDEN_DIM);
+  bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
+
+  bool hidden_bias =
+      user_args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
+  bool output_bias =
+      user_args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
+
+  bool dissimilar_cutoff_distance =
+      user_args.get<float>("dissimilar_cutoff_distance", "float", 1);
+
+  _contrastive_model = utils::contrastiveModel(
+      input_dim, hidden_dim, num_buckets, use_tanh, hidden_bias, output_bias,
+      dissimilar_cutoff_distance);
 }
+
+py::object UDTMachClassifier::trainContrastive(
+    const dataset::DataSourcePtr& queries,
+    const dataset::DataSourcePtr& responses, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    uint32_t freeze_hash_tables_epoch) {
+  auto query_dataset_loader =
+      _dataset_factory->getUnLabeledDatasetLoader(queries);
+
+  auto response_and_labels_dataset_loader =
+      _dataset_factory->getLabeledDatasetLoader(responses,
+                                                /* shuffle= */ false);
+
+  bolt::train::Trainer trainer(_contrastive_model, freeze_hash_tables_epoch,
+                               bolt::train::python::CtrlCCheck{});
+
+  uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
+
+  auto query_old_dataset =
+      query_dataset_loader->loadAll(batch_size, /* verbose= */ true);
+  auto response_old_dataset =
+      response_dataset_loader->loadAll(batch_size, /* verbose= */ true);
+
+  uint32_t input_dim = _contrastive_model->inputDims().at(0);
+
+  auto query_new_dataset =
+      bolt::train::convertDatasets(query_old_dataset, {input_dim},
+                                   /* copy= */ false);
+  auto response_new_dataset =
+      bolt::train::convertDatasets(response_old_dataset, {input_dim},
+                                   /* copy= */ false);
+
+  bolt::train::Dataset query_response_dataset = {query_new_dataset.at(0),
+                                                 response_new_dataset.at(0)};
+
+  auto final_labeled_dataset = LabeledDataset(query_response_dataset, labels);
+}
+
+void transferContrastiveWeights() {}
 
 py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
@@ -1067,10 +1124,10 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _pre_hashed_labels_dataset_factory,
-          _default_top_k_to_return, _num_buckets_to_eval,
-          _mach_sampling_threshold, _rlhf_sampler);
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _contrastive_model,
+          _mach_label_block, _dataset_factory,
+          _pre_hashed_labels_dataset_factory, _default_top_k_to_return,
+          _num_buckets_to_eval, _mach_sampling_threshold, _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt

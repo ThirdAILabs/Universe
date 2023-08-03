@@ -37,6 +37,14 @@ class UDTMachClassifier final : public UDTBackend {
                     const std::optional<std::string>& model_config,
                     config::ArgumentMap user_args);
 
+  py::object trainContrastive(const dataset::DataSourcePtr& queries,
+                              const dataset::DataSourcePtr& responses,
+                              float learning_rate, uint32_t epochs,
+                              const std::vector<std::string>& train_metrics,
+                              const std::vector<CallbackPtr>& callbacks,
+                              TrainOptions options,
+                              uint32_t freeze_hash_tables_epoch);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -266,6 +274,7 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   std::shared_ptr<utils::Classifier> _classifier;
+  ModelPtr _contrastive_model;
 
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;

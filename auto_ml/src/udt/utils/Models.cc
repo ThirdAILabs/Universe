@@ -2,6 +2,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Embedding.h>
@@ -15,6 +16,41 @@
 #include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
+
+ModelPtr contrastiveModel(uint32_t input_dim, uint32_t hidden_dim,
+                          uint32_t output_dim, bool use_tanh, bool hidden_bias,
+                          bool output_bias, float dissimilar_cutoff_distance) {
+  auto query_input = bolt::nn::ops::Input::make(input_dim);
+  auto response_input = bolt::nn::ops::Input::make(input_dim);
+
+  const auto* hidden_activation = use_tanh ? "tanh" : "relu";
+
+  auto hidden_op =
+      bolt::nn::ops::Embedding::make(hidden_dim, input_dim, hidden_activation,
+                                     /* bias= */ hidden_bias);
+
+  auto query_hidden = hidden_op->apply(query_input);
+  auto response_hidden = hidden_op->apply(response_input);
+
+  auto sparsity = autotuneSparsity(output_dim);
+  auto output_op = bolt::nn::ops::FullyConnected::make(
+      output_dim, query_hidden->dim(), sparsity, "sigmoid",
+      /* sampling= */ nullptr, /* use_bias= */ output_bias);
+
+  auto query_output = output_op->apply(query_hidden);
+  auto response_output = output_op->apply(response_hidden);
+
+  auto similarity_labels = bolt::nn::ops::Input::make(1);
+
+  bolt::nn::loss::LossPtr loss = bolt::nn::loss::EuclideanContrastive::make(
+      query_output, response_output, similarity_labels,
+      dissimilar_cutoff_distance);
+
+  auto model = bolt::nn::model::Model::make(
+      {query_input, response_input}, {query_output, response_output}, {loss});
+
+  return model;
+}
 
 ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const config::ArgumentMap& args,
