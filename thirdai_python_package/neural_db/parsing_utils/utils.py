@@ -9,8 +9,20 @@ CHUNK_THRESHOLD = 150
 def ensure_valid_encoding(text):
     return unidecode.unidecode(text.encode("utf-8", "replace").decode("utf-8"))
 
+def valid_chunk(text):
+    return len(text) >= 20 and (sum(c.isalpha() for c in text) >= len(text) / 2)
+
+
 
 def chunk_text(text: str):
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=750,
+        chunk_overlap=0,
+        length_function=len,
+    )
+
     sentences = sent_tokenize(text)
     if len(sentences) == 1:
         return [text]
@@ -38,5 +50,17 @@ def chunk_text(text: str):
             chunks[-1] += final_chunk
         else:
             chunks.append(final_chunk)
+
+    for i in range(len(chunks)):
+        chunk = chunks[i]
+        if len(chunk) > 750:
+            sub_chunks = text_splitter.split_text(chunk)
+            chunks[i] = sub_chunks
+    chunks = [
+        chunk
+        for sub_chunks in chunks
+        for chunk in (sub_chunks if isinstance(sub_chunks, list) else [sub_chunks])
+    ]
+    chunks = [chunk for chunk in chunks if valid_chunk(chunk)]
 
     return chunks
