@@ -45,8 +45,8 @@ def test_get_set_hash_tables():
     # when using sparse inference.
     model = build_model()
 
-    train_data = get_data(n_samples=10000)
-    test_data = get_data(n_samples=1000)
+    train_data = gen_numpy_training_data(n_classes=N_CLASSES, n_samples=10000)
+    test_data = gen_numpy_training_data(n_classes=N_CLASSES, n_samples=1000)
 
     trainer = bolt.train.Trainer(model)
 

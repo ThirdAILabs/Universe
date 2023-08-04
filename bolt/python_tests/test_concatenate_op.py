@@ -38,15 +38,6 @@ def concat_gradients(computations):
     )
 
 
-def get_data(n_classes):
-    x, y = gen_numpy_training_data(n_classes=n_classes)
-
-    x = bolt.train.convert_dataset(x, dim=n_classes)
-    y = bolt.train.convert_dataset(y, dim=n_classes)
-
-    return x, y
-
-
 @pytest.mark.unit
 @pytest.mark.parametrize("use_sparsity", [True, False])
 def test_concatenation_op(use_sparsity):
@@ -73,7 +64,7 @@ def test_concatenation_op(use_sparsity):
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
-    train_x, train_y = get_data(n_classes)
+    train_x, train_y = gen_numpy_training_data(n_classes)
 
     for x, y in zip(train_x, train_y):
         model.train_on_batch(x, y)

@@ -29,15 +29,6 @@ def build_model():
     return model
 
 
-def get_data(n_classes):
-    x, y = gen_numpy_training_data(n_classes=n_classes)
-
-    x = bolt.train.convert_dataset(x, dim=n_classes)
-    y = bolt.train.convert_dataset(y, dim=n_classes)
-
-    return x, y
-
-
 class GetEndingLearningRate(bolt.train.callbacks.Callback):
     def __init__(self):
         super().__init__()
@@ -50,7 +41,7 @@ class GetEndingLearningRate(bolt.train.callbacks.Callback):
 def train_model_with_scheduler(epochs, base_learning_rate, schedule):
     model = build_model()
 
-    train_data = get_data(N_CLASSES)
+    train_data = gen_numpy_training_data(N_CLASSES)
 
     ending_lr_callback = GetEndingLearningRate()
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/tests/TestDatasetGenerators.h>
 
 namespace thirdai::bolt::nn::tests {
 

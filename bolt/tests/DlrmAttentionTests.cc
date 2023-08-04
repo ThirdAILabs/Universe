@@ -1,5 +1,4 @@
 
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
@@ -9,6 +8,7 @@
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <bolt/tests/TestDatasetGenerators.h>
 #include <gtest/gtest.h>
 
 namespace thirdai::bolt::nn::tests {

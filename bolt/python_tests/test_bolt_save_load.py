@@ -112,8 +112,6 @@ def get_data():
 
     # We use the labels as tokens to be embedded by the embedding table so they
     # are included as part of the inputs.
-    train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
-    train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
     train_data = [x + y for x, y in zip(train_data, train_labels)]
     train_labels = [x * 3 for x in train_labels]
 

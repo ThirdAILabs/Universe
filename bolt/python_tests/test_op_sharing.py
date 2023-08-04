@@ -26,15 +26,6 @@ def build_model(hidden_op, output_op):
     return model, metric
 
 
-def get_data(n_classes):
-    x, y = gen_numpy_training_data(n_classes=n_classes)
-
-    x = bolt.train.convert_dataset(x, dim=n_classes)
-    y = bolt.train.convert_dataset(y, dim=n_classes)
-
-    return x, y
-
-
 @pytest.mark.unit
 def test_op_sharing():
     hidden_op = bolt.nn.FullyConnected(
@@ -52,8 +43,8 @@ def test_op_sharing():
 
     original_model, original_metric = build_model(hidden_op, output_op)
 
-    train_data = get_data(N_CLASSES)
-    test_data = get_data(N_CLASSES)
+    train_data = gen_numpy_training_data(N_CLASSES)
+    test_data = gen_numpy_training_data(N_CLASSES)
 
     original_trainer = bolt.train.Trainer(original_model)
 

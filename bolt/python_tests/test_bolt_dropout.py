@@ -12,24 +12,31 @@ def test_dropout_layer():
     hidden_layer = bolt.nn.FullyConnected(
         dim=100,
         sparsity=0.3,
+        input_dim=n_classes,
         activation="relu",
         sampling_config=bolt.nn.RandomSamplingConfig(),
     )(input_layer)
-    output_layer = bolt.nn.FullyConnected(dim=n_classes, activation="softmax")(
-        hidden_layer
+    output_layer = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=hidden_layer.dim(), activation="softmax"
+    )(hidden_layer)
+
+    loss = bolt.nn.losses.CategoricalCrossEntropy(
+        output_layer, labels=bolt.nn.Input(dim=n_classes)
     )
 
-    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
 
-    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
+    train_data = gen_numpy_training_data(n_classes=n_classes, n_samples=2000)
+    test_data = gen_numpy_training_data(n_classes=n_classes, n_samples=500)
 
-    train_x, train_y = gen_numpy_training_data(n_classes=n_classes, n_samples=2000)
-    test_x, test_y = gen_numpy_training_data(n_classes=n_classes, n_samples=500)
+    trainer = bolt.train.Trainer(model)
 
-    train_cfg = bolt.TrainConfig(epochs=3, learning_rate=0.001).silence()
-    model.train(train_x, train_y, train_cfg)
+    metrics = trainer.train(
+        train_data=train_data,
+        learning_rate=0.001,
+        epochs=3,
+        validation_data=test_data,
+        validation_metrics=["categorical_accuracy"],
+    )
 
-    eval_cfg = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
-    metrics = model.evaluate(test_x, test_y, eval_cfg)
-
-    assert metrics[0]["categorical_accuracy"] >= 0.8
+    assert metrics["val_categorical_accuracy"][-1] >= 0.8
