@@ -335,11 +335,11 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.strong_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.weak_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
