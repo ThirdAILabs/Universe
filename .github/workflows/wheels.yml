@@ -98,9 +98,6 @@ jobs:
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
          
           CIBW_BEFORE_BUILD_LINUX: >
-            yum update -y && yum clean all &&
-            yum install openssl11-devel -y &&
-            yum install -y libxslt-devel libxml2-devel && 
             apt-get update -y && apt-get install -y protobuf-compiler
           CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
