@@ -6,7 +6,7 @@ from typing import Any, Dict
 from thirdai._thirdai import bolt
 
 
-class MlflowCallbackV2(bolt.train.callbacks.Callback):
+class MlflowCallback(bolt.train.callbacks.Callback):
     def __init__(
         self,
         tracking_uri: str,

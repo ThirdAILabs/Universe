@@ -31,11 +31,11 @@ def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0)
         mlflow_callback.log_additional_metric(key="roc_auc", value=auc, step=step)
 
 
-class DLRMV2Runner(Runner):
+class DLRMRunner(Runner):
     config_type = DLRMConfig
 
     def run_benchmark(config: DLRMConfig, path_prefix, mlflow_logger):
-        model = DLRMV2Runner.get_model(config)
+        model = DLRMRunner.get_model(config)
 
         train_set, train_labels, test_set, test_labels = config.load_datasets(
             path_prefix
