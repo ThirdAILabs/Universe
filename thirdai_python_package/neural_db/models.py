@@ -361,6 +361,7 @@ class Mach(Model):
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
+                "extreme_num_hashes": 4,
             },
             model_config=model_config,
         )
