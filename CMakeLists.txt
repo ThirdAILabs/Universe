@@ -268,7 +268,7 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
 include(FindProtobuf)
-find_package(Protobuf REQUIRED CONFIG)
+find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIR})
 add_subdirectory(proto)
 

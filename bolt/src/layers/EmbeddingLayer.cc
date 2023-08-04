@@ -113,7 +113,7 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
 
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
   assert(output.len == _total_embedding_dim);
-  assert(_reduction == EmbeddingReductionType::SUM ||
+  assert(_reduction != EmbeddingReductionType::CONCATENATION ||
          _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 
