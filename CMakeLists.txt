@@ -271,12 +271,6 @@ include(FindProtobuf)
 find_package(Protobuf REQUIRED)
 add_subdirectory(proto)
 
-# Turn of tests so we don't have two copies of gtest.
-# set(protobuf_BUILD_TESTS OFF)
-# add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
-# include_directories(deps/protobuf/src)
-# include_directories(deps/protobuf/third_party/abseil-cpp)
-
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
 set(ENABLE_TESTING OFF)
@@ -479,8 +473,14 @@ endif()
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
-  thirdai PUBLIC proto ${Protobuf_LIBRARIES} OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+  thirdai
+  PUBLIC proto
+         ${Protobuf_LIBRARIES}
+         OpenMP::OpenMP_CXX
+         spdlog::spdlog
+         cereal::cereal
+         prometheus-cpp::pull
+         utf8proc)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
