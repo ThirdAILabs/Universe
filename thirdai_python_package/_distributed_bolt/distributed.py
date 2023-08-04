@@ -35,6 +35,16 @@ class Communication(bolt.train.Communication):
         dist.all_reduce(gradients)
 
         gradients = gradients.numpy() / num_workers
+        norm = np.linalg.norm(gradients)
+
+        max_norm = 1.0  # Set your maximum allowed norm
+
+        # Avoid division by zero
+        if norm > 0:
+            # If the norm is above max_norm, scale it back to max_norm
+            if norm > max_norm:
+                gradients = gradients / norm * max_norm
+
         model.set_gradients(gradients)
 
     @timed
