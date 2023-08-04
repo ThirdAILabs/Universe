@@ -97,6 +97,11 @@ class EmbeddingLayer {
   uint32_t hashSeed() const { return _hash_fn.seed(); }
 
   ~EmbeddingLayer() = default;
+  uint64_t getNumberLookups() const { return _num_lookups_per_token; }
+
+  uint64_t getLookupSize() const { return _lookup_size; }
+
+  uint64_t getNumberTokens() const { return _num_tokens_per_input.value_or(0); }
 
  private:
   void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,

@@ -8,14 +8,21 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/ContextualRobeZ.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FCMixer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
+#include <bolt/src/nn/ops/MultiplicativeCombined.h>
+#include <bolt/src/nn/ops/MultiplicativePositionalEmbedding.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/PositionalEmbedding.h>
 #include <bolt/src/nn/ops/RobeZ.h>
+#include <bolt/src/nn/ops/Sigmoid.h>
 #include <bolt/src/nn/ops/Tanh.h>
+#include <bolt/src/nn/ops/Transpose.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -36,7 +43,7 @@ template <typename T>
 using NumpyArray = thirdai::bolt::python::NumpyArray<T>;
 
 template <typename T>
-py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
+py::object toNumpy(const T* data, std::vector<uint32_t> shape) {  // NOLINT
   if (data) {
     NumpyArray<T> arr(shape, data);
     return py::object(std::move(arr));
@@ -158,7 +165,11 @@ void defineTensor(py::module_& nn) {
           [](const tensor::TensorPtr& tensor) {
             return toNumpy(tensor, tensor->gradientsPtr());
           },
-          py::return_value_policy::reference_internal);
+          py::return_value_policy::reference_internal)
+      .def("__getitem__",
+           static_cast<BoltVector& (tensor::Tensor::*)(uint32_t index)>(
+               &tensor::Tensor::getVector),
+           py::arg("index"), py::return_value_policy::copy);
 }
 
 void defineOps(py::module_& nn) {
@@ -218,6 +229,52 @@ void defineOps(py::module_& nn) {
       .def("set_hash_table", &ops::FullyConnected::setHashTable,
            py::arg("hash_fn"), py::arg("hash_table"));
 
+  py::class_<ops::FCMixer, ops::FCMixerPtr, ops::Op>(nn, "FCMixer")
+      .def(py::init(&ops::FCMixer::make), py::arg("dim"), py::arg("input_dim"),
+           py::arg("number_segment"), py::arg("sparsity") = 1.0,
+           py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
+           py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
+           py::arg("reconstruct_hash_functions") = 100)
+      .def("__call__", &ops::FCMixer::apply)
+      .def("dim", &ops::FCMixer::dim)
+      .def("get_sparsity", &ops::FCMixer::getSparsity)
+      .def("set_sparsity", &ops::FCMixer::setSparsity, py::arg("sparsity"),
+           py::arg("rebuild_hash_tables") = true,
+           py::arg("experimental_autotune") = false)
+      .def_property_readonly(
+          "weights",
+          [](const ops::FCMixer& op) {
+            return toNumpy(op.weightsPtr(), {op.dim(), op.inputDim()});
+          })
+      .def_property_readonly("biases",
+                             [](const ops::FCMixer& op) {
+                               return toNumpy(op.biasesPtr(), {op.dim()});
+                             })
+      .def("set_weights",
+           [](ops::FCMixer& op, const NumpyArray<float>& weights) {
+             if (weights.ndim() != 2 || weights.shape(0) != op.dim() ||
+                 weights.shape(1) != op.inputDim()) {
+               std::stringstream error;
+               error << "Expected weights to be 2D array with shape ("
+                     << op.dim() << ", " << op.inputDim() << ").";
+               throw std::invalid_argument(error.str());
+             }
+             op.setWeights(weights.data());
+           })
+      .def("set_biases",
+           [](ops::FCMixer& op, const NumpyArray<float>& biases) {
+             if (biases.ndim() != 1 || biases.shape(0) != op.dim()) {
+               std::stringstream error;
+               error << "Expected biases to be 1D array with shape ("
+                     << op.dim() << ",).";
+               throw std::invalid_argument(error.str());
+             }
+             op.setBiases(biases.data());
+           })
+      .def("get_hash_table", &ops::FCMixer::getHashTable)
+      .def("set_hash_table", &ops::FCMixer::setHashTable, py::arg("hash_fn"),
+           py::arg("hash_table"));
+
   py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
       .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
@@ -228,6 +285,55 @@ void defineOps(py::module_& nn) {
       .def("duplicate_with_new_reduction",
            &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
            py::arg("num_tokens_per_input"));
+
+  py::class_<ops::ContextualRobeZ, ops::ContextualRobeZPtr, ops::Op>(
+      nn, "ContextualRobeZ")
+      .def(py::init(&ops::ContextualRobeZ::make),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"), py::arg("num_tokens_per_input"),
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::ContextualRobeZ::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::ContextualRobeZ::duplicateWithNewReduction,
+           py::arg("reduction"), py::arg("num_tokens_per_input"));
+
+  py::class_<ops::PosEmbedding, ops::PosEmbeddingPtr, ops::Op>(nn,
+                                                               "PosEmbedding")
+      .def(py::init(&ops::PosEmbedding::make), py::arg("num_embedding_lookups"),
+           py::arg("lookup_size"), py::arg("log_embedding_block_size"),
+           py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+           py::arg("sum_combination") = false)
+      .def("__call__", &ops::PosEmbedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::PosEmbedding::duplicateWithNewReduction, py::arg("reduction"),
+           py::arg("num_tokens_per_input"));
+
+  py::class_<ops::MultiplicativePosEmbedding,
+             ops::MultiplicativePosEmbeddingPtr, ops::Op>(
+      nn, "MultiplicativePosEmbedding")
+      .def(py::init(&ops::MultiplicativePosEmbedding::make),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"), py::arg("reduction"),
+           py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::MultiplicativePosEmbedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::MultiplicativePosEmbedding::duplicateWithNewReduction,
+           py::arg("reduction"), py::arg("num_tokens_per_input"));
+
+  py::class_<ops::MultiplicativeCombinedEmbedding,
+             ops::MultiplicativeCombinedEmbeddingPtr, ops::Op>(
+      nn, "MultiplicativeCombinedEmbedding")
+      .def(py::init(&ops::MultiplicativeCombinedEmbedding::make),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"), py::arg("reduction"),
+           py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::MultiplicativeCombinedEmbedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::MultiplicativeCombinedEmbedding::duplicateWithNewReduction,
+           py::arg("reduction"), py::arg("num_tokens_per_input"));
 
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
       .def(py::init(&ops::Embedding::make), py::arg("dim"),
@@ -275,6 +381,14 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::Sigmoid, ops::SigmoidPtr, ops::Op>(nn, "Sigmoid")
+      .def(py::init(&ops::Sigmoid::make))
+      .def("__call__", &ops::Sigmoid::apply);
+
+  py::class_<ops::Transpose, ops::TransposePtr, ops::Op>(nn, "Transpose")
+      .def(py::init(&ops::Transpose::make), py::arg("rows"), py::arg("columns"))
+      .def("__call__", &ops::Transpose::apply);
 
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")

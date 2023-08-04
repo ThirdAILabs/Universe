@@ -325,10 +325,17 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
+    bolt/src/nn/ops/MultiplicativePositionalEmbedding.cc
+    bolt/src/nn/ops/ContextualRobeZ.cc
+    bolt/src/nn/ops/MultiplicativeCombined.cc
+    bolt/src/nn/ops/FCMixer.cc
+    bolt/src/nn/ops/PositionalEmbedding.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Sigmoid.cc
+    bolt/src/nn/ops/Transpose.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc

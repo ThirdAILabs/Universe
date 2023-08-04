@@ -67,7 +67,8 @@ void Input::summary(std::ostream& summary,
                     const autograd::ComputationList& inputs,
                     const autograd::Computation* output) const {
   (void)inputs;
-  summary << "Input(" << name() << ") -> " << output->name();
+  summary << "Input(" << name() << ") -> " << output->name()
+          << " [ dim=" << dim() << " ]";
 }
 
 template void Input::serialize(cereal::BinaryInputArchive&);
