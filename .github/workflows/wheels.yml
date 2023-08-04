@@ -102,7 +102,7 @@ jobs:
             yum install openssl11-devel -y &&
             yum install -y libxslt-devel libxml2-devel && 
             sudo apt-get update -y && 
-            suto apt-get install protobuf-compiler
+            sudo apt-get install -y protobuf-compiler
           CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
           # Online compile cpython wheels (pytorch does this too), no big 
