@@ -170,7 +170,7 @@ bolt::nn::autograd::ComputationPtr buildLayerNorm(
 
   auto layer = bolt::nn::ops::LayerNorm::make();
 
-  return layer->apply(predecessor);
+  return layer->applyUnary(predecessor);
 }
 
 /**

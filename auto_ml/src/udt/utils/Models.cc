@@ -72,7 +72,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
           ->applyUnary(input);
 
   if (normalize_embeddings) {
-    hidden = bolt::nn::ops::LayerNorm::make()->apply(hidden);
+    hidden = bolt::nn::ops::LayerNorm::make()->applyUnary(hidden);
   }
 
   auto sparsity = autotuneSparsity(output_dim);
