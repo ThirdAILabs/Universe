@@ -7,6 +7,7 @@
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -162,6 +163,16 @@ bolt::nn::autograd::ComputationPtr buildEmbedding(
   return layer->applyUnary(predecessor);
 }
 
+bolt::nn::autograd::ComputationPtr buildLayerNorm(
+    const json& config, const ArgumentMap& /*args*/,
+    const CreatedComputations& created_comps) {
+  auto predecessor = getPredecessor(config, created_comps);
+
+  auto layer = bolt::nn::ops::LayerNorm::make();
+
+  return layer->apply(predecessor);
+}
+
 /**
  * Helper function to construct the inputs. Matches the input dims to the
  * input names provided in the config. Updates created nodes to contain the
@@ -212,6 +223,8 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
       created_comps[name] = buildRobeZ(node_config, args, created_comps);
     } else if (type == "embedding") {
       created_comps[name] = buildEmbedding(node_config, args, created_comps);
+    } else if (type == "layernorm") {
+      created_comps[name] = buildLayerNorm(node_config, args, created_comps);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");

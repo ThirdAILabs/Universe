@@ -36,9 +36,13 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
       args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
   bool output_bias =
       args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
+
+  bool normalize_embeddings = args.get<bool>("normalize_embeddings", "bool",
+                                             defaults::NORMALIZE_EMBEDDINGS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, /* hidden_bias= */ hidden_bias,
-                             /* output_bias= */ output_bias, /* mach= */ mach);
+                             /* output_bias= */ output_bias, /* mach= */ mach,
+                             /* normalize_embeddings= */ normalize_embeddings);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -56,7 +60,8 @@ float autotuneSparsity(uint32_t dim) {
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
-                      bool hidden_bias, bool output_bias, bool mach) {
+                      bool hidden_bias, bool output_bias, bool mach,
+                      bool normalize_embeddings) {
   auto input = bolt::nn::ops::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
@@ -65,6 +70,10 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
       bolt::nn::ops::Embedding::make(hidden_dim, input_dim, hidden_activation,
                                      /* bias= */ hidden_bias)
           ->applyUnary(input);
+
+  if (normalize_embeddings) {
+    hidden = bolt::nn::ops::LayerNorm::make()->apply(hidden);
+  }
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
