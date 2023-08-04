@@ -211,9 +211,9 @@ proto::hashtable::SampledHashTable* SampledHashTable::toProto() const {
   hashtable->set_reservoir_size(_reservoir_size);
   hashtable->set_range(_range);
 
-  hashtable->mutable_data()->Assign(_data.begin(), _data.end());
-  hashtable->mutable_counters()->Assign(_counters.begin(), _counters.end());
-  hashtable->mutable_gen_rand()->Assign(_gen_rand.begin(), _gen_rand.end());
+  *hashtable->mutable_data() = {_data.begin(), _data.end()};
+  *hashtable->mutable_counters() = {_counters.begin(), _counters.end()};
+  *hashtable->mutable_gen_rand() = {_gen_rand.begin(), _gen_rand.end()};
 
   return hashtable;
 }

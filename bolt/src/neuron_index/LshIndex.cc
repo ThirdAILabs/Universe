@@ -162,8 +162,8 @@ proto::bolt::NeuronIndex* LshIndex::toProto() const {
   lsh_index->set_allocated_hash_function(_hash_fn->toProto());
   lsh_index->set_allocated_hash_table(_hash_table->toProto());
 
-  lsh_index->mutable_random_neurons()->Assign(_rand_neurons.begin(),
-                                              _rand_neurons.end());
+  *lsh_index->mutable_random_neurons() = {_rand_neurons.begin(),
+                                          _rand_neurons.end()};
 
   lsh_index->set_insert_labels_when_not_found(_insert_labels_when_not_found);
 

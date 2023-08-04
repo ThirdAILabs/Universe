@@ -1,4 +1,5 @@
 #include "Conversions.h"
+#include <google/protobuf/repeated_field.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::ops {
@@ -16,6 +17,8 @@ proto::bolt::ActivationFunction activationToProto(
       return proto::bolt::ActivationFunction::TANH;
     case ActivationFunction::Linear:
       return proto::bolt::ActivationFunction::LINEAR;
+    default:
+      throw std::invalid_argument("Invalid activation function in toProto.");
   }
 }
 
@@ -46,6 +49,8 @@ proto::bolt::EmbeddingReduction reductionToProto(
       return proto::bolt::EmbeddingReduction::SUM;
     case EmbeddingReductionType::AVERAGE:
       return proto::bolt::EmbeddingReduction::AVG;
+    default:
+      throw std::invalid_argument("Invalid reduction type in toProto.");
   }
 }
 
@@ -66,7 +71,8 @@ EmbeddingReductionType reductionFromProto(
 proto::bolt::Parameter* parametersToProto(
     const std::vector<float>& parameters) {
   proto::bolt::Parameter* proto = new proto::bolt::Parameter();
-  proto->mutable_data()->Assign(parameters.begin(), parameters.end());
+  *proto->mutable_data() = {parameters.begin(), parameters.end()};
+
   return proto;
 }
 

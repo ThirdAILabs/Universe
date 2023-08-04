@@ -166,8 +166,8 @@ proto::hashing::HashFunction* DWTAHashFunction::toProto() const {
   dwta->set_input_dim(_dim);
   dwta->set_permutations(_permute);
 
-  dwta->mutable_bin_map()->Assign(_bin_map.begin(), _bin_map.end());
-  dwta->mutable_positions()->Assign(_positions.begin(), _positions.end());
+  *dwta->mutable_bin_map() = {_bin_map.begin(), _bin_map.end()};
+  *dwta->mutable_positions() = {_positions.begin(), _positions.end()};
 
   dwta->set_random_double_hash_seed(_rand_double_hash_seed);
 

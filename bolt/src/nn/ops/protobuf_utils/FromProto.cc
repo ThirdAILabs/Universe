@@ -32,8 +32,8 @@ OpPtr fromProto(const proto::bolt::Op& op_proto) {
     case proto::bolt::Op::kTanh:
       return Tanh::fromProto(name, op_proto.tanh());
 
-    case proto::bolt::Op::TYPE_NOT_SET:
-      throw std::invalid_argument("Invalid op with TYPE_NOT_SET in fromProto.");
+    default:
+      throw std::invalid_argument("Invalid op type in fromProto.");
   }
 }
 

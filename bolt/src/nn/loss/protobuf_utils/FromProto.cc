@@ -18,8 +18,8 @@ LossPtr fromProto(
       return BinaryCrossEntropy::make(
           computations.at(loss_proto.binary_cross_entropy().output()),
           computations.at(loss_proto.binary_cross_entropy().labels()));
-    case proto::bolt::Loss::LOSS_NOT_SET:
-      throw std::invalid_argument("Invalid loss LOSS_NOT_SET in fromProto.");
+    default:
+      throw std::invalid_argument("Invalid loss in fromProto.");
   }
 }
 
