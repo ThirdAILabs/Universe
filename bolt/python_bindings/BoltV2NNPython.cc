@@ -270,7 +270,7 @@ void defineOps(py::module_& nn) {
 
   py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
       .def(py::init(py::overload_cast<>(&ops::LayerNorm::make)))
-      .def("__call__", &ops::LayerNorm::apply);
+      .def("__call__", &ops::LayerNorm::applyUnary);
 
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))

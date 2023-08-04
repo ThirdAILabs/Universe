@@ -27,10 +27,16 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}  
+
       - name: Install protobuf
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y protobuf-compiler        
+          sudo apt-get install -y protobuf-compiler    
+          
+      - name: Generate protobuf files
+      - run: | 
+          bin/build.py -t proto
+
       - name: Run clang-tidy linting on all files
         run: |
           bin/lint.py

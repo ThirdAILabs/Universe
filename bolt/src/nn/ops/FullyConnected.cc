@@ -205,8 +205,11 @@ void FullyConnected::registerModel(
 
 autograd::ComputationPtr FullyConnected::apply(
     const autograd::ComputationList& inputs) {
-  // Can have two inputs when loading a graph because of the labels if sparse,
-  // however this is added by the model later anyway so we can discard it here.
+  // If the layer is a sparse output then it has a second input which are the
+  // labels, so that it can always select the label neurons. This is stored as
+  // part of the computation graph and thus may be passed in here when loading a
+  // saved model, however we can discard it since these labels and layers will
+  // automatically be matched up again in when the new model is constructed.
   if (inputs.size() != 1 && inputs.size() != 2) {
     throw std::invalid_argument("FullyConnected op expects a single input.");
   }

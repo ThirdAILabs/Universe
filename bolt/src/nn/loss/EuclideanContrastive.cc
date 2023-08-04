@@ -131,7 +131,7 @@ float EuclideanContrastive::euclideanDistanceSquared(
 }
 
 proto::bolt::Loss* EuclideanContrastive::toProto() const {
-  throw std::runtime_error("toProto is not supported for Contrastive loss.");
+  throw std::runtime_error("toProto is not implemented for Contrastive loss.");
 }
 
 template <class Archive>

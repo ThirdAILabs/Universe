@@ -1,4 +1,5 @@
 #include "EmbeddingLayer.h"
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <hashing/src/MurmurHash.h>
 #include <algorithm>
@@ -79,6 +80,14 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
       _disable_sparse_parameter_updates(
           robez_proto.disable_sparse_parameter_updates()),
       _should_save_optimizer(false) {
+  if (_reduction == EmbeddingReductionType::CONCATENATION) {
+    if (!_num_tokens_per_input) {
+      throw std::invalid_argument(
+          "Must specify a number of tokens per input with a concatenation "
+          "reduction.");
+    }
+    _total_embedding_dim *= _num_tokens_per_input.value();
+  }
   auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
       _log_embedding_block_size, _lookup_size, _update_chunk_size);
 

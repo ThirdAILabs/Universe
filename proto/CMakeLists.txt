@@ -1,8 +1,3 @@
-include(FindProtobuf)
-find_package(Protobuf REQUIRED)
-
-include_directories(${Protobuf_INCLUDE_DIR})
-
 set(THIRDAI_PROTO_DEFS
     hashing/hashing.proto
     hashtable/hashtable.proto

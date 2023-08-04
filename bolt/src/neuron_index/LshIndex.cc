@@ -34,8 +34,8 @@ LshIndex::LshIndex(const proto::bolt::LSHNeuronIndex& lsh_proto)
       _hash_fn = std::make_shared<hashing::DWTAHashFunction>(
           lsh_proto.hash_function().dwta());
       break;
-    case proto::hashing::HashFunction::TYPE_NOT_SET:
-      throw std::invalid_argument("HashFunction not set in fromProto.");
+    default:
+      throw std::invalid_argument("Invalid HashFunction in fromProto.");
   }
 }
 

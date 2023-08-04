@@ -129,9 +129,9 @@ class Op {
       const autograd::ComputationList& inputs) = 0;
 
   /**
-   * Appends a line to the summary to describe the op when applied to the
-   * given inputs and yielding the given output. Ideally this should be in
-   * the form: OpType(op name): input(s) -> output(s) [op parameters]
+   * Appends a line to the summary to describe the op when applied to the given
+   * inputs and yielding the given output. Ideally this should be in the form:
+   * OpType(op name): input(s) -> output(s) [op parameters]
    */
   virtual void summary(std::ostream& summary,
                        const autograd::ComputationList& inputs,

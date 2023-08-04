@@ -268,7 +268,8 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
 include(FindProtobuf)
-find_package(Protobuf REQUIRED)
+find_package(Protobuf REQUIRED CONFIG)
+include_directories(${Protobuf_INCLUDE_DIR})
 add_subdirectory(proto)
 
 # Turn off prometheus-cpp's testing build so that we don't try to build two
@@ -452,8 +453,6 @@ set(THIRDAI_SOURCES
     licensing/src/entitlements/RestrictionTree.cc
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)
-
-# file(GLOB PROTOBUF_GEN_SOURCES proto/gen/*.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set

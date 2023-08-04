@@ -755,6 +755,11 @@ proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
   fc->set_allocated_bias(nn::ops::parametersToProto(_biases));
 
   if (_neuron_index) {
+    /**
+     * We don't serialize a MachNeuronIndex here because bolt does not own the
+     * underlying MachIndex which causes issues when deserializing, since the
+     * MachIndex needs to be conistent between bolt and udt.
+     */
     if (auto lsh_index = nn::LshIndex::cast(_neuron_index)) {
       fc->set_allocated_neuron_index(lsh_index->toProto());
     } else if (auto rand_index = nn::RandomSampler::cast(_neuron_index)) {
