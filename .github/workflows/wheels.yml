@@ -68,7 +68,7 @@ jobs:
           .\vcpkg install protobuf
         shell: powershell
       - name: Install protobuf on linux
-        if: ${{ startsWith(runner.os, 'ubuntu') }}
+        if: startsWith(matrix.os,'ubuntu')
         run: |
           sudo apt-get update -y
           sudo apt-get install -y protobuf-compiler
