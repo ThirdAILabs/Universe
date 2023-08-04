@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package proto.bolt;
 
@@ -15,40 +15,40 @@ enum ActivationFunction {
 }
 
 message FullyConnected {
-  uint64 dim = 1;
-  uint64 input_dim = 2;
-  float sparsity = 3;
-  ActivationFunction activation = 4;
+  required uint64 dim = 1;
+  required uint64 input_dim = 2;
+  required float sparsity = 3;
+  required ActivationFunction activation = 4;
 
-  bool use_bias = 5;
+  required bool use_bias = 5;
 
-  Parameter weights = 6;
-  Parameter bias = 7;
+  required Parameter weights = 6;
+  required Parameter bias = 7;
 
-  uint64 rebuild_hash_tables = 8;
-  uint64 reconstruct_hash_functions = 9;
+  required uint64 rebuild_hash_tables = 8;
+  required uint64 reconstruct_hash_functions = 9;
 
   optional NeuronIndex neuron_index = 10;
-  bool index_frozen = 11;
+  required bool index_frozen = 11;
 
   optional Optimizer weight_optimizer = 12;
   optional Optimizer bias_optimizer = 13;
-  bool disable_sparse_parameter_updates = 14;
+  required bool disable_sparse_parameter_updates = 14;
 }
 
 message Embedding {
-  uint64 dim = 1;
-  uint64 input_dim = 2;
-  ActivationFunction activation = 3;
+  required uint64 dim = 1;
+  required uint64 input_dim = 2;
+  required ActivationFunction activation = 3;
 
-  bool use_bias = 4;
+  required bool use_bias = 4;
 
-  Parameter embeddings = 5;
-  Parameter bias = 6;
+  required Parameter embeddings = 5;
+  required Parameter bias = 6;
 
   optional Optimizer embeddings_optimizer = 7;
   optional Optimizer bias_optimizer = 8;
-  bool disable_sparse_parameter_updates = 9;
+  required bool disable_sparse_parameter_updates = 9;
 }
 
 enum EmbeddingReduction {
@@ -58,25 +58,24 @@ enum EmbeddingReduction {
 }
 
 message RobeZ {
-  uint64 num_lookups_per_token = 1;
-  uint64 lookup_size = 2;
-  uint64 log_embedding_block_size = 3;
-
-  EmbeddingReduction reduction = 4;
+  required uint64 num_lookups_per_token = 1;
+  required uint64 lookup_size = 2;
+  required uint64 log_embedding_block_size = 3;
+  required EmbeddingReduction reduction = 4;
 
   optional uint64 num_tokens_per_input = 5;
-  uint64 update_chunk_size = 6;
-  uint32 hash_seed = 7;
+  required uint64 update_chunk_size = 6;
+  required uint32 hash_seed = 7;
 
-  Parameter embedding_block = 8;
+  required Parameter embedding_block = 8;
 
   optional Optimizer embedding_block_optimizer = 9;
-  bool disable_sparse_parameter_updates = 10;
+  required bool disable_sparse_parameter_updates = 10;
 }
 
 message LayerNorm {
-  Parameter gamma = 1;
-  Parameter beta = 2;
+  required Parameter gamma = 1;
+  required Parameter beta = 2;
 
   optional Optimizer gamma_optimizer = 3;
   optional Optimizer beta_optimizer = 4;
@@ -87,7 +86,7 @@ message Concatenate {}
 message Tanh {}
 
 message Op {
-  string name = 1;
+  required string name = 1;
 
   oneof type {
     FullyConnected fully_connected = 2;
