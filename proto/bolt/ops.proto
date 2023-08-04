@@ -28,11 +28,11 @@ message FullyConnected {
   uint64 rebuild_hash_tables = 8;
   uint64 reconstruct_hash_functions = 9;
 
-  NeuronIndex neuron_index = 10;
+  optional NeuronIndex neuron_index = 10;
   bool index_frozen = 11;
 
-  Optimizer weight_optimizer = 12;
-  Optimizer bias_optimizer = 13;
+  optional Optimizer weight_optimizer = 12;
+  optional Optimizer bias_optimizer = 13;
   bool disable_sparse_parameter_updates = 14;
 }
 
@@ -46,8 +46,8 @@ message Embedding {
   Parameter embeddings = 5;
   Parameter bias = 6;
 
-  Optimizer embeddings_optimizer = 7;
-  Optimizer bias_optimizer = 8;
+  optional Optimizer embeddings_optimizer = 7;
+  optional Optimizer bias_optimizer = 8;
   bool disable_sparse_parameter_updates = 9;
 }
 
@@ -64,13 +64,13 @@ message RobeZ {
 
   EmbeddingReduction reduction = 4;
 
-  uint64 num_tokens_per_input = 5;
+  optional uint64 num_tokens_per_input = 5;
   uint64 update_chunk_size = 6;
   uint32 hash_seed = 7;
 
   Parameter embedding_block = 8;
 
-  Optimizer embedding_block_optimizer = 9;
+  optional Optimizer embedding_block_optimizer = 9;
   bool disable_sparse_parameter_updates = 10;
 }
 
@@ -78,8 +78,8 @@ message LayerNorm {
   Parameter gamma = 1;
   Parameter beta = 2;
 
-  Optimizer gamma_optimizer = 3;
-  Optimizer beta_optimizer = 4;
+  optional Optimizer gamma_optimizer = 3;
+  optional Optimizer beta_optimizer = 4;
 }
 
 message Concatenate {}
