@@ -332,13 +332,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("embedding_layer"));
 
   py::class_<BoltGraph, BoltGraphPtr>(nn_submodule, "Model")
-/*
- * ToDo(Pratik): We are exposing our bolt model from the model pipeline while
- * distributing UDT, which also exposes these BoltGraph APIs. Ideally, we should
- * pass the whole Model Pipeline to our DistributedTrainingWrapper and move
- * the whole distributed wrapper to a different folder. So, our
- * model pipeline symbol doesn't pass into the bolt folder.
- */
 #if THIRDAI_EXPOSE_ALL
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
