@@ -67,7 +67,11 @@ jobs:
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
           .\vcpkg install protobuf
         shell: powershell
-
+      - name: Install protobuf on linux
+        if: ${{ startsWith(runner.os, 'ubuntu') }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
@@ -98,7 +102,9 @@ jobs:
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
          
           CIBW_BEFORE_BUILD_LINUX: >
-            apt-get update -y && apt-get install -y protobuf-compiler
+            yum update -y && yum clean all &&
+            yum install openssl11-devel -y &&
+            yum install -y libxslt-devel libxml2-devel
           CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
           # Online compile cpython wheels (pytorch does this too), no big 
