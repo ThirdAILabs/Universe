@@ -28,7 +28,10 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+      - name: Install protobuf
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE
@@ -44,7 +47,11 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+  
+      - name: Install protobuf
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
@@ -60,6 +67,10 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
+      - name: Install protobuf
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug
