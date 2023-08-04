@@ -1,7 +1,6 @@
 import pytest
 import thirdai
-from thirdai import bolt_v2 as bolt
-from thirdai import hashing
+from thirdai import bolt, hashing
 
 from utils import gen_numpy_training_data
 

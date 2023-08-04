@@ -1,5 +1,5 @@
 import pytest
-from thirdai import bolt_v2 as bolt
+from thirdai import bolt
 
 from utils import gen_numpy_training_data
 

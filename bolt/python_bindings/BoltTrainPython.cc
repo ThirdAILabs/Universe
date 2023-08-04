@@ -1,9 +1,8 @@
-#include "BoltV2TrainPython.h"
+#include "BoltTrainPython.h"
 #include "CtrlCCheck.h"
 #include "DistributedCommunicationPython.h"
 #include "PyCallback.h"
 #include "PybindUtils.h"
-#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/callbacks/Callback.h>
@@ -40,7 +39,7 @@ void defineCallbacks(py::module_& train);
 
 void defineDistributedTrainer(py::module_& train);
 
-void createBoltV2TrainSubmodule(py::module_& module) {
+void createBoltTrainSubmodule(py::module_& module) {
   auto train = module.def_submodule("train");
 
   defineTrainer(train);

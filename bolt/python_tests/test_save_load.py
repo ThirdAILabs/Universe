@@ -1,163 +1,180 @@
+import re
+
 import numpy as np
 import pytest
-from thirdai import bolt
+import thirdai
+from thirdai import bolt, dataset
 
-from thirdai_python_package_tests.distributed_bolt_test.distributed_utils import (
-    compare_parameters_of_two_models,
-)
 from utils import gen_numpy_training_data
 
-pytestmark = [pytest.mark.unit]
+N_CLASSES = 100
 
 
-def get_train_config(epochs, batch_size):
-    return bolt.TrainConfig(learning_rate=0.001, epochs=epochs).silence()
+def build_model(n_classes):
+    vector_input = bolt.nn.Input(dim=n_classes)
 
+    hidden = bolt.nn.FullyConnected(
+        dim=200, sparsity=0.3, input_dim=n_classes, activation="relu"
+    )(vector_input)
 
-def get_eval_config():
-    return bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+    hidden = bolt.nn.LayerNorm()(hidden)
 
+    token_input = bolt.nn.Input(dim=n_classes)
 
-class ModelWithLayers:
-    def __init__(self, n_classes, sparse_model=True):
-        self.input_layer = bolt.nn.Input(dim=n_classes)
+    embedding = bolt.nn.RobeZ(
+        num_embedding_lookups=8,
+        lookup_size=8,
+        log_embedding_block_size=10,
+        update_chunk_size=8,
+        reduction="sum",
+    )(token_input)
 
-        if sparse_model:
-            self.hidden1 = bolt.nn.FullyConnected(
-                dim=2000, sparsity=0.15, activation="relu"
-            )(self.input_layer)
-        else:
-            self.hidden1 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
-                self.input_layer
-            )
+    embedding = bolt.nn.Tanh()(embedding)
 
-        if sparse_model:
-            self.hidden2 = bolt.nn.FullyConnected(
-                dim=2000, sparsity=0.15, activation="relu"
-            )(self.input_layer)
-        else:
-            self.hidden2 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
-                self.input_layer
-            )
+    concat = bolt.nn.Concatenate()([hidden, embedding])
 
-        self.concat = bolt.nn.Concatenate()([self.hidden1, self.hidden2])
+    output1 = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=200, activation="softmax"
+    )(hidden)
 
-        self.output = bolt.nn.FullyConnected(dim=n_classes, activation="softmax")(
-            self.concat
-        )
+    output2 = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=264, activation="sigmoid"
+    )(concat)
 
-        self.model = bolt.nn.Model(inputs=[self.input_layer], output=self.output)
-
-        self.model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
-
-    def train(self, data, labels, epochs):
-        self.model.train(
-            data, labels, train_config=get_train_config(epochs, batch_size=100)
-        )
-
-    def evaluate(self, data, labels):
-        return self.model.evaluate(data, labels, eval_config=get_eval_config())[0]
-
-
-def test_checkpoint_load_dag():
-    n_classes = 100
-
-    # We need dense model as in sparse the model tends to diverge after training.
-    # With dense model too, models tends to diverge when train for longer durations
-    # because of non-associative sum of float
-    # (https://stackoverflow.com/questions/10371857/is-floating-point-addition-and-multiplication-associative)
-    # and slight data-race while calcuating gradients. Thse two factors leads to
-    # different gradient during different training. Hence, model trained separately diverge.
-    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
-
-    model = ModelWithLayers(n_classes=n_classes, sparse_model=False)
-
-    # Train model and get accuracy.
-    model.train(data, labels, epochs=1)
-
-    # Save and load as new model.
-    checkpoint_loc = "./checkpointed_dag_pymodel"
-    model.model.checkpoint(filename=checkpoint_loc)
-
-    new_model = bolt.nn.Model.load(filename=checkpoint_loc)
-
-    model.model.train(
-        data, labels, train_config=get_train_config(epochs=1, batch_size=100)
-    )
-    new_model.train(
-        data, labels, train_config=get_train_config(epochs=1, batch_size=100)
-    )
-    compare_parameters_of_two_models(model.model, new_model, atol=1e-1)
-
-
-def test_save_load_dag():
-    n_classes = 100
-
-    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
-
-    model = ModelWithLayers(n_classes=n_classes)
-
-    # Train model and get accuracy.
-    model.train(data, labels, epochs=1)
-    test_metrics1 = model.evaluate(data, labels)
-    assert test_metrics1["categorical_accuracy"] >= 0.9
-
-    # Save and load as new model.
-    save_loc = "./saved_dag_pymodel"
-    model.model.save(filename=save_loc)
-    new_model = bolt.nn.Model.load(filename=save_loc)
-
-    # Verify accuracy matches.
-    test_metrics2 = new_model.evaluate(data, labels, eval_config=get_eval_config())[0]
-    assert test_metrics2["categorical_accuracy"] >= 0.9
-    assert (
-        test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
+    output3 = bolt.nn.FullyConnected(dim=n_classes, input_dim=64, activation="softmax")(
+        embedding
     )
 
-    # Verify we can train the new model. Ideally we could check accuracy can
-    # improve, but that is a bit flaky.
-    new_model.train(
-        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
-    )
-    test_metrics3 = new_model.evaluate(data, labels, eval_config=get_eval_config())[0]
-    assert test_metrics3["categorical_accuracy"] >= 0.9
+    labels = bolt.nn.Input(dim=n_classes)
 
+    loss1 = bolt.nn.losses.CategoricalCrossEntropy(activations=output1, labels=labels)
+    loss2 = bolt.nn.losses.BinaryCrossEntropy(activations=output2, labels=labels)
+    loss3 = bolt.nn.losses.CategoricalCrossEntropy(activations=output3, labels=labels)
 
-def test_save_fully_connected_layer_parameters():
-    n_classes = 100
-
-    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
-
-    model = ModelWithLayers(n_classes=n_classes)
-
-    # Train model and get accuracy.
-    model.train(data, labels, epochs=1)
-    test_metrics1 = model.evaluate(data, labels)
-    assert test_metrics1["categorical_accuracy"] >= 0.9
-
-    # Save and load as new model.
-    hidden1_save_loc = "./saved_dag_pymodel_hidden1"
-    hidden2_save_loc = "./saved_dag_pymodel_hidden2"
-    output_save_loc = "./saved_dag_pymodel_output"
-
-    model.hidden1.save_parameters(hidden1_save_loc)
-    model.hidden2.save_parameters(hidden2_save_loc)
-    model.output.save_parameters(output_save_loc)
-
-    new_model = ModelWithLayers(n_classes=n_classes)
-    new_model.hidden1.load_parameters(hidden1_save_loc)
-    new_model.hidden2.load_parameters(hidden2_save_loc)
-    new_model.output.load_parameters(output_save_loc)
-
-    # Verify accuracy matches.
-    test_metrics2 = new_model.evaluate(data, labels)
-    assert test_metrics2["categorical_accuracy"] >= 0.9
-    assert (
-        test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
+    model = bolt.nn.Model(
+        inputs=[vector_input, token_input],
+        outputs=[output1, output2, output3],
+        losses=[loss1, loss2, loss3],
     )
 
-    # Verify we can train the new model. Ideally we could check accuracy can
-    # improve, but that is a bit flaky.
-    new_model.train(data, labels, epochs=2)
-    test_metrics3 = new_model.evaluate(data, labels)
-    assert test_metrics3["categorical_accuracy"] >= 0.9
+    return model
+
+
+def check_metadata_file(model, save_filename):
+    summary = [
+        re.escape(line) for line in model.summary(print=False).split("\n") if line != ""
+    ]
+    expected_lines = [
+        re.escape("thirdai_version=" + thirdai.__version__),
+        "model_uuid=[0-9A-F]+",
+        "date_saved=.*",
+        "train_steps_before_save=32",
+        "model_summary=",
+        *summary,
+    ]
+
+    with open(save_filename + ".metadata") as file:
+        contents = file.readlines()
+
+        for line, expected in zip(contents, expected_lines):
+            assert re.match(expected, line.strip())
+
+
+def train_model(model, train_data, train_labels):
+    for x, y in zip(train_data, train_labels):
+        model.train_on_batch(x, y)
+        model.update_parameters(learning_rate=0.05)
+
+
+def evaluate_model(model, test_data, test_labels_np):
+    assert len(test_data) == 1
+
+    accs = []
+    # We constructed the test data to only contain 1 batch.
+    outputs = model.forward(test_data[0], use_sparsity=False)
+    for output in outputs:
+        predictions = np.argmax(output.activations, axis=1)
+        acc = np.mean(predictions == test_labels_np)
+        assert acc >= 0.8
+        accs.append(acc)
+    return accs
+
+
+def get_model():
+    model = build_model(N_CLASSES)
+    return model
+
+
+def get_data():
+    train_data, train_labels = gen_numpy_training_data(
+        n_classes=N_CLASSES, n_samples=2000
+    )
+
+    # We use the labels as tokens to be embedded by the embedding table so they
+    # are included as part of the inputs.
+    train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
+    train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
+    train_data = [x + y for x, y in zip(train_data, train_labels)]
+    train_labels = [x * 3 for x in train_labels]
+
+    test_data_np, test_labels_np = gen_numpy_training_data(
+        n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False
+    )
+
+    # We use the labels as tokens to be embedded by the embedding table so they
+    # are included as part of the inputs.
+    test_data = bolt.train.convert_datasets(
+        [
+            dataset.from_numpy(test_data_np, len(test_data_np)),
+            dataset.from_numpy(test_labels_np, len(test_labels_np)),
+        ],
+        dims=[N_CLASSES, N_CLASSES],
+    )
+
+    return train_data, train_labels, test_data, test_labels_np
+
+
+@pytest.mark.unit
+def test_bolt_save_load():
+    model = get_model()
+    train_data, train_labels, test_data, test_labels_np = get_data()
+
+    # Initial training/evaluation of the model.
+    train_model(model, train_data, train_labels)
+    initial_accs = evaluate_model(model, test_data, test_labels_np)
+
+    # Save and reload model
+    temp_save_path = "./temp_save_model"
+    model.save(temp_save_path)
+
+    check_metadata_file(model, temp_save_path)
+
+    model = bolt.nn.Model.load(temp_save_path)
+
+    # Check that the accuracies match
+    assert initial_accs == evaluate_model(model, test_data, test_labels_np)
+
+    # Check that the model can continue to be trained after save/load.
+    train_model(model, train_data, train_labels)
+    evaluate_model(model, test_data, test_labels_np)
+
+
+@pytest.mark.unit
+def test_bolt_model_porting():
+    model = get_model()
+    train_data, train_labels, test_data, test_labels_np = get_data()
+
+    # Initial training/evaluation of the model.
+    train_model(model, train_data, train_labels)
+    initial_accs = evaluate_model(model, test_data, test_labels_np)
+
+    # Port to new model
+    params = model.params()
+    model = bolt.nn.Model.from_params(params)
+
+    # Check that the accuracies match
+    assert initial_accs == evaluate_model(model, test_data, test_labels_np)
+
+    # Check that the model can continue to be trained after save/load.
+    train_model(model, train_data, train_labels)
+    evaluate_model(model, test_data, test_labels_np)

@@ -6,6 +6,6 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::train::python {
 
-void createBoltV2TrainSubmodule(py::module_& module);
+void createBoltTrainSubmodule(py::module_& module);
 
 }  // namespace thirdai::bolt::train::python

@@ -3,58 +3,64 @@ from thirdai import bolt
 
 from utils import gen_numpy_training_data
 
-BATCH_SIZE = 32
-LEARNING_RATE = 0.001
-ACCURACY_THRESHOLD = 0.95
-EPOCHS = 5
+N_CLASSES = 100
 
 
-def get_simple_model(num_classes, sparsity=1.0):
-    input_layer = bolt.nn.Input(dim=num_classes)
+def build_model():
+    input_layer = bolt.nn.Input(dim=N_CLASSES)
+
     hidden_layer = bolt.nn.FullyConnected(
-        dim=num_classes, activation="relu", sparsity=sparsity
+        dim=200,
+        input_dim=input_layer.dim(),
+        sparsity=0.4,
+        activation="relu",
     )(input_layer)
 
-    layer_norm_config = (
-        bolt.nn.LayerNormConfig.make()
-        .center(beta_regularizer=0.0025)
-        .scale(gamma_regularizer=0.9)
+    norm_layer = bolt.nn.LayerNorm()(hidden_layer)
+
+    output_layer = bolt.nn.FullyConnected(
+        dim=N_CLASSES,
+        input_dim=norm_layer.dim(),
+        activation="softmax",
+    )(norm_layer)
+
+    labels = bolt.nn.Input(dim=N_CLASSES)
+
+    loss = bolt.nn.losses.CategoricalCrossEntropy(
+        activations=output_layer, labels=labels
     )
 
-    normalization_layer = bolt.nn.LayerNormalization(
-        layer_norm_config=layer_norm_config
-    )(hidden_layer)
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
 
-    output_layer = bolt.nn.FullyConnected(dim=100, activation="softmax")(
-        normalization_layer
-    )
+    metric = bolt.train.metrics.CategoricalAccuracy(outputs=output_layer, labels=labels)
 
-    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
+    return model, metric
 
-    return model
+
+def get_data(n_classes):
+    x, y = gen_numpy_training_data(n_classes=n_classes)
+
+    x = bolt.train.convert_dataset(x, dim=n_classes)
+    y = bolt.train.convert_dataset(y, dim=n_classes)
+
+    return x, y
 
 
 @pytest.mark.unit
-def test_normalize_layer_activations():
-    model_with_normalization = get_simple_model(num_classes=100)
+def test_layer_norm():
+    model, metric = build_model()
 
-    train_data, train_labels = gen_numpy_training_data(
-        n_classes=100, n_samples=10000, batch_size_for_conversion=BATCH_SIZE
+    train_data = get_data(N_CLASSES)
+    test_data = get_data(N_CLASSES)
+
+    trainer = bolt.train.Trainer(model)
+
+    metrics = trainer.train(
+        train_data=train_data,
+        learning_rate=0.05,
+        epochs=5,
+        validation_data=test_data,
+        validation_metrics={"acc": metric},
     )
 
-    train_config = bolt.TrainConfig(
-        learning_rate=LEARNING_RATE, epochs=EPOCHS
-    ).silence()
-
-    model_with_normalization.train(
-        train_data=train_data, train_labels=train_labels, train_config=train_config
-    )
-
-    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
-
-    metrics = model_with_normalization.evaluate(
-        test_data=train_data, test_labels=train_labels, eval_config=eval_config
-    )
-
-    assert metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+    assert metrics["acc"][-1] >= 0.9  # Accuracy should be ~0.97-0.98.

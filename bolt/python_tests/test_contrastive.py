@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 from sklearn.metrics.pairwise import euclidean_distances
-from thirdai import bolt_v2 as bolt
-from thirdai import dataset
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
