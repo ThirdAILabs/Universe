@@ -63,7 +63,7 @@ class DlrmAttention final : public Op,
   autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
 
   autograd::ComputationPtr applyBinary(autograd::ComputationPtr fc_input,
-                                      autograd::ComputationPtr emb_input);
+                                       autograd::ComputationPtr emb_input);
 
  private:
   DlrmAttention() {}

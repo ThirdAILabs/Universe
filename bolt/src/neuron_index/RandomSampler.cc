@@ -67,8 +67,8 @@ proto::bolt::NeuronIndex* RandomSampler::toProto() const {
 
   auto* rand_index = index->mutable_random();
 
-  *rand_index->mutable_random_neurons()= {_rand_neurons.begin(),
-                                               _rand_neurons.end()};
+  *rand_index->mutable_random_neurons() = {_rand_neurons.begin(),
+                                           _rand_neurons.end()};
 
   return index;
 }
