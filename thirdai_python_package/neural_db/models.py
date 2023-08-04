@@ -303,9 +303,8 @@ class Mach(Model):
                 self.model.introduce_documents_on_data_source(
                     data_source=intro_documents,
                     strong_column_names=[intro_documents.strong_column],
-                    weak_column_names=[intro_documents.weak_column]
-                    if use_weak_columns
-                    else [],
+                    weak_column_names=[intro_documents.weak_column],
+                    fast_approximation=True,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
             learning_rate = 0.001

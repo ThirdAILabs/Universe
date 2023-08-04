@@ -298,7 +298,7 @@ class CSV(Document):
             for col_name, udt_col_type in get_udt_col_types(path).items():
                 if type(udt_col_type) == type(bolt.types.text()):
                     text_col_names.append(col_name)
-            strong_columns = text_col_names
+            strong_columns = []
             weak_columns = text_col_names
         elif strong_columns == None:
             strong_columns = []
