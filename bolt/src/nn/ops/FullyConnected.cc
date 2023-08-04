@@ -150,6 +150,8 @@ proto::bolt::Op* FullyConnected::toProto(bool with_optimizer) const {
   fc->set_rebuild_hash_tables(_rebuild_hash_tables);
   fc->set_reconstruct_hash_functions(_reconstruct_hash_functions);
 
+  op->set_allocated_fully_connected(fc);
+
   return op;
 }
 
@@ -203,7 +205,9 @@ void FullyConnected::registerModel(
 
 autograd::ComputationPtr FullyConnected::apply(
     const autograd::ComputationList& inputs) {
-  if (inputs.size() != 1) {
+  // Can have two inputs when loading a graph because of the labels if sparse,
+  // however this is added by the model later anyway so we can discard it here.
+  if (inputs.size() != 1 && inputs.size() != 2) {
     throw std::invalid_argument("FullyConnected op expects a single input.");
   }
 

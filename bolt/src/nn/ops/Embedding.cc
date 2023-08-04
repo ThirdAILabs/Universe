@@ -49,7 +49,7 @@ Embedding::Embedding(const std::string& name,
                      const proto::bolt::Embedding& emb_proto)
     : Op(name),
       _dim(emb_proto.dim()),
-      _input_dim(emb_proto.dim()),
+      _input_dim(emb_proto.input_dim()),
       _bias(emb_proto.use_bias()),
       _act_func(activationFromProto(emb_proto.activation())),
       _embeddings(parametersFromProto(emb_proto.embeddings())),

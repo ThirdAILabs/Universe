@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <fstream>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -445,6 +446,39 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
       model_proto.metadata().total_training_samples();
 
   return model;
+}
+
+void Model::saveProto(const std::string& filename, bool with_optimizer) const {
+  auto proto = toProto(with_optimizer);
+
+  std::ofstream output = dataset::SafeFileIO::ofstream(filename);
+  proto.SerializeToOstream(&output);
+}
+
+std::shared_ptr<Model> Model::loadProto(const std::string& filename) {
+  proto::bolt::Model proto;
+
+  std::ifstream input = dataset::SafeFileIO::ifstream(filename);
+  if (!proto.ParseFromIstream(&input)) {
+    throw std::invalid_argument("Error parsing protobuf archive.");
+  }
+
+  return Model::fromProto(proto);
+}
+
+std::string Model::serializeProto(bool with_optimizer) const {
+  auto proto = toProto(with_optimizer);
+  return proto.SerializeAsString();
+}
+
+std::shared_ptr<Model> Model::deserializeProto(const std::string& binary) {
+  proto::bolt::Model proto;
+
+  if (!proto.ParseFromString(binary)) {
+    throw std::invalid_argument("Error parsing protobuf archive.");
+  }
+
+  return Model::fromProto(proto);
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {

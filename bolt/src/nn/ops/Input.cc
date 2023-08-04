@@ -10,13 +10,8 @@
 
 namespace thirdai::bolt::nn::ops {
 
-std::string nextInputName() {
-  static uint32_t constructed = 0;
-  return "input_" + std::to_string(++constructed);
-}
-
 Input::Input(uint32_t dim, std::optional<uint32_t> nonzeros)
-    : Op(nextInputName()), _dim(dim), _nonzeros(nonzeros) {}
+    : Op(), _dim(dim), _nonzeros(nonzeros) {}
 
 autograd::ComputationPtr Input::make(uint32_t dim) {
   return autograd::Computation::make(
@@ -72,7 +67,7 @@ void Input::summary(std::ostream& summary,
                     const autograd::ComputationList& inputs,
                     const autograd::Computation* output) const {
   (void)inputs;
-  summary << "Input(" << name() << ") -> " << output->name();
+  summary << "Input: " << output->name() << " [dim=" << _dim << "]";
 }
 
 autograd::ComputationPtr Input::apply(const autograd::ComputationList& inputs) {

@@ -227,6 +227,14 @@ class Model : public std::enable_shared_from_this<Model> {
   static std::shared_ptr<Model> fromProto(
       const proto::bolt::Model& model_proto);
 
+  void saveProto(const std::string& filename, bool with_optimizer) const;
+
+  static std::shared_ptr<Model> loadProto(const std::string& filename);
+
+  std::string serializeProto(bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeProto(const std::string& binary);
+
   /**
    * Helper function to save the model to a stream.
    */
