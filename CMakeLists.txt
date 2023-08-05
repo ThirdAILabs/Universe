@@ -470,6 +470,7 @@ pybind11_add_module(
   bolt/python_bindings/PybindUtils.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/BoltTrainPython.cc
+  bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc

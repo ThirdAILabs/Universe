@@ -11,7 +11,7 @@ LEARNING_RATE = 0.0001
 
 
 @pytest.fixture
-def load_mnist_bolt_v2(download_mnist_dataset):
+def load_mnist_bolt(download_mnist_dataset):
     train_file, test_file = download_mnist_dataset
     train_x, train_y = dataset.load_bolt_svm_dataset(train_file, 250)
     train_x = bolt.train.convert_dataset(train_x, dim=784)
@@ -24,7 +24,7 @@ def load_mnist_bolt_v2(download_mnist_dataset):
     return (train_x, train_y), (test_x, test_y)
 
 
-def test_bolt_on_mnist(load_mnist_bolt_v2):
+def test_bolt_on_mnist(load_mnist_bolt):
     input_layer = bolt.nn.Input(dim=784)
 
     hidden_layer = bolt.nn.FullyConnected(
@@ -52,7 +52,7 @@ def test_bolt_on_mnist(load_mnist_bolt_v2):
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
-    train_data, test_data = load_mnist_bolt_v2
+    train_data, test_data = load_mnist_bolt
 
     trainer = bolt.train.Trainer(model)
 
