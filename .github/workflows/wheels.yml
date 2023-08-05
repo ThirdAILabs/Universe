@@ -40,7 +40,7 @@ jobs:
             os: macos-12
             archs: arm64
             deployment_target: "11.0"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DTHIRDAI_BUILD_PROTOBUF_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
 
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
