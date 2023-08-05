@@ -477,7 +477,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(
   thirdai
   PUBLIC proto
-         ${Protobuf_LIBRARIES}
+         protobuf::libprotobuf
          OpenMP::OpenMP_CXX
          spdlog::spdlog
          cereal::cereal
