@@ -35,7 +35,7 @@ def prepare_documents_test():
         @property
         def name(self) -> str:
             return self._identifier
-        
+
         @property
         def hash(self) -> str:
             return hash_string(self._identifier)
