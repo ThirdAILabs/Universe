@@ -81,4 +81,16 @@ template ValueColumnPtr<std::string> ValueColumn<std::string>::make(
 template ValueColumnPtr<int64_t> ValueColumn<int64_t>::make(
     std::vector<int64_t>&&);
 
+// This must be defined after the make() definitions since it uses make(),
+// otherwise we get an "explicit specialization after instantiation" error.
+// https://stackoverflow.com/questions/7774188/explicit-specialization-after-instantiation
+template <typename T>
+ColumnPtr ValueColumn<T>::permute(
+    const std::vector<size_t>& permutation) const {
+  std::optional<size_t> dim = _dimension.has_value()
+                                  ? std::make_optional(_dimension->dim)
+                                  : std::nullopt;
+  return make(permuteVector(_data, permutation), dim);
+}
+
 }  // namespace thirdai::data

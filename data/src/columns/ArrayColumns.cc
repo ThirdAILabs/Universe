@@ -2,6 +2,7 @@
 #include "ColumnUtils.h"
 #include <data/src/columns/Column.h>
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -93,6 +94,18 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
 
   return ArrayColumnPtr<float>(
       new ArrayColumn<float>(std::move(data), dimension));
+}
+
+// This must be defined after the make() definitions since it uses make(),
+// otherwise we get an "explicit specialization after instantiation" error.
+// https://stackoverflow.com/questions/7774188/explicit-specialization-after-instantiation
+template <typename T>
+ColumnPtr ArrayColumn<T>::permute(
+    const std::vector<size_t>& permutation) const {
+  std::optional<size_t> dim = _dimension.has_value()
+                                  ? std::make_optional(_dimension->dim)
+                                  : std::nullopt;
+  return make(permuteVector(_data, permutation), dim);
 }
 
 }  // namespace thirdai::data

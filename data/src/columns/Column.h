@@ -60,6 +60,11 @@ class Column {
   virtual void shuffle(const std::vector<size_t>& permutation) = 0;
 
   /**
+   * Creates a new column with the given permutation.
+   */
+  virtual ColumnPtr permute(const std::vector<size_t>& permutation) const = 0;
+
+  /**
    * Concatenates the column with another column and returns a new column. Moves
    * the values out of both of the original columns to avoid expensive copies.
    */

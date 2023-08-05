@@ -39,6 +39,8 @@ class ValueColumn : public ValueColumnBase<T> {
 
   void shuffle(const std::vector<size_t>& permutation) final;
 
+  ColumnPtr permute(const std::vector<size_t>& permutation) const final;
+
   ColumnPtr concat(ColumnPtr&& other) final;
 
   std::pair<ColumnPtr, ColumnPtr> split(size_t starting_offset) final;
