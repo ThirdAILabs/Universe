@@ -1,3 +1,5 @@
+find_package(Protobuf REQUIRED)
+
 set(THIRDAI_PROTO_DEFS
     hashing/hashing.proto
     hashtable/hashtable.proto

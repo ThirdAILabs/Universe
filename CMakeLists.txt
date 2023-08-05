@@ -207,7 +207,6 @@ set(THIRDAI_COMPILE_OPTIONS
     -Wno-unused-function
     -Wno-ignored-optimization-argument
     -Wno-psabi
-    -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
     $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
@@ -267,9 +266,13 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
-include(FindProtobuf)
-find_package(Protobuf REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIR})
+#include(FindProtobuf)
+#find_package(Protobuf REQUIRED)
+#include_directories(${Protobuf_INCLUDE_DIR})
+set(protobuf_BUILD_TESTS OFF)
+add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
+include_directories(deps/protobuf/src)
+include_directories(deps/protobuf/third_party/abseil-cpp)
 add_subdirectory(proto)
 
 # Turn off prometheus-cpp's testing build so that we don't try to build two
