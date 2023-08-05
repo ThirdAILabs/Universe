@@ -487,6 +487,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
   bolt/python_bindings/BoltV2NNPython.cc
+  bolt/python_bindings/BoltV2Compression.cc
   bolt/python_bindings/BoltV2TrainPython.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/Porting.cc
