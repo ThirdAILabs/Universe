@@ -15,6 +15,7 @@ from thirdai import bolt, demos, neural_db
 def prepare_documents_test():
     from thirdai.neural_db import Document, Reference
     from thirdai.neural_db import documents as docs
+    from thirdai.neural_db.utils import hash_string
 
     class MockDocument(Document):
         def __init__(self, identifier: str, size: int) -> None:
@@ -34,6 +35,10 @@ def prepare_documents_test():
         @property
         def name(self) -> str:
             return self._identifier
+        
+        @property
+        def hash(self) -> str:
+            return hash_string(self._identifier)
 
         # Expected strings have commas (delimiter) to test that the data source
         # converts it to proper CSV strings.
