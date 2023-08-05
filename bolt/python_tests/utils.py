@@ -2,7 +2,7 @@ import math
 import os
 
 import numpy as np
-from thirdai import bolt, dataset
+from thirdai import bolt, bolt_v2, dataset
 
 
 # Generates easy training data: the ground truth function is f(x_i) = i, where
@@ -101,9 +101,7 @@ def get_simple_concat_model(
     input_layer = bolt.nn.Input(dim=num_classes)
 
     hidden_layer_top = bolt.nn.FullyConnected(
-        dim=hidden_layer_top_dim,
-        sparsity=hidden_layer_top_sparsity,
-        activation="relu",
+        dim=hidden_layer_top_dim, sparsity=hidden_layer_top_sparsity, activation="relu"
     )(input_layer)
 
     hidden_layer_bottom = bolt.nn.FullyConnected(
@@ -146,23 +144,18 @@ def remove_files(files):
         os.remove(file)
 
 
-def build_simple_hidden_layer_model(
-    input_dim=10,
-    hidden_dim=10,
-    output_dim=10,
-):
-    input_layer = bolt.nn.Input(dim=input_dim)
+def build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10):
+    input_layer = bolt_v2.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=hidden_dim,
-        activation="relu",
-    )(input_layer)
+    hidden_layer = bolt_v2.nn.FullyConnected(dim=hidden_dim, activation="relu")(
+        input_layer
+    )
 
-    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation="softmax")(
+    output_layer = bolt_v2.nn.FullyConnected(dim=output_dim, activation="softmax")(
         hidden_layer
     )
 
-    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model = bolt_v2.nn.Model(inputs=[input_layer], output=output_layer)
 
     return model
 
@@ -181,9 +174,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
 
     input_layer = bolt.nn.Input(dim=num_classes)
     hidden_layer = bolt.nn.FullyConnected(
-        dim=hidden_layer_dim,
-        sparsity=sparsity,
-        activation="relu",
+        dim=hidden_layer_dim, sparsity=sparsity, activation="relu"
     )(input_layer)
     output_layer = bolt.nn.FullyConnected(dim=num_classes, activation="softmax")(
         hidden_layer
@@ -199,9 +190,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
     model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
     wrapper = bolt.DistributedTrainingWrapper(
-        model=model,
-        train_config=train_config,
-        worker_id=0,
+        model=model, train_config=train_config, worker_id=0
     )
     wrapper.set_datasets([train_data, train_labels])
     return wrapper
@@ -283,10 +272,7 @@ def get_compressed_weight_gradients(
 
 
 # Assumes that the model has only two layers
-def set_compressed_weight_gradients(
-    wrapped_model,
-    compressed_weight_grads,
-):
+def set_compressed_weight_gradients(wrapped_model, compressed_weight_grads):
     model = wrapped_model.model
     nodes_with_weight_gradients = [
         layer for layer in model.nodes() if hasattr(layer, "weight_gradients")
@@ -298,59 +284,80 @@ def set_compressed_weight_gradients(
             layer.weight_gradients.set(weight_gradient)
 
 
+def build_simple_model_for_compression(n_classes):
+    input_layer = bolt_v2.nn.Input(dim=n_classes)
+
+    output_layer = bolt_v2.nn.FullyConnected(
+        dim=n_classes, input_dim=input_layer.dim(), activation="softmax"
+    )(input_layer)
+
+    labels = bolt_v2.nn.Input(dim=n_classes)
+
+    loss = bolt_v2.nn.losses.CategoricalCrossEntropy(
+        activations=output_layer, labels=labels
+    )
+
+    model = bolt_v2.nn.Model(
+        inputs=[input_layer], outputs=[output_layer], losses=[loss]
+    )
+
+    return model
+
+
 def compressed_training(
     compression_scheme,
     compression_density,
     sample_population_size,
     learning_rate=0.002,
     n_classes=10,
-    hidden_dim=10,
     epochs=30,
     batch_size=64,
 ):
+    model = build_simple_model_for_compression(n_classes)
+
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=n_classes, n_samples=1000, convert_to_bolt_dataset=False
+        n_classes=n_classes, n_samples=10000, convert_to_bolt_dataset=False
     )
     test_data, test_labels = gen_numpy_training_data(
         n_classes=n_classes, n_samples=100, convert_to_bolt_dataset=False
     )
 
-    num_training_batches = math.ceil(len(train_data) / batch_size)
-
-    wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
-        train_data=train_data,
-        train_labels=train_labels,
-        sparsity=0.2,
-        num_classes=n_classes,
-        learning_rate=learning_rate,
-        hidden_layer_dim=hidden_dim,
-        batch_size=batch_size,
+    train_dataset = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(train_data, batch_size=batch_size), dim=n_classes
     )
 
-    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+    train_labels = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(train_labels, batch_size=batch_size), dim=n_classes
+    )
+
+    test_dataset = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(test_data, batch_size=batch_size), dim=n_classes
+    )
+
+    test_labels = bolt_v2.train.convert_dataset(
+        dataset.from_numpy(test_labels, batch_size=batch_size), dim=n_classes
+    )
+
     for epochs in range(epochs):
-        for batch_num in range(num_training_batches):
-            wrapped_model.compute_and_store_batch_gradients(batch_num)
-            compressed_weight_grads = get_compressed_weight_gradients(
-                wrapped_model,
-                compression_scheme=compression_scheme,
-                compression_density=compression_density,
-                seed_for_hashing=np.random.randint(100),
+        for x, y in zip(train_dataset, train_labels):
+            model.train_on_batch(x, y)
+            old_gradients = np.array(model.get_gradients())
+            compressed_weights = bolt_v2.compression.compress(
+                old_gradients,
+                compression_scheme,
+                compression_density,
+                seed_for_hashing=42,
                 sample_population_size=sample_population_size,
             )
-            set_compressed_weight_gradients(
-                wrapped_model,
-                compressed_weight_grads=compressed_weight_grads,
-            )
-            wrapped_model.update_parameters()
+            new_gradients = bolt_v2.compression.decompress(compressed_weights)
+            model.set_gradients(new_gradients)
+            model.update_parameters(learning_rate)
 
-    wrapped_model.finish_training()
-
-    model = wrapped_model.model
-    acc = model.evaluate(
-        test_data=dataset.from_numpy(test_data, batch_size=64),
-        test_labels=dataset.from_numpy(test_labels, batch_size=64),
-        eval_config=eval_config,
+    trainer = bolt_v2.train.Trainer(model)
+    validation_results = trainer.validate(
+        validation_data=[test_dataset, test_labels],
+        validation_metrics=["categorical_accuracy", "loss"],
     )
 
+    acc = validation_results["val_categorical_accuracy"][0]
     return acc
