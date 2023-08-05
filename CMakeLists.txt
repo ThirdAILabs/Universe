@@ -41,6 +41,8 @@ message("====================================")
 option(THIRDAI_REPORT_BUILD_STEP_TIMES
        "Report time using builtin for make/ninja compile-build steps" OFF)
 option(THIRDAI_BUILD_OPENSSL_FROM_SOURCE "Build OpenSSL from source" OFF)
+option(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE "Build Protobuf from source" OFF)
+
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
@@ -266,13 +268,18 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
-#include(FindProtobuf)
-#find_package(Protobuf REQUIRED)
-#include_directories(${Protobuf_INCLUDE_DIR})
-set(protobuf_BUILD_TESTS OFF)
-add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
-include_directories(deps/protobuf/src)
-include_directories(deps/protobuf/third_party/abseil-cpp)
+include(FindProtobuf)
+find_package(Protobuf REQUIRED)
+
+if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+  set(protobuf_BUILD_TESTS OFF)
+  add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
+  include_directories(deps/protobuf/src)
+  include_directories(deps/protobuf/third_party/abseil-cpp)
+else(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+  include_directories(${Protobuf_INCLUDE_DIR})
+endif()
+
 add_subdirectory(proto)
 
 # Turn off prometheus-cpp's testing build so that we don't try to build two
