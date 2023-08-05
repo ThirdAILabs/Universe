@@ -185,7 +185,7 @@ setup(
         "numpy",
         "typing_extensions",
         "requests",
-        "pandas>=1.2.0",
+        "pandas>=2.0.0",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
@@ -209,9 +209,9 @@ setup(
             "toml",
             "psutil",
             "transformers",
-            "pandas>=1.2.0",
+            "pandas>=2.0.0",
             "cryptography",
-            "tokenizers==0.11.6",
+            "tokenizers",
             "pyarrow",
             "prometheus_client",
             "gcsfs",
@@ -221,7 +221,6 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
-            "torch",
         ]
         + neural_db_deps,
         "benchmark": [
