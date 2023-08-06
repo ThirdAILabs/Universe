@@ -268,7 +268,7 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
 include(FindProtobuf)
-find_package(Protobuf REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
 
 if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
   set(protobuf_BUILD_TESTS OFF)
@@ -484,6 +484,8 @@ target_link_libraries(
   thirdai
   PUBLIC proto
          protobuf::libprotobuf
+         absl_log_internal_message 
+         absl_log_internal_check_op
          OpenMP::OpenMP_CXX
          spdlog::spdlog
          cereal::cereal
