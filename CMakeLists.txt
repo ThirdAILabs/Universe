@@ -484,8 +484,40 @@ target_link_libraries(
   thirdai
   PUBLIC proto
          protobuf::libprotobuf
-         absl_log_internal_message 
-         absl_log_internal_check_op
+         absl::absl_check
+         absl::absl_log
+         absl::algorithm
+         absl::base
+         absl::bind_front
+         absl::bits
+         absl::btree
+         absl::cleanup
+         absl::cord
+         absl::core_headers
+         absl::debugging
+         absl::die_if_null
+         absl::dynamic_annotations
+         absl::flags
+         absl::flat_hash_map
+         absl::flat_hash_set
+         absl::function_ref
+         absl::hash
+         absl::layout
+         absl::log_initialize
+         absl::log_severity
+         absl::memory
+         absl::node_hash_map
+         absl::node_hash_set
+         absl::optional
+         absl::span
+         absl::status
+         absl::statusor
+         absl::strings
+         absl::synchronization
+         absl::time
+         absl::type_traits
+         absl::utility
+         absl::variant
          OpenMP::OpenMP_CXX
          spdlog::spdlog
          cereal::cereal
