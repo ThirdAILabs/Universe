@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/LossMetric.h>
@@ -166,7 +167,9 @@ UDTMachClassifier::UDTMachClassifier(
       user_args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
 
   bool dissimilar_cutoff_distance =
-      user_args.get<float>("dissimilar_cutoff_distance", "float", 1);
+      user_args.get<float>("dissimilar_cutoff_distance", "float", 1.0);
+
+  std::cout << "DISSIMMILAR" << dissimilar_cutoff_distance << std::endl;
 
   _contrastive_model = utils::contrastiveModel(
       input_dim, hidden_dim, num_buckets, use_tanh, hidden_bias, output_bias,
@@ -212,26 +215,20 @@ py::object UDTMachClassifier::trainContrastive(
       response_and_labels_dataset_loader->loadAll(batch_size,
                                                   /* verbose= */ true);
 
-
   uint32_t input_dim = _contrastive_model->inputDims().at(0);
   uint32_t label_dim = _contrastive_model->labelDims().at(0);
 
-  auto query_dataset =
-      bolt::train::convertDatasets(query_old_dataset, {input_dim},
-                                   /* copy= */ false);
-
-  auto response_dataset = bolt::train::convertDatasets(
-      {response_and_labels_old_dataset[0]}, {input_dim},
+  auto input_datasets = bolt::train::convertDatasets(
+      {query_old_dataset[0], response_and_labels_old_dataset[0]},
+      {input_dim, input_dim},
       /* copy= */ false);
+
   auto label_dataset = bolt::train::convertDatasets(
       {response_and_labels_old_dataset[1]}, {label_dim},
       /* copy= */ false);
 
-  bolt::train::Dataset query_response_dataset = {query_dataset.at(0),
-                                                 response_dataset.at(0)};
-
   bolt::train::LabeledDataset final_labeled_dataset =
-      std::make_pair(query_response_dataset, label_dataset);
+      std::make_pair(input_datasets, label_dataset);
 
   return py::cast(trainer.train(
       final_labeled_dataset,
@@ -248,26 +245,27 @@ py::object UDTMachClassifier::trainContrastive(
 }
 
 void UDTMachClassifier::transferContrastiveWeights() {
-  // TODO(david) is this [1] index correct for the hidden layer?
-  auto contrastive_hidden_layer = bolt::nn::ops::FullyConnected::cast(
-      _contrastive_model->opExecutionOrder()[1]);
+  // _contrastive_model->opExecutionOrder() = emb_2, emb_2, fc_2, fc_2
+  auto contrastive_hidden_layer =
+      bolt::nn::ops::Embedding::cast(_contrastive_model->opExecutionOrder()[0]);
 
-  auto classifier_hidden_layer = bolt::nn::ops::FullyConnected::cast(
-      _classifier->model()->opExecutionOrder()[1]);
+  auto classifier_hidden_layer = bolt::nn::ops::Embedding::cast(
+      _classifier->model()->opExecutionOrder()[0]);
 
-  float* hidden_weights = contrastive_hidden_layer->kernel()->getWeights();
-  float* hidden_biases = contrastive_hidden_layer->kernel()->getBiases();
-  classifier_hidden_layer->kernel()->setWeights(hidden_weights);
-  classifier_hidden_layer->kernel()->setBiases(hidden_biases);
+  const float* hidden_weights = contrastive_hidden_layer->embeddingsPtr();
+  const float* hidden_biases = contrastive_hidden_layer->biasesPtr();
+
+  classifier_hidden_layer->setEmbeddings(hidden_weights);
+  classifier_hidden_layer->setBiases(hidden_biases);
 
   auto contrastive_output_layer = bolt::nn::ops::FullyConnected::cast(
       _contrastive_model->opExecutionOrder().back());
-
   auto classifier_output_layer = bolt::nn::ops::FullyConnected::cast(
       _classifier->model()->opExecutionOrder().back());
 
   float* output_weights = contrastive_output_layer->kernel()->getWeights();
   float* output_biases = contrastive_output_layer->kernel()->getBiases();
+
   classifier_output_layer->kernel()->setWeights(output_weights);
   classifier_output_layer->kernel()->setBiases(output_biases);
 }
