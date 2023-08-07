@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package proto.data;
+
+message CategoricalTemporal {
+  required string user_column = 1;
+  required string item_column = 2;
+  required string timestamp_column = 3;
+  required string output_column = 4;
+
+  required string tracker_key = 5;
+
+  required uint64 track_last_n = 6;
+  required bool should_update_history = 7;
+  required bool include_current_row = 8;
+  required int64 time_lag = 9;
+}

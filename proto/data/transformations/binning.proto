@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package proto.data;
+
+message Binning {
+  required string input_column = 1;
+  required string output_column = 2;
+
+  required float inclusive_min_value = 3;
+  required float exclusive_max_value = 4;
+  required float binsize = 5;
+  required uint32 num_bins = 6;
+}

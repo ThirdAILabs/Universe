@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package proto.data;
+
+message StringConcat {
+  repeated string input_columns = 1;
+  required string output_column = 2;
+  required string seperator = 3;
+}

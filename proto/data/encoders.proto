@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package proto.data;
+
+message NGramEncoder {
+  required uint32 n = 1;
+}
+
+message PairgramEncoder {}
+
+message TextEncoder {
+  oneof encoder {
+    NGramEncoder ngram = 1;
+    PairgramEncoder pairgram = 2;
+  }
+}
