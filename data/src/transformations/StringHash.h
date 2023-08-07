@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/string.hpp>
 #include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
@@ -22,20 +19,6 @@ class StringHash final : public Transformation {
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
-  // Private constructor for cereal.
-  StringHash()
-      : _input_column_name(),
-        _output_column_name(),
-        _output_range(0),
-        _seed(0) {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Transformation>(this), _input_column_name,
-            _output_column_name, _output_range, _seed);
-  }
-
   uint32_t hash(const std::string& str) const;
 
   std::string _input_column_name;
@@ -45,5 +28,3 @@ class StringHash final : public Transformation {
 };
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::StringHash)

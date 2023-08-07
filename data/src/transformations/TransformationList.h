@@ -28,24 +28,8 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static std::shared_ptr<TransformationList> load(const std::string& filename);
-
-  static std::shared_ptr<TransformationList> load_stream(
-      std::istream& input_stream);
-
  private:
   std::vector<TransformationPtr> _transformations;
-
-  // Private constructor for cereal.
-  TransformationList(){};
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 using TransformationListPtr = std::shared_ptr<TransformationList>;

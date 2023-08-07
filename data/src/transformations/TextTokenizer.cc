@@ -1,8 +1,4 @@
 #include "TextTokenizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
 
 namespace thirdai::data {
@@ -47,15 +43,4 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-template void TextTokenizer::serialize(cereal::BinaryInputArchive&);
-template void TextTokenizer::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void TextTokenizer::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column,
-          _output_column, _tokenizer, _encoder, _lowercase, _dim);
-}
-
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::TextTokenizer)

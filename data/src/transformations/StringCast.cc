@@ -1,8 +1,4 @@
 #include "StringCast.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
@@ -99,22 +95,6 @@ ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
   return ValueColumn<T>::make(std::move(rows));
 }
 
-template <typename T>
-template <class Archive>
-void CastToValue<T>::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _dim);
-}
-
-template void CastToValue<uint32_t>::serialize(cereal::BinaryInputArchive&);
-template void CastToValue<uint32_t>::serialize(cereal::BinaryOutputArchive&);
-
-template void CastToValue<float>::serialize(cereal::BinaryInputArchive&);
-template void CastToValue<float>::serialize(cereal::BinaryOutputArchive&);
-
-template void CastToValue<int64_t>::serialize(cereal::BinaryInputArchive&);
-template void CastToValue<int64_t>::serialize(cereal::BinaryOutputArchive&);
-
 template class CastToValue<uint32_t>;
 template class CastToValue<float>;
 template class CastToValue<int64_t>;
@@ -175,26 +155,7 @@ ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
 }
 
-template <typename T>
-template <class Archive>
-void CastToArray<T>::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _delimiter, _dim);
-}
-
-template void CastToArray<uint32_t>::serialize(cereal::BinaryInputArchive&);
-template void CastToArray<uint32_t>::serialize(cereal::BinaryOutputArchive&);
-
-template void CastToArray<float>::serialize(cereal::BinaryInputArchive&);
-template void CastToArray<float>::serialize(cereal::BinaryOutputArchive&);
-
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)

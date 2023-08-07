@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/memory.hpp>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
@@ -101,12 +99,6 @@ class State {
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_mach_index);
-  }
 };
 
 using StatePtr = std::shared_ptr<State>;

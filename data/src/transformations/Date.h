@@ -15,12 +15,6 @@ class Date final : public Transformation {
   std::string _input_column_name;
   std::string _output_column_name;
   std::string _format;
-
-  Date() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

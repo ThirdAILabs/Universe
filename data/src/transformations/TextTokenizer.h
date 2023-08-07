@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -26,12 +25,6 @@ class TextTokenizer final : public Transformation {
 
   bool _lowercase;
   size_t _dim;
-
-  TextTokenizer() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

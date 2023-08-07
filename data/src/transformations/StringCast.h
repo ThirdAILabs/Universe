@@ -31,12 +31,6 @@ class CastToValue final : public Transformation {
 
   struct Empty {};
   std::conditional_t<std::is_same_v<T, int64_t>, std::string, Empty> _format;
-
-  CastToValue() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 template <typename T>
@@ -56,12 +50,6 @@ class CastToArray final : public Transformation {
   std::string _output_column_name;
   char _delimiter;
   std::optional<size_t> _dim;
-
-  CastToArray() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 using StringToToken = CastToValue<uint32_t>;

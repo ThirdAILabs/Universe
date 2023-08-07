@@ -1,6 +1,4 @@
 #include "Date.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <exception>
@@ -64,15 +62,6 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, output);
 
   return columns;
-}
-
-template void Date::serialize(cereal::BinaryInputArchive&);
-template void Date::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void Date::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _format);
 }
 
 }  // namespace thirdai::data

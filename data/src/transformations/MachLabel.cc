@@ -1,6 +1,4 @@
 #include "MachLabel.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
 
@@ -48,15 +46,4 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-template void MachLabel::serialize(cereal::BinaryInputArchive&);
-template void MachLabel::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void MachLabel::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name);
-}
-
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::MachLabel)
