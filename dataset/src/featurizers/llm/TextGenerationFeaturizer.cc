@@ -24,7 +24,7 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
   }
 
   std::vector<std::vector<BoltVector>> data(5);
-  if(_context_featurizer.needPositionContext()){
+  if (_context_featurizer.needPositionContext()) {
     data.resize(6);
   }
 
@@ -63,26 +63,29 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
   uint32_t context_length = _context_featurizer.getLongRangeContextLength();
 
   for (uint32_t i = predict_start; i < tokens.size(); i += context_length) {
-      uint32_t end_index = std::min((i + context_length), static_cast<uint32_t>(tokens.size()));
+    uint32_t end_index =
+        std::min((i + context_length), static_cast<uint32_t>(tokens.size()));
 
-      for (uint32_t j = i; j < end_index; j++) {
-          BoltVector label = BoltVector::singleElementSparseVector(tokens[j]);
+    for (uint32_t j = i; j < end_index; j++) {
+      BoltVector label = BoltVector::singleElementSparseVector(tokens[j]);
 
-          // start index = i-1, since we maintain an offset of 1 with predict_start and i-1 is always >= 0
-          std::vector<BoltVector> featurized_vectors = {
-              prompt,
-              _context_featurizer.lrcContext(tokens, j, i-1),
-              _context_featurizer.ircContext(tokens, j, i-1),
-              _context_featurizer.srcContext(tokens, j, i-1),
-          };
+      // start index = i-1, since we maintain an offset of 1 with predict_start
+      // and i-1 is always >= 0
+      std::vector<BoltVector> featurized_vectors = {
+          prompt,
+          _context_featurizer.lrcContext(tokens, j, i - 1),
+          _context_featurizer.ircContext(tokens, j, i - 1),
+          _context_featurizer.srcContext(tokens, j, i - 1),
+      };
 
-          if (_context_featurizer.needPositionContext()) {
-              featurized_vectors.push_back(_context_featurizer.positionContext(tokens, j, i-1));
-          }
-
-          featurized_vectors.push_back(std::move(label));
-          vectors.push_back(featurized_vectors);
+      if (_context_featurizer.needPositionContext()) {
+        featurized_vectors.push_back(
+            _context_featurizer.positionContext(tokens, j, i - 1));
       }
+
+      featurized_vectors.push_back(std::move(label));
+      vectors.push_back(featurized_vectors);
+    }
   }
 
   return vectors;
@@ -105,11 +108,12 @@ BoltVector TextGenerationFeaturizer::promptContext(
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& prompt,
     const std::vector<uint32_t>& context) const {
-  std::vector<BoltVector> inference_sample = {promptContext(prompt), _context_featurizer.lrcContext(context),
-          _context_featurizer.ircContext(context),
-          _context_featurizer.srcContext(context)};
-  if(_context_featurizer.needPositionContext()){
-     inference_sample.push_back(_context_featurizer.positionContext(context));
+  std::vector<BoltVector> inference_sample = {
+      promptContext(prompt), _context_featurizer.lrcContext(context),
+      _context_featurizer.ircContext(context),
+      _context_featurizer.srcContext(context)};
+  if (_context_featurizer.needPositionContext()) {
+    inference_sample.push_back(_context_featurizer.positionContext(context));
   }
   return inference_sample;
 }
