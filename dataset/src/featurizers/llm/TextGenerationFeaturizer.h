@@ -64,8 +64,9 @@ using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
-                           uint32_t vocab_size)
-      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size) {}
+                           uint32_t vocab_size, bool include_position = false)
+      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size,
+                            include_position) {}
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& lines) final;

@@ -8,11 +8,12 @@ namespace thirdai::dataset {
 class TextContextFeaturizer {
  public:
   TextContextFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
-                        uint32_t vocab_size)
+                        uint32_t vocab_size, bool include_position = false)
       : _lrc_len(lrc_len),
         _irc_len(irc_len),
         _src_len(src_len),
-        _vocab_size(vocab_size) {}
+        _vocab_size(vocab_size),
+        _include_position(include_position) {}
 
   TextContextFeaturizer() {}
 
@@ -48,6 +49,7 @@ class TextContextFeaturizer {
   uint32_t _irc_len;
   uint32_t _src_len;
   uint32_t _vocab_size;
+  bool _include_position;
 
   friend class cereal::access;
   template <class Archive>

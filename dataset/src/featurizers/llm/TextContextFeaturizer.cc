@@ -40,7 +40,8 @@ BoltVector TextContextFeaturizer::srcContext(
 
   const uint32_t* context_start = tokens.data() + end_index - src_len;
 
-  BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
+  uint32_t alloc_len = _include_position ? _src_len + 1 : _src_len;
+  BoltVector vector(/* l= */ alloc_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
 
   // Zero pad if short range context length is greater than number of tokens. We
@@ -49,6 +50,9 @@ BoltVector TextContextFeaturizer::srcContext(
   std::fill_n(vector.active_neurons, padding_len, 0);
   std::copy(context_start, context_start + src_len,
             vector.active_neurons + padding_len);
+  if (_include_position) {
+    vector.active_neurons[_src_len] = _vocab_size + end_index;
+  }
   std::fill_n(vector.activations, vector.len, 1.0);
 
   return vector;
