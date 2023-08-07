@@ -60,18 +60,20 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = predict_start; i < tokens.size(); i++) {
-    BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
-    std::vector<BoltVector> featurized_vectors = {prompt, _context_featurizer.lrcContext(tokens, i),
-                       _context_featurizer.ircContext(tokens, i),
-                       _context_featurizer.srcContext(tokens, i),
-                       };
-    
-    if(_context_featurizer.needPositionContext()){
-      featurized_vectors.push_back(_context_featurizer.positionContext(tokens, i));
+  for (uint32_t i = predict_start; i < tokens.size(); i+=_context_featurizer.getLongRangeContextLength()) {
+    for(uint32_t j=0; j<_context_featurizer.getLongRangeContextLength()+1; j++){
+      BoltVector label = BoltVector::singleElementSparseVector(tokens[i+j]);
+      std::vector<BoltVector> featurized_vectors = {prompt, _context_featurizer.lrcContext(tokens, i+j, i),
+                        _context_featurizer.ircContext(tokens, i+j, i),
+                        _context_featurizer.srcContext(tokens, i+j, i),
+                        };
+      
+      if(_context_featurizer.needPositionContext()){
+        featurized_vectors.push_back(_context_featurizer.positionContext(tokens, i+j, i));
+      }
+      featurized_vectors.push_back(std::move(label));
+      vectors.push_back(featurized_vectors);
     }
-    featurized_vectors.push_back(std::move(label));
-    vectors.push_back(featurized_vectors);
   }
 
   return vectors;

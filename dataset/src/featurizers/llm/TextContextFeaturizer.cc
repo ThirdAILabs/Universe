@@ -4,10 +4,10 @@
 namespace thirdai::dataset {
 
 BoltVector TextContextFeaturizer::lrcContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t lrc_len = std::min(end_index, _lrc_len);
+    const std::vector<uint32_t>& tokens, uint32_t end_index, uint32_t start_index) const {
+  uint32_t lrc_len = std::min(end_index - start_index, _lrc_len);
 
-  const uint32_t* context_start = tokens.data() + end_index - lrc_len;
+  const uint32_t* context_start = tokens.data() + start_index + end_index - lrc_len;
 
   BoltVector vector(/* l= */ lrc_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
@@ -18,12 +18,12 @@ BoltVector TextContextFeaturizer::lrcContext(
 }
 
 BoltVector TextContextFeaturizer::ircContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t irc_len = std::min(end_index, _irc_len);
+    const std::vector<uint32_t>& tokens, uint32_t end_index, uint32_t start_index) const {
+  uint32_t irc_len = std::min(end_index - start_index, _irc_len);
 
   std::vector<uint32_t> irc_context =
       token_encoding::unigramPreservingPairgrams(
-          tokens.data() + end_index - irc_len, irc_len, _vocab_size);
+          tokens.data() + start_index + end_index - irc_len, irc_len, _vocab_size);
 
   BoltVector vector(/* l= */ irc_context.size(), /* is_dense= */ false,
                     /* has_gradient= */ false);
@@ -34,22 +34,22 @@ BoltVector TextContextFeaturizer::ircContext(
 }
 
 BoltVector TextContextFeaturizer::positionContext(
-  const std::vector<uint32_t>& tokens, uint32_t end_index) const {
+  const std::vector<uint32_t>& tokens, uint32_t end_index, uint32_t start_index) const {
     (void)tokens;
     BoltVector vector(/* l= */ 1, /* is_dense= */ false,
                   /* has_gradient= */ false);
-    std::fill_n(vector.active_neurons, vector.len, std::min(end_index, _lrc_len));
+    std::fill_n(vector.active_neurons, vector.len, std::min(end_index - start_index, _lrc_len));
     std::fill_n(vector.activations, vector.len, 1);
     return vector;
 }
 
 
 BoltVector TextContextFeaturizer::srcContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t src_len = std::min(end_index, _src_len);
+    const std::vector<uint32_t>& tokens, uint32_t end_index, uint32_t start_index) const {
+  uint32_t src_len = std::min(end_index - start_index, _src_len);
   uint32_t padding_len = _src_len - src_len;
 
-  const uint32_t* context_start = tokens.data() + end_index - src_len;
+  const uint32_t* context_start = tokens.data() + start_index + end_index - src_len;
 
   BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
