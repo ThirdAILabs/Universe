@@ -33,7 +33,8 @@ inline std::vector<T> permuteVector(const std::vector<T>& vector,
                                     const std::vector<size_t>& permutation) {
   std::exception_ptr permutation_err;
   std::vector<T> new_vector(permutation.size());
-#pragma omp parallel for default(none) shared(vector, permutation)
+#pragma omp parallel for default(none) \
+    shared(vector, permutation, permutation_err, new_vector)
   for (size_t i = 0; i < new_vector.size(); ++i) {
     if (permutation[i] >= vector.size()) {
       std::stringstream error_ss;
