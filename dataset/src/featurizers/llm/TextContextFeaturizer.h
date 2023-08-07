@@ -54,7 +54,7 @@ class TextContextFeaturizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_lrc_len, _irc_len, _src_len, _vocab_size);
+    archive(_lrc_len, _irc_len, _src_len, _vocab_size, _include_position);
   }
 };
 
