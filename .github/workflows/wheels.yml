@@ -108,7 +108,9 @@ jobs:
             ./configure && 
             make &&
             make install && 
-            ldconfig
+            ldconfig && 
+            cd .. &&
+            rm -rf protobuf
           CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
           # Online compile cpython wheels (pytorch does this too), no big 
