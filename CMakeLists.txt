@@ -268,7 +268,7 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
 include(FindProtobuf)
-find_package(Protobuf CONFIG REQUIRED)
+find_package(Protobuf REQUIRED)
 
 if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
   set(protobuf_BUILD_TESTS OFF)
@@ -484,40 +484,6 @@ target_link_libraries(
   thirdai
   PUBLIC proto
          protobuf::libprotobuf
-         absl::absl_check
-         absl::absl_log
-         absl::algorithm
-         absl::base
-         absl::bind_front
-         absl::bits
-         absl::btree
-         absl::cleanup
-         absl::cord
-         absl::core_headers
-         absl::debugging
-         absl::die_if_null
-         absl::dynamic_annotations
-         absl::flags
-         absl::flat_hash_map
-         absl::flat_hash_set
-         absl::function_ref
-         absl::hash
-         absl::layout
-         absl::log_initialize
-         absl::log_severity
-         absl::memory
-         absl::node_hash_map
-         absl::node_hash_set
-         absl::optional
-         absl::span
-         absl::status
-         absl::statusor
-         absl::strings
-         absl::synchronization
-         absl::time
-         absl::type_traits
-         absl::utility
-         absl::variant
          OpenMP::OpenMP_CXX
          spdlog::spdlog
          cereal::cereal

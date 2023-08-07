@@ -103,12 +103,12 @@ jobs:
             yum install -y libxslt-devel libxml2-devel &&
             git clone https://github.com/protocolbuffers/protobuf --recursive && 
             cd protobuf/ && 
-            mkdir build && 
-            cd build && 
-            cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=14 -Dprotobuf_ABSL_PROVIDER=module -DABSL_PROPAGATE_CXX_STD=ON -Dprotobuf_BUILD_TESTS=OFF .. &&            
-            cmake --build . --parallel 20 && 
-            cmake --install .
-
+            git checkout tags/v3.19.3 &&
+            ./autogen.sh &&
+            ./configure && 
+            make &&
+            make install && 
+            ldconfig
           CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
           # Online compile cpython wheels (pytorch does this too), no big 
