@@ -267,15 +267,16 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
-include(FindProtobuf)
-find_package(Protobuf REQUIRED)
 
 if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+  message("BUILDING PROTOBUF FROM SOURCE")
   set(protobuf_BUILD_TESTS OFF)
   add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
   include_directories(deps/protobuf/src)
   include_directories(deps/protobuf/third_party/abseil-cpp)
 else(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+  include(FindProtobuf)
+  find_package(Protobuf REQUIRED)
   include_directories(${Protobuf_INCLUDE_DIR})
 endif()
 
