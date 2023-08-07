@@ -67,6 +67,42 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
   // phrases (or vice versa) and it is difficult to validate all combinations.
 }
 
+ColdStartTextAugmentation::ColdStartTextAugmentation(
+    const proto::data::ColdStart& cold_start)
+    : _strong_column_names(cold_start.strong_columns().begin(),
+                           cold_start.strong_columns().end()),
+      _weak_column_names(cold_start.weak_columns().begin(),
+                         cold_start.weak_columns().end()),
+      _label_column_name(cold_start.label_column()),
+      _output_column_name(cold_start.output_column()),
+      // _weak_min_len(col),
+      // _weak_max_len(config.weak_max_len),
+      // _weak_chunk_len(config.weak_chunk_len),
+      // _weak_sample_num_words(config.weak_sample_num_words),
+      _weak_sample_reps(cold_start.weak_sample_reps()),
+      // _strong_max_len(config.strong_max_len),
+      // _strong_sample_num_words(config.strong_sample_num_words),
+      _seed(cold_start.seed()) {
+  if (cold_start.has_weak_min_len()) {
+    _weak_min_len = cold_start.weak_min_len();
+  }
+  if (cold_start.has_weak_max_len()) {
+    _weak_max_len = cold_start.weak_max_len();
+  }
+  if (cold_start.has_weak_chunk_len()) {
+    _weak_chunk_len = cold_start.has_weak_chunk_len();
+  }
+  if (cold_start.has_weak_sample_num_words()) {
+    _weak_sample_num_words = cold_start.weak_sample_num_words();
+  }
+  if (cold_start.has_strong_max_len()) {
+    _strong_max_len = cold_start.strong_max_len();
+  }
+  if (cold_start.has_strong_sample_num_words()) {
+    _strong_sample_num_words = cold_start.strong_sample_num_words();
+  }
+}
+
 void ColdStartTextAugmentation::validateGreaterThanZero(
     std::optional<uint32_t> parameter, const std::string& parameter_name) {
   if (parameter && parameter.value() <= 0) {

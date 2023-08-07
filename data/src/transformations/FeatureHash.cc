@@ -18,6 +18,13 @@ FeatureHash::FeatureHash(std::vector<std::string> input_columns,
       _output_indices_column(std::move(output_indices_column)),
       _output_values_column(std::move(output_values_column)) {}
 
+FeatureHash::FeatureHash(const proto::data::FeatureHash& feature_hash)
+    : _hash_range(feature_hash.hash_range()),
+      _input_columns(feature_hash.input_columns().begin(),
+                     feature_hash.input_columns().end()),
+      _output_indices_column(feature_hash.output_indices_column()),
+      _output_values_column(feature_hash.output_values_column()) {}
+
 ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
   (void)state;
 
@@ -66,6 +73,19 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
 
   return ColumnMap({{_output_indices_column, indices_col},
                     {_output_values_column, values_col}});
+}
+
+proto::data::Transformation* FeatureHash::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* feature_hash = transformation->mutable_feature_hash();
+
+  *feature_hash->mutable_input_columns() = {_input_columns.begin(),
+                                            _input_columns.end()};
+  feature_hash->set_output_indices_column(_output_indices_column);
+  feature_hash->set_output_values_column(_output_values_column);
+  feature_hash->set_hash_range(_hash_range);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

@@ -19,6 +19,19 @@ StringIDLookup::StringIDLookup(std::string input_column_name,
       _max_vocab_size(max_vocab_size),
       _delimiter(delimiter) {}
 
+StringIDLookup::StringIDLookup(
+    const proto::data::StringIDLookup& string_id_lookup)
+    : _input_column_name(string_id_lookup.input_column()),
+      _output_column_name(string_id_lookup.output_column()),
+      _vocab_key(string_id_lookup.vocab_key()) {
+  if (string_id_lookup.has_max_vocab_size()) {
+    _max_vocab_size = string_id_lookup.max_vocab_size();
+  }
+  if (string_id_lookup.has_delimiter()) {
+    _delimiter = string_id_lookup.delimiter();
+  }
+}
+
 ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
   auto strings = columns.getValueColumn<std::string>(_input_column_name);
 

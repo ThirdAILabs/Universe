@@ -1,5 +1,10 @@
 #include "TextTokenizer.h"
 #include <data/src/columns/ArrayColumns.h>
+#include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/blocks/text/WordpieceTokenizer.h>
+#include <proto/tokenizers.pb.h>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -14,6 +19,45 @@ TextTokenizer::TextTokenizer(std::string input_column,
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
       _dim(dim) {}
+
+TextTokenizer::TextTokenizer(const proto::data::TextTokenizer& text)
+    : _input_column(text.input_column()),
+      _output_column(text.output_column()),
+      _lowercase(text.lowercase()),
+      _dim(text.dim()) {
+  switch (text.tokenizer().tokenizer_case()) {
+    case proto::data::Tokenizer::kWordpiece:
+      _tokenizer = std::make_shared<dataset::WordpieceTokenizer>(
+          text.tokenizer().wordpiece());
+      break;
+    case proto::data::Tokenizer::kSplit:
+      _tokenizer = dataset::NaiveSplitTokenizer::make(
+          text.tokenizer().split().delimiter());
+      break;
+    case proto::data::Tokenizer::kWordPunct:
+      _tokenizer = dataset::WordPunctTokenizer::make();
+      break;
+    case proto::data::Tokenizer::kCharKgram:
+      _tokenizer =
+          dataset::CharKGramTokenizer::make(text.tokenizer().char_kgram().k());
+      break;
+    default:
+      throw std::invalid_argument(
+          "Invalid text tokenizer specified in fromProto.");
+  }
+
+  switch (text.encoder().encoder_case()) {
+    case proto::data::TextEncoder::kNgram:
+      _encoder = dataset::NGramEncoder::make(text.encoder().ngram().n());
+      break;
+    case proto::data::TextEncoder::kPairgram:
+      _encoder = dataset::PairGramEncoder::make();
+      break;
+    default:
+      throw std::invalid_argument(
+          "Invalid text encoder specified in fromProto.");
+  }
+}
 
 ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   (void)state;

@@ -9,6 +9,10 @@ MachLabel::MachLabel(std::string input_column_name,
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)) {}
 
+MachLabel::MachLabel(const proto::data::MachLabel& mach_label)
+    : _input_column_name(mach_label.input_column()),
+      _output_column_name(mach_label.output_column()) {}
+
 ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   auto entities_column = columns.getArrayColumn<uint32_t>(_input_column_name);
 

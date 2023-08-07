@@ -4,6 +4,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/Datasets.h>
+#include <proto/transformations.pb.h>
 #include <algorithm>
 #include <memory>
 
@@ -13,6 +14,8 @@ class TransformationList final : public Transformation {
  public:
   explicit TransformationList(std::vector<TransformationPtr> transformations)
       : _transformations(std::move(transformations)) {}
+
+  explicit TransformationList(const proto::data::Transformation_List& t_list);
 
   static auto make(std::vector<TransformationPtr> transformations) {
     return std::make_shared<TransformationList>(std::move(transformations));

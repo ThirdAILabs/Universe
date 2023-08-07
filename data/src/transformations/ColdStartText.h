@@ -131,6 +131,8 @@ class ColdStartTextAugmentation final : public Transformation {
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = global_random::nextSeed());
 
+  explicit ColdStartTextAugmentation(const proto::data::ColdStart& cold_start);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

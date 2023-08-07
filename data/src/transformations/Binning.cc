@@ -3,6 +3,15 @@
 
 namespace thirdai::data {
 
+BinningTransformation::BinningTransformation(
+    const proto::data::Binning& binning)
+    : _input_column_name(binning.input_column()),
+      _output_column_name(binning.output_column()),
+      _inclusive_min_value(binning.inclusive_min_value()),
+      _exclusive_max_value(binning.exclusive_max_value()),
+      _binsize(binning.binsize()),
+      _num_bins(binning.num_bins()) {}
+
 ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
   (void)state;
 

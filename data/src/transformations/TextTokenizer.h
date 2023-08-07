@@ -15,6 +15,8 @@ class TextTokenizer final : public Transformation {
       bool lowercase = false,
       size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
 
+  explicit TextTokenizer(const proto::data::TextTokenizer& text);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

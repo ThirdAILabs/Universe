@@ -21,6 +21,18 @@ CategoricalTemporal::CategoricalTemporal(
       _include_current_row(include_current_row),
       _time_lag(time_lag) {}
 
+CategoricalTemporal::CategoricalTemporal(
+    const proto::data::CategoricalTemporal& cat_temp)
+    : _user_column(cat_temp.user_column()),
+      _item_column(cat_temp.item_column()),
+      _timestamp_column(cat_temp.timestamp_column()),
+      _output_column(cat_temp.output_column()),
+      _tracker_key(cat_temp.tracker_key()),
+      _track_last_n(cat_temp.track_last_n()),
+      _should_update_history(cat_temp.should_update_history()),
+      _include_current_row(cat_temp.include_current_row()),
+      _time_lag(cat_temp.time_lag()) {}
+
 ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto user_col = columns.getValueColumn<std::string>(_user_column);
   auto item_col = columns.getArrayColumn<uint32_t>(_item_column);

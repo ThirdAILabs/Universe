@@ -16,6 +16,8 @@ class StringHash final : public Transformation {
         _output_range(output_range),
         _seed(seed) {}
 
+  explicit StringHash(const proto::data::StringHash& string_hash);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

@@ -9,6 +9,8 @@ class Date final : public Transformation {
   Date(std::string input_column_name, std::string output_column_name,
        std::string format = "%Y-%m-%d");
 
+  explicit Date(const proto::data::Date& date);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

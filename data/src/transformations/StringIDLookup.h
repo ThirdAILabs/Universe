@@ -10,6 +10,8 @@ class StringIDLookup final : public Transformation {
                  std::string vocab_key, std::optional<size_t> max_vocab_size,
                  std::optional<char> delimiter);
 
+  explicit StringIDLookup(const proto::data::StringIDLookup& string_id_lookup);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

@@ -19,6 +19,11 @@ Date::Date(std::string input_column_name, std::string output_column_name,
       _output_column_name(std::move(output_column_name)),
       _format(std::move(format)) {}
 
+Date::Date(const proto::data::Date& date)
+    : _input_column_name(date.input_column()),
+      _output_column_name(date.output_column()),
+      _format(date.format()) {}
+
 ColumnMap Date::apply(ColumnMap columns, State& state) const {
   (void)state;
 

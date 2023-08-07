@@ -5,6 +5,12 @@
 
 namespace thirdai::data {
 
+StringConcat::StringConcat(const proto::data::StringConcat& string_concat)
+    : _input_column_names(string_concat.input_columns().begin(),
+                          string_concat.input_columns().end()),
+      _output_column_name(string_concat.output_column()),
+      _seperator(string_concat.seperator()) {}
+
 ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   (void)state;
 

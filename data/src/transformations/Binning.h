@@ -1,7 +1,6 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
-#include <proto/transformations.pb.h>
 #include <exception>
 #include <optional>
 #include <stdexcept>
@@ -24,6 +23,8 @@ class BinningTransformation final : public Transformation {
         _exclusive_max_value(exclusive_max_value),
         _binsize((exclusive_max_value - inclusive_min_value) / num_bins),
         _num_bins(num_bins) {}
+
+  explicit BinningTransformation(const proto::data::Binning& binning);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

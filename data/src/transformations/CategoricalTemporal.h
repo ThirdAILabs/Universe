@@ -12,6 +12,9 @@ class CategoricalTemporal final : public Transformation {
                       bool should_update_history, bool include_current_row,
                       int64_t time_lag);
 
+  explicit CategoricalTemporal(
+      const proto::data::CategoricalTemporal& cat_temp);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

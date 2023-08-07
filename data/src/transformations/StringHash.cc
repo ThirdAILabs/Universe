@@ -5,6 +5,15 @@
 
 namespace thirdai::data {
 
+StringHash::StringHash(const proto::data::StringHash& string_hash)
+    : _input_column_name(string_hash.input_column()),
+      _output_column_name(string_hash.output_column()),
+      _seed(string_hash.seed()) {
+  if (string_hash.has_hash_range()) {
+    _output_range = string_hash.hash_range();
+  }
+}
+
 ColumnMap StringHash::apply(ColumnMap columns, State& state) const {
   (void)state;
 
