@@ -105,7 +105,7 @@ jobs:
             cd protobuf/ && 
             git checkout tags/v3.19.3 &&
             ./autogen.sh &&
-            ./configure --disable-shared && 
+            ./configure && 
             make &&
             make install && 
             ldconfig && 
