@@ -28,6 +28,8 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   std::vector<TransformationPtr> _transformations;
 };

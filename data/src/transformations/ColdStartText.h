@@ -133,6 +133,8 @@ class ColdStartTextAugmentation final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
   std::vector<std::string> augmentMapInput(const automl::MapInput& document);
 
   /**

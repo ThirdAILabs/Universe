@@ -18,6 +18,8 @@ class StringHash final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   uint32_t hash(const std::string& str) const;
 

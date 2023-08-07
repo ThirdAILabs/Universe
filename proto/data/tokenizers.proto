@@ -5,7 +5,7 @@ package proto.data;
 message WordpieceTokenizer {
   message Entry {
     required uint64 id = 1;
-    repeated uint32 str = 2;
+    repeated uint32 chars = 2;
   }
 
   repeated Entry tokens = 1;
@@ -13,13 +13,13 @@ message WordpieceTokenizer {
 }
 
 message SplitTokenizer {
-  required char delimiter = 1;
+  required uint32 delimiter = 1;
 }
 
 message WordPunctTokenizer {}
 
 message CharKGramTokenizer {
-  required uint32_t k = 1;
+  required uint32 k = 1;
 }
 
 message Tokenizer {

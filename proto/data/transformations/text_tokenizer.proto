@@ -2,8 +2,8 @@ syntax = "proto2";
 
 package proto.data;
 
-import "data.encoders";
-import "data.tokenizers";
+import "encoders.proto";
+import "tokenizers.proto";
 
 message TextTokenizer {
   required string input_column = 1;

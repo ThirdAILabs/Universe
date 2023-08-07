@@ -33,4 +33,16 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* StringConcat::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* string_concat = transformation->mutable_string_concat();
+
+  *string_concat->mutable_input_columns() = {_input_column_names.begin(),
+                                             _input_column_names.end()};
+  string_concat->set_output_column(_output_column_name);
+  string_concat->set_seperator(_seperator);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

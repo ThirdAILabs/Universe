@@ -7,6 +7,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -85,6 +86,12 @@ class TabularHashedFeatures : public Transformation {
     column_map.setColumn(_output_column_name, output_column);
 
     return column_map;
+  }
+
+  proto::data::Transformation* toProto() const final {
+    throw std::invalid_argument(
+        "TabularHashFeatures will be removed soon and toProto is thus not "
+        "implemented.");
   }
 
  private:

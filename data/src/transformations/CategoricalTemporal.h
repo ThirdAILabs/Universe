@@ -14,6 +14,8 @@ class CategoricalTemporal final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   std::string _user_column;
   std::string _item_column;

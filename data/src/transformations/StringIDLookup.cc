@@ -58,4 +58,23 @@ ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* StringIDLookup::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* string_lookup = transformation->mutable_string_id_lookup();
+
+  string_lookup->set_input_column(_input_column_name);
+  string_lookup->set_output_column(_output_column_name);
+  string_lookup->set_vocab_key(_vocab_key);
+
+  if (_max_vocab_size) {
+    string_lookup->set_max_vocab_size(*_max_vocab_size);
+  }
+
+  if (_delimiter) {
+    string_lookup->set_delimiter(*_delimiter);
+  }
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

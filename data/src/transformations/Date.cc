@@ -64,4 +64,15 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* Date::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* date = transformation->mutable_date();
+
+  date->set_input_column(_input_column_name);
+  date->set_output_column(_output_column_name);
+  date->set_format(_format);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

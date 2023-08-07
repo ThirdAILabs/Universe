@@ -18,6 +18,8 @@ class StringConcat final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   std::vector<std::string> _input_column_names;
   std::string _output_column_name;

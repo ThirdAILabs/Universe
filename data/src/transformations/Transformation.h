@@ -2,6 +2,7 @@
 
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/State.h>
+#include <proto/transformations.pb.h>
 #include <memory>
 
 namespace thirdai::data {
@@ -27,6 +28,8 @@ class Transformation {
    * columns.
    */
   virtual ColumnMap apply(ColumnMap columns, State& state) const = 0;
+
+  virtual proto::data::Transformation* toProto() const = 0;
 
   ColumnMap applyStateless(ColumnMap columns) const {
     State state;

@@ -2,6 +2,7 @@
 
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
+#include <proto/string_cast.pb.h>
 #include <string>
 #include <type_traits>
 
@@ -20,10 +21,14 @@ class CastToValue final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   T parse(const std::string& row) const;
 
   ColumnPtr makeColumn(std::vector<T>&& rows) const;
+
+  proto::data::StringCast::TargetType protoTargetType() const;
 
   std::string _input_column_name;
   std::string _output_column_name;
@@ -41,10 +46,14 @@ class CastToArray final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   T parse(const std::string& item) const;
 
   ColumnPtr makeColumn(std::vector<std::vector<T>>&& rows) const;
+
+  proto::data::StringCast::TargetType protoTargetType() const;
 
   std::string _input_column_name;
   std::string _output_column_name;

@@ -184,4 +184,22 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
   return wordpieces;
 }
 
+proto::data::Tokenizer* WordpieceTokenizer::toProto() const {
+  proto::data::Tokenizer* tokenizer = new proto::data::Tokenizer();
+
+  auto* word_piece = tokenizer->mutable_wordpiece();
+
+  for (size_t i = 0; i < _id_to_token.size(); i++) {
+    auto* entry = word_piece->add_tokens();
+    entry->set_id(i);
+    for (char c : _id_to_token[i]) {
+      entry->add_chars(c);
+    }
+  }
+
+  word_piece->set_lowercase(_to_lower);
+
+  return tokenizer;
+}
+
 }  // namespace thirdai::dataset

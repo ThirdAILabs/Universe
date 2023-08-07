@@ -44,4 +44,18 @@ std::optional<uint32_t> BinningTransformation::getBin(float value) const {
   return (value - _inclusive_min_value) / _binsize;
 }
 
+proto::data::Transformation* BinningTransformation::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* binning = transformation->mutable_binning();
+
+  binning->set_input_column(_input_column_name);
+  binning->set_output_column(_output_column_name);
+  binning->set_inclusive_min_value(_inclusive_min_value);
+  binning->set_exclusive_max_value(_exclusive_max_value);
+  binning->set_binsize(_binsize);
+  binning->set_num_bins(_num_bins);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

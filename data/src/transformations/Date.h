@@ -11,6 +11,8 @@ class Date final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   std::string _input_column_name;
   std::string _output_column_name;

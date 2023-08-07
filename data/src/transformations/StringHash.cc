@@ -33,4 +33,20 @@ uint32_t StringHash::hash(const std::string& str) const {
   return hash;
 }
 
+proto::data::Transformation* StringHash::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* string_hash = transformation->mutable_string_hash();
+
+  string_hash->set_input_column(_input_column_name);
+  string_hash->set_output_column(_output_column_name);
+
+  if (_output_range) {
+    string_hash->set_hash_range(*_output_range);
+  }
+
+  string_hash->set_seed(_seed);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

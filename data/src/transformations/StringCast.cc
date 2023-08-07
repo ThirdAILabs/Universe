@@ -1,13 +1,16 @@
 #include "StringCast.h"
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <proto/string_cast.pb.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace thirdai::data {
 
@@ -95,6 +98,46 @@ ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
   return ValueColumn<T>::make(std::move(rows));
 }
 
+template <typename T>
+proto::data::Transformation* CastToValue<T>::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* cast = transformation->mutable_string_cast();
+
+  cast->set_target(protoTargetType());
+
+  cast->set_input_column(_input_column_name);
+  cast->set_output_column(_output_column_name);
+
+  if (_dim) {
+    cast->set_dim(*_dim);
+  }
+
+  if constexpr (std::is_same_v<decltype(_format), std::string>) {
+    cast->set_format(_format);
+  }
+
+  return transformation;
+}
+
+template <>
+proto::data::StringCast::TargetType CastToValue<uint32_t>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TOKEN;
+}
+
+template <>
+proto::data::StringCast::TargetType CastToValue<float>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_DECIMAL;
+}
+
+template <>
+proto::data::StringCast::TargetType CastToValue<int64_t>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TIMESTAMP;
+}
+
 template class CastToValue<uint32_t>;
 template class CastToValue<float>;
 template class CastToValue<int64_t>;
@@ -153,6 +196,37 @@ float CastToArray<float>::parse(const std::string& row) const {
 template <typename T>
 ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
+}
+
+template <typename T>
+proto::data::Transformation* CastToArray<T>::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* cast = transformation->mutable_string_cast();
+
+  cast->set_target(protoTargetType());
+
+  cast->set_input_column(_input_column_name);
+  cast->set_output_column(_output_column_name);
+  cast->set_delimiter(_delimiter);
+
+  if (_dim) {
+    cast->set_dim(*_dim);
+  }
+
+  return transformation;
+}
+
+template <>
+proto::data::StringCast::TargetType CastToArray<uint32_t>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TOKEN;
+}
+
+template <>
+proto::data::StringCast::TargetType CastToArray<float>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_DECIMAL;
 }
 
 template class CastToArray<uint32_t>;

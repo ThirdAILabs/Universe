@@ -16,6 +16,6 @@ message StringCast {
   required string output_column = 3;
 
   optional uint64 dim = 4;
-  optional char delimiter = 5;
+  optional uint32 delimiter = 5;
   optional string format = 6;
 }

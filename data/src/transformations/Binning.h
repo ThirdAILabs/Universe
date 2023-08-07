@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/transformations.pb.h>
 #include <exception>
 #include <optional>
 #include <stdexcept>
@@ -25,6 +26,8 @@ class BinningTransformation final : public Transformation {
         _num_bins(num_bins) {}
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  proto::data::Transformation* toProto() const final;
 
  private:
   std::optional<uint32_t> getBin(float value) const;

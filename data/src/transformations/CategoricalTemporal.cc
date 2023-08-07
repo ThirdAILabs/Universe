@@ -92,4 +92,22 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* CategoricalTemporal::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* categorical_temporal = transformation->mutable_categorical_temporal();
+
+  categorical_temporal->set_user_column(_user_column);
+  categorical_temporal->set_item_column(_item_column);
+  categorical_temporal->set_timestamp_column(_timestamp_column);
+  categorical_temporal->set_output_column(_output_column);
+  categorical_temporal->set_tracker_key(_tracker_key);
+
+  categorical_temporal->set_track_last_n(_track_last_n);
+  categorical_temporal->set_should_update_history(_should_update_history);
+  categorical_temporal->set_include_current_row(_include_current_row);
+  categorical_temporal->set_time_lag(_time_lag);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

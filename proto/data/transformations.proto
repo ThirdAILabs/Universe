@@ -2,4 +2,35 @@ syntax = "proto2";
 
 package proto.data;
 
+import "binning.proto";
+import "categorical_temporal.proto";
+import "cold_start.proto";
+import "date.proto";
+import "feature_hash.proto";
+import "mach_label.proto";
+import "string_cast.proto";
+import "string_concat.proto";
+import "string_hash.proto";
+import "string_id_lookup.proto";
+import "text_tokenizer.proto";
 
+message Transformation {
+  message List {
+    repeated Transformation transformations = 1;
+  }
+
+  oneof type {
+    Binning binning = 1;
+    CategoricalTemporal categorical_temporal = 2;
+    ColdStart cold_start = 3;
+    Date date = 4;
+    FeatureHash feature_hash = 5;
+    MachLabel mach_label = 6;
+    StringCast string_cast = 7;
+    StringConcat string_concat = 8;
+    StringHash string_hash = 9;
+    StringIDLookup string_id_lookup = 10;
+    TextTokenizer text_tokenizer = 11;
+    List list = 12;
+  }
+}

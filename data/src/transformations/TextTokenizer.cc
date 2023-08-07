@@ -43,4 +43,18 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* TextTokenizer::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* text = transformation->mutable_text_tokenizer();
+
+  text->set_input_column(_input_column);
+  text->set_output_column(_output_column);
+  text->set_allocated_tokenizer(_tokenizer->toProto());
+  text->set_allocated_encoder(_encoder->toProto());
+  text->set_lowercase(_lowercase);
+  text->set_dim(_dim);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

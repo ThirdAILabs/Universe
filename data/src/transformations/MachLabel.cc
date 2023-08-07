@@ -46,4 +46,14 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* MachLabel::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* mach_label = transformation->mutable_mach_label();
+
+  mach_label->set_input_column(_input_column_name);
+  mach_label->set_output_column(_output_column_name);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data

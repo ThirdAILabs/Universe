@@ -395,4 +395,41 @@ std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
   return augmentSingleRow(strong_text, weak_text);
 }
 
+proto::data::Transformation* ColdStartTextAugmentation::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* cold_start = transformation->mutable_cold_start();
+
+  *cold_start->mutable_strong_columns() = {_strong_column_names.begin(),
+                                           _strong_column_names.end()};
+  *cold_start->mutable_weak_columns() = {_weak_column_names.begin(),
+                                         _weak_column_names.end()};
+  cold_start->set_label_column(_label_column_name);
+  cold_start->set_output_column(_output_column_name);
+
+  if (_weak_min_len) {
+    cold_start->set_weak_min_len(*_weak_min_len);
+  }
+  if (_weak_max_len) {
+    cold_start->set_weak_max_len(*_weak_max_len);
+  }
+  if (_weak_chunk_len) {
+    cold_start->set_weak_chunk_len(*_weak_chunk_len);
+  }
+  if (_weak_sample_num_words) {
+    cold_start->set_weak_sample_num_words(*_weak_sample_num_words);
+  }
+  cold_start->set_weak_sample_reps(_weak_sample_reps);
+
+  if (_strong_max_len) {
+    cold_start->set_strong_max_len(*_strong_max_len);
+  }
+  if (_strong_sample_num_words) {
+    cold_start->set_strong_sample_num_words(*_strong_sample_num_words);
+  }
+  cold_start->set_seed(_seed);
+
+  return transformation;
+}
+
 }  // namespace thirdai::data
