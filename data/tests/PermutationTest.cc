@@ -16,15 +16,16 @@ TEST(Permutationtest, RandomOneToManyPermutation) {
   // Make value column {0, 1, 2, ..., 99}
   std::vector<uint32_t> value_column_data(100);
   std::iota(value_column_data.begin(), value_column_data.end(), 0);
-  auto orig_val_col = ValueColumn<uint32_t>::make(std::move(value_column_data));
+  auto orig_val_col = ValueColumn<uint32_t>::make(std::move(value_column_data),
+                                                  /* dim= */ std::nullopt);
 
   // Make array column {{0, 1}, {1, 2}, ..., {99, 100}}
   std::vector<std::vector<uint32_t>> array_column_data(100);
   for (uint32_t i = 0; i < 100; i++) {
     array_column_data[i] = {i, i + 1};
   }
-  auto orig_arr_col =
-      ArrayColumn<uint32_t>::make(std::move(array_column_data), std::nullopt);
+  auto orig_arr_col = ArrayColumn<uint32_t>::make(std::move(array_column_data),
+                                                  /* dim= */ std::nullopt);
 
   // Make permutation, each position in the original columns map to 10 positions
   // in the permuted column.
