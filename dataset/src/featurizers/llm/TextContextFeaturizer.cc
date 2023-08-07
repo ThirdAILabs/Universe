@@ -33,6 +33,17 @@ BoltVector TextContextFeaturizer::ircContext(
   return vector;
 }
 
+BoltVector TextContextFeaturizer::positionContext(
+  const std::vector<uint32_t>& tokens, uint32_t end_index) const {
+    (void)tokens;
+    BoltVector vector(/* l= */ 1, /* is_dense= */ false,
+                  /* has_gradient= */ false);
+    std::fill_n(vector.active_neurons, vector.len, std::min(end_index, _lrc_len));
+    std::fill_n(vector.activations, vector.len, 1);
+    return vector;
+}
+
+
 BoltVector TextContextFeaturizer::srcContext(
     const std::vector<uint32_t>& tokens, uint32_t end_index) const {
   uint32_t src_len = std::min(end_index, _src_len);

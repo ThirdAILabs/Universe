@@ -24,6 +24,9 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
   }
 
   std::vector<std::vector<BoltVector>> data(5);
+  if(_context_featurizer.needPositionContext()){
+    data.resize(6);
+  }
 
   for (auto& vectors : featurized_samples) {
     for (auto& sample : vectors) {
@@ -59,11 +62,16 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
 
   for (uint32_t i = predict_start; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
-
-    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, i),
+    std::vector<BoltVector> featurized_vectors = {prompt, _context_featurizer.lrcContext(tokens, i),
                        _context_featurizer.ircContext(tokens, i),
                        _context_featurizer.srcContext(tokens, i),
-                       std::move(label)});
+                       };
+    
+    if(_context_featurizer.needPositionContext()){
+      featurized_vectors.push_back(_context_featurizer.positionContext(tokens, i));
+    }
+    featurized_vectors.push_back(std::move(label));
+    vectors.push_back(featurized_vectors);
   }
 
   return vectors;
@@ -86,9 +94,13 @@ BoltVector TextGenerationFeaturizer::promptContext(
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& prompt,
     const std::vector<uint32_t>& context) const {
-  return {promptContext(prompt), _context_featurizer.lrcContext(context),
+  std::vector<BoltVector> inference_sample = {promptContext(prompt), _context_featurizer.lrcContext(context),
           _context_featurizer.ircContext(context),
           _context_featurizer.srcContext(context)};
+  if(_context_featurizer.needPositionContext()){
+     inference_sample.push_back(_context_featurizer.positionContext(context));
+  }
+  return inference_sample;
 }
 
 std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(

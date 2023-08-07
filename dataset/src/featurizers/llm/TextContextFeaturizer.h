@@ -7,12 +7,12 @@ namespace thirdai::dataset {
 
 class TextContextFeaturizer {
  public:
-  TextContextFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
-                        uint32_t vocab_size)
+  TextContextFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len, uint32_t vocab_size, bool need_position_context=false)
       : _lrc_len(lrc_len),
         _irc_len(irc_len),
         _src_len(src_len),
-        _vocab_size(vocab_size) {}
+        _vocab_size(vocab_size),
+        _needs_position_context(need_position_context) {}
 
   TextContextFeaturizer() {}
 
@@ -43,16 +43,31 @@ class TextContextFeaturizer {
   BoltVector srcContext(const std::vector<uint32_t>& tokens,
                         uint32_t end_index) const;
 
+  
+  BoltVector positionContext(const std::vector<uint32_t>& tokens) const{
+    return positionContext(tokens, tokens.size());
+  }
+
+  // Returns the positional context before end_index represented as 
+  // unigrams.
+  BoltVector positionContext(const std::vector<uint32_t>& tokens,
+                        uint32_t end_index) const;
+  
+  bool needPositionContext() const {
+    return _needs_position_context;
+  }
+
  private:
   uint32_t _lrc_len;
   uint32_t _irc_len;
   uint32_t _src_len;
   uint32_t _vocab_size;
+  bool _needs_position_context;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_lrc_len, _irc_len, _src_len, _vocab_size);
+    archive(_lrc_len, _irc_len, _src_len, _vocab_size, _needs_position_context);
   }
 };
 
