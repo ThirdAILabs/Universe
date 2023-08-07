@@ -93,7 +93,7 @@ class Reference:
         self._context_fn = lambda radius: document.context(element_id, radius)
         self._score = 0
         self._source_id = document.hash
-        self._row_id = 0
+        self._row_id = element_id
 
     @property
     def id(self):
@@ -252,7 +252,6 @@ class DocumentManager:
         doc, start_id = self._get_doc_and_start_id(element_id)
         doc_ref = doc.reference(element_id - start_id)
         doc_ref._id = element_id
-        doc_ref._row_id = element_id - start_id
         doc_ref._upvote_ids = [start_id + uid for uid in doc_ref._upvote_ids]
         return doc_ref
 
