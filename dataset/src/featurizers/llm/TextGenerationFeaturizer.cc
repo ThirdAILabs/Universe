@@ -60,21 +60,29 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = predict_start; i < tokens.size(); i+=_context_featurizer.getLongRangeContextLength()) {
-    for(uint32_t j=0; j<_context_featurizer.getLongRangeContextLength()+1; j++){
-      BoltVector label = BoltVector::singleElementSparseVector(tokens[i+j]);
+  uint32_t context_length = _context_featurizer.getLongRangeContextLength();
 
-      std::vector<BoltVector> featurized_vectors = {prompt, _context_featurizer.lrcContext(tokens, i+j, i),
-                        _context_featurizer.ircContext(tokens, i+j, i),
-                        _context_featurizer.srcContext(tokens, i+j, i),
-                        };
-      
-      if(_context_featurizer.needPositionContext()){
-        featurized_vectors.push_back(_context_featurizer.positionContext(tokens, i+j, i));
+  for (uint32_t i = predict_start; i < tokens.size(); i += context_length) {
+      uint32_t end_index = std::min((i + context_length), static_cast<uint32_t>(tokens.size()));
+
+      for (uint32_t j = i; j < end_index; j++) {
+          BoltVector label = BoltVector::singleElementSparseVector(tokens[j]);
+
+          // start index = i-1, since we maintain an offset of 1 with predict_start and i-1 is always >= 0
+          std::vector<BoltVector> featurized_vectors = {
+              prompt,
+              _context_featurizer.lrcContext(tokens, j, i-1),
+              _context_featurizer.ircContext(tokens, j, i-1),
+              _context_featurizer.srcContext(tokens, j, i-1),
+          };
+
+          if (_context_featurizer.needPositionContext()) {
+              featurized_vectors.push_back(_context_featurizer.positionContext(tokens, j, i-1));
+          }
+
+          featurized_vectors.push_back(std::move(label));
+          vectors.push_back(featurized_vectors);
       }
-      featurized_vectors.push_back(std::move(label));
-      vectors.push_back(featurized_vectors);
-    }
   }
 
   return vectors;
