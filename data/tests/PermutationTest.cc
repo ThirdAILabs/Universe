@@ -12,7 +12,7 @@
 
 namespace thirdai::data::tests {
 
-TEST(Permutationtest, RandomOneToManyPermutation) {
+TEST(PermutationTest, RandomOneToManyPermutation) {
   // Make value column {0, 1, 2, ..., 99}
   std::vector<uint32_t> value_column_data(100);
   std::iota(value_column_data.begin(), value_column_data.end(), 0);

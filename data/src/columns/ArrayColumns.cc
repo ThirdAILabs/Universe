@@ -102,10 +102,8 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
 template <typename T>
 ColumnPtr ArrayColumn<T>::permute(
     const std::vector<size_t>& permutation) const {
-  std::optional<size_t> dim = _dimension.has_value()
-                                  ? std::make_optional(_dimension->dim)
-                                  : std::nullopt;
-  return make(permuteVector(_data, permutation), dim);
+  auto new_data = permuteVector(_data, permutation);
+  return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), _dimension));
 }
 
 }  // namespace thirdai::data

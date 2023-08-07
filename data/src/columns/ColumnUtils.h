@@ -49,7 +49,11 @@ inline std::vector<T> permuteVector(const std::vector<T>& vector,
 
     new_vector[i] = vector[permutation[i]];
   }
-  std::rethrow_exception(permutation_err);
+  if (permutation_err) {
+    std::rethrow_exception(permutation_err);
+  }
+
+  return new_vector;
 }  // namespace thirdai::data
 
 template <typename T>
