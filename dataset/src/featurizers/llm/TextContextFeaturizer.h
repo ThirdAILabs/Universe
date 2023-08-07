@@ -48,7 +48,9 @@ class TextContextFeaturizer {
   BoltVector srcContext(const std::vector<uint32_t>& tokens) const {
     return srcContext(tokens, tokens.size(),0);
   }
-
+  BoltVector srcContext(const std::vector<uint32_t>& tokens, uint32_t end_index) const {
+    return srcContext(tokens, end_index,0);
+  }
 
   // Returns up to the last src_len tokens before end_index represented as
   // unigrams.
@@ -58,6 +60,10 @@ class TextContextFeaturizer {
   
   BoltVector positionContext(const std::vector<uint32_t>& tokens) const{
     return positionContext(tokens, tokens.size(), 0);
+  }
+
+  BoltVector positionContext(const std::vector<uint32_t>& tokens, uint32_t end_index) const{
+    return positionContext(tokens, end_index, 0);
   }
 
   // Returns the positional context before end_index represented as 

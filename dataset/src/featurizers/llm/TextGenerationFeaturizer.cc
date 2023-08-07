@@ -63,6 +63,7 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
   for (uint32_t i = predict_start; i < tokens.size(); i+=_context_featurizer.getLongRangeContextLength()) {
     for(uint32_t j=0; j<_context_featurizer.getLongRangeContextLength()+1; j++){
       BoltVector label = BoltVector::singleElementSparseVector(tokens[i+j]);
+
       std::vector<BoltVector> featurized_vectors = {prompt, _context_featurizer.lrcContext(tokens, i+j, i),
                         _context_featurizer.ircContext(tokens, i+j, i),
                         _context_featurizer.srcContext(tokens, i+j, i),
