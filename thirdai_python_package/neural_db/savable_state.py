@@ -70,6 +70,8 @@ class State:
 
         # make directory
         directory = Path(location)
+        if directory.exists():
+            shutil.rmtree(directory)  # This will not delete read-only files
         os.mkdir(directory)
         on_progress(1 / total_steps)
 
