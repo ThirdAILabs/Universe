@@ -59,7 +59,10 @@ class SupDataSource(PyDataSource):
 
     def _csv_line(self, query: str, label: str):
         df = pd.DataFrame(
-            {self.query_col: [query], self.doc_manager.id_column: [label]}
+            {
+                self.query_col: [query],
+                self.doc_manager.id_column: [label],
+            }
         )
         return df.to_csv(header=None, index=None).strip("\n")
 
@@ -96,7 +99,9 @@ class NeuralDB:
 
     @staticmethod
     def from_checkpoint(
-        checkpoint_path: str, user_id: str = "user", on_progress: Callable = no_op
+        checkpoint_path: str,
+        user_id: str = "user",
+        on_progress: Callable = no_op,
     ):
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
@@ -313,7 +318,12 @@ class NeuralDB:
         else:
             return 7
 
-    def supervised_train(self, data: List[Sup], learning_rate=0.0001, epochs=3):
+    def supervised_train(
+        self,
+        data: List[Sup],
+        learning_rate=0.0001,
+        epochs=3,
+    ):
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
