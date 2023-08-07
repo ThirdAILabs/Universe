@@ -8,7 +8,7 @@ from typing import Callable
 from .documents import DocumentManager
 from .loggers import Logger
 from .models import Model
-import shutil
+
 
 def pickle_to(obj: object, filepath: Path):
     with open(filepath, "wb") as pkl:
