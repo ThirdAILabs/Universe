@@ -250,6 +250,14 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['model'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
