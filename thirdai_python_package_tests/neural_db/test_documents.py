@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from thirdai import bolt, demos
+from thirdai import bolt, demos, neural_db
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -403,3 +403,27 @@ def test_udt_cold_start_on_csv_document():
     os.remove(catalog_file)
 
     assert metrics["train_categorical_accuracy"][-1] > 0.5
+
+
+@pytest.mark.unit
+def test_csv_doc_autotuning():
+    filename = "simple.csv"
+    with open(filename, "w") as file:
+        file.write(
+            f"""col1,col2,col3,col4,col5\n
+            lorem,2,3.0,How vexingly quick daft zebras jump!,2021-02-01\n
+            ipsum,5,6,"Sphinx of black quartz, judge my vow.",2022-02-01\n
+            dolor,8,9,The quick brown fox jumps over the lazy dog,2023-02-01\n
+            """
+        )
+
+    doc = neural_db.CSV(filename)
+
+    assert doc.id_column == "thirdai_index"
+    assert doc.strong_columns == ["col4"]
+    assert doc.weak_columns == []
+    assert doc.reference_columns == ["col1", "col2", "col3", "col4", "col5"]
+
+    assert "lorem" in doc.reference(0).text
+
+    os.remove(filename)

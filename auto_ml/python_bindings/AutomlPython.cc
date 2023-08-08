@@ -262,20 +262,6 @@ void createModelsSubmodule(py::module_& module) {
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 }
 
-void createDistributedPreprocessingWrapper(py::module_& module) {
-  auto distributed_preprocessing_submodule =
-      module.def_submodule("distributed_preprocessing");
-  distributed_preprocessing_submodule.def(
-      "preprocess_cold_start_train_source",
-      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
-      py::arg("strong_column_names"), py::arg("weak_column_names"),
-      py::arg("dataset_factory"), py::arg("metadata"));
-
-  py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
-      distributed_preprocessing_submodule, "ColdStartMetaData")
-      .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
-}
-
 void createUDTTypesSubmodule(py::module_& module) {
   auto udt_types_submodule = module.def_submodule("types");
 
