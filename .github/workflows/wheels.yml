@@ -105,8 +105,7 @@ jobs:
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
             yum install -y libxslt-devel libxml2-devel &&
-            ls &&
-            ./bin/build_protobuf.sh
+            sh ./bin/build_protobuf.sh
           CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
           # Online compile cpython wheels (pytorch does this too), no big 
