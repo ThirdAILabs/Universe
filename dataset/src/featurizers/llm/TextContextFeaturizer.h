@@ -18,31 +18,33 @@ class TextContextFeaturizer {
   TextContextFeaturizer() {}
 
   BoltVector lrcContext(const std::vector<uint32_t>& tokens) const {
-    return lrcContext(tokens, tokens.size());
+    return lrcContext(tokens, 0, tokens.size());
   }
 
   // Returns up to the last lrc_len tokens before end_index represented as
   // unigrams.
   BoltVector lrcContext(const std::vector<uint32_t>& tokens,
-                        uint32_t end_index) const;
+                        uint32_t start_index, uint32_t end_index) const;
 
   BoltVector ircContext(const std::vector<uint32_t>& tokens) const {
-    return ircContext(tokens, tokens.size());
+    return ircContext(tokens, 0, tokens.size());
   }
 
   // Returns up to the last irc_len tokens before end_index represented as
   // pairgrams.
   BoltVector ircContext(const std::vector<uint32_t>& tokens,
-                        uint32_t end_index) const;
+                        uint32_t start_index, uint32_t end_index) const;
 
   BoltVector srcContext(const std::vector<uint32_t>& tokens) const {
-    return srcContext(tokens, tokens.size());
+    return srcContext(tokens, 0, tokens.size());
   }
 
   // Returns up to the last src_len tokens before end_index represented as
   // unigrams.
   BoltVector srcContext(const std::vector<uint32_t>& tokens,
-                        uint32_t end_index) const;
+                        uint32_t start_index, uint32_t end_index) const;
+
+  size_t contextSize() const { return _lrc_len; }
 
  private:
   uint32_t _lrc_len;

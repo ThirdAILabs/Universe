@@ -81,96 +81,79 @@ std::vector<uint32_t> expectedPairgrams(std::vector<uint32_t> tokens) {
 }
 
 TEST(TextGenerationFeaturizerTest, Featurization) {
-  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6"})"};
+  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6 7 8"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
       // Prompt input
-      {{0}, {0}, {0}, {0}, {0}},
+      {{0}, {0}, {0}, {0}, {0}, {0}},
       //  LRC context input
-      {{1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      {{1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}, {6}, {6, 7}},
       // IRC context input
       {
           {1},
           expectedPairgrams({1, 2}),
           expectedPairgrams({1, 2, 3}),
           expectedPairgrams({2, 3, 4}),
-          expectedPairgrams({3, 4, 5}),
+          {6},
+          expectedPairgrams({6, 7}),
       },
       // SRC context input
-      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}},
+      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {0, 6}, {6, 7}},
       // Labels
-      {{2}, {3}, {4}, {5}, {6}}};
-
-  checkDataFeaturization(phrases, expected_indices);
-}
-
-TEST(TextGenerationFeaturizerTest, FeaturizationWithContext) {
-  std::vector<std::string> phrases = {
-      R"({"context": "1 2", "target": "3 4 5 6"})"};
-
-  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      // Prompt input
-      {{0}, {0}, {0}},
-      //  LRC context input
-      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
-      // IRC context input
-      {
-          expectedPairgrams({1, 2, 3}),
-          expectedPairgrams({2, 3, 4}),
-          expectedPairgrams({3, 4, 5}),
-      },
-      // SRC context input
-      {{2, 3}, {3, 4}, {4, 5}},
-      // Labels
-      {{4}, {5}, {6}}};
+      {{2}, {3}, {4}, {5}, {7}, {8}}};
 
   checkDataFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
   std::vector<std::string> phrases = {
-      R"({"prompt": "1 2", "context": "3 4", "target": "5 6 7"})"};
+      R"({"prompt": "1 2", "target": "3 4 5 6 7 8 9"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
       // Prompt input
-      {{1, 2}, {1, 2}},
+      {{1, 2}, {1, 2}, {1, 2}, {1, 2}, {1, 2}},
       //  LRC context input
-      {{3, 4, 5}, {3, 4, 5, 6}},
+      {{3}, {3, 4}, {3, 4, 5}, {3, 4, 5, 6}, {8}},
       // IRC context input
       {
+          {3},
+          expectedPairgrams({3, 4}),
           expectedPairgrams({3, 4, 5}),
           expectedPairgrams({4, 5, 6}),
+          expectedPairgrams({8}),
       },
       // SRC context input
-      {{4, 5}, {5, 6}},
+      {{0, 3}, {3, 4}, {4, 5}, {5, 6}, {0, 8}},
       // Labels
-      {{6}, {7}}};
+      {{4}, {5}, {6}, {7}, {9}}};
 
   checkDataFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithPosition) {
-  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6"})"};
+  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6 7 8"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
       // Prompt input
-      {{0}, {0}, {0}, {0}, {0}},
+      {{0}, {0}, {0}, {0}, {0}, {0}},
       //  LRC context input
-      {{1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      {{1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}, {6}, {6, 7}},
       // IRC context input
       {
           {1},
           expectedPairgrams({1, 2}),
           expectedPairgrams({1, 2, 3}),
           expectedPairgrams({2, 3, 4}),
-          expectedPairgrams({3, 4, 5}),
+          {6},
+          expectedPairgrams({6, 7}),
       },
       // SRC context input
-      {{0, 1, 9}, {1, 2, 10}, {2, 3, 11}, {3, 4, 12}, {4, 5, 13}},
+      {{0, 1, 9}, {1, 2, 10}, {2, 3, 11}, {3, 4, 12}, {0, 6, 14}, {6, 7, 15}},
       // Labels
-      {{2}, {3}, {4}, {5}, {6}}};
+      {{2}, {3}, {4}, {5}, {7}, {8}}};
 
-  checkDataFeaturization(phrases, expected_indices, true);
+  checkDataFeaturization(phrases, expected_indices,
+                         /* include_position= */ true);
 }
 
 TEST(TextGenerationFeaturizerTest, InferenceFeaturization) {

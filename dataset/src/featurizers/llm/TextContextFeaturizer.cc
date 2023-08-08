@@ -4,8 +4,9 @@
 namespace thirdai::dataset {
 
 BoltVector TextContextFeaturizer::lrcContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t lrc_len = std::min(end_index, _lrc_len);
+    const std::vector<uint32_t>& tokens, uint32_t start_index,
+    uint32_t end_index) const {
+  uint32_t lrc_len = std::min(end_index - start_index, _lrc_len);
 
   const uint32_t* context_start = tokens.data() + end_index - lrc_len;
 
@@ -18,8 +19,9 @@ BoltVector TextContextFeaturizer::lrcContext(
 }
 
 BoltVector TextContextFeaturizer::ircContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t irc_len = std::min(end_index, _irc_len);
+    const std::vector<uint32_t>& tokens, uint32_t start_index,
+    uint32_t end_index) const {
+  uint32_t irc_len = std::min(end_index - start_index, _irc_len);
 
   std::vector<uint32_t> irc_context =
       token_encoding::unigramPreservingPairgrams(
@@ -34,8 +36,9 @@ BoltVector TextContextFeaturizer::ircContext(
 }
 
 BoltVector TextContextFeaturizer::srcContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t src_len = std::min(end_index, _src_len);
+    const std::vector<uint32_t>& tokens, uint32_t start_index,
+    uint32_t end_index) const {
+  uint32_t src_len = std::min(end_index - start_index, _src_len);
   uint32_t padding_len = _src_len - src_len;
 
   const uint32_t* context_start = tokens.data() + end_index - src_len;

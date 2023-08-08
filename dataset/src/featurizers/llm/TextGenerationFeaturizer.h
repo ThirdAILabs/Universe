@@ -119,8 +119,7 @@ class TextGenerationFeaturizer final : public Featurizer {
    * Returns the context tokens (the concatenation of the context and target) as
    * well as the index to start predicting from.
    */
-  static std::pair<std::vector<uint32_t>, uint32_t> getContext(
-      const json& line_content);
+  static std::vector<uint32_t> getAllTokens(const json& line_content);
 
   static std::vector<uint32_t> getPrompt(const json& line_content);
 
