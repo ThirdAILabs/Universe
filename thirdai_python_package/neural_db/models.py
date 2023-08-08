@@ -239,6 +239,7 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        model_config=None,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -249,6 +250,7 @@ class Mach(Model):
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
+        self.model_config = model_config
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
@@ -359,6 +361,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
+            model_config=self.model_config,
         )
 
     def forget_documents(self) -> None:
