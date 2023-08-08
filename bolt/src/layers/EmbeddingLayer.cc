@@ -98,7 +98,7 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
 
   if (_embedding_block->size() != _embedding_block_size) {
     throw std::runtime_error(
-        "Embedding block in protobuf object does not have expected size.");
+        "Embedding block does not have expected size in fromProto.");
   }
 
   _embedding_chunks_used.assign(n_emb_chunks, false);
@@ -106,6 +106,11 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
   if (robez_proto.has_embedding_block_optimizer()) {
     _optimizer =
         nn::ops::optimizerFromProto(robez_proto.embedding_block_optimizer());
+    if (_optimizer->momentum.size() != _embedding_block_size) {
+      throw std::runtime_error(
+          "Embedding block optimizer does not have expected size in "
+          "fromProto.");
+    }
   } else {
     _optimizer = AdamOptimizer(_embedding_block_size);
   }

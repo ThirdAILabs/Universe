@@ -124,35 +124,26 @@ TEST(ProtobufSerializationTests, ModelSummariesMatch) {
   ASSERT_EQ(summary1, summary2);
 }
 
-TEST(ProtobufSerializationTests, ModelOutputsMatch) {
-  auto model1 = buildModel();
-
-  auto data = getDataset();
-
-  train::Trainer trainer1(model1);
-
-  auto accs1 = trainer1.train(data, 0.003, 5, {}, data, makeMetrics(model1));
-
-  ASSERT_GE(accs1.at("acc1").back(), 0.7);
-  ASSERT_GE(accs1.at("acc2").back(), 0.7);
-
-  auto model2 = model::Model::deserializeProto(model1->serializeProto(true));
-  auto model3 = model::Model::deserializeProto(model1->serializeProto(true));
+void checkOutputsAndGradientsMatchAfterSerialization(
+    const model::ModelPtr& model, const train::LabeledDataset& data) {
+  auto model_copy = model::Model::deserializeProto(model->serializeProto(true));
 
   for (size_t batch_idx = 0; batch_idx < data.first.size(); batch_idx++) {
-    model1->trainOnBatch(data.first[batch_idx], data.second[batch_idx]);
-    model2->trainOnBatch(data.first[batch_idx], data.second[batch_idx]);
+    model->trainOnBatch(data.first[batch_idx], data.second[batch_idx]);
+    model_copy->trainOnBatch(data.first[batch_idx], data.second[batch_idx]);
 
-    auto model1_comps = model1->computationOrderWithoutInputs();
-    auto model2_comps = model2->computationOrderWithoutInputs();
+    auto model_comps = model->computationOrderWithoutInputs();
+    auto model_copy_comps = model_copy->computationOrderWithoutInputs();
 
-    ASSERT_EQ(model1_comps.size(), model2_comps.size());
+    ASSERT_EQ(model_comps.size(), model_copy_comps.size());
 
-    for (size_t comp_idx = 0; comp_idx < model1_comps.size(); comp_idx++) {
-      auto tensor1 = model1_comps[comp_idx]->tensor();
-      auto tensor2 = model2_comps[comp_idx]->tensor();
+    for (size_t comp_idx = 0; comp_idx < model_comps.size(); comp_idx++) {
+      auto tensor1 = model_comps[comp_idx]->tensor();
+      auto tensor2 = model_copy_comps[comp_idx]->tensor();
 
       ASSERT_EQ(tensor1->batchSize(), tensor2->batchSize());
+      ASSERT_EQ(tensor2->batchSize(),
+                data.first[batch_idx].front()->batchSize());
 
       for (size_t i = 0; i < tensor1->batchSize(); i++) {
         const BoltVector& vec1 = tensor1->getVector(i);
@@ -171,13 +162,30 @@ TEST(ProtobufSerializationTests, ModelOutputsMatch) {
       }
     }
   }
+}
 
-  train::Trainer trainer3(model3);
+TEST(ProtobufSerializationTests, ModelOutputsMatch) {
+  auto model1 = buildModel();
 
-  auto accs3 = trainer3.train(data, 0.003, 5, {}, data, makeMetrics(model3));
+  auto data = getDataset();
 
-  ASSERT_GE(accs3.at("acc1").back(), 0.9);
-  ASSERT_GE(accs3.at("acc2").back(), 0.9);
+  train::Trainer trainer1(model1);
+
+  auto accs1 = trainer1.train(data, 0.003, 5, {}, data, makeMetrics(model1));
+
+  ASSERT_GE(accs1.at("acc1").back(), 0.7);
+  ASSERT_GE(accs1.at("acc2").back(), 0.7);
+
+  checkOutputsAndGradientsMatchAfterSerialization(model1, data);
+
+  auto model2 = model::Model::deserializeProto(model1->serializeProto(true));
+
+  train::Trainer trainer2(model2);
+
+  auto accs2 = trainer2.train(data, 0.003, 5, {}, data, makeMetrics(model2));
+
+  ASSERT_GE(accs2.at("acc1").back(), 0.9);
+  ASSERT_GE(accs2.at("acc2").back(), 0.9);
 }
 
 }  // namespace thirdai::bolt::nn::tests
