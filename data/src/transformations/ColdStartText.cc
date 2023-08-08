@@ -90,7 +90,7 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
     _weak_max_len = cold_start.weak_max_len();
   }
   if (cold_start.has_weak_chunk_len()) {
-    _weak_chunk_len = cold_start.has_weak_chunk_len();
+    _weak_chunk_len = cold_start.weak_chunk_len();
   }
   if (cold_start.has_weak_sample_num_words()) {
     _weak_sample_num_words = cold_start.weak_sample_num_words();

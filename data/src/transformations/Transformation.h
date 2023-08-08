@@ -36,6 +36,10 @@ class Transformation {
     return apply(std::move(columns), state);
   }
 
+  std::string serialize() const;
+
+  static std::shared_ptr<Transformation> deserialize(const std::string& binary);
+
   virtual ~Transformation() = default;
 };
 

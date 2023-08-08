@@ -220,13 +220,14 @@ proto::data::Transformation* CastToArray<T>::toProto() const {
 template <>
 proto::data::StringCast::TargetType CastToArray<uint32_t>::protoTargetType()
     const {
-  return proto::data::StringCast::TargetType::StringCast_TargetType_TOKEN;
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TOKEN_ARRAY;
 }
 
 template <>
 proto::data::StringCast::TargetType CastToArray<float>::protoTargetType()
     const {
-  return proto::data::StringCast::TargetType::StringCast_TargetType_DECIMAL;
+  return proto::data::StringCast::TargetType::
+      StringCast_TargetType_DECIMAL_ARRAY;
 }
 
 template class CastToArray<uint32_t>;

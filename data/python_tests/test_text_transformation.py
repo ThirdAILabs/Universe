@@ -67,3 +67,42 @@ def test_text_tokenizer_wordpiece(download_bert_base_uncased):
     for text, tokens in zip(TEXT_SAMPLES, tokens):
         hf_tokens = huggingface_tokenizer.encode(text, add_special_tokens=False)
         assert np.array_equal(np.array(hf_tokens), tokens)
+
+
+def check_text_tokenizer_serialization(tokenizer, encoder):
+    transformation = data.transformations.Text(
+        input_column="input",
+        output_column="tokens",
+        tokenizer=tokenizer,
+        encoder=encoder,
+        dim=0xFFFFFFFF,
+    )
+
+    transformation_copy = data.transformations.deserialize(transformation.serialize())
+
+    columns = data.ColumnMap({"input": data.columns.StringColumn(TEXT_SAMPLES)})
+
+    output1 = transformation(columns)
+    output2 = transformation_copy(columns)
+
+    assert output1["tokens"].data() == output2["tokens"].data()
+
+
+def test_wordpiece_tokenizer_serialization(download_bert_base_uncased):
+    BERT_VOCAB_PATH = download_bert_base_uncased
+    tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
+    encoder = dataset.NGramEncoder(n=1)
+
+    check_text_tokenizer_serialization(tokenizer, encoder)
+
+
+@pytest.mark.parametrize(
+    "tokenizer, encoder",
+    [
+        (dataset.CharKGramTokenizer(k=3), dataset.NGramEncoder(n=1)),
+        (dataset.NaiveSplitTokenizer(delimiter=" "), dataset.NGramEncoder(n=2)),
+        (dataset.WordPunctTokenizer(), dataset.PairGramEncoder()),
+    ],
+)
+def test_text_tokenizer_serialization(tokenizer, encoder):
+    check_text_tokenizer_serialization(tokenizer, encoder)

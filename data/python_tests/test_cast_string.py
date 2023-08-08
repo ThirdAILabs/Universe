@@ -5,10 +5,17 @@ from thirdai import data
 pytestmark = [pytest.mark.unit]
 
 
-def test_cast_string_to_token():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_cast_string_to_token(serialize):
     string_col = data.columns.StringColumn([str(i) for i in range(10)])
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.ToTokens("strings", "tokens")(columns)
+
+    transformation = data.transformations.ToTokens("strings", "tokens")
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
+
+    columns = transformation(columns)
+
     for i in range(10):
         assert columns["tokens"][i] == i
 
@@ -19,14 +26,21 @@ def test_cast_string_to_token():
         data.transformations.ToTokens("strings", "tokens", dim=5)(columns)
 
 
-def test_cast_string_to_token_array():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_cast_string_to_token_array(serialize):
     string_col = data.columns.StringColumn(
         [" ".join(map(str, range(i, i + 2))) for i in range(10)]
     )
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.ToTokenArrays("strings", "tokens", delimiter=" ")(
-        columns
+
+    transformation = data.transformations.ToTokenArrays(
+        "strings", "tokens", delimiter=" "
     )
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
+
+    columns = transformation(columns)
+
     for i in range(10):
         assert columns["tokens"][i][0] == i
         assert columns["tokens"][i][1] == i + 1
@@ -40,22 +54,36 @@ def test_cast_string_to_token_array():
         )
 
 
-def test_cast_string_to_decimal():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_cast_string_to_decimal(serialize):
     string_col = data.columns.StringColumn([str(0.1 * i) for i in range(10)])
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.ToDecimals("strings", "decimals")(columns)
+
+    transformation = data.transformations.ToDecimals("strings", "decimals")
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
+
+    columns = transformation(columns)
+
     for i in range(10):
         assert np.allclose([columns["decimals"][i]], [0.1 * i])
 
 
-def test_cast_string_to_decimal_array():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_cast_string_to_decimal_array(serialize):
     string_col = data.columns.StringColumn(
         [" ".join([str(0.1 * j) for j in range(i, i + 2)]) for i in range(10)]
     )
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.ToDecimalArrays(
+
+    transformation = data.transformations.ToDecimalArrays(
         "strings", "decimals", delimiter=" "
-    )(columns)
+    )
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
+
+    columns = transformation(columns)
+
     for i in range(10):
         assert np.allclose(columns["decimals"][i], [i * 0.1, (i + 1) * 0.1])
 
@@ -85,12 +113,18 @@ def test_invalid_row_in_array_column(conversion):
         transformation(columns)
 
 
-def test_cast_string_to_timestamp():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_cast_string_to_timestamp(serialize):
     string_col = data.columns.StringColumn(
         ["2023-07-" + str(date) for date in range(10, 20)]
     )
     columns = data.ColumnMap({"strings": string_col})
-    columns = data.transformations.ToTimestamps("strings", "timestamps")(columns)
+
+    transformation = data.transformations.ToTimestamps("strings", "timestamps")
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
+
+    columns = transformation(columns)
 
     SECONDS_IN_A_DAY = 24 * 3600
 

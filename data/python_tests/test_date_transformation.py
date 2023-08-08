@@ -2,13 +2,16 @@ import pytest
 from thirdai import data
 
 
+@pytest.mark.parametrize("serialize", [True, False])
 @pytest.mark.unit
-def test_date_transformation():
+def test_date_transformation(serialize):
     columns = data.ColumnMap(
         {"strings": data.columns.StringColumn(["2023-01-03", "2023-10-12"])}
     )
 
     transformation = data.transformations.Date("strings", "date_info")
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
 
     columns = transformation(columns)
 

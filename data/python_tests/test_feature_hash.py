@@ -181,3 +181,33 @@ def test_tokens_and_decimals():
             assert len(indices[i].intersection(indices[i + 1])) == (COLS * 2 - 1)
         if i < (ROWS - 3):
             assert len(indices[i].intersection(indices[i + 3])) == (COLS * 2 - 3)
+
+
+def test_feature_hash_serialization():
+    ROWS = 100
+    COLS = 5
+
+    tokens = [[i + j for j in range(COLS)] for i in range(ROWS)]
+    decimals = [[float(i + j + 10) ** 2 for j in range(COLS)] for i in range(ROWS)]
+
+    columns = data.ColumnMap(
+        {
+            "col1": data.columns.TokenArrayColumn(tokens),
+            "col2": data.columns.DecimalArrayColumn(decimals),
+        }
+    )
+
+    transformation = data.transformations.FeatureHash(
+        input_columns=["col1", "col2"],
+        output_indices_column="indices",
+        output_values_column="values",
+        hash_range=100000,
+    )
+
+    transformation_copy = data.transformations.deserialize(transformation.serialize())
+
+    output1 = transformation(columns)
+    output2 = transformation_copy(columns)
+
+    assert output1["indices"].data() == output2["indices"].data()
+    assert output1["values"].data() == output2["values"].data()

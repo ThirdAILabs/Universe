@@ -212,7 +212,7 @@ proto::data::Tokenizer* WordpieceTokenizer::toProto() const {
   for (size_t i = 0; i < _id_to_token.size(); i++) {
     auto* entry = word_piece->add_tokens();
     entry->set_id(i);
-    for (char c : _id_to_token[i]) {
+    for (wchar_t c : _id_to_token[i]) {
       entry->add_chars(c);
     }
   }
