@@ -346,6 +346,10 @@ class Mach(Model):
         self,
         documents: DocumentDataSource,
     ):
+        model_config = None
+        if hasattr(self, "model_config"):
+            # This is to support loading models that may not have the field set.
+            model_config = self.model_config
         return bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer="char-4"),
@@ -361,7 +365,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
-            model_config=self.model_config,
+            model_config=model_config,
         )
 
     def forget_documents(self) -> None:
