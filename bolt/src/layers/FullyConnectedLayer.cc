@@ -72,6 +72,13 @@ FullyConnectedLayer::FullyConnectedLayer(
       _use_bias(fc_proto.use_bias()),
       _prev_is_active(fc_proto.input_dim(), false),
       _is_active(fc_proto.dim(), false) {
+  if (_weights.size() != _dim * _prev_dim) {
+    throw std::runtime_error("Weights do not have expected size in fromProto.");
+  }
+  if (_biases.size() != _dim) {
+    throw std::runtime_error("Biases do not have expected size in fromProto.");
+  }
+
   switch (fc_proto.neuron_index().index_case()) {
     case proto::bolt::NeuronIndex::kLsh:
       _neuron_index = nn::LshIndex::fromProto(fc_proto.neuron_index().lsh());
@@ -93,7 +100,16 @@ FullyConnectedLayer::FullyConnectedLayer(
   if (fc_proto.has_weight_optimizer() && fc_proto.has_bias_optimizer()) {
     _weight_optimizer =
         nn::ops::optimizerFromProto(fc_proto.weight_optimizer());
+    if (_weight_optimizer->momentum.size() != _weights.size()) {
+      throw std::runtime_error(
+          "Weights optimizer does not have expected size in fromProto.");
+    }
+
     _bias_optimizer = nn::ops::optimizerFromProto(fc_proto.bias_optimizer());
+    if (_bias_optimizer->momentum.size() != _biases.size()) {
+      throw std::runtime_error(
+          "Bias optimizer does not expected size in fromProto.");
+    }
   } else {
     _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
     _bias_optimizer = AdamOptimizer(_dim);

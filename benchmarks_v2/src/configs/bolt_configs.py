@@ -118,11 +118,6 @@ class WayfairConfig(BoltBenchmarkConfig):
     learning_rate = 1e-04
     num_epochs = 5
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
-    callbacks = [
-        bolt.callbacks.LearningRateScheduler(
-            schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
-        )
-    ]
 
     def _load_wayfair_dataset(filename, batch_size, output_dim, shuffle=True):
         featurizer = dataset.TabularFeaturizer(

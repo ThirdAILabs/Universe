@@ -1,6 +1,5 @@
 #include "DatasetUtils.h"
 #include "gtest/gtest.h"
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>

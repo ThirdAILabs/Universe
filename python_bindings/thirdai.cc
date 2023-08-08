@@ -1,9 +1,7 @@
 // Code to create thirdai modules
+#include <bolt/python_bindings/BoltCompression.h>
 #include <bolt/python_bindings/BoltNNPython.h>
-#include <bolt/python_bindings/BoltPython.h>
-#include <bolt/python_bindings/BoltV2NNPython.h>
-#include <bolt/python_bindings/BoltV2TrainPython.h>
-#include <bolt/python_bindings/CallbacksPython.h>
+#include <bolt/python_bindings/BoltTrainPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
 #include <data/python_bindings/DataPython.h>
@@ -133,9 +131,10 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Bolt Submodule
   auto bolt_submodule = m.def_submodule("bolt");
-  thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
-  thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
-  thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
+  thirdai::bolt::nn::python::createBoltNNSubmodule(bolt_submodule);
+  thirdai::bolt::train::python::createBoltTrainSubmodule(bolt_submodule);
+  thirdai::bolt::compression::python::createCompressionSubmodule(
+      bolt_submodule);
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);
@@ -149,9 +148,4 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
-
-  // Bolt V2
-  auto bolt_v2_submodule = m.def_submodule("bolt_v2");
-  thirdai::bolt::nn::python::createBoltV2NNSubmodule(bolt_v2_submodule);
-  thirdai::bolt::train::python::createBoltV2TrainSubmodule(bolt_v2_submodule);
 }

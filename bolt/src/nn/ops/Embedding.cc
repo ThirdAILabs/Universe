@@ -58,10 +58,27 @@ Embedding::Embedding(const std::string& name,
           emb_proto.disable_sparse_parameter_updates()),
       _should_serialize_optimizer(false),
       _embeddings_used(emb_proto.input_dim(), false) {
+  if (_embeddings.size() != _dim * _input_dim) {
+    throw std::runtime_error(
+        "Embeddings do not have expected size in fromProto.");
+  }
+  if (_biases.size() != _dim) {
+    throw std::runtime_error("Biases do not have expected size in fromProto.");
+  }
+
   if (emb_proto.has_embeddings_optimizer() && emb_proto.has_bias_optimizer()) {
     _embedding_optimizer = optimizerFromProto(emb_proto.embeddings_optimizer());
+    if (_embedding_optimizer->momentum.size() != _embeddings.size()) {
+      throw std::runtime_error(
+          "Embeddings optimizer does not have expected size in fromProto.");
+    }
 
     _bias_optimizer = optimizerFromProto(emb_proto.bias_optimizer());
+    if (_bias_optimizer->momentum.size() != _biases.size()) {
+      throw std::runtime_error(
+          "Bias optimizer does not expected size in fromProto.");
+    }
+
   } else {
     _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
     _bias_optimizer = AdamOptimizer(_dim);

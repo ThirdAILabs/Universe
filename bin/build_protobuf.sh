@@ -1,14 +1,22 @@
 #!/bin/bash
 
-# Run this script with sudo
+# Run this script with sudo.
 
 git clone https://github.com/protocolbuffers/protobuf --recursive
 cd protobuf/
-mkdir build
-cd build
-cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=14 ..
-cmake --build . --parallel 20
-cmake --install .
 
+# Newer versions have an issue where abseil and utf8_range don't get linked 
+# correctly and it causes link errors unless we manually link them directly. 
+git checkout tags/v3.19.3 
 
-cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_CXX_STANDARD=14 -Dprotobuf_ABSL_PROVIDER=module -DABSL_PROPAGATE_CXX_STD=ON -Dprotobuf_BUILD_TESTS=OFF ..
+# Follows instructions to build from source here:
+# https://github.com/protocolbuffers/protobuf/tree/v3.19.3/src
+./autogen.sh
+./configure
+make
+make install
+ldconfig
+
+# Cleanup after installation.
+cd ..
+rm -rf protobuf

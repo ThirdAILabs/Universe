@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
-from thirdai import bolt_v2 as bolt
+from thirdai import bolt
 
 SERIALIZED_CLASS_DIR = Path(__file__).resolve().parent / "serialized_classes"
 INTERNAL_ERROR_STRING = (

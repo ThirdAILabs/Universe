@@ -32,11 +32,25 @@ LayerNorm::LayerNorm(const std::string& name,
     : Op(name),
       _gamma(parametersFromProto(layer_norm_proto.gamma())),
       _beta(parametersFromProto(layer_norm_proto.beta())) {
+  if (_gamma.size() != _beta.size()) {
+    throw std::runtime_error(
+        "Gamma and beta do not have expect size in fromProt.");
+  }
+
   if (layer_norm_proto.has_gamma_optimizer() &&
       layer_norm_proto.has_beta_optimizer()) {
     _gamma_optimizer = optimizerFromProto(layer_norm_proto.gamma_optimizer());
+    if (_gamma_optimizer.momentum.size() != _gamma.size()) {
+      throw std::runtime_error(
+          "Gamma optimizer does not have expected size in fromProto.");
+    }
 
     _beta_optimizer = optimizerFromProto(layer_norm_proto.beta_optimizer());
+    if (_beta_optimizer.momentum.size() != _beta.size()) {
+      throw std::runtime_error(
+          "Beta optimizer does not have expected size in fromProto.");
+    }
+
   } else {
     _gamma_optimizer = AdamOptimizer(dim());
     _beta_optimizer = AdamOptimizer(dim());
