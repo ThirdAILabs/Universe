@@ -7,7 +7,7 @@ from model_test_utils import (
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
 )
-from thirdai import bolt, bolt_v2
+from thirdai import bolt
 
 ACCURACY_THRESHOLD = 0.8
 
@@ -125,7 +125,7 @@ def test_udt_text_classification_model_porting(
     trained_model._get_model().summary()
 
     params = trained_model._get_model().params()
-    new_bolt_model = bolt_v2.nn.Model.from_params(params)
+    new_bolt_model = bolt.nn.Model.from_params(params)
     new_model._set_model(new_bolt_model)
 
     # Check the accuracy of the new model.

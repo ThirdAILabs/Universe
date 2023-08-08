@@ -12,7 +12,7 @@ from distributed_utils import (
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
-from thirdai import bolt_v2 as bolt
+from thirdai import bolt
 
 
 def training_loop_per_worker(config):
