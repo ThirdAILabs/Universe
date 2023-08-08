@@ -93,7 +93,7 @@ class Reference:
         self._context_fn = lambda radius: document.context(element_id, radius)
         self._score = 0
         self._source_id = document.hash
-        self._row_id = element_id
+        self._id_in_document = element_id
 
     @property
     def id(self):
@@ -124,8 +124,8 @@ class Reference:
         return self._source_id
 
     @property
-    def row_id(self):
-        return self._row_id
+    def id_in_document(self):
+        return self._id_in_document
 
     def context(self, radius: int):
         return self._context_fn(radius)

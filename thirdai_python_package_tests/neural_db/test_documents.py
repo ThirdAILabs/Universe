@@ -26,8 +26,6 @@ def prepare_documents_test():
             self._load_meta_called = 0
             self._load_meta_dir = None
 
-        # We don't implement hash to test the default implementation
-
         @property
         def size(self) -> int:
             return self._size
