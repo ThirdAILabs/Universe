@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, bolt_v2, dataset
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
@@ -206,7 +206,7 @@ def test_mach_udt_on_scifact_model_porting(
 
     new_model = scifact_model(n_target_classes=n_classes)
 
-    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_bolt_model = bolt.nn.Model.from_params(model._get_model().params())
     new_model._set_model(new_bolt_model)
 
     new_model.set_index(model.get_index())
@@ -628,7 +628,7 @@ def test_mach_sparse_inference():
         )
     )
 
-    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+    input_vec = bolt.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
 
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 30])

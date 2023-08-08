@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 from typing import Callable, List, Sequence, Tuple
 
-from thirdai import bolt, bolt_v2
+from thirdai import bolt
 
 from .documents import DocumentDataSource
 from .utils import clean_text, random_sample
@@ -118,7 +118,7 @@ class Model:
         raise NotImplementedError()
 
 
-class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
+class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
     def __init__(
         self,
         min_epochs,
@@ -142,7 +142,7 @@ class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
-class ProgressUpdate(bolt_v2.train.callbacks.Callback):
+class ProgressUpdate(bolt.train.callbacks.Callback):
     def __init__(
         self,
         max_epochs,
@@ -169,7 +169,7 @@ class ProgressUpdate(bolt_v2.train.callbacks.Callback):
             self.progress_callback_fn(progress)
 
 
-class CancelTraining(bolt_v2.train.callbacks.Callback):
+class CancelTraining(bolt.train.callbacks.Callback):
     def __init__(self, cancel_state):
         super().__init__()
         self.cancel_state = cancel_state

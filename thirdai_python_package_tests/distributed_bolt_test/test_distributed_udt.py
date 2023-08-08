@@ -12,8 +12,7 @@ from distributed_utils import (
 )
 from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
-from thirdai import bolt as old_bolt
-from thirdai import bolt_v2 as bolt
+from thirdai import bolt
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
@@ -88,10 +87,10 @@ def download_and_split_scifact_dataset(download_scifact_dataset):
 
 
 def get_udt_scifact_mach_model(n_target_classes):
-    model = old_bolt.UniversalDeepTransformer(
+    model = bolt.UniversalDeepTransformer(
         data_types={
-            "QUERY": old_bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": old_bolt.types.categorical(delimiter=":"),
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+            "DOC_ID": bolt.types.categorical(delimiter=":"),
         },
         target="DOC_ID",
         n_target_classes=n_target_classes,
@@ -102,10 +101,10 @@ def get_udt_scifact_mach_model(n_target_classes):
 
 
 def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
-    udt_model = old_bolt.UniversalDeepTransformer(
+    udt_model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": old_bolt.types.categorical(),
-            "text": old_bolt.types.text(),
+            "category": bolt.types.categorical(),
+            "text": bolt.types.text(),
         },
         target="category",
         n_target_classes=151,
@@ -259,7 +258,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
             ],
         )
 
-        validation = old_bolt.Validation(
+        validation = bolt.Validation(
             filename="scifact/tst_supervised.csv",
             metrics=["precision@1"],
         )
