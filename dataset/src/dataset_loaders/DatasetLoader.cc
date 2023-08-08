@@ -145,7 +145,10 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
       return;
     }
 
+    std::cout << "FEATURIZING ROW: " << (*rows)[0] << (*rows)[1] << std::endl;
+
     auto batch = _featurizer->featurize(*rows);
+    std::cout << "LEN OF BATCH " << batch.size() << std::endl;
     for (size_t i = 0; i < batch.at(0).size(); i++) {
       std::vector<BoltVector> temp_vector;
       temp_vector.reserve(batch.size());

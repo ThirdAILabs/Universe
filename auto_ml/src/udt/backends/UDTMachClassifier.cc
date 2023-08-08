@@ -195,6 +195,7 @@ py::object UDTMachClassifier::trainContrastive(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     uint32_t freeze_hash_tables_epoch) {
+  (void)train_metrics;
   auto query_dataset_loader =
       _contrastive_dataset_factory->getUnLabeledDatasetLoader(queries);
 
@@ -230,10 +231,14 @@ py::object UDTMachClassifier::trainContrastive(
   bolt::train::LabeledDataset final_labeled_dataset =
       std::make_pair(input_datasets, label_dataset);
 
+  InputMetrics metrics;
+  bolt::nn::loss::LossPtr loss = _contrastive_model->losses().front();
+  metrics["train_loss"] = std::make_shared<LossMetric>(loss);
+
   return py::cast(trainer.train(
       final_labeled_dataset,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
-      /* train_metrics= */ getMetrics(train_metrics, "train_"),
+      /* train_metrics= */ metrics,
       /* validation_data= */ std::nullopt,
       /* validation_metrics= */ {},
       /* steps_per_validation= */ options.steps_per_validation,

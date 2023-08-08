@@ -315,7 +315,8 @@ def modify_mach_udt():
         responses_filename,
         learning_rate = 0.001,
         epochs = 5,
-        train_metrics = [],
+        metrics = [],
+        callbacks = [],
         freeze_hash_tables_epoch = 1,
     ):
         train_options = bolt.TrainOptions()
@@ -331,7 +332,8 @@ def modify_mach_udt():
             responses=_create_data_source(responses_filename),
             learning_rate=learning_rate,
             epochs=epochs,
-            train_metrics=train_metrics,
+            train_metrics=metrics,
+            callbacks=callbacks,
             options=train_options,
             freeze_hash_tables_epoch=freeze_hash_tables_epoch,
         )
