@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import requests
 import thirdai
-from thirdai.experimental import MlflowCallback, MlflowCallbackV2
+from thirdai.experimental import MlflowCallback
 
 from .runners.runner_map import runner_map
 from .runners.temporal import TemporalRunner
