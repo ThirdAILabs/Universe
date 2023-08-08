@@ -97,6 +97,10 @@ jobs:
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
          
+          # Because manylinux is based on CentOS it uses yum package manager. 
+          # Yum will only install protobuf 2.3.1 which doens't support some 
+          # useful features we are using. To get around this we just build and
+          # install from source. 
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
