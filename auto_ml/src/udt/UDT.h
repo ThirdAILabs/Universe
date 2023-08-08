@@ -161,17 +161,18 @@ class UDT {
 
   data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
 
-  void introduceDocuments(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose) {
+  void introduceDocuments(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool fast_approximation, bool verbose,
+      std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
     licensing::entitlements().verifyDataSource(data);
 
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample, num_random_hashes,
-                                 fast_approximation, verbose);
+    _backend->introduceDocuments(
+        data, strong_column_names, weak_column_names, num_buckets_to_sample,
+        num_random_hashes, fast_approximation, verbose, max_in_memory_batches);
   }
 
   void introduceDocument(const MapInput& document,

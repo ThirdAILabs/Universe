@@ -516,7 +516,8 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
+    std::optional<uint32_t> max_in_memory_batches) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -533,46 +534,52 @@ void UDTMachClassifier::introduceDocuments(
   auto dataset_loader =
       _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
 
-  auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE, verbose);
+  while (
+      auto doc_samples = dataset_loader->loadSome(
+          defaults::BATCH_SIZE,
+          max_in_memory_batches.value_or(std::numeric_limits<uint32_t>::max()),
+          verbose)) {
+    auto doc_samples_tensors = bolt::train::convertDatasets(
+        *doc_samples, _classifier->model()->inputDims());
 
-  auto doc_samples_tensors = bolt::train::convertDatasets(
-      doc_samples, _classifier->model()->inputDims());
+    const auto& labels = cold_start_data->labelColumn();
+    uint32_t row_idx = 0;
 
-  const auto& labels = cold_start_data->labelColumn();
-  uint32_t row_idx = 0;
+    uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+        _mach_label_block->index()->numHashes());
 
-  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
-      _mach_label_block->index()->numHashes());
+    std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>>
+        top_k_per_doc;
 
-  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+    bolt::train::python::CtrlCCheck ctrl_c_check;
 
-  bolt::train::python::CtrlCCheck ctrl_c_check;
+    for (const auto& batch : doc_samples_tensors) {
+      // Note: using sparse inference here could cause issues because the
+      // mach index sampler will only return nonempty buckets, which could
+      // cause new docs to only be mapped to buckets already containing
+      // entities.
+      auto scores = _classifier->model()->forward(batch).at(0);
 
-  for (const auto& batch : doc_samples_tensors) {
-    // Note: using sparse inference here could cause issues because the
-    // mach index sampler will only return nonempty buckets, which could
-    // cause new docs to only be mapped to buckets already containing
-    // entities.
-    auto scores = _classifier->model()->forward(batch).at(0);
+      for (uint32_t i = 0; i < scores->batchSize(); i++) {
+        uint32_t label = std::stoi(labels->value(row_idx++));
+        top_k_per_doc[label].push_back(
+            scores->getVector(i).findKLargestActivations(
+                num_buckets_to_sample));
+      }
 
-    for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = std::stoi(labels->value(row_idx++));
-      top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+      ctrl_c_check();
     }
 
-    ctrl_c_check();
+    for (auto& [doc, top_ks] : top_k_per_doc) {
+      auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                    num_random_hashes);
+      _mach_label_block->index()->insert(doc, hashes);
+
+      ctrl_c_check();
+    }
+
+    addBalancingSamples(cold_start_data);
   }
-
-  for (auto& [doc, top_ks] : top_k_per_doc) {
-    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes);
-    _mach_label_block->index()->insert(doc, hashes);
-
-    ctrl_c_check();
-  }
-
-  addBalancingSamples(cold_start_data);
 
   updateSamplingStrategy();
 }
