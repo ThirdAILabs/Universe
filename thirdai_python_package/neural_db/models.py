@@ -377,9 +377,12 @@ class Mach(Model):
         self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
         all_predictions = self.model.predict_batch(infer_batch)
-        #####
+        num_hashes = self.model.get_index().num_hashes()
+        if num_hashes == 0:
+            raise ValueError("Model in invalid state. Num hashes should not be 0.")
         return [
-            [int(pred) for pred, _ in predictions] for predictions in all_predictions
+            [(int(pred), score / num_hashes) for pred, score in predictions]
+            for predictions in all_predictions
         ]
 
     def infer_buckets(
