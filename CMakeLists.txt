@@ -405,6 +405,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
     data/src/transformations/Date.cc
+    data/src/transformations/CrossColumnPairgrams.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -418,6 +419,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
+    auto_ml/src/featurization/TabularTransformations.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
