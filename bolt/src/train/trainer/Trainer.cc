@@ -102,6 +102,8 @@ metrics::History Trainer::train(
 
       train_metrics.recordBatch(inputs.at(0)->batchSize());
 
+      train_metrics.updateHistory(*_history);
+
       callbacks.onBatchEnd();
 
       if (bar) {
@@ -129,8 +131,6 @@ metrics::History Trainer::train(
     }
 
     epoch_timer.stop();
-
-    train_metrics.updateHistory(*_history);
 
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
