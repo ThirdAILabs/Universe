@@ -148,7 +148,7 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithPosition) {
           expectedPairgrams({6, 7}),
       },
       // SRC context input
-      {{0, 1, 9}, {1, 2, 10}, {2, 3, 11}, {3, 4, 12}, {0, 6, 14}, {6, 7, 15}},
+      {{0, 1, 9}, {1, 2, 10}, {2, 3, 11}, {3, 4, 12}, {0, 6, 9}, {6, 7, 10}},
       // Labels
       {{2}, {3}, {4}, {5}, {7}, {8}}};
 
