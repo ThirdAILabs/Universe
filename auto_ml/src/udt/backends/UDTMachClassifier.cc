@@ -169,8 +169,6 @@ UDTMachClassifier::UDTMachClassifier(
   bool dissimilar_cutoff_distance =
       user_args.get<float>("dissimilar_cutoff_distance", "float", 1.0);
 
-  std::cout << "DISSIMMILAR" << dissimilar_cutoff_distance << std::endl;
-
   _contrastive_model = utils::contrastiveModel(
       input_dim, hidden_dim, num_buckets, use_tanh, hidden_bias, output_bias,
       dissimilar_cutoff_distance);

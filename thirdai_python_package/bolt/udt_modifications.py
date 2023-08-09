@@ -311,8 +311,8 @@ def modify_mach_udt():
 
     def wrapped_train_contrastive(
         self,
-        queries_filename,
-        responses_filename,
+        queries,
+        responses,
         learning_rate = 0.001,
         epochs = 5,
         metrics = [],
@@ -328,8 +328,8 @@ def modify_mach_udt():
 
         return original_train_contrastive(
             self,
-            queries=_create_data_source(queries_filename),
-            responses=_create_data_source(responses_filename),
+            queries=_create_data_source(queries),
+            responses=_create_data_source(responses),
             learning_rate=learning_rate,
             epochs=epochs,
             train_metrics=metrics,
