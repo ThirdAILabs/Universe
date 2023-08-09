@@ -346,10 +346,6 @@ class Mach(Model):
         self,
         documents: DocumentDataSource,
     ):
-        model_config = None
-        if hasattr(self, "model_config"):
-            # This is to support loading models that may not have the field set.
-            model_config = self.model_config
         return bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer="char-4"),
@@ -365,7 +361,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
-            model_config=model_config,
+            model_config=self.get_id_colmodel_config,
         )
 
     def forget_documents(self) -> None:
@@ -467,3 +463,9 @@ class Mach(Model):
             metrics=["hash_precision@5"],
             options=bolt.TrainOptions(),
         )
+
+    def __setstate__(self, state):
+        if "model_config" not in state:
+            # Add model_config field if an older model is being loaded.
+            state["model_config"] = None
+        self.__dict__.update(state)
