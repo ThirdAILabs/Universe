@@ -54,7 +54,7 @@ BoltVector TextContextFeaturizer::srcContext(
   std::copy(context_start, context_start + src_len,
             vector.active_neurons + padding_len);
   if (_include_position) {
-    vector.active_neurons[_src_len] = _vocab_size + end_index;
+    vector.active_neurons[_src_len] = _vocab_size + end_index - start_index;
   }
   std::fill_n(vector.activations, vector.len, 1.0);
 
