@@ -193,6 +193,7 @@ py::object UDTMachClassifier::trainContrastive(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     uint32_t freeze_hash_tables_epoch) {
+  transferUDTWeights();
   (void)train_metrics;
   auto query_dataset_loader =
       _contrastive_dataset_factory->getUnLabeledDatasetLoader(queries);
@@ -245,6 +246,31 @@ py::object UDTMachClassifier::trainContrastive(
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval,
       /*comm= */ nullptr));
+}
+
+void UDTMachClassifier::transferUDTWeights() {
+  auto contrastive_hidden_layer =
+      bolt::nn::ops::Embedding::cast(_contrastive_model->opExecutionOrder()[0]);
+
+  auto classifier_hidden_layer = bolt::nn::ops::Embedding::cast(
+      _classifier->model()->opExecutionOrder()[0]);
+
+  const float* hidden_weights = classifier_hidden_layer->embeddingsPtr();
+  const float* hidden_biases = classifier_hidden_layer->biasesPtr();
+
+  contrastive_hidden_layer->setEmbeddings(hidden_weights);
+  contrastive_hidden_layer->setBiases(hidden_biases);
+
+  auto contrastive_output_layer = bolt::nn::ops::FullyConnected::cast(
+      _contrastive_model->opExecutionOrder().back());
+  auto classifier_output_layer = bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->opExecutionOrder().back());
+
+  float* output_weights = classifier_output_layer->kernel()->getWeights();
+  float* output_biases = classifier_output_layer->kernel()->getBiases();
+
+  contrastive_output_layer->kernel()->setWeights(output_weights);
+  contrastive_output_layer->kernel()->setBiases(output_biases);
 }
 
 void UDTMachClassifier::transferContrastiveWeights() {

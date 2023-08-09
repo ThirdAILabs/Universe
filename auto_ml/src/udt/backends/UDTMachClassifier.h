@@ -45,6 +45,8 @@ class UDTMachClassifier final : public UDTBackend {
                               TrainOptions options,
                               uint32_t freeze_hash_tables_epoch) final;
 
+  void transferUDTWeights();
+
   void transferContrastiveWeights() final;
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
