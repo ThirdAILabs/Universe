@@ -66,7 +66,11 @@ class TextGenerationFeaturizer final : public Featurizer {
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
                            uint32_t vocab_size, bool include_position = false)
       : _context_featurizer(lrc_len, irc_len, src_len, vocab_size,
-                            include_position) {}
+                            include_position) {
+    if (irc_len > lrc_len || src_len > lrc_len) {
+      throw std::invalid_argument("LRC size should be at least IRC/SRC size.");
+    }
+  }
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& lines) final;
