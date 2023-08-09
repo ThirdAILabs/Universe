@@ -28,10 +28,10 @@ using CreatedTransformations =
 
 using UniqueColumnNamer = std::function<std::string(std::string)>;
 
-CreatedTransformation textT(const std::string& column_name,
-                            const data::TextDataTypePtr& text,
-                            const UniqueColumnNamer& column_namer,
-                            size_t dim = std::numeric_limits<uint32_t>::max()) {
+CreatedTransformation text(const std::string& column_name,
+                           const data::TextDataTypePtr& text,
+                           const UniqueColumnNamer& column_namer,
+                           size_t dim = std::numeric_limits<uint32_t>::max()) {
   std::string output = column_namer("__" + column_name + "_tokenized__");
 
   auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
@@ -42,7 +42,7 @@ CreatedTransformation textT(const std::string& column_name,
   return {transformation, output};
 }
 
-CreatedTransformation categoricalT(
+CreatedTransformation categorical(
     const std::string& column_name,
     const data::CategoricalDataTypePtr& categorical,
     const UniqueColumnNamer& column_namer) {
@@ -66,9 +66,9 @@ CreatedTransformation categoricalT(
   return {transformation, output};
 }
 
-CreatedTransformation binningT(const std::string& column_name,
-                               const data::NumericalDataTypePtr& numerical,
-                               const UniqueColumnNamer& column_namer) {
+CreatedTransformation binning(const std::string& column_name,
+                              const data::NumericalDataTypePtr& numerical,
+                              const UniqueColumnNamer& column_namer) {
   std::string output = column_namer("__" + column_name + "_binned__");
 
   auto transformation = std::make_shared<thirdai::data::BinningTransformation>(
@@ -80,9 +80,9 @@ CreatedTransformation binningT(const std::string& column_name,
   return {transformation, output};
 }
 
-CreatedTransformation dateT(const std::string& column_name,
-                            const data::DateDataTypePtr& date,
-                            const UniqueColumnNamer& column_namer) {
+CreatedTransformation date(const std::string& column_name,
+                           const data::DateDataTypePtr& date,
+                           const UniqueColumnNamer& column_namer) {
   (void)date;
 
   std::string output = column_namer("__" + column_name + "_date__");
@@ -93,7 +93,7 @@ CreatedTransformation dateT(const std::string& column_name,
   return {transformation, output};
 }
 
-CreatedTransformation crossColumnPaigramsT(
+CreatedTransformation crossColumnPaigrams(
     const std::vector<std::string>& tabular_columns,
     const UniqueColumnNamer& column_namer) {
   std::string output = column_namer("__contextual_columns__");
@@ -106,8 +106,8 @@ CreatedTransformation crossColumnPaigramsT(
   return {transformation, output};
 }
 
-CreatedTransformation timestampT(const data::ColumnDataTypes& data_types,
-                                 const UniqueColumnNamer& column_namer) {
+CreatedTransformation timestamp(const data::ColumnDataTypes& data_types,
+                                const UniqueColumnNamer& column_namer) {
   std::optional<std::string> timestamp_column;
   for (const auto& [col_name, data_type] : data_types) {
     if (asDate(data_type)) {
@@ -141,16 +141,16 @@ CreatedTransformations nonTemporalTransformations(
   std::vector<std::string> tabular_columns;
 
   for (const auto& [name, data_type] : data_types) {
-    if (auto text = data::asText(data_type)) {
-      auto [transform, output] = textT(name, text, column_namer);
+    if (auto text_type = data::asText(data_type)) {
+      auto [transform, output] = text(name, text_type, column_namer);
       transformations.push_back(transform);
       output_columns.push_back(output);
     }
 
-    if (auto categorical = data::asCategorical(data_type)) {
-      auto [transform, output] = categoricalT(name, categorical, column_namer);
+    if (auto cat_type = data::asCategorical(data_type)) {
+      auto [transform, output] = categorical(name, cat_type, column_namer);
       transformations.push_back(transform);
-      if (!categorical->delimiter) {
+      if (!cat_type->delimiter) {
         tabular_columns.push_back(output);
       } else {
         output_columns.push_back(output);
@@ -158,7 +158,7 @@ CreatedTransformations nonTemporalTransformations(
     }
 
     if (auto numerical = data::asNumerical(data_type)) {
-      auto [transform, output] = binningT(name, numerical, column_namer);
+      auto [transform, output] = binning(name, numerical, column_namer);
       transformations.push_back(transform);
       tabular_columns.push_back(output);
     }
@@ -167,8 +167,8 @@ CreatedTransformations nonTemporalTransformations(
       throw std::runtime_error("TODO(Nicholas, Geordie): sequence data type.");
     }
 
-    if (auto date = data::asDate(data_type)) {
-      auto [transform, output] = dateT(name, date, column_namer);
+    if (auto date_type = data::asDate(data_type)) {
+      auto [transform, output] = date(name, date_type, column_namer);
       transformations.push_back(transform);
       output_columns.push_back(output);
     }
@@ -176,7 +176,7 @@ CreatedTransformations nonTemporalTransformations(
 
   if (!tabular_columns.empty()) {
     if (options.contextual_columns) {
-      auto [xcol, output] = crossColumnPaigramsT(tabular_columns, column_namer);
+      auto [xcol, output] = crossColumnPaigrams(tabular_columns, column_namer);
       transformations.push_back(xcol);
       output_columns.push_back(output);
     } else {
@@ -234,7 +234,7 @@ CreatedTransformations temporalTransformations(
 
   uint32_t temporal_id = 0;
 
-  auto [timestamp_cast, timestamp_col] = timestampT(data_types, column_namer);
+  auto [timestamp_cast, timestamp_col] = timestamp(data_types, column_namer);
 
   std::vector<thirdai::data::TransformationPtr> transformations = {
       timestamp_cast};
@@ -326,10 +326,10 @@ inputTransformations(const data::ColumnDataTypes& data_types,
     // hashing and just have a single text transformation.
     auto text_column = *non_temporal_input_data_types.begin();
 
-    if (auto text = data::asText(text_column.second)) {
+    if (auto text_type = data::asText(text_column.second)) {
       auto [transformation, output_name] =
-          textT(text_column.first, text, column_namer,
-                /* dim= */ options.feature_hash_range);
+          text(text_column.first, text_type, column_namer,
+               /* dim= */ options.feature_hash_range);
 
       return {transformation, {{output_name, std::nullopt}}};
     }
