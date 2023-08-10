@@ -51,6 +51,10 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
         ceiling ? std::min(*ceiling, num_tokens) : num_tokens;
     ASSERT_EQ(count_column->value(i), expected_count);
   }
+
+  if (ceiling) {
+    ASSERT_EQ(count_column->dimension()->dim, ceiling.value() + 1);
+  }
 }
 
 TEST(CountTokensTest, CorrectCountsNoCeiling) {
