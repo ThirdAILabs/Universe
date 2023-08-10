@@ -18,8 +18,8 @@ class ArrayColumn : public ArrayColumnBase<T> {
   static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data,
                                 std::optional<size_t> dim);
 
-  static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data,
-                                std::optional<ColumnDimension> dim) {
+  static ArrayColumnPtr<T> makeWithColumnDimension(
+      std::vector<std::vector<T>>&& data, std::optional<ColumnDimension> dim) {
     if (!dim) {
       return make(std::move(data), std::nullopt);
     }
