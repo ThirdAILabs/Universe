@@ -390,7 +390,6 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
-    dataset/src/blocks/text/Count.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
