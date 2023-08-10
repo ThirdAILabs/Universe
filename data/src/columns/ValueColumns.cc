@@ -1,5 +1,6 @@
 #include "ValueColumns.h"
 #include "ColumnUtils.h"
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -80,6 +81,15 @@ template ValueColumnPtr<std::string> ValueColumn<std::string>::make(
 
 template ValueColumnPtr<int64_t> ValueColumn<int64_t>::make(
     std::vector<int64_t>&&);
+
+template <>
+ValueColumnPtr<uint32_t> ValueColumn<uint32_t>::makeWithColumnDimension(
+    std::vector<uint32_t>&& data, std::optional<ColumnDimension> dim) {
+  if (!dim) {
+    return make(std::move(data), std::nullopt);
+  }
+  return make(std::move(data), dim->dim);
+}
 
 // This must be defined after the make() definitions since it uses make(),
 // otherwise we get an "explicit specialization after instantiation" error.

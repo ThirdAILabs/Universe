@@ -19,12 +19,7 @@ class ArrayColumn : public ArrayColumnBase<T> {
                                 std::optional<size_t> dim);
 
   static ArrayColumnPtr<T> makeWithColumnDimension(
-      std::vector<std::vector<T>>&& data, std::optional<ColumnDimension> dim) {
-    if (!dim) {
-      return make(std::move(data), std::nullopt);
-    }
-    return make(std::move(data), dim->dim);
-  }
+      std::vector<std::vector<T>>&& data, std::optional<ColumnDimension> dim);
 
   size_t numRows() const final { return _data.size(); }
 

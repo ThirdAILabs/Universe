@@ -18,12 +18,7 @@ class ValueColumn : public ValueColumnBase<T> {
                                 std::optional<size_t> dim);
 
   static ValueColumnPtr<T> makeWithColumnDimension(
-      std::vector<T>&& data, std::optional<ColumnDimension> dim) {
-    if (!dim) {
-      return make(std::move(data), std::nullopt);
-    }
-    return make(std::move(data), dim->dim);
-  }
+      std::vector<T>&& data, std::optional<ColumnDimension> dim);
 
   static ValueColumnPtr<T> make(std::vector<T>&& data);
 

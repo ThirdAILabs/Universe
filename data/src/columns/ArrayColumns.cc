@@ -96,6 +96,23 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
       new ArrayColumn<float>(std::move(data), dimension));
 }
 
+template <typename T>
+ArrayColumnPtr<T> ArrayColumn<T>::makeWithColumnDimension(
+    std::vector<std::vector<T>>&& data, std::optional<ColumnDimension> dim) {
+  if (!dim) {
+    return make(std::move(data), std::nullopt);
+  }
+  return make(std::move(data), dim->dim);
+}
+
+template ArrayColumnPtr<uint32_t>
+ArrayColumn<uint32_t>::makeWithColumnDimension(
+    std::vector<std::vector<uint32_t>>&& data,
+    std::optional<ColumnDimension> dim);
+
+template ArrayColumnPtr<float> ArrayColumn<float>::makeWithColumnDimension(
+    std::vector<std::vector<float>>&& data, std::optional<ColumnDimension> dim);
+
 // This must be defined after the make() definitions since it uses make(),
 // otherwise we get an "explicit specialization after instantiation" error.
 // https://stackoverflow.com/questions/7774188/explicit-specialization-after-instantiation
