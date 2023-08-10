@@ -8,6 +8,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/CosineSimilarity.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/DotProduct.h>
 #include <bolt/src/nn/ops/Embedding.h>
@@ -174,6 +175,8 @@ void defineTensor(py::module_& nn) {
       .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
            py::arg("dense_dim"))
       .def(py::init(&fromNumpyDense), py::arg("values"))
+      .def("__getitem__", &tensor::Tensor::getVector)
+      .def("__len__", &tensor::Tensor::batchSize)
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
@@ -350,6 +353,11 @@ void defineOps(py::module_& nn) {
   py::class_<ops::DotProduct, ops::DotProductPtr, ops::Op>(nn, "DotProduct")
       .def(py::init<>(&ops::DotProduct::make))
       .def("__call__", &ops::DotProduct::apply);
+
+  py::class_<ops::CosineSimilarity, ops::CosineSimilarityPtr, ops::Op>(
+      nn, "CosineSimilarity")
+      .def(py::init<>(&ops::CosineSimilarity::make))
+      .def("__call__", &ops::CosineSimilarity::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 }
