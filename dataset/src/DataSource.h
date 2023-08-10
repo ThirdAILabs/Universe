@@ -3,6 +3,7 @@
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <ios>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,7 +34,11 @@ using DataSourcePtr = std::shared_ptr<DataSource>;
 class FileDataSource final : public DataSource {
  public:
   explicit FileDataSource(const std::string& filename)
-      : _file(SafeFileIO::ifstream(filename)), _filename(filename) {}
+      : _file(SafeFileIO::ifstream(
+            // read in binary mode because the EOF character in text mode
+            // (default) on Windows is different, leading to parsing problems.
+            filename, /* mode= */ std::ios_base::in | std::ios_base::binary)),
+        _filename(filename) {}
 
   static std::shared_ptr<FileDataSource> make(const std::string& filename) {
     return std::make_shared<FileDataSource>(filename);
