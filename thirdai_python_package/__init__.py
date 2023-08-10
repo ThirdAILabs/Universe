@@ -11,12 +11,10 @@ __all__ = [
     "telemetry",
     "set_global_num_threads",
     "logging",
-    "bolt_v2",
 ]
 
 # Include these so we can use them just by import the top level.
 import thirdai.bolt as bolt
-import thirdai.bolt_v2 as bolt_v2
 import thirdai.data as data
 import thirdai.dataset as dataset
 import thirdai.demos as demos

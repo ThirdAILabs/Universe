@@ -4,8 +4,7 @@ import ray
 import thirdai.distributed_bolt as dist
 from ray.air import session
 from ray.train.torch import TorchConfig
-from thirdai import bolt as old_bolt
-from thirdai import bolt_v2 as bolt
+from thirdai import bolt
 
 from ..configs.distributed_configs import DistributedBenchmarkConfig
 from ..distributed_utils import create_udt_model, setup_ray
@@ -24,7 +23,7 @@ class DistributedRunner(Runner):
         )
         model = dist.prepare_model(model)
 
-        validation = old_bolt.Validation(
+        validation = bolt.Validation(
             filename=config["data_splits"]["validation"],
             interval=10,
             metrics=config["val_metrics"],

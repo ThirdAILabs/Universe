@@ -2,9 +2,6 @@ import pytest
 
 pytestmark = [pytest.mark.unit]
 
-import numpy as np
-from thirdai import dataset
-
 from utils import compressed_training
 
 LEARNING_RATE = 0.002
