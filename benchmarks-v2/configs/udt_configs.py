@@ -45,7 +45,7 @@ class UDTBenchmarkConfig(ABC):
     def get_data_types(path_prefix):
         pass
 
-"""
+
 class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     config_name = "yelp_polarity_udt"
     dataset_name = "yelp_polarity"
@@ -428,4 +428,3 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
             "input_seq": bolt.types.sequence(delimiter=" "),
             "output_seq": bolt.types.sequence(max_length=30, delimiter=" "),
         }
-"""
