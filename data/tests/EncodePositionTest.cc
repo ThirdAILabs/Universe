@@ -7,16 +7,16 @@
 
 namespace thirdai::data::tests {
 
-static std::vector<std::vector<uint32_t>> encode_positions(
+static std::vector<std::vector<uint32_t>> hashPositions(
     std::vector<std::vector<uint32_t>> sequences) {
   auto sequence_column =
       ArrayColumn<uint32_t>::make(std::move(sequences), /* dim= */ 100000);
 
   ColumnMap column_map({{"sequence", sequence_column}});
 
-  EncodePositionTransform transform(/* input_column= */ "sequence",
-                                    /* output_column= */ "pos_sequence",
-                                    /* hash_range= */ 100000);
+  HashPositionTransform transform(/* input_column= */ "sequence",
+                                  /* output_column= */ "pos_sequence",
+                                  /* hash_range= */ 100000);
 
   State state(/* mach_index= */ nullptr);
   column_map = transform.apply(column_map, state);
@@ -32,8 +32,8 @@ static std::vector<std::vector<uint32_t>> encode_positions(
   return output;
 }
 
-TEST(EncodePositionTest, SameSequence) {
-  auto position_encoded_sequences = encode_positions(/* sequences= */ {
+TEST(EncodePositionTest, HashPositionSameSequence) {
+  auto position_encoded_sequences = hashPositions(/* sequences= */ {
       {0, 1, 2, 3, 4},
       {0, 1, 2, 3, 4},
   });
@@ -53,8 +53,8 @@ TEST(EncodePositionTest, SameSequence) {
  * Ensures that encodings of the same tokens in the same positions are the same
  * even if the other tokens are different.
  */
-TEST(EncodePositionTest, SameTokenSamePosition) {
-  auto position_encoded_sequences = encode_positions(/* sequences= */ {
+TEST(EncodePositionTest, HashPositionSameTokenSamePosition) {
+  auto position_encoded_sequences = hashPositions(/* sequences= */ {
       {5, 1, 6, 3, 7},
       {0, 1, 2, 3, 4},
   });
@@ -62,8 +62,8 @@ TEST(EncodePositionTest, SameTokenSamePosition) {
   ASSERT_EQ(position_encoded_sequences[0][3], position_encoded_sequences[1][3]);
 }
 
-TEST(EncodePositionTest, SameTokenDifferentPosition) {
-  auto position_encoded_sequences = encode_positions(/* sequences= */ {
+TEST(EncodePositionTest, HashPositionSameTokenDifferentPosition) {
+  auto position_encoded_sequences = hashPositions(/* sequences= */ {
       {1, 1, 1, 1, 1},
   });
 
@@ -73,13 +73,34 @@ TEST(EncodePositionTest, SameTokenDifferentPosition) {
   }
 }
 
-TEST(EncodePositionTest, DifferentTokenSamePosition) {
-  auto position_encoded_sequences = encode_positions(/* sequences= */ {
+TEST(EncodePositionTest, HashPositionDifferentTokenSamePosition) {
+  auto position_encoded_sequences = hashPositions(/* sequences= */ {
       {1, 2},
       {2, 1},
   });
   ASSERT_NE(position_encoded_sequences[0][0], position_encoded_sequences[1][0]);
   ASSERT_NE(position_encoded_sequences[0][1], position_encoded_sequences[1][1]);
+}
+
+TEST(EncodePositionTest, OffsetPosition) {
+  auto tokens =
+      ArrayColumn<uint32_t>::make(/* data= */ {{4, 3, 2, 1, 0}}, /* dim= */ 5);
+  ColumnMap columns({{"tokens", tokens}});
+  OffsetPositionTransform offset(/* input_column= */ "tokens",
+                                 /* output_column= */ "tokens_offset",
+                                 /* max_num_tokens= */ 5);
+  columns = offset.applyStateless(columns);
+
+  auto tokens_offset = columns.getArrayColumn<uint32_t>("tokens_offset");
+
+  std::vector<uint32_t> tokens_offset_vec(tokens_offset->row(0).begin(),
+                                          tokens_offset->row(0).end());
+
+  ASSERT_EQ(tokens_offset_vec[0], 4);   // 0 * 5 + 4
+  ASSERT_EQ(tokens_offset_vec[1], 8);   // 1 * 5 + 3
+  ASSERT_EQ(tokens_offset_vec[2], 12);  // 2 * 5 + 2
+  ASSERT_EQ(tokens_offset_vec[3], 16);  // 3 * 5 + 1
+  ASSERT_EQ(tokens_offset_vec[4], 20);  // 4 * 5 + 0
 }
 
 }  // namespace thirdai::data::tests
