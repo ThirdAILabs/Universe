@@ -48,12 +48,12 @@ jobs:
       - name: Delete Container
         run: sudo docker system prune -a -f
 
-      # - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
-      #   if: failure()
-      #   env:
-      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      #   uses: voxmedia/github-action-slack-notify-build@v1
-      #   with:
-      #     channel_id: daily_udt_benchmarks
-      #     status: FAILED
-      #     color: danger
+      - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: daily_udt_benchmarks
+          status: FAILED
+          color: danger
