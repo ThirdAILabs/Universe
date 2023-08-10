@@ -13,7 +13,7 @@ thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
   for (uint32_t i = 0; i < tokens_column->numRows(); ++i) {
     new_data[i] = tokens_column->row(i).size();
     if (_ceiling && new_data[i] > _ceiling) {
-      new_data[i] = _ceiling.value();
+      new_data[i] = *_ceiling;
     }
   }
 
