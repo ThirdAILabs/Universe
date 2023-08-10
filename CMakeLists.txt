@@ -329,6 +329,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
     bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Switch.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -389,6 +390,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
+    dataset/src/blocks/text/Count.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
