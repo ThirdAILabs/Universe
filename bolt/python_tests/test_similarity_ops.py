@@ -1,5 +1,8 @@
 import numpy as np
+import pytest
 from thirdai import bolt
+
+pytestmark = [pytest.mark.unit]
 
 
 # This generates a dataset of one hot encoded vectors (with random noise added) and
@@ -41,7 +44,7 @@ def generate_dataset(n_classes, n_batches, batch_size, seed):
     return (data_batches, label_batches), labels_np
 
 
-def create_model(input_dim, lhs_sparsity, rhs_sparsity):
+def create_model(sim_op, input_dim, lhs_sparsity, rhs_sparsity):
     lhs_input = bolt.nn.Input(input_dim)
     rhs_input = bolt.nn.Input(input_dim)
 
@@ -53,7 +56,7 @@ def create_model(input_dim, lhs_sparsity, rhs_sparsity):
         dim=input_dim, input_dim=input_dim, sparsity=rhs_sparsity, activation="relu"
     )(rhs_input)
 
-    dot = bolt.nn.DotProduct()(lhs_hidden, rhs_hidden)
+    dot = sim_op(lhs_hidden, rhs_hidden)
 
     loss = bolt.nn.losses.BinaryCrossEntropy(dot, labels=bolt.nn.Input(dim=1))
 
@@ -67,7 +70,9 @@ def compute_acc(labels, scores, threshold):
     return np.mean(preds == labels)
 
 
-def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_threshold):
+def run_similarity_test(
+    sim_op, lhs_sparsity, rhs_sparsity, predict_threshold, acc_threshold
+):
     n_classes = 50
     n_batches = 20
     batch_size = 100
@@ -77,7 +82,7 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
         n_classes, n_batches, batch_size, seed=82385
     )
 
-    model = create_model(n_classes, lhs_sparsity, rhs_sparsity)
+    model = create_model(sim_op, n_classes, lhs_sparsity, rhs_sparsity)
 
     trainer = bolt.train.Trainer(model)
 
@@ -99,27 +104,87 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
 
 def test_dot_product_dense_dense_embeddings():
     # Accuracy is around 0.96-0.97
-    run_dot_product_test(
-        lhs_sparsity=1.0, rhs_sparsity=1.0, predict_threshold=0.9, acc_threshold=0.8
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=1.0,
+        rhs_sparsity=1.0,
+        predict_threshold=0.9,
+        acc_threshold=0.8,
     )
 
 
 def test_dot_product_dense_sparse_embeddings():
     # Accuracy is around 0.95-0.97
-    run_dot_product_test(
-        lhs_sparsity=1.0, rhs_sparsity=0.2, predict_threshold=0.98, acc_threshold=0.8
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=1.0,
+        rhs_sparsity=0.2,
+        predict_threshold=0.98,
+        acc_threshold=0.8,
     )
 
 
 def test_dot_product_sparse_dense_embeddings():
     # Accuracy is around 0.95-0.97
-    run_dot_product_test(
-        lhs_sparsity=0.2, rhs_sparsity=1.0, predict_threshold=0.98, acc_threshold=0.8
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=0.2,
+        rhs_sparsity=1.0,
+        predict_threshold=0.98,
+        acc_threshold=0.8,
     )
 
 
 def test_dot_product_sparse_sparse_embeddings():
     # Accuracy is around 0.85-0.9
-    run_dot_product_test(
-        lhs_sparsity=0.2, rhs_sparsity=0.2, predict_threshold=0.998, acc_threshold=0.7
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=0.2,
+        rhs_sparsity=0.2,
+        predict_threshold=0.998,
+        acc_threshold=0.7,
+    )
+
+
+def test_cosine_distance_dense_dense_embeddings():
+    # Accuracy is around 0.98-0.99
+    run_similarity_test(
+        sim_op=bolt.nn.CosineSimilarity(),
+        lhs_sparsity=1.0,
+        rhs_sparsity=1.0,
+        predict_threshold=0.6,
+        acc_threshold=0.9,
+    )
+
+
+def test_cosine_distance_dense_sparse_embeddings():
+    # Accuracy is around 0.94-0.97
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=1.0,
+        rhs_sparsity=0.2,
+        predict_threshold=0.99,
+        acc_threshold=0.8,
+    )
+
+
+def test_cosine_distance_sparse_dense_embeddings():
+    # Accuracy is around 0.94-0.97
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=0.2,
+        rhs_sparsity=1.0,
+        predict_threshold=0.99,
+        acc_threshold=0.8,
+    )
+
+
+def test_cosine_distance_sparse_sparse_embeddings():
+    # Accuracy is around 0.85-0.9
+    run_similarity_test(
+        sim_op=bolt.nn.DotProduct(),
+        lhs_sparsity=0.2,
+        rhs_sparsity=0.2,
+        predict_threshold=0.99,
+        acc_threshold=0.7,
     )
