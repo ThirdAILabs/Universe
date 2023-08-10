@@ -3,8 +3,7 @@ import tempfile
 
 from ray.air.checkpoint import Checkpoint
 from ray.air.constants import MODEL_KEY
-from thirdai._thirdai import bolt as old_bolt
-from thirdai._thirdai import bolt_v2 as bolt
+from thirdai._thirdai import bolt
 
 from ..utils import timed
 
@@ -48,7 +47,7 @@ class UDTCheckPoint(Checkpoint):
     def get_model(self):
         """Retrieve the Bolt model stored in this checkpoint."""
         with self.as_directory() as checkpoint_path:
-            return old_bolt.UniversalDeepTransformer.load(
+            return bolt.UniversalDeepTransformer.load(
                 os.path.join(checkpoint_path, MODEL_KEY)
             )
 

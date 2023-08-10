@@ -4,8 +4,9 @@
 namespace thirdai::dataset {
 
 BoltVector TextContextFeaturizer::lrcContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t lrc_len = std::min(end_index, _lrc_len);
+    const std::vector<uint32_t>& tokens, uint32_t start_index,
+    uint32_t end_index) const {
+  uint32_t lrc_len = std::min(end_index - start_index, _lrc_len);
 
   const uint32_t* context_start = tokens.data() + end_index - lrc_len;
 
@@ -18,8 +19,9 @@ BoltVector TextContextFeaturizer::lrcContext(
 }
 
 BoltVector TextContextFeaturizer::ircContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t irc_len = std::min(end_index, _irc_len);
+    const std::vector<uint32_t>& tokens, uint32_t start_index,
+    uint32_t end_index) const {
+  uint32_t irc_len = std::min(end_index - start_index, _irc_len);
 
   std::vector<uint32_t> irc_context =
       token_encoding::unigramPreservingPairgrams(
@@ -34,13 +36,15 @@ BoltVector TextContextFeaturizer::ircContext(
 }
 
 BoltVector TextContextFeaturizer::srcContext(
-    const std::vector<uint32_t>& tokens, uint32_t end_index) const {
-  uint32_t src_len = std::min(end_index, _src_len);
+    const std::vector<uint32_t>& tokens, uint32_t start_index,
+    uint32_t end_index) const {
+  uint32_t src_len = std::min(end_index - start_index, _src_len);
   uint32_t padding_len = _src_len - src_len;
 
   const uint32_t* context_start = tokens.data() + end_index - src_len;
 
-  BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
+  uint32_t alloc_len = _include_position ? _src_len + 1 : _src_len;
+  BoltVector vector(/* l= */ alloc_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
 
   // Zero pad if short range context length is greater than number of tokens. We
@@ -49,6 +53,9 @@ BoltVector TextContextFeaturizer::srcContext(
   std::fill_n(vector.active_neurons, padding_len, 0);
   std::copy(context_start, context_start + src_len,
             vector.active_neurons + padding_len);
+  if (_include_position) {
+    vector.active_neurons[_src_len] = _vocab_size + end_index - start_index;
+  }
   std::fill_n(vector.activations, vector.len, 1.0);
 
   return vector;
