@@ -1,11 +1,11 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package proto.hashtable;
 
 message SampledHashTable {
-  required uint64 num_tables = 1;
-  required uint64 reservoir_size = 2;
-  required uint64 range = 3;
+  uint64 num_tables = 1;
+  uint64 reservoir_size = 2;
+  uint64 range = 3;
 
   repeated uint32 data = 4;
   repeated uint32 counters = 5;
