@@ -11,6 +11,9 @@ class Date final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void explainFeatures(const ColumnMap& input, State& state,
+                       FeatureExplainations& explainations) const final;
+
  private:
   std::string _input_column_name;
   std::string _output_column_name;

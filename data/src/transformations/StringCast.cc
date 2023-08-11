@@ -99,6 +99,57 @@ ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
   return ValueColumn<T>::make(std::move(rows));
 }
 
+template <>
+void CastToValue<uint32_t>::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explaination =
+      "token " + value + " from " +
+      explainations.explainFeature(_input_column_name, /* feature_index = */ 0);
+
+  explainations.addFeatureExplaination(_output_column_name, parse(value),
+                                       explaination);
+}
+
+template <>
+void CastToValue<float>::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explaination =
+      "decimal " + value + " from " +
+      explainations.explainFeature(_input_column_name, /* feature_index = */ 0);
+
+  explainations.addFeatureExplaination(_output_column_name,
+                                       /* feature_index = */ 0, explaination);
+}
+
+template <>
+void CastToValue<int64_t>::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explaination =
+      "timestamp " + value + " from " +
+      explainations.explainFeature(_input_column_name, /* feature_index = */ 0);
+
+  explainations.addFeatureExplaination(_output_column_name,
+                                       /* feature_index = */ 0, explaination);
+}
+
 template <typename T>
 template <class Archive>
 void CastToValue<T>::serialize(Archive& archive) {
@@ -173,6 +224,47 @@ float CastToArray<float>::parse(const std::string& row) const {
 template <typename T>
 ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
+}
+
+template <>
+void CastToArray<uint32_t>::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explaination =
+        "token " + item + " from " +
+        explainations.explainFeature(_input_column_name,
+                                     /* feature_index = */ 0);
+
+    explainations.addFeatureExplaination(_output_column_name, parse(item),
+                                         explaination);
+  }
+}
+
+template <>
+void CastToArray<float>::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  size_t index = 0;
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explaination =
+        "decimal " + item + " from " +
+        explainations.explainFeature(_input_column_name,
+                                     /* feature_index = */ 0);
+
+    explainations.addFeatureExplaination(_output_column_name, index++,
+                                         explaination);
+  }
 }
 
 template <typename T>

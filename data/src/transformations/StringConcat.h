@@ -18,6 +18,9 @@ class StringConcat final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void explainFeatures(const ColumnMap& input, State& state,
+                       FeatureExplainations& explainations) const final;
+
  private:
   std::vector<std::string> _input_column_names;
   std::string _output_column_name;

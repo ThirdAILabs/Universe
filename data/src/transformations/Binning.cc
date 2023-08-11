@@ -1,5 +1,7 @@
 #include "Binning.h"
+#include <_types/_uint32_t.h>
 #include <data/src/columns/ValueColumns.h>
+#include <string>
 
 namespace thirdai::data {
 
@@ -42,6 +44,19 @@ std::optional<uint32_t> BinningTransformation::getBin(float value) const {
     return std::nullopt;
   }
   return (value - _inclusive_min_value) / _binsize;
+}
+
+void BinningTransformation::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  (void)state;
+
+  float value = input.getValueColumn<float>(_input_column_name)->value(0);
+  uint32_t bin = getBin(value).value();
+
+  std::string explaination =
+      explainations.explainFeature(_input_column_name, /* feature_index= */ 0);
+  explainations.addFeatureExplaination(_output_column_name, bin, explaination);
 }
 
 }  // namespace thirdai::data

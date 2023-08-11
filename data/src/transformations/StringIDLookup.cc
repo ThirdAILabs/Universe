@@ -1,6 +1,7 @@
 #include "StringIDLookup.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/CsvParser.h>
+#include <string>
 
 namespace thirdai::data {
 
@@ -56,6 +57,31 @@ ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, output);
 
   return columns;
+}
+
+void StringIDLookup::explainFeatures(
+    const ColumnMap& input, State& state,
+    FeatureExplainations& explainations) const {
+  const auto& str_input =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  const auto& vocab = state.getVocab(_vocab_key);
+
+  if (_delimiter) {
+    auto items = parseLine(str_input, *_delimiter);
+    for (const auto& item : items) {
+      explainations.addFeatureExplaination(
+          _output_column_name, vocab->getUid(item),
+          "item '" + item + "' from " +
+              explainations.explainFeature(_input_column_name,
+                                           /* feature_index= */ 0));
+    }
+  } else {
+    explainations.addFeatureExplaination(
+        _output_column_name, vocab->getUid(str_input),
+        explainations.explainFeature(_input_column_name,
+                                     /* feature_index= */ 0));
+  }
 }
 
 }  // namespace thirdai::data

@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
+#include <string>
 
 namespace thirdai::data {
 
@@ -45,6 +46,29 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
 
   columns.setColumn(_output_column, token_col);
   return columns;
+}
+
+void TextTokenizer::explainFeatures(const ColumnMap& input, State& state,
+                                    FeatureExplainations& explainations) const {
+  (void)state;
+
+  const std::string& text =
+      input.getValueColumn<std::string>(_input_column)->value(0);
+
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(text);
+  std::vector<uint32_t> indices = _encoder->encode(tokens);
+  dataset::token_encoding::mod(indices, _dim);
+
+  for (const auto& token : indices) {
+    auto word = _tokenizer->getResponsibleWord(
+        text, _encoder->undoEncoding(indices, token, _dim));
+
+    explainations.addFeatureExplaination(
+        _output_column, token,
+        "word '" + word + "' from " +
+            explainations.explainFeature(_input_column,
+                                         /* feature_index= */ 0));
+  }
 }
 
 template void TextTokenizer::serialize(cereal::BinaryInputArchive&);

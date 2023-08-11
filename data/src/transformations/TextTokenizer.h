@@ -18,6 +18,9 @@ class TextTokenizer final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void explainFeatures(const ColumnMap& input, State& state,
+                       FeatureExplainations& explainations) const final;
+
  private:
   std::string _input_column, _output_column;
 

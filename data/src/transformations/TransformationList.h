@@ -28,6 +28,9 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
+  void explainFeatures(const ColumnMap& input, State& state,
+                       FeatureExplainations& explainations) const final;
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;

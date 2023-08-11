@@ -2,6 +2,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ValueColumns.h>
+#include <string>
 
 namespace thirdai::data {
 
@@ -31,6 +32,18 @@ uint32_t StringHash::hash(const std::string& str) const {
     return hash % *_output_range;
   }
   return hash;
+}
+
+void StringHash::explainFeatures(const ColumnMap& input, State& state,
+                                 FeatureExplainations& explainations) const {
+  (void)state;
+
+  const auto& str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  explainations.addFeatureExplaination(
+      _output_column_name, hash(str),
+      explainations.explainFeature(_input_column_name, /* feature_index= */ 0));
 }
 
 }  // namespace thirdai::data

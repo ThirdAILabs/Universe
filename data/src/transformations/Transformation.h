@@ -1,8 +1,10 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
+#include <data/src/rca/FeatureExplaination.h>
 #include <data/src/transformations/State.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -31,6 +33,14 @@ class Transformation {
   ColumnMap applyStateless(ColumnMap columns) const {
     State state;
     return apply(std::move(columns), state);
+  }
+
+  virtual void explainFeatures(const ColumnMap& input, State& state,
+                               FeatureExplainations& explainations) const {
+    (void)input;
+    (void)state;
+    (void)explainations;
+    throw std::runtime_error("RCA is not supported for this transformation.");
   }
 
   virtual ~Transformation() = default;

@@ -27,8 +27,7 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
   for (const auto& name : _input_columns) {
     auto column = columns.getColumn(name);
 
-    uint32_t column_salt =
-        hashing::MurmurHash(name.data(), name.size(), 932042);
+    uint32_t column_salt = columnSalt(name);
 
     if (auto token_arrays =
             std::dynamic_pointer_cast<ArrayColumnBase<uint32_t>>(column)) {
@@ -66,6 +65,61 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
 
   return ColumnMap({{_output_indices_column, indices_col},
                     {_output_values_column, values_col}});
+}
+
+void FeatureHash::explainFeatures(const ColumnMap& input, State& state,
+                                  FeatureExplainations& explainations) const {
+  (void)state;
+
+  ColumnFeatureExplainations feature_explainations;
+
+  for (const auto& name : _input_columns) {
+    auto column = input.getColumn(name);
+
+    uint32_t column_salt = columnSalt(name);
+
+    if (auto token_arrays =
+            std::dynamic_pointer_cast<ArrayColumnBase<uint32_t>>(column)) {
+      for (size_t i = 0; i < token_arrays->numRows(); i++) {
+        for (uint32_t token : token_arrays->row(i)) {
+          uint32_t feature = hash(token, column_salt);
+
+          if (feature_explainations.count(feature)) {
+            feature_explainations[feature] +=
+                " " + explainations.explainFeature(name, token);
+          } else {
+            feature_explainations[feature] =
+                explainations.explainFeature(name, token);
+          }
+        }
+      }
+    } else if (auto decimal_arrays =
+                   std::dynamic_pointer_cast<ArrayColumnBase<float>>(column)) {
+      for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
+        size_t row_len = decimal_arrays->row(i).size();
+        for (size_t feature_idx = 0; feature_idx < row_len; feature_idx++) {
+          uint32_t feature = hash(feature_idx, column_salt);
+
+          if (feature_explainations.count(feature)) {
+            feature_explainations[feature] +=
+                " " + explainations.explainFeature(name, feature_idx);
+          } else {
+            feature_explainations[feature] =
+                explainations.explainFeature(name, feature_idx);
+          }
+        }
+      }
+    } else {
+      throw std::invalid_argument(
+          "Column '" + name +
+          "' does not have a data type that can be feature hashed.");
+    }
+  }
+
+  for (const auto& [feature, explaination] : feature_explainations) {
+    explainations.addFeatureExplaination(_output_indices_column, feature,
+                                         explaination);
+  }
 }
 
 }  // namespace thirdai::data
