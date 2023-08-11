@@ -8,36 +8,6 @@
 
 namespace thirdai::data {
 
-struct ColumnDimension {
-  size_t dim;
-  bool is_dense;
-
-  static std::optional<ColumnDimension> sparse(std::optional<size_t> dim) {
-    if (!dim) {
-      return std::nullopt;
-    }
-    return ColumnDimension(*dim, /* is_dense= */ false);
-  }
-
-  static std::optional<ColumnDimension> dense(std::optional<size_t> dim) {
-    if (!dim) {
-      return std::nullopt;
-    }
-    return ColumnDimension(*dim, /* is_dense= */ true);
-  }
-
-  friend bool operator==(const ColumnDimension& a, const ColumnDimension& b) {
-    return a.dim == b.dim && a.is_dense == b.is_dense;
-  }
-
-  friend bool operator!=(const ColumnDimension& a, const ColumnDimension& b) {
-    return !(a == b);
-  }
-
- private:
-  ColumnDimension(size_t dim, size_t is_dense) : dim(dim), is_dense(is_dense) {}
-};
-
 class Column;
 using ColumnPtr = std::shared_ptr<Column>;
 
@@ -52,7 +22,7 @@ class Column {
    * columns with varying row sizes, or token columns without a max token value
    * will not have a dimension.
    */
-  virtual std::optional<ColumnDimension> dimension() const = 0;
+  virtual std::optional<size_t> dim() const = 0;
 
   /**
    * Applies the permutation to the column in place.
