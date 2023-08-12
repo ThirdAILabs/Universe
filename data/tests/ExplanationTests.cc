@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
