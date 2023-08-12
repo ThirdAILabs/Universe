@@ -28,8 +28,8 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
-  void explainFeatures(const ColumnMap& input, State& state,
-                       FeatureExplainations& explainations) const final;
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explainations) const final;
 
   void save(const std::string& filename) const;
 

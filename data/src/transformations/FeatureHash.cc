@@ -3,6 +3,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -29,8 +30,7 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
 
     uint32_t column_salt = columnSalt(name);
 
-    if (auto token_arrays =
-            std::dynamic_pointer_cast<ArrayColumnBase<uint32_t>>(column)) {
+    if (auto token_arrays = ArrayColumnBase<uint32_t>::cast(column)) {
 #pragma omp parallel for default(none) \
     shared(token_arrays, indices, values, column_salt)
       for (size_t i = 0; i < token_arrays->numRows(); i++) {
@@ -39,8 +39,7 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
           values[i].push_back(1.0);
         }
       }
-    } else if (auto decimal_arrays =
-                   std::dynamic_pointer_cast<ArrayColumnBase<float>>(column)) {
+    } else if (auto decimal_arrays = ArrayColumnBase<float>::cast(column)) {
 #pragma omp parallel for default(none) \
     shared(decimal_arrays, indices, values, column_salt)
       for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
@@ -67,34 +66,31 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
                     {_output_values_column, values_col}});
 }
 
-void FeatureHash::explainFeatures(const ColumnMap& input, State& state,
-                                  FeatureExplainations& explainations) const {
+void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
+                                      ExplanationMap& explainations) const {
   (void)state;
 
-  ColumnFeatureExplainations feature_explainations;
+  std::unordered_map<size_t, std::string> feature_explainations;
 
   for (const auto& name : _input_columns) {
     auto column = input.getColumn(name);
 
     uint32_t column_salt = columnSalt(name);
 
-    if (auto token_arrays =
-            std::dynamic_pointer_cast<ArrayColumnBase<uint32_t>>(column)) {
+    if (auto token_arrays = ArrayColumnBase<uint32_t>::cast(column)) {
       for (size_t i = 0; i < token_arrays->numRows(); i++) {
         for (uint32_t token : token_arrays->row(i)) {
           uint32_t feature = hash(token, column_salt);
 
           if (feature_explainations.count(feature)) {
             feature_explainations[feature] +=
-                " " + explainations.explainFeature(name, token);
+                " " + explainations.explain(name, token);
           } else {
-            feature_explainations[feature] =
-                explainations.explainFeature(name, token);
+            feature_explainations[feature] = explainations.explain(name, token);
           }
         }
       }
-    } else if (auto decimal_arrays =
-                   std::dynamic_pointer_cast<ArrayColumnBase<float>>(column)) {
+    } else if (auto decimal_arrays = ArrayColumnBase<float>::cast(column)) {
       for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
         size_t row_len = decimal_arrays->row(i).size();
         for (size_t feature_idx = 0; feature_idx < row_len; feature_idx++) {
@@ -102,10 +98,10 @@ void FeatureHash::explainFeatures(const ColumnMap& input, State& state,
 
           if (feature_explainations.count(feature)) {
             feature_explainations[feature] +=
-                " " + explainations.explainFeature(name, feature_idx);
+                " " + explainations.explain(name, feature_idx);
           } else {
             feature_explainations[feature] =
-                explainations.explainFeature(name, feature_idx);
+                explainations.explain(name, feature_idx);
           }
         }
       }
@@ -117,8 +113,7 @@ void FeatureHash::explainFeatures(const ColumnMap& input, State& state,
   }
 
   for (const auto& [feature, explaination] : feature_explainations) {
-    explainations.addFeatureExplaination(_output_indices_column, feature,
-                                         explaination);
+    explainations.store(_output_indices_column, feature, explaination);
   }
 }
 

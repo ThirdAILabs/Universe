@@ -30,8 +30,8 @@ class BinningTransformation final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
-  void explainFeatures(const ColumnMap& input, State& state,
-                       FeatureExplainations& explainations) const final;
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explainations) const final;
 
  private:
   // Private constructor for cereal.

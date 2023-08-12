@@ -1,7 +1,7 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
-#include <data/src/rca/FeatureExplaination.h>
+#include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
 #include <memory>
 #include <stdexcept>
@@ -35,15 +35,27 @@ class Transformation {
     return apply(std::move(columns), state);
   }
 
-  virtual void explainFeatures(const ColumnMap& input, State& state,
-                               FeatureExplainations& explainations) const {
+  virtual ~Transformation() = default;
+
+  virtual void buildExplanationMap(const ColumnMap& input, State& state,
+                                   ExplanationMap& explainations) const {
     (void)input;
     (void)state;
     (void)explainations;
     throw std::runtime_error("RCA is not supported for this transformation.");
   }
 
-  virtual ~Transformation() = default;
+  ExplanationMap explain(const ColumnMap& input, State& state) const {
+    if (input.numRows() != 1) {
+      throw std::invalid_argument(
+          "Can only call explain on column maps with a single row.");
+    }
+    ExplanationMap explanations(input);
+
+    buildExplanationMap(input, state, explanations);
+
+    return explanations;
+  }
 
  private:
   friend class cereal::access;

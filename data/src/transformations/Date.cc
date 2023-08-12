@@ -76,37 +76,38 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-void Date::explainFeatures(const ColumnMap& input, State& state,
-                           FeatureExplainations& explainations) const {
+void Date::buildExplanationMap(const ColumnMap& input, State& state,
+                               ExplanationMap& explainations) const {
   (void)state;
 
   auto output = apply(input, state);
 
+  const auto& time_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
   TimeObject time(
       input.getValueColumn<std::string>(_input_column_name)->value(0), _format);
 
   auto date_attributes =
       output.getArrayColumn<uint32_t>(_output_column_name)->row(0);
 
-  std::string origin = explainations.explainFeature(_input_column_name,
-                                                    /* feature_index= */ 0);
+  std::string origin = explainations.explain(_input_column_name, time_str);
 
-  explainations.addFeatureExplaination(
-      _output_column_name, date_attributes[0],
-      "day of week = " + std::to_string(dayOfWeek(time)) + " from " + origin);
+  explainations.store(_output_column_name, date_attributes[0],
+                      "day of the week = " + std::to_string(dayOfWeek(time)) +
+                          " from " + origin);
 
-  explainations.addFeatureExplaination(
-      _output_column_name, date_attributes[1],
-      "month = " + std::to_string(time.month()) + " from " + origin);
+  explainations.store(_output_column_name, date_attributes[1],
+                      "month of the year = " + std::to_string(time.month()) +
+                          " from " + origin);
 
-  explainations.addFeatureExplaination(
+  explainations.store(
       _output_column_name, date_attributes[2],
-      "week of month = " + std::to_string(weekOfMonth(time)) + " from " +
+      "week of the month = " + std::to_string(weekOfMonth(time)) + " from " +
           origin);
 
-  explainations.addFeatureExplaination(
-      _output_column_name, date_attributes[3],
-      "week of year = " + std::to_string(weekOfYear(time)) + " from " + origin);
+  explainations.store(_output_column_name, date_attributes[3],
+                      "week of the year = " + std::to_string(weekOfYear(time)) +
+                          " from " + origin);
 }
 
 template void Date::serialize(cereal::BinaryInputArchive&);

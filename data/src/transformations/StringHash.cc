@@ -34,16 +34,15 @@ uint32_t StringHash::hash(const std::string& str) const {
   return hash;
 }
 
-void StringHash::explainFeatures(const ColumnMap& input, State& state,
-                                 FeatureExplainations& explainations) const {
+void StringHash::buildExplanationMap(const ColumnMap& input, State& state,
+                                     ExplanationMap& explainations) const {
   (void)state;
 
   const auto& str =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  explainations.addFeatureExplaination(
-      _output_column_name, hash(str),
-      explainations.explainFeature(_input_column_name, /* feature_index= */ 0));
+  explainations.store(_output_column_name, hash(str),
+                      explainations.explain(_input_column_name, str));
 }
 
 }  // namespace thirdai::data

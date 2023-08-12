@@ -48,8 +48,8 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-void TextTokenizer::explainFeatures(const ColumnMap& input, State& state,
-                                    FeatureExplainations& explainations) const {
+void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
+                                        ExplanationMap& explainations) const {
   (void)state;
 
   const std::string& text =
@@ -59,15 +59,13 @@ void TextTokenizer::explainFeatures(const ColumnMap& input, State& state,
   std::vector<uint32_t> indices = _encoder->encode(tokens);
   dataset::token_encoding::mod(indices, _dim);
 
-  for (const auto& token : indices) {
-    auto word = _tokenizer->getResponsibleWord(
-        text, _encoder->undoEncoding(indices, token, _dim));
+  for (const auto& index : indices) {
+    uint32_t token = _encoder->undoEncoding(tokens, index, _dim);
+    auto word = _tokenizer->getResponsibleWord(text, token);
 
-    explainations.addFeatureExplaination(
-        _output_column, token,
-        "word '" + word + "' from " +
-            explainations.explainFeature(_input_column,
-                                         /* feature_index= */ 0));
+    explainations.store(_output_column, index,
+                        "word '" + word + "' from " +
+                            explainations.explain(_input_column, text));
   }
 }
 

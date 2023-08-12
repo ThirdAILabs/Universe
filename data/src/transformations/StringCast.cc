@@ -100,54 +100,47 @@ ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
 }
 
 template <>
-void CastToValue<uint32_t>::explainFeatures(
-    const ColumnMap& input, State& state,
-    FeatureExplainations& explainations) const {
+void CastToValue<uint32_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
   (void)state;
 
   const std::string& value =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  std::string explaination =
-      "token " + value + " from " +
-      explainations.explainFeature(_input_column_name, /* feature_index = */ 0);
+  std::string explaination = "token " + value + " from " +
+                             explainations.explain(_input_column_name, value);
 
-  explainations.addFeatureExplaination(_output_column_name, parse(value),
-                                       explaination);
+  explainations.store(_output_column_name, parse(value), explaination);
 }
 
 template <>
-void CastToValue<float>::explainFeatures(
-    const ColumnMap& input, State& state,
-    FeatureExplainations& explainations) const {
+void CastToValue<float>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
   (void)state;
 
   const std::string& value =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  std::string explaination =
-      "decimal " + value + " from " +
-      explainations.explainFeature(_input_column_name, /* feature_index = */ 0);
+  std::string explaination = "decimal " + value + " from " +
+                             explainations.explain(_input_column_name, value);
 
-  explainations.addFeatureExplaination(_output_column_name,
-                                       /* feature_index = */ 0, explaination);
+  explainations.store(_output_column_name,
+                      /* feature_index = */ 0, explaination);
 }
 
 template <>
-void CastToValue<int64_t>::explainFeatures(
-    const ColumnMap& input, State& state,
-    FeatureExplainations& explainations) const {
+void CastToValue<int64_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
   (void)state;
 
   const std::string& value =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  std::string explaination =
-      "timestamp " + value + " from " +
-      explainations.explainFeature(_input_column_name, /* feature_index = */ 0);
+  std::string explaination = "timestamp " + value + " from " +
+                             explainations.explain(_input_column_name, value);
 
-  explainations.addFeatureExplaination(_output_column_name,
-                                       /* feature_index = */ 0, explaination);
+  explainations.store(_output_column_name,
+                      /* feature_index = */ 0, explaination);
 }
 
 template <typename T>
@@ -227,9 +220,8 @@ ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
 }
 
 template <>
-void CastToArray<uint32_t>::explainFeatures(
-    const ColumnMap& input, State& state,
-    FeatureExplainations& explainations) const {
+void CastToArray<uint32_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
   (void)state;
 
   std::string input_str =
@@ -238,18 +230,15 @@ void CastToArray<uint32_t>::explainFeatures(
   for (const auto& item : text::split(input_str, _delimiter)) {
     std::string explaination =
         "token " + item + " from " +
-        explainations.explainFeature(_input_column_name,
-                                     /* feature_index = */ 0);
+        explainations.explain(_input_column_name, input_str);
 
-    explainations.addFeatureExplaination(_output_column_name, parse(item),
-                                         explaination);
+    explainations.store(_output_column_name, parse(item), explaination);
   }
 }
 
 template <>
-void CastToArray<float>::explainFeatures(
-    const ColumnMap& input, State& state,
-    FeatureExplainations& explainations) const {
+void CastToArray<float>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
   (void)state;
 
   std::string input_str =
@@ -259,11 +248,9 @@ void CastToArray<float>::explainFeatures(
   for (const auto& item : text::split(input_str, _delimiter)) {
     std::string explaination =
         "decimal " + item + " from " +
-        explainations.explainFeature(_input_column_name,
-                                     /* feature_index = */ 0);
+        explainations.explain(_input_column_name, input_str);
 
-    explainations.addFeatureExplaination(_output_column_name, index++,
-                                         explaination);
+    explainations.store(_output_column_name, index++, explaination);
   }
 }
 

@@ -8,15 +8,14 @@
 
 namespace thirdai::data {
 
-void TransformationList::explainFeatures(
-    const ColumnMap& input, State& state,
-    FeatureExplainations& explainations) const {
+void TransformationList::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
   ColumnMap last_input = input;
 
   for (const auto& transformation : _transformations) {
-    // Apply the transformatino first to make sure that the input is valid.
+    // Apply the transformation first to make sure that the input is valid.
     ColumnMap next_input = transformation->apply(last_input, state);
-    transformation->explainFeatures(last_input, state, explainations);
+    transformation->buildExplanationMap(last_input, state, explainations);
     last_input = std::move(next_input);
   }
 }

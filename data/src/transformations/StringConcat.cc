@@ -33,21 +33,4 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-void StringConcat::explainFeatures(const ColumnMap& input, State& state,
-                                   FeatureExplainations& explainations) const {
-  (void)input;
-  (void)state;
-
-  std::string explaination;
-  for (const auto& col_name : _input_column_names) {
-    // Should we have some commas or and's here?
-    explaination +=
-        explainations.explainFeature(col_name, /* feature_index= */ 0) + " ";
-  }
-  explaination.pop_back();
-
-  explainations.addFeatureExplaination(_output_column_name,
-                                       /* feature_index= */ 0, explaination);
-}
-
 }  // namespace thirdai::data
