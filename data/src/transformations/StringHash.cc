@@ -42,7 +42,8 @@ void StringHash::buildExplanationMap(const ColumnMap& input, State& state,
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
   explainations.store(_output_column_name, hash(str),
-                      explainations.explain(_input_column_name, str));
+                      "item '" + str + "' from " +
+                          explainations.explain(_input_column_name, str));
 }
 
 }  // namespace thirdai::data

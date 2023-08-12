@@ -130,7 +130,8 @@ TEST(ExplanationTests, StringHash) {
 
   uint32_t feature = output.getValueColumn<uint32_t>("bbb")->value(0);
 
-  ASSERT_EQ(explainations.explain("bbb", feature), "column 'aaa'");
+  ASSERT_EQ(explainations.explain("bbb", feature),
+            "item 'some str' from column 'aaa'");
 }
 
 TEST(ExplanationTests, StringIDLookup) {
@@ -193,7 +194,7 @@ TEST(ExplanationTests, ComposedTransformations) {
   std::set<std::string> expected_msgs = {
       "word 'we' from column 'a'",      "word 'baked' from column 'a'",
       "word 'cookies' from column 'a'", "decimal 16.4 from column 'b'",
-      "decimal 7.5 from column 'c'",    "column 'd'",
+      "decimal 7.5 from column 'c'",    "item 'to_hash' from column 'd'",
       "token 6 from column 'e'",        "token 4 from column 'e'",
       "token 2 from column 'e'",
   };
