@@ -2,10 +2,13 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
+#include <cstddef>
 #include <exception>
 #include <numeric>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 
 namespace thirdai::data {
 
@@ -31,18 +34,14 @@ static std::vector<size_t> permutation(const std::vector<size_t>& offsets) {
   return permutation;
 }
 
-static void setErrorIfMismatchedRowSize(uint32_t source_row_size,
-                                        uint32_t target_row_size,
-                                        uint32_t row_number,
-                                        std::exception_ptr& error_ptr) {
-  if (source_row_size != target_row_size) {
-    std::stringstream error_ss;
-    error_ss << "Recurrence error: source is not the same size as target ("
-             << source_row_size << " vs. " << target_row_size << ") in row "
-             << row_number << ".";
-#pragma omp critical
-    error_ptr = std::make_exception_ptr(std::invalid_argument(error_ss.str()));
-  }
+static std::exception_ptr mismatchedRowSizeError(uint32_t source_row_size,
+                                                 uint32_t target_row_size,
+                                                 uint32_t row_number) {
+  std::stringstream error_ss;
+  error_ss << "Recurrence error: source is not the same size as target ("
+           << source_row_size << " vs. " << target_row_size << ") in row "
+           << row_number << ".";
+  return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
 }
 
 ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
@@ -65,10 +64,12 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
     auto source_row = source_column->row(i);
     auto target_row = target_column->row(i);
 
-    setErrorIfMismatchedRowSize(
-        /* source_row_size= */ source_row.size(),
-        /* target_row_size= */ target_row.size(), /* row_number= */ i,
-        /* error_ptr= */ error);
+    if (source_row.size() != target_row.size()) {
+#pragma omp critical
+      error = mismatchedRowSizeError(/* source_row_size= */ source_row.size(),
+                                     /* target_row_size= */ target_row.size(),
+                                     /* row_number= */ i);
+    }
 
     size_t offset = row_offsets[i];
     for (uint32_t row_pos = 0; row_pos < source_row.size(); ++row_pos) {
