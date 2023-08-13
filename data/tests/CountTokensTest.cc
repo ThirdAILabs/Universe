@@ -19,7 +19,7 @@ static void assertRowsEqual(RowView<uint32_t> row_1, RowView<uint32_t> row_2) {
 }
 
 static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
-                                std::optional<uint32_t> ceiling) {
+                                std::optional<uint32_t> max_tokens) {
   auto tokens_data_copy = tokens_data;
   auto tokens_column =
       ArrayColumn<uint32_t>::make(/* data= */ std::move(tokens_data),
@@ -35,7 +35,7 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
 
   CountTokens counter(/* input_column= */ "tokens",
                       /* output_column= */ "count",
-                      /* ceiling= */ ceiling);
+                      /* max_tokens= */ max_tokens);
 
   columns = counter.applyStateless(columns);
 
@@ -48,16 +48,16 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
     // Check counts are correct.
     uint32_t num_tokens = tokens_column->row(i).size();
     uint32_t expected_count =
-        ceiling ? std::min(*ceiling, num_tokens) : num_tokens;
+        max_tokens ? std::min(*max_tokens, num_tokens) : num_tokens;
     ASSERT_EQ(count_column->value(i), expected_count);
   }
 
-  if (ceiling) {
-    ASSERT_EQ(count_column->dimension()->dim, ceiling.value() + 1);
+  if (max_tokens) {
+    ASSERT_EQ(count_column->dimension()->dim, max_tokens.value() + 1);
   }
 }
 
-TEST(CountTokensTest, CorrectCountsNoCeiling) {
+TEST(CountTokensTest, CorrectCountsNoMaxTokens) {
   assertCorrectCounts(/* tokens_data= */
                       {{},
                        {0},
@@ -65,10 +65,10 @@ TEST(CountTokensTest, CorrectCountsNoCeiling) {
                        {0, 1, 2},
                        {0, 1, 2, 3},
                        {0, 1, 2, 3, 4}},
-                      /* ceiling= */ std::nullopt);
+                      /* max_tokens= */ std::nullopt);
 }
 
-TEST(CountTokensTest, CorrectCountsWithCeiling) {
+TEST(CountTokensTest, CorrectCountsWithMaxTokens) {
   assertCorrectCounts(/* tokens_data= */
                       {{},
                        {0},
@@ -76,7 +76,7 @@ TEST(CountTokensTest, CorrectCountsWithCeiling) {
                        {0, 1, 2},
                        {0, 1, 2, 3},
                        {0, 1, 2, 3, 4}},
-                      /* ceiling= */ 3);
+                      /* max_tokens= */ 3);
 }
 
 }  // namespace thirdai::data::tests
