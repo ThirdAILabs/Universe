@@ -534,6 +534,12 @@ void UDTMachClassifier::introduceDocuments(
   auto dataset_loader =
       _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
 
+  const auto& labels = cold_start_data->labelColumn();
+  uint32_t row_idx = 0;
+
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
   while (
       auto doc_samples = dataset_loader->loadSome(
           defaults::BATCH_SIZE,
@@ -541,12 +547,6 @@ void UDTMachClassifier::introduceDocuments(
           verbose)) {
     auto doc_samples_tensors = bolt::train::convertDatasets(
         *doc_samples, _classifier->model()->inputDims());
-
-    const auto& labels = cold_start_data->labelColumn();
-    uint32_t row_idx = 0;
-
-    uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
-        _mach_label_block->index()->numHashes());
 
     std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>>
         top_k_per_doc;
