@@ -6,6 +6,14 @@
 
 namespace thirdai::data {
 
+/**
+ * Unrolls a sequence into a separate row for each time step.
+ * source_input_column and target_input_column are representations of the
+ * same sequences. This gives us the flexibility to featurize source and
+ * target tokens differently, e.g. use hash-based position encoding for the
+ * source sequence and use offset-based position encoding for the target
+ * sequence.
+ */
 class UnrollSequence final : public Transformation {
  public:
   UnrollSequence(std::string source_input_column,
