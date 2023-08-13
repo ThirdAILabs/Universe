@@ -25,6 +25,7 @@ ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
                     ArrayColumn<uint32_t>::make(std::move(new_data), _dim));
   return columns;
 }
+
 ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
                                          State& state) const {
   (void)state;
