@@ -570,6 +570,9 @@ void UDTMachClassifier::introduceDocuments(
     }
   }
 
+  // This part has to be outside of the streaming for-loop because cold start
+  // samples from the same input sample may come in different batches, leading
+  // to a double insertion / "manually added a previously seen label" error.
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
                                   num_random_hashes);
