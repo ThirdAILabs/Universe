@@ -31,11 +31,11 @@ ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
   (void)state;
   auto input_column = columns.getArrayColumn<uint32_t>(_input_column);
 
-  if (!input_column->dimension()) {
+  if (!input_column->dim()) {
     throw std::invalid_argument(
         "OffsetPositionTransform: input column must have a dimension.");
   }
-  uint32_t vocab_size = input_column->dimension()->dim;
+  uint32_t vocab_size = input_column->dim().value();
 
   std::vector<std::vector<uint32_t>> offset_tokens(input_column->numRows());
 #pragma omp parallel for default(none) \

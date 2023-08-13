@@ -17,9 +17,6 @@ class ValueColumn : public ValueColumnBase<T> {
   static ValueColumnPtr<T> make(std::vector<T>&& data,
                                 std::optional<size_t> dim);
 
-  static ValueColumnPtr<T> makeWithColumnDimension(
-      std::vector<T>&& data, std::optional<ColumnDimension> dim);
-
   static ValueColumnPtr<T> make(std::vector<T>&& data);
 
   size_t numRows() const final { return _data.size(); }

@@ -18,9 +18,6 @@ class ArrayColumn : public ArrayColumnBase<T> {
   static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data,
                                 std::optional<size_t> dim);
 
-  static ArrayColumnPtr<T> makeWithColumnDimension(
-      std::vector<std::vector<T>>&& data, std::optional<ColumnDimension> dim);
-
   size_t numRows() const final { return _data.size(); }
 
   std::optional<size_t> dim() const final { return _dim; }

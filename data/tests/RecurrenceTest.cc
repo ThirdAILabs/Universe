@@ -72,8 +72,8 @@ TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
       /* column= */ *target_unrolled,
       /* expected= */ {{0}, {1}, {2}, {3}, {4}, {5}});
 
-  ASSERT_EQ(source_unrolled->dimension()->dim, tokens->dimension()->dim);
-  ASSERT_EQ(target_unrolled->dimension()->dim, tokens->dimension()->dim);
+  ASSERT_EQ(source_unrolled->dim().value(), tokens->dim().value());
+  ASSERT_EQ(target_unrolled->dim().value(), tokens->dim().value());
 }
 
 TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
@@ -111,8 +111,8 @@ TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
       /* column= */ *target_unrolled,
       /* expected= */ {{6}, {7}, {8}, {9}, {10}, {11}});
 
-  ASSERT_EQ(source_unrolled->dimension()->dim, source->dimension()->dim);
-  ASSERT_EQ(target_unrolled->dimension()->dim, target->dimension()->dim);
+  ASSERT_EQ(source_unrolled->dim().value(), source->dim().value());
+  ASSERT_EQ(target_unrolled->dim().value(), target->dim().value());
 }
 
 }  // namespace thirdai::data::tests

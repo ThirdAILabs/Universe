@@ -81,20 +81,11 @@ template ValueColumnPtr<std::string> ValueColumn<std::string>::make(
 template ValueColumnPtr<int64_t> ValueColumn<int64_t>::make(
     std::vector<int64_t>&&);
 
-template <>
-ValueColumnPtr<uint32_t> ValueColumn<uint32_t>::makeWithColumnDimension(
-    std::vector<uint32_t>&& data, std::optional<ColumnDimension> dim) {
-  if (!dim) {
-    return make(std::move(data), std::nullopt);
-  }
-  return make(std::move(data), dim->dim);
-}
-
 template <typename T>
 ColumnPtr ValueColumn<T>::permute(
     const std::vector<size_t>& permutation) const {
   auto new_data = permuteVector(_data, permutation);
-  return ValueColumnPtr<T>(new ValueColumn<T>(std::move(new_data), _dimension));
+  return ValueColumnPtr<T>(new ValueColumn<T>(std::move(new_data), _dim));
 }
 
 }  // namespace thirdai::data

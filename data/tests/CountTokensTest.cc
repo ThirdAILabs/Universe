@@ -53,7 +53,7 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
   }
 
   if (max_tokens) {
-    ASSERT_EQ(count_column->dimension()->dim, max_tokens.value() + 1);
+    ASSERT_EQ(count_column->dim().value(), max_tokens.value() + 1);
   }
 }
 

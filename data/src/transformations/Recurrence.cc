@@ -85,10 +85,10 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
     std::rethrow_exception(error);
   }
 
-  auto unrolled_source_column = ArrayColumn<uint32_t>::makeWithColumnDimension(
-      std::move(unrolled_source_data), source_column->dimension());
-  auto unrolled_target_column = ValueColumn<uint32_t>::makeWithColumnDimension(
-      std::move(unrolled_target_data), target_column->dimension());
+  auto unrolled_source_column = ArrayColumn<uint32_t>::make(
+      std::move(unrolled_source_data), source_column->dim());
+  auto unrolled_target_column = ValueColumn<uint32_t>::make(
+      std::move(unrolled_target_data), target_column->dim());
 
   auto permutation_indices = permutation(row_offsets);
   columns = columns.permute(permutation_indices);
