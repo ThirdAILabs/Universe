@@ -19,7 +19,7 @@ template class ArrayColumn<float>;
 
 template <typename T>
 ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {
-  if (_dimension != other->dimension()) {
+  if (dim() != other->dim()) {
     throw std::invalid_argument(
         "Can only concatenate columns with the same dimension.");
   }
@@ -34,10 +34,10 @@ ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {
       concatVectors(std::move(_data), std::move(other_concrete->_data));
 
   auto new_column =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), _dimension));
+      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), dim()));
 
-  _dimension.reset();
-  other_concrete->_dimension.reset();
+  _dim.reset();
+  other_concrete->_dim.reset();
 
   return new_column;
 }
@@ -47,11 +47,10 @@ std::pair<ColumnPtr, ColumnPtr> ArrayColumn<T>::split(size_t starting_offset) {
   auto [front, back] = splitVector(std::move(_data), starting_offset);
 
   auto front_col =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(front), _dimension));
-  auto back_col =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(back), _dimension));
+      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(front), dim()));
+  auto back_col = ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(back), dim()));
 
-  _dimension.reset();
+  _dim.reset();
 
   return {front_col, back_col};
 }
@@ -72,13 +71,12 @@ ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
   }
 
   return ArrayColumnPtr<uint32_t>(
-      new ArrayColumn<uint32_t>(std::move(data), ColumnDimension::sparse(dim)));
+      new ArrayColumn<uint32_t>(std::move(data), dim));
 }
 
 template <>
 ArrayColumnPtr<float> ArrayColumn<float>::make(
     std::vector<std::vector<float>>&& data, std::optional<size_t> dim) {
-  std::optional<ColumnDimension> dimension = std::nullopt;
   if (dim) {
     bool all_dims_match = std::all_of(
         data.begin(), data.end(),
@@ -88,12 +86,9 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
       throw std::invalid_argument(
           "Not all rows in DecimalArray column match provided dimension.");
     }
-
-    dimension = ColumnDimension::dense(*dim);
   }
 
-  return ArrayColumnPtr<float>(
-      new ArrayColumn<float>(std::move(data), dimension));
+  return ArrayColumnPtr<float>(new ArrayColumn<float>(std::move(data), dim));
 }
 
 template <typename T>
