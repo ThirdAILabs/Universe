@@ -390,6 +390,25 @@ def test_mach_udt_introduce_documents(fast_approximation):
     os.remove(new_docs)
 
 
+def test_mach_udt_streaming_introduce_documents():
+    model = train_simple_mach_udt()
+
+    new_docs = "NEW_DOCS.csv"
+    with open(new_docs, "w") as f:
+        f.write("label,title,description\n")
+        for i in range(4, 10_000):
+            f.write(f"{i},some title,some description\n")
+
+    model.introduce_documents(
+        new_docs,
+        strong_column_names=["title"],
+        weak_column_names=["description"],
+        max_in_memory_batches=1,
+    )
+
+    os.remove(new_docs)
+
+
 def test_mach_udt_hash_based_methods():
     # Set mach_sampling_threshold = 1.0 to ensure that we use MACH index for
     # active neuron selection.
