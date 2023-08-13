@@ -18,8 +18,7 @@ static std::vector<std::vector<uint32_t>> hashPositions(
                                   /* output_column= */ "pos_sequence",
                                   /* hash_range= */ 100000);
 
-  State state(/* mach_index= */ nullptr);
-  column_map = transform.apply(column_map, state);
+  column_map = transform.applyStateless(column_map);
 
   auto pos_seq_column = column_map.getArrayColumn<uint32_t>("pos_sequence");
 
