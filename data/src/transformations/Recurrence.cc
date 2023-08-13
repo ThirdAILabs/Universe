@@ -78,7 +78,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
       unrolled_source_data[offset + row_pos] =
           std::vector(source_row.begin(), source_row.begin() + row_pos);
       // Target is row_pos-th token; the next token to be predicted.
-      unrolled_target_data[offset + row_pos] = *(target_row.begin() + row_pos);
+      unrolled_target_data[offset + row_pos] = target_row.begin()[row_pos];
     }
   }
 

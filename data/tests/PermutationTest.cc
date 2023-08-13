@@ -52,8 +52,8 @@ TEST(PermutationTest, RandomOneToManyPermutation) {
 
     ASSERT_EQ(permuted_arr_col->row(i).size(), 2);
     auto expected_array = orig_arr_col->row(permutation[i]);
-    ASSERT_EQ(*(permuted_arr_col->row(i).begin()), expected_array[0]);
-    ASSERT_EQ(*(permuted_arr_col->row(i).begin() + 1), expected_array[1]);
+    ASSERT_EQ(permuted_arr_col->row(i)[0], expected_array[0]);
+    ASSERT_EQ(permuted_arr_col->row(i)[1], expected_array[1]);
   }
 }
 
