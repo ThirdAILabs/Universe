@@ -12,7 +12,7 @@ ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
   auto input_column = columns.getArrayColumn<uint32_t>(_input_column);
   std::vector<std::vector<uint32_t>> hashed_tokens(input_column->numRows());
 #pragma omp parallel for default(none) shared(input_column, hashed_tokens)
-  for (uint32_t i = 0; i < input_column->numRows(); ++i) {
+  for (uint32_t i = 0; i < input_column->numRows(); i++) {
     hashed_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
     for (uint32_t token : input_column->row(i)) {
@@ -40,7 +40,7 @@ ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
   std::vector<std::vector<uint32_t>> offset_tokens(input_column->numRows());
 #pragma omp parallel for default(none) \
     shared(input_column, offset_tokens, vocab_size)
-  for (uint32_t i = 0; i < input_column->numRows(); ++i) {
+  for (uint32_t i = 0; i < input_column->numRows(); i++) {
     offset_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
     for (uint32_t token : input_column->row(i)) {

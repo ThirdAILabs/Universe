@@ -36,7 +36,7 @@ inline std::vector<T> permuteVector(const std::vector<T>& vector,
   std::vector<T> new_vector(permutation.size());
 #pragma omp parallel for default(none) \
     shared(vector, permutation, invalid_index, new_vector)
-  for (size_t i = 0; i < new_vector.size(); ++i) {
+  for (size_t i = 0; i < new_vector.size(); i++) {
     if (permutation[i] >= vector.size()) {
 #pragma omp critical
       invalid_index = permutation[i];

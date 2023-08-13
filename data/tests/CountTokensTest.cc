@@ -13,7 +13,7 @@ static void assertRowsEqual(RowView<uint32_t> row_1, RowView<uint32_t> row_2) {
   ASSERT_EQ(row_1.size(), row_2.size());
   std::vector<uint32_t> row_1_vec(row_1.begin(), row_1.end());
   std::vector<uint32_t> row_2_vec(row_2.begin(), row_2.end());
-  for (uint32_t i = 0; i < row_1.size(); ++i) {
+  for (uint32_t i = 0; i < row_1.size(); i++) {
     ASSERT_EQ(row_1_vec[i], row_2_vec[i]);
   }
 }
@@ -42,7 +42,7 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
   auto final_tokens_column = columns.getArrayColumn<uint32_t>("tokens");
   auto count_column = columns.getValueColumn<uint32_t>("count");
 
-  for (uint32_t i = 0; i < columns.numRows(); ++i) {
+  for (uint32_t i = 0; i < columns.numRows(); i++) {
     // Make sure we didn't change the tokens column
     assertRowsEqual(tokens_column_copy->row(i), final_tokens_column->row(i));
     // Check counts are correct.

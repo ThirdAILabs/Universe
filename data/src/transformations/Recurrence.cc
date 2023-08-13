@@ -12,7 +12,7 @@ namespace thirdai::data {
 static std::vector<size_t> offsets(const ArrayColumnBase<uint32_t>& column) {
   std::vector<size_t> offsets(column.numRows() + 1);
   offsets[0] = 0;
-  for (uint32_t i = 0; i < column.numRows(); ++i) {
+  for (uint32_t i = 0; i < column.numRows(); i++) {
     offsets[i + 1] = offsets[i] + column.row(i).size();
   }
   return offsets;
@@ -22,7 +22,7 @@ static std::vector<size_t> permutation(const std::vector<size_t>& offsets) {
   std::vector<size_t> permutation(offsets.back());
 
 #pragma omp parallel for default(none) shared(permutation, offsets)
-  for (uint32_t i = 0; i < offsets.size() - 1; ++i) {
+  for (uint32_t i = 0; i < offsets.size() - 1; i++) {
     for (uint32_t row_pos = offsets[i]; row_pos < offsets[i + 1]; ++row_pos) {
       permutation[row_pos] = i;
     }
@@ -61,7 +61,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 #pragma omp parallel for default(none)                                      \
     shared(source_column, target_column, row_offsets, unrolled_source_data, \
                unrolled_target_data, error)
-  for (uint32_t i = 0; i < source_column->numRows(); ++i) {
+  for (uint32_t i = 0; i < source_column->numRows(); i++) {
     auto source_row = source_column->row(i);
     auto target_row = target_column->row(i);
 

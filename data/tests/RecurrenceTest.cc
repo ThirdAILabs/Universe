@@ -13,7 +13,7 @@ static void assertRowsEqual(
     const ArrayColumnBase<uint32_t>& column,
     const std::vector<std::vector<uint32_t>>& expected) {
   ASSERT_EQ(column.numRows(), expected.size());
-  for (uint32_t i = 0; i < column.numRows(); ++i) {
+  for (uint32_t i = 0; i < column.numRows(); i++) {
     uint32_t pos = 0;
     for (uint32_t token : column.row(i)) {
       ASSERT_EQ(token, expected[i][pos]);

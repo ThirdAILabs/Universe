@@ -62,7 +62,7 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     for (auto it = user_item_history.rbegin();
          it != user_item_history.rend() &&
          user_last_n_items.size() < _track_last_n;
-         ++it) {
+         i++ t) {
       if (it->timestamp <= (timestamp - _time_lag)) {
         user_last_n_items.push_back(it->item);
       }
