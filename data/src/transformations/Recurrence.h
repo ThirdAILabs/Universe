@@ -6,10 +6,12 @@
 
 namespace thirdai::data {
 
-class Recurrence final : public Transformation {
+class SequenceUnrolling final : public Transformation {
  public:
-  Recurrence(std::string source_input_column, std::string target_input_column,
-             std::string source_output_column, std::string target_output_column)
+  SequenceUnrolling(std::string source_input_column,
+                    std::string target_input_column,
+                    std::string source_output_column,
+                    std::string target_output_column)
       : _source_input_column(std::move(source_input_column)),
         _target_input_column(std::move(target_input_column)),
         _source_output_column(std::move(source_output_column)),

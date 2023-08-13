@@ -31,10 +31,10 @@ TEST(RecurrenceTest, DifferentRowSizesThrowsError) {
   ColumnMap columns(
       /* columns= */ {{"source", source_column}, {"target", target_column}});
 
-  Recurrence recurrence(/* source_input_column= */ "source",
-                        /* target_input_column= */ "target",
-                        /* source_output_column= */ "source_unrolled",
-                        /* target_output_column= */ "target_unrolled");
+  SequenceUnrolling recurrence(/* source_input_column= */ "source",
+                               /* target_input_column= */ "target",
+                               /* source_output_column= */ "source_unrolled",
+                               /* target_output_column= */ "target_unrolled");
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       recurrence.applyStateless(columns), std::invalid_argument);
@@ -47,10 +47,10 @@ TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
 
   ColumnMap columns(/* columns= */ {{"tokens", tokens}});
 
-  Recurrence recurrence(/* source_input_column= */ "tokens",
-                        /* target_input_column= */ "tokens",
-                        /* source_output_column= */ "source_unrolled",
-                        /* target_output_column= */ "target_unrolled");
+  SequenceUnrolling recurrence(/* source_input_column= */ "tokens",
+                               /* target_input_column= */ "tokens",
+                               /* source_output_column= */ "source_unrolled",
+                               /* target_output_column= */ "target_unrolled");
 
   columns = recurrence.applyStateless(columns);
 
@@ -86,10 +86,10 @@ TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
 
   ColumnMap columns(/* columns= */ {{"source", source}, {"target", target}});
 
-  Recurrence recurrence(/* source_input_column= */ "source",
-                        /* target_input_column= */ "target",
-                        /* source_output_column= */ "source_unrolled",
-                        /* target_output_column= */ "target_unrolled");
+  SequenceUnrolling recurrence(/* source_input_column= */ "source",
+                               /* target_input_column= */ "target",
+                               /* source_output_column= */ "source_unrolled",
+                               /* target_output_column= */ "target_unrolled");
 
   columns = recurrence.applyStateless(columns);
 

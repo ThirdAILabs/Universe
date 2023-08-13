@@ -44,7 +44,7 @@ static std::exception_ptr mismatchedRowSizeError(uint32_t source_row_size,
   return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
 }
 
-ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
+ColumnMap SequenceUnrolling::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto source_column = columns.getArrayColumn<uint32_t>(_source_input_column);
