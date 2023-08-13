@@ -91,9 +91,6 @@ ValueColumnPtr<uint32_t> ValueColumn<uint32_t>::makeWithColumnDimension(
   return make(std::move(data), dim->dim);
 }
 
-// This must be defined after the make() definitions since it uses make(),
-// otherwise we get an "explicit specialization after instantiation" error.
-// https://stackoverflow.com/questions/7774188/explicit-specialization-after-instantiation
 template <typename T>
 ColumnPtr ValueColumn<T>::permute(
     const std::vector<size_t>& permutation) const {

@@ -113,9 +113,6 @@ ArrayColumn<uint32_t>::makeWithColumnDimension(
 template ArrayColumnPtr<float> ArrayColumn<float>::makeWithColumnDimension(
     std::vector<std::vector<float>>&& data, std::optional<ColumnDimension> dim);
 
-// This must be defined after the make() definitions since it uses make(),
-// otherwise we get an "explicit specialization after instantiation" error.
-// https://stackoverflow.com/questions/7774188/explicit-specialization-after-instantiation
 template <typename T>
 ColumnPtr ArrayColumn<T>::permute(
     const std::vector<size_t>& permutation) const {
