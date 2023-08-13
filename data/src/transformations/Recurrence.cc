@@ -23,9 +23,8 @@ static std::vector<size_t> permutation(const std::vector<size_t>& offsets) {
 
 #pragma omp parallel for default(none) shared(permutation, offsets)
   for (uint32_t i = 0; i < offsets.size() - 1; ++i) {
-    uint32_t row_size = offsets[i + 1] - offsets[i];
-    for (uint32_t row_pos = 0; row_pos < row_size; ++row_pos) {
-      permutation[offsets[i] + row_pos] = i;
+    for (uint32_t row_pos = offsets[i]; row_pos < offsets[i + 1]; ++row_pos) {
+      permutation[row_pos] = i;
     }
   }
 
@@ -61,7 +60,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none)                                      \
     shared(source_column, target_column, row_offsets, unrolled_source_data, \
-           unrolled_target_data, error)
+               unrolled_target_data, error)
   for (uint32_t i = 0; i < source_column->numRows(); ++i) {
     auto source_row = source_column->row(i);
     auto target_row = target_column->row(i);
