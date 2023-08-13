@@ -6,12 +6,12 @@
 
 namespace thirdai::data {
 
-class SequenceUnrolling final : public Transformation {
+class UnrollSequence final : public Transformation {
  public:
-  SequenceUnrolling(std::string source_input_column,
-                    std::string target_input_column,
-                    std::string source_output_column,
-                    std::string target_output_column)
+  UnrollSequence(std::string source_input_column,
+                 std::string target_input_column,
+                 std::string source_output_column,
+                 std::string target_output_column)
       : _source_input_column(std::move(source_input_column)),
         _target_input_column(std::move(target_input_column)),
         _source_output_column(std::move(source_output_column)),

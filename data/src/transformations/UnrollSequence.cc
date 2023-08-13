@@ -1,4 +1,4 @@
-#include "Recurrence.h"
+#include "UnrollSequence.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
@@ -38,13 +38,13 @@ static std::exception_ptr mismatchedRowSizeError(uint32_t source_row_size,
                                                  uint32_t target_row_size,
                                                  uint32_t row_number) {
   std::stringstream error_ss;
-  error_ss << "Recurrence error: source is not the same size as target ("
+  error_ss << "UnrollSequence error: source is not the same size as target ("
            << source_row_size << " vs. " << target_row_size << ") in row "
            << row_number << ".";
   return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
 }
 
-ColumnMap SequenceUnrolling::apply(ColumnMap columns, State& state) const {
+ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto source_column = columns.getArrayColumn<uint32_t>(_source_input_column);

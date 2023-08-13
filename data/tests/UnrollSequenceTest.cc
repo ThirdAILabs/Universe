@@ -2,7 +2,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
-#include <data/src/transformations/Recurrence.h>
+#include <data/src/transformations/UnrollSequence.h>
 #include <optional>
 #include <stdexcept>
 #include <vector>
@@ -22,7 +22,7 @@ static void assertRowsEqual(
   }
 }
 
-TEST(RecurrenceTest, DifferentRowSizesThrowsError) {
+TEST(UnrollSequenceTest, DifferentRowSizesThrowsError) {
   auto source_column = ArrayColumn<uint32_t>::make(/* data= */ {{0, 1}},
                                                    /* dim= */ std::nullopt);
   auto target_column = ArrayColumn<uint32_t>::make(/* data= */ {{0, 1, 2}},
@@ -31,28 +31,28 @@ TEST(RecurrenceTest, DifferentRowSizesThrowsError) {
   ColumnMap columns(
       /* columns= */ {{"source", source_column}, {"target", target_column}});
 
-  SequenceUnrolling recurrence(/* source_input_column= */ "source",
-                               /* target_input_column= */ "target",
-                               /* source_output_column= */ "source_unrolled",
-                               /* target_output_column= */ "target_unrolled");
+  UnrollSequence unroll_seq(/* source_input_column= */ "source",
+                            /* target_input_column= */ "target",
+                            /* source_output_column= */ "source_unrolled",
+                            /* target_output_column= */ "target_unrolled");
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      recurrence.applyStateless(columns), std::invalid_argument);
+      unroll_seq.applyStateless(columns), std::invalid_argument);
 }
 
-TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
+TEST(UnrollSequenceTest, CorrectUnrollingSameSourceTargetColumn) {
   auto tokens =
       ArrayColumn<uint32_t>::make(/* data= */ {{0}, {1, 2}, {3, 4, 5}},
                                   /* dim= */ 100);
 
   ColumnMap columns(/* columns= */ {{"tokens", tokens}});
 
-  SequenceUnrolling recurrence(/* source_input_column= */ "tokens",
-                               /* target_input_column= */ "tokens",
-                               /* source_output_column= */ "source_unrolled",
-                               /* target_output_column= */ "target_unrolled");
+  UnrollSequence unroll_seq(/* source_input_column= */ "tokens",
+                            /* target_input_column= */ "tokens",
+                            /* source_output_column= */ "source_unrolled",
+                            /* target_output_column= */ "target_unrolled");
 
-  columns = recurrence.applyStateless(columns);
+  columns = unroll_seq.applyStateless(columns);
 
   auto source_unrolled = columns.getArrayColumn<uint32_t>("source_unrolled");
   auto target_unrolled = columns.getArrayColumn<uint32_t>("target_unrolled");
@@ -76,7 +76,7 @@ TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
   ASSERT_EQ(target_unrolled->dim().value(), tokens->dim().value());
 }
 
-TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
+TEST(UnrollSequenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
   auto source =
       ArrayColumn<uint32_t>::make(/* data= */ {{0}, {1, 2}, {3, 4, 5}},
                                   /* dim= */ 100);
@@ -86,12 +86,12 @@ TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
 
   ColumnMap columns(/* columns= */ {{"source", source}, {"target", target}});
 
-  SequenceUnrolling recurrence(/* source_input_column= */ "source",
-                               /* target_input_column= */ "target",
-                               /* source_output_column= */ "source_unrolled",
-                               /* target_output_column= */ "target_unrolled");
+  UnrollSequence unroll_seq(/* source_input_column= */ "source",
+                            /* target_input_column= */ "target",
+                            /* source_output_column= */ "source_unrolled",
+                            /* target_output_column= */ "target_unrolled");
 
-  columns = recurrence.applyStateless(columns);
+  columns = unroll_seq.applyStateless(columns);
 
   auto source_unrolled = columns.getArrayColumn<uint32_t>("source_unrolled");
   auto target_unrolled = columns.getArrayColumn<uint32_t>("target_unrolled");
