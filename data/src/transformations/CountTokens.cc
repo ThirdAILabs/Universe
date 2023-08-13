@@ -12,13 +12,13 @@ thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
 #pragma omp parallel for default(none) shared(tokens_column, num_tokens)
   for (uint32_t i = 0; i < tokens_column->numRows(); ++i) {
     num_tokens[i] = tokens_column->row(i).size();
-    if (_ceiling && num_tokens[i] > _ceiling) {
-      num_tokens[i] = *_ceiling;
+    if (_max_tokens && num_tokens[i] > _max_tokens) {
+      num_tokens[i] = *_max_tokens;
     }
   }
 
   std::optional<uint32_t> dim =
-      _ceiling ? std::make_optional(*_ceiling + 1) : std::nullopt;
+      _max_tokens ? std::make_optional(*_max_tokens + 1) : std::nullopt;
 
   auto new_column = ValueColumn<uint32_t>::make(
       /* data= */ std::move(num_tokens), /* dim= */ dim);
