@@ -10,19 +10,19 @@ namespace thirdai::data {
 ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
   (void)state;
   auto input_column = columns.getArrayColumn<uint32_t>(_input_column);
-  std::vector<std::vector<uint32_t>> new_data(input_column->numRows());
-#pragma omp parallel for default(none) shared(input_column, new_data)
+  std::vector<std::vector<uint32_t>> hashed_tokens(input_column->numRows());
+#pragma omp parallel for default(none) shared(input_column, hashed_tokens)
   for (uint32_t i = 0; i < input_column->numRows(); ++i) {
-    new_data[i].reserve(input_column->row(i).size());
+    hashed_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
     for (uint32_t token : input_column->row(i)) {
       uint32_t pos_encoded_token = hashing::combineHashes(pos, token) % _dim;
-      new_data[i].push_back(pos_encoded_token);
+      hashed_tokens[i].push_back(pos_encoded_token);
       ++pos;
     }
   }
-  columns.setColumn(_output_column,
-                    ArrayColumn<uint32_t>::make(std::move(new_data), _dim));
+  auto hashed_col = ArrayColumn<uint32_t>::make(std::move(hashed_tokens), _dim);
+  columns.setColumn(/* name= */ _output_column, hashed_col);
   return columns;
 }
 
@@ -37,21 +37,21 @@ ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
   }
   uint32_t vocab_size = input_column->dimension()->dim;
 
-  std::vector<std::vector<uint32_t>> new_data(input_column->numRows());
+  std::vector<std::vector<uint32_t>> offset_tokens(input_column->numRows());
 #pragma omp parallel for default(none) \
-    shared(input_column, new_data, vocab_size)
+    shared(input_column, offset_tokens, vocab_size)
   for (uint32_t i = 0; i < input_column->numRows(); ++i) {
-    new_data[i].reserve(input_column->row(i).size());
+    offset_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
     for (uint32_t token : input_column->row(i)) {
       uint32_t pos_encoded_token = vocab_size * pos + token;
-      new_data[i].push_back(pos_encoded_token);
+      offset_tokens[i].push_back(pos_encoded_token);
       ++pos;
     }
   }
-  columns.setColumn(_output_column,
-                    ArrayColumn<uint32_t>::make(std::move(new_data),
-                                                vocab_size * _max_num_tokens));
+  size_t dim = vocab_size * _max_num_tokens;
+  auto offset_col = ArrayColumn<uint32_t>::make(std::move(offset_tokens), dim);
+  columns.setColumn(_output_column, offset_col);
   return columns;
 }
 }  // namespace thirdai::data
