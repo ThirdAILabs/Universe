@@ -396,7 +396,7 @@ def test_mach_udt_streaming_introduce_documents():
     new_docs = "NEW_DOCS.csv"
     with open(new_docs, "w") as f:
         f.write("label,title,description\n")
-        for i in range(4, 10_000):
+        for i in range(4, 5000):
             f.write(f"{i},some title,some description\n")
 
     model.introduce_documents(

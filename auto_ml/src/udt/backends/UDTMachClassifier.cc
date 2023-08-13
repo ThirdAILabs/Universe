@@ -540,6 +540,10 @@ void UDTMachClassifier::introduceDocuments(
   uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
       _mach_label_block->index()->numHashes());
 
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+
+  bolt::train::python::CtrlCCheck ctrl_c_check;
+
   while (
       auto doc_samples = dataset_loader->loadSome(
           defaults::BATCH_SIZE,
@@ -547,11 +551,6 @@ void UDTMachClassifier::introduceDocuments(
           verbose)) {
     auto doc_samples_tensors = bolt::train::convertDatasets(
         *doc_samples, _classifier->model()->inputDims());
-
-    std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>>
-        top_k_per_doc;
-
-    bolt::train::python::CtrlCCheck ctrl_c_check;
 
     for (const auto& batch : doc_samples_tensors) {
       // Note: using sparse inference here could cause issues because the
@@ -569,17 +568,17 @@ void UDTMachClassifier::introduceDocuments(
 
       ctrl_c_check();
     }
-
-    for (auto& [doc, top_ks] : top_k_per_doc) {
-      auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                    num_random_hashes);
-      _mach_label_block->index()->insert(doc, hashes);
-
-      ctrl_c_check();
-    }
-
-    addBalancingSamples(cold_start_data);
   }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
+    _mach_label_block->index()->insert(doc, hashes);
+
+    ctrl_c_check();
+  }
+
+  addBalancingSamples(cold_start_data);
 
   updateSamplingStrategy();
 }
