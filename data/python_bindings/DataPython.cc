@@ -139,12 +139,8 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
   py::class_<Column, ColumnPtr>(columns_submodule, "Column")
-      .def("dimension", &Column::dimension)
+      .def("dim", &Column::dim)
       .def("__len__", &Column::numRows);
-
-  py::class_<ColumnDimension>(columns_submodule, "Dimension")
-      .def_readonly("dim", &ColumnDimension::dim)
-      .def_readonly("is_dense", &ColumnDimension::is_dense);
 
   py::class_<ValueColumn<uint32_t>, Column, ValueColumnPtr<uint32_t>>(
       columns_submodule, "TokenColumn")
