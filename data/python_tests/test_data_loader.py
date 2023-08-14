@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 from download_dataset_fixtures import download_clinc_dataset
-from thirdai import bolt_v2 as bolt
-from thirdai import data, dataset
+from thirdai import bolt, data, dataset
 
 
 def text_transformation():

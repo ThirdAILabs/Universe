@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bolt/src/callbacks/Callback.h>
-#include <bolt/src/graph/Graph.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>

@@ -2,8 +2,7 @@ import os
 
 import numpy as np
 import thirdai
-from thirdai._thirdai import bolt as old_bolt
-from thirdai._thirdai import bolt_v2 as bolt
+from thirdai._thirdai import bolt
 
 from .utils import check_torch_installed, timed
 
@@ -75,7 +74,7 @@ def adds_distributed_to_bolt():
 
         return metrics
 
-    old_bolt.UniversalDeepTransformer.train_distributed = udt_train_distributed
+    bolt.UniversalDeepTransformer.train_distributed = udt_train_distributed
 
     def udt_coldstart_distributed(self, *args, **kwargs):
         self._get_model().disable_sparse_parameter_updates()
@@ -87,4 +86,4 @@ def adds_distributed_to_bolt():
 
         return metrics
 
-    old_bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
+    bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
