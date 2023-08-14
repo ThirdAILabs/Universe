@@ -6,6 +6,17 @@
 
 namespace thirdai::data {
 
+/**
+ * Deduplicates indices in each row, summing up their values if provided or
+ * the frequency otherwise.
+ * For example, given a row of indices [0, 0, 1, 0], the transformation produces
+ * a row of indices [0, 1] and a row of values [3, 1]. In this example, we don't
+ * provide the values so the output values represent the frequencies of the
+ * indices.
+ * Given a row of indices [0, 0, 1, 0] and values [1.0, 2.0, 3.0, 4.0], the
+ * transformation produces a row of indices [0, 1] and a row of values
+ * [7.0, 3.0].
+ */
 class DeduplicateTokens final : public Transformation {
  public:
   DeduplicateTokens(std::string input_indices_column,
