@@ -8,6 +8,9 @@
 
 namespace thirdai::data {
 
+/**
+ * Counts the number of tokens in each row of a token array column.
+ */
 class CountTokens final : public Transformation {
  public:
   CountTokens(std::string input_column, std::string output_column,

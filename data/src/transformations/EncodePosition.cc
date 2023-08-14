@@ -1,6 +1,7 @@
 #include "EncodePosition.h"
 #include <hashing/src/HashUtils.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -44,7 +45,8 @@ ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
     offset_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
     for (uint32_t token : input_column->row(i)) {
-      uint32_t pos_encoded_token = vocab_size * pos + token;
+      uint32_t encoded_pos = std::min<uint32_t>(pos, _max_num_tokens - 1);
+      uint32_t pos_encoded_token = vocab_size * encoded_pos + token;
       offset_tokens[i].push_back(pos_encoded_token);
       ++pos;
     }
