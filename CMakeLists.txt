@@ -405,6 +405,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
     data/src/transformations/Date.cc
+    data/src/transformations/DeduplicateTokens.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
