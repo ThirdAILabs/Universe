@@ -298,8 +298,8 @@ class CSV(Document):
             for col_name, udt_col_type in get_udt_col_types(path).items():
                 if type(udt_col_type) == type(bolt.types.text()):
                     text_col_names.append(col_name)
-            strong_columns = text_col_names
-            weak_columns = []
+            strong_columns = []
+            weak_columns = text_col_names
         elif strong_columns == None:
             strong_columns = []
         elif weak_columns == None:
@@ -335,11 +335,11 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.strong_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.weak_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
