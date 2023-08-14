@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 #include <optional>
@@ -22,11 +23,12 @@ std::shared_ptr<Switch> Switch::make(uint32_t n_layers, uint32_t dim,
                                      uint32_t input_dim, float sparsity,
                                      const std::string& activation,
                                      const SamplingConfigPtr& sampling,
+                                     bool use_bias,
                                      uint32_t rebuild_hash_tables,
                                      uint32_t reconstruct_hash_functions) {
   return std::shared_ptr<Switch>(
       new Switch(n_layers, dim, input_dim, sparsity, activation, sampling,
-                 rebuild_hash_tables, reconstruct_hash_functions));
+                 use_bias, rebuild_hash_tables, reconstruct_hash_functions));
 }
 
 void Switch::forward(const autograd::ComputationList& inputs,
@@ -35,7 +37,7 @@ void Switch::forward(const autograd::ComputationList& inputs,
   assert(inputs.size() == 2 || inputs.size() == 3);
 
   auto fc_inputs = fcInputs(inputs);
-  fcOp(inputs, index_in_batch)
+  getFcOpForInputs(inputs, index_in_batch)
       ->forward(fc_inputs, output, index_in_batch, training);
 }
 
@@ -44,7 +46,7 @@ void Switch::backpropagate(autograd::ComputationList& inputs,
   assert(inputs.size() == 2 || inputs.size() == 3);
 
   auto fc_inputs = fcInputs(inputs);
-  fcOp(inputs, index_in_batch)
+  getFcOpForInputs(inputs, index_in_batch)
       ->backpropagate(fc_inputs, output, index_in_batch);
 }
 
@@ -140,15 +142,12 @@ void Switch::freezeHashTables(bool insert_labels_if_not_found) {
   }
 }
 
-void Switch::setWeightsAndBiases(uint32_t layer_id, const float* weights_to_set,
-                                 const float* biases_to_set) {
-  if (layer_id >= _fc_ops.size()) {
-    std::stringstream error;
-    error << "Tried to set weights and biases of layer_id=" << layer_id
-          << " in Switch op with n_layers=" << _fc_ops.size() << ".";
-    throw std::invalid_argument(error.str());
-  }
-  _fc_ops[layer_id]->setWeightsAndBiases(weights_to_set, biases_to_set);
+void Switch::setWeights(uint32_t layer_id, const float* weights_to_set) {
+  getFcOpById(layer_id)->setWeights(weights_to_set);
+}
+
+void Switch::setBiases(uint32_t layer_id, const float* biases_to_set) {
+  getFcOpById(layer_id)->setBiases(biases_to_set);
 }
 
 void Switch::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
@@ -159,23 +158,34 @@ void Switch::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
 
 Switch::Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim,
                float sparsity, const std::string& activation,
-               const SamplingConfigPtr& sampling, uint32_t rebuild_hash_tables,
+               const SamplingConfigPtr& sampling, bool use_bias,
+               uint32_t rebuild_hash_tables,
                uint32_t reconstruct_hash_functions)
     : Op(nextSwitchOpName()) {
   for (uint32_t layer_id = 0; layer_id < n_layers; layer_id++) {
-    _fc_ops.emplace_back(
-        FullyConnected::make(dim, input_dim, sparsity, activation, sampling,
-                             rebuild_hash_tables, reconstruct_hash_functions));
+    _fc_ops.emplace_back(FullyConnected::make(
+        dim, input_dim, sparsity, activation, sampling, use_bias,
+        rebuild_hash_tables, reconstruct_hash_functions));
   }
 }
 
-FullyConnectedPtr Switch::fcOp(const autograd::ComputationList& inputs,
-                               uint32_t index_in_batch) {
+FullyConnectedPtr Switch::getFcOpForInputs(
+    const autograd::ComputationList& inputs, uint32_t index_in_batch) {
   uint32_t fc_id =
       inputs[0]->tensor()->getVector(index_in_batch).active_neurons[0];
   // Default to last op if fc_id >= number of ops.
   fc_id = std::min<uint32_t>(fc_id, _fc_ops.size() - 1);
   return _fc_ops[fc_id];
+}
+
+FullyConnectedPtr Switch::getFcOpById(uint32_t layer_id) {
+  if (layer_id >= _fc_ops.size()) {
+    std::stringstream error;
+    error << "Tried to set weights and biases of layer_id=" << layer_id
+          << " in Switch op with n_layers=" << _fc_ops.size() << ".";
+    throw std::invalid_argument(error.str());
+  }
+  return _fc_ops[layer_id];
 }
 
 autograd::ComputationList Switch::fcInputs(

@@ -17,13 +17,14 @@ model::ModelPtr buildModel() {
   auto output_op =
       bolt::nn::ops::Switch::make(N_LAYERS, /* dim= */ 1, /* input_dim= */ 1,
                                   /* sparsity= */ 1.0,
-                                  /* activation= */ "softmax");
+                                  /* activation= */ "linear");
   auto output = output_op->apply(index, input);
 
   for (uint32_t layer_id = 0; layer_id < N_LAYERS; layer_id++) {
     float bias = 0;
     float weight = layer_id;
-    output_op->setWeightsAndBiases(layer_id, &weight, &bias);
+    output_op->setWeights(layer_id, &weight);
+    output_op->setBiases(layer_id, &bias);
   }
 
   auto loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, label);

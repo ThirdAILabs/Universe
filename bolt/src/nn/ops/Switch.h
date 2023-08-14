@@ -24,7 +24,7 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
   static std::shared_ptr<Switch> make(
       uint32_t n_layers, uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation,
-      const SamplingConfigPtr& sampling = nullptr,
+      const SamplingConfigPtr& sampling = nullptr, bool use_bias = true,
       uint32_t rebuild_hash_tables = 4,
       uint32_t reconstruct_hash_functions = 100);
 
@@ -85,8 +85,9 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
    */
   void freezeHashTables(bool insert_labels_if_not_found);
 
-  void setWeightsAndBiases(uint32_t layer_id, const float* weights_to_set,
-                           const float* biases_to_set);
+  void setWeights(uint32_t layer_id, const float* weights_to_set);
+
+  void setBiases(uint32_t layer_id, const float* biases_to_set);
 
   /**
    * Autotunes how often the hash tables and hash functions are rebuilt using
@@ -101,12 +102,15 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
  private:
   Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim, float sparsity,
          const std::string& activation, const SamplingConfigPtr& sampling,
+         bool use_bias = true,
          uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
          uint32_t reconstruct_hash_functions =
              std::numeric_limits<uint32_t>::max());
 
-  FullyConnectedPtr fcOp(const autograd::ComputationList& inputs,
-                         uint32_t index_in_batch);
+  FullyConnectedPtr getFcOpForInputs(const autograd::ComputationList& inputs,
+                                     uint32_t index_in_batch);
+
+  FullyConnectedPtr getFcOpById(uint32_t layer_id);
 
   static autograd::ComputationList fcInputs(
       const autograd::ComputationList& inputs);
