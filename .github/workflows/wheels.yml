@@ -86,7 +86,7 @@ jobs:
           #
           # TODO(GH-779): Fix the multiple libraries existing.
           CIBW_ENVIRONMENT_WINDOWS: >
-              CMAKE_ARGS='-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
+              CMAKE_ARGS='-DENABLE_COMPRESSION=OFF -DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
               KMP_DUPLICATE_LIB_OK=TRUE
               THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS:
@@ -129,7 +129,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-macox_arm64 cp311-*"
+          CIBW_SKIP: "cp36-* cp37-*"
 
 
       - name: Upload wheels

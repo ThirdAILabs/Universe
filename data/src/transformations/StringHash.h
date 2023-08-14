@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
-#include <data/src/columns/VectorColumns.h>
 #include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
@@ -20,7 +19,7 @@ class StringHash final : public Transformation {
         _output_range(output_range),
         _seed(seed) {}
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   // Private constructor for cereal.

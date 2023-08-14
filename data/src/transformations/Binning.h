@@ -4,7 +4,6 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
-#include <data/src/columns/VectorColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <exception>
 #include <optional>
@@ -29,7 +28,7 @@ class BinningTransformation final : public Transformation {
         _binsize((exclusive_max_value - inclusive_min_value) / num_bins),
         _num_bins(num_bins) {}
 
-  ColumnMap apply(ColumnMap columns) const final;
+  ColumnMap apply(ColumnMap columns, State& state) const final;
 
  private:
   // Private constructor for cereal.

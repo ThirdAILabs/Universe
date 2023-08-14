@@ -1,55 +1,10 @@
 import random
 import string
 
-import numpy as np
 from thirdai import data
 
 
-def dense_vectors_to_numpy(vectors):
-    return np.array([v.to_numpy() for v in vectors])
-
-
-def sparse_vectors_to_numpy(vectors):
-    indices_list = []
-    values_list = []
-    for vec in vectors:
-        (i, v) = vec.to_numpy()
-        indices_list.append(i)
-        values_list.append(v)
-
-    indices = np.array(indices_list)
-    values = np.array(values_list)
-    return (indices, values)
-
-
-def get_bolt_vectors_from_dataset(dataset):
-    vectors = []
-    for batch in range(len(dataset)):
-        for vec in range(len(dataset[batch])):
-            vectors.append(dataset[batch][vec])
-    return vectors
-
-
-def dense_bolt_dataset_to_numpy(dataset):
-    return dense_vectors_to_numpy(get_bolt_vectors_from_dataset(dataset))
-
-
-def sparse_bolt_dataset_to_numpy(dataset):
-    return sparse_vectors_to_numpy(get_bolt_vectors_from_dataset(dataset))
-
-
-def nonzeros_from_sparse_bolt_dataset(dataset):
-    all_indices = []
-    all_values = []
-    for vec in get_bolt_vectors_from_dataset(dataset):
-        indices, values = vec.to_numpy()
-        for i, v in zip(indices, values):
-            all_indices.append(i)
-            all_values.append(v)
-    return all_indices, all_values
-
-
-def random_word(length=4):
+def random_word(length=8):
     return "".join(random.choice(string.ascii_lowercase) for _ in range(length))
 
 
@@ -67,33 +22,35 @@ def get_random_sentence_str_column(col_length, num_words):
     )
 
 
-# Given a sparse numpy dataset of featurized pairgrams (not deduplicated), count
-# to make sure the number of pairgrams for each possible pairgram value across the whole dataset
-# is close to the expected number.
-# We use the fact that if there are N unigrams per row, there are N * (N + 1)) / 2 pairgrams per row.
-def verify_pairgrams_distribution(pairgram_nonzeros, output_range):
-    indices, values = pairgram_nonzeros
+def verify_hash_distribution(all_hashes, output_range):
     hash_counts = [0 for _ in range(output_range)]
-    for index, value in zip(indices, values):
-        hash_counts[index] += value
+    for hashes in all_hashes:
+        for h in hashes:
+            hash_counts[h] += 1
 
-    expected_count = len(indices) / output_range
+    expected_count = sum(hash_counts) / output_range
     for count in hash_counts:
         assert count / expected_count < 2 and count / expected_count > 0.5
 
 
-# Given a sparse numpy dataset of featurized unigrams (not deduplicated), count
-# to make sure the number of unigrams for each possible unigram value across the whole dataset
-# is close to the expected number.
-def verify_unigrams_distribution(
-    pairgram_dataset, output_range, expected_unigrams_per_row
-):
-    indices, values = pairgram_dataset
-    hash_counts = [0 for _ in range(output_range)]
-    for row_indices, row_values in zip(indices, values):
-        for index, value in zip(row_indices, row_values):
-            hash_counts[index] += value
+def get_ascending_column_map(rows, offset=0):
+    end = rows + offset
+    return data.ColumnMap(
+        {
+            "token": data.columns.TokenColumn(list(range(offset, end))),
+            "decimal": data.columns.DecimalColumn(list(range(offset, end))),
+            "token_array": data.columns.TokenArrayColumn(
+                [list(range(i, i + 4)) for i in range(offset, end)]
+            ),
+            "decimal_array": data.columns.DecimalArrayColumn(
+                [list(range(i, i + 4)) for i in range(offset, end)]
+            ),
+            "string": data.columns.StringColumn([str(i) for i in range(offset, end)]),
+        }
+    )
 
-    expected_num_unigrams = expected_unigrams_per_row * len(indices) / output_range
-    for count in hash_counts:
-        assert count / expected_num_unigrams < 2 and count / expected_num_unigrams > 0.5
+
+def check_column_maps_are_equal(column_map_a, column_map_b):
+    assert len(column_map_a.columns()) == len(column_map_b.columns())
+    for name, column in column_map_a:
+        assert column.data() == column_map_b[name].data()

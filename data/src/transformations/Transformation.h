@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
+#include <data/src/transformations/State.h>
 #include <memory>
 
 namespace thirdai::data {
@@ -10,10 +11,11 @@ namespace thirdai::data {
  * available columns and produce multiple (or zero) columns. It is responsible
  * for its own parallelism and throwing exceptions for invalid inputs. Note that
  * the column map will throw if a column is not present or has the wrong type.
- * The transformation can maintain state or not depending on what is required.
- * Ideally all state objects should be constructed outside of the transformation
- * and passed in so that they can be managed outside of the transformation for
- * things like serialization for reuse.
+ * The transformation should not mutate its internal state once constructed. Any
+ * state that needs to be maintained for the transformation should be part of
+ * the State object that is passed into each call to apply. This is to so that
+ * there is a unique owner of the stateful information within the data pipeline
+ * which simplifies serialization.
  */
 class Transformation {
  public:
@@ -24,7 +26,12 @@ class Transformation {
    * ColumnMap are distinct objects, but may share references to the same
    * columns.
    */
-  virtual ColumnMap apply(ColumnMap columns) const = 0;
+  virtual ColumnMap apply(ColumnMap columns, State& state) const = 0;
+
+  ColumnMap applyStateless(ColumnMap columns) const {
+    State state;
+    return apply(std::move(columns), state);
+  }
 
   virtual ~Transformation() = default;
 

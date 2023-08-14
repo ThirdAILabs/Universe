@@ -16,12 +16,12 @@ class MockSentenceLevelDocument(docs.SentenceLevelExtracted):
         # class expects an existing file.
         with open("temp", "w"):
             pass
-        super().__init__(filename="temp")
+        super().__init__(path="temp")
         os.remove("temp")
 
     def process_data(
         self,
-        filename: str,
+        path: str,
     ) -> pd.DataFrame:
         paragraphs = [
             "This is a paragraph. This is the second sentence. This is the third.",

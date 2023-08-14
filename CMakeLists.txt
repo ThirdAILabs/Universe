@@ -304,6 +304,7 @@ include_directories(${CMAKE_BINARY_DIR})
 add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
+add_subdirectory(data)
 add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
@@ -348,28 +349,12 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
-    bolt/src/train/trainer/DistributedTrainingWrapper.cc
-    bolt/src/graph/Graph.cc
-    bolt/src/graph/ExecutionConfig.cc
-    bolt/src/graph/nodes/FullyConnected.cc
-    bolt/src/graph/DatasetContext.cc
-    bolt/src/graph/Node.cc
-    bolt/src/graph/nodes/Switch.cc
-    bolt/src/graph/nodes/Concatenate.cc
-    bolt/src/graph/nodes/DlrmAttention.cc
-    bolt/src/graph/nodes/DotProduct.cc
-    bolt/src/graph/nodes/Embedding.cc
-    bolt/src/graph/nodes/FullyConnected.cc
-    bolt/src/graph/nodes/LayerNorm.cc
-    bolt/src/graph/nodes/Input.cc
-    bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
-    bolt/src/loss_functions/LossFunctions.cc
-    bolt/src/metrics/Metric.cc
     bolt/src/root_cause_analysis/RCA.cc
+    bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -412,8 +397,20 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
     data/src/transformations/ColdStartText.cc
+    data/src/transformations/FeatureHash.cc
     data/src/transformations/TransformationList.cc
+    data/src/transformations/MachLabel.cc
+    data/src/transformations/StringConcat.cc
+    data/src/transformations/StringCast.cc
+    data/src/transformations/StringIDLookup.cc
+    data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Date.cc
     data/src/ColumnMap.cc
+    data/src/columns/ArrayColumns.cc
+    data/src/columns/ValueColumns.cc
+    data/src/TensorConversion.cc
+    data/src/Loader.cc
+    data/src/ColumnMapIterator.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
@@ -471,11 +468,9 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/PybindUtils.cc
-  bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
-  bolt/python_bindings/CallbacksPython.cc
-  bolt/python_bindings/BoltV2NNPython.cc
-  bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/BoltTrainPython.cc
+  bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc
