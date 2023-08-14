@@ -29,9 +29,7 @@ class MockSentenceLevelDocument(docs.SentenceLevelExtracted):
             "\n\n",
         ]
 
-        return pd.DataFrame(
-            {"para": paragraphs, "display": paragraphs}
-        )
+        return pd.DataFrame({"para": paragraphs, "display": paragraphs})
 
 
 def test_sentence_level_document_removes_punctuation_only_sentences():
