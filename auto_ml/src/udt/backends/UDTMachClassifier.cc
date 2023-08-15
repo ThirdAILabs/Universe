@@ -478,7 +478,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
-void UDTMachClassifier::updateSamplingStrategy() {
+void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
   auto mach_index = _mach_label_block->index();
 
   auto output_layer = bolt::nn::ops::FullyConnected::cast(
@@ -487,7 +487,8 @@ void UDTMachClassifier::updateSamplingStrategy() {
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
   float index_sparsity = mach_index->sparsity();
-  if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
+  if (!force_lsh && index_sparsity > 0 &&
+      index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
     auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
@@ -519,6 +520,7 @@ void UDTMachClassifier::introduceDocuments(
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool fast_approximation, bool verbose,
     std::optional<uint32_t> max_in_memory_batches) {
+  updateSamplingStrategy(/* force_lsh= */ true);
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;

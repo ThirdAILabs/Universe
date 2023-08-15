@@ -209,7 +209,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::string textColumnForDocumentIntroduction();
 
-  void updateSamplingStrategy();
+  void updateSamplingStrategy(bool force_lsh = false);
 
   void addBalancingSamples(const dataset::DataSourcePtr& data);
 
