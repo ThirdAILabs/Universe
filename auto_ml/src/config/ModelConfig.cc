@@ -71,13 +71,13 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
 }
 
 using CreatedComputations =
-    std::unordered_map<std::string, bolt::nn::autograd::ComputationPtr>;
+    std::unordered_map<std::string, bolt::ComputationPtr>;
 
 /**
  * Helper function to get the predecessor of a node.
  */
-bolt::nn::autograd::ComputationPtr getPredecessor(
-    const json& config, const CreatedComputations& created_comps) {
+bolt::ComputationPtr getPredecessor(const json& config,
+                                    const CreatedComputations& created_comps) {
   std::string predecessor = getString(config, "predecessor");
   if (!created_comps.count(predecessor)) {
     throw std::invalid_argument("Could not find node '" + predecessor + "'.");
@@ -91,7 +91,7 @@ bolt::nn::autograd::ComputationPtr getPredecessor(
  * config. Optionally a field 'sampling_config' can be specified. If it is
  * not present the sampling parameters will be autotuned if not specified.
  */
-bolt::nn::autograd::ComputationPtr buildFullyConnected(
+bolt::ComputationPtr buildFullyConnected(
     const json& config, const ArgumentMap& args,
     const CreatedComputations& created_comps) {
   uint32_t dim = integerParameter(config, "dim", args);
@@ -107,7 +107,7 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
     use_bias = booleanParameter(config, "use_bias", args);
   }
 
-  auto layer = bolt::nn::ops::FullyConnected::make(
+  auto layer = bolt::FullyConnected::make(
       dim, predecessor->dim(), sparsity, activation, sampling_config, use_bias);
 
   return layer->apply(predecessor);
@@ -120,9 +120,8 @@ bolt::nn::autograd::ComputationPtr buildFullyConnected(
  * 'num_tokens_per_input' can be specified to indicate the number of tokens in
  * each sample. This field is only required for concatenation reductions.
  */
-bolt::nn::autograd::ComputationPtr buildRobeZ(
-    const json& config, const ArgumentMap& args,
-    const CreatedComputations& created_comps) {
+bolt::ComputationPtr buildRobeZ(const json& config, const ArgumentMap& args,
+                                const CreatedComputations& created_comps) {
   uint32_t num_lookups =
       integerParameter(config, "num_embedding_lookups", args);
   uint32_t lookup_size = integerParameter(config, "lookup_size", args);
@@ -136,16 +135,14 @@ bolt::nn::autograd::ComputationPtr buildRobeZ(
         integerParameter(config, "num_tokens_per_input", args);
   }
 
-  auto layer =
-      bolt::nn::ops::RobeZ::make(num_lookups, lookup_size, log_block_size,
+  auto layer = bolt::RobeZ::make(num_lookups, lookup_size, log_block_size,
                                  reduction, num_tokens_per_input);
 
   return layer->apply(getPredecessor(config, created_comps));
 }
 
-bolt::nn::autograd::ComputationPtr buildEmbedding(
-    const json& config, const ArgumentMap& args,
-    const CreatedComputations& created_comps) {
+bolt::ComputationPtr buildEmbedding(const json& config, const ArgumentMap& args,
+                                    const CreatedComputations& created_comps) {
   uint32_t dim = integerParameter(config, "dim", args);
 
   std::string activation = stringParameter(config, "activation", args);
@@ -157,18 +154,18 @@ bolt::nn::autograd::ComputationPtr buildEmbedding(
     use_bias = booleanParameter(config, "use_bias", args);
   }
 
-  auto layer = bolt::nn::ops::Embedding::make(dim, predecessor->dim(),
-                                              activation, use_bias);
+  auto layer =
+      bolt::Embedding::make(dim, predecessor->dim(), activation, use_bias);
 
   return layer->apply(predecessor);
 }
 
-bolt::nn::autograd::ComputationPtr buildLayerNorm(
-    const json& config, const ArgumentMap& /*args*/,
-    const CreatedComputations& created_comps) {
+bolt::ComputationPtr buildLayerNorm(const json& config,
+                                    const ArgumentMap& /*args*/,
+                                    const CreatedComputations& created_comps) {
   auto predecessor = getPredecessor(config, created_comps);
 
-  auto layer = bolt::nn::ops::LayerNorm::make();
+  auto layer = bolt::LayerNorm::make();
 
   return layer->apply(predecessor);
 }
@@ -178,9 +175,9 @@ bolt::nn::autograd::ComputationPtr buildLayerNorm(
  * input names provided in the config. Updates created nodes to contain the
  * created inputs.
  */
-bolt::nn::autograd::ComputationList getInputs(
-    const json& config, const std::vector<uint32_t>& input_dims,
-    CreatedComputations& created_comps) {
+bolt::ComputationList getInputs(const json& config,
+                                const std::vector<uint32_t>& input_dims,
+                                CreatedComputations& created_comps) {
   auto json_inputs = getArray(config, "inputs");
   if (config["inputs"].size() != input_dims.size()) {
     throw std::invalid_argument(
@@ -188,9 +185,9 @@ bolt::nn::autograd::ComputationList getInputs(
         "number of input dims provided to the model.");
   }
 
-  bolt::nn::autograd::ComputationList inputs;
+  bolt::ComputationList inputs;
   for (uint32_t i = 0; i < input_dims.size(); i++) {
-    inputs.push_back(bolt::nn::ops::Input::make(input_dims[i]));
+    inputs.push_back(bolt::Input::make(input_dims[i]));
 
     if (!json_inputs[i].is_string()) {
       throw std::invalid_argument("Expect inputs to be an array of strings.");
@@ -200,10 +197,8 @@ bolt::nn::autograd::ComputationList getInputs(
   return inputs;
 }
 
-bolt::nn::model::ModelPtr buildModel(const json& config,
-                                     const ArgumentMap& args,
-                                     const std::vector<uint32_t>& input_dims,
-                                     bool mach) {
+bolt::ModelPtr buildModel(const json& config, const ArgumentMap& args,
+                          const std::vector<uint32_t>& input_dims, bool mach) {
   CreatedComputations created_comps;
 
   auto inputs = getInputs(config, input_dims, created_comps);
@@ -237,31 +232,30 @@ bolt::nn::model::ModelPtr buildModel(const json& config,
   }
   auto output = created_comps.at(output_name);
 
-  auto labels = bolt::nn::ops::Input::make(output->dim());
+  auto labels = bolt::Input::make(output->dim());
 
-  bolt::nn::loss::LossPtr loss;
+  bolt::LossPtr loss;
   std::string loss_name = getString(config, "loss");
 
   if (text::lower(loss_name) == "categoricalcrossentropyloss") {
-    loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+    loss = bolt::CategoricalCrossEntropy::make(output, labels);
   } else if (text::lower(loss_name) == "binarycrossentropyloss") {
-    loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
+    loss = bolt::BinaryCrossEntropy::make(output, labels);
   } else {
     throw std::invalid_argument("Invalid loss function '" + loss_name +
                                 "' provided in model config.");
   }
 
-  bolt::nn::autograd::ComputationList additional_labels;
+  bolt::ComputationList additional_labels;
   if (mach) {
     // For mach we need the hash based labels for training, but the actual
     // document/class ids to compute metrics. Hence we add two labels to the
     // model.
     additional_labels.push_back(
-        bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
+        bolt::Input::make(std::numeric_limits<uint32_t>::max()));
   }
 
-  auto model =
-      bolt::nn::model::Model::make(inputs, {output}, {loss}, additional_labels);
+  auto model = bolt::Model::make(inputs, {output}, {loss}, additional_labels);
 
   return model;
 }

@@ -7,7 +7,7 @@
 #include <utils/Random.h>
 #include <random>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 RandomSampler::RandomSampler(uint32_t layer_dim) : _rand_neurons(layer_dim) {
   std::mt19937 rng(global_random::nextSeed());
@@ -65,6 +65,6 @@ void RandomSampler::serialize(Archive& archive) {
   archive(cereal::base_class<NeuronIndex>(this), _rand_neurons);
 }
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::RandomSampler)
+CEREAL_REGISTER_TYPE(thirdai::bolt::RandomSampler)

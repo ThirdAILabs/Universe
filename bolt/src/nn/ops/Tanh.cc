@@ -9,7 +9,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextTanhOpName() {
   static uint32_t constructed = 0;
@@ -20,9 +20,8 @@ Tanh::Tanh() : Op(nextTanhOpName()) {}
 
 std::shared_ptr<Tanh> Tanh::make() { return std::shared_ptr<Tanh>(new Tanh()); }
 
-void Tanh::forward(const autograd::ComputationList& inputs,
-                   tensor::TensorPtr& output, uint32_t index_in_batch,
-                   bool training) {
+void Tanh::forward(const ComputationList& inputs, TensorPtr& output,
+                   uint32_t index_in_batch, bool training) {
   (void)training;
 
   const BoltVector& input_vec =
@@ -40,8 +39,8 @@ void Tanh::forward(const autograd::ComputationList& inputs,
   }
 }
 
-void Tanh::backpropagate(autograd::ComputationList& inputs,
-                         tensor::TensorPtr& output, uint32_t index_in_batch) {
+void Tanh::backpropagate(ComputationList& inputs, TensorPtr& output,
+                         uint32_t index_in_batch) {
   BoltVector& input_vec = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vec = output->getVector(index_in_batch);
 
@@ -58,7 +57,7 @@ void Tanh::updateParameters(float learning_rate, uint32_t train_steps) {
 
 uint32_t Tanh::dim() const { return _dim; }
 
-std::optional<uint32_t> Tanh::nonzeros(const autograd::ComputationList& inputs,
+std::optional<uint32_t> Tanh::nonzeros(const ComputationList& inputs,
                                        bool use_sparsity) const {
   return inputs.at(0)->nonzeros(use_sparsity);
 }
@@ -70,14 +69,13 @@ void Tanh::enableSparseParameterUpdates() {}
 std::vector<std::vector<float>*> Tanh::gradients() { return {}; }
 std::vector<std::vector<float>*> Tanh::parameters() { return {}; }
 
-void Tanh::summary(std::ostream& summary,
-                   const autograd::ComputationList& inputs,
-                   const autograd::Computation* output) const {
+void Tanh::summary(std::ostream& summary, const ComputationList& inputs,
+                   const Computation* output) const {
   summary << "Tanh(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name();
 }
 
-autograd::ComputationPtr Tanh::apply(autograd::ComputationPtr input) {
+ComputationPtr Tanh::apply(ComputationPtr input) {
   if (dim() == 0) {
     _dim = input->dim();
   } else {
@@ -86,7 +84,7 @@ autograd::ComputationPtr Tanh::apply(autograd::ComputationPtr input) {
     }
   }
 
-  return autograd::Computation::make(shared_from_this(), {std::move(input)});
+  return Computation::make(shared_from_this(), {std::move(input)});
 }
 
 template void Tanh::serialize(cereal::BinaryInputArchive&);
@@ -97,6 +95,6 @@ void Tanh::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _dim);
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Tanh)
+CEREAL_REGISTER_TYPE(thirdai::bolt::Tanh)

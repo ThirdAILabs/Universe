@@ -4,7 +4,7 @@
 #include <random>
 #include <vector>
 
-namespace thirdai::bolt::tests {
+namespace thirdai::bolt_v1::tests {
 
 TEST(MetricTest, CategoricalAccuracy) {
   // For the following test 'metric' is a metric that computes the metric for
@@ -619,4 +619,4 @@ TEST(MetricTest, Precision) {
   ASSERT_EQ(metric.value(), 0.5);
 }
 
-}  // namespace thirdai::bolt::tests
+}  // namespace thirdai::bolt_v1::tests

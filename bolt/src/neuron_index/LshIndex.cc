@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <random>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
                    hashtable::SampledHashTablePtr hash_table)
@@ -145,6 +145,6 @@ void LshIndex::serialize(Archive& archive) {
           _rand_neurons, _insert_labels_when_not_found);
 }
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::LshIndex)
+CEREAL_REGISTER_TYPE(thirdai::bolt::LshIndex)

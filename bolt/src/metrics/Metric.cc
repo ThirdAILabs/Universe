@@ -1,6 +1,6 @@
 #include "Metric.h"
 
-namespace thirdai::bolt {
+namespace thirdai::bolt_v1 {
 
 void CategoricalAccuracy::record(const BoltVector& output,
                                  const BoltVector& labels) {
@@ -564,4 +564,4 @@ std::shared_ptr<Metric> makeMetric(const std::string& name) {
   }
   throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt_v1

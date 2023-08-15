@@ -71,7 +71,7 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getUnLabeledDatasetLoader(
       csv_data_source, _inference_featurizer, /* shuffle= */ false);
 }
 
-TensorList TabularDatasetFactory::featurizeInputBatch(
+bolt::TensorList TabularDatasetFactory::featurizeInputBatch(
     const MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);
 
@@ -80,12 +80,12 @@ TensorList TabularDatasetFactory::featurizeInputBatch(
   result.emplace_back(
       std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
 
-  return bolt::train::convertBatch(std::move(result),
-                                   _inference_featurizer->getDimensions());
+  return bolt::convertBatch(std::move(result),
+                            _inference_featurizer->getDimensions());
 }
 
-std::pair<TensorList, TensorList> TabularDatasetFactory::featurizeTrainingBatch(
-    const MapInputBatch& batch) {
+std::pair<bolt::TensorList, bolt::TensorList>
+TabularDatasetFactory::featurizeTrainingBatch(const MapInputBatch& batch) {
   dataset::MapBatchRef inputs_ref(batch);
 
   auto featurized = _labeled_featurizer->featurize(inputs_ref);
@@ -93,17 +93,17 @@ std::pair<TensorList, TensorList> TabularDatasetFactory::featurizeTrainingBatch(
 
   uint32_t num_data_blocks = dims.size() - _num_label_blocks;
 
-  TensorList data;
+  bolt::TensorList data;
   for (uint32_t i = 0; i < num_data_blocks; i++) {
-    data.push_back(bolt::nn::tensor::Tensor::convert(
-        BoltBatch(std::move(featurized[i])), dims[i]));
+    data.push_back(
+        bolt::Tensor::convert(BoltBatch(std::move(featurized[i])), dims[i]));
   }
 
-  TensorList labels;
+  bolt::TensorList labels;
   for (uint32_t i = num_data_blocks; i < num_data_blocks + _num_label_blocks;
        i++) {
-    labels.push_back(bolt::nn::tensor::Tensor::convert(
-        BoltBatch(std::move(featurized[i])), dims[i]));
+    labels.push_back(
+        bolt::Tensor::convert(BoltBatch(std::move(featurized[i])), dims[i]));
   }
 
   return {std::move(data), std::move(labels)};

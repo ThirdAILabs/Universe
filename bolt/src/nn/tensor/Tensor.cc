@@ -4,7 +4,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::tensor {
+namespace thirdai::bolt {
 
 Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
     : _dim(dim), _nonzeros(nonzeros) {
@@ -224,4 +224,4 @@ void Tensor::checkBatchContents(const BoltBatch& batch, uint32_t dim) {
   }
 }
 
-}  // namespace thirdai::bolt::nn::tensor
+}  // namespace thirdai::bolt

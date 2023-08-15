@@ -12,7 +12,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 using InterruptCheck = std::optional<std::function<void()>>;
 
@@ -26,7 +26,7 @@ using InterruptCheck = std::optional<std::function<void()>>;
 class Trainer {
  public:
   explicit Trainer(
-      nn::model::ModelPtr model,
+      ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
       InterruptCheck interrupt_check = std::nullopt);
 
@@ -104,7 +104,8 @@ class Trainer {
       const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
-  nn::model::ModelPtr getModel() { return _model; }
+  ModelPtr getModel() { return _model; }
+
   // Synchronizes the outer epoch count maintained by the distributed framework
   // with the epoch count maintained within Bolt.
   void incrementEpochCount() { _epoch++; }
@@ -159,7 +160,7 @@ class Trainer {
     }
   }
 
-  nn::model::ModelPtr _model;
+  ModelPtr _model;
 
   std::shared_ptr<metrics::History> _history;
 
@@ -169,4 +170,4 @@ class Trainer {
   InterruptCheck _interrupt_check;
 };
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

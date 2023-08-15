@@ -33,7 +33,7 @@ Loader::Loader(ColumnMapIterator data_iterator,
   recordReturnedColumns(_model_label_columns);
 }
 
-std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
+std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
   logLoadStart();
   bolt::utils::Timer timer;
 
@@ -83,7 +83,7 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
   return std::make_pair(std::move(inputs), std::move(labels));
 }
 
-bolt::train::LabeledDataset Loader::all() {
+bolt::LabeledDataset Loader::all() {
   auto result = next(NO_LIMIT);
   if (!result) {
     throw std::invalid_argument("Could not load data from '" +

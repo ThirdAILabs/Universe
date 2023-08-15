@@ -6,14 +6,14 @@
 #include <cmath>
 #include <optional>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
-BinaryCrossEntropy::BinaryCrossEntropy(autograd::ComputationPtr output,
-                                       autograd::ComputationPtr labels)
+BinaryCrossEntropy::BinaryCrossEntropy(ComputationPtr output,
+                                       ComputationPtr labels)
     : ComparativeLoss(std::move(output), std::move(labels)) {}
 
 std::shared_ptr<BinaryCrossEntropy> BinaryCrossEntropy::make(
-    autograd::ComputationPtr output, autograd::ComputationPtr labels) {
+    ComputationPtr output, ComputationPtr labels) {
   return std::make_shared<BinaryCrossEntropy>(std::move(output),
                                               std::move(labels));
 }
@@ -37,6 +37,6 @@ void BinaryCrossEntropy::serialize(Archive& archive) {
   archive(cereal::base_class<ComparativeLoss>(this));
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::BinaryCrossEntropy)
+CEREAL_REGISTER_TYPE(thirdai::bolt::BinaryCrossEntropy)
