@@ -74,7 +74,7 @@ ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
     size_t offset = row_offsets[i];
     for (uint32_t row_pos = 0; row_pos < source_row.size(); ++row_pos) {
       // Simulate next token prediction by giving the model an array of tokens
-      // up to the row_pos - 1th token.
+      // up to the (row_pos - 1)th token.
       unrolled_source_data[offset + row_pos] =
           std::vector(source_row.begin(), source_row.begin() + row_pos);
       // Target is row_pos-th token; the next token to be predicted.
