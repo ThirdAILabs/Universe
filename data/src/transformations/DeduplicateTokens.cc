@@ -32,8 +32,9 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
       std::unordered_map<uint32_t, float> features;
 
       if (values) {
+        auto values_row = (*values)->row(i);
         for (uint32_t pos = 0; pos < indices_row.size(); pos++) {
-          features[indices_row[i]] += (*values)->row(i)[pos];
+          features[indices_row[pos]] += values_row[pos];
         }
       } else {
         for (const uint32_t token : indices_row) {
