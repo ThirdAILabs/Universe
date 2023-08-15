@@ -51,7 +51,7 @@ ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
   auto target_column = columns.getArrayColumn<uint32_t>(_target_input_column);
 
   std::vector<size_t> row_offsets = offsets(*source_column);
-  size_t total_num_rows = row_offsets.back();
+  const size_t total_num_rows = row_offsets.back();
   std::vector<std::vector<uint32_t>> unrolled_source_data(total_num_rows);
   std::vector<uint32_t> unrolled_target_data(total_num_rows);
 
@@ -71,14 +71,19 @@ ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
                                      /* row_number= */ i);
     }
 
-    size_t offset = row_offsets[i];
-    for (uint32_t row_pos = 0; row_pos < source_row.size(); ++row_pos) {
-      // Simulate next token prediction by giving the model an array of tokens
-      // up to the (row_pos - 1)th token.
-      unrolled_source_data[offset + row_pos] =
-          std::vector(source_row.begin(), source_row.begin() + row_pos);
-      // Target is row_pos-th token; the next token to be predicted.
-      unrolled_target_data[offset + row_pos] = target_row[row_pos];
+    try {
+      const size_t offset = row_offsets[i];
+      for (uint32_t row_pos = 0; row_pos < source_row.size(); ++row_pos) {
+        // Simulate next token prediction by giving the model an array of tokens
+        // up to the (row_pos - 1)th token.
+        unrolled_source_data[offset + row_pos] =
+            std::vector(source_row.begin(), source_row.begin() + row_pos);
+        // Target is row_pos-th token; the next token to be predicted.
+        unrolled_target_data[offset + row_pos] = target_row[row_pos];
+      }
+    } catch (std::exception& e) {
+#pragma omp critical
+      error = std::make_exception_ptr(e);
     }
   }
 
