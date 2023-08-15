@@ -13,4 +13,4 @@ py::dict modelParams(const ModelPtr& model);
 
 ModelPtr modelFromParams(const py::dict& params);
 
-}  // namespace thirdai::boltpython
+}  // namespace thirdai::bolt::python
