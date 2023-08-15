@@ -135,4 +135,5 @@ void EuclideanContrastive::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::EuclideanContrastive)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::EuclideanContrastive,
+                               "thirdai::bolt::nn::loss::EuclideanContrastive")

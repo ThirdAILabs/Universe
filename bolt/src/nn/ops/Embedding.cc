@@ -290,4 +290,5 @@ struct specialize<Archive, thirdai::bolt::Embedding,
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::Embedding)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Embedding,
+                               "thirdai::bolt::nn::ops::Embedding")

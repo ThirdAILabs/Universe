@@ -97,4 +97,5 @@ void Tanh::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::Tanh)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Tanh,
+                               "thirdai::bolt::nn::ops::Tanh")

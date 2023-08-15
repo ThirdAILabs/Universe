@@ -148,4 +148,5 @@ struct specialize<Archive, thirdai::bolt::RobeZ,
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::RobeZ)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::RobeZ,
+                               "thirdai::bolt::nn::ops::RobeZ")

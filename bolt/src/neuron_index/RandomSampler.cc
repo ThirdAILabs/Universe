@@ -67,4 +67,5 @@ void RandomSampler::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::RandomSampler)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::RandomSampler,
+                               "thirdai::bolt::nn::RandomSampler")

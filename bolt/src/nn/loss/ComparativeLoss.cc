@@ -120,4 +120,5 @@ void ComparativeLoss::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::ComparativeLoss)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::ComparativeLoss,
+                               "thirdai::bolt::nn::loss::ComparativeLoss")

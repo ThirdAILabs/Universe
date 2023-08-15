@@ -147,4 +147,5 @@ void LshIndex::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::LshIndex)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::LshIndex,
+                               "thirdai::bolt::nn::LshIndex")

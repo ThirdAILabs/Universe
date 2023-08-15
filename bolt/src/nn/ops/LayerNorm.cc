@@ -198,4 +198,5 @@ void LayerNorm::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::LayerNorm)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::LayerNorm,
+                               "thirdai::bolt::nn::ops::LayerNorm")

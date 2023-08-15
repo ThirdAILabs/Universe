@@ -57,4 +57,5 @@ void MachNeuronIndex::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::MachNeuronIndex)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::MachNeuronIndex,
+                               "thirdai::bolt::nn::MachNeuronIndex")

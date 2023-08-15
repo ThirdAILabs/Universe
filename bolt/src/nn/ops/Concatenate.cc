@@ -157,4 +157,5 @@ void Concatenate::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::Concatenate)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Concatenate,
+                               "thirdai::bolt::nn::ops::Concatenate")

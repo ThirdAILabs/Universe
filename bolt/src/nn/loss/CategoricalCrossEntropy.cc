@@ -48,4 +48,6 @@ void CategoricalCrossEntropy::serialize(Archive& archive) {
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::CategoricalCrossEntropy)
+CEREAL_REGISTER_TYPE_WITH_NAME(
+    thirdai::bolt::CategoricalCrossEntropy,
+    "thirdai::bolt::nn::loss::CategoricalCrossEntropy")

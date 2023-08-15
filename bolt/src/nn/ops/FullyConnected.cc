@@ -284,4 +284,5 @@ struct specialize<Archive, thirdai::bolt::FullyConnected,
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnected)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::FullyConnected,
+                               "thirdai::bolt::nn::ops::FullyConnected")
