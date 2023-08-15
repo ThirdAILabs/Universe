@@ -1,4 +1,4 @@
-#include "FromProto.h"
+#include "Op.h"
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -9,7 +9,7 @@
 
 namespace thirdai::bolt::nn::ops {
 
-OpPtr fromProto(const proto::bolt::Op& op_proto) {
+std::shared_ptr<Op> Op::fromProto(const proto::bolt::Op& op_proto) {
   const std::string& name = op_proto.name();
 
   OpPtr op;

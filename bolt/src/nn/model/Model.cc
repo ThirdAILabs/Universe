@@ -4,11 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
-#include <bolt/src/nn/loss/protobuf_utils/FromProto.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/nn/ops/protobuf_utils/FromProto.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -399,7 +397,7 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   std::unordered_map<std::string, ops::OpPtr> ops;
 
   for (const auto& op_proto : model_proto.ops()) {
-    ops[op_proto.name()] = ops::fromProto(op_proto);
+    ops[op_proto.name()] = ops::Op::fromProto(op_proto);
   }
 
   autograd::ComputationList inputs;
@@ -430,7 +428,7 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
 
   std::vector<loss::LossPtr> losses;
   for (const auto& loss : model_proto.losses()) {
-    losses.push_back(loss::fromProto(loss, computations));
+    losses.push_back(loss::Loss::fromProto(loss, computations));
   }
 
   autograd::ComputationList outputs;

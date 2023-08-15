@@ -1,15 +1,15 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package proto.bolt;
 
 message CategoricalCrossEntropy {
-  string output = 1;
-  string labels = 2;
+  required string output = 1;
+  required string labels = 2;
 }
 
 message BinaryCrossEntropy {
-  string output = 1;
-  string labels = 2;
+  required string output = 1;
+  required string labels = 2;
 }
 
 message Loss {

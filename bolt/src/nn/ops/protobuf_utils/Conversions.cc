@@ -84,7 +84,8 @@ std::vector<float> parametersFromProto(const proto::bolt::Parameter& proto) {
 // Some of these fields are to ensure that things serialized before the
 // Optimizer PR can be loaded with the new design. For example beta1/beta2
 // become optimizer parameters instead of global constants, so they are
-// serialized here.
+// serialized here. Rows/cols will be used by the optimizers, but are currently
+// not required because the optimizer is hard coded into the ops/layers.
 proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
                                          size_t rows, size_t cols) {
   if (optimizer.momentum.size() != (rows * cols)) {

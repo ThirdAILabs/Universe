@@ -1,11 +1,11 @@
-#include "FromProto.h"
+#include "Loss.h"
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::loss {
 
-LossPtr fromProto(
+std::shared_ptr<Loss> Loss::fromProto(
     const proto::bolt::Loss& loss_proto,
     const std::unordered_map<std::string, autograd::ComputationPtr>&
         computations) {

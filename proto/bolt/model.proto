@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package proto.bolt;
 
@@ -6,20 +6,20 @@ import "loss.proto";
 import "ops.proto";
 
 message Placeholder {
-  string name = 1;
-  uint64 dim = 2;
+  required string name = 1;
+  required uint64 dim = 2;
 }
 
 message Computation {
-  string name = 1;
-  string op = 2;
+  required string name = 1;
+  required string op = 2;
   repeated string inputs = 3;
 }
 
 message ModelMetadata {
-  uint64 train_steps = 1;
-  uint64 total_training_samples = 2;
-  string uuid = 3;
+  required uint64 train_steps = 1;
+  required uint64 total_training_samples = 2;
+  required string uuid = 3;
 }
 
 message Model {
@@ -30,5 +30,5 @@ message Model {
   repeated Loss losses = 5;
   repeated string outputs = 6;
 
-  ModelMetadata metadata = 7;
+  required ModelMetadata metadata = 7;
 }

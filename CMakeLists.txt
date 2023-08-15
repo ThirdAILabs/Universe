@@ -267,12 +267,17 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
+# This controls if we use/link a preinstalled version of the protobuf library or
+# if we build and link protobuf from source using the submodule. This is becuase
+# we need to build and link from source when cross compiling for MacOS arm to
+# ensure that the target architecture of lib protobuf matches the target we are
+# compling for.
 if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
   set(protobuf_BUILD_TESTS OFF)
   add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
   include_directories(deps/protobuf/src)
   include_directories(deps/protobuf/third_party/abseil-cpp)
-else(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+else()
   include(FindProtobuf)
   find_package(Protobuf REQUIRED)
   include_directories(${Protobuf_INCLUDE_DIR})
@@ -335,6 +340,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/Op.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
@@ -344,13 +350,12 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Tanh.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
-    bolt/src/nn/ops/protobuf_utils/FromProto.cc
     bolt/src/nn/ops/protobuf_utils/Conversions.cc
-    bolt/src/nn/loss/protobuf_utils/FromProto.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
