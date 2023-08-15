@@ -352,22 +352,27 @@ void Model::enableSparseParameterUpdates() {
 proto::bolt::Model Model::toProto(bool with_optimizer) const {
   proto::bolt::Model model;
 
+  // Record all of the model ops.
   for (const auto& op : ops()) {
     model.mutable_ops()->AddAllocated(op->toProto(with_optimizer));
   }
 
+  // Record the inputs to the model.
   for (const auto& input : _inputs) {
     auto* placeholder = model.add_inputs();
     placeholder->set_name(input->name());
     placeholder->set_dim(input->dim());
   }
 
+  // Record the labels of the model.
   for (const auto& label : _labels) {
     auto* placeholder = model.add_labels();
     placeholder->set_name(label->name());
     placeholder->set_dim(label->dim());
   }
 
+  // Construct a representation of the model computation graph. Ops are refered
+  // to by name, as are the inputs to a computation.
   for (const auto& comp : _computation_order) {
     auto* comp_proto = model.mutable_computation_graph()->Add();
     comp_proto->set_name(comp->name());
@@ -377,10 +382,12 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
     }
   }
 
+  // Record the loss functions the model uses.
   for (const auto& loss : _losses) {
     model.mutable_losses()->AddAllocated(loss->toProto());
   }
 
+  // Record which computations should be returned as outputs.
   for (const auto& output : _outputs) {
     model.add_outputs(output->name());
   }
@@ -396,6 +403,7 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
 std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   std::unordered_map<std::string, ops::OpPtr> ops;
 
+  // Build a map from the name of each op to the reconstructed op object.
   for (const auto& op_proto : model_proto.ops()) {
     ops[op_proto.name()] = ops::Op::fromProto(op_proto);
   }
@@ -404,18 +412,24 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   autograd::ComputationList labels;
   std::unordered_map<std::string, autograd::ComputationPtr> computations;
 
+  // Create the inputs to the model.
   for (const auto& input_proto : model_proto.inputs()) {
     auto input = ops::Input::make(input_proto.dim());
     computations[input_proto.name()] = input;
     inputs.push_back(input);
   }
 
+  // Create the labels for the model.
   for (const auto& label_proto : model_proto.labels()) {
     auto label = ops::Input::make(label_proto.dim());
     computations[label_proto.name()] = label;
     labels.push_back(label);
   }
 
+  // Rebuild the model computation graph. The ops are uniquely identified by
+  // name, so they can be retrieved from the map of ops. Since the computations
+  // are serialized/deserialized in the execution order we know that a
+  // computation will occur after its inputs.
   for (const auto& comp_proto : model_proto.computation_graph()) {
     autograd::ComputationList op_inputs;
     for (const auto& input : comp_proto.inputs()) {
@@ -426,11 +440,13 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
     computations[comp_proto.name()] = op->apply(op_inputs);
   }
 
+  // Reconstruct the loss functions for the model.
   std::vector<loss::LossPtr> losses;
   for (const auto& loss : model_proto.losses()) {
     losses.push_back(loss::Loss::fromProto(loss, computations));
   }
 
+  // Find the model outputs.
   autograd::ComputationList outputs;
   for (const auto& output : model_proto.outputs()) {
     outputs.push_back(computations.at(output));
