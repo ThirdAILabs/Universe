@@ -54,7 +54,7 @@ inline std::vector<T> permuteVector(const std::vector<T>& vector,
   }
 
   return new_vector;
-}  // namespace thirdai::data
+}
 
 template <typename T>
 inline std::vector<T> concatVectors(std::vector<T>&& a, std::vector<T>&& b) {
