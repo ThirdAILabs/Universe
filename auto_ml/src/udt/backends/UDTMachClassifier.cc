@@ -566,6 +566,12 @@ void UDTMachClassifier::introduceDocuments(
       // mach index sampler will only return nonempty buckets, which could
       // cause new docs to only be mapped to buckets already containing
       // entities.
+      std::cout << "Batch size: " << batch.front()->batchSize() << std::endl;
+      std::cout << "First vectors ================ " << std::endl;
+      for (const auto& inner_batch : batch) {
+        std::cout << inner_batch->getVector(0) << std::endl;
+        std::cout << "================" << std::endl;
+      }
       auto scores = _classifier->model()->forward(batch).at(0);
       std::cout << "Forward: " << timer.seconds() - last_seconds << std::endl;
       last_seconds = timer.seconds();
