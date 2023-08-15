@@ -13,6 +13,16 @@ namespace thirdai::data {
  * target tokens differently, e.g. use hash-based position encoding for the
  * source sequence and use offset-based position encoding for the target
  * sequence.
+ *
+ * For the source sequence [a, b, c, d] and target sequence [A, B, C, D] it will
+ * generate the samples:
+ * []        -> A
+ * [a]       -> B
+ * [a, b]    -> C
+ * [a, b, c] -> D
+ * 
+ * Left of "->" is source_output_column
+ * Right of "->" is target_output_column
  */
 class UnrollSequence final : public Transformation {
  public:
