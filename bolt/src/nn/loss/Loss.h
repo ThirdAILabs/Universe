@@ -48,6 +48,11 @@ class Loss {
 
   virtual proto::bolt::Loss* toProto() const = 0;
 
+  static std::shared_ptr<Loss> fromProto(
+      const proto::bolt::Loss& loss_proto,
+      const std::unordered_map<std::string, autograd::ComputationPtr>&
+          computations);
+
   virtual ~Loss() = default;
 
  private:

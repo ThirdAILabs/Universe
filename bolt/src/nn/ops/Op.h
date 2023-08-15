@@ -148,6 +148,8 @@ class Op {
     (void)model;
   }
 
+  static std::shared_ptr<Op> fromProto(const proto::bolt::Op& op_proto);
+
   /**
    * Returns the name of the op. All of the ops in a model must have a
    * unique name.

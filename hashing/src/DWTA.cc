@@ -67,7 +67,7 @@ DWTAHashFunction::DWTAHashFunction(const proto::hashing::DWTA& dwta_proto)
       _hashes_per_table(dwta_proto.hashes_per_table()),
       _num_hashes(dwta_proto.num_tables() * dwta_proto.hashes_per_table()),
       _dim(dwta_proto.input_dim()),
-      _binsize(dwta_proto.binsize()),
+      _binsize(1 << dwta_proto.log_binsize()),
       _log_binsize(dwta_proto.log_binsize()),
       _permute(dwta_proto.permutations()),
       _bin_map(dwta_proto.bin_map().begin(), dwta_proto.bin_map().end()),
@@ -161,7 +161,6 @@ proto::hashing::HashFunction* DWTAHashFunction::toProto() const {
   auto* dwta = hash_fn->mutable_dwta();
   dwta->set_num_tables(_num_tables);
   dwta->set_hashes_per_table(_hashes_per_table);
-  dwta->set_binsize(_binsize);
   dwta->set_log_binsize(_log_binsize);
   dwta->set_input_dim(_dim);
   dwta->set_permutations(_permute);

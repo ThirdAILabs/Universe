@@ -29,7 +29,7 @@ if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
 
   set_source_files_properties(${PROTO_HEADERS} ${PROTO_SOURCES}
                               PROPERTIES GENERATED TRUE)
-else(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+else()
   # We can't use protobuf_generate_cpp when building from source because it
   # requires using find_package(Protobuf) which also sets the libprotobuf
   # variables as well, which causes the final linking to be done with the host

@@ -11,8 +11,8 @@ message Placeholder {
 }
 
 message Computation {
-  required  string name = 1;
-  required  string op = 2;
+  required string name = 1;
+  required string op = 2;
   repeated string inputs = 3;
 }
 
