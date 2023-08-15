@@ -572,7 +572,8 @@ void UDTMachClassifier::introduceDocuments(
         std::cout << inner_batch->getVector(0) << std::endl;
         std::cout << "================" << std::endl;
       }
-      auto scores = _classifier->model()->forward(batch).at(0);
+      auto scores =
+          _classifier->model()->forward(batch, /* use_sparsity= */ true).at(0);
       std::cout << "Forward: " << timer.seconds() - last_seconds << std::endl;
       last_seconds = timer.seconds();
 
