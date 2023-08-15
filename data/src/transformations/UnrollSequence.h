@@ -20,7 +20,7 @@ namespace thirdai::data {
  * [a]       -> B
  * [a, b]    -> C
  * [a, b, c] -> D
- * 
+ *
  * Left of "->" is source_output_column
  * Right of "->" is target_output_column
  */
