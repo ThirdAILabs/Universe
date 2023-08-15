@@ -2,28 +2,14 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/DeduplicateTokens.h>
+#include <exception>
+#include <new>
 #include <optional>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 namespace thirdai::data {
-
-static std::pair<std::vector<uint32_t>, std::vector<float>> deduplicate(
-    RowView<uint32_t> indices, std::optional<RowView<float>> values) {
-  std::unordered_map<uint32_t, float> features;
-  for (uint32_t i = 0; i < indices.size(); i++) {
-    features[indices[i]] += values ? (*values)[i] : 1;
-  }
-  std::vector<uint32_t> deduped_indices;
-  deduped_indices.reserve(features.size());
-  std::vector<float> deduped_values;
-  deduped_values.reserve(features.size());
-  for (auto [index, value] : features) {
-    deduped_indices.push_back(index);
-    deduped_values.push_back(value);
-  }
-  return std::make_pair(std::move(deduped_indices), std::move(deduped_values));
-}
 
 ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -36,18 +22,39 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
   std::vector<std::vector<uint32_t>> deduped_indices(indices->numRows());
   std::vector<std::vector<float>> deduped_values(indices->numRows());
 
-#pragma omp parallel for default(none) \
-    shared(indices, values, deduped_indices, deduped_values)
-  for (uint32_t i = 0; i < indices->numRows(); i++) {
-    std::optional<RowView<float>> row_values;
-    if (values) {
-      row_values = (*values)->row(i);
-    }
+  std::exception_ptr error;
 
-    auto [deduped_row_indices, deduped_row_values] =
-        deduplicate(indices->row(i), row_values);
-    deduped_indices[i] = std::move(deduped_row_indices);
-    deduped_values[i] = std::move(deduped_row_values);
+#pragma omp parallel for default(none) \
+    shared(indices, values, deduped_indices, deduped_values, error)
+  for (uint32_t i = 0; i < indices->numRows(); i++) {
+    try {
+      auto indices_row = indices->row(i);
+      std::unordered_map<uint32_t, float> features;
+
+      if (values) {
+        for (uint32_t pos = 0; pos < indices_row.size(); pos++) {
+          features[indices_row[i]] += (*values)->row(i)[pos];
+        }
+      } else {
+        for (const uint32_t token : indices_row) {
+          features[token]++;
+        }
+      }
+
+      deduped_indices[i].reserve(features.size());
+      deduped_values[i].reserve(features.size());
+      for (auto [index, value] : features) {
+        deduped_indices[i].push_back(index);
+        deduped_values[i].push_back(value);
+      }
+    } catch (std::exception& e) {
+#pragma omp critical
+      error = std::make_exception_ptr(e);
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   columns.setColumn(
