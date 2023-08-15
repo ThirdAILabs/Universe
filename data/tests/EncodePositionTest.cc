@@ -3,6 +3,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/State.h>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::data::tests {
@@ -62,14 +63,13 @@ TEST(EncodePositionTest, HashPositionSameTokenSamePosition) {
 }
 
 TEST(EncodePositionTest, HashPositionSameTokenDifferentPosition) {
-  auto position_encoded_sequences = hashPositions(/* sequences= */ {
-      {1, 1, 1, 1, 1},
-  });
+  auto position_encoded_sequence = hashPositions(
+      /* sequences= */ {{1, 1, 1, 1, 1}})[0];
 
-  for (uint32_t pos = 0; pos < 4; ++pos) {
-    ASSERT_NE(position_encoded_sequences[0][pos],
-              position_encoded_sequences[0][pos + 1]);
-  }
+  std::unordered_set<uint32_t> unique_tokens(position_encoded_sequence.begin(),
+                                             position_encoded_sequence.end());
+
+  ASSERT_EQ(unique_tokens.size(), 5);
 }
 
 TEST(EncodePositionTest, HashPositionDifferentTokenSamePosition) {
@@ -87,7 +87,7 @@ TEST(EncodePositionTest, OffsetPosition) {
   ColumnMap columns({{"tokens", tokens}});
   OffsetPositionTransform offset(/* input_column= */ "tokens",
                                  /* output_column= */ "tokens_offset",
-                                 /* max_num_tokens= */ 5);
+                                 /* max_num_tokens= */ 4);
   columns = offset.applyStateless(columns);
 
   auto tokens_offset = columns.getArrayColumn<uint32_t>("tokens_offset");
@@ -99,7 +99,8 @@ TEST(EncodePositionTest, OffsetPosition) {
   ASSERT_EQ(tokens_offset_vec[1], 8);   // 1 * 5 + 3
   ASSERT_EQ(tokens_offset_vec[2], 12);  // 2 * 5 + 2
   ASSERT_EQ(tokens_offset_vec[3], 16);  // 3 * 5 + 1
-  ASSERT_EQ(tokens_offset_vec[4], 20);  // 4 * 5 + 0
+  // For the next one, position is 3 instead of 4 since max_num_tokens is 4.
+  ASSERT_EQ(tokens_offset_vec[4], 15);  // 3 * 5 + 0.
 }
 
 }  // namespace thirdai::data::tests
