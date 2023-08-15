@@ -1,0 +1,43 @@
+syntax = "proto2";
+
+package proto.data;
+
+message ItemRecord {
+  required uint32 item = 1;
+  required int64 timestamp = 2;
+}
+
+message ItemRecordList {
+  required string key = 1;
+  repeated ItemRecord history = 2;
+}
+
+message ItemHistoryTracker {
+  repeated ItemRecordList trackers = 1;
+  required int64 last_timestamp = 2;
+}
+
+message Vocabulary {
+  optional uint64 max_vocab_size = 1;
+  repeated string vocab = 2;
+}
+
+message Entity {
+  required uint32 entity_id = 1;
+  repeated uint32 hashes = 2;
+}
+
+message MachIndex {
+  required uint64 num_buckets = 1;
+  required uint64 num_hashes = 2;
+
+  repeated Entity entities = 3;
+}
+
+message State {
+  optional MachIndex mach_index = 1;
+
+  map<string, Vocabulary> vocabs = 2;
+
+  map<string, ItemHistoryTracker> item_history_trackers = 3;
+}

@@ -2,6 +2,7 @@
 
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <proto/state.pb.h>
 #include <limits>
 #include <stdexcept>
 #include <unordered_map>
@@ -54,6 +55,8 @@ class State {
 
   State() {}
 
+  explicit State(const proto::data::State& state);
+
   const auto& machIndex() const {
     if (!_mach_index) {
       throw std::invalid_argument(
@@ -92,6 +95,8 @@ class State {
   ItemHistoryTracker& getItemHistoryTracker(const std::string& tracker_key) {
     return _item_history_trackers[tracker_key];
   }
+
+  proto::data::State* toProto() const;
 
  private:
   MachIndexPtr _mach_index = nullptr;

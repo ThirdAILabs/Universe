@@ -18,7 +18,6 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
-#include <data/src/transformations/protobuf_utils/FromProto.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <proto/transformations.pb.h>

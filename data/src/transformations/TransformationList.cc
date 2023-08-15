@@ -1,12 +1,11 @@
 #include "TransformationList.h"
-#include <data/src/transformations/protobuf_utils/FromProto.h>
 
 namespace thirdai::data {
 
 TransformationList::TransformationList(
     const proto::data::Transformation_List& t_list) {
   for (const auto& transformation : t_list.transformations()) {
-    _transformations.push_back(fromProto(transformation));
+    _transformations.push_back(Transformation::fromProto(transformation));
   }
 }
 

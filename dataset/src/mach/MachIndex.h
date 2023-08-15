@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <proto/state.pb.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -79,6 +80,11 @@ class MachIndex {
                                            uint32_t k) const;
 
   float sparsity() const;
+
+  proto::data::MachIndex* toProto() const;
+
+  static std::shared_ptr<MachIndex> fromProto(
+      const proto::data::MachIndex& mach_index);
 
   void save(const std::string& filename) const;
 

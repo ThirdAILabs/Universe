@@ -36,6 +36,9 @@ class Transformation {
     return apply(std::move(columns), state);
   }
 
+  static std::shared_ptr<Transformation> fromProto(
+      const proto::data::Transformation& transformation);
+
   std::string serialize() const;
 
   static std::shared_ptr<Transformation> deserialize(const std::string& binary);
