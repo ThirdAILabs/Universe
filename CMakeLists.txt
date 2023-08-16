@@ -427,6 +427,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/CategoricalTemporal.cc
     data/src/transformations/Date.cc
     data/src/transformations/Transformation.cc
+    data/src/transformations/State.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc

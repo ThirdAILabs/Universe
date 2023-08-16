@@ -74,6 +74,8 @@ class MachIndex {
     return _buckets.at(bucket).size();
   }
 
+  const auto& entityToHashes() const { return _entity_to_hashes; }
+
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
   TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,

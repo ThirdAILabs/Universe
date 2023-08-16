@@ -34,8 +34,8 @@ ItemHistoryTracker trackerFromProto(
 
   for (const auto& history : tracker_proto.trackers()) {
     for (const auto& record : history.history()) {
-      tracker.trackers[history.key()].emplace_back(record.item(),
-                                                   record.timestamp());
+      tracker.trackers[history.key()].push_back(
+          {record.item(), record.timestamp()});
     }
   }
 
