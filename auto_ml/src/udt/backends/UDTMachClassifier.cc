@@ -547,9 +547,6 @@ void UDTMachClassifier::introduceDocuments(
 
   bolt::train::python::CtrlCCheck ctrl_c_check;
 
-  bolt::utils::Timer timer;
-  double last_seconds = timer.seconds();
-
   while (
       auto doc_samples = dataset_loader->loadSome(
           defaults::BATCH_SIZE,
@@ -558,26 +555,13 @@ void UDTMachClassifier::introduceDocuments(
     auto doc_samples_tensors = bolt::train::convertDatasets(
         *doc_samples, _classifier->model()->inputDims());
 
-    std::cout << "Loading data: " << timer.seconds() - last_seconds
-              << std::endl;
-    last_seconds = timer.seconds();
-
-    std::cout << "FOR EACH BATCH " << std::endl;
     for (const auto& batch : doc_samples_tensors) {
       // Note: using sparse inference here could cause issues because the
       // mach index sampler will only return nonempty buckets, which could
       // cause new docs to only be mapped to buckets already containing
       // entities.
-      std::cout << "Batch size: " << batch.front()->batchSize() << std::endl;
-      std::cout << "First vectors ================ " << std::endl;
-      for (const auto& inner_batch : batch) {
-        std::cout << inner_batch->getVector(0) << std::endl;
-        std::cout << "================" << std::endl;
-      }
       auto scores =
           _classifier->model()->forward(batch, /* use_sparsity= */ true).at(0);
-      std::cout << "Forward: " << timer.seconds() - last_seconds << std::endl;
-      last_seconds = timer.seconds();
 
       for (uint32_t i = 0; i < scores->batchSize(); i++) {
         uint32_t label = std::stoi(labels->value(row_idx++));
@@ -585,9 +569,6 @@ void UDTMachClassifier::introduceDocuments(
             scores->getVector(i).findKLargestActivations(
                 num_buckets_to_sample));
       }
-      std::cout << "K Larget Acts: " << timer.seconds() - last_seconds
-                << std::endl;
-      last_seconds = timer.seconds();
 
       ctrl_c_check();
     }
@@ -603,9 +584,6 @@ void UDTMachClassifier::introduceDocuments(
 
     ctrl_c_check();
   }
-  std::cout << "topHashesForDoc loop: " << timer.seconds() - last_seconds
-            << std::endl;
-  last_seconds = timer.seconds();
 
   addBalancingSamples(cold_start_data);
 
