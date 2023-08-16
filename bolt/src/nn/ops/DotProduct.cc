@@ -1,4 +1,7 @@
 #include "DotProduct.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -164,4 +167,12 @@ void DotProduct::sparseSparseBackprop(float grad, BoltVector& a,
   }
 }
 
+template <class Archive>
+void DotProduct::serialize(Archive& archive) {
+  // The optimizer is small so we can always serialize it.
+  archive(cereal::base_class<Op>(this));
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::DotProduct)
