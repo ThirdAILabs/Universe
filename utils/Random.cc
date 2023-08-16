@@ -1,4 +1,5 @@
 #include "Random.h"
+#include <ctime>
 #include <random>
 
 namespace thirdai::global_random {

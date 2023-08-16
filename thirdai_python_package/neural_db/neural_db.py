@@ -192,11 +192,8 @@ class NeuralDB:
 
         return NeuralDB(user_id, savable_state)
 
-    def in_session(self) -> bool:
-        return self._savable_state is not None
-
     def ready_to_search(self) -> bool:
-        return self.in_session() and self._savable_state.ready()
+        return self._savable_state.ready()
 
     def sources(self) -> Dict[str, str]:
         return self._savable_state.documents.sources()
@@ -208,12 +205,11 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
-        use_weak_columns: bool = False,
-        num_buckets_to_sample: int = 16,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = no_op,
         on_success: Callable = no_op,
         on_error: Callable = None,
-        on_irrecoverable_error: Callable = None,
         cancel_state: CancelState = None,
     ) -> List[str]:
         documents_copy = copy.deepcopy(self._savable_state.documents)
@@ -230,8 +226,8 @@ class NeuralDB:
             intro_documents=intro_and_train.intro,
             train_documents=intro_and_train.train,
             num_buckets_to_sample=num_buckets_to_sample,
+            fast_approximation=fast_approximation,
             should_train=train,
-            use_weak_columns=use_weak_columns,
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
@@ -252,16 +248,17 @@ class NeuralDB:
     def search(
         self, query: str, top_k: int, on_error: Callable = None
     ) -> List[Reference]:
-        try:
-            result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k
-            )[0]
-            return [self._savable_state.documents.reference(rid) for rid in result_ids]
-        except Exception as e:
-            if on_error is not None:
-                on_error(e.__str__())
-                return []
-            raise e
+        result_ids = self._savable_state.model.infer_labels(
+            samples=[query], n_results=top_k
+        )[0]
+
+        references = []
+        for rid, score in result_ids:
+            ref = self._savable_state.documents.reference(rid)
+            ref._score = score
+            references.append(ref)
+
+        return references
 
     def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text

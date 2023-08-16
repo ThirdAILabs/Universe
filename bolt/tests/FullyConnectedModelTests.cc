@@ -1,6 +1,5 @@
 #include "DatasetUtils.h"
 #include "gtest/gtest.h"
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
@@ -28,7 +27,8 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
         /* sampling= */
         DWTASamplingConfig::autotune(dim, sparsity,
                                      /* experimental_autotune=*/false),
-        /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20);
+        /* use_bias= */ true, /* rebuild_hash_tables= */ 4,
+        /* reconstruct_hash_functions= */ 20);
 
     input_dim_to_last_layer = dim;
     input_to_output_layer = hidden->apply(input);
@@ -198,7 +198,8 @@ TEST(FullyConnectedModelTests, SparseOutput) {
           DWTASamplingConfig::autotune(/* layer_dim=*/N_CLASSES,
                                        /* sparsity=*/0.1,
                                        /* experimental_autotune=*/false),
-          /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20)
+          /* use_bias= */ true, /* rebuild_hash_tables= */ 4,
+          /* reconstruct_hash_functions= */ 20)
           ->apply(hidden);
 
   auto label = ops::Input::make(/* dim= */ N_CLASSES);

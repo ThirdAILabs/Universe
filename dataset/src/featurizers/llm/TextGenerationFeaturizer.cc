@@ -51,19 +51,26 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     throw std::invalid_argument("Expected line to be a json object.");
   }
 
-  auto [tokens, predict_start] = getContext(line_content);
+  auto tokens = getAllTokens(line_content);
 
   BoltVector prompt = promptContext(getPrompt(line_content));
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = predict_start; i < tokens.size(); i++) {
-    BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
+  size_t chunk_size = _context_featurizer.contextSize() + 1;
 
-    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, i),
-                       _context_featurizer.ircContext(tokens, i),
-                       _context_featurizer.srcContext(tokens, i),
-                       std::move(label)});
+  for (size_t chunk_start = 0; chunk_start < tokens.size();
+       chunk_start += chunk_size) {
+    size_t chunk_end = std::min(tokens.size(), chunk_start + chunk_size);
+
+    for (size_t i = chunk_start + 1; i < chunk_end; i++) {
+      BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
+      vectors.push_back({prompt,
+                         _context_featurizer.lrcContext(tokens, chunk_start, i),
+                         _context_featurizer.ircContext(tokens, chunk_start, i),
+                         _context_featurizer.srcContext(tokens, chunk_start, i),
+                         std::move(label)});
+    }
   }
 
   return vectors;
@@ -91,7 +98,7 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
+std::vector<uint32_t> TextGenerationFeaturizer::getAllTokens(
     const json& line_content) {
   if (!line_content.contains("target")) {
     throw std::invalid_argument("Expected field 'target' in json object'");
@@ -100,21 +107,7 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
   std::vector<uint32_t> target_tokens =
       token_encoding::tokenIds(getStringField(line_content, "target"));
 
-  if (line_content.contains("context")) {
-    std::vector<uint32_t> context_tokens =
-        token_encoding::tokenIds(getStringField(line_content, "context"));
-
-    // The predict start is 1 after the end of the context because there will be
-    // a [CLS] token.
-    uint32_t predict_start = context_tokens.size() + 1;
-
-    context_tokens.insert(context_tokens.end(), target_tokens.begin(),
-                          target_tokens.end());
-
-    return {std::move(context_tokens), predict_start};
-  }
-
-  return {std::move(target_tokens), 1};
+  return target_tokens;
 }
 
 std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(

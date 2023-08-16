@@ -1,20 +1,27 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <data/src/columns/Column.h>
 #include <dataset/src/Datasets.h>
 #include <utils/Random.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::data {
 
 class ColumnMap {
  public:
   explicit ColumnMap(std::unordered_map<std::string, ColumnPtr> columns);
+
+  static ColumnMap fromMapInput(const automl::MapInput& sample);
+
+  static ColumnMap fromMapInputBatch(const automl::MapInputBatch& samples);
 
   size_t numRows() const { return _num_rows; }
 
@@ -42,6 +49,11 @@ class ColumnMap {
    * Shuffles the ColumnMap in place.
    */
   void shuffle(uint32_t seed = global_random::nextSeed());
+
+  /**
+   * Creates a new column map whose rows are permuted in the given order
+   */
+  ColumnMap permute(const std::vector<size_t>& permutation) const;
 
   /**
    * Concatenates with another ColumnMap, returning the result. This will

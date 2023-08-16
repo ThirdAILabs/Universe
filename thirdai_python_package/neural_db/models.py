@@ -1,9 +1,9 @@
 import math
 import random
 from pathlib import Path
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
-from thirdai import bolt, bolt_v2
+from thirdai import bolt
 
 from .documents import DocumentDataSource
 from .utils import clean_text, random_sample
@@ -40,8 +40,8 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        use_weak_columns: bool = False,
-        num_buckets_to_sample: int = 16,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ) -> None:
@@ -118,7 +118,7 @@ class Model:
         raise NotImplementedError()
 
 
-class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
+class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
     def __init__(
         self,
         min_epochs,
@@ -142,7 +142,7 @@ class EarlyStopWithMinEpochs(bolt_v2.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
-class ProgressUpdate(bolt_v2.train.callbacks.Callback):
+class ProgressUpdate(bolt.train.callbacks.Callback):
     def __init__(
         self,
         max_epochs,
@@ -169,7 +169,7 @@ class ProgressUpdate(bolt_v2.train.callbacks.Callback):
             self.progress_callback_fn(progress)
 
 
-class CancelTraining(bolt_v2.train.callbacks.Callback):
+class CancelTraining(bolt.train.callbacks.Callback):
     def __init__(self, cancel_state):
         super().__init__()
         self.cancel_state = cancel_state
@@ -278,8 +278,8 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        use_weak_columns: bool = False,
-        num_buckets_to_sample: int = 16,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ) -> None:
@@ -302,12 +302,16 @@ class Mach(Model):
                     raise ValueError(
                         f"Document has a different id column ({doc_id}) than the model configuration ({self.id_col})."
                     )
+
+                num_buckets_to_sample = num_buckets_to_sample or int(
+                    self.model.get_index().num_hashes() * 2.0
+                )
+
                 self.model.introduce_documents_on_data_source(
                     data_source=intro_documents,
                     strong_column_names=[intro_documents.strong_column],
-                    weak_column_names=[intro_documents.weak_column]
-                    if use_weak_columns
-                    else [],
+                    weak_column_names=[intro_documents.weak_column],
+                    fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
             learning_rate = 0.001
@@ -381,9 +385,12 @@ class Mach(Model):
         self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
         all_predictions = self.model.predict_batch(infer_batch)
-        #####
+        num_hashes = self.model.get_index().num_hashes()
+        if num_hashes == 0:
+            raise ValueError("Model in invalid state. Num hashes should not be 0.")
         return [
-            [int(pred) for pred, _ in predictions] for predictions in all_predictions
+            [(int(pred), score / num_hashes) for pred, score in predictions]
+            for predictions in all_predictions
         ]
 
     def infer_buckets(

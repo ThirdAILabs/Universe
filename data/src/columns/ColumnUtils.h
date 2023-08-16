@@ -1,6 +1,10 @@
 #pragma once
 
+#include <cstddef>
+#include <exception>
 #include <iostream>
+#include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -20,6 +24,33 @@ inline std::vector<T> shuffleVector(std::vector<T>&& vector,
 #pragma omp parallel for default(none) shared(new_vector, vector, permutation)
   for (size_t i = 0; i < vector.size(); i++) {
     std::swap(new_vector[i], vector[permutation[i]]);
+  }
+
+  return new_vector;
+}
+
+template <typename T>
+inline std::vector<T> permuteVector(const std::vector<T>& vector,
+                                    const std::vector<size_t>& permutation) {
+  std::optional<size_t> invalid_index;
+  std::vector<T> new_vector(permutation.size());
+#pragma omp parallel for default(none) \
+    shared(vector, permutation, invalid_index, new_vector)
+  for (size_t i = 0; i < new_vector.size(); i++) {
+    if (permutation[i] >= vector.size()) {
+#pragma omp critical
+      invalid_index = permutation[i];
+      continue;
+    }
+
+    new_vector[i] = vector[permutation[i]];
+  }
+  if (invalid_index) {
+    std::stringstream error_ss;
+    error_ss << "Invalid permutation. Original vector has " << vector.size()
+             << " elements but permutation contains index " << *invalid_index
+             << ".";
+    throw std::invalid_argument(error_ss.str());
   }
 
   return new_vector;

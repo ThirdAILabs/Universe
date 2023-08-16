@@ -2,28 +2,17 @@ import os
 import shutil
 
 import pytest
-from ndb_utils import create_simple_dataset
+from ndb_utils import create_simple_dataset, train_simple_neural_db
 from thirdai import neural_db
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def test_neural_db_save_load(create_simple_dataset):
-    filename = create_simple_dataset
-    ndb = neural_db.NeuralDB()
-
-    doc = neural_db.CSV(
-        filename,
-        id_column="id",
-        strong_columns=["text"],
-        weak_columns=["text"],
-        reference_columns=["id", "text"],
-    )
-
-    ndb.insert(sources=[doc], train=True)
+def test_neural_db_save_load(train_simple_neural_db):
+    ndb = train_simple_neural_db
 
     before_save_results = ndb.search(
-        query="some query",
+        query="what color are apples",
         top_k=10,
     )
 
@@ -35,12 +24,24 @@ def test_neural_db_save_load(create_simple_dataset):
     new_ndb = neural_db.NeuralDB.from_checkpoint("temp")
 
     after_save_results = new_ndb.search(
-        query="some query",
+        query="what color are apples",
         top_k=10,
     )
 
     for after, before in zip(after_save_results, before_save_results):
         assert after.text == before.text
+        assert after.score == before.score
 
     if os.path.exists("temp"):
         shutil.rmtree("temp")
+
+
+def test_neural_db_reference_scores(train_simple_neural_db):
+    ndb = train_simple_neural_db
+
+    results = ndb.search("are apples green or red ?", top_k=10)
+    for r in results:
+        assert 0 <= r.score and r.score <= 1
+
+    scores = [r.score for r in results]
+    assert scores == sorted(scores, reverse=True)
