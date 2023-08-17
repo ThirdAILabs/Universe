@@ -361,7 +361,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
-            model_config=self.get_id_colmodel_config,
+            model_config=self.model_config,
         )
 
     def forget_documents(self) -> None:
