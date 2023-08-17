@@ -2,6 +2,7 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -15,6 +16,7 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::bolt {
 
@@ -69,7 +71,64 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
       forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output, labels);
     }
   }
-}
+
+#if THIRDAI_LOG_SPARSITY_RECALL
+#pragma message("THIRDAI_LOG_SPARSITY_RECALL is defined")
+  if (!output.isDense()) {
+    BoltVector dense_output(/* l= */ _dim, /* is_dense= */ true,
+                            /* has_gradient= */ false);
+    eigenDenseDenseForward(input, dense_output);
+
+    std::unordered_set<uint32_t> sparse_active_neurons(
+        output.active_neurons, output.active_neurons + output.len);
+    double average_active_neuron_activation = 0;
+    for (uint32_t pos = 0; pos < output.len; pos++) {
+      average_active_neuron_activation += output.activations[pos];
+    }
+    average_active_neuron_activation /= output.len;
+
+    uint32_t intersection_size = 0;
+    double average_true_top_activation = 0;
+    auto dense_top_k = dense_output.findKLargestActivations(output.len);
+    while (!dense_top_k.empty()) {
+      if (sparse_active_neurons.count(dense_top_k.top().second)) {
+        intersection_size++;
+      }
+      average_true_top_activation += dense_top_k.top().first;
+      dense_top_k.pop();
+    }
+    average_true_top_activation /= output.len;
+
+    double average_random_activation = 0;
+    for (uint32_t i = 0; i < output.len; i++) {
+      average_random_activation +=
+          dense_output.activations[i * _dim / output.len];
+    }
+    average_random_activation /= output.len;
+
+    double average_activation = 0;
+    for (uint32_t i = 0; i < dense_output.len; i++) {
+      average_activation += dense_output.activations[i];
+    }
+    average_activation /= dense_output.len;
+
+#pragma omp critical
+    {
+      std::cout << "Active neurons captured " << intersection_size << "/"
+                << output.len << " true top neurons." << std::endl;
+      std::cout << "Average random neuron activation: "
+                << average_random_activation << std::endl;
+      std::cout << "Average all neurons activation: " << average_activation
+                << std::endl;
+      std::cout << "Average active neuron activation: "
+                << average_active_neuron_activation << std::endl;
+      std::cout << "Average true top neuron activation: "
+                << average_true_top_activation << std::endl
+                << std::endl;
+    }
+  }
+#endif
+}  // namespace thirdai::bolt
 
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,

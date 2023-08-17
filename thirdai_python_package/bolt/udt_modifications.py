@@ -286,6 +286,8 @@ def modify_mach_udt():
         num_random_hashes: int = 0,
         fast_approximation: bool = False,
         verbose: bool = True,
+        use_sparsity: bool = False,
+        max_in_memory_batches: Optional[int] = None,
     ):
         data_source = _create_data_source(filename)
 
@@ -298,6 +300,8 @@ def modify_mach_udt():
             num_random_hashes,
             fast_approximation,
             verbose,
+            use_sparsity,
+            max_in_memory_batches,
         )
 
     delattr(bolt.UniversalDeepTransformer, "introduce_documents")

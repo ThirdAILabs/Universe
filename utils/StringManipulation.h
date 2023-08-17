@@ -21,7 +21,8 @@ std::vector<std::string> split(const std::string_view& string, char delimiter);
  */
 std::vector<std::string> tokenizeSentence(const std::string_view& sentence);
 
-std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
+std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k,
+                                    uint32_t stride);
 
 /**
  * Joins a vector of strings into a single delimited string.
@@ -92,5 +93,10 @@ bool isChineseChar(const wchar_t& c);
 
 std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text);
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
+
+/**
+ * Replaces punctuation characters in string with whitespace.
+ */
+void replacePunctuationWithSpaces(std::string& string);
 
 }  // namespace thirdai::text

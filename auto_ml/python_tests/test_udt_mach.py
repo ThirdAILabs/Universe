@@ -390,6 +390,25 @@ def test_mach_udt_introduce_documents(fast_approximation):
     os.remove(new_docs)
 
 
+def test_mach_udt_streaming_introduce_documents():
+    model = train_simple_mach_udt()
+
+    new_docs = "NEW_DOCS.csv"
+    with open(new_docs, "w") as f:
+        f.write("label,title,description\n")
+        for i in range(4, 5000):
+            f.write(f"{i},some title,some description\n")
+
+    model.introduce_documents(
+        new_docs,
+        strong_column_names=["title"],
+        weak_column_names=["description"],
+        max_in_memory_batches=1,
+    )
+
+    os.remove(new_docs)
+
+
 def test_mach_udt_hash_based_methods():
     # Set mach_sampling_threshold = 1.0 to ensure that we use MACH index for
     # active neuron selection.
@@ -822,3 +841,22 @@ def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
     model.introduce_label(
         [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
     )
+
+
+def test_udt_mach_fast_approximation_handles_commas():
+    model = train_simple_mach_udt()
+    model.clear_index()
+
+    with open("temp.csv", "w") as out:
+        out.write("strong,weak,label\n")
+        out.write('"a string, with, commas","another, one",0\n')
+
+    # We only care that it doesn't throw an error
+    model.introduce_documents(
+        "temp.csv",
+        strong_column_names=["strong"],
+        weak_column_names=["weak"],
+        fast_approximation=True,
+    )
+
+    os.remove("temp.csv")
