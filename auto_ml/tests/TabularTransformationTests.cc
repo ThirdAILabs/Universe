@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
@@ -55,6 +56,16 @@ data::ColumnDataTypes getTabularDataTypes() {
   };
 }
 
+thirdai::data::ColumnMap getInput() {
+  return thirdai::data::ColumnMap::fromMapInput({{"a", "some text"},
+                                                 {"b", "cat_str"},
+                                                 {"c", "20-24-22"},
+                                                 {"d", "0.5"},
+                                                 {"e", "a b c d"},
+                                                 {"f", "2023-10-12"},
+                                                 {"label", "4"}});
+}
+
 void checkOutputs(const thirdai::data::IndexValueColumnList& outputs) {
   ASSERT_EQ(outputs.size(), 1);
   ASSERT_EQ(outputs.at(0).first, "__featurized_input_indices__");
@@ -98,6 +109,11 @@ TEST(TabularTransformationTests, TabularTransformations) {
       "__f_date__",      "__b_categorical__", "__d_binned__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
+
+  // Check that transformations can process data without errors.
+  thirdai::data::State state;
+  thirdai::data::TransformationList pipeline(t_list);
+  pipeline.apply(getInput(), state);
 }
 
 TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
@@ -150,6 +166,11 @@ TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
       "__f_date__",      "__contextual_columns__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
+
+  // Check that transformations can process data without errors.
+  thirdai::data::State state;
+  thirdai::data::TransformationList pipeline(t_list);
+  pipeline.apply(getInput(), state);
 }
 
 TEST(TabularTransformationTests, TabularTransformationsTemporal) {
@@ -216,6 +237,11 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
       "__categorical_temporal_1__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
+
+  // Check that transformations can process data without errors.
+  thirdai::data::State state;
+  thirdai::data::TransformationList pipeline(t_list);
+  pipeline.apply(getInput(), state);
 }
 
 }  // namespace thirdai::automl::tests
