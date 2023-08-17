@@ -25,7 +25,7 @@ class FullyConnected final
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
       bool use_bias = true, uint32_t rebuild_hash_tables = 4,
       uint32_t reconstruct_hash_functions = 100,
-      const std::optional<std::string>& grad_clip = std::nullopt);
+      std::optional<std::string> grad_clip = std::nullopt);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
@@ -139,7 +139,7 @@ class FullyConnected final
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max(),
-      const std::optional<std::string>& grad_clip = std::nullopt);
+      std::optional<std::string> grad_clip = std::nullopt);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 
