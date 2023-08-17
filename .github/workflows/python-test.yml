@@ -29,8 +29,12 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
+
       - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+          # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/build.py --extras test
 
       # Install go (necessary for running go unit tests)
       - name: Set up Go
@@ -39,7 +43,10 @@ jobs:
           go-version: 1.19
 
       - name: Run python unit tests
-        run: bin/python-test.sh -m unit
+          # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/python-test.sh -m unit
 
   python-release-tests:
     runs-on: ubuntu-latest
@@ -60,7 +67,10 @@ jobs:
           go-version: 1.19
 
       - name: Run python release tests
-        run: bin/python-test.sh -m release
+          # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/python-test.sh -m release
 
   distributed-python-tests:
     runs-on: ubuntu-latest-8-cores
@@ -73,7 +83,13 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+          # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/build.py --extras test
 
       - name: Run python distributed tests
-        run: bin/python-test.sh -m distributed --durations=0
+          # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/python-test.sh -m distributed --durations=0
