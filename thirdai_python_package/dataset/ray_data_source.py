@@ -1,7 +1,7 @@
 import os
-import ray
 
 import pandas as pd
+import ray
 from thirdai.dataset.data_source import PyDataSource
 
 

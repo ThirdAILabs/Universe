@@ -2,9 +2,9 @@ import copy
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
-import ray
 
 import pandas as pd
+import ray
 import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource

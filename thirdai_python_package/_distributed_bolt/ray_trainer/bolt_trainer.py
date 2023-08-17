@@ -3,10 +3,8 @@ from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
 from ray.air.checkpoint import Checkpoint
 from ray.air.config import RunConfig, ScalingConfig
-from ray.train.data_parallel_trainer import DataParallelTrainer
-
 from ray.train import DataConfig
-
+from ray.train.data_parallel_trainer import DataParallelTrainer
 from ray.train.trainer import GenDataset
 
 if TYPE_CHECKING:

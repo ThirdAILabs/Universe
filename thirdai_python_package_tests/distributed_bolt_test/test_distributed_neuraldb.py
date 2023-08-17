@@ -1,15 +1,15 @@
 import os
+import shutil
 
 import pytest
 import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-from thirdai_python_package_tests.neural_db.ndb_utils import create_simple_dataset
-
-from ray.air import session, ScalingConfig
+from ray.air import ScalingConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import neural_db
-import shutil
+
+from thirdai_python_package_tests.neural_db.ndb_utils import create_simple_dataset
 
 
 @pytest.mark.unit

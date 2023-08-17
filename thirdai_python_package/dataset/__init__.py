@@ -7,5 +7,5 @@ __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
 
 from .csv_data_source import CSVDataSource
-from .ray_data_source import RayDataSource
 from .parquet_data_source import ParquetSource
+from .ray_data_source import RayDataSource
