@@ -58,7 +58,7 @@ class Loader {
 
   void logLoadStart() const;
 
-  void logLoadEnd(size_t vectors, size_t batches, int64_t time) const;
+  void logLoadEnd(size_t vectors, size_t batches, double time) const;
 
   ColumnMapIterator _data_iterator;
   TransformationPtr _transformation;

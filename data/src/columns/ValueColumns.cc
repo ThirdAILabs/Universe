@@ -1,5 +1,6 @@
 #include "ValueColumns.h"
 #include "ColumnUtils.h"
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -10,7 +11,7 @@ void ValueColumn<T>::shuffle(const std::vector<size_t>& permutation) {
 
 template <typename T>
 ColumnPtr ValueColumn<T>::concat(ColumnPtr&& other) {
-  if (_dimension != other->dimension()) {
+  if (dim() != other->dim()) {
     throw std::invalid_argument(
         "Can only concatenate columns with the same dimension.");
   }
@@ -25,10 +26,10 @@ ColumnPtr ValueColumn<T>::concat(ColumnPtr&& other) {
       concatVectors(std::move(_data), std::move(other_concrete->_data));
 
   auto new_column = std::shared_ptr<ValueColumn>(
-      new ValueColumn<T>(std::move(new_data), _dimension));
+      new ValueColumn<T>(std::move(new_data), _dim));
 
-  _dimension.reset();
-  other_concrete->_dimension.reset();
+  _dim.reset();
+  other_concrete->_dim.reset();
 
   return new_column;
 }
@@ -38,11 +39,10 @@ std::pair<ColumnPtr, ColumnPtr> ValueColumn<T>::split(size_t starting_offset) {
   auto [front, back] = splitVector(std::move(_data), starting_offset);
 
   auto front_col =
-      ValueColumnPtr<T>(new ValueColumn<T>(std::move(front), _dimension));
-  auto back_col =
-      ValueColumnPtr<T>(new ValueColumn<T>(std::move(back), _dimension));
+      ValueColumnPtr<T>(new ValueColumn<T>(std::move(front), _dim));
+  auto back_col = ValueColumnPtr<T>(new ValueColumn<T>(std::move(back), _dim));
 
-  _dimension.reset();
+  _dim.reset();
 
   return {front_col, back_col};
 }
@@ -61,13 +61,13 @@ ValueColumnPtr<uint32_t> ValueColumn<uint32_t>::make(
   }
 
   return ValueColumnPtr<uint32_t>(
-      new ValueColumn<uint32_t>(std::move(data), ColumnDimension::sparse(dim)));
+      new ValueColumn<uint32_t>(std::move(data), dim));
 }
 
 template <>
 ValueColumnPtr<float> ValueColumn<float>::make(std::vector<float>&& data) {
   return ValueColumnPtr<float>(
-      new ValueColumn<float>(std::move(data), ColumnDimension::dense(1)));
+      new ValueColumn<float>(std::move(data), /* dim= */ 1));
 }
 
 template <typename T>
@@ -80,5 +80,12 @@ template ValueColumnPtr<std::string> ValueColumn<std::string>::make(
 
 template ValueColumnPtr<int64_t> ValueColumn<int64_t>::make(
     std::vector<int64_t>&&);
+
+template <typename T>
+ColumnPtr ValueColumn<T>::permute(
+    const std::vector<size_t>& permutation) const {
+  auto new_data = permuteVector(_data, permutation);
+  return ValueColumnPtr<T>(new ValueColumn<T>(std::move(new_data), _dim));
+}
 
 }  // namespace thirdai::data

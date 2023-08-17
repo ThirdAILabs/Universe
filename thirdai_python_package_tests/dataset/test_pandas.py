@@ -22,9 +22,9 @@ def test_basic_pandas_to_columnmap():
     assert isinstance(column_map["col2"], data.columns.DecimalColumn)
     assert isinstance(column_map["col3"], data.columns.TokenColumn)
 
-    assert column_map["col1"].dimension() == None
-    assert column_map["col2"].dimension().dim == 1
-    assert column_map["col3"].dimension() == None
+    assert column_map["col1"].dim() == None
+    assert column_map["col2"].dim() == 1
+    assert column_map["col3"].dim() == None
 
 
 def test_pandas_to_columnmap_int_cols():
@@ -44,9 +44,9 @@ def test_pandas_to_columnmap_int_cols():
     assert isinstance(column_map["col2"], data.columns.DecimalColumn)
     assert isinstance(column_map["col3"], data.columns.TokenColumn)
 
-    assert column_map["col1"].dimension() == None
-    assert column_map["col2"].dimension().dim == 1
-    assert column_map["col3"].dimension().dim == 20
+    assert column_map["col1"].dim() == None
+    assert column_map["col2"].dim() == 1
+    assert column_map["col3"].dim() == 20
 
 
 def test_pandas_bad_col():
