@@ -154,6 +154,7 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
   if (_disable_sparse_parameter_updates) {
     _optimizer->applyUpdate(*_embedding_block, lr, iter);
   } else {
+    _optimizer->clipGradients();
     updateParametersSparse(lr, iter, B1, B2, eps);
   }
 }

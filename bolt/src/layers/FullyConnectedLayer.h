@@ -140,7 +140,7 @@ class FullyConnectedLayer final {
 
   void buildSamplingSummary(std::ostream& summary) const;
 
-  void initOptimizer();
+  void initOptimizer(std::optional<std::string> grad_clip = std::nullopt);
 
   ~FullyConnectedLayer() = default;
 

@@ -2,6 +2,7 @@
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -18,11 +19,12 @@ void EmbeddingLayerConfig::serialize(Archive& archive) {
 
 FullyConnectedLayerConfig::FullyConnectedLayerConfig(
     uint64_t dim, float sparsity, const std::string& activation,
-    SamplingConfigPtr sampling_config)
+    SamplingConfigPtr sampling_config, std::optional<std::string> grad_clip)
     : _dim(dim),
       _sparsity(sparsity),
       _activation_fn(getActivationFunction(activation)),
-      _sampling_config(std::move(sampling_config)) {
+      _sampling_config(std::move(sampling_config)),
+      _grad_clip(std::move(grad_clip)) {
   if (_sparsity <= 0.0 || _sparsity > 1.0) {
     throw std::invalid_argument(
         "Layer sparsity must be in the range (0.0, 1.0].");

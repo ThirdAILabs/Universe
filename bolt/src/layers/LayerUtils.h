@@ -1,11 +1,14 @@
 #pragma once
 
 #include <cereal/types/vector.hpp>
+#include <bolt/src/layers/GradientClipper.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/SRP.h>
 #include <utils/StringManipulation.h>
 #include <cctype>
+#include <memory>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -29,6 +32,23 @@ static std::string activationFunctionToStr(ActivationFunction act_func) {
   }
   throw std::logic_error(
       "Invalid activation function passed to activationFunctionToStr.");
+}
+
+static GradientClipperPtr getGradientClipper(const std::string& grad_clip) {
+  if (std::regex_match(grad_clip, std::regex(R"(frac_\(0.\d+\))"))) {
+    float threshold = std::stof(grad_clip.substr(grad_clip.find('(') + 1));
+    return std::make_shared<GradientClipperByFraction>(threshold);
+  }
+  if (std::regex_match(grad_clip, std::regex(R"(^norm_\d+(\.\d+)?$)"))) {
+    float threshold = std::stof(grad_clip.substr(grad_clip.find('_') + 1));
+    return std::make_shared<GradientClipperByNorm>(threshold);
+  }
+  if (std::regex_match(grad_clip, std::regex(R"(^value_\d+(\.\d+)?$)"))) {
+    float threshold = std::stof(grad_clip.substr(grad_clip.find('_') + 1));
+    return std::make_shared<GradientClipperByValue>(threshold);
+  }
+  throw std::invalid_argument("'" + grad_clip +
+                              "' is not a valid gradient clipping string.");
 }
 
 static ActivationFunction getActivationFunction(

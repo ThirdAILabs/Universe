@@ -49,7 +49,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     buildHashTables();
   }
 
-  initOptimizer();
+  initOptimizer(config.getGradClip());
 
   initActiveNeuronsTrackers();
 }
@@ -373,6 +373,8 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
    * was thinking of having different blocks. It also make is visually
    * more clear.
    */
+  _weight_optimizer->clipGradients();
+  _bias_optimizer->clipGradients();
   if (_disable_sparse_parameter_updates ||
       (_prev_is_dense && _this_is_dense)) {  // NOLINT
     updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
@@ -694,10 +696,10 @@ void FullyConnectedLayer::setHashTable(
       nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
 }
 
-void FullyConnectedLayer::initOptimizer() {
+void FullyConnectedLayer::initOptimizer(std::optional<std::string> grad_clip) {
   if (!_weight_optimizer || !_bias_optimizer) {
-    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
+    _weight_optimizer = AdamOptimizer(_dim * _prev_dim, grad_clip);
+    _bias_optimizer = AdamOptimizer(_dim, grad_clip);
   }
 }
 
