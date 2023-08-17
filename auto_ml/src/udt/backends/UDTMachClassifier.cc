@@ -486,6 +486,10 @@ void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
 
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
+  std::cout << "Current neuron index: ";
+  neuron_index->summarize(std::cout);
+  std::cout << std::endl;
+
   float index_sparsity = mach_index->sparsity();
   if (!force_lsh && index_sparsity > 0 &&
       index_sparsity <= _mach_sampling_threshold) {
@@ -495,7 +499,8 @@ void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
     output_layer->kernel()->setNeuronIndex(new_index);
 
   } else {
-    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index) ||
+        force_lsh) {
       std::cout << "Setting lsh index..." << std::endl;
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 

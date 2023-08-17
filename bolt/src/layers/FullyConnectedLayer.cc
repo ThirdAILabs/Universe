@@ -86,7 +86,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
   if constexpr (!DENSE) {
     assert(_neuron_index);
-    _neuron_index->query(input, output, labels);
+    _neuron_dindex->query(input, output, labels);
   } else {
     (void)labels;
   }
