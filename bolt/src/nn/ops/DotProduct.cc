@@ -52,6 +52,11 @@ void DotProduct::backpropagate(autograd::ComputationList& inputs,
   assert(out.len == 1);
   assert(out.isDense());
 
+  // In our code we combine the gradient of sigmoid with the gradient in binary
+  // cross entropy loss. This simplifies the computations and makes it faster to
+  // compute. This grad method assumes that binary cross entropy is being
+  // applied to the output of the dot product op, thus the gradient for sigmoid
+  // has already be taken care of here.
   float grad = out.gradients[0];
 
   if (a.isDense()) {

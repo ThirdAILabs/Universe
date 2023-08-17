@@ -51,19 +51,20 @@ void CosineSimilarity::backpropagate(autograd::ComputationList& inputs,
   assert(out.len == 1);
   assert(out.isDense());
 
+  float cos_sim = out.activations[0];
   float grad = out.gradients[0];
 
   if (a.isDense()) {
     if (b.isDense()) {
-      denseDenseBackprop(grad, a, b);
+      denseDenseBackprop(grad, cos_sim, a, b);
     } else {
-      denseSparseBackprop(grad, a, b);
+      denseSparseBackprop(grad, cos_sim, a, b);
     }
   } else {
     if (b.isDense()) {
-      denseSparseBackprop(grad, b, a);
+      denseSparseBackprop(grad, cos_sim, b, a);
     } else {
-      sparseSparseBackprop(grad, a, b);
+      sparseSparseBackprop(grad, cos_sim, a, b);
     }
   }
 }
@@ -153,11 +154,10 @@ float gradient(float grad, float act, float other_act, float mag,
   return grad * (other_act / (mag * other_mag) - act * cos_sim / (mag * mag));
 }
 
-void CosineSimilarity::denseDenseBackprop(float grad, BoltVector& a,
-                                          BoltVector& b) {
+void CosineSimilarity::denseDenseBackprop(float grad, float cos_sim,
+                                          BoltVector& a, BoltVector& b) {
   float a_mag = magnitude(a);
   float b_mag = magnitude(b);
-  float cos_sim = denseDenseSim(a, b);
 
   for (size_t i = 0; i < a.len; i++) {
     float a_act = a.activations[i];
@@ -167,11 +167,11 @@ void CosineSimilarity::denseDenseBackprop(float grad, BoltVector& a,
   }
 }
 
-void CosineSimilarity::denseSparseBackprop(float grad, BoltVector& a,
-                                           BoltVector& b) {
+void CosineSimilarity::denseSparseBackprop(float grad, float cos_sim,
+                                           BoltVector& a, BoltVector& b) {
   float a_mag = magnitude(a);
   float b_mag = magnitude(b);
-  float cos_sim = denseSparseSim(a, b);
+
   for (size_t i = 0; i < b.len; i++) {
     float a_act = a.activations[b.active_neurons[i]];
     float b_act = b.activations[i];
@@ -180,8 +180,8 @@ void CosineSimilarity::denseSparseBackprop(float grad, BoltVector& a,
   }
 }
 
-void CosineSimilarity::sparseSparseBackprop(float grad, BoltVector& a,
-                                            BoltVector& b) {
+void CosineSimilarity::sparseSparseBackprop(float grad, float cos_sim,
+                                            BoltVector& a, BoltVector& b) {
   std::unordered_map<uint32_t, size_t> b_map;
   for (size_t i = 0; i < b.len; i++) {
     b_map[b.active_neurons[i]] = i;
@@ -189,7 +189,6 @@ void CosineSimilarity::sparseSparseBackprop(float grad, BoltVector& a,
 
   float a_mag = magnitude(a);
   float b_mag = magnitude(b);
-  float cos_sim = sparseSparseSim(a, b);
 
   for (size_t i = 0; i < a.len; i++) {
     if (b_map.count(a.active_neurons[i])) {

@@ -53,11 +53,14 @@ class CosineSimilarity final
 
   static float sparseSparseSim(const BoltVector& a, const BoltVector& b);
 
-  static void denseDenseBackprop(float grad, BoltVector& a, BoltVector& b);
+  static void denseDenseBackprop(float grad, float cos_sim, BoltVector& a,
+                                 BoltVector& b);
 
-  static void denseSparseBackprop(float grad, BoltVector& a, BoltVector& b);
+  static void denseSparseBackprop(float grad, float cos_sim, BoltVector& a,
+                                  BoltVector& b);
 
-  static void sparseSparseBackprop(float grad, BoltVector& a, BoltVector& b);
+  static void sparseSparseBackprop(float grad, float cos_sim, BoltVector& a,
+                                   BoltVector& b);
 };
 
 using CosineSimilarityPtr = std::shared_ptr<CosineSimilarity>;
