@@ -61,6 +61,12 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
     _hash_table->queryBySet(hashes.data(), selected_neurons);
   }
 
+#if THIRDAI_LOG_SPARSITY_RECALL
+  std::cout
+      << selected_neurons.size() << "/" << sparse_dim
+      << " active neurons are selected via LSH (the rest are randomly sampled)."
+      << std::endl;
+#endif
   if (selected_neurons.size() < sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
     // safe and we want to have deterministic sampling. We do the additional
