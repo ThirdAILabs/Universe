@@ -1,6 +1,7 @@
 #include "ColdStartText.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
+#include <utils/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
 #include <numeric>
@@ -166,12 +167,6 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   return output_samples;
 }
 
-void ColdStartTextAugmentation::replacePunctuationWithSpaces(std::string& s) {
-  std::replace_if(
-      s.begin(), s.end(), [](const char c) -> bool { return std::ispunct(c); },
-      ' ');
-}
-
 void ColdStartTextAugmentation::stripWhitespace(std::string& s) {
   auto first_valid = s.find_first_not_of(" \t\f\v\n\r");
   auto last_valid = s.find_last_not_of(" \t\f\v\n\r");
@@ -185,7 +180,7 @@ void ColdStartTextAugmentation::stripWhitespace(std::string& s) {
 
 ColdStartTextAugmentation::Phrase ColdStartTextAugmentation::getStrongPhrase(
     std::string& s) const {
-  replacePunctuationWithSpaces(s);
+  text::replacePunctuationWithSpaces(s);
   stripWhitespace(s);
   Phrase strong_phrase = splitByWhitespace(s);
   if (_strong_max_len) {
@@ -227,7 +222,7 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) const {
       return std::ispunct(c);
     });
     std::string natural_phrase_text(phrase_start, phrase_end);
-    replacePunctuationWithSpaces(natural_phrase_text);
+    text::replacePunctuationWithSpaces(natural_phrase_text);
     stripWhitespace(natural_phrase_text);
     phrase_start = phrase_end;
     if (phrase_end != s.end()) {

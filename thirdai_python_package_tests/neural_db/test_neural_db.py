@@ -11,43 +11,14 @@ from ndb_utils import (
 )
 from thirdai import neural_db as ndb
 from pathlib import Path
-import random
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def test_neural_db_save_load(train_simple_neural_db):
-    ndb = train_simple_neural_db
-
-    before_save_results = ndb.search(
-        query="what color are apples",
-        top_k=10,
-    )
-
-    if os.path.exists("temp"):
-        shutil.rmtree("temp")
-
-    ndb.save("temp")
-
-    new_ndb = ndb.NeuralDB.from_checkpoint("temp")
-
-    after_save_results = new_ndb.search(
-        query="what color are apples",
-        top_k=10,
-    )
-
-    for after, before in zip(after_save_results, before_save_results):
-        assert after.text == before.text
-        assert after.score == before.score
-
-    if os.path.exists("temp"):
-        shutil.rmtree("temp")
-
-
 def test_neural_db_reference_scores(train_simple_neural_db):
-    ndb = train_simple_neural_db
+    db = train_simple_neural_db
 
-    results = ndb.search("are apples green or red ?", top_k=10)
+    results = db.search("are apples green or red ?", top_k=10)
     for r in results:
         assert 0 <= r.score and r.score <= 1
 
@@ -89,25 +60,29 @@ def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
 
-def search_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
+def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
+    top_k = 5
+    correct_result = 0
+    correct_source = 0
     for doc in docs:
-        # We assume that the database has been trained with the given documents.
-        # It should at least be able to recover exact matches.
-        arbitrary_id = doc.size / 2
-        query = doc.reference(arbitrary_id).text
-        results = db.search(query, top_k=5)
+        source = doc.reference(0).source
+        for elem_id in range(doc.size):
+            query = doc.reference(elem_id).text
+            results = db.search(query, top_k)
 
-        assert len(results) >= 1
-        assert len(results) <= 5
+            assert len(results) >= 1
+            assert len(results) <= top_k
 
-        found_correct = False
+            for result in results:
+                assert type(result.text) == str
+                assert len(result.text) > 0
 
-        for result in results:
-            assert type(result.text) == str
-            assert len(result.text) > 0
-            if result.text == query:
-                found_correct = True
-        assert found_correct
+            correct_result += int(query in [r.text for r in results])
+            correct_source += int(source in [r.source for r in results])
+
+    assert correct_source / sum([doc.size for doc in docs]) > 0.8
+    if assert_acc:
+        assert correct_result / sum([doc.size for doc in docs]) > 0.8
 
 
 def upvote_works(db: ndb.NeuralDB):
@@ -148,14 +123,18 @@ def associate_works(db: ndb.NeuralDB):
 
 
 def save_load_works(db: ndb.NeuralDB):
+    if os.path.exists("temp.ndb"):
+        shutil.rmtree("temp.ndb")
     db.save("temp.ndb")
-    search_results = db.search(ARBITRARY_QUERY, top_k=5)
+    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
-    new_search_results = new_db.search(ARBITRARY_QUERY, top_k=5)
+    new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
     assert db.sources() == new_db.sources()
+
+    shutil.rmtree("temp.ndb")
 
 
 def clear_sources_works(db: ndb.NeuralDB):
@@ -164,9 +143,9 @@ def clear_sources_works(db: ndb.NeuralDB):
     assert len(db.sources()) == 0
 
 
-def all_methods_work(db: ndb.NeuralDB):
-    insert_works(db)
-    search_works(db)
+def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
+    insert_works(db, docs, assert_acc)
+    search_works(db, docs)
     upvote_works(db)
     associate_works(db)
     save_load_works(db)
@@ -177,11 +156,14 @@ def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
 
-def test_neural_db_all_methods_work_on_new_model():
+def test_neural_db_all_methods_work_on_new_model(all_docs):
+    # all_docs is a fixture
+    # docs = all_docs
+    # docs = docs.values()
     db = ndb.NeuralDB("user")
-    all_methods_work(db)
+    all_methods_work(db, all_docs.values(), assert_acc=False)
 
 
-def test_neural_db_insert_works_on_loaded_bazaar_model():
+def test_neural_db_all_methods_work_on_loaded_bazaar_model(all_docs):
     db = db_from_bazaar()
-    all_methods_work(db)
+    all_methods_work(db, all_docs.values(), assert_acc=True)

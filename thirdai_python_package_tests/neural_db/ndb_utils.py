@@ -28,7 +28,7 @@ def create_simple_dataset():
 @pytest.fixture
 def train_simple_neural_db(create_simple_dataset):
     filename = create_simple_dataset
-    ndb = ndb.NeuralDB()
+    db = ndb.NeuralDB()
 
     doc = ndb.CSV(
         filename,
@@ -38,9 +38,9 @@ def train_simple_neural_db(create_simple_dataset):
         reference_columns=["id", "text"],
     )
 
-    ndb.insert(sources=[doc], train=True)
+    db.insert(sources=[doc], train=True)
 
-    return ndb
+    return db
 
 
 class Docs(Enum):
