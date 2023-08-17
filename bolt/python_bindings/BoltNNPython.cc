@@ -7,15 +7,17 @@
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/CosineSimilarity.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
+#include <bolt/src/nn/ops/DotProduct.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -63,6 +65,35 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
+tensor::TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
+                                  const NumpyArray<float>& values,
+                                  uint32_t last_dim) {
+  if (indices.ndim() != 2) {
+    throw std::invalid_argument("Expected indices to be 2D.");
+  }
+  if (values.ndim() != 2) {
+    throw std::invalid_argument("Expected values to be 2D.");
+  }
+
+  uint32_t batch_size = indices.shape(0);
+  uint32_t nonzeros = indices.shape(1);
+
+  return tensor::Tensor::fromArray(indices.data(), values.data(), batch_size,
+                                   last_dim, nonzeros, /* with_grad= */ false);
+}
+
+tensor::TensorPtr fromNumpyDense(const NumpyArray<float>& values) {
+  if (values.ndim() != 2) {
+    throw std::invalid_argument("Expected values to be 2D.");
+  }
+
+  uint32_t batch_size = values.shape(0);
+  uint32_t dim = values.shape(1);
+
+  return tensor::Tensor::fromArray(nullptr, values.data(), batch_size, dim,
+                                   /* nonzeros= */ dim, /* with_grad= */ false);
+}
+
 void defineTensor(py::module_& nn);
 
 void defineOps(py::module_& nn);
@@ -97,6 +128,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("num_params", &model::Model::numParams)
       .def("get_parameters", &::thirdai::bolt::python::getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &::thirdai::bolt::python::setParameters,
@@ -141,6 +173,11 @@ void defineTensor(py::module_& nn) {
              return tensor::Tensor::convert(std::move(vector), dim);
            }),
            py::arg("vector"), py::arg("dim"))
+      .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
+           py::arg("dense_dim"))
+      .def(py::init(&fromNumpyDense), py::arg("values"))
+      .def("__getitem__", &tensor::Tensor::getVector)
+      .def("__len__", &tensor::Tensor::batchSize)
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
@@ -309,10 +346,23 @@ void defineOps(py::module_& nn) {
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
 
+  py::class_<ops::Relu, ops::ReluPtr, ops::Op>(nn, "Relu")
+      .def(py::init(&ops::Relu::make))
+      .def("__call__", &ops::Relu::apply);
+
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")
       .def(py::init(&ops::DlrmAttention::make))
       .def("__call__", &ops::DlrmAttention::apply);
+
+  py::class_<ops::DotProduct, ops::DotProductPtr, ops::Op>(nn, "DotProduct")
+      .def(py::init<>(&ops::DotProduct::make))
+      .def("__call__", &ops::DotProduct::apply);
+
+  py::class_<ops::CosineSimilarity, ops::CosineSimilarityPtr, ops::Op>(
+      nn, "CosineSimilarity")
+      .def(py::init<>(&ops::CosineSimilarity::make))
+      .def("__call__", &ops::CosineSimilarity::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 }

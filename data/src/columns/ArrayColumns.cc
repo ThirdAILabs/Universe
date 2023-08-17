@@ -2,6 +2,7 @@
 #include "ColumnUtils.h"
 #include <data/src/columns/Column.h>
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -88,6 +89,13 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
   }
 
   return ArrayColumnPtr<float>(new ArrayColumn<float>(std::move(data), dim));
+}
+
+template <typename T>
+ColumnPtr ArrayColumn<T>::permute(
+    const std::vector<size_t>& permutation) const {
+  auto new_data = permuteVector(_data, permutation);
+  return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), _dim));
 }
 
 }  // namespace thirdai::data

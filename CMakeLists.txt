@@ -328,8 +328,10 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
-    bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
+    bolt/src/nn/ops/DotProduct.cc
+    bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -405,6 +407,9 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
     data/src/transformations/Date.cc
+    data/src/transformations/EncodePosition.cc
+    data/src/transformations/UnrollSequence.cc
+    data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
