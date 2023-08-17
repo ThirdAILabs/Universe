@@ -2,6 +2,7 @@ import copy
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
+import ray
 
 import pandas as pd
 import unidecode
@@ -191,6 +192,62 @@ class NeuralDB:
             savable_state.model.set_n_ids(csv_doc.size)
 
         return NeuralDB(user_id, savable_state)
+
+    @staticmethod
+    def get_model(
+        self,
+        n_target_classes: int,
+        model_config=None,
+        query_column="QUERY",
+        id_column="DOC_ID",
+    ):
+        return Mach.model_from_scratch(
+            num_target_classes=n_target_classes,
+            model_config=model_config,
+            query_col=query_column,
+            id_column=id_column,
+        )
+
+    @staticmethod
+    def pretrain_distributed(
+        self,
+        udt: bolt.UniversalDeepTransformer,
+        ray_dataset: ray.data.Dataset,
+        id_column: str,
+        strong_column_names: List[str],
+        weak_column_names: Optional[List[str]] = None,
+        reference_column_names: Optional[List[str]] = None,
+        csv: Optional[str] = None,
+        user_id: str = "user",
+        learning_rate=0.001,
+        epochs=5,
+        metrics=[],
+    ):
+        from thirdai._distributed_bolt import Communication
+        from thirdai.dataset import RayDataSource
+
+        # passing in comm class, will make sure this function runs in distributed
+        # training, if this function is running inside ray trainer's training loop
+        # with TorchConfig
+        udt.cold_start_on_data_source(
+            data_source=RayDataSource(ray_dataset),
+            strong_column_names=strong_column_names,
+            weak_column_names=weak_column_names,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=metrics,
+            comm=Communication(),
+        )
+
+        return self.from_udt(
+            udt=udt,
+            user_id=user_id,
+            csv=csv,
+            csv_id_column=id_column,
+            csv_strong_columns=strong_column_names,
+            csv_weak_columns=weak_column_names,
+            csv_reference_columns=reference_column_names,
+        )
 
     def ready_to_search(self) -> bool:
         return self._savable_state.ready()
