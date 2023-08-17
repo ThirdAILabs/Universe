@@ -7,6 +7,7 @@
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
@@ -15,7 +16,6 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -309,6 +309,10 @@ void defineOps(py::module_& nn) {
   py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
       .def(py::init(&ops::Tanh::make))
       .def("__call__", &ops::Tanh::apply);
+
+  py::class_<ops::Relu, ops::ReluPtr, ops::Op>(nn, "Relu")
+      .def(py::init(&ops::Relu::make))
+      .def("__call__", &ops::Relu::apply);
 
   py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
       nn, "DlrmAttention")

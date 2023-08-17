@@ -1,13 +1,32 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
+#include <cmath>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
 
-class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
+struct ReluImpl {
+  static float forward(float x) { return std::max(x, 0.F); }
+
+  static float gradient(float y) { return y > 0 ? 1 : 0; }
+
+  static std::string name() { return "ReLU"; }
+};
+
+struct TanhImpl {
+  static float forward(float x) { return std::tanh(x); }
+
+  static float gradient(float y) { return (1 - y * y); }
+
+  static std::string name() { return "Tanh"; }
+};
+
+template <typename Impl>
+class Activation final : public Op,
+                         public std::enable_shared_from_this<Activation<Impl>> {
  public:
-  static std::shared_ptr<Tanh> make();
+  static std::shared_ptr<Activation> make();
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -37,7 +56,7 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
  private:
-  Tanh();
+  Activation();
 
   friend class cereal::access;
   template <class Archive>
@@ -46,6 +65,10 @@ class Tanh final : public Op, public std::enable_shared_from_this<Tanh> {
   uint32_t _dim = 0;
 };
 
+using Relu = Activation<ReluImpl>;
+using ReluPtr = std::shared_ptr<Relu>;
+
+using Tanh = Activation<TanhImpl>;
 using TanhPtr = std::shared_ptr<Tanh>;
 
 }  // namespace thirdai::bolt::nn::ops
