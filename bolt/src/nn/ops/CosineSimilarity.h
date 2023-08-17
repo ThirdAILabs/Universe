@@ -4,7 +4,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class CosineSimilarity final
     : public Op,
@@ -14,18 +14,17 @@ class CosineSimilarity final
     return std::shared_ptr<CosineSimilarity>(new CosineSimilarity());
   }
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final {}
@@ -36,11 +35,10 @@ class CosineSimilarity final
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
-  autograd::ComputationPtr apply(autograd::ComputationPtr lhs,
-                                 autograd::ComputationPtr rhs);
+  ComputationPtr apply(ComputationPtr lhs, ComputationPtr rhs);
 
  private:
   CosineSimilarity() {}
@@ -69,4 +67,4 @@ class CosineSimilarity final
 
 using CosineSimilarityPtr = std::shared_ptr<CosineSimilarity>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

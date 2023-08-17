@@ -3,7 +3,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::train::callbacks {
+namespace thirdai::bolt::callbacks {
 
 class Overfitting : public Callback {
  public:
@@ -40,4 +40,4 @@ class Overfitting : public Callback {
   bool _freeze_hash_tables;
 };
 
-}  // namespace thirdai::bolt::train::callbacks
+}  // namespace thirdai::bolt::callbacks

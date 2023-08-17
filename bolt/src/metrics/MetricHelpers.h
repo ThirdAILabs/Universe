@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt_v1 {
 
 class MetricUtilities {
  public:
@@ -110,4 +110,4 @@ class MetricUtilities {
   }
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt_v1

@@ -5,16 +5,14 @@
 
 namespace thirdai::data {
 
-using bolt::nn::tensor::TensorList;
-
 using IndexValueColumnList =
     std::vector<std::pair<std::string, std::optional<std::string>>>;
 
-std::vector<TensorList> toTensorBatches(
+std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
     size_t batch_size);
 
-TensorList toTensors(const ColumnMap& columns,
-                     const IndexValueColumnList& columns_to_convert);
+bolt::TensorList toTensors(const ColumnMap& columns,
+                           const IndexValueColumnList& columns_to_convert);
 
 }  // namespace thirdai::data
