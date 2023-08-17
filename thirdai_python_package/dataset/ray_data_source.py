@@ -10,7 +10,8 @@ class RayDataSource(PyDataSource):
     RayDataSource ingests ray datasets during distributed training.
     Using this ideally we should be able to load data from any of
     the sources mentioned here https://docs.ray.io/en/latest/data/loading-data.html
-    which includes, parquet, s3, gcs, dask, spark, sql etc.
+    which includes, parquet, s3, gcs, dask, spark, sql etc. It should work
+    out of the box for single amchine training too.
     """
 
     def __init__(self, ray_dataset):
