@@ -1,4 +1,5 @@
 #include "DatasetLoader.h"
+#include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
@@ -72,7 +73,7 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   }
 #endif
 
-  auto start = std::chrono::high_resolution_clock::now();
+  bolt::utils::Timer timer;
 
   // We fill the buffer with num_batches * batch_size + _buffer_size vectors
   // so that after exporting num_batches from the buffer we still have
@@ -91,9 +92,8 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 
   auto dataset_slices = popFromBuffer(/* target_num_batches = */ num_batches,
                                       /* target_batch_size = */ batch_size);
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+  timer.stop();
 
   if (dataset_slices.at(0).empty()) {
 #if THIRDAI_EXPOSE_ALL
@@ -101,7 +101,7 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
       // This is to ensure that it always prints complete if it prints that it
       // has started loading above.
       std::cout << "loading data | source '" << _data_source->resourceName()
-                << "' | vectors 0 | batches 0 | time " << duration
+                << "' | vectors 0 | batches 0 | time " << timer.seconds()
                 << "s | complete\n"
                 << std::endl;
     }
@@ -118,7 +118,7 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   if (verbose) {
     std::cout << "loaded data | source '" << _data_source->resourceName()
               << "' | vectors " << data.at(0)->len() << " | batches "
-              << data.at(0)->numBatches() << " | time " << duration
+              << data.at(0)->numBatches() << " | time " << timer.seconds()
               << "s | complete\n"
               << std::endl;
   }

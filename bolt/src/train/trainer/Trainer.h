@@ -116,7 +116,7 @@ class Trainer {
    * Returns a formatted log line for the end of each epoch.
    */
   std::string formatTrainLogLine(const std::string& metric_summary,
-                                 uint32_t batches, int64_t time);
+                                 uint32_t batches, double time);
 
   /**
    * Format intermediate train log line for reporting metrics and status within
@@ -128,12 +128,7 @@ class Trainer {
    * Returns a formatted log line for the result of each call to validate.
    */
   std::string formatValidateLogLine(const std::string& metric_summary,
-                                    uint32_t batches, int64_t time);
-
-  /**
-   * Invokes the autotuner for rehash and rebuild based on the size of the
-   * dataset.
-   */
+                                    uint32_t batches, double time);
 
   /**
    * Returns a formatted log line for function call
@@ -141,6 +136,10 @@ class Trainer {
   std::string formatFuncCallLogLine(const std::string& func_call,
                                     uint32_t batches, int64_t time);
 
+  /**
+   * Invokes the autotuner for rehash and rebuild based on the size of the
+   * dataset.
+   */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
   // TODO(Nicholas): These are just wrappers to convert the datasets to tensors.

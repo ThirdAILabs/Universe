@@ -64,8 +64,13 @@ using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
-                           uint32_t vocab_size)
-      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size) {}
+                           uint32_t vocab_size, bool include_position = false)
+      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size,
+                            include_position) {
+    if (irc_len > lrc_len || src_len > lrc_len) {
+      throw std::invalid_argument("LRC size should be at least IRC/SRC size.");
+    }
+  }
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& lines) final;
@@ -118,8 +123,7 @@ class TextGenerationFeaturizer final : public Featurizer {
    * Returns the context tokens (the concatenation of the context and target) as
    * well as the index to start predicting from.
    */
-  static std::pair<std::vector<uint32_t>, uint32_t> getContext(
-      const json& line_content);
+  static std::vector<uint32_t> getAllTokens(const json& line_content);
 
   static std::vector<uint32_t> getPrompt(const json& line_content);
 

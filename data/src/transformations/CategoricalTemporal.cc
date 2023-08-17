@@ -82,11 +82,8 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     last_n_items[i] = std::move(user_last_n_items);
   }
 
-  std::optional<uint32_t> dim;
-  if (item_col->dimension()) {
-    dim = item_col->dimension()->dim;
-  }
-  auto output = ArrayColumn<uint32_t>::make(std::move(last_n_items), dim);
+  auto output =
+      ArrayColumn<uint32_t>::make(std::move(last_n_items), item_col->dim());
   columns.setColumn(_output_column, output);
 
   return columns;
