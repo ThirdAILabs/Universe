@@ -208,7 +208,6 @@ void CosineSimilarity::sparseSparseBackprop(float grad, BoltVector& a,
 
 template <class Archive>
 void CosineSimilarity::serialize(Archive& archive) {
-  // The optimizer is small so we can always serialize it.
   archive(cereal::base_class<Op>(this));
 }
 }  // namespace thirdai::bolt::nn::ops

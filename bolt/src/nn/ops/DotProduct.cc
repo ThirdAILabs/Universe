@@ -169,7 +169,6 @@ void DotProduct::sparseSparseBackprop(float grad, BoltVector& a,
 
 template <class Archive>
 void DotProduct::serialize(Archive& archive) {
-  // The optimizer is small so we can always serialize it.
   archive(cereal::base_class<Op>(this));
 }
 
