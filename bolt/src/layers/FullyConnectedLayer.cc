@@ -2,6 +2,7 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -15,6 +16,7 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::bolt {
 
@@ -69,6 +71,29 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
       forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output, labels);
     }
   }
+
+#if THIRDAI_LOG_SPARSITY_RECALL
+#pragma message("THIRDAI_LOG_SPARSITY_RECALL is defined")
+  if (!output.isDense()) {
+    BoltVector dense_output(/* l= */ _dim, /* is_dense= */ true,
+                            /* has_gradient= */ false);
+    eigenDenseDenseForward(input, dense_output);
+    auto dense_top_k = dense_output.findKLargestActivations(output.len);
+    // TODO(Geordie): Compare actual top k with active neurons
+    std::unordered_set<uint32_t> sparse_active_neurons(
+        output.active_neurons, output.active_neurons + output.len);
+    uint32_t intersection_size = 0;
+    while (!dense_top_k.empty()) {
+      if (sparse_active_neurons.count(dense_top_k.top().second)) {
+        intersection_size++;
+      }
+      dense_top_k.pop();
+    }
+#pragma omp critical
+    std::cout << "Active neurons captured " << intersection_size << "/"
+              << output.len << " true top neurons." << std::endl;
+  }
+#endif
 }
 
 template <bool DENSE, bool PREV_DENSE>
