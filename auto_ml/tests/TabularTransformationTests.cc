@@ -57,13 +57,15 @@ data::ColumnDataTypes getTabularDataTypes() {
 }
 
 thirdai::data::ColumnMap getInput() {
-  return thirdai::data::ColumnMap::fromMapInput({{"a", "some text"},
-                                                 {"b", "cat_str"},
-                                                 {"c", "20-24-22"},
-                                                 {"d", "0.5"},
-                                                 {"e", "a b c d"},
-                                                 {"f", "2023-10-12"},
-                                                 {"label", "4"}});
+  return thirdai::data::ColumnMap::fromMapInput({
+      {"a", "some text"},
+      {"b", "cat_str"},
+      {"c", "20-24-22"},
+      {"d", "0.5"},
+      {"e", "a b c d"},
+      {"f", "2023-10-12"},
+      {"label", "4"},
+  });
 }
 
 void checkOutputs(const thirdai::data::IndexValueColumnList& outputs) {
