@@ -29,7 +29,7 @@ using bolt::nn::tensor::TensorList;
 
 class DatasetFactory {
  public:
-  DatasetFactory( data::ColumnDataTypes data_types,
+  DatasetFactory(data::ColumnDataTypes data_types,
                  const data::TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
                  thirdai::data::TransformationPtr label_transform,
