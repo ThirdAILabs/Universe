@@ -78,20 +78,44 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
     BoltVector dense_output(/* l= */ _dim, /* is_dense= */ true,
                             /* has_gradient= */ false);
     eigenDenseDenseForward(input, dense_output);
-    auto dense_top_k = dense_output.findKLargestActivations(output.len);
-    // TODO(Geordie): Compare actual top k with active neurons
+
     std::unordered_set<uint32_t> sparse_active_neurons(
         output.active_neurons, output.active_neurons + output.len);
-    uint32_t intersection_size = 0;
+    double average_active_neuron_activation = 0;
+    for (uint32_t pos = 0; pos < output.len; pos++) {
+      average_active_neuron_activation += output.activations[pos];
+    }
+    average_active_neuron_activation /= output.len
+
+                                            uint32_t intersection_size = 0;
+    double average_true_top_activation = 0;
+    auto dense_top_k = dense_output.findKLargestActivations(output.len);
     while (!dense_top_k.empty()) {
       if (sparse_active_neurons.count(dense_top_k.top().second)) {
         intersection_size++;
       }
+      average_true_top_activation += dense_top_k.top().first;
       dense_top_k.pop();
     }
+    average_true_top_activation /= output.len;
+
+    double average_random_activation = 0;
+    for (uint32_t i = 0; i < output.len; i++) {
+      average_random_activation +=
+          dense_output.activations[i * _dim / output.len];
+    }
+    average_random_activation /= output.len;
+
 #pragma omp critical
     std::cout << "Active neurons captured " << intersection_size << "/"
               << output.len << " true top neurons." << std::endl;
+    std::cout << "Average random neuron activation: "
+              << average_random_activation << std::endl;
+    std::cout << "Average active neuron activation: "
+              << average_active_neuron_activation << std::endl;
+    std::cout << "Average true top neuron activation: "
+              << average_true_top_activation << std::endl
+              << std::endl;
   }
 #endif
 }
