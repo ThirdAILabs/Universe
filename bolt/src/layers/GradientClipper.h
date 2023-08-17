@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -9,6 +10,7 @@
 #include <vector>
 
 namespace thirdai::bolt {
+
 class GradientClipper {
  public:
   virtual std::vector<float> clipVector(
@@ -16,7 +18,9 @@ class GradientClipper {
 
   virtual ~GradientClipper() = default;
 };
+
 using GradientClipperPtr = std::shared_ptr<GradientClipper>;
+
 class GradientClipperByValue : public GradientClipper {
  public:
   explicit GradientClipperByValue(float threshold) : _threshold(threshold) {}
