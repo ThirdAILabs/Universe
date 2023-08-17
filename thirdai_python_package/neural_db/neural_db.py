@@ -212,14 +212,12 @@ class NeuralDB:
     def pretrain_distributed(
         udt: bolt.UniversalDeepTransformer,
         ray_dataset: ray.data.Dataset,
-        id_column: str,
         strong_column_names: List[str],
         weak_column_names: Optional[List[str]] = None,
-        reference_column_names: Optional[List[str]] = None,
-        csv: Optional[str] = None,
-        user_id: str = "user",
         learning_rate=0.001,
         epochs=5,
+        max_in_memory_batches: Optional[int] = None,
+        batch_size: int = None,
         metrics=[],
     ):
         from thirdai._distributed_bolt import Communication
@@ -234,19 +232,13 @@ class NeuralDB:
             weak_column_names=weak_column_names,
             learning_rate=learning_rate,
             epochs=epochs,
+            batch_size=batch_size,
             metrics=metrics,
+            max_in_memory_batches=max_in_memory_batches,
             comm=Communication(),
         )
 
-        return NeuralDB.from_udt(
-            udt=udt,
-            user_id=user_id,
-            csv=csv,
-            csv_id_column=id_column,
-            csv_strong_columns=strong_column_names,
-            csv_weak_columns=weak_column_names,
-            csv_reference_columns=reference_column_names,
-        )
+        return udt
 
     def ready_to_search(self) -> bool:
         return self._savable_state.ready()
