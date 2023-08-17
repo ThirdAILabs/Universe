@@ -357,4 +357,10 @@ std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
   return output;
 }
 
+void replacePunctuationWithSpaces(std::string& string) {
+  std::replace_if(
+      string.begin(), string.end(),
+      [](const char c) -> bool { return std::ispunct(c); }, ' ');
+}
+
 }  // namespace thirdai::text

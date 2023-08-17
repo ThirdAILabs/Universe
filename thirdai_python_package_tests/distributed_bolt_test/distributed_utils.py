@@ -80,7 +80,7 @@ def check_model_parameters_equal(model_0, model_1):
 
 
 def get_bolt_model():
-    from thirdai import bolt_v2 as bolt
+    from thirdai import bolt
 
     n_classes = 10
     input_layer = bolt.nn.Input(dim=n_classes)

@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from thirdai import bolt, bolt_v2
+from thirdai import bolt
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def write_data():
 
 @pytest.mark.unit
 def test_udt_classifier_csv_parsing(write_data):
-    class CountCallback(bolt_v2.train.callbacks.Callback):
+    class CountCallback(bolt.train.callbacks.Callback):
         def __init__(self):
             super().__init__()
             self.batch_end_count = 0

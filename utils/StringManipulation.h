@@ -94,4 +94,9 @@ bool isChineseChar(const wchar_t& c);
 std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text);
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
 
+/**
+ * Replaces punctuation characters in string with whitespace.
+ */
+void replacePunctuationWithSpaces(std::string& string);
+
 }  // namespace thirdai::text
