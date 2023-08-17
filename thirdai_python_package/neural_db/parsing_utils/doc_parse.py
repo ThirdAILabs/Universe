@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 from docx import Document
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -36,7 +38,7 @@ def create_train_df(elements):
         para = " ".join(sents)
         df.iloc[i] = [
             para,
-            elem[1],
+            Path(elem[1]).name,
             str(elem[0].replace("\n", " ")),
         ]
     for column in ["para", "display"]:
