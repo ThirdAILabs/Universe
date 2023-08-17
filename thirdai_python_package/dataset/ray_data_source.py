@@ -6,6 +6,13 @@ from thirdai.dataset.data_source import PyDataSource
 
 
 class RayDataSource(PyDataSource):
+    """
+    RayDataSource ingests ray datasets during distributed training.
+    Using this ideally we should be able to load data from any of
+    the sources mentioned here https://docs.ray.io/en/latest/data/loading-data.html
+    which includes, parquet, s3, gcs, dask, spark, sql etc.
+    """
+
     def __init__(self, ray_dataset):
         PyDataSource.__init__(self)
         self.ray_dataset = ray_dataset

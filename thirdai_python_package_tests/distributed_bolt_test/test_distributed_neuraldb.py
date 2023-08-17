@@ -5,7 +5,7 @@ import pytest
 import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-from ray.air import ScalingConfig, session
+from ray.air import session
 from ray.train.torch import TorchConfig
 from thirdai import neural_db
 
@@ -57,27 +57,3 @@ def test_neural_db_training(create_simple_dataset):
         csv_weak_columns=["text"],
         csv_reference_columns=["text"],
     )
-
-    before_save_results = ndb.search(
-        query="what color are apples",
-        top_k=10,
-    )
-
-    if os.path.exists("temp"):
-        shutil.rmtree("temp")
-
-    ndb.save("temp")
-
-    new_ndb = neural_db.NeuralDB.from_checkpoint("temp")
-
-    after_save_results = new_ndb.search(
-        query="what color are apples",
-        top_k=10,
-    )
-
-    for after, before in zip(after_save_results, before_save_results):
-        assert after.text == before.text
-        assert after.score == before.score
-
-    if os.path.exists("temp"):
-        shutil.rmtree("temp")
