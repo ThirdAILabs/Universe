@@ -519,8 +519,10 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool fast_approximation, bool verbose,
-    std::optional<uint32_t> max_in_memory_batches) {
-  updateSamplingStrategy(/* force_lsh= */ true);
+    bool use_sparsity, std::optional<uint32_t> max_in_memory_batches) {
+  if (use_sparsity) {
+    updateSamplingStrategy(/* force_lsh= */ true);
+  }
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -560,8 +562,7 @@ void UDTMachClassifier::introduceDocuments(
       // mach index sampler will only return nonempty buckets, which could
       // cause new docs to only be mapped to buckets already containing
       // entities.
-      auto scores =
-          _classifier->model()->forward(batch, /* use_sparsity= */ true).at(0);
+      auto scores = _classifier->model()->forward(batch, use_sparsity).at(0);
 
       for (uint32_t i = 0; i < scores->batchSize(); i++) {
         uint32_t label = std::stoi(labels->value(row_idx++));
