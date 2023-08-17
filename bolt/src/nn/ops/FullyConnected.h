@@ -9,6 +9,7 @@
 #include <hashtable/src/SampledHashTable.h>
 #include <limits>
 #include <memory>
+#include <optional>
 
 namespace thirdai::bolt::nn::ops {
 
@@ -23,7 +24,8 @@ class FullyConnected final
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
       bool use_bias = true, uint32_t rebuild_hash_tables = 4,
-      uint32_t reconstruct_hash_functions = 100);
+      uint32_t reconstruct_hash_functions = 100,
+      const std::optional<std::string>& grad_clip = std::nullopt);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
@@ -136,7 +138,8 @@ class FullyConnected final
       bool use_bias = true,
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
-          std::numeric_limits<uint32_t>::max());
+          std::numeric_limits<uint32_t>::max(),
+      const std::optional<std::string>& grad_clip = std::nullopt);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 
@@ -144,6 +147,7 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+  std::optional<std::string> _grad_clip;
 
   // This does not need to be serialized because models will register with their
   // ops again once loaded.

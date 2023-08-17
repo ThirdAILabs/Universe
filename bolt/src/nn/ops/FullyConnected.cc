@@ -24,12 +24,14 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
                                SamplingConfigPtr sampling, bool use_bias,
                                uint32_t rebuild_hash_tables,
-                               uint32_t reconstruct_hash_functions)
+                               uint32_t reconstruct_hash_functions,
+                               const std::optional<std::string>& grad_clip)
     : Op(nextFullyConnectedOpName()),
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0) {
+      _updates_since_reconstruct_hash_functions(0),
+      _grad_clip(grad_clip) {
   if (!sampling) {
     sampling = DWTASamplingConfig::autotune(dim, sparsity,
                                             /* experimental_autotune=*/false);
@@ -44,10 +46,11 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
     const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
-    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions,
+    const std::optional<std::string>& grad_clip) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
       dim, input_dim, sparsity, activation, std::move(sampling), use_bias,
-      rebuild_hash_tables, reconstruct_hash_functions));
+      rebuild_hash_tables, reconstruct_hash_functions, grad_clip));
 }
 
 void FullyConnected::forward(const autograd::ComputationList& inputs,
@@ -257,7 +260,7 @@ template <class Archive>
 void FullyConnected::save(Archive& archive) const {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions);
+          _updates_since_reconstruct_hash_functions, _grad_clip);
 }
 
 template void FullyConnected::load(cereal::BinaryInputArchive&);
@@ -266,9 +269,9 @@ template <class Archive>
 void FullyConnected::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions);
+          _updates_since_reconstruct_hash_functions, _grad_clip);
 
-  _kernel->initOptimizer();
+  _kernel->initOptimizer(_grad_clip);
 }
 
 }  // namespace thirdai::bolt::nn::ops
