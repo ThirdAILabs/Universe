@@ -314,9 +314,10 @@ void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
 }
 
 std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
-                                        uint32_t batches, int64_t time) {
+                                        uint32_t batches, double time) {
   std::string logline = fmt::format(
-      "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
+      "train | epoch {} | train_steps {} | {} | train_batches {} | time "
+      "{:.3f}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
@@ -341,9 +342,10 @@ std::string Trainer::formatIntermediateLogLine(
 }
 
 std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
-                                           uint32_t batches, int64_t time) {
+                                           uint32_t batches, double time) {
   std::string logline = fmt::format(
-      "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}s",
+      "validate | epoch {} | train_steps {} | {} | val_batches {} | time "
+      "{:.3f}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;

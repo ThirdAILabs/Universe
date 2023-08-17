@@ -7,6 +7,7 @@
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
 #include <bolt/src/nn/ops/Embedding.h>
@@ -15,7 +16,6 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -95,6 +95,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
+      .def("num_params", &Model::numParams)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))
@@ -302,6 +303,10 @@ void defineOps(py::module_& nn) {
   py::class_<Tanh, TanhPtr, Op>(nn, "Tanh")
       .def(py::init(&Tanh::make))
       .def("__call__", &Tanh::apply);
+
+  py::class_<Relu, ReluPtr, Op>(nn, "Relu")
+      .def(py::init(&Relu::make))
+      .def("__call__", &Relu::apply);
 
   py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
       .def(py::init(&DlrmAttention::make))

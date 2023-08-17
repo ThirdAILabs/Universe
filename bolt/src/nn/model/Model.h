@@ -143,6 +143,11 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string summary(bool print = true) const;
 
   /**
+   * Returns the number of parameters in the model.
+   */
+  size_t numParams() const;
+
+  /**
    * Returns how many train steps the model has taken. Used for logging in
    * trainer.
    */

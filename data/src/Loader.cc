@@ -148,7 +148,7 @@ void Loader::logLoadStart() const {
 #endif
 }
 
-void Loader::logLoadEnd(size_t vectors, size_t batches, int64_t time) const {
+void Loader::logLoadEnd(size_t vectors, size_t batches, double time) const {
 #if THIRDAI_EXPOSE_ALL
   if (_verbose) {
     std::cout << "loading data | source '" << _data_iterator.resourceName()

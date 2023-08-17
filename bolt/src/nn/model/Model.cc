@@ -205,6 +205,7 @@ std::string Model::summary(bool print) const {
     comp->summary(summary);
     summary << "\n";
   }
+  summary << "Total Paramters: " << numParams() << "\n";
   summary << "=================================================\n";
 
   if (print) {
@@ -212,6 +213,14 @@ std::string Model::summary(bool print) const {
   }
 
   return summary.str();
+}
+
+size_t Model::numParams() const {
+  size_t total_params = 0;
+  for (const auto* param : parameters()) {
+    total_params += param->size();
+  }
+  return total_params;
 }
 
 uint32_t Model::trainSteps() const { return _train_steps; }

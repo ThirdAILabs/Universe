@@ -4,6 +4,7 @@
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -170,6 +171,26 @@ bolt::ComputationPtr buildLayerNorm(const json& config,
   return layer->apply(predecessor);
 }
 
+bolt::ComputationPtr buildActivation(const json& config,
+                                     const ArgumentMap& args,
+                                     const CreatedComputations& created_comps) {
+  (void)args;
+
+  auto predecessor = getPredecessor(config, created_comps);
+
+  std::string type = text::lower(getString(config, "activation"));
+
+  if (type == "relu") {
+    return bolt::Relu::make()->apply(predecessor);
+  }
+  if (type == "tanh") {
+    return bolt::Tanh::make()->apply(predecessor);
+  }
+
+  throw std::invalid_argument("Invalid activation type '" + type +
+                              "'. Please use 'relu' or 'tanh'.");
+}
+
 /**
  * Helper function to construct the inputs. Matches the input dims to the
  * input names provided in the config. Updates created nodes to contain the
@@ -220,6 +241,8 @@ bolt::ModelPtr buildModel(const json& config, const ArgumentMap& args,
       created_comps[name] = buildEmbedding(node_config, args, created_comps);
     } else if (type == "layernorm") {
       created_comps[name] = buildLayerNorm(node_config, args, created_comps);
+    } else if (type == "activation") {
+      created_comps[name] = buildActivation(node_config, args, created_comps);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");

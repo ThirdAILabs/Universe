@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/columns/Column.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::data {
@@ -29,6 +30,8 @@ class ArrayColumn : public ArrayColumnBase<T> {
   }
 
   void shuffle(const std::vector<size_t>& permutation) final;
+
+  ColumnPtr permute(const std::vector<size_t>& permutation) const final;
 
   ColumnPtr concat(ColumnPtr&& other) final;
 
