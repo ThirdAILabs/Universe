@@ -116,6 +116,31 @@ TEST(TensorTests, SparseTensorFromIndicesValues) {
   }
 }
 
+TEST(TensorTests, TensorFromArray) {
+  std::vector<uint32_t> indices = {2, 1, 8, 7, 4, 6, 0, 9, 3, 5, 1, 4};
+  std::vector<float> values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+  auto tensor = tensor::Tensor::fromArray(indices.data(), values.data(), 4, 10,
+                                          3, /* with_grad= */ false);
+
+  EXPECT_EQ(tensor->batchSize(), 4);
+  EXPECT_EQ(tensor->dim(), 10);
+  EXPECT_TRUE(tensor->nonzeros().has_value());
+  EXPECT_EQ(tensor->nonzeros().value(), 3);
+
+  std::vector<BoltVector> expected_vecs = {
+      BoltVector::makeSparseVector({2, 1, 8}, {1, 2, 3}),
+      BoltVector::makeSparseVector({7, 4, 6}, {4, 5, 6}),
+      BoltVector::makeSparseVector({0, 9, 3}, {7, 8, 9}),
+      BoltVector::makeSparseVector({5, 1, 4}, {10, 11, 12}),
+  };
+
+  for (size_t i = 0; i < 4; i++) {
+    thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+        tensor->getVector(i), expected_vecs[i]);
+  }
+}
+
 TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
