@@ -1,4 +1,7 @@
 #include "CosineSimilarity.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -202,4 +205,10 @@ void CosineSimilarity::sparseSparseBackprop(float grad, float cos_sim,
   }
 }
 
+template <class Archive>
+void CosineSimilarity::serialize(Archive& archive) {
+  archive(cereal::base_class<Op>(this));
+}
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::CosineSimilarity)

@@ -42,6 +42,10 @@ class DotProduct final : public Op,
  private:
   DotProduct() {}
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
+
   static float denseDenseDot(const BoltVector& a, const BoltVector& b);
 
   static float denseSparseDot(const BoltVector& a, const BoltVector& b);

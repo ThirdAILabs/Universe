@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cereal/access.hpp>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
@@ -44,6 +44,10 @@ class CosineSimilarity final
 
  private:
   CosineSimilarity() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 
   static float magnitude(const BoltVector& a);
 
