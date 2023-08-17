@@ -30,7 +30,7 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package and install test dependencies
-          # Issue: https://github.com/pypa/pip/issues/10851
+        # Issue: https://github.com/pypa/pip/issues/10851
         run: |
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           bin/build.py --extras test
@@ -55,7 +55,7 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package release version and install test dependencies
-          # Issue: https://github.com/pypa/pip/issues/10851
+        # Issue: https://github.com/pypa/pip/issues/10851
         run: |
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           pip3 install .[test]
@@ -79,7 +79,7 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package and install test dependencies
-          # Issue: https://github.com/pypa/pip/issues/10851
+        # Issue: https://github.com/pypa/pip/issues/10851
         run: |
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           bin/build.py --extras test
