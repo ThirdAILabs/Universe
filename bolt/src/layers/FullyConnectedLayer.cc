@@ -696,7 +696,8 @@ void FullyConnectedLayer::setHashTable(
       nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
 }
 
-void FullyConnectedLayer::initOptimizer(std::optional<std::string> grad_clip) {
+void FullyConnectedLayer::initOptimizer(
+    const std::optional<std::string>& grad_clip) {
   if (!_weight_optimizer || !_bias_optimizer) {
     _weight_optimizer = AdamOptimizer(_dim * _prev_dim, grad_clip);
     _bias_optimizer = AdamOptimizer(_dim, grad_clip);

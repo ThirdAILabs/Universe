@@ -1,7 +1,6 @@
 
 #include <bolt/src/layers/GradientClipper.h>
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 namespace thirdai::bolt::tests {
 
 std::vector<float> gradients = {-5.0, -4.0, -3.0, -2.0, -1.0, 0,
