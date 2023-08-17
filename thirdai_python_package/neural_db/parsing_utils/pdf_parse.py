@@ -99,14 +99,14 @@ def process_pdf_file(filename):
 def create_train_df(elements):
     df = pd.DataFrame(
         index=range(len(elements)),
-        columns=["passage", "para", "filename", "page", "display", "highlight"],
+        columns=["para", "filename", "page", "display", "highlight"],
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(elem[1])
         sents = list(map(lambda x: x.lower(), sents))
-        passage = " ".join(sents)
+        para = " ".join(sents)
         # elem[-1] is id
-        df.iloc[i] = [passage, passage, elem[3], elem[2], elem[1], elem[4]]
-    for column in ["passage", "para", "display"]:
+        df.iloc[i] = [para, elem[3], elem[2], elem[1], elem[4]]
+    for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df

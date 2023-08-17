@@ -1,5 +1,3 @@
-import os
-
 import pandas as pd
 from docx import Document
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -27,7 +25,7 @@ def get_elements(filename):
 def create_train_df(elements):
     df = pd.DataFrame(
         index=range(len(elements)),
-        columns=["passage", "para", "filename", "display"],
+        columns=["para", "filename", "display"],
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(str(elem[0]))
@@ -35,13 +33,12 @@ def create_train_df(elements):
             sent.replace("\t", " ").replace(",", " ").replace("\n", " ").strip().lower()
             for sent in sents
         ]
-        passage = " ".join(sents)
+        para = " ".join(sents)
         df.iloc[i] = [
-            passage,
-            passage,
+            para,
             elem[1],
             str(elem[0].replace("\n", " ")),
         ]
-    for column in ["passage", "para", "display"]:
+    for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
