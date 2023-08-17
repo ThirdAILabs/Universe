@@ -1,7 +1,7 @@
 import math
 import random
 from pathlib import Path
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 from thirdai import bolt
 
@@ -40,8 +40,8 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        use_weak_columns: bool = False,
-        num_buckets_to_sample: int = 16,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ) -> None:
@@ -239,6 +239,7 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        model_config=None,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -249,6 +250,7 @@ class Mach(Model):
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
+        self.model_config = model_config
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
@@ -276,8 +278,8 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        use_weak_columns: bool = False,
-        num_buckets_to_sample: int = 16,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ) -> None:
@@ -288,7 +290,7 @@ class Mach(Model):
 
         if self.model is None:
             self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(intro_documents)
+            self.model = self.model_from_scratch(intro_documents, self.model_config)
             learning_rate = 0.005
             freeze_before_train = False
             min_epochs = 10
@@ -300,12 +302,16 @@ class Mach(Model):
                     raise ValueError(
                         f"Document has a different id column ({doc_id}) than the model configuration ({self.id_col})."
                     )
+
+                num_buckets_to_sample = num_buckets_to_sample or int(
+                    self.model.get_index().num_hashes() * 2.0
+                )
+
                 self.model.introduce_documents_on_data_source(
                     data_source=intro_documents,
                     strong_column_names=[intro_documents.strong_column],
-                    weak_column_names=[intro_documents.weak_column]
-                    if use_weak_columns
-                    else [],
+                    weak_column_names=[intro_documents.weak_column],
+                    fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
             learning_rate = 0.001
@@ -343,6 +349,7 @@ class Mach(Model):
     def model_from_scratch(
         self,
         documents: DocumentDataSource,
+        model_config=None,
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
@@ -359,6 +366,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
+            model_config=model_config,
         )
 
     def forget_documents(self) -> None:

@@ -21,7 +21,7 @@ class ValueColumn : public ValueColumnBase<T> {
 
   size_t numRows() const final { return _data.size(); }
 
-  std::optional<ColumnDimension> dimension() const final { return _dimension; }
+  std::optional<size_t> dim() const final { return _dim; }
 
   const T& value(size_t i) const final {
     if (i >= _data.size()) {
@@ -39,6 +39,8 @@ class ValueColumn : public ValueColumnBase<T> {
 
   void shuffle(const std::vector<size_t>& permutation) final;
 
+  ColumnPtr permute(const std::vector<size_t>& permutation) const final;
+
   ColumnPtr concat(ColumnPtr&& other) final;
 
   std::pair<ColumnPtr, ColumnPtr> split(size_t starting_offset) final;
@@ -46,11 +48,11 @@ class ValueColumn : public ValueColumnBase<T> {
   const auto& data() const { return _data; }
 
  private:
-  ValueColumn(std::vector<T>&& data, std::optional<ColumnDimension> dimension)
-      : _data(std::move(data)), _dimension(dimension) {}
+  ValueColumn(std::vector<T>&& data, std::optional<size_t> dim)
+      : _data(std::move(data)), _dim(dim) {}
 
   std::vector<T> _data;
-  std::optional<ColumnDimension> _dimension;
+  std::optional<size_t> _dim;
 };
 
 }  // namespace thirdai::data

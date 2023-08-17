@@ -69,7 +69,7 @@ std::vector<TensorList> toTensorBatches(
 
       tensors[batch].emplace_back(bolt::nn::tensor::Tensor::sparse(
           std::move(batch_indices), std::move(batch_values),
-          std::move(batch_lens), indices->dimension()->dim));
+          std::move(batch_lens), indices->dim().value()));
     }
 
     if (error) {
