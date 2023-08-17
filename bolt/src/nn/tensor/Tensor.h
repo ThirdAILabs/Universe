@@ -11,10 +11,14 @@ namespace thirdai::bolt::nn::tensor {
  */
 class Tensor {
  public:
-  Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
+  Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
+         bool with_grad = true);
 
   Tensor(std::vector<uint32_t>&& indices, std::vector<float>&& values,
          std::vector<size_t>&& lens, uint32_t dim);
+
+  Tensor(const uint32_t* indices, const float* values, uint32_t batch_size,
+         uint32_t dim, uint32_t nonzeros, bool with_grad);
 
   Tensor(BoltBatch&& batch, uint32_t dim);
 
@@ -29,6 +33,11 @@ class Tensor {
                                         std::vector<float>&& values,
                                         std::vector<size_t>&& lens,
                                         uint32_t dim);
+
+  static std::shared_ptr<Tensor> fromArray(const uint32_t* indices,
+                                           const float* values,
+                                           uint32_t batch_size, uint32_t dim,
+                                           uint32_t nonzeros, bool with_grad);
 
   static std::shared_ptr<Tensor> copy(const BoltBatch& batch, uint32_t dim);
 
@@ -52,6 +61,11 @@ class Tensor {
    * Returns the ith vector in the tensor.
    */
   BoltVector& getVector(uint32_t index);
+
+  /**
+   * Returns if the tensor is sparse.
+   */
+  bool isSparse() const { return !_vectors.front().isDense(); }
 
   /**
    * Returns the number of vectors in the tensor.
