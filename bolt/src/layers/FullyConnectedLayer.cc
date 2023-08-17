@@ -107,18 +107,20 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
     average_random_activation /= output.len;
 
 #pragma omp critical
-    std::cout << "Active neurons captured " << intersection_size << "/"
-              << output.len << " true top neurons." << std::endl;
-    std::cout << "Average random neuron activation: "
-              << average_random_activation << std::endl;
-    std::cout << "Average active neuron activation: "
-              << average_active_neuron_activation << std::endl;
-    std::cout << "Average true top neuron activation: "
-              << average_true_top_activation << std::endl
-              << std::endl;
+    {
+      std::cout << "Active neurons captured " << intersection_size << "/"
+                << output.len << " true top neurons." << std::endl;
+      std::cout << "Average random neuron activation: "
+                << average_random_activation << std::endl;
+      std::cout << "Average active neuron activation: "
+                << average_active_neuron_activation << std::endl;
+      std::cout << "Average true top neuron activation: "
+                << average_true_top_activation << std::endl
+                << std::endl;
+    }
   }
 #endif
-}
+}  // namespace thirdai::bolt
 
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,
