@@ -1,10 +1,17 @@
 import os
 import shutil
+from typing import List
 
 import pytest
-from ndb_utils import create_simple_dataset, train_simple_neural_db
+from ndb_utils import (
+    create_simple_dataset,
+    train_simple_neural_db,
+    doc_choices,
+    all_docs,
+)
 from thirdai import neural_db as ndb
 from pathlib import Path
+import random
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -54,12 +61,15 @@ def db_from_bazaar():
     return bazaar.get_model("General QnA")
 
 
-def get_upvote_target_id(db: ndb.NeuralDB, query: str):
-    initial_ids = [r.id for r in db.search(query, top_k=10)]
+def get_upvote_target_id(db: ndb.NeuralDB, query: str, top_k: int):
+    initial_ids = [r.id for r in db.search(query, top_k)]
     target_id = 0
     while target_id in initial_ids:
         target_id += 1
     return target_id
+
+
+ARBITRARY_QUERY = "This is an arbitrary search query"
 
 
 # Some of the following helper functions depend on others being called before them.
@@ -67,51 +77,55 @@ def get_upvote_target_id(db: ndb.NeuralDB, query: str):
 # They are only written as separate functions to make it easier to read.
 
 
-def insert_works(db: ndb.NeuralDB):
-    documents = [
-        ndb.CSV(BLA),
-        ndb.DOCX(BLA),
-        ndb.PDF(BLA),
-        ndb.URL(BLA),
-    ]
-    db.insert(documents, train=False)
+def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
+    db.insert(docs, train=False)
     assert len(db.sources()) == 4
 
-    initial_scores = [r.score for r in db.search(RANDOMSTRING, top_k=5)]
+    initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
-    db.insert(documents, train=True)
+    db.insert(docs, train=True)
     assert len(db.sources()) == 4
 
-    assert [r.score for r in db.search(RANDOMSTRING, top_k=5)] != initial_scores
+    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
 
-def search_works(db: ndb.NeuralDB):
-    # What edge cases can I test?
-    # Empty string is not one since we don't support that
-    # Maybe we should assert that it throws...
-    # Maybe something from each of the sources (get a random reference)
-    # then switch a percentage of characters with random characters
-    # Assert that the real reference is in top k
-    results = db.search(RANDOMSTRING, top_k=5)
-    assert len(results) >= 1
-    assert len(results) <= 5
-    for result in results:
-        assert type(result.text) == str
-        assert len(result.text) > 0
+def search_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
+    for doc in docs:
+        # We assume that the database has been trained with the given documents.
+        # It should at least be able to recover exact matches.
+        arbitrary_id = doc.size / 2
+        query = doc.reference(arbitrary_id).text
+        results = db.search(query, top_k=5)
+
+        assert len(results) >= 1
+        assert len(results) <= 5
+
+        found_correct = False
+
+        for result in results:
+            assert type(result.text) == str
+            assert len(result.text) > 0
+            if result.text == query:
+                found_correct = True
+        assert found_correct
 
 
 def upvote_works(db: ndb.NeuralDB):
     # We have more than 10 indexed entities.
-    target_id = get_upvote_target_id(db, RANDOMSTRING)
-    db.text_to_result(RANDOMSTRING, target_id)
-    assert target_id in [r.id for r in db.search(RANDOMSTRING, top_k=10)]
+    target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
+    db.text_to_result(ARBITRARY_QUERY, target_id)
+    assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
 
 
 def upvote_batch_works(db: ndb.NeuralDB):
-    RANDOMSTRINGS = []
-    target_ids = [get_upvote_target_id(db, query) for query in RANDOMSTRINGS]
-    db.text_to_result_batch(list(zip(RANDOMSTRINGS, target_ids)))
-    for query, target_id in zip(RANDOMSTRINGS, target_ids):
+    queries = [
+        "This query is not related to any document.",
+        "Neither is this one.",
+        "Wanna get some biryani so we won't have to cook dinner?",
+    ]
+    target_ids = [get_upvote_target_id(db, query, top_k=10) for query in queries]
+    db.text_to_result_batch(list(zip(queries, target_ids)))
+    for query, target_id in zip(queries, target_ids):
         assert target_id in [r.id for r in db.search(query, top_k=10)]
 
 
@@ -119,13 +133,14 @@ def associate_works(db: ndb.NeuralDB):
     # Since this is still unstable, we only check that associate() updates the
     # model in *some* way, but we don't want to make stronger assertions as it
     # would make the test flaky.
-    search_results = db.search(RANDOMSTRING, top_k=5)
+    search_results = db.search(ARBITRARY_QUERY, top_k=5)
     initial_scores = [r.score for r in search_results]
     initial_ids = [r.id for r in search_results]
 
-    db.associate(RANDOMSTRING, RANDOMSTRING2)
+    another_arbitrary_query = "Eating makes me sleepy"
+    db.associate(ARBITRARY_QUERY, another_arbitrary_query)
 
-    new_search_results = db.search(RANDOMSTRING, top_k=5)
+    new_search_results = db.search(ARBITRARY_QUERY, top_k=5)
     new_scores = [r.score for r in new_search_results]
     new_ids = [r.id for r in new_search_results]
 
@@ -134,10 +149,10 @@ def associate_works(db: ndb.NeuralDB):
 
 def save_load_works(db: ndb.NeuralDB):
     db.save("temp.ndb")
-    search_results = db.search(RANDOMSTRING, top_k=5)
+    search_results = db.search(ARBITRARY_QUERY, top_k=5)
 
     new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
-    new_search_results = new_db.search(RANDOMSTRING, top_k=5)
+    new_search_results = new_db.search(ARBITRARY_QUERY, top_k=5)
 
     assert search_results == new_search_results
     assert db.sources() == new_db.sources()

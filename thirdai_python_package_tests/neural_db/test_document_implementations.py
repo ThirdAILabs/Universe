@@ -4,38 +4,12 @@ from pathlib import Path
 
 import pytest
 from thirdai import neural_db as ndb
-
-BASE_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "document_test_data"
-)
-CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
-PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
-DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
-
-
-@pytest.fixture(scope="session")
-def all_docs():
-    yield {
-        "csv": ndb.CSV(
-            CSV_FILE,
-            id_column="category",
-            strong_columns=["text"],
-            weak_columns=["text"],
-            reference_columns=["text"],
-        ),
-        "pdf": ndb.PDF(PDF_FILE),
-        "docx": ndb.DOCX(DOCX_FILE),
-        "url": ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
-        "sentence_pdf": ndb.SentenceLevelPDF(PDF_FILE),
-        "sentence_docx": ndb.SentenceLevelDOCX(DOCX_FILE),
-    }
+from ndb_utils import all_docs, doc_choices
 
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.parametrize(
-        "choice", ["csv", "pdf", "docx", "url", "sentence_pdf", "sentence_docx"]
-    ),
+    pytest.mark.parametrize("choice", doc_choices),
 ]
 
 
