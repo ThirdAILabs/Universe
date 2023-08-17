@@ -18,7 +18,7 @@ $$ \begin{align*}
   &= -\frac{1}{2} (u_1^2 + u_2^2 + ... + u_n^2)^{-3/2}\ 2 u_i \\
   &= -\frac{1}{2} \|u\|^{-3}\ 2u_i \\
   &= -u_i\|u\|^{-3}
-\end{align*}$$
+\end{align*} $$
 
 Now we can compute the full partial derivative. Again note that this will be done for $u$ but it is the same for $v$.
 
