@@ -52,8 +52,7 @@ class UDT {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options,
-                   const bolt::train::DistributedCommPtr& comm);
+                   TrainOptions options, const bolt::DistributedCommPtr& comm);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
@@ -94,7 +93,7 @@ class UDT {
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
                        TrainOptions options,
-                       const bolt::train::DistributedCommPtr& comm);
+                       const bolt::DistributedCommPtr& comm);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     return _backend->getColdStartMetaData();
@@ -153,9 +152,9 @@ class UDT {
     return _backend->setDecodeParams(top_k_to_return, num_buckets_to_eval);
   }
 
-  ModelPtr model() const { return _backend->model(); }
+  bolt::ModelPtr model() const { return _backend->model(); }
 
-  void setModel(const ModelPtr& model) { _backend->setModel(model); }
+  void setModel(const bolt::ModelPtr& model) { _backend->setModel(model); }
 
   std::vector<uint32_t> modelDims() const;
 

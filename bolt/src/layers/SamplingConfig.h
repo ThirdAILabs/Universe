@@ -18,8 +18,8 @@ class SamplingConfig {
  public:
   SamplingConfig() {}
 
-  virtual nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
-                                            uint32_t input_dim) const = 0;
+  virtual NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                        uint32_t input_dim) const = 0;
 
   virtual ~SamplingConfig() = default;
 
@@ -47,8 +47,8 @@ class DWTASamplingConfig final : public SamplingConfig {
         _reservoir_size(reservoir_size),
         _permutes(permutations) {}
 
-  nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
-                                    uint32_t input_dim) const final;
+  NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                uint32_t input_dim) const final;
 
   hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const;
 
@@ -83,8 +83,8 @@ class FastSRPSamplingConfig final : public SamplingConfig {
         _hashes_per_table(hashes_per_table),
         _reservoir_size(reservoir_size) {}
 
-  nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
-                                    uint32_t input_dim) const final;
+  NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                uint32_t input_dim) const final;
 
   hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const;
 
@@ -105,10 +105,10 @@ class RandomSamplingConfig final : public SamplingConfig {
  public:
   RandomSamplingConfig() {}
 
-  nn::NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
-                                    uint32_t input_dim) const final {
+  NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
+                                uint32_t input_dim) const final {
     (void)input_dim;
-    return nn::RandomSampler::make(layer_dim);
+    return RandomSampler::make(layer_dim);
   }
 
  private:
