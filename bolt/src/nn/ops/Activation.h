@@ -7,17 +7,17 @@
 namespace thirdai::bolt::nn::ops {
 
 struct ReluImpl {
-  static float forward(float x) { return std::max(x, 0.F); }
+  static constexpr float forward(float x) { return std::max(x, 0.F); }
 
-  static float gradient(float y) { return y > 0 ? 1 : 0; }
+  static constexpr float gradient(float y) { return y > 0 ? 1 : 0; }
 
   static std::string name() { return "ReLU"; }
 };
 
 struct TanhImpl {
-  static float forward(float x) { return std::tanh(x); }
+  static constexpr float forward(float x) { return std::tanh(x); }
 
-  static float gradient(float y) { return (1 - y * y); }
+  static constexpr float gradient(float y) { return (1 - y * y); }
 
   static std::string name() { return "Tanh"; }
 };
