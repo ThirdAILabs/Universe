@@ -62,6 +62,7 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
   }
 
 #if THIRDAI_LOG_SPARSITY_RECALL
+#pragma omp critical
   std::cout
       << selected_neurons.size() << "/" << sparse_dim
       << " active neurons are selected via LSH (the rest are randomly sampled)."
