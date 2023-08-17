@@ -291,7 +291,7 @@ class Mach(Model):
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
-                intro_documents.size, self.model_config, self.query_col, self.id_col
+                intro_documents.size, self.model_config
             )
             learning_rate = 0.005
             freeze_before_train = False
@@ -348,20 +348,17 @@ class Mach(Model):
         if len(self.balancing_samples) > 25000:
             self.balancing_samples = random.sample(self.balancing_samples, k=25000)
 
-    @staticmethod
     def model_from_scratch(
         self,
         num_target_classes: int,
         model_config=None,
-        query_col=None,
-        id_column=None,
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
-                query_col: bolt.types.text(tokenizer="char-4"),
-                id_column: bolt.types.categorical(delimiter=self.id_delimiter),
+                self.query_col: bolt.types.text(tokenizer="char-4"),
+                self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
-            target=id_column,
+            target=self.id_col,
             n_target_classes=num_target_classes,
             integer_target=True,
             options={

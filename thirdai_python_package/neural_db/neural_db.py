@@ -195,22 +195,21 @@ class NeuralDB:
 
     @staticmethod
     def get_model(
-        self,
         n_target_classes: int,
         model_config=None,
-        query_column="QUERY",
-        id_column="DOC_ID",
+        query_column="query",
+        id_column="id",
+        **kwargs,
     ):
-        return Mach.model_from_scratch(
+        return Mach(
+            query_col=query_column, id_col=id_column, **kwargs
+        ).model_from_scratch(
             num_target_classes=n_target_classes,
             model_config=model_config,
-            query_col=query_column,
-            id_column=id_column,
         )
 
     @staticmethod
     def pretrain_distributed(
-        self,
         udt: bolt.UniversalDeepTransformer,
         ray_dataset: ray.data.Dataset,
         id_column: str,
@@ -239,7 +238,7 @@ class NeuralDB:
             comm=Communication(),
         )
 
-        return self.from_udt(
+        return NeuralDB.from_udt(
             udt=udt,
             user_id=user_id,
             csv=csv,
