@@ -4,7 +4,7 @@
 
 Let $u$, $v$ be the vectors we are computing the cosine similarity for.
 
-$$ cos\_sim(u,v) = \frac{u \cdot v}{\|u\| \|v\|} $$
+$$ sim(u,v) = \frac{u \cdot v}{\|u\| \|v\|} $$
 
 
 ## Backpropagation
@@ -23,9 +23,9 @@ $$ \begin{align*}
 Now we can compute the full partial derivative. Again note that this will be done for $u$ but it is the same for $v$.
 
 $$ \begin{align*}
-\frac{\partial cos\_sim(u,v)}{\partial u_i} &= \frac{\partial}{\partial u_i} \frac{u \cdot v}{\|u\| \|v\|} \\
+\frac{\partial sim(u,v)}{\partial u_i} &= \frac{\partial}{\partial u_i} \frac{u \cdot v}{\|u\| \|v\|} \\
 &= \frac{1}{\|v\|} \left( \frac{1}{\|u\|}\frac{\partial u \cdot v}{\partial u_i} + u \cdot v \frac{\partial \|u\|^{-1}}{\partial u_i}\right) \\
 &= \frac{1}{\|v\|} \left(v_i  \frac{1}{\|u\|}- u_i\frac{u \cdot v}{\|u\|^3} \right) \\
 &= \frac{v_i}{\|u\|\|v\|} - u_i\frac{u \cdot v}{\|u\|^3\|v\|} \\
-&= \frac{v_i}{\|u\|\|v\|} - u_i\frac{cos\_sim(u,v)}{\|u\|^2}
+&= \frac{v_i}{\|u\|\|v\|} - u_i\frac{sim(u,v)}{\|u\|^2}
 \end{align*} $$
