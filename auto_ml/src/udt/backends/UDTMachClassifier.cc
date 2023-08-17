@@ -496,6 +496,7 @@ void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
 
   } else {
     if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+      std::cout << "Setting lsh index..." << std::endl;
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
       auto sampling_config = bolt::DWTASamplingConfig::autotune(
@@ -521,7 +522,9 @@ void UDTMachClassifier::introduceDocuments(
     uint32_t num_random_hashes, bool fast_approximation, bool verbose,
     bool use_sparsity, std::optional<uint32_t> max_in_memory_batches) {
   if (use_sparsity) {
+    std::cout << "Updating sampling strategy..." << std::endl;
     updateSamplingStrategy(/* force_lsh= */ true);
+    std::cout << "Updated sampling strategy." << std::endl;
   }
   auto metadata = getColdStartMetaData();
 
