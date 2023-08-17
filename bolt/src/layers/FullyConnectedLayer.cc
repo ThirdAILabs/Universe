@@ -85,9 +85,9 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
     for (uint32_t pos = 0; pos < output.len; pos++) {
       average_active_neuron_activation += output.activations[pos];
     }
-    average_active_neuron_activation /= output.len
+    average_active_neuron_activation /= output.len;
 
-                                            uint32_t intersection_size = 0;
+    uint32_t intersection_size = 0;
     double average_true_top_activation = 0;
     auto dense_top_k = dense_output.findKLargestActivations(output.len);
     while (!dense_top_k.empty()) {
