@@ -204,7 +204,7 @@ class NeuralDB:
         return Mach(
             query_col=query_column, id_col=id_column, **kwargs
         ).model_from_scratch(
-            num_target_classes=n_target_classes,
+            n_target_classes=n_target_classes,
             model_config=model_config,
         )
 

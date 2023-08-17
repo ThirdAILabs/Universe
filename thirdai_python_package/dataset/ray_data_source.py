@@ -9,12 +9,19 @@ class RayDataSource(PyDataSource):
     def __init__(self, ray_dataset):
         PyDataSource.__init__(self)
         self.ray_dataset = ray_dataset
+        self.restart()
 
     def _get_line_iterator(self):
-        yield pd.DataFrame(self.ray_dataset.columns()).to_csv(index=False, header=True)
-
+        # return the header first
+        column_names = self.ray_dataset.schema().names
+        yield pd.DataFrame(
+            {column_name: [column_name] for column_name in column_names}
+        ).to_csv(index=None, header=None)
+        # return row-by-row data
         for row in self.ray_dataset.iter_rows():
-            yield row.to_pandas().to_csv(header=None, index=None).strip("\n")
+            yield pd.DataFrame(row, index=[0]).to_csv(header=None, index=None).strip(
+                "\n"
+            )
 
     def resource_name(self) -> str:
-        return f"Ray-Dataset-sources-{self.ray_dataset.input_files()}-count-{self.ray_dataset.count()}"
+        return f"ray-dataset-sources"

@@ -4,9 +4,9 @@ import pytest
 import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-from ..neural_db.ndb_utils import create_simple_dataset
+from thirdai_python_package_tests.neural_db.ndb_utils import create_simple_dataset
 
-from ray.air import session
+from ray.air import session, ScalingConfig
 from ray.train.torch import TorchConfig
 from thirdai import neural_db
 import shutil
@@ -16,8 +16,9 @@ import shutil
 def test_neural_db_training(create_simple_dataset):
     train_file = create_simple_dataset
 
-    def training_loop_per_worker(config):
+    def training_loop_per_worker():
         training_data = session.get_dataset_shard("train")
+
         udt = neural_db.NeuralDB.get_model(n_target_classes=5, id_column="id")
 
         udt = dist.prepare_model(udt)
@@ -39,10 +40,10 @@ def test_neural_db_training(create_simple_dataset):
 
     scaling_config = setup_ray()
     trainer = dist.BoltTrainer(
-        training_loop_per_worker=training_loop_per_worker,
-        training_loop_config={"num_epochs": 5},
+        train_loop_per_worker=training_loop_per_worker,
+        train_loop_config={"num_epochs": 5},
         scaling_config=scaling_config,
-        backend_config=TorchConfig(BACKEND="gloo"),
+        backend_config=TorchConfig(backend="gloo"),
         datasets={"train": train_ray_ds},
     )
 

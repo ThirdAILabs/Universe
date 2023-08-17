@@ -350,7 +350,7 @@ class Mach(Model):
 
     def model_from_scratch(
         self,
-        num_target_classes: int,
+        n_target_classes: int,
         model_config=None,
     ):
         return bolt.UniversalDeepTransformer(
@@ -359,7 +359,7 @@ class Mach(Model):
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
-            n_target_classes=num_target_classes,
+            n_target_classes=n_target_classes,
             integer_target=True,
             options={
                 "extreme_classification": True,

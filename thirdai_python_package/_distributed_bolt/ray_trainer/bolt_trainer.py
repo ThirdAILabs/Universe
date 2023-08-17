@@ -2,9 +2,10 @@ import os
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
 from ray.air.checkpoint import Checkpoint
-from ray.air.config import RunConfig, ScalingConfig, DataConfig
+from ray.air.config import RunConfig, ScalingConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
-from thirdai._thirdai import logging
+
+from ray.train import DataConfig
 
 from ray.train.trainer import GenDataset
 
@@ -79,6 +80,8 @@ class BoltTrainer(DataParallelTrainer):
             train_loop_config=train_loop_config,
             backend_config=backend_config,
             scaling_config=scaling_config,
+            dataset_config=dataset_config,
             run_config=run_config,
+            datasets=datasets,
             resume_from_checkpoint=resume_from_checkpoint,
         )
