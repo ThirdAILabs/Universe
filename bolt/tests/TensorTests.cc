@@ -120,8 +120,8 @@ TEST(TensorTests, TensorFromArray) {
   std::vector<uint32_t> indices = {2, 1, 8, 7, 4, 6, 0, 9, 3, 5, 1, 4};
   std::vector<float> values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
-  auto tensor = tensor::Tensor::fromArray(indices.data(), values.data(), 4, 10,
-                                          3, /* with_grad= */ false);
+  auto tensor = Tensor::fromArray(indices.data(), values.data(), 4, 10, 3,
+                                  /* with_grad= */ false);
 
   EXPECT_EQ(tensor->batchSize(), 4);
   EXPECT_EQ(tensor->dim(), 10);
