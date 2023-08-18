@@ -3,12 +3,11 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
 std::shared_ptr<Loss> Loss::fromProto(
     const proto::bolt::Loss& loss_proto,
-    const std::unordered_map<std::string, autograd::ComputationPtr>&
-        computations) {
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
   switch (loss_proto.loss_case()) {
     case proto::bolt::Loss::kCategoricalCrossEntropy:
       return CategoricalCrossEntropy::make(
@@ -23,4 +22,4 @@ std::shared_ptr<Loss> Loss::fromProto(
   }
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt

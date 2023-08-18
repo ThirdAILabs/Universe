@@ -8,6 +8,7 @@ import "parameter.proto";
 import "fully_connected.proto";
 import "embedding.proto";
 import "robez.proto";
+import "activation.proto";
 
 message LayerNorm {
   required Parameter gamma = 1;
@@ -19,7 +20,13 @@ message LayerNorm {
 
 message Concatenate {}
 
-message Tanh {}
+message Activation {
+  required ActivationFunction activation = 1;
+}
+
+message DotProduct {}
+
+message CosineSimilarity {}
 
 message Op {
   required string name = 1;
@@ -30,6 +37,8 @@ message Op {
     RobeZ robez = 4;
     LayerNorm layer_norm = 5;
     Concatenate concatenate = 6;
-    Tanh tanh = 7;
+    Activation activation = 7;
+    DotProduct dot_product = 8;
+    CosineSimilarity cosine_similarity = 9;
   }
 }

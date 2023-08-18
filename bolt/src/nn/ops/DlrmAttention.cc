@@ -5,15 +5,14 @@
 #include <memory>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::shared_ptr<DlrmAttention> DlrmAttention::make() {
   return std::shared_ptr<DlrmAttention>(new DlrmAttention());
 }
 
-void DlrmAttention::forward(const autograd::ComputationList& inputs,
-                            tensor::TensorPtr& output, uint32_t index_in_batch,
-                            bool training) {
+void DlrmAttention::forward(const ComputationList& inputs, TensorPtr& output,
+                            uint32_t index_in_batch, bool training) {
   assert(inputs.size() == 2);
   (void)training;
 
@@ -50,8 +49,7 @@ void DlrmAttention::forward(const autograd::ComputationList& inputs,
   }
 }
 
-void DlrmAttention::backpropagate(autograd::ComputationList& inputs,
-                                  tensor::TensorPtr& output,
+void DlrmAttention::backpropagate(ComputationList& inputs, TensorPtr& output,
                                   uint32_t index_in_batch) {
   BoltVector& fc_input = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& emb_input = inputs.at(1)->tensor()->getVector(index_in_batch);
@@ -98,23 +96,17 @@ uint32_t DlrmAttention::dim() const {
   return (_n_emb_chunks + 1) * _n_emb_chunks / 2;
 }
 
-std::optional<uint32_t> DlrmAttention::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> DlrmAttention::nonzeros(const ComputationList& inputs,
+                                                bool use_sparsity) const {
   (void)inputs;
   (void)use_sparsity;
 
   return dim();
 }
 
-proto::bolt::Op* DlrmAttention::toProto(bool with_optimizer) const {
-  (void)with_optimizer;
-
-  throw std::invalid_argument("toProto is not implemented for DlrmAttention.");
-}
-
 void DlrmAttention::summary(std::ostream& summary,
-                            const autograd::ComputationList& inputs,
-                            const autograd::Computation* output) const {
+                            const ComputationList& inputs,
+                            const Computation* output) const {
   summary << "DlrmAttention(" << name() << "): " << inputs.at(0)->name() << ", "
           << inputs.at(1)->name() << ") -> " << output->name()
           << "[n_emb_chunks=" << _n_emb_chunks
@@ -162,8 +154,7 @@ void DlrmAttention::embeddingDotProductBackward(
   }
 }
 
-autograd::ComputationPtr DlrmAttention::apply(
-    const autograd::ComputationList& inputs) {
+ComputationPtr DlrmAttention::apply(const ComputationList& inputs) {
   if (inputs.size() != 2) {
     throw std::invalid_argument("DlrmAttention op expects two inputs.");
   }
@@ -171,8 +162,8 @@ autograd::ComputationPtr DlrmAttention::apply(
   return applyBinary(inputs.at(0), inputs.at(1));
 }
 
-autograd::ComputationPtr DlrmAttention::applyBinary(
-    autograd::ComputationPtr fc_input, autograd::ComputationPtr emb_input) {
+ComputationPtr DlrmAttention::applyBinary(ComputationPtr fc_input,
+                                          ComputationPtr emb_input) {
   uint32_t fc_dim = fc_input->dim();
   uint32_t emb_dim = emb_input->dim();
 
@@ -205,8 +196,14 @@ autograd::ComputationPtr DlrmAttention::applyBinary(
     throw std::invalid_argument(error.str());
   }
 
-  return autograd::Computation::make(
-      shared_from_this(), {std::move(fc_input), std::move(emb_input)});
+  return Computation::make(shared_from_this(),
+                           {std::move(fc_input), std::move(emb_input)});
 }
 
-}  // namespace thirdai::bolt::nn::ops
+proto::bolt::Op* DlrmAttention::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  throw std::invalid_argument("toProto is not implemented for DlrmAttention.");
+}
+
+}  // namespace thirdai::bolt

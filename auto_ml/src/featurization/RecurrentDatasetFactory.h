@@ -16,8 +16,6 @@
 
 namespace thirdai::automl::data {
 
-using bolt::nn::tensor::TensorList;
-
 class RecurrentDatasetFactory {
  public:
   RecurrentDatasetFactory(const ColumnDataTypes& data_types,
@@ -33,9 +31,9 @@ class RecurrentDatasetFactory {
       std::optional<dataset::DatasetShuffleConfig> shuffle_config =
           std::nullopt);
 
-  TensorList featurizeInput(const MapInput& sample);
+  bolt::TensorList featurizeInput(const MapInput& sample);
 
-  TensorList featurizeInputBatch(const MapInputBatch& samples);
+  bolt::TensorList featurizeInputBatch(const MapInputBatch& samples);
 
   uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
 

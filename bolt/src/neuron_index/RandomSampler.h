@@ -5,7 +5,7 @@
 #include <proto/neuron_index.pb.h>
 #include <random>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 class RandomSampler final : public NeuronIndex {
  public:
@@ -57,4 +57,4 @@ class RandomSampler final : public NeuronIndex {
   void serialize(Archive& archive);
 };
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt

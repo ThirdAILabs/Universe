@@ -7,7 +7,7 @@
 #include <memory>
 #include <random>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 class LshIndex final : public NeuronIndex {
  public:
@@ -64,4 +64,4 @@ class LshIndex final : public NeuronIndex {
   void serialize(Archive& archive);
 };
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt

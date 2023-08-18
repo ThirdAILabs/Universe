@@ -6,14 +6,14 @@
 #include <cmath>
 #include <optional>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
-CategoricalCrossEntropy::CategoricalCrossEntropy(
-    autograd::ComputationPtr output, autograd::ComputationPtr labels)
+CategoricalCrossEntropy::CategoricalCrossEntropy(ComputationPtr output,
+                                                 ComputationPtr labels)
     : ComparativeLoss(std::move(output), std::move(labels)) {}
 
 std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::make(
-    autograd::ComputationPtr output, autograd::ComputationPtr labels) {
+    ComputationPtr output, ComputationPtr labels) {
   return std::make_shared<CategoricalCrossEntropy>(std::move(output),
                                                    std::move(labels));
 }
@@ -57,6 +57,8 @@ void CategoricalCrossEntropy::serialize(Archive& archive) {
   archive(cereal::base_class<ComparativeLoss>(this));
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::CategoricalCrossEntropy)
+CEREAL_REGISTER_TYPE_WITH_NAME(
+    thirdai::bolt::CategoricalCrossEntropy,
+    "thirdai::bolt::nn::loss::CategoricalCrossEntropy")

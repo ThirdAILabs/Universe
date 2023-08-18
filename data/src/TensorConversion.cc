@@ -6,11 +6,11 @@
 
 namespace thirdai::data {
 
-std::vector<TensorList> toTensorBatches(
+std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
     size_t batch_size) {
   size_t num_batches = (columns.numRows() + batch_size - 1) / batch_size;
-  std::vector<TensorList> tensors(num_batches);
+  std::vector<bolt::TensorList> tensors(num_batches);
 
   for (const auto& [indices_column, values_column] : columns_to_convert) {
     auto indices = columns.getArrayColumn<uint32_t>(indices_column);
@@ -67,9 +67,9 @@ std::vector<TensorList> toTensorBatches(
         batch_lens.push_back(indices_row.size());
       }
 
-      tensors[batch].emplace_back(bolt::nn::tensor::Tensor::sparse(
+      tensors[batch].emplace_back(bolt::Tensor::sparse(
           std::move(batch_indices), std::move(batch_values),
-          std::move(batch_lens), indices->dimension()->dim));
+          std::move(batch_lens), indices->dim().value()));
     }
 
     if (error) {
@@ -80,8 +80,8 @@ std::vector<TensorList> toTensorBatches(
   return tensors;
 }
 
-TensorList toTensors(const ColumnMap& columns,
-                     const IndexValueColumnList& columns_to_convert) {
+bolt::TensorList toTensors(const ColumnMap& columns,
+                           const IndexValueColumnList& columns_to_convert) {
   return toTensorBatches(columns, columns_to_convert,
                          /* batch_size= */ columns.numRows())
       .at(0);

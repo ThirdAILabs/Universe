@@ -420,8 +420,8 @@ def test_csv_doc_autotuning():
     doc = neural_db.CSV(filename)
 
     assert doc.id_column == "thirdai_index"
-    assert doc.strong_columns == ["col4"]
-    assert doc.weak_columns == []
+    assert doc.strong_columns == []
+    assert doc.weak_columns == ["col4"]
     assert doc.reference_columns == ["col1", "col2", "col3", "col4", "col5"]
 
     assert "lorem" in doc.reference(0).text

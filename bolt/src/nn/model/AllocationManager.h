@@ -3,7 +3,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 
-namespace thirdai::bolt::nn::model {
+namespace thirdai::bolt {
 
 /**
  * This class manages the allocation of Tensors in the model. This means
@@ -15,7 +15,7 @@ namespace thirdai::bolt::nn::model {
  */
 class AllocationManager {
  public:
-  explicit AllocationManager(autograd::ComputationList computations);
+  explicit AllocationManager(ComputationList computations);
 
   AllocationManager() : _allocated_batch_size(0), _using_sparsity(false) {}
 
@@ -40,7 +40,7 @@ class AllocationManager {
   void forceReallocation();
 
  private:
-  autograd::ComputationList _computations;
+  ComputationList _computations;
 
   uint32_t _allocated_batch_size;
 
@@ -51,4 +51,4 @@ class AllocationManager {
   void serialize(Archive& archive);
 };
 
-}  // namespace thirdai::bolt::nn::model
+}  // namespace thirdai::bolt

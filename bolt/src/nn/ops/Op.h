@@ -5,22 +5,14 @@
 #include <proto/ops.pb.h>
 #include <memory>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 class Computation;
 
 using ComputationPtr = std::shared_ptr<Computation>;
 using ComputationList = std::vector<ComputationPtr>;
 
-}  // namespace thirdai::bolt::nn::autograd
-
-namespace thirdai::bolt::nn::model {
-
 class Model;
-
-}  // namespace thirdai::bolt::nn::model
-
-namespace thirdai::bolt::nn::ops {
 
 /**
  * Represents a operation in a model which takes in one or more inputs and
@@ -47,9 +39,8 @@ class Op {
    * function should be thread safe to being called with different values for
    * index_in_batch at the same time.
    */
-  virtual void forward(const autograd::ComputationList& inputs,
-                       tensor::TensorPtr& output, uint32_t index_in_batch,
-                       bool training) = 0;
+  virtual void forward(const ComputationList& inputs, TensorPtr& output,
+                       uint32_t index_in_batch, bool training) = 0;
 
   /**
    * Computes the gradients of any parameters in the op and with respect to the
@@ -65,8 +56,7 @@ class Op {
    * with different values for index_in_batch at the same time (though benign
    * race conditions to e.g. weight array are sometimes okay for performance).
    */
-  virtual void backpropagate(autograd::ComputationList& inputs,
-                             tensor::TensorPtr& output,
+  virtual void backpropagate(ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch) = 0;
 
   /**
@@ -95,8 +85,8 @@ class Op {
    * sparse inputs, then if sparsity is being used the number of nonzeros in the
    * output will depend on the number of nonzeros in the inputs.
    */
-  virtual std::optional<uint32_t> nonzeros(
-      const autograd::ComputationList& inputs, bool use_sparsity) const = 0;
+  virtual std::optional<uint32_t> nonzeros(const ComputationList& inputs,
+                                           bool use_sparsity) const = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -123,19 +113,15 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
-  virtual proto::bolt::Op* toProto(bool with_optimizer) const = 0;
-
-  virtual autograd::ComputationPtr apply(
-      const autograd::ComputationList& inputs) = 0;
+  virtual ComputationPtr apply(const ComputationList& inputs) = 0;
 
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
    * OpType(op name): input(s) -> output(s) [op parameters]
    */
-  virtual void summary(std::ostream& summary,
-                       const autograd::ComputationList& inputs,
-                       const autograd::Computation* output) const = 0;
+  virtual void summary(std::ostream& summary, const ComputationList& inputs,
+                       const Computation* output) const = 0;
 
   /**
    * Controls if the op should save the optimizer along with the parameters.
@@ -144,9 +130,9 @@ class Op {
     (void)setSerializeOptimizer;
   }
 
-  virtual void registerModel(const std::weak_ptr<model::Model>& model) {
-    (void)model;
-  }
+  virtual void registerModel(const std::weak_ptr<Model>& model) { (void)model; }
+
+  virtual proto::bolt::Op* toProto(bool with_optimizer) const = 0;
 
   static std::shared_ptr<Op> fromProto(const proto::bolt::Op& op_proto);
 
@@ -175,4 +161,4 @@ class Op {
 
 using OpPtr = std::shared_ptr<Op>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

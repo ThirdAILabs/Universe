@@ -11,7 +11,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextLayerNormOpName() {
   static uint32_t constructed = 0;
@@ -66,14 +66,8 @@ std::shared_ptr<LayerNorm> LayerNorm::make(const float* gamma,
   return std::shared_ptr<LayerNorm>(new LayerNorm(gamma, beta, dim));
 }
 
-std::shared_ptr<LayerNorm> LayerNorm::fromProto(
-    const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto) {
-  return std::shared_ptr<LayerNorm>(new LayerNorm(name, layer_norm_proto));
-}
-
-void LayerNorm::forward(const autograd::ComputationList& inputs,
-                        tensor::TensorPtr& output, uint32_t index_in_batch,
-                        bool training) {
+void LayerNorm::forward(const ComputationList& inputs, TensorPtr& output,
+                        uint32_t index_in_batch, bool training) {
   (void)training;
 
   const BoltVector& input_vector =
@@ -108,8 +102,7 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
   }
 }
 
-void LayerNorm::backpropagate(autograd::ComputationList& inputs,
-                              tensor::TensorPtr& output,
+void LayerNorm::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
   BoltVector& input_vector = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vector = output->getVector(index_in_batch);
@@ -185,8 +178,8 @@ void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
 
 uint32_t LayerNorm::dim() const { return _gamma.size(); }
 
-std::optional<uint32_t> LayerNorm::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
+                                            bool use_sparsity) const {
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
@@ -200,6 +193,36 @@ std::vector<std::vector<float>*> LayerNorm::gradients() {
 
 std::vector<std::vector<float>*> LayerNorm::parameters() {
   return {&_gamma, &_beta};
+}
+
+void LayerNorm::summary(std::ostream& summary, const ComputationList& inputs,
+                        const Computation* output) const {
+  summary << "LayerNorm(" << name() << "): " << inputs.at(0)->name() << " -> "
+          << output->name();
+}
+
+ComputationPtr LayerNorm::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("LayerNorm op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr LayerNorm::applyUnary(const ComputationPtr& input) {
+  if (dim() == 0) {
+    _gamma.assign(input->dim(), 1.0);
+    _beta.assign(input->dim(), 0.0);
+    _gamma_optimizer = AdamOptimizer(input->dim());
+    _beta_optimizer = AdamOptimizer(input->dim());
+  } else if (input->dim() != dim()) {
+    throw std::invalid_argument(
+        "Cannot apply LayerNorm op for input with dimension " +
+        std::to_string(dim()) + " to input with dimension " +
+        std::to_string(input->dim()) + ".");
+  }
+
+  return Computation::make(shared_from_this(), {input});
 }
 
 proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
@@ -222,37 +245,9 @@ proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
   return op;
 }
 
-void LayerNorm::summary(std::ostream& summary,
-                        const autograd::ComputationList& inputs,
-                        const autograd::Computation* output) const {
-  summary << "LayerNorm(" << name() << "): " << inputs.at(0)->name() << " -> "
-          << output->name();
-}
-
-autograd::ComputationPtr LayerNorm::apply(
-    const autograd::ComputationList& inputs) {
-  if (inputs.size() != 1) {
-    throw std::invalid_argument("LayerNorm op expects a single input.");
-  }
-
-  return applyUnary(inputs.at(0));
-}
-
-autograd::ComputationPtr LayerNorm::applyUnary(
-    const autograd::ComputationPtr& input) {
-  if (dim() == 0) {
-    _gamma.assign(input->dim(), 1.0);
-    _beta.assign(input->dim(), 0.0);
-    _gamma_optimizer = AdamOptimizer(input->dim());
-    _beta_optimizer = AdamOptimizer(input->dim());
-  } else if (input->dim() != dim()) {
-    throw std::invalid_argument(
-        "Cannot apply LayerNorm op for input with dimension " +
-        std::to_string(dim()) + " to input with dimension " +
-        std::to_string(input->dim()) + ".");
-  }
-
-  return autograd::Computation::make(shared_from_this(), {input});
+std::shared_ptr<LayerNorm> LayerNorm::fromProto(
+    const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(name, layer_norm_proto));
 }
 
 template void LayerNorm::serialize(cereal::BinaryInputArchive&);
@@ -265,6 +260,7 @@ void LayerNorm::serialize(Archive& archive) {
           _beta_optimizer);
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::LayerNorm)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::LayerNorm,
+                               "thirdai::bolt::nn::ops::LayerNorm")

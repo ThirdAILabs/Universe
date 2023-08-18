@@ -80,9 +80,9 @@ class FullyConnectedLayer final {
 
   void reBuildHashFunction();
 
-  const nn::NeuronIndexPtr& neuronIndex() const { return _neuron_index; }
+  const NeuronIndexPtr& neuronIndex() const { return _neuron_index; }
 
-  void setNeuronIndex(nn::NeuronIndexPtr index);
+  void setNeuronIndex(NeuronIndexPtr index);
 
   uint32_t getDim() const { return _dim; }
 
@@ -161,7 +161,7 @@ class FullyConnectedLayer final {
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
-  nn::NeuronIndexPtr _neuron_index;
+  NeuronIndexPtr _neuron_index;
   bool _index_frozen = false;
 
   template <bool DENSE>

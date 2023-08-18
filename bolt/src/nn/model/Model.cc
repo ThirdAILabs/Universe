@@ -25,12 +25,10 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn::model {
+namespace thirdai::bolt {
 
-Model::Model(autograd::ComputationList inputs,
-             autograd::ComputationList outputs,
-             std::vector<loss::LossPtr> losses,
-             autograd::ComputationList additional_labels)
+Model::Model(ComputationList inputs, ComputationList outputs,
+             std::vector<LossPtr> losses, ComputationList additional_labels)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -46,15 +44,14 @@ Model::Model(autograd::ComputationList inputs,
   _labels.insert(_labels.end(), additional_labels.begin(),
                  additional_labels.end());
 
-  _computation_order =
-      autograd::getComputationOrder(_inputs, _outputs, _losses);
+  _computation_order = getComputationOrder(_inputs, _outputs, _losses);
 
   nameComputations(_inputs, _computation_order, _labels);
 
   _allocation_manager = AllocationManager(_computation_order);
 
   std::unordered_set<std::string> op_names;
-  std::unordered_set<ops::OpPtr> ops;
+  std::unordered_set<OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.insert(comp->op());
     std::string name = comp->op()->name();
@@ -75,10 +72,10 @@ Model::Model(autograd::ComputationList inputs,
   verifyAllowedOutputDim();
 }
 
-std::shared_ptr<Model> Model::make(
-    autograd::ComputationList inputs, autograd::ComputationList outputs,
-    std::vector<loss::LossPtr> losses,
-    autograd::ComputationList additional_labels) {
+std::shared_ptr<Model> Model::make(ComputationList inputs,
+                                   ComputationList outputs,
+                                   std::vector<LossPtr> losses,
+                                   ComputationList additional_labels) {
   auto model = std::shared_ptr<Model>(
       new Model(std::move(inputs), std::move(outputs), std::move(losses),
                 std::move(additional_labels)));
@@ -89,8 +86,7 @@ std::shared_ptr<Model> Model::make(
   return model;
 }
 
-tensor::TensorList Model::forward(const tensor::TensorList& inputs,
-                                  bool use_sparsity) {
+TensorList Model::forward(const TensorList& inputs, bool use_sparsity) {
   uint32_t input_batch_size = setInput(inputs);
 
   _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
@@ -102,15 +98,14 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
     forwardVector(index_in_batch, /* training= */ false);
   }
 
-  tensor::TensorList outputs;
+  TensorList outputs;
   for (auto& output : _outputs) {
     outputs.push_back(output->tensor());
   }
   return outputs;
 }
 
-void Model::trainOnBatch(const tensor::TensorList& inputs,
-                         const tensor::TensorList& labels) {
+void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -133,9 +128,8 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
   }
 }
 
-tensor::TensorList Model::forward(const tensor::TensorList& inputs,
-                                  const tensor::TensorList& labels,
-                                  bool use_sparsity) {
+TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
+                          bool use_sparsity) {
   setLabels(labels);
   return forward(inputs, use_sparsity);
 }
@@ -151,37 +145,37 @@ void Model::forceStateReallocation() {
   _allocation_manager.forceReallocation();
 }
 
-std::vector<ops::OpPtr> Model::opExecutionOrder() const {
-  std::vector<ops::OpPtr> ops;
+std::vector<OpPtr> Model::opExecutionOrder() const {
+  std::vector<OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.push_back(comp->op());
   }
   return ops;
 }
 
-autograd::ComputationList Model::computationOrder() const {
-  autograd::ComputationList all_comps;
+ComputationList Model::computationOrder() const {
+  ComputationList all_comps;
   all_comps.insert(all_comps.end(), _inputs.begin(), _inputs.end());
   all_comps.insert(all_comps.end(), _computation_order.begin(),
                    _computation_order.end());
   return all_comps;
 }
 
-autograd::ComputationList Model::computationOrderWithoutInputs() const {
+ComputationList Model::computationOrderWithoutInputs() const {
   return _computation_order;
 }
 
-const autograd::ComputationList& Model::inputs() const { return _inputs; }
+const ComputationList& Model::inputs() const { return _inputs; }
 
-const autograd::ComputationList& Model::outputs() const { return _outputs; }
+const ComputationList& Model::outputs() const { return _outputs; }
 
-const autograd::ComputationList& Model::labels() const { return _labels; }
+const ComputationList& Model::labels() const { return _labels; }
 
-const std::vector<loss::LossPtr>& Model::losses() const { return _losses; }
+const std::vector<LossPtr>& Model::losses() const { return _losses; }
 
-const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
+const std::vector<OpPtr>& Model::ops() const { return _ops; }
 
-ops::OpPtr Model::getOp(const std::string& name) const {
+OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
       return op;
@@ -190,7 +184,7 @@ ops::OpPtr Model::getOp(const std::string& name) const {
   throw std::invalid_argument("Could not find op with name '" + name + "'.");
 }
 
-autograd::ComputationPtr Model::getComputation(const std::string& name) const {
+ComputationPtr Model::getComputation(const std::string& name) const {
   for (const auto& comp : _computation_order) {
     if (comp->name() == name) {
       return comp;
@@ -213,6 +207,7 @@ std::string Model::summary(bool print) const {
     comp->summary(summary);
     summary << "\n";
   }
+  summary << "Total Paramters: " << numParams() << "\n";
   summary << "=================================================\n";
 
   if (print) {
@@ -220,6 +215,14 @@ std::string Model::summary(bool print) const {
   }
 
   return summary.str();
+}
+
+size_t Model::numParams() const {
+  size_t total_params = 0;
+  for (const auto* param : parameters()) {
+    total_params += param->size();
+  }
+  return total_params;
 }
 
 uint32_t Model::trainSteps() const { return _train_steps; }
@@ -331,7 +334,7 @@ void Model::setFlattenedParameters(const float* concatenated_values,
    * distributed.
    */
   for (const auto& op : _ops) {
-    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+    if (auto fc = std::dynamic_pointer_cast<FullyConnected>(op)) {
       fc->reBuildHashFunction();
     }
   }
@@ -401,27 +404,27 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
 }
 
 std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
-  std::unordered_map<std::string, ops::OpPtr> ops;
+  std::unordered_map<std::string, OpPtr> ops;
 
   // Build a map from the name of each op to the reconstructed op object.
   for (const auto& op_proto : model_proto.ops()) {
-    ops[op_proto.name()] = ops::Op::fromProto(op_proto);
+    ops[op_proto.name()] = Op::fromProto(op_proto);
   }
 
-  autograd::ComputationList inputs;
-  autograd::ComputationList labels;
-  std::unordered_map<std::string, autograd::ComputationPtr> computations;
+  ComputationList inputs;
+  ComputationList labels;
+  std::unordered_map<std::string, ComputationPtr> computations;
 
   // Create the inputs to the model.
   for (const auto& input_proto : model_proto.inputs()) {
-    auto input = ops::Input::make(input_proto.dim());
+    auto input = Input::make(input_proto.dim());
     computations[input_proto.name()] = input;
     inputs.push_back(input);
   }
 
   // Create the labels for the model.
   for (const auto& label_proto : model_proto.labels()) {
-    auto label = ops::Input::make(label_proto.dim());
+    auto label = Input::make(label_proto.dim());
     computations[label_proto.name()] = label;
     labels.push_back(label);
   }
@@ -431,7 +434,7 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   // are serialized/deserialized in the execution order we know that a
   // computation will occur after its inputs.
   for (const auto& comp_proto : model_proto.computation_graph()) {
-    autograd::ComputationList op_inputs;
+    ComputationList op_inputs;
     for (const auto& input : comp_proto.inputs()) {
       op_inputs.push_back(computations.at(input));
     }
@@ -441,13 +444,13 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   }
 
   // Reconstruct the loss functions for the model.
-  std::vector<loss::LossPtr> losses;
+  std::vector<LossPtr> losses;
   for (const auto& loss : model_proto.losses()) {
-    losses.push_back(loss::Loss::fromProto(loss, computations));
+    losses.push_back(Loss::fromProto(loss, computations));
   }
 
   // Find the model outputs.
-  autograd::ComputationList outputs;
+  ComputationList outputs;
   for (const auto& output : model_proto.outputs()) {
     outputs.push_back(computations.at(output));
   }
@@ -497,7 +500,7 @@ std::shared_ptr<Model> Model::deserializeProto(const std::string& binary) {
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
-    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+    if (auto fc = std::dynamic_pointer_cast<FullyConnected>(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->freezeHashTables(insert_labels_if_not_found);
@@ -507,7 +510,7 @@ void Model::freezeHashTables(bool insert_labels_if_not_found) {
 
 void Model::unfreezeHashTables() {
   for (auto& op : _ops) {
-    if (auto fc = ops::FullyConnected::cast(op)) {
+    if (auto fc = FullyConnected::cast(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->unfreezeHashTables();
@@ -515,10 +518,9 @@ void Model::unfreezeHashTables() {
   }
 }
 
-std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-Model::outputLabelPairs() const {
-  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-      output_label_pairs;
+std::vector<std::pair<ComputationPtr, ComputationPtr>> Model::outputLabelPairs()
+    const {
+  std::vector<std::pair<ComputationPtr, ComputationPtr>> output_label_pairs;
 
   for (const auto& loss : _losses) {
     auto outputs_used = loss->outputsUsed();
@@ -602,8 +604,8 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
   }
 }
 
-inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
-                               const tensor::TensorList& batches,
+inline uint32_t setBatchHelper(ComputationList& inputs,
+                               const TensorList& batches,
                                const std::string& type) {
   if (batches.size() != inputs.size()) {
     std::stringstream error;
@@ -632,17 +634,17 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
   return batch_size.value();
 }
 
-uint32_t Model::setInput(const tensor::TensorList& input_batches) {
+uint32_t Model::setInput(const TensorList& input_batches) {
   return setBatchHelper(_inputs, input_batches, "input batches");
 }
 
-uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
+uint32_t Model::setLabels(const TensorList& label_batches) {
   return setBatchHelper(_labels, label_batches, "label batches");
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
-    auto fully_connected = ops::FullyConnected::cast(output->op());
+    auto fully_connected = FullyConnected::cast(output->op());
 
     if (fully_connected) {
       output->addInput(label);
@@ -656,14 +658,13 @@ void Model::registerWithOps() {
   }
 }
 
-void Model::nameComputations(autograd::ComputationList& inputs,
-                             autograd::ComputationList& comps,
-                             autograd::ComputationList& labels) {
+void Model::nameComputations(ComputationList& inputs, ComputationList& comps,
+                             ComputationList& labels) {
   uint32_t comp_count = 0;
   auto next_name = [&comp_count]() {
     return "tensor_" + std::to_string(++comp_count);
   };
-  std::unordered_set<autograd::ComputationPtr> visited;
+  std::unordered_set<ComputationPtr> visited;
   for (auto& input : inputs) {
     // The same computation might be referenced multiple times in the inputs.
     if (!visited.count(input)) {
@@ -742,7 +743,7 @@ void Model::serialize(Archive& archive, const uint32_t version) {
   registerWithOps();
 }
 
-}  // namespace thirdai::bolt::nn::model
+}  // namespace thirdai::bolt
 
-CEREAL_CLASS_VERSION(thirdai::bolt::nn::model::Model,
+CEREAL_CLASS_VERSION(thirdai::bolt::Model,
                      thirdai::versions::BOLT_MODEL_VERSION)

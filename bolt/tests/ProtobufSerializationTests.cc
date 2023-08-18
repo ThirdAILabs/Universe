@@ -2,13 +2,13 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
@@ -22,13 +22,13 @@
 #include <optional>
 #include <random>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 constexpr size_t INPUT_DIM = 50;
 constexpr size_t BATCH_SIZE = 100;
 constexpr size_t N_BATCHES = 15;
 
-train::LabeledDataset getDataset() {
+LabeledDataset getDataset() {
   size_t n_samples = BATCH_SIZE * N_BATCHES;
 
   std::vector<uint32_t> lhs(n_samples);
@@ -68,47 +68,46 @@ train::LabeledDataset getDataset() {
   return {data_batches, label_batches};
 }
 
-model::ModelPtr buildModel() {
-  auto input = ops::Input::make(INPUT_DIM);
+ModelPtr buildModel() {
+  auto input = Input::make(INPUT_DIM);
 
   auto fc =
-      ops::FullyConnected::make(100, INPUT_DIM, 0.3, "relu")->applyUnary(input);
+      FullyConnected::make(100, INPUT_DIM, 0.3, "relu")->applyUnary(input);
 
-  auto tokens = ops::Input::make(INPUT_DIM);
+  auto tokens = Input::make(INPUT_DIM);
 
-  auto robez = ops::RobeZ::make(5, 20, 13, "avg")->applyUnary(tokens);
+  auto robez = RobeZ::make(5, 20, 13, "avg")->applyUnary(tokens);
 
-  auto tanh = ops::Tanh::make()->applyUnary(robez);
+  auto tanh = Tanh::make()->applyUnary(robez);
 
-  auto emb = ops::Embedding::make(100, INPUT_DIM, "tanh")->applyUnary(tokens);
+  auto emb = Embedding::make(100, INPUT_DIM, "tanh")->applyUnary(tokens);
 
-  auto concat = ops::Concatenate::make()->apply({fc, tanh, emb});
+  auto concat = Concatenate::make()->apply({fc, tanh, emb});
 
-  auto norm = ops::LayerNorm::make()->applyUnary(concat);
+  auto norm = LayerNorm::make()->applyUnary(concat);
 
   auto output1 =
-      ops::FullyConnected::make(2 * INPUT_DIM, norm->dim(), 0.3, "softmax")
+      FullyConnected::make(2 * INPUT_DIM, norm->dim(), 0.3, "softmax")
           ->applyUnary(norm);
 
   auto output2 =
-      ops::FullyConnected::make(2 * INPUT_DIM, norm->dim(), 0.4, "sigmoid")
+      FullyConnected::make(2 * INPUT_DIM, norm->dim(), 0.4, "sigmoid")
           ->applyUnary(norm);
 
-  auto label1 = ops::Input::make(2 * INPUT_DIM);
-  auto label2 = ops::Input::make(2 * INPUT_DIM);
-  std::vector<loss::LossPtr> losses = {
-      loss::CategoricalCrossEntropy::make(output1, label1),
-      loss::BinaryCrossEntropy::make(output2, label2)};
+  auto label1 = Input::make(2 * INPUT_DIM);
+  auto label2 = Input::make(2 * INPUT_DIM);
+  std::vector<LossPtr> losses = {CategoricalCrossEntropy::make(output1, label1),
+                                 BinaryCrossEntropy::make(output2, label2)};
 
-  auto model = model::Model::make({input, tokens}, {output1, output2}, losses);
+  auto model = Model::make({input, tokens}, {output1, output2}, losses);
 
   return model;
 }
 
-train::metrics::InputMetrics makeMetrics(const model::ModelPtr& model) {
-  return {{"acc1", std::make_shared<train::metrics::CategoricalAccuracy>(
+metrics::InputMetrics makeMetrics(const ModelPtr& model) {
+  return {{"acc1", std::make_shared<metrics::CategoricalAccuracy>(
                        model->outputs()[0], model->labels()[0])},
-          {"acc2", std::make_shared<train::metrics::CategoricalAccuracy>(
+          {"acc2", std::make_shared<metrics::CategoricalAccuracy>(
                        model->outputs()[1], model->labels()[1])}};
 }
 
@@ -116,7 +115,7 @@ TEST(ProtobufSerializationTests, ModelSummariesMatch) {
   auto model1 = buildModel();
 
   auto binary = model1->serializeProto(true);
-  auto model2 = model::Model::deserializeProto(binary);
+  auto model2 = Model::deserializeProto(binary);
 
   auto summary1 = model1->summary(false);
   auto summary2 = model2->summary(false);
@@ -125,8 +124,8 @@ TEST(ProtobufSerializationTests, ModelSummariesMatch) {
 }
 
 void checkOutputsAndGradientsMatchAfterSerialization(
-    const model::ModelPtr& model, const train::LabeledDataset& data) {
-  auto model_copy = model::Model::deserializeProto(model->serializeProto(true));
+    const ModelPtr& model, const LabeledDataset& data) {
+  auto model_copy = Model::deserializeProto(model->serializeProto(true));
 
   for (size_t batch_idx = 0; batch_idx < data.first.size(); batch_idx++) {
     model->trainOnBatch(data.first[batch_idx], data.second[batch_idx]);
@@ -169,7 +168,7 @@ TEST(ProtobufSerializationTests, ModelOutputsMatch) {
 
   auto data = getDataset();
 
-  train::Trainer trainer1(model1);
+  Trainer trainer1(model1);
 
   auto accs1 = trainer1.train(data, 0.003, 5, {}, data, makeMetrics(model1));
 
@@ -178,9 +177,9 @@ TEST(ProtobufSerializationTests, ModelOutputsMatch) {
 
   checkOutputsAndGradientsMatchAfterSerialization(model1, data);
 
-  auto model2 = model::Model::deserializeProto(model1->serializeProto(true));
+  auto model2 = Model::deserializeProto(model1->serializeProto(true));
 
-  train::Trainer trainer2(model2);
+  Trainer trainer2(model2);
 
   auto accs2 = trainer2.train(data, 0.003, 5, {}, data, makeMetrics(model2));
 
@@ -188,4 +187,4 @@ TEST(ProtobufSerializationTests, ModelOutputsMatch) {
   ASSERT_GE(accs2.at("acc2").back(), 0.9);
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

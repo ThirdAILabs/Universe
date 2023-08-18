@@ -6,7 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 MachNeuronIndex::MachNeuronIndex(dataset::mach::MachIndexPtr mach_index)
     : _mach_index(std::move(mach_index)) {}
@@ -55,6 +55,7 @@ void MachNeuronIndex::serialize(Archive& archive) {
   archive(cereal::base_class<NeuronIndex>(this), _mach_index);
 }
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::MachNeuronIndex)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::MachNeuronIndex,
+                               "thirdai::bolt::nn::MachNeuronIndex")
