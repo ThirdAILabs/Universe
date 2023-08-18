@@ -47,7 +47,7 @@ void CosineSimilarity::forward(const ComputationList& inputs, TensorPtr& output,
       out.activations[0] = 1 / (1 + std::exp(-sim));
       break;
     case ClippingMode::LinearScaling:
-      out.activations[0] = 2 * (1 + sim);
+      out.activations[0] = 0.5 * (1 + sim);
       break;
   }
 }
