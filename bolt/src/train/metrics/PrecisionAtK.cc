@@ -1,9 +1,9 @@
 #include "PrecisionAtK.h"
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
-PrecisionAtK::PrecisionAtK(nn::autograd::ComputationPtr outputs,
-                           nn::autograd::ComputationPtr labels, uint32_t k)
+PrecisionAtK::PrecisionAtK(ComputationPtr outputs, ComputationPtr labels,
+                           uint32_t k)
     : _outputs(std::move(outputs)),
       _labels(std::move(labels)),
       _num_correct_predicted(0),
@@ -31,4 +31,4 @@ float PrecisionAtK::worst() const { return 0.0; }
 
 bool PrecisionAtK::betterThan(float a, float b) const { return a > b; }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

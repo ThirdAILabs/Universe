@@ -39,10 +39,9 @@ class Loader {
         verbose, shuffle_buffer_size, shuffle_seed);
   }
 
-  std::optional<bolt::train::LabeledDataset> next(
-      size_t max_batches = NO_LIMIT);
+  std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
-  bolt::train::LabeledDataset all();
+  bolt::LabeledDataset all();
 
   void restart();
 
@@ -58,7 +57,7 @@ class Loader {
 
   void logLoadStart() const;
 
-  void logLoadEnd(size_t vectors, size_t batches, int64_t time) const;
+  void logLoadEnd(size_t vectors, size_t batches, double time) const;
 
   ColumnMapIterator _data_iterator;
   TransformationPtr _transformation;

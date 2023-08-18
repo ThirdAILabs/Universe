@@ -539,7 +539,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
   _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ true);
 }
 
-void FullyConnectedLayer::setNeuronIndex(nn::NeuronIndexPtr index) {
+void FullyConnectedLayer::setNeuronIndex(NeuronIndexPtr index) {
   _neuron_index = std::move(index);
   if (_neuron_index) {
     _neuron_index->buildIndex(_weights, _dim, /* use_new_seed= */ false);
@@ -658,7 +658,7 @@ void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_hash_tables,
 
 std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
 FullyConnectedLayer::getHashTable() {
-  if (auto index = nn::LshIndex::cast(_neuron_index)) {
+  if (auto index = LshIndex::cast(_neuron_index)) {
     return {index->hashFn(), index->hashTable()};
   }
 
@@ -691,7 +691,7 @@ void FullyConnectedLayer::setHashTable(
   }
 
   _neuron_index =
-      nn::LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
+      LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
 }
 
 void FullyConnectedLayer::initOptimizer() {

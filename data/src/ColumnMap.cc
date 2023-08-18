@@ -1,4 +1,5 @@
 #include "ColumnMap.h"
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -128,6 +129,14 @@ void ColumnMap::shuffle(uint32_t seed) {
   for (auto& [_, column] : _columns) {
     column->shuffle(permutation);
   }
+}
+
+ColumnMap ColumnMap::permute(const std::vector<size_t>& permutation) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (auto [name, column] : _columns) {
+    new_columns[name] = column->permute(permutation);
+  }
+  return ColumnMap(std::move(new_columns));
 }
 
 ColumnMap ColumnMap::concat(ColumnMap& other) {

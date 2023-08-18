@@ -3,19 +3,18 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class Concatenate final : public Op,
                           public std::enable_shared_from_this<Concatenate> {
  public:
   static std::shared_ptr<Concatenate> make();
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final {
     (void)learning_rate;
@@ -24,7 +23,7 @@ class Concatenate final : public Op,
 
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final {}
@@ -35,10 +34,10 @@ class Concatenate final : public Op,
 
   std::vector<std::vector<float>*> parameters() final { return {}; };
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
-  autograd::ComputationPtr apply(const autograd::ComputationList& inputs);
+  ComputationPtr apply(const ComputationList& inputs);
 
  private:
   Concatenate();
@@ -53,4 +52,4 @@ class Concatenate final : public Op,
 
 using ConcatenatePtr = std::shared_ptr<Concatenate>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

@@ -8,7 +8,7 @@
 #include <regex>
 #include <stdexcept>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
 void Metric::incrementAtomicFloat(std::atomic<float>& value, float increment) {
   float curr_val = value.load(std::memory_order_relaxed);
@@ -57,7 +57,7 @@ void MetricCollection::reset() {
   }
 }
 
-InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+InputMetrics fromMetricNames(const ModelPtr& model,
                              const std::vector<std::string>& metric_names,
                              const std::string& prefix) {
   if (model->losses().size() != 1 ||
@@ -68,9 +68,9 @@ InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
         "loss function which is applied to a single output/label.");
   }
 
-  nn::autograd::ComputationPtr output = model->outputs().front();
-  nn::autograd::ComputationPtr labels = model->labels().front();
-  nn::loss::LossPtr loss = model->losses().front();
+  ComputationPtr output = model->outputs().front();
+  ComputationPtr labels = model->labels().front();
+  LossPtr loss = model->losses().front();
 
   InputMetrics metrics;
 
@@ -128,4 +128,4 @@ uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
   return true_positives;
 }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

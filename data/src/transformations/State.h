@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
 #include <stdexcept>
@@ -54,6 +55,8 @@ class State {
   explicit State(MachIndexPtr mach_index)
       : _mach_index(std::move(mach_index)) {}
 
+  explicit State(automl::data::GraphInfoPtr graph) : _graph(std::move(graph)) {}
+
   State() {}
 
   const auto& machIndex() const {
@@ -95,12 +98,22 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  const auto& graph() const {
+    if (!_graph) {
+      throw std::invalid_argument(
+          "Transformation state does not contain Graph object.");
+    }
+    return _graph;
+  }
+
  private:
   MachIndexPtr _mach_index = nullptr;
 
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
+
+  automl::data::GraphInfoPtr _graph;
 
   friend class cereal::access;
   template <class Archive>

@@ -1,11 +1,10 @@
 #include "FMeasure.h"
 #include <bolt/src/train/metrics/Metric.h>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
-FMeasure::FMeasure(nn::autograd::ComputationPtr outputs,
-                   nn::autograd::ComputationPtr labels, float threshold,
-                   float beta)
+FMeasure::FMeasure(ComputationPtr outputs, ComputationPtr labels,
+                   float threshold, float beta)
     : _outputs(std::move(outputs)),
       _labels(std::move(labels)),
       _threshold(threshold),
@@ -69,4 +68,4 @@ float FMeasure::worst() const { return 0; }
 
 bool FMeasure::betterThan(float a, float b) const { return a > b; }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics
