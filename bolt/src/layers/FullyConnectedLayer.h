@@ -140,7 +140,7 @@ class FullyConnectedLayer final {
 
   void buildSamplingSummary(std::ostream& summary) const;
 
-  void initOptimizer(const std::optional<std::string>& grad_clip);
+  void initOptimizer();
 
   ~FullyConnectedLayer() = default;
 
@@ -155,6 +155,7 @@ class FullyConnectedLayer final {
 
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+  std::optional<std::string> _grad_clip;
 
   NeuronIndexPtr _neuron_index;
   bool _index_frozen = false;
@@ -268,7 +269,7 @@ class FullyConnectedLayer final {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
             _disable_sparse_parameter_updates, _should_save_optimizer,
-            _use_bias);
+            _use_bias, _grad_clip);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
@@ -294,7 +295,7 @@ class FullyConnectedLayer final {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
             _disable_sparse_parameter_updates, _should_save_optimizer,
-            _use_bias);
+            _use_bias, _grad_clip);
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }

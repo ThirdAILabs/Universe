@@ -30,14 +30,13 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0),
-      _grad_clip(std::move(grad_clip)) {
+      _updates_since_reconstruct_hash_functions(0) {
   if (!sampling) {
     sampling = DWTASamplingConfig::autotune(dim, sparsity,
                                             /* experimental_autotune=*/false);
   }
   FullyConnectedLayerConfig config(dim, sparsity, activation,
-                                   std::move(sampling));
+                                   std::move(sampling), std::move(grad_clip));
 
   _kernel = std::make_shared<FullyConnectedLayer>(
       config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
@@ -257,7 +256,7 @@ template <class Archive>
 void FullyConnected::save(Archive& archive) const {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions, _grad_clip);
+          _updates_since_reconstruct_hash_functions);
 }
 
 template void FullyConnected::load(cereal::BinaryInputArchive&);
@@ -266,9 +265,9 @@ template <class Archive>
 void FullyConnected::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions, _grad_clip);
+          _updates_since_reconstruct_hash_functions);
 
-  _kernel->initOptimizer(_grad_clip);
+  _kernel->initOptimizer();
 }
 
 }  // namespace thirdai::bolt

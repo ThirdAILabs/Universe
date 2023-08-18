@@ -28,6 +28,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
+      _grad_clip(config.getGradClip()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
       _use_bias(use_bias),
@@ -49,7 +50,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     buildHashTables();
   }
 
-  initOptimizer(config.getGradClip());
+  initOptimizer();
 
   initActiveNeuronsTrackers();
 }
@@ -696,11 +697,10 @@ void FullyConnectedLayer::setHashTable(
       LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
 }
 
-void FullyConnectedLayer::initOptimizer(
-    const std::optional<std::string>& grad_clip) {
+void FullyConnectedLayer::initOptimizer() {
   if (!_weight_optimizer || !_bias_optimizer) {
-    _weight_optimizer = AdamOptimizer(_dim * _prev_dim, grad_clip);
-    _bias_optimizer = AdamOptimizer(_dim, grad_clip);
+    _weight_optimizer = AdamOptimizer(_dim * _prev_dim, _grad_clip);
+    _bias_optimizer = AdamOptimizer(_dim, _grad_clip);
   }
 }
 
