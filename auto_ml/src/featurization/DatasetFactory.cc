@@ -11,7 +11,7 @@ namespace thirdai::automl {
 
 DatasetFactory::DatasetFactory(
     data::ColumnDataTypes data_types,
-    const data::TemporalRelationships& temporal_relationship,
+    const data::TemporalRelationships& temporal_relationships,
     const std::string& label_column,
     thirdai::data::TransformationPtr label_transform,
     thirdai::data::IndexValueColumnList bolt_label_columns,
@@ -21,15 +21,15 @@ DatasetFactory::DatasetFactory(
       _delimiter(options.delimiter),
       _state(std::make_shared<thirdai::data::State>()) {
   std::tie(_input_transform, _bolt_input_columns) =
-      inputTransformations(data_types, label_column, temporal_relationship,
+      inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ true);
 
   _input_transform_non_updating =
-      inputTransformations(data_types, label_column, temporal_relationship,
+      inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ false)
           .first;
 
-  if (data_types.size() == 2 && temporal_relationship.empty()) {
+  if (data_types.size() == 2 && temporal_relationships.empty()) {
     data_types.erase(label_column);
     if (data::asText(data_types.begin()->second)) {
       _text_dataset =
@@ -84,7 +84,7 @@ thirdai::data::LoaderPtr DatasetFactory::getDataLoaderHelper(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-TensorList DatasetFactory::featurizeInput(const MapInput& sample) {
+bolt::TensorList DatasetFactory::featurizeInput(const MapInput& sample) {
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
 
   columns = _input_transform_non_updating->apply(columns, *_state);
@@ -92,7 +92,8 @@ TensorList DatasetFactory::featurizeInput(const MapInput& sample) {
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
 
-TensorList DatasetFactory::featurizeInputBatch(const MapInputBatch& samples) {
+bolt::TensorList DatasetFactory::featurizeInputBatch(
+    const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform_non_updating->apply(columns, *_state);
@@ -100,7 +101,7 @@ TensorList DatasetFactory::featurizeInputBatch(const MapInputBatch& samples) {
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
 
-TensorList DatasetFactory::featurizeInputColdStart(
+bolt::TensorList DatasetFactory::featurizeInputColdStart(
     MapInput sample, const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
   auto cold_start = coldStartTransform(strong_column_names, weak_column_names);
@@ -118,8 +119,8 @@ TensorList DatasetFactory::featurizeInputColdStart(
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
 
-std::pair<TensorList, TensorList> DatasetFactory::featurizeTrainingBatch(
-    const MapInputBatch& samples) {
+std::pair<bolt::TensorList, bolt::TensorList>
+DatasetFactory::featurizeTrainingBatch(const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(columns, *_state);

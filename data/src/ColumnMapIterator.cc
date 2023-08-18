@@ -2,6 +2,8 @@
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <exception>
+#include <limits>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -16,6 +18,20 @@ ColumnMapIterator::ColumnMapIterator(DataSourcePtr data_source, char delimiter,
     throw std::invalid_argument("DataSource was found to be empty.");
   }
   _column_names = dataset::parsers::CSV::parseLine(*header, _delimiter);
+}
+
+ColumnMap ColumnMapIterator::all(DataSourcePtr data_source, char delimiter) {
+  ColumnMapIterator data_iter(std::move(data_source), delimiter,
+                              std::numeric_limits<size_t>::max());
+
+  auto data = data_iter.next();
+
+  if (!data) {
+    throw std::invalid_argument("Unable to load data from '" +
+                                data_iter.resourceName() + "'.");
+  }
+
+  return *data;
 }
 
 std::optional<ColumnMap> ColumnMapIterator::next() {

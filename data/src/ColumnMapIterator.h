@@ -12,6 +12,8 @@ class ColumnMapIterator {
   ColumnMapIterator(DataSourcePtr data_source, char delimiter,
                     size_t rows_per_load = 10000);
 
+  static ColumnMap all(DataSourcePtr data_source, char delimiter);
+
   std::optional<ColumnMap> next();
 
   void restart();

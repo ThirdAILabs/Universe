@@ -25,12 +25,10 @@ class TextDatasetConfig {
   std::string _label_column;
 };
 
-using bolt::nn::tensor::TensorList;
-
 class DatasetFactory {
  public:
   DatasetFactory(data::ColumnDataTypes data_types,
-                 const data::TemporalRelationships& temporal_relationship,
+                 const data::TemporalRelationships& temporal_relationships,
                  const std::string& label_column,
                  thirdai::data::TransformationPtr label_transform,
                  thirdai::data::IndexValueColumnList bolt_label_columns,
@@ -50,18 +48,18 @@ class DatasetFactory {
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
-  TensorList featurizeInput(const MapInput& sample);
+  bolt::TensorList featurizeInput(const MapInput& sample);
 
-  TensorList featurizeInputBatch(const MapInputBatch& samples);
+  bolt::TensorList featurizeInputBatch(const MapInputBatch& samples);
 
-  TensorList featurizeInputColdStart(
+  bolt::TensorList featurizeInputColdStart(
       MapInput sample, const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
-  std::pair<TensorList, TensorList> featurizeTrainingBatch(
+  std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
       const MapInputBatch& samples);
 
- private:
+ protected:
   thirdai::data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose, dataset::DatasetShuffleConfig shuffle_config,
