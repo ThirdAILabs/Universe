@@ -452,14 +452,11 @@ class Extracted(Document):
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
-        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        # Remove filename attribute because this is a deprecated attribute for Extracted
         if "filename" in state:
             del state["filename"]
 
-        # In older versions of neural_db, we accidentally stored Path objects in the df
+        # In older versions of neural_db, we accidentally stored Path objects in the df.
         # This changes those objects to a string, because PosixPath can't be loaded in Windows
         def path_to_str(element):
             if isinstance(element, Path):
@@ -467,6 +464,9 @@ class Extracted(Document):
             return element
 
         state["df"] = state["df"].applymap(path_to_str)
+
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
 
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
