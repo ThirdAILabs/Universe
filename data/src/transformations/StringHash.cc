@@ -35,15 +35,15 @@ uint32_t StringHash::hash(const std::string& str) const {
 }
 
 void StringHash::buildExplanationMap(const ColumnMap& input, State& state,
-                                     ExplanationMap& explainations) const {
+                                     ExplanationMap& explanations) const {
   (void)state;
 
   const auto& str =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  explainations.store(_output_column_name, hash(str),
-                      "item '" + str + "' from " +
-                          explainations.explain(_input_column_name, str));
+  explanations.store(_output_column_name, hash(str),
+                     "item '" + str + "' from " +
+                         explanations.explain(_input_column_name, str));
 }
 
 }  // namespace thirdai::data

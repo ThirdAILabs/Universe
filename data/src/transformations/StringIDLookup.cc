@@ -60,7 +60,7 @@ ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
 }
 
 void StringIDLookup::buildExplanationMap(const ColumnMap& input, State& state,
-                                         ExplanationMap& explainations) const {
+                                         ExplanationMap& explanations) const {
   const auto& str_input =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
@@ -69,16 +69,15 @@ void StringIDLookup::buildExplanationMap(const ColumnMap& input, State& state,
   if (_delimiter) {
     auto items = parseLine(str_input, *_delimiter);
     for (const auto& item : items) {
-      explainations.store(
+      explanations.store(
           _output_column_name, vocab->getUid(item),
           "item '" + item + "' from " +
-              explainations.explain(_input_column_name, str_input));
+              explanations.explain(_input_column_name, str_input));
     }
   } else {
-    explainations.store(
-        _output_column_name, vocab->getUid(str_input),
-        "item '" + str_input + "' from " +
-            explainations.explain(_input_column_name, str_input));
+    explanations.store(_output_column_name, vocab->getUid(str_input),
+                       "item '" + str_input + "' from " +
+                           explanations.explain(_input_column_name, str_input));
   }
 }
 

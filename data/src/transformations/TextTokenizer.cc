@@ -49,7 +49,7 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
 }
 
 void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
-                                        ExplanationMap& explainations) const {
+                                        ExplanationMap& explanations) const {
   (void)state;
 
   const std::string& text =
@@ -63,9 +63,9 @@ void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
     uint32_t token = _encoder->undoEncoding(tokens, index, _dim);
     auto word = _tokenizer->getResponsibleWord(text, token);
 
-    explainations.store(_output_column, index,
-                        "word '" + word + "' from " +
-                            explainations.explain(_input_column, text));
+    explanations.store(_output_column, index,
+                       "word '" + word + "' from " +
+                           explanations.explain(_input_column, text));
   }
 }
 

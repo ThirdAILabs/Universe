@@ -24,7 +24,7 @@ class FeatureHash final : public Transformation {
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
-                           ExplanationMap& explainations) const final;
+                           ExplanationMap& explanations) const final;
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {

@@ -8,6 +8,11 @@
 namespace thirdai::data {
 
 ExplanationMap::ExplanationMap(const ColumnMap& column_map) {
+  if (column_map.numRows() != 1) {
+    throw std::invalid_argument(
+        "ExplanationMap can only be constructed from column maps with a single "
+        "row.");
+  }
   for (const auto& [name, column] : column_map) {
     std::string from_column = " from column '" + name + "'";
     if (auto token_array_col = ArrayColumnBase<uint32_t>::cast(column)) {

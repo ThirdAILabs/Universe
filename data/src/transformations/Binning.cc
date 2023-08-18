@@ -46,15 +46,15 @@ std::optional<uint32_t> BinningTransformation::getBin(float value) const {
 }
 
 void BinningTransformation::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
   (void)state;
 
   float value = input.getValueColumn<float>(_input_column_name)->value(0);
   uint32_t bin = getBin(value).value();
 
-  explainations.store(
+  explanations.store(
       _output_column_name, bin,
-      explainations.explain(_input_column_name, /* feature_index= */ 0));
+      explanations.explain(_input_column_name, /* feature_index= */ 0));
 }
 
 }  // namespace thirdai::data

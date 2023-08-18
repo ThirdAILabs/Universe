@@ -29,7 +29,9 @@ void compareAllExplanations(const ExplanationMap& explanations,
 }
 
 TEST(ExplanationTests, Binning) {
-  BinningTransformation binning("aaa", "bbb", 10, 20, 10);
+  BinningTransformation binning("aaa", "bbb", /* inclusive_min_value= */ 10,
+                                /* exclusive_max_value= */ 20,
+                                /* num_bins= */ 10);
 
   ColumnMap columns({{"aaa", ValueColumn<float>::make({14.7})}});
 
@@ -85,11 +87,13 @@ TEST(ExplanationTests, FeatureHash) {
 
 TEST(ExplanationTests, StringCast) {
   TransformationList casts({
-      std::make_shared<StringToToken>("a", "aa", std::nullopt),
+      std::make_shared<StringToToken>("a", "aa", /* dim= */ std::nullopt),
       std::make_shared<StringToDecimal>("b", "bb"),
-      std::make_shared<StringToTimestamp>("c", "cc", "%Y-%m-%d"),
-      std::make_shared<StringToTokenArray>("d", "dd", ',', std::nullopt),
-      std::make_shared<StringToDecimalArray>("e", "ee", ',', std::nullopt),
+      std::make_shared<StringToTimestamp>("c", "cc", /* format= */ "%Y-%m-%d"),
+      std::make_shared<StringToTokenArray>("d", "dd", /* delimiter= */ ',',
+                                           /* dim= */ std::nullopt),
+      std::make_shared<StringToDecimalArray>("e", "ee", /* delimiter= */ ',',
+                                             /* dim= */ std::nullopt),
   });
 
   ColumnMap columns({
@@ -123,28 +127,30 @@ TEST(ExplanationTests, StringHash) {
   ColumnMap columns({{"aaa", ValueColumn<std::string>::make({"some str"})}});
 
   State state;
-  auto explainations = string_hash.explain(columns, state);
+  auto explanations = string_hash.explain(columns, state);
 
   auto output = string_hash.apply(columns, state);
 
   uint32_t feature = output.getValueColumn<uint32_t>("bbb")->value(0);
 
-  ASSERT_EQ(explainations.explain("bbb", feature),
+  ASSERT_EQ(explanations.explain("bbb", feature),
             "item 'some str' from column 'aaa'");
 }
 
 TEST(ExplanationTests, StringIDLookup) {
-  StringIDLookup string_lookup("aaa", "bbb", "vocab", std::nullopt, ';');
+  StringIDLookup string_lookup("aaa", "bbb", "vocab",
+                               /* max_vocab_size= */ std::nullopt,
+                               /* delimiter= */ ';');
 
   ColumnMap columns({{"aaa", ValueColumn<std::string>::make({"x;y;z"})}});
 
   State state;
   string_lookup.apply(columns, state);  // To create the IDs.
-  auto explainations = string_lookup.explain(columns, state);
+  auto explanations = string_lookup.explain(columns, state);
 
-  ASSERT_EQ(explainations.explain("bbb", 0), "item 'x' from column 'aaa'");
-  ASSERT_EQ(explainations.explain("bbb", 1), "item 'y' from column 'aaa'");
-  ASSERT_EQ(explainations.explain("bbb", 2), "item 'z' from column 'aaa'");
+  ASSERT_EQ(explanations.explain("bbb", 0), "item 'x' from column 'aaa'");
+  ASSERT_EQ(explanations.explain("bbb", 1), "item 'y' from column 'aaa'");
+  ASSERT_EQ(explanations.explain("bbb", 2), "item 'z' from column 'aaa'");
 }
 
 TEST(ExplanationTests, TextTokenizer) {
@@ -154,13 +160,13 @@ TEST(ExplanationTests, TextTokenizer) {
   ColumnMap columns({{"a", ValueColumn<std::string>::make({"the tree grew"})}});
 
   State state;
-  auto explainations = tokenizer.explain(columns, state);
+  auto explanations = tokenizer.explain(columns, state);
 
   std::set<std::string> expected_msgs = {"word 'the' from column 'a'",
                                          "word 'tree' from column 'a'",
                                          "word 'grew' from column 'a'"};
 
-  compareAllExplanations(explainations, "b", expected_msgs);
+  compareAllExplanations(explanations, "b", expected_msgs);
 }
 
 TEST(ExplanationTests, ComposedTransformations) {
@@ -169,14 +175,21 @@ TEST(ExplanationTests, ComposedTransformations) {
                                       dataset::NaiveSplitTokenizer::make(),
                                       dataset::NGramEncoder::make(1)),
       std::make_shared<StringToDecimal>("b", "b_cast"),
-      std::make_shared<BinningTransformation>("b_cast", "b_binned", 10, 20, 10),
-      std::make_shared<BinningTransformation>("c", "c_binned", 5, 10, 5),
+      std::make_shared<BinningTransformation>("b_cast", "b_binned",
+                                              /* inclusive_min_value= */ 10,
+                                              /* exlusive_max_value= */ 20,
+                                              /* num_bins= */ 10),
+      std::make_shared<BinningTransformation>("c", "c_binned",
+                                              /* inclusive_min_value= */ 5,
+                                              /* exlusive_max_value= */ 10,
+                                              /* num_bins= */ 5),
       std::make_shared<StringHash>("d", "hash"),
-      std::make_shared<StringToTokenArray>("e", "tokens", ',', std::nullopt),
+      std::make_shared<StringToTokenArray>("e", "tokens", /* delimiter= */ ',',
+                                           /* dim= */ std::nullopt),
       std::make_shared<FeatureHash>(
           std::vector<std::string>{"words", "b_binned", "c_binned", "hash",
                                    "tokens"},
-          "indices", "values", 100000),
+          "indices", "values", /* hash_range= */ 100000),
   });
 
   ColumnMap columns({

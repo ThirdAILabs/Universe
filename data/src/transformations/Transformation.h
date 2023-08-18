@@ -38,10 +38,10 @@ class Transformation {
   virtual ~Transformation() = default;
 
   virtual void buildExplanationMap(const ColumnMap& input, State& state,
-                                   ExplanationMap& explainations) const {
+                                   ExplanationMap& explanations) const {
     (void)input;
     (void)state;
-    (void)explainations;
+    (void)explanations;
     throw std::runtime_error("RCA is not supported for this transformation.");
   }
 

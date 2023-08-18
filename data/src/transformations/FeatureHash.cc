@@ -67,10 +67,10 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
 }
 
 void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
-                                      ExplanationMap& explainations) const {
+                                      ExplanationMap& explanations) const {
   (void)state;
 
-  std::unordered_map<size_t, std::string> feature_explainations;
+  std::unordered_map<size_t, std::string> feature_explanations;
 
   for (const auto& name : _input_columns) {
     auto column = input.getColumn(name);
@@ -82,11 +82,14 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
         for (uint32_t token : token_arrays->row(i)) {
           uint32_t feature = hash(token, column_salt);
 
-          if (feature_explainations.count(feature)) {
-            feature_explainations[feature] +=
-                " " + explainations.explain(name, token);
+          // Concatenate the explanations for the features if there are hash
+          // colisions, since the output feature comes from both of the input
+          // features.
+          if (feature_explanations.count(feature)) {
+            feature_explanations[feature] +=
+                " " + explanations.explain(name, token);
           } else {
-            feature_explainations[feature] = explainations.explain(name, token);
+            feature_explanations[feature] = explanations.explain(name, token);
           }
         }
       }
@@ -96,12 +99,15 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
         for (size_t feature_idx = 0; feature_idx < row_len; feature_idx++) {
           uint32_t feature = hash(feature_idx, column_salt);
 
-          if (feature_explainations.count(feature)) {
-            feature_explainations[feature] +=
-                " " + explainations.explain(name, feature_idx);
+          // Concatenate the explanations for the features if there are hash
+          // colisions, since the output feature comes from both of the input
+          // features.
+          if (feature_explanations.count(feature)) {
+            feature_explanations[feature] +=
+                " " + explanations.explain(name, feature_idx);
           } else {
-            feature_explainations[feature] =
-                explainations.explain(name, feature_idx);
+            feature_explanations[feature] =
+                explanations.explain(name, feature_idx);
           }
         }
       }
@@ -112,8 +118,8 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
     }
   }
 
-  for (const auto& [feature, explaination] : feature_explainations) {
-    explainations.store(_output_indices_column, feature, explaination);
+  for (const auto& [feature, explanation] : feature_explanations) {
+    explanations.store(_output_indices_column, feature, explanation);
   }
 }
 

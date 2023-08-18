@@ -76,7 +76,7 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
 }
 
 void Date::buildExplanationMap(const ColumnMap& input, State& state,
-                               ExplanationMap& explainations) const {
+                               ExplanationMap& explanation) const {
   (void)state;
 
   auto output = apply(input, state);
@@ -89,22 +89,22 @@ void Date::buildExplanationMap(const ColumnMap& input, State& state,
   auto date_attributes =
       output.getArrayColumn<uint32_t>(_output_column_name)->row(0);
 
-  std::string origin = explainations.explain(_input_column_name, time_str);
+  std::string origin = explanation.explain(_input_column_name, time_str);
 
-  explainations.store(_output_column_name, date_attributes[0],
+  explanation.store(_output_column_name, date_attributes[0],
                       "day of the week = " + std::to_string(dayOfWeek(time)) +
                           " from " + origin);
 
-  explainations.store(_output_column_name, date_attributes[1],
+  explanation.store(_output_column_name, date_attributes[1],
                       "month of the year = " + std::to_string(time.month()) +
                           " from " + origin);
 
-  explainations.store(
+  explanation.store(
       _output_column_name, date_attributes[2],
       "week of the month = " + std::to_string(weekOfMonth(time)) + " from " +
           origin);
 
-  explainations.store(_output_column_name, date_attributes[3],
+  explanation.store(_output_column_name, date_attributes[3],
                       "week of the year = " + std::to_string(weekOfYear(time)) +
                           " from " + origin);
 }

@@ -101,46 +101,46 @@ ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
 
 template <>
 void CastToValue<uint32_t>::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
   (void)state;
 
   const std::string& value =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  std::string explaination = "token " + value + " from " +
-                             explainations.explain(_input_column_name, value);
+  std::string explanation = "token " + value + " from " +
+                            explanations.explain(_input_column_name, value);
 
-  explainations.store(_output_column_name, parse(value), explaination);
+  explanations.store(_output_column_name, parse(value), explanation);
 }
 
 template <>
 void CastToValue<float>::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
   (void)state;
 
   const std::string& value =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  std::string explaination = "decimal " + value + " from " +
-                             explainations.explain(_input_column_name, value);
+  std::string explanation = "decimal " + value + " from " +
+                            explanations.explain(_input_column_name, value);
 
-  explainations.store(_output_column_name,
-                      /* feature_index = */ 0, explaination);
+  explanations.store(_output_column_name,
+                     /* feature_index = */ 0, explanation);
 }
 
 template <>
 void CastToValue<int64_t>::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
   (void)state;
 
   const std::string& value =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
-  std::string explaination = "timestamp " + value + " from " +
-                             explainations.explain(_input_column_name, value);
+  std::string explanation = "timestamp " + value + " from " +
+                            explanations.explain(_input_column_name, value);
 
-  explainations.store(_output_column_name,
-                      /* feature_index = */ 0, explaination);
+  explanations.store(_output_column_name,
+                     /* feature_index = */ 0, explanation);
 }
 
 template <typename T>
@@ -221,24 +221,24 @@ ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
 
 template <>
 void CastToArray<uint32_t>::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
   (void)state;
 
   std::string input_str =
       input.getValueColumn<std::string>(_input_column_name)->value(0);
 
   for (const auto& item : text::split(input_str, _delimiter)) {
-    std::string explaination =
+    std::string explanation =
         "token " + item + " from " +
-        explainations.explain(_input_column_name, input_str);
+        explanations.explain(_input_column_name, input_str);
 
-    explainations.store(_output_column_name, parse(item), explaination);
+    explanations.store(_output_column_name, parse(item), explanation);
   }
 }
 
 template <>
 void CastToArray<float>::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explainations) const {
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
   (void)state;
 
   std::string input_str =
@@ -246,11 +246,11 @@ void CastToArray<float>::buildExplanationMap(
 
   size_t index = 0;
   for (const auto& item : text::split(input_str, _delimiter)) {
-    std::string explaination =
+    std::string explanation =
         "decimal " + item + " from " +
-        explainations.explain(_input_column_name, input_str);
+        explanations.explain(_input_column_name, input_str);
 
-    explainations.store(_output_column_name, index++, explaination);
+    explanations.store(_output_column_name, index++, explanation);
   }
 }
 

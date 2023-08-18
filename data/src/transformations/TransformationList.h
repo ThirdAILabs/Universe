@@ -29,7 +29,7 @@ class TransformationList final : public Transformation {
   }
 
   void buildExplanationMap(const ColumnMap& input, State& state,
-                           ExplanationMap& explainations) const final;
+                           ExplanationMap& explanations) const final;
 
   void save(const std::string& filename) const;
 
