@@ -5,6 +5,7 @@
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/utils/CsvParser.h>
+#include <string>
 
 namespace thirdai::data {
 
@@ -53,6 +54,18 @@ uint32_t StringHash::hash(const std::string& str) const {
     return hash % *_output_range;
   }
   return hash;
+}
+
+void StringHash::buildExplanationMap(const ColumnMap& input, State& state,
+                                     ExplanationMap& explanations) const {
+  (void)state;
+
+  const auto& str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  explanations.store(_output_column_name, hash(str),
+                     "item '" + str + "' from " +
+                         explanations.explain(_input_column_name, str));
 }
 
 }  // namespace thirdai::data

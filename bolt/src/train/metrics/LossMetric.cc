@@ -1,9 +1,9 @@
 #include "LossMetric.h"
 #include <limits>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
-LossMetric::LossMetric(nn::loss::LossPtr loss_fn)
+LossMetric::LossMetric(LossPtr loss_fn)
     : _loss_fn(std::move(loss_fn)), _loss(0), _num_samples(0) {}
 
 void LossMetric::record(uint32_t index_in_batch) {
@@ -24,4 +24,4 @@ float LossMetric::worst() const { return std::numeric_limits<float>::max(); }
 
 bool LossMetric::betterThan(float a, float b) const { return a < b; }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

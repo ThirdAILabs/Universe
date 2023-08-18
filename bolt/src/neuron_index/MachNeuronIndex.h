@@ -7,7 +7,7 @@
 #include <random>
 #include <vector>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 class MachNeuronIndex final : public NeuronIndex {
  public:
@@ -47,4 +47,4 @@ class MachNeuronIndex final : public NeuronIndex {
   void serialize(Archive& archive);
 };
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt

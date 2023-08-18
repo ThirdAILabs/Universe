@@ -4,13 +4,13 @@
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <pybind11/pybind11.h>
 
-namespace thirdai::bolt::train::python {
+namespace thirdai::bolt::python {
 
 class PyDistributedComm : public DistributedComm {
  public:
   PyDistributedComm() {}
 
-  void communicate(const bolt::nn::model::ModelPtr& model) override {
+  void communicate(const ModelPtr& model) override {
     PYBIND11_OVERRIDE_PURE_NAME(void,            /* Return type */
                                 DistributedComm, /* Parent class */
                                 "communicate",   /* Name of Python function */
@@ -29,4 +29,4 @@ class PyDistributedComm : public DistributedComm {
   }
 };
 
-}  // namespace thirdai::bolt::train::python
+}  // namespace thirdai::bolt::python

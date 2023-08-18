@@ -89,15 +89,12 @@ class NeuralDB:
         self,
         user_id: str = "user",
         savable_state: State = None,
-        model_config: str = None,
         **kwargs,
     ) -> None:
         self._user_id: str = user_id
         if savable_state == None:
             self._savable_state: State = State(
-                model=Mach(
-                    id_col="id", query_col="query", model_config=model_config, **kwargs
-                ),
+                model=Mach(id_col="id", query_col="query", **kwargs),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
             )
         else:

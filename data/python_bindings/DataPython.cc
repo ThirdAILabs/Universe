@@ -274,9 +274,10 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
       transformations_submodule, "StringHash")
       .def(py::init<std::string, std::string, std::optional<uint32_t>,
-                    uint32_t>(),
+                    std::optional<char>, uint32_t>(),
            py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
+           py::arg("output_range") = std::nullopt,
+           py::arg("delimiter") = std::nullopt, py::arg("seed") = 42);
 
   py::class_<CrossColumnPairgrams, Transformation,
              std::shared_ptr<CrossColumnPairgrams>>(transformations_submodule,
