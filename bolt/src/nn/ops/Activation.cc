@@ -135,6 +135,7 @@ proto::bolt::Op* Activation<Impl>::toProto(bool with_optimizer) const {
   (void)with_optimizer;
 
   proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
 
   auto* activation = op->mutable_activation();
   activation->set_activation(Impl::toProto());
