@@ -3,10 +3,9 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::rca {
+namespace thirdai::bolt::rca {
 
-tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
-                                       uint32_t dim) {
+TensorPtr createTensorWithGrad(const TensorList& inputs, uint32_t dim) {
   if (inputs.size() != 1 || inputs.at(0)->batchSize() != 1) {
     throw std::invalid_argument(
         "RCA is only supported for single inputs and batch size 1.");
@@ -14,10 +13,10 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
 
   const BoltVector& vector = inputs.at(0)->getVector(0);
 
-  tensor::TensorPtr tensor;
+  TensorPtr tensor;
   if (!vector.isDense()) {
-    tensor = tensor::Tensor::sparse(/* batch_size= */ 1, /* dim= */ dim,
-                                    /* nonzeros= */ vector.len);
+    tensor = Tensor::sparse(/* batch_size= */ 1, /* dim= */ dim,
+                            /* nonzeros= */ vector.len);
 
     for (uint32_t i = 0; i < vector.len; i++) {
       if (vector.active_neurons[i] >= dim) {
@@ -28,7 +27,7 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
       tensor->getVector(0).active_neurons[i] = vector.active_neurons[i];
     }
   } else {
-    tensor = tensor::Tensor::dense(/* batch_size= */ 1, /* dim= */ dim);
+    tensor = Tensor::dense(/* batch_size= */ 1, /* dim= */ dim);
   }
 
   std::copy(vector.activations, vector.activations + vector.len,
@@ -37,12 +36,11 @@ tensor::TensorPtr createTensorWithGrad(const tensor::TensorList& inputs,
   return tensor;
 }
 
-RCAGradients explainNeuronHelper(model::ModelPtr& model,
-                                 const tensor::TensorPtr& input,
+RCAGradients explainNeuronHelper(ModelPtr& model, const TensorPtr& input,
                                  uint32_t neuron) {
-  auto label = tensor::Tensor::sparse(/* batch_size= */ 1,
-                                      /* dim= */ model->labelDims().at(0),
-                                      /* nonzeros= */ 1);
+  auto label = Tensor::sparse(/* batch_size= */ 1,
+                              /* dim= */ model->labelDims().at(0),
+                              /* nonzeros= */ 1);
   label->getVector(0).active_neurons[0] = neuron;
   label->getVector(0).activations[0] = 1.0;
 
@@ -65,8 +63,7 @@ RCAGradients explainNeuronHelper(model::ModelPtr& model,
   return gradients;
 }
 
-RCAGradients explainPrediction(model::ModelPtr& model,
-                               const tensor::TensorList& input_vec) {
+RCAGradients explainPrediction(ModelPtr& model, const TensorList& input_vec) {
   if (model->inputDims().size() != 1 || model->outputs().size() != 1) {
     throw std::invalid_argument(
         "RCA is only supported for models with a single input and output.");
@@ -82,8 +79,7 @@ RCAGradients explainPrediction(model::ModelPtr& model,
   return explainNeuronHelper(model, input, prediction);
 }
 
-RCAGradients explainNeuron(model::ModelPtr& model,
-                           const tensor::TensorList& input_vec,
+RCAGradients explainNeuron(ModelPtr& model, const TensorList& input_vec,
                            uint32_t neuron) {
   if (model->inputDims().size() != 1 || model->outputs().size() != 1) {
     throw std::invalid_argument(
@@ -95,4 +91,4 @@ RCAGradients explainNeuron(model::ModelPtr& model,
   return explainNeuronHelper(model, input, neuron);
 }
 
-}  // namespace thirdai::bolt::nn::rca
+}  // namespace thirdai::bolt::rca

@@ -20,6 +20,9 @@ class CastToValue final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
  private:
   T parse(const std::string& row) const;
 
@@ -46,6 +49,9 @@ class CastToArray final : public Transformation {
               char delimiter, std::optional<size_t> dim);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
 
  private:
   T parse(const std::string& item) const;

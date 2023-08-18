@@ -366,7 +366,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
-            model_config=model_config,
+            model_config=self.model_config,
         )
 
     def forget_documents(self) -> None:
@@ -468,3 +468,9 @@ class Mach(Model):
             metrics=["hash_precision@5"],
             options=bolt.TrainOptions(),
         )
+
+    def __setstate__(self, state):
+        if "model_config" not in state:
+            # Add model_config field if an older model is being loaded.
+            state["model_config"] = None
+        self.__dict__.update(state)

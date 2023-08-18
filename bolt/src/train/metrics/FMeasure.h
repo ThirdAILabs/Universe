@@ -3,13 +3,12 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <atomic>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
 class FMeasure final : public Metric {
  public:
-  explicit FMeasure(nn::autograd::ComputationPtr outputs,
-                    nn::autograd::ComputationPtr labels, float threshold,
-                    float beta = 1);
+  explicit FMeasure(ComputationPtr outputs, ComputationPtr labels,
+                    float threshold, float beta = 1);
 
   void record(uint32_t index_in_batch) final;
 
@@ -22,8 +21,8 @@ class FMeasure final : public Metric {
   bool betterThan(float a, float b) const final;
 
  private:
-  nn::autograd::ComputationPtr _outputs;
-  nn::autograd::ComputationPtr _labels;
+  ComputationPtr _outputs;
+  ComputationPtr _labels;
 
   std::atomic_uint64_t _true_positives = 0;
   std::atomic_uint64_t _false_positives = 0;
@@ -33,4 +32,4 @@ class FMeasure final : public Metric {
   float _beta_squared;
 };
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

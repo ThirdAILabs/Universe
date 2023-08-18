@@ -7,7 +7,7 @@
 #include <optional>
 #include <string>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 TEST(ComputationScheduleTests, SingleOutput) {
   auto input = emptyInput();
@@ -21,9 +21,9 @@ TEST(ComputationScheduleTests, SingleOutput) {
 
   auto loss = MockLoss::make({comp_5});
 
-  auto model = model::Model::make(/* inputs= */ {input},
-                                  /* outputs= */ {comp_5},
-                                  /* losses= */ {loss});
+  auto model = Model::make(/* inputs= */ {input},
+                           /* outputs= */ {comp_5},
+                           /* losses= */ {loss});
 
   ASSERT_EQ(model->opExecutionOrder().size(), 5);
   uint32_t op_cnt = 0;
@@ -31,8 +31,8 @@ TEST(ComputationScheduleTests, SingleOutput) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++op_cnt));
   }
 
-  autograd::ComputationList expected_computation_order = {
-      input, comp_1, comp_2, comp_3, comp_4, comp_5};
+  ComputationList expected_computation_order = {input,  comp_1, comp_2,
+                                                comp_3, comp_4, comp_5};
 
   ASSERT_EQ(model->computationOrder().size(),
             expected_computation_order.size());
@@ -56,7 +56,7 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
 
   auto loss = MockLoss::make({comp_4, comp_7});
 
-  auto model = model::Model::make(
+  auto model = Model::make(
       /* inputs= */ {input_1, input_2, input_3},
       /* outputs= */ {comp_4, comp_7},
       /* losses= */ {loss});
@@ -73,9 +73,8 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
   // for the purpose of this test we know the order the MockLoss will return the
   // outputs in, and so we know which order they will be executed in, which
   // simplifies check correctness here.
-  autograd::ComputationList expected_order = {input_1, input_2, input_3, comp_1,
-                                              comp_2,  comp_3,  comp_5,  comp_6,
-                                              comp_4,  comp_7};
+  ComputationList expected_order = {input_1, input_2, input_3, comp_1, comp_2,
+                                    comp_3,  comp_5,  comp_6,  comp_4, comp_7};
 
   ASSERT_EQ(model->computationOrder().size(), expected_order.size());
 
@@ -107,7 +106,7 @@ TEST(ComputationScheduleTests, Recurrence) {
 
   auto loss = MockLoss::make({comp_5});
 
-  auto model = model::Model::make(
+  auto model = Model::make(
       /* inputs= */ {input_1, input_2, input_3, input_4, input_5},
       /* outputs= */ {comp_5}, /* losses= */ {loss});
 
@@ -118,7 +117,7 @@ TEST(ComputationScheduleTests, Recurrence) {
     ASSERT_EQ(model->opExecutionOrder()[i]->name(), op_order[i]);
   }
 
-  autograd::ComputationList expected_computation_order = {
+  ComputationList expected_computation_order = {
       input_1, input_2, input_3, input_4, input_5,
       comp_1,  comp_2,  comp_3,  comp_4,  comp_5};
 
@@ -127,6 +126,6 @@ TEST(ComputationScheduleTests, Recurrence) {
   for (uint32_t i = 0; i < expected_computation_order.size(); i++) {
     ASSERT_EQ(model->computationOrder()[i], expected_computation_order.at(i));
   }
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

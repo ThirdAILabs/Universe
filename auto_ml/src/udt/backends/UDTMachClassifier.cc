@@ -45,11 +45,11 @@
 
 namespace thirdai::automl::udt {
 
-using bolt::train::metrics::LossMetric;
-using bolt::train::metrics::MachPrecision;
-using bolt::train::metrics::MachRecall;
-using bolt::train::metrics::PrecisionAtK;
-using bolt::train::metrics::RecallAtK;
+using bolt::metrics::LossMetric;
+using bolt::metrics::MachPrecision;
+using bolt::metrics::MachRecall;
+using bolt::metrics::PrecisionAtK;
+using bolt::metrics::RecallAtK;
 
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -161,7 +161,7 @@ py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
@@ -381,7 +381,7 @@ py::object UDTMachClassifier::outputCorrectness(
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
-  bolt::nn::model::ModelPtr& curr_model = _classifier->model();
+  bolt::ModelPtr& curr_model = _classifier->model();
 
   utils::verifyCanSetModel(curr_model, model);
 
@@ -396,7 +396,7 @@ py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
@@ -428,7 +428,7 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
         "This UDT architecture currently doesn't support getting entity "
         "embeddings.");
   }
-  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
   if (!fc) {
     throw std::invalid_argument(
         "This UDT architecture currently doesn't support getting entity "
@@ -480,7 +480,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
 void UDTMachClassifier::updateSamplingStrategy() {
   auto mach_index = _mach_label_block->index();
 
-  auto output_layer = bolt::nn::ops::FullyConnected::cast(
+  auto output_layer = bolt::FullyConnected::cast(
       _classifier->model()->opExecutionOrder().back());
 
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
@@ -489,11 +489,11 @@ void UDTMachClassifier::updateSamplingStrategy() {
   if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
-    auto new_index = bolt::nn::MachNeuronIndex::make(mach_index);
+    auto new_index = bolt::MachNeuronIndex::make(mach_index);
     output_layer->kernel()->setNeuronIndex(new_index);
 
   } else {
-    if (std::dynamic_pointer_cast<bolt::nn::MachNeuronIndex>(neuron_index)) {
+    if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index)) {
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
       auto sampling_config = bolt::DWTASamplingConfig::autotune(
@@ -535,8 +535,8 @@ void UDTMachClassifier::introduceDocuments(
 
   auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE, verbose);
 
-  auto doc_samples_tensors = bolt::train::convertDatasets(
-      doc_samples, _classifier->model()->inputDims());
+  auto doc_samples_tensors =
+      bolt::convertDatasets(doc_samples, _classifier->model()->inputDims());
 
   const auto& labels = cold_start_data->labelColumn();
   uint32_t row_idx = 0;
@@ -546,7 +546,7 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
-  bolt::train::python::CtrlCCheck ctrl_c_check;
+  bolt::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
     // Note: using sparse inference here could cause issues because the
@@ -840,9 +840,7 @@ void UDTMachClassifier::teach(
 
   std::shuffle(samples.begin(), samples.end(), rng);
 
-  std::vector<
-      std::pair<bolt::nn::tensor::TensorList, bolt::nn::tensor::TensorList>>
-      batches;
+  std::vector<std::pair<bolt::TensorList, bolt::TensorList>> batches;
 
   uint32_t input_dim = _classifier->model()->inputDims().at(0);
   uint32_t label_dim = _classifier->model()->labelDims().at(0);
@@ -858,11 +856,11 @@ void UDTMachClassifier::teach(
       labels.emplace_back(std::move(samples[j].second));
     }
 
-    auto input_tensor = bolt::nn::tensor::Tensor::convert(
-        BoltBatch(std::move(inputs)), input_dim);
+    auto input_tensor =
+        bolt::Tensor::convert(BoltBatch(std::move(inputs)), input_dim);
 
-    auto label_tensor = bolt::nn::tensor::Tensor::convert(
-        BoltBatch(std::move(labels)), label_dim);
+    auto label_tensor =
+        bolt::Tensor::convert(BoltBatch(std::move(labels)), label_dim);
 
     batches.push_back(
         {{input_tensor},
@@ -996,10 +994,10 @@ InputMetrics UDTMachClassifier::getMetrics(
         "loss.");
   }
 
-  bolt::nn::autograd::ComputationPtr output = model->outputs().front();
-  bolt::nn::autograd::ComputationPtr hash_labels = model->labels().front();
-  bolt::nn::autograd::ComputationPtr true_class_labels = model->labels().back();
-  bolt::nn::loss::LossPtr loss = model->losses().front();
+  bolt::ComputationPtr output = model->outputs().front();
+  bolt::ComputationPtr hash_labels = model->labels().front();
+  bolt::ComputationPtr true_class_labels = model->labels().back();
+  bolt::LossPtr loss = model->losses().front();
 
   InputMetrics metrics;
   for (const auto& name : metric_names) {
@@ -1045,11 +1043,9 @@ void UDTMachClassifier::warnOnNonHashBasedMetrics(
   }
 }
 
-bolt::nn::tensor::TensorPtr UDTMachClassifier::placeholderDocIds(
-    uint32_t batch_size) {
-  return bolt::nn::tensor::Tensor::sparse(batch_size,
-                                          std::numeric_limits<uint32_t>::max(),
-                                          /* nonzeros= */ 1);
+bolt::TensorPtr UDTMachClassifier::placeholderDocIds(uint32_t batch_size) {
+  return bolt::Tensor::sparse(batch_size, std::numeric_limits<uint32_t>::max(),
+                              /* nonzeros= */ 1);
 }
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
