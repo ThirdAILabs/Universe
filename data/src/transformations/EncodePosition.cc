@@ -1,6 +1,10 @@
 #include "EncodePosition.h"
 #include <hashing/src/HashUtils.h>
+#include <_types/_uint32_t.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
+#include <data/src/rca/ExplanationMap.h>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -25,6 +29,29 @@ ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
   auto hashed_col = ArrayColumn<uint32_t>::make(std::move(hashed_tokens), _dim);
   columns.setColumn(/* name= */ _output_column, hashed_col);
   return columns;
+}
+
+void explainEncodedPositions(const ColumnMap& input, const ColumnMap& output,
+                             const std::string& input_column,
+                             const std::string& output_column,
+                             ExplanationMap& explanations) {
+  auto input_tokens = input.getArrayColumn<uint32_t>(input_column)->row(0);
+  auto encoded_tokens = output.getArrayColumn<uint32_t>(output_column)->row(0);
+
+  for (size_t i = 0; i < encoded_tokens.size(); i++) {
+    std::string explanation =
+        explanations.explain(input_column, input_tokens[i]) + " at position " +
+        std::to_string(i);
+    explanations.store(output_column, encoded_tokens[i], explanation);
+  }
+}
+
+void HashPositionTransform::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  auto output = apply(input, state);
+
+  explainEncodedPositions(input, output, _input_column, _output_column,
+                          explanations);
 }
 
 ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
@@ -56,4 +83,13 @@ ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
   columns.setColumn(_output_column, offset_col);
   return columns;
 }
+
+void OffsetPositionTransform::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  auto output = apply(input, state);
+
+  explainEncodedPositions(input, output, _input_column, _output_column,
+                          explanations);
+}
+
 }  // namespace thirdai::data

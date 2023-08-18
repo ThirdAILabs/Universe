@@ -4,6 +4,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/Date.h>
+#include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
@@ -13,6 +14,7 @@
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <limits>
 #include <memory>
 #include <optional>
 
@@ -62,8 +64,46 @@ TEST(ExplanationTests, Date) {
             "week of the month = 1 from column 'aaa'");
   feature_offset += 5;  // Max weeks in month.
 
-  ASSERT_EQ(explanations.explain("bbb", feature_offset += 40),
+  ASSERT_EQ(explanations.explain("bbb", feature_offset + 40),
             "week of the year = 40 from column 'aaa'");
+}
+
+TEST(ExplanationTests, HashedPosition) {
+  HashPositionTransform encoder(
+      "aaa", "bbb", /* hash_range= */ std::numeric_limits<uint32_t>::max());
+
+  ColumnMap columns({{"aaa", ArrayColumn<uint32_t>::make({{1, 2, 3, 4}})}});
+
+  State state;
+  auto explanations = encoder.explain(columns, state);
+
+  std::set<std::string> expected_msgs = {
+      "token 1 from column 'aaa' at position 0",
+      "token 2 from column 'aaa' at position 1",
+      "token 3 from column 'aaa' at position 2",
+      "token 4 from column 'aaa' at position 3",
+  };
+
+  compareAllExplanations(explanations, "bbb", expected_msgs);
+}
+
+TEST(ExplanationTests, OffsetPosition) {
+  OffsetPositionTransform encoder("aaa", "bbb", /* max_num_tokens= */ 10);
+
+  ColumnMap columns(
+      {{"aaa", ArrayColumn<uint32_t>::make({{1, 2, 3, 4}}, /* dim= */ 10)}});
+
+  State state;
+  auto explanations = encoder.explain(columns, state);
+
+  ASSERT_EQ(explanations.explain("bbb", 1),
+            "token 1 from column 'aaa' at position 0");
+  ASSERT_EQ(explanations.explain("bbb", 12),
+            "token 2 from column 'aaa' at position 1");
+  ASSERT_EQ(explanations.explain("bbb", 23),
+            "token 3 from column 'aaa' at position 2");
+  ASSERT_EQ(explanations.explain("bbb", 34),
+            "token 4 from column 'aaa' at position 3");
 }
 
 TEST(ExplanationTests, FeatureHash) {
