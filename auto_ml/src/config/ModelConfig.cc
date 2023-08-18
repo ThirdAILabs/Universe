@@ -108,8 +108,14 @@ bolt::ComputationPtr buildFullyConnected(
     use_bias = booleanParameter(config, "use_bias", args);
   }
 
-  auto layer = bolt::FullyConnected::make(
-      dim, predecessor->dim(), sparsity, activation, sampling_config, use_bias);
+  std::optional<std::string> grad_clip = std::nullopt;
+  if (config.contains("grad_clip")) {
+    grad_clip = stringParameter(config, "grad_clip", args);
+  }
+
+  auto layer =
+      bolt::FullyConnected::make(dim, predecessor->dim(), sparsity, activation,
+                                 sampling_config, use_bias, 4, 100, grad_clip);
 
   return layer->apply(predecessor);
 }
