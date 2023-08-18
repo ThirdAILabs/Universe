@@ -4,7 +4,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
 /**
  * Loss functions are used to compute the gradients of the terminal computations
@@ -36,14 +36,14 @@ class Loss {
    * function. This is used to ensure that all of the outputs in the model have
    * gradients computed for them.
    */
-  virtual autograd::ComputationList outputsUsed() const = 0;
+  virtual ComputationList outputsUsed() const = 0;
 
   /**
    * Returns the labels that the loss function is expecting. These are any
    * inputs to the loss function that do not come from the model itself. For
    * instance a classical label vector, or even per sample weights for the loss.
    */
-  virtual autograd::ComputationList labels() const = 0;
+  virtual ComputationList labels() const = 0;
 
   virtual ~Loss() = default;
 
@@ -57,4 +57,4 @@ class Loss {
 
 using LossPtr = std::shared_ptr<Loss>;
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt

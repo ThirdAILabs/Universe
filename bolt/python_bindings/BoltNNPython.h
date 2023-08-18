@@ -4,8 +4,8 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::nn::python {
+namespace thirdai::bolt::python {
 
 void createBoltNNSubmodule(py::module_& module);
 
-}  // namespace thirdai::bolt::nn::python
+}  // namespace thirdai::bolt::python
