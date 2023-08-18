@@ -14,9 +14,9 @@ def get_elements(filename):
     for p in document.paragraphs:
         if len(p.text.strip()) > 3:
             if prev_short:
-                temp[-1] = (temp[-1][0] + " " + p.text.strip(), filename)
+                temp[-1] = (temp[-1][0] + " " + p.text.strip(), Path(filename).name)
             else:
-                temp.append((p.text.strip(), filename))
+                temp.append((p.text.strip(), Path(filename).name))
             prev_short = len(word_tokenize(p.text.strip())) < ATTACH_N_WORD_THRESHOLD
     temp = [
         (chunk, filename) for passage, filename in temp for chunk in chunk_text(passage)
@@ -38,7 +38,7 @@ def create_train_df(elements):
         para = " ".join(sents)
         df.iloc[i] = [
             para,
-            Path(elem[1]).name,
+            elem[1],
             str(elem[0].replace("\n", " ")),
         ]
     for column in ["para", "display"]:
