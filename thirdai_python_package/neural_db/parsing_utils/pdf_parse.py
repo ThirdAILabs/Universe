@@ -60,7 +60,7 @@ def process_pdf_file(filename):
                         paras[-1] = (
                             paras[-1][0] + " " + current,  # text
                             paras[-1][1],  # page number
-                            doc.name,  # pdf filename
+                            Path(filename).name,  # pdf filename
                             temp_prev,  # page to block dictionary
                         )
                     else:
