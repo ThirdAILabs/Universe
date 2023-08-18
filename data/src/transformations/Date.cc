@@ -92,21 +92,20 @@ void Date::buildExplanationMap(const ColumnMap& input, State& state,
   std::string origin = explanation.explain(_input_column_name, time_str);
 
   explanation.store(_output_column_name, date_attributes[0],
-                      "day of the week = " + std::to_string(dayOfWeek(time)) +
-                          " from " + origin);
+                    "day of the week = " + std::to_string(dayOfWeek(time)) +
+                        " from " + origin);
 
   explanation.store(_output_column_name, date_attributes[1],
-                      "month of the year = " + std::to_string(time.month()) +
-                          " from " + origin);
+                    "month of the year = " + std::to_string(time.month()) +
+                        " from " + origin);
 
-  explanation.store(
-      _output_column_name, date_attributes[2],
-      "week of the month = " + std::to_string(weekOfMonth(time)) + " from " +
-          origin);
+  explanation.store(_output_column_name, date_attributes[2],
+                    "week of the month = " + std::to_string(weekOfMonth(time)) +
+                        " from " + origin);
 
   explanation.store(_output_column_name, date_attributes[3],
-                      "week of the year = " + std::to_string(weekOfYear(time)) +
-                          " from " + origin);
+                    "week of the year = " + std::to_string(weekOfYear(time)) +
+                        " from " + origin);
 }
 
 template void Date::serialize(cereal::BinaryInputArchive&);
