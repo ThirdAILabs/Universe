@@ -181,16 +181,19 @@ def test_distributed_resume_training():
         backend_config=TorchConfig(backend="gloo"),
     )
     result = trainer.fit()
+    checkpoint_path = result.checkpoint.to_directory()
+
+    ray.shutdown()
+
+    # Now we start a new training using previously saved checkpoint
+    scaling_config = setup_ray()
 
     trainer2 = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
-        # if you have direct access to checkpoint
-        resume_from_checkpoint=result.checkpoint,
-        # if you have checkpoint directory instead
-        # resume_from_checkpoint=dist.BoltCheckPoint.from_directory("/path/to/checkpoint/directory")
+        resume_from_checkpoint=dist.BoltCheckPoint.from_directory(checkpoint_path),
     )
     trainer2.fit()
 
