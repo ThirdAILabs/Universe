@@ -290,7 +290,7 @@ class Mach(Model):
 
         if self.model is None:
             self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(intro_documents, self.model_config)
+            self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_before_train = False
             min_epochs = 10
@@ -349,7 +349,6 @@ class Mach(Model):
     def model_from_scratch(
         self,
         documents: DocumentDataSource,
-        model_config=None,
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
