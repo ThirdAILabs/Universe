@@ -8,13 +8,13 @@ namespace thirdai::bolt {
 
 template <class Archive>
 void FullyConnectedLayerConfig::serialize(Archive& archive) {
-  archive(_dim, _sparsity, _activation_fn, _sampling_config);
+  archive(_dim, _sparsity, _activation_fn, _sampling_config, _grad_clip);
 }
 
 template <class Archive>
 void EmbeddingLayerConfig::serialize(Archive& archive) {
   archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
-          _reduction, _num_tokens_per_input);
+          _reduction, _num_tokens_per_input, _grad_clip);
 }
 
 FullyConnectedLayerConfig::FullyConnectedLayerConfig(
@@ -77,25 +77,29 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
 EmbeddingLayerConfig::EmbeddingLayerConfig(
     uint64_t num_embedding_lookups, uint64_t lookup_size,
     uint64_t log_embedding_block_size, const std::string& reduction,
-    std::optional<uint64_t> num_tokens_per_input)
+    std::optional<uint64_t> num_tokens_per_input,
+    std::optional<std::string> grad_clip)
     : EmbeddingLayerConfig(
           /* num_embedding_lookups= */ num_embedding_lookups,
           /* lookup_size= */ lookup_size,
           /* log_embedding_block_size= */ log_embedding_block_size,
           /* update_chunk_size= */ DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
           /* reduction= */ reduction,
-          /* num_tokens_per_input= */ num_tokens_per_input) {}
+          /* num_tokens_per_input= */ num_tokens_per_input,
+          std::move(grad_clip)) {}
 
 EmbeddingLayerConfig::EmbeddingLayerConfig(
     uint64_t num_embedding_lookups, uint64_t lookup_size,
     uint64_t log_embedding_block_size, uint64_t update_chunk_size,
-    const std::string& reduction, std::optional<uint64_t> num_tokens_per_input)
+    const std::string& reduction, std::optional<uint64_t> num_tokens_per_input,
+    std::optional<std::string> grad_clip)
     : _num_embedding_lookups(num_embedding_lookups),
       _lookup_size(lookup_size),
       _log_embedding_block_size(log_embedding_block_size),
       _update_chunk_size(update_chunk_size),
       _reduction(getReductionType(reduction)),
-      _num_tokens_per_input(num_tokens_per_input) {
+      _num_tokens_per_input(num_tokens_per_input),
+      _grad_clip(std::move(grad_clip)) {
   if (_reduction == EmbeddingReductionType::CONCATENATION &&
       !_num_tokens_per_input) {
     throw std::invalid_argument(

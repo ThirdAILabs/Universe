@@ -247,8 +247,8 @@ void defineOps(py::module_& nn) {
       .def("__call__", &FullyConnected::apply)
       .def("dim", &FullyConnected::dim)
       .def("get_sparsity", &FullyConnected::getSparsity)
-      .def("set_sparsity", &FullyConnected::setSparsity,
-           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+      .def("set_sparsity", &FullyConnected::setSparsity, py::arg("sparsity"),
+           py::arg("rebuild_hash_tables") = true,
            py::arg("experimental_autotune") = false)
       .def_property_readonly(
           "weights",
@@ -289,7 +289,8 @@ void defineOps(py::module_& nn) {
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
-           py::arg("seed") = global_random::nextSeed())
+           py::arg("seed") = global_random::nextSeed(),
+           py::arg("grad_clip") = std::nullopt)
       .def("__call__", &RobeZ::apply)
       .def("duplicate_with_new_reduction", &RobeZ::duplicateWithNewReduction,
            py::arg("reduction"), py::arg("num_tokens_per_input"));

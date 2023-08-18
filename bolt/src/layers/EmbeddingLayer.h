@@ -44,7 +44,7 @@ class EmbeddingLayer {
 
   void initOptimizer() {
     if (!_optimizer) {
-      _optimizer = AdamOptimizer(_embedding_block_size);
+      _optimizer = AdamOptimizer(_embedding_block_size, _grad_clip);
     }
   }
 
@@ -147,7 +147,7 @@ class EmbeddingLayer {
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
             _log_embedding_block_size, _update_chunk_size, _reduction,
-            _num_tokens_per_input, _embedding_block_size, _hash_fn,
+            _num_tokens_per_input, _grad_clip, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
             _disable_sparse_parameter_updates, _should_save_optimizer);
     if (_should_save_optimizer) {
@@ -164,6 +164,7 @@ class EmbeddingLayer {
 
   EmbeddingReductionType _reduction;
   std::optional<uint64_t> _num_tokens_per_input;
+  std::optional<std::string> _grad_clip;
 
   hashing::UniversalHash _hash_fn;
 

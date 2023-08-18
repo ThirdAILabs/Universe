@@ -15,6 +15,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _update_chunk_size(config.updateChunkSize()),
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
+      _grad_clip(config.getGradClip()),
       _hash_fn(seed),
       _disable_sparse_parameter_updates(false),
       _should_save_optimizer(false) {

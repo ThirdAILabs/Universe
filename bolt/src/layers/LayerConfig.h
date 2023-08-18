@@ -110,13 +110,15 @@ class EmbeddingLayerConfig {
   EmbeddingLayerConfig(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, const std::string& reduction,
-      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt,
+      std::optional<std::string> grad_clip = std::nullopt);
 
   EmbeddingLayerConfig(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, uint64_t update_chunk_size,
       const std::string& reduction,
-      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt,
+      std::optional<std::string> grad_clip = std::nullopt);
 
   uint64_t numEmbeddingLookups() const { return _num_embedding_lookups; }
 
@@ -140,6 +142,8 @@ class EmbeddingLayerConfig {
     return _num_tokens_per_input;
   }
 
+  std::optional<std::string> getGradClip() const { return _grad_clip; }
+
  private:
   uint64_t _num_embedding_lookups;
   uint64_t _lookup_size;
@@ -148,6 +152,7 @@ class EmbeddingLayerConfig {
 
   EmbeddingReductionType _reduction;
   std::optional<uint64_t> _num_tokens_per_input;
+  std::optional<std::string> _grad_clip;
 
   friend class cereal::access;
   template <class Archive>
