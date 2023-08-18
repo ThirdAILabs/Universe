@@ -47,6 +47,36 @@ class Communication(bolt.train.Communication):
         return all_reduce_num_batches
 
 
+class EarlyStopOnMetrics(bolt.train.callbacks.Callback):
+    def __init__(
+        self,
+        tracked_metric: str,
+        metric_threshold: float,
+    ):
+        super().__init__()
+
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+        self.stop_training = 0
+
+    def on_epoch_end(self):
+        import torch
+        import torch.distributed as dist
+        from ray.air import session
+
+        if (
+            session.get_world_rank() == 0
+            and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.stop_training = 1
+
+        stop_training = torch.tensor(self.stop_training)
+        dist.all_reduce(stop_training)
+
+        if stop_training.item():
+            self.train_state.stop_training()
+
+
 # Note: We need to disable sparse updates neural network updates as after allreduce
 # during sparse training, we only update the parameters selected by hash tables, rather we
 # need to update all the parameters, since during all-reduce some other neuron could be non-zero
@@ -87,3 +117,5 @@ def adds_distributed_to_bolt():
         return metrics
 
     bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
+
+    bolt.train.callbacks.EarlyStopOnMetrics = EarlyStopOnMetrics

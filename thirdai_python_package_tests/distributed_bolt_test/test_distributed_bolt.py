@@ -24,7 +24,15 @@ def training_loop_per_worker(config):
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
     trainer.train_distributed(
-        train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+        train_data=(train_x, train_y),
+        learning_rate=0.005,
+        epochs=config.get("num_epochs", 1),
+        train_metrics=["categorical_accuracy"],
+        callbacks=[
+            bolt.train.callbacks.EarlyStopOnMetrics(
+                tracked_metric="categorical_accuracy", metric_threshold=0.95
+            )
+        ],
     )
 
     session.report(
