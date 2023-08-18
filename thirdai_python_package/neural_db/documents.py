@@ -459,6 +459,15 @@ class Extracted(Document):
         if "filename" in state:
             del state["filename"]
 
+        # In older versions of neural_db, we accidentally stored Path objects in the df
+        # This changes those objects to a string, because PosixPath can't be loaded in Windows
+        def path_to_str(element):
+            if isinstance(element, Path):
+                return element.name
+            return element
+
+        state["df"] = state["df"].applymap(path_to_str)
+
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
 
@@ -470,14 +479,6 @@ class Extracted(Document):
             state["_save_extra_info"] = True
         if "filename" in state:
             state["path"] = state["filename"]
-
-        # In older versions of neural_db, we accidentally stored Path objects in the df
-        # This changes those objects to a string, because PosixPath can't be loaded in Windows
-        def path_to_str(element):
-            if isinstance(element, Path):
-                return element.name
-
-        state["df"] = state["df"].applymap(path_to_str)
 
         self.__dict__.update(state)
 
