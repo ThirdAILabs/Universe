@@ -3,16 +3,41 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::bolt {
+
+enum class ClippingMode { Identity = 0, Sigmoid = 1, LinearScaling = 2 };
+
+inline ClippingMode getClippingMode(
+    const std::optional<std::string>& clipping_mode) {
+  std::string clipping_mode_str = clipping_mode.value_or("Identity");
+  if (clipping_mode_str == "Identity") {
+    return ClippingMode::Identity;
+  }
+  if (clipping_mode_str == "Sigmoid") {
+    return ClippingMode::Sigmoid;
+  }
+  if (clipping_mode_str == "LinearScaling") {
+    return ClippingMode::LinearScaling;
+  }
+  throw std::invalid_argument(
+      "Invalid Clipping Mode specified for CosineSimilarity OP");
+}
 
 class CosineSimilarity final
     : public Op,
       public std::enable_shared_from_this<CosineSimilarity> {
  public:
-  static auto make() {
-    return std::shared_ptr<CosineSimilarity>(new CosineSimilarity());
+  static auto make(std::optional<const std::string>& clipping_mode) {
+    ClippingMode clipping_mode_enum = getClippingMode(clipping_mode);
+    return std::make_shared<CosineSimilarity>(clipping_mode_enum);
   }
+
+  explicit CosineSimilarity(ClippingMode clipping_mode)
+      : _clipping_mode(clipping_mode) {}
 
   void forward(const ComputationList& inputs, TensorPtr& output,
                uint32_t index_in_batch, bool training) final;
@@ -44,6 +69,8 @@ class CosineSimilarity final
   CosineSimilarity() {}
 
   friend class cereal::access;
+  ClippingMode _clipping_mode;
+
   template <class Archive>
   void serialize(Archive& archive);
 

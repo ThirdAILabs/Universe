@@ -348,7 +348,8 @@ void defineOps(py::module_& nn) {
       .def("__call__", &DotProduct::apply);
 
   py::class_<CosineSimilarity, CosineSimilarityPtr, Op>(nn, "CosineSimilarity")
-      .def(py::init<>(&CosineSimilarity::make))
+      .def(py::init<>(&CosineSimilarity::make),
+           py::arg("clipping_mode") = std::nullopt)
       .def("__call__", &CosineSimilarity::apply);
 
   py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
