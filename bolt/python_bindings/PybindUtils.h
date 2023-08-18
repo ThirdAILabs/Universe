@@ -16,15 +16,13 @@ namespace thirdai::bolt::python {
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-NumpyArray<float> getGradients(const nn::model::ModelPtr& model);
+NumpyArray<float> getGradients(const ModelPtr& model);
 
-NumpyArray<float> getParameters(const nn::model::ModelPtr& model);
+NumpyArray<float> getParameters(const ModelPtr& model);
 
-void setGradients(const nn::model::ModelPtr& model,
-                  NumpyArray<float>& new_values);
+void setGradients(const ModelPtr& model, NumpyArray<float>& new_values);
 
-void setParameters(const nn::model::ModelPtr& model,
-                   NumpyArray<float>& new_values);
+void setParameters(const ModelPtr& model, NumpyArray<float>& new_values);
 
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations

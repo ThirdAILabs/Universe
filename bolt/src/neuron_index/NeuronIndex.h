@@ -5,7 +5,7 @@
 #include <memory>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 class NeuronIndex {
  public:
@@ -35,4 +35,4 @@ class NeuronIndex {
 
 using NeuronIndexPtr = std::shared_ptr<NeuronIndex>;
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt

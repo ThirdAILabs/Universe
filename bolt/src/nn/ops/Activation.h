@@ -4,20 +4,20 @@
 #include <cmath>
 #include <memory>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 struct ReluImpl {
-  static constexpr float forward(float x) { return std::max(x, 0.F); }
+  static float forward(float x) { return std::max(x, 0.F); }
 
-  static constexpr float gradient(float y) { return y > 0 ? 1 : 0; }
+  static float gradient(float y) { return y > 0 ? 1 : 0; }
 
   static std::string name() { return "ReLU"; }
 };
 
 struct TanhImpl {
-  static constexpr float forward(float x) { return std::tanh(x); }
+  static float forward(float x) { return std::tanh(x); }
 
-  static constexpr float gradient(float y) { return (1 - y * y); }
+  static float gradient(float y) { return (1 - y * y); }
 
   static std::string name() { return "Tanh"; }
 };
@@ -28,18 +28,17 @@ class Activation final : public Op,
  public:
   static std::shared_ptr<Activation> make();
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
@@ -50,10 +49,10 @@ class Activation final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
-  autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  ComputationPtr apply(ComputationPtr input);
 
  private:
   Activation();
@@ -71,4 +70,4 @@ using ReluPtr = std::shared_ptr<Relu>;
 using Tanh = Activation<TanhImpl>;
 using TanhPtr = std::shared_ptr<Tanh>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

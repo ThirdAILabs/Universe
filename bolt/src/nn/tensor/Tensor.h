@@ -3,7 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <vector>
 
-namespace thirdai::bolt::nn::tensor {
+namespace thirdai::bolt {
 
 /**
  * A tensor represents a collection of vectors that are either the inputs to a
@@ -99,4 +99,4 @@ using TensorPtr = std::shared_ptr<Tensor>;
 
 using TensorList = std::vector<TensorPtr>;
 
-}  // namespace thirdai::bolt::nn::tensor
+}  // namespace thirdai::bolt

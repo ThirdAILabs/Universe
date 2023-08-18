@@ -9,10 +9,9 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
-void CosineSimilarity::forward(const autograd::ComputationList& inputs,
-                               tensor::TensorPtr& output,
+void CosineSimilarity::forward(const ComputationList& inputs, TensorPtr& output,
                                uint32_t index_in_batch, bool training) {
   (void)training;
   assert(inputs.size() == 2);
@@ -42,8 +41,7 @@ void CosineSimilarity::forward(const autograd::ComputationList& inputs,
   out.activations[0] = sim;
 }
 
-void CosineSimilarity::backpropagate(autograd::ComputationList& inputs,
-                                     tensor::TensorPtr& output,
+void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
                                      uint32_t index_in_batch) {
   assert(inputs.size() == 2);
 
@@ -81,7 +79,7 @@ void CosineSimilarity::updateParameters(float learning_rate,
 uint32_t CosineSimilarity::dim() const { return 1; }
 
 std::optional<uint32_t> CosineSimilarity::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+    const ComputationList& inputs, bool use_sparsity) const {
   (void)inputs;
   (void)use_sparsity;
 
@@ -89,22 +87,21 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
 }
 
 void CosineSimilarity::summary(std::ostream& summary,
-                               const autograd::ComputationList& inputs,
-                               const autograd::Computation* output) const {
+                               const ComputationList& inputs,
+                               const Computation* output) const {
   summary << "CosineSimilarity(" << name() << "): " << inputs.at(0)->name()
           << ", " << inputs.at(1)->name() << " -> " << output->name();
 }
 
-autograd::ComputationPtr CosineSimilarity::apply(autograd::ComputationPtr lhs,
-                                                 autograd::ComputationPtr rhs) {
+ComputationPtr CosineSimilarity::apply(ComputationPtr lhs, ComputationPtr rhs) {
   if (lhs->dim() != rhs->dim()) {
     throw std::invalid_argument(
         "Cannot take cosine similarity between tensors with different "
         "dimensions.");
   }
 
-  return autograd::Computation::make(shared_from_this(),
-                                     {std::move(lhs), std::move(rhs)});
+  return Computation::make(shared_from_this(),
+                           {std::move(lhs), std::move(rhs)});
 }
 
 float CosineSimilarity::magnitude(const BoltVector& a) {
@@ -209,6 +206,6 @@ template <class Archive>
 void CosineSimilarity::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this));
 }
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::CosineSimilarity)
+CEREAL_REGISTER_TYPE(thirdai::bolt::CosineSimilarity)

@@ -12,11 +12,11 @@
 #include <stdexcept>
 #include <utility>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
-Trainer::Trainer(nn::model::ModelPtr model,
+Trainer::Trainer(ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
                  InterruptCheck interrupt_check)
     : _model(std::move(model)),
@@ -76,8 +76,8 @@ metrics::History Trainer::train(
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       callbacks.onBatchBegin();
 
-      const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
-      const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
+      const TensorList& inputs = train_data.first.at(batch_idx);
+      const TensorList& labels = train_data.second.at(batch_idx);
 
       utils::Timer train_on_batch_timer;
       _model->trainOnBatch(inputs, labels);
@@ -254,8 +254,8 @@ metrics::History Trainer::validate(const LabeledDataset& data,
   utils::Timer val_timer;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    const nn::tensor::TensorList& inputs = data.first.at(batch_idx);
-    const nn::tensor::TensorList& labels = data.second.at(batch_idx);
+    const TensorList& inputs = data.first.at(batch_idx);
+    const TensorList& labels = data.second.at(batch_idx);
 
     _model->forward(inputs, labels, /* use_sparsity= */ use_sparsity);
 
@@ -353,7 +353,7 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
 
 void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   for (const auto& op : _model->ops()) {
-    if (auto fc = std::dynamic_pointer_cast<nn::ops::FullyConnected>(op)) {
+    if (auto fc = FullyConnected::cast(op)) {
       fc->autotuneRehashRebuild(/* num_batches= */ num_batches,
                                 /* batch_size= */ batch_size);
     }
@@ -401,4 +401,4 @@ std::optional<LabeledDataset> Trainer::loadSomeWrapper(
       convertDatasets(label_datasets, label_dims, /* copy= */ false));
 }
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

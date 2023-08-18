@@ -55,8 +55,7 @@ class UDT {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options,
-                   const bolt::train::DistributedCommPtr& comm);
+                   TrainOptions options, const bolt::DistributedCommPtr& comm);
 
   /**
    * Trains the model on a batch of samples.
@@ -126,7 +125,7 @@ class UDT {
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
                        TrainOptions options,
-                       const bolt::train::DistributedCommPtr& comm);
+                       const bolt::DistributedCommPtr& comm);
 
   /**
    * Returns metadata for ColdStart which are needed to be passed to

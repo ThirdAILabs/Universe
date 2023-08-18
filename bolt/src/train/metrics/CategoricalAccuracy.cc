@@ -2,10 +2,10 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
-CategoricalAccuracy::CategoricalAccuracy(nn::autograd::ComputationPtr outputs,
-                                         nn::autograd::ComputationPtr labels)
+CategoricalAccuracy::CategoricalAccuracy(ComputationPtr outputs,
+                                         ComputationPtr labels)
     : _outputs(std::move(outputs)),
       _labels(std::move(labels)),
       _correct(0),
@@ -36,4 +36,4 @@ float CategoricalAccuracy::worst() const { return 0.0; }
 
 bool CategoricalAccuracy::betterThan(float a, float b) const { return a > b; }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

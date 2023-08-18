@@ -171,11 +171,6 @@ class ColdStartTextAugmentation final : public Transformation {
   static Phrase splitByWhitespace(std::string& s);
 
   /**
-   * Replaces punctuation characters in s with whitespace.
-   */
-  static void replacePunctuationWithSpaces(std::string& s);
-
-  /**
    *Strips leading and tailing whitespace.
    */
   static void stripWhitespace(std::string& s);

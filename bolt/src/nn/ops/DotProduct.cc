@@ -9,11 +9,10 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
-void DotProduct::forward(const autograd::ComputationList& inputs,
-                         tensor::TensorPtr& output, uint32_t index_in_batch,
-                         bool training) {
+void DotProduct::forward(const ComputationList& inputs, TensorPtr& output,
+                         uint32_t index_in_batch, bool training) {
   (void)training;
   assert(inputs.size() == 2);
 
@@ -43,8 +42,7 @@ void DotProduct::forward(const autograd::ComputationList& inputs,
   out.activations[0] = 1 / (1 + std::exp(-dot_product));
 }
 
-void DotProduct::backpropagate(autograd::ComputationList& inputs,
-                               tensor::TensorPtr& output,
+void DotProduct::backpropagate(ComputationList& inputs, TensorPtr& output,
                                uint32_t index_in_batch) {
   assert(inputs.size() == 2);
 
@@ -84,30 +82,28 @@ void DotProduct::updateParameters(float learning_rate, uint32_t train_steps) {
 
 uint32_t DotProduct::dim() const { return 1; }
 
-std::optional<uint32_t> DotProduct::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
+                                             bool use_sparsity) const {
   (void)inputs;
   (void)use_sparsity;
 
   return 1;
 }
 
-void DotProduct::summary(std::ostream& summary,
-                         const autograd::ComputationList& inputs,
-                         const autograd::Computation* output) const {
+void DotProduct::summary(std::ostream& summary, const ComputationList& inputs,
+                         const Computation* output) const {
   summary << "DotProduct(" << name() << "): " << inputs.at(0)->name() << ", "
           << inputs.at(1)->name() << " -> " << output->name();
 }
 
-autograd::ComputationPtr DotProduct::apply(autograd::ComputationPtr lhs,
-                                           autograd::ComputationPtr rhs) {
+ComputationPtr DotProduct::apply(ComputationPtr lhs, ComputationPtr rhs) {
   if (lhs->dim() != rhs->dim()) {
     throw std::invalid_argument(
         "Cannot take dot product between tensors with different dimensions.");
   }
 
-  return autograd::Computation::make(shared_from_this(),
-                                     {std::move(lhs), std::move(rhs)});
+  return Computation::make(shared_from_this(),
+                           {std::move(lhs), std::move(rhs)});
 }
 
 float DotProduct::denseDenseDot(const BoltVector& a, const BoltVector& b) {
@@ -177,6 +173,6 @@ void DotProduct::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this));
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::DotProduct)
+CEREAL_REGISTER_TYPE(thirdai::bolt::DotProduct)

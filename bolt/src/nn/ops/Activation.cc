@@ -10,7 +10,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextActivationName(const std::string& name) {
   static uint32_t constructed = 0;
@@ -26,8 +26,7 @@ std::shared_ptr<Activation<Impl>> Activation<Impl>::make() {
 }
 
 template <typename Impl>
-void Activation<Impl>::forward(const autograd::ComputationList& inputs,
-                               tensor::TensorPtr& output,
+void Activation<Impl>::forward(const ComputationList& inputs, TensorPtr& output,
                                uint32_t index_in_batch, bool training) {
   (void)training;
 
@@ -47,8 +46,7 @@ void Activation<Impl>::forward(const autograd::ComputationList& inputs,
 }
 
 template <typename Impl>
-void Activation<Impl>::backpropagate(autograd::ComputationList& inputs,
-                                     tensor::TensorPtr& output,
+void Activation<Impl>::backpropagate(ComputationList& inputs, TensorPtr& output,
                                      uint32_t index_in_batch) {
   BoltVector& input_vec = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vec = output->getVector(index_in_batch);
@@ -73,7 +71,7 @@ uint32_t Activation<Impl>::dim() const {
 
 template <typename Impl>
 std::optional<uint32_t> Activation<Impl>::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+    const ComputationList& inputs, bool use_sparsity) const {
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
@@ -95,15 +93,14 @@ std::vector<std::vector<float>*> Activation<Impl>::parameters() {
 
 template <typename Impl>
 void Activation<Impl>::summary(std::ostream& summary,
-                               const autograd::ComputationList& inputs,
-                               const autograd::Computation* output) const {
+                               const ComputationList& inputs,
+                               const Computation* output) const {
   summary << Impl::name() << "(" << name() << "): " << inputs[0]->name()
           << " -> " << output->name();
 }
 
 template <typename Impl>
-autograd::ComputationPtr Activation<Impl>::apply(
-    autograd::ComputationPtr input) {
+ComputationPtr Activation<Impl>::apply(ComputationPtr input) {
   if (dim() == 0) {
     _dim = input->dim();
   } else {
@@ -112,8 +109,7 @@ autograd::ComputationPtr Activation<Impl>::apply(
     }
   }
 
-  return autograd::Computation::make(this->shared_from_this(),
-                                     {std::move(input)});
+  return Computation::make(this->shared_from_this(), {std::move(input)});
 }
 
 template void Activation<ReluImpl>::serialize(cereal::BinaryInputArchive&);
@@ -131,9 +127,9 @@ void Activation<Impl>::serialize(Archive& archive) {
 template class Activation<ReluImpl>;
 template class Activation<TanhImpl>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(
-    thirdai::bolt::nn::ops::Activation<thirdai::bolt::nn::ops::ReluImpl>)
-CEREAL_REGISTER_TYPE(
-    thirdai::bolt::nn::ops::Activation<thirdai::bolt::nn::ops::TanhImpl>)
+CEREAL_REGISTER_TYPE(thirdai::bolt::Activation<thirdai::bolt::ReluImpl>)
+CEREAL_REGISTER_TYPE_WITH_NAME(
+    thirdai::bolt::Activation<thirdai::bolt::TanhImpl>,
+    "thirdai::bolt::nn::ops::Tanh")
