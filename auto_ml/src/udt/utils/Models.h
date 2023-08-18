@@ -5,7 +5,7 @@
 
 namespace thirdai::automl::udt::utils {
 
-using bolt::nn::model::ModelPtr;
+using bolt::ModelPtr;
 
 ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const config::ArgumentMap& args,

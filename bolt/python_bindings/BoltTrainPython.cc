@@ -29,7 +29,7 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::train::python {
+namespace thirdai::bolt::python {
 
 void defineTrainer(py::module_& train);
 
@@ -59,7 +59,7 @@ void createBoltTrainSubmodule(py::module_& module) {
   defineDistributedTrainer(train);
 }
 
-Trainer makeTrainer(nn::model::ModelPtr model,
+Trainer makeTrainer(ModelPtr model,
                     std::optional<uint32_t> freeze_hash_tables_epoch) {
   return Trainer(std::move(model), freeze_hash_tables_epoch, CtrlCCheck{});
 }
@@ -137,47 +137,41 @@ void defineMetrics(py::module_& train) {
 
   py::class_<metrics::LossMetric, std::shared_ptr<metrics::LossMetric>,
              metrics::Metric>(metrics, "LossMetric")
-      .def(py::init<nn::loss::LossPtr>(), py::arg("loss_fn"));
+      .def(py::init<LossPtr>(), py::arg("loss_fn"));
 
   py::class_<metrics::CategoricalAccuracy,
              std::shared_ptr<metrics::CategoricalAccuracy>, metrics::Metric>(
       metrics, "CategoricalAccuracy")
-      .def(py::init<nn::autograd::ComputationPtr,
-                    nn::autograd::ComputationPtr>(),
-           py::arg("outputs"), py::arg("labels"));
+      .def(py::init<ComputationPtr, ComputationPtr>(), py::arg("outputs"),
+           py::arg("labels"));
 
   py::class_<metrics::PrecisionAtK, std::shared_ptr<metrics::PrecisionAtK>,
              metrics::Metric>(metrics, "PrecisionAtK")
-      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    uint32_t>(),
+      .def(py::init<ComputationPtr, ComputationPtr, uint32_t>(),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   py::class_<metrics::RecallAtK, std::shared_ptr<metrics::RecallAtK>,
              metrics::Metric>(metrics, "RecallAtK")
-      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    uint32_t>(),
+      .def(py::init<ComputationPtr, ComputationPtr, uint32_t>(),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   py::class_<metrics::FMeasure, std::shared_ptr<metrics::FMeasure>,
              metrics::Metric>(metrics, "FMeasure")
-      .def(py::init<nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    float, float>(),
+      .def(py::init<ComputationPtr, ComputationPtr, float, float>(),
            py::arg("outputs"), py::arg("labels"), py::arg("threshold"),
            py::arg("beta") = 1);
 
   py::class_<metrics::MachPrecision, std::shared_ptr<metrics::MachPrecision>,
              metrics::Metric>(metrics, "MachPrecision")
-      .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
-                    nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    uint32_t>(),
+      .def(py::init<dataset::mach::MachIndexPtr, uint32_t, ComputationPtr,
+                    ComputationPtr, uint32_t>(),
            py::arg("mach_index"), py::arg("num_buckets_to_eval"),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   py::class_<metrics::MachRecall, std::shared_ptr<metrics::MachRecall>,
              metrics::Metric>(metrics, "MachRecall")
-      .def(py::init<dataset::mach::MachIndexPtr, uint32_t,
-                    nn::autograd::ComputationPtr, nn::autograd::ComputationPtr,
-                    uint32_t>(),
+      .def(py::init<dataset::mach::MachIndexPtr, uint32_t, ComputationPtr,
+                    ComputationPtr, uint32_t>(),
            py::arg("mach_index"), py::arg("num_buckets_to_eval"),
            py::arg("outputs"), py::arg("labels"), py::arg("k"));
 }
@@ -256,4 +250,4 @@ void defineDistributedTrainer(py::module_& train) {
       .def(py::init<>());
 }
 
-}  // namespace thirdai::bolt::train::python
+}  // namespace thirdai::bolt::python

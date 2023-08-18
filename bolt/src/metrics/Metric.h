@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt_v1 {
 
 // Metric interface
 class Metric {
@@ -292,4 +292,4 @@ std::shared_ptr<Metric> makeMetric(const std::string& name);
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt_v1
