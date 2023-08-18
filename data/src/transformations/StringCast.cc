@@ -99,6 +99,50 @@ ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
   return ValueColumn<T>::make(std::move(rows));
 }
 
+template <>
+void CastToValue<uint32_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explanation = "token " + value + " from " +
+                            explanations.explain(_input_column_name, value);
+
+  explanations.store(_output_column_name, parse(value), explanation);
+}
+
+template <>
+void CastToValue<float>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explanation = "decimal " + value + " from " +
+                            explanations.explain(_input_column_name, value);
+
+  explanations.store(_output_column_name,
+                     /* feature_index = */ 0, explanation);
+}
+
+template <>
+void CastToValue<int64_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explanation = "timestamp " + value + " from " +
+                            explanations.explain(_input_column_name, value);
+
+  explanations.store(_output_column_name,
+                     /* feature_index = */ 0, explanation);
+}
+
 template <typename T>
 template <class Archive>
 void CastToValue<T>::serialize(Archive& archive) {
@@ -173,6 +217,41 @@ float CastToArray<float>::parse(const std::string& row) const {
 template <typename T>
 ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
+}
+
+template <>
+void CastToArray<uint32_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explanation =
+        "token " + item + " from " +
+        explanations.explain(_input_column_name, input_str);
+
+    explanations.store(_output_column_name, parse(item), explanation);
+  }
+}
+
+template <>
+void CastToArray<float>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  size_t index = 0;
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explanation =
+        "decimal " + item + " from " +
+        explanations.explain(_input_column_name, input_str);
+
+    explanations.store(_output_column_name, index++, explanation);
+  }
 }
 
 template <typename T>

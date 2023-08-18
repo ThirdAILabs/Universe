@@ -417,6 +417,7 @@ set(THIRDAI_SOURCES
     data/src/TensorConversion.cc
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
+    data/src/rca/ExplanationMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
