@@ -397,7 +397,6 @@ class CSV(Document):
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True):
-        path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
         self._save_extra_info = save_extra_info
