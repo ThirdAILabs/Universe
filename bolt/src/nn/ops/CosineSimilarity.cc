@@ -236,7 +236,7 @@ void CosineSimilarity::sparseSparseBackprop(float grad, float cos_sim,
 
 template <class Archive>
 void CosineSimilarity::serialize(Archive& archive) {
-  archive(cereal::base_class<Op>(this));
+  archive(cereal::base_class<Op>(this), _clipping_mode);
 }
 }  // namespace thirdai::bolt
 
