@@ -135,7 +135,7 @@ class NeuralDB:
         # and should not be used by an external user.
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
-        if not kwargs["savable_state"]:
+        if "savable_state" not in kwargs:
             self._savable_state: State = State(
                 model=Mach(id_col="id", query_col="query", **kwargs),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
