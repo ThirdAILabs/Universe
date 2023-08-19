@@ -39,10 +39,9 @@ namespace thirdai::automl::config {
  * The predecessors of a given node must be specified in the nodes list before
  * the the node that uses them as inputs.
  */
-bolt::nn::model::ModelPtr buildModel(const json& config,
-                                     const ArgumentMap& args,
-                                     const std::vector<uint32_t>& input_dims,
-                                     bool mach = false);
+bolt::ModelPtr buildModel(const json& config, const ArgumentMap& args,
+                          const std::vector<uint32_t>& input_dims,
+                          bool mach = false);
 
 /**
  * Takes in a config as a json string and encrypts it using a per byte cipher

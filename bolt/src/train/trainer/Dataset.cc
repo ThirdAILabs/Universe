@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
                         std::vector<uint32_t> dims, bool copy) {
@@ -29,7 +29,7 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
     }
   }
 
-  std::vector<nn::tensor::TensorList> batches(num_batches);
+  std::vector<TensorList> batches(num_batches);
 
   std::exception_ptr err;
 
@@ -40,12 +40,12 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
          dataset_idx++) {
       try {
         if (copy) {
-          batches.at(batch_idx).push_back(nn::tensor::Tensor::copy(
+          batches.at(batch_idx).push_back(Tensor::copy(
               datasets[dataset_idx]->at(batch_idx), dims.at(dataset_idx)));
         } else {
-          batches.at(batch_idx).push_back(nn::tensor::Tensor::convert(
-              std::move(datasets[dataset_idx]->at(batch_idx)),
-              dims.at(dataset_idx)));
+          batches.at(batch_idx).push_back(
+              Tensor::convert(std::move(datasets[dataset_idx]->at(batch_idx)),
+                              dims.at(dataset_idx)));
         }
       } catch (...) {
 #pragma omp critical
@@ -67,36 +67,34 @@ Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim,
   return convertDatasets({std::move(datasets)}, {dim}, copy);
 }
 
-nn::tensor::TensorList convertBatch(std::vector<BoltBatch>&& batches,
-                                    const std::vector<uint32_t>& dims) {
+TensorList convertBatch(std::vector<BoltBatch>&& batches,
+                        const std::vector<uint32_t>& dims) {
   if (dims.size() != batches.size()) {
     throw std::invalid_argument(
         "Expected number of dimensions to match the number of batches.");
   }
 
-  nn::tensor::TensorList tensors;
+  TensorList tensors;
   for (uint32_t i = 0; i < batches.size(); i++) {
-    tensors.push_back(
-        nn::tensor::Tensor::convert(std::move(batches[i]), dims[i]));
+    tensors.push_back(Tensor::convert(std::move(batches[i]), dims[i]));
   }
 
   return tensors;
 }
 
-nn::tensor::TensorList convertVectors(std::vector<BoltVector>&& vectors,
-                                      const std::vector<uint32_t>& dims) {
+TensorList convertVectors(std::vector<BoltVector>&& vectors,
+                          const std::vector<uint32_t>& dims) {
   if (dims.size() != vectors.size()) {
     throw std::invalid_argument(
         "Expected number of dimensions to match the number of vectors.");
   }
 
-  nn::tensor::TensorList tensors;
+  TensorList tensors;
   for (uint32_t i = 0; i < vectors.size(); i++) {
-    tensors.push_back(
-        nn::tensor::Tensor::convert(std::move(vectors[i]), dims[i]));
+    tensors.push_back(Tensor::convert(std::move(vectors[i]), dims[i]));
   }
 
   return tensors;
 }
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

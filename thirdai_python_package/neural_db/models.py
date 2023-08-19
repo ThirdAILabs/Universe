@@ -290,9 +290,7 @@ class Mach(Model):
 
         if self.model is None:
             self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(
-                intro_documents.size, self.model_config
-            )
+            self.model = self.model_from_scratch(intro_documents.size)
             learning_rate = 0.005
             freeze_before_train = False
             min_epochs = 10
@@ -351,7 +349,6 @@ class Mach(Model):
     def model_from_scratch(
         self,
         n_target_classes: int,
-        model_config=None,
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
@@ -368,7 +365,7 @@ class Mach(Model):
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
             },
-            model_config=model_config,
+            model_config=self.model_config,
         )
 
     def forget_documents(self) -> None:
@@ -470,3 +467,9 @@ class Mach(Model):
             metrics=["hash_precision@5"],
             options=bolt.TrainOptions(),
         )
+
+    def __setstate__(self, state):
+        if "model_config" not in state:
+            # Add model_config field if an older model is being loaded.
+            state["model_config"] = None
+        self.__dict__.update(state)

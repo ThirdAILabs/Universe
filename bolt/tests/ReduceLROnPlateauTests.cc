@@ -3,7 +3,7 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/TrainState.h>
 
-namespace thirdai::bolt::train::tests {
+namespace thirdai::bolt::tests {
 
 void runLRScheduleTest(float threshold, bool relative_threshold) {
   auto history = std::make_shared<metrics::History>();
@@ -37,4 +37,4 @@ TEST(ReduceLROnPlateauTests, TestAbsoluteThreshold) {
   runLRScheduleTest(/* threshold= */ 2, /* relative_threshold= */ false);
 }
 
-}  // namespace thirdai::bolt::train::tests
+}  // namespace thirdai::bolt::tests

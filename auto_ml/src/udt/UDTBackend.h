@@ -19,9 +19,9 @@ namespace py = pybind11;
 
 namespace thirdai::automl::udt {
 
-using bolt::train::callbacks::CallbackPtr;
+using bolt::callbacks::CallbackPtr;
 
-using bolt::nn::model::ModelPtr;
+using bolt::ModelPtr;
 
 struct TrainOptions {
   std::optional<size_t> batch_size = std::nullopt;
@@ -55,7 +55,7 @@ class UDTBackend {
                            const std::vector<std::string>& val_metrics,
                            const std::vector<CallbackPtr>& callbacks,
                            TrainOptions options,
-                           const bolt::train::DistributedCommPtr& comm) = 0;
+                           const bolt::DistributedCommPtr& comm) = 0;
 
   /**
    * Trains the model on a batch of samples.
@@ -165,7 +165,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::train::DistributedCommPtr& comm) {
+      const bolt::DistributedCommPtr& comm) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;

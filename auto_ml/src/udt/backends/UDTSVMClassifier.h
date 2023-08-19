@@ -22,7 +22,7 @@ class UDTSVMClassifier final : public UDTBackend {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::train::DistributedCommPtr& comm) final;
+                   const bolt::DistributedCommPtr& comm) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,

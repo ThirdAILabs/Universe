@@ -16,7 +16,7 @@ template <typename T>
 class ArrayColumn : public ArrayColumnBase<T> {
  public:
   static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data,
-                                std::optional<size_t> dim);
+                                std::optional<size_t> dim = std::nullopt);
 
   size_t numRows() const final { return _data.size(); }
 

@@ -12,6 +12,9 @@ class StringIDLookup final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
  private:
   std::string _input_column_name;
   std::string _output_column_name;
