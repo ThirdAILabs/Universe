@@ -66,7 +66,7 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ColumnMapIterator>(dataset_submodule, "ColumnMapIterator")
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"), py::arg("rows_per_load") = 10000);
+           py::arg("delimiter"), py::arg("rows_per_load") = 1000000);
 
   py::class_<Loader, LoaderPtr>(dataset_submodule, "Loader")
       .def(py::init(&Loader::make), py::arg("data_iterator"),
