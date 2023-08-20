@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
-import ray
 import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
@@ -190,50 +189,123 @@ class NeuralDB:
 
         return NeuralDB(user_id, savable_state)
 
-    @staticmethod
-    def get_model(
-        n_target_classes: int,
-        model_config=None,
-        query_column="query",
-        id_column="id",
-        **kwargs,
-    ):
-        return Mach(
-            query_col=query_column, id_col=id_column, **kwargs
-        ).model_from_scratch(
-            n_target_classes=n_target_classes,
-            model_config=model_config,
-        )
-
-    @staticmethod
     def pretrain_distributed(
-        udt: bolt.UniversalDeepTransformer,
-        ray_dataset: ray.data.Dataset,
-        strong_column_names: List[str],
-        weak_column_names: Optional[List[str]] = None,
-        learning_rate=0.001,
-        epochs=5,
-        max_in_memory_batches: Optional[int] = None,
+        self,
+        documents,
+        scaling_config,
+        learning_rate: float = 0.001,
+        epochs: int = 5,
         batch_size: int = None,
-        metrics=[],
+        metrics: List[str] = [],
+        max_in_memory_batches: Optional[int] = None,
+        communication_backend="gloo",
+        run_config=None,
     ):
-        from thirdai.dataset import RayDataSource
+        """
+        Pretrains a model in a distributed manner using the provided documents.
 
-        # passing in comm class, will make sure this function runs in distributed
-        # training, if this function is running inside ray trainer's training loop
-        # with TorchConfig
-        udt.coldstart_distributed_on_data_source(
-            data_source=RayDataSource(ray_dataset),
-            strong_column_names=strong_column_names,
-            weak_column_names=weak_column_names,
-            learning_rate=learning_rate,
-            epochs=epochs,
-            batch_size=batch_size,
-            metrics=metrics,
-            max_in_memory_batches=max_in_memory_batches,
+        Args:
+            documents: List of documents for pretraining.
+            scaling_config: Configuration related to the scaling aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.ScalingConfig.html
+            learning_rate (float, optional): Learning rate for the optimizer. Default is 0.001.
+            epochs (int, optional): Number of epochs to train. Default is 5.
+            batch_size (int, optional): Size of each batch for training. If not provided, will be determined automatically.
+            metrics (List[str], optional): List of metrics to evaluate during training. Default is an empty list.
+            max_in_memory_batches (Optional[int], optional): Number of batches to load in memory at once. Useful for
+                streaming support when dataset is too large to fit in memory. If None, all batches will be loaded.
+            communication_backend (str, optional): Bolt Distributed Training uses Torch Communication Backend. This
+                refers to backend for inter-worker communication. Default is "gloo".
+            run_config: Configuration related to the runtime aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.RunConfig.html
+
+        Notes:
+            - The `scaling_config`, `run_config`, and `resume_from_checkpoint` arguments are related to the Ray trainer configuration. Read
+                https://docs.ray.io/en/latest/ray-air/trainers.html#trainer-basics
+            - Ensure that the communication backend specified is compatible with the hardware and network setup for MPI/Gloo backend.
+        """
+
+        from ray.train.torch import TorchConfig
+        import thirdai.distributed_bolt as dist
+        import ray
+        from distutils.version import LooseVersion
+        import warnings
+
+        ray_version = ray.__version__
+        if LooseVersion(ray_version) >= LooseVersion("2.7"):
+            warnings.warn(
+                """
+                Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
+                Support for local checkpoints has been discontinued in these versions. 
+                Refer to https://github.com/ray-project/ray/issues/37177 for details.
+                """.strip()
+            )
+
+        def training_loop_per_worker(config):
+            from ray.air import session
+            import thirdai.distributed_bolt as dist
+            from thirdai.dataset import RayDataSource
+
+            stream_split_data_iterator = session.get_dataset_shard("train")
+
+            model = config["model"]
+            learning_rate = config["learning_rate"]
+            epochs = config["epochs"]
+            batch_size = config["batch_size"]
+            metrics = config["metrics"]
+            max_in_memory_batches = config["max_in_memory_batches"]
+
+            metrics = model.coldstart_distributed_on_data_source(
+                data_source=RayDataSource(stream_split_data_iterator),
+                learning_rate=learning_rate,
+                epochs=epochs,
+                batch_size=batch_size,
+                metrics=metrics,
+                max_in_memory_batches=max_in_memory_batches,
+            )
+
+            session.report(
+                metrics=metrics,
+                checkpoint=dist.UDTCheckPoint.from_model(model),
+            )
+
+        if isinstance(documents, List[CSV]):
+            raise ValueError("Only List[CSV] is supported for distributed training")
+
+        csv_path = (
+            CSV.path
+            if isinstance(documents, CSV)
+            else [document.path for document in documents]
         )
 
-        return udt
+        train_ray_ds = ray.data.read_csv(csv_path)
+
+        train_loop_config = {}
+
+        # TODO(pratik/mritunjay): this might lead to OOM very quickly. Find a better way
+        # to pass in model to training loop
+        train_loop_config["model"] = self._savable_state.model.get_model()
+        train_loop_config["learning_rate"] = learning_rate
+        train_loop_config["epochs"] = epochs
+        train_loop_config["batch_size"] = batch_size
+        train_loop_config["metrics"] = metrics
+        train_loop_config["max_in_memory_batches"] = max_in_memory_batches
+
+        trainer = dist.BoltTrainer(
+            train_loop_per_worker=training_loop_per_worker,
+            train_loop_config=train_loop_config,
+            scaling_config=scaling_config,
+            backend_config=TorchConfig(backend=communication_backend),
+            datasets={"train": train_ray_ds},
+            run_config=run_config,
+        )
+
+        result_and_checkpoint = trainer.fit()
+
+        # TODO(pratik/mritunjay): This will stop working with ray==2.7 if runconfig doesnt specify s3 storage path.
+        model = result_and_checkpoint.checkpoint.get_model()
+
+        self._savable_state.model.set_model(model)
 
     def ready_to_search(self) -> bool:
         return self._savable_state.ready()

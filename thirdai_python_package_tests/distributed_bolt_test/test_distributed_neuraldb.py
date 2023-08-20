@@ -14,46 +14,19 @@ from thirdai_python_package_tests.neural_db.ndb_utils import create_simple_datas
 
 @pytest.mark.unit
 def test_neural_db_training(create_simple_dataset):
-    train_file = create_simple_dataset
+    filename = create_simple_dataset
+    ndb = neural_db.NeuralDB("")
 
-    def training_loop_per_worker():
-        training_data = session.get_dataset_shard("train")
+    doc = neural_db.CSV(
+        filename,
+        id_column="id",
+        strong_columns=["text"],
+        weak_columns=["text"],
+        reference_columns=[],
+    )
 
-        udt = neural_db.NeuralDB.get_model(n_target_classes=5, id_column="id")
-
-        udt = dist.prepare_model(udt)
-
-        pretrained_model = neural_db.NeuralDB.pretrain_distributed(
-            udt=udt,
-            ray_dataset=training_data,
-            strong_column_names=["text"],
-            weak_column_names=["text"],
-            batch_size=10,
-        )
-
-        session.report(
-            metrics={"demo_metric": 0},
-            checkpoint=dist.UDTCheckPoint.from_model(pretrained_model),
-        )
-
-    train_ray_ds = ray.data.read_csv(train_file)
+    ndb.insert(sources=[doc], train=False)
 
     scaling_config = setup_ray()
-    trainer = dist.BoltTrainer(
-        train_loop_per_worker=training_loop_per_worker,
-        train_loop_config={"num_epochs": 5},
-        scaling_config=scaling_config,
-        backend_config=TorchConfig(backend="gloo"),
-        datasets={"train": train_ray_ds},
-    )
 
-    results = trainer.fit()
-
-    ndb = neural_db.NeuralDB.from_udt(
-        udt=results.checkpoint.get_model(),
-        csv=train_file,
-        csv_id_column="id",
-        csv_strong_columns=["text"],
-        csv_weak_columns=["text"],
-        csv_reference_columns=["text"],
-    )
+    ndb.train_distributed(documents=[doc], scaling_config=scaling_config)

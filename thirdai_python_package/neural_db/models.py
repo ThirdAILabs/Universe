@@ -255,6 +255,9 @@ class Mach(Model):
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
+    def set_model(self, model):
+        self.model = model
+
     def save_meta(self, directory: Path):
         pass
 
