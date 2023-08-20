@@ -22,7 +22,7 @@ def test_neural_db_training(create_simple_dataset):
         id_column="id",
         strong_columns=["text"],
         weak_columns=["text"],
-        reference_columns=[],
+        reference_columns=["text"],
     )
 
     ndb.insert(sources=[doc], train=False)
