@@ -92,22 +92,23 @@ class GradientClipperByFraction : public GradientClipper {
   float getthreshold(const std::vector<float>& gradients) const {
     std::vector<float> abs_gradients(gradients.size());
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t i = 0; i < gradients.size(); ++i) {
-        abs_gradients[i] = std::abs(gradients[i]);
+      abs_gradients[i] = std::abs(gradients[i]);
     }
 
     // Sort the absolute gradients in descending order
-    std::sort(abs_gradients.begin(), abs_gradients.end(), std::greater<float>());
+    std::sort(abs_gradients.begin(), abs_gradients.end(),
+              std::greater<float>());
 
     size_t index = static_cast<size_t>(std::ceil(_frac * abs_gradients.size()));
 
     if (index >= abs_gradients.size()) {
-        index = abs_gradients.size() - 1;
+      index = abs_gradients.size() - 1;
     }
 
     return abs_gradients[index];
-}
+  }
 
   float _frac;
 };
