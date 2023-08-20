@@ -141,7 +141,7 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
   _input_transform->apply(columns, *_state);
 
   columns.setColumn(
-      _text_dataset->labelColumn(),
+      MACH_LABEL_COLUMN,
       thirdai::data::ArrayColumn<uint32_t>::make(std::move(labels)));
 
   addDummyDocIds(columns);
