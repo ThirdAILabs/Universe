@@ -17,4 +17,12 @@ inputTransformations(const data::ColumnDataTypes& data_types,
                      const data::TabularOptions& options,
                      bool should_update_history);
 
+using CreatedTransformations =
+    std::pair<std::vector<thirdai::data::TransformationPtr>,
+              std::vector<std::string>>;
+
+CreatedTransformations nonTemporalTransformations(
+    data::ColumnDataTypes data_types, const std::string& label_column,
+    const data::TabularOptions& options);
+
 }  // namespace thirdai::automl

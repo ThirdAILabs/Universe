@@ -24,10 +24,6 @@ namespace thirdai::automl {
 using CreatedTransformation =
     std::pair<std::vector<thirdai::data::TransformationPtr>, std::string>;
 
-using CreatedTransformations =
-    std::pair<std::vector<thirdai::data::TransformationPtr>,
-              std::vector<std::string>>;
-
 using UniqueColumnNamer = std::function<std::string(std::string)>;
 
 CreatedTransformation text(const std::string& column_name,
@@ -399,6 +395,22 @@ inputTransformations(const data::ColumnDataTypes& data_types,
       std::make_shared<thirdai::data::TransformationList>(transformations);
 
   return {t_list, {{output_indices, output_values}}};
+}
+
+CreatedTransformations nonTemporalTransformations(
+    data::ColumnDataTypes data_types, const std::string& label_column,
+    const data::TabularOptions& options) {
+  if (!data_types.count(label_column)) {
+    throw std::invalid_argument(
+        "Target column was not specified in data_types.");
+  }
+  data_types.erase(label_column);
+
+  UniqueColumnNamer column_namer = [&data_types](const std::string& name) {
+    return uniqueColumnName(name, data_types);
+  };
+
+  return nonTemporalTransformations(data_types, options, column_namer);
 }
 
 }  // namespace thirdai::automl
