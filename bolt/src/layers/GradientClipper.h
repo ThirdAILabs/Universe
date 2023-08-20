@@ -58,9 +58,14 @@ class GradientClipperByNorm : public GradientClipper {
 
  private:
   static float compute_norm(const std::vector<float>& gradients) {
-    return std::sqrt(
-        std::accumulate(gradients.begin(), gradients.end(), 0.0,
-                        [](float sum, float val) { return sum + val * val; }));
+    float result = 0.0;
+
+#pragma omp parallel for reduction(+ : result)
+    for (float gradient : gradients) {
+      result += gradient * gradient;
+    }
+
+    return std::sqrt(result);
   }
   float _max_norm;
 };
