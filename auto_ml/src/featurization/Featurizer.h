@@ -4,9 +4,11 @@
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <stdexcept>
 
 namespace thirdai::automl {
 
@@ -25,14 +27,14 @@ class TextDatasetConfig {
   std::string _label_column;
 };
 
-class DatasetFactory {
+class Featurizer {
  public:
-  DatasetFactory(data::ColumnDataTypes data_types,
-                 const data::TemporalRelationships& temporal_relationships,
-                 const std::string& label_column,
-                 thirdai::data::TransformationPtr label_transform,
-                 thirdai::data::IndexValueColumnList bolt_label_columns,
-                 const data::TabularOptions& options);
+  Featurizer(data::ColumnDataTypes data_types,
+             const data::TemporalRelationships& temporal_relationships,
+             const std::string& label_column,
+             thirdai::data::TransformationPtr label_transform,
+             thirdai::data::IndexValueColumnList bolt_label_columns,
+             const data::TabularOptions& options);
 
   thirdai::data::LoaderPtr getDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -59,6 +61,23 @@ class DatasetFactory {
   std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
       const MapInputBatch& samples);
 
+  thirdai::data::ExplanationMap explain(
+      const thirdai::data::ColumnMap& columns) {
+    return _input_transform->explain(columns, *_state);
+  }
+
+  const auto& state() const { return _state; }
+
+  bool hasTemporalTransformations() const;
+
+  const auto& textDatasetConfig() const {
+    if (!_text_dataset) {
+      throw std::runtime_error(
+          "This method is only supported for text models.");
+    }
+    return *_text_dataset;
+  }
+
  protected:
   thirdai::data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -82,6 +101,19 @@ class DatasetFactory {
   thirdai::data::StatePtr _state;
 
   std::optional<TextDatasetConfig> _text_dataset;
+
+ private:
+  Featurizer() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(_input_transform, _input_transform_non_updating, _label_transform,
+            _bolt_input_columns, _bolt_label_columns, _delimiter);
+    // TODO(Nicholas) finish this
+  }
 };
+
+using FeaturizerPtr = std::shared_ptr<Featurizer>;
 
 }  // namespace thirdai::automl

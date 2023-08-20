@@ -211,7 +211,7 @@ py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
   return result;
 }
 
-std::vector<dataset::Explanation> UDT::explain(
+std::vector<std::pair<std::string, float>> UDT::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
   bolt::utils::Timer timer;

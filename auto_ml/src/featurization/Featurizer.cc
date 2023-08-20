@@ -1,15 +1,18 @@
-#include "DatasetFactory.h"
+#include "Featurizer.h"
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::automl {
 
-DatasetFactory::DatasetFactory(
+Featurizer::Featurizer(
     data::ColumnDataTypes data_types,
     const data::TemporalRelationships& temporal_relationships,
     const std::string& label_column,
@@ -38,14 +41,14 @@ DatasetFactory::DatasetFactory(
   }
 }
 
-thirdai::data::LoaderPtr DatasetFactory::getDataLoader(
+thirdai::data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
                              shuffle_config);
 }
 
-thirdai::data::LoaderPtr DatasetFactory::getColdStartDataLoader(
+thirdai::data::LoaderPtr Featurizer::getColdStartDataLoader(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, bool fast_approximation,
@@ -58,7 +61,7 @@ thirdai::data::LoaderPtr DatasetFactory::getColdStartDataLoader(
                              shuffle_config, cold_start);
 }
 
-thirdai::data::LoaderPtr DatasetFactory::getDataLoaderHelper(
+thirdai::data::LoaderPtr Featurizer::getDataLoaderHelper(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config,
     const thirdai::data::TransformationPtr& cold_start_transform) {
@@ -84,7 +87,7 @@ thirdai::data::LoaderPtr DatasetFactory::getDataLoaderHelper(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-bolt::TensorList DatasetFactory::featurizeInput(const MapInput& sample) {
+bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
 
   columns = _input_transform_non_updating->apply(columns, *_state);
@@ -92,8 +95,7 @@ bolt::TensorList DatasetFactory::featurizeInput(const MapInput& sample) {
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
 
-bolt::TensorList DatasetFactory::featurizeInputBatch(
-    const MapInputBatch& samples) {
+bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform_non_updating->apply(columns, *_state);
@@ -101,7 +103,7 @@ bolt::TensorList DatasetFactory::featurizeInputBatch(
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
 
-bolt::TensorList DatasetFactory::featurizeInputColdStart(
+bolt::TensorList Featurizer::featurizeInputColdStart(
     MapInput sample, const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
   auto cold_start = coldStartTransform(strong_column_names, weak_column_names);
@@ -120,7 +122,7 @@ bolt::TensorList DatasetFactory::featurizeInputColdStart(
 }
 
 std::pair<bolt::TensorList, bolt::TensorList>
-DatasetFactory::featurizeTrainingBatch(const MapInputBatch& samples) {
+Featurizer::featurizeTrainingBatch(const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(columns, *_state);
@@ -133,7 +135,7 @@ DatasetFactory::featurizeTrainingBatch(const MapInputBatch& samples) {
   return std::make_pair(std::move(data), std::move(labels));
 }
 
-thirdai::data::TransformationPtr DatasetFactory::coldStartTransform(
+thirdai::data::TransformationPtr Featurizer::coldStartTransform(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bool fast_approximation) {
@@ -154,6 +156,30 @@ thirdai::data::TransformationPtr DatasetFactory::coldStartTransform(
       /* weak_column_names= */ weak_column_names,
       /* label_column_name= */ _text_dataset->labelColumn(),
       /* output_column_name= */ _text_dataset->textColumn());
+}
+
+auto asTransformationList(const thirdai::data::TransformationPtr& t) {
+  return std::dynamic_pointer_cast<thirdai::data::TransformationList>(t);
+}
+
+auto asTemporal(const thirdai::data::TransformationPtr& t) {
+  return std::dynamic_pointer_cast<thirdai::data::CategoricalTemporal>(t);
+}
+
+bool hasTemporalTransformation(const thirdai::data::TransformationPtr& t) {
+  if (auto tlist = asTransformationList(t)) {
+    for (const auto& tt : tlist->transformations()) {
+      if (hasTemporalTransformation(tt)) {
+        return true;
+      }
+    }
+  }
+
+  return asTemporal(t) != nullptr;
+}
+
+bool Featurizer::hasTemporalTransformations() const {
+  return hasTemporalTransformation(_input_transform);
 }
 
 }  // namespace thirdai::automl

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <auto_ml/src/featurization/DatasetFactory.h>
+#include <bolt/src/train/trainer/Dataset.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <data/src/TensorConversion.h>
 #include <dataset/src/mach/MachIndex.h>
 
@@ -9,13 +10,13 @@ namespace thirdai::automl {
 
 using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
 
-class MachDatasetFactory final : public DatasetFactory {
+class MachFeaturizer final : public Featurizer {
  public:
-  MachDatasetFactory(data::ColumnDataTypes data_types,
-                     const data::TemporalRelationships& temporal_relationship,
-                     const std::string& label_column,
-                     dataset::mach::MachIndexPtr mach_index,
-                     const data::TabularOptions& options);
+  MachFeaturizer(data::ColumnDataTypes data_types,
+                 const data::TemporalRelationships& temporal_relationship,
+                 const std::string& label_column,
+                 dataset::mach::MachIndexPtr mach_index,
+                 const data::TabularOptions& options);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
@@ -35,6 +36,17 @@ class MachDatasetFactory final : public DatasetFactory {
   thirdai::data::ColumnMap featurizeRlhfSamples(
       const std::vector<RlhfSample>& samples);
 
+  bolt::LabeledDataset columnsToTensors(const thirdai::data::ColumnMap& columns,
+                                        size_t batch_size) const;
+
+  std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
+      const dataset::DataSourcePtr& data_source,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      size_t n_balancing_samples, size_t rows_to_read);
+
+  const auto& machIndex() const { return _state->machIndex(); }
+
  private:
   thirdai::data::TransformationPtr makeLabelTransformations(
       const std::string& label_column_name,
@@ -45,9 +57,8 @@ class MachDatasetFactory final : public DatasetFactory {
 
   thirdai::data::TransformationPtr _doc_id_transform;
   thirdai::data::TransformationPtr _prehashed_labels_transform;
-
-  static const std::string PARSED_DOC_ID_COLUMN;
-  static const std::string MACH_LABEL_COLUMN;
 };
+
+using MachFeaturizerPtr = std::shared_ptr<MachFeaturizer>;
 
 }  // namespace thirdai::automl

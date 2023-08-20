@@ -1,4 +1,4 @@
-#include "MachDatasetFactory.h"
+#include "MachFeaturizer.h"
 #include <_types/_uint32_t.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <data/src/Loader.h>
@@ -15,12 +15,15 @@
 
 namespace thirdai::automl {
 
-MachDatasetFactory::MachDatasetFactory(
+static const std::string PARSED_DOC_ID_COLUMN = "__doc_ids__";
+static const std::string MACH_LABEL_COLUMN = "__mach_labels__";
+
+MachFeaturizer::MachFeaturizer(
     data::ColumnDataTypes data_types,
     const data::TemporalRelationships& temporal_relationship,
     const std::string& label_column, dataset::mach::MachIndexPtr mach_index,
     const data::TabularOptions& options)
-    : DatasetFactory(
+    : Featurizer(
           data_types, temporal_relationship, label_column,
           makeLabelTransformations(
               label_column, data::asCategorical(data_types.at(label_column)),
@@ -32,7 +35,7 @@ MachDatasetFactory::MachDatasetFactory(
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
-MachDatasetFactory::featurizeForIntroduceDocuments(
+MachFeaturizer::featurizeForIntroduceDocuments(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, bool fast_approximation,
@@ -71,7 +74,7 @@ MachDatasetFactory::featurizeForIntroduceDocuments(
 }
 
 std::pair<bolt::TensorList, bolt::TensorList>
-MachDatasetFactory::featurizeHashesTrainingBatch(const MapInputBatch& samples) {
+MachFeaturizer::featurizeHashesTrainingBatch(const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(columns, *_state);
@@ -85,7 +88,7 @@ MachDatasetFactory::featurizeHashesTrainingBatch(const MapInputBatch& samples) {
   return std::make_pair(std::move(data), std::move(labels));
 }
 
-thirdai::data::ColumnMap MachDatasetFactory::featurizeDataset(
+thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
@@ -100,10 +103,25 @@ thirdai::data::ColumnMap MachDatasetFactory::featurizeDataset(
   _input_transform->apply(columns, *_state);
   _label_transform->apply(columns, *_state);
 
-  return columns;
+  // Remove intermediate columns.
+  thirdai::data::ColumnMap output({});
+  for (const auto& [index_col, value_col] : _bolt_input_columns) {
+    output.setColumn(index_col, columns.getColumn(index_col));
+    if (value_col) {
+      output.setColumn(*value_col, columns.getColumn(*value_col));
+    }
+  }
+  for (const auto& [index_col, value_col] : _bolt_label_columns) {
+    output.setColumn(index_col, columns.getColumn(index_col));
+    if (value_col) {
+      output.setColumn(*value_col, columns.getColumn(*value_col));
+    }
+  }
+
+  return output;
 }
 
-thirdai::data::ColumnMap MachDatasetFactory::featurizeRlhfSamples(
+thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
     const std::vector<RlhfSample>& samples) {
   if (_text_dataset) {
     throw std::invalid_argument("RLHF is only supported for text datasets.");
@@ -131,10 +149,56 @@ thirdai::data::ColumnMap MachDatasetFactory::featurizeRlhfSamples(
   return columns;
 }
 
-const std::string MachDatasetFactory::PARSED_DOC_ID_COLUMN = "__doc_ids__";
-const std::string MachDatasetFactory::MACH_LABEL_COLUMN = "__mach_labels__";
+bolt::LabeledDataset MachFeaturizer::columnsToTensors(
+    const thirdai::data::ColumnMap& columns, size_t batch_size) const {
+  auto data =
+      thirdai::data::toTensorBatches(columns, _bolt_input_columns, batch_size);
+  auto labels =
+      thirdai::data::toTensorBatches(columns, _bolt_label_columns, batch_size);
 
-thirdai::data::TransformationPtr MachDatasetFactory::makeLabelTransformations(
+  return std::make_pair(std::move(data), std::move(labels));
+}
+
+std::vector<std::pair<uint32_t, RlhfSample>>
+MachFeaturizer::getBalancingSamples(
+    const dataset::DataSourcePtr& data_source,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    size_t n_balancing_samples, size_t rows_to_read) {
+  thirdai::data::ColumnMapIterator data_iter(
+      data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
+
+  auto columns = data_iter.next().value();
+
+  if (!strong_column_names.empty() || !weak_column_names.empty()) {
+    coldStartTransform(strong_column_names, weak_column_names)
+        ->apply(columns, *_state);
+  }
+
+  _label_transform->apply(columns, *_state);
+
+  columns.shuffle();
+
+  auto text_col =
+      columns.getValueColumn<std::string>(textDatasetConfig().textColumn());
+  auto mach_label_col = columns.getArrayColumn<uint32_t>(MACH_LABEL_COLUMN);
+  auto doc_id_col = columns.getValueColumn<uint32_t>(PARSED_DOC_ID_COLUMN);
+
+  size_t n_to_return = std::min(n_balancing_samples, columns.numRows());
+  std::vector<std::pair<uint32_t, RlhfSample>> samples;
+  for (size_t i = 0; i < n_to_return; i++) {
+    auto labels = mach_label_col->row(i);
+
+    RlhfSample sample(text_col->value(i),
+                      std::vector<uint32_t>(labels.begin(), labels.end()));
+
+    samples.emplace_back(doc_id_col->value(i), std::move(sample));
+  }
+
+  return samples;
+}
+
+thirdai::data::TransformationPtr MachFeaturizer::makeLabelTransformations(
     const std::string& label_column_name,
     const data::CategoricalDataTypePtr& label_column_info,
     const dataset::mach::MachIndexPtr& mach_index) {
@@ -157,7 +221,7 @@ thirdai::data::TransformationPtr MachDatasetFactory::makeLabelTransformations(
       {_doc_id_transform, mach_label_transform});
 }
 
-void MachDatasetFactory::addDummyDocIds(thirdai::data::ColumnMap& columns) {
+void MachFeaturizer::addDummyDocIds(thirdai::data::ColumnMap& columns) {
   auto dummy_doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
       std::vector<uint32_t>(columns.numRows(), 0), std::nullopt);
 
