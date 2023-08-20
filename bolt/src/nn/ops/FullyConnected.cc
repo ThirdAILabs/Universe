@@ -141,6 +141,9 @@ void FullyConnected::summary(std::ostream& summary,
     summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
     summary << ")";
   }
+  if (_kernel->getGradClip()) {
+    summary << ", grad_clip=" << *_kernel->getGradClip();
+  }
   summary << "]";
 }
 

@@ -36,7 +36,7 @@ struct AdamOptimizer {
 
   void clipGradients() {
     if (_gradient_clipper) {
-      gradients = _gradient_clipper->get()->clipVector(gradients);
+      _gradient_clipper->get()->clipVector(gradients);
     }
   }
 
@@ -45,7 +45,7 @@ struct AdamOptimizer {
     assert(params.size() == gradients.size());
 
     if (_gradient_clipper) {
-      gradients = _gradient_clipper->get()->clipVector(gradients);
+      _gradient_clipper->get()->clipVector(gradients);
     }
 
     float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));

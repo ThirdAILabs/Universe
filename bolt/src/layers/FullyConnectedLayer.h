@@ -81,6 +81,8 @@ class FullyConnectedLayer final {
 
   void setNeuronIndex(NeuronIndexPtr index);
 
+  std::optional<std::string> getGradClip() const { return _grad_clip; }
+
   uint32_t getDim() const { return _dim; }
 
   uint32_t getInputDim() const { return _prev_dim; }
