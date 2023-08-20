@@ -14,6 +14,8 @@ class RayDataSource(PyDataSource):
     out of the box for single amchine training too.
     """
 
+    DEFAULT_CHUNK_SIZE = 1000
+
     def __init__(self, ray_dataset):
         PyDataSource.__init__(self)
         self.ray_dataset = ray_dataset
@@ -26,10 +28,11 @@ class RayDataSource(PyDataSource):
             {column_name: [column_name] for column_name in column_names}
         ).to_csv(index=None, header=None)
         # return row-by-row data
-        for row in self.ray_dataset.iter_rows():
-            yield pd.DataFrame(row, index=[0]).to_csv(header=None, index=None).strip(
-                "\n"
-            )
+        for chunk in self.ray_dataset.iter_batches(
+            batch_size=self.DEFAULT_CHUNK_SIZE, batch_format="pandas"
+        ):
+            for i in range(len(chunk)):
+                yield chunk.iloc[i : i + 1].to_csv(header=None, index=None).strip("\n")
 
     def resource_name(self) -> str:
         return f"ray-dataset-sources"
