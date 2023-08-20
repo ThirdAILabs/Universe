@@ -250,7 +250,10 @@ class NeuralDB:
 
             stream_split_data_iterator = session.get_dataset_shard("train")
 
-            model = session.get_checkpoint().get_model()
+            model = dist.UDTCheckPoint.get_model(session.get_checkpoint())
+
+            strong_column_names = config["strong_column_names"]
+            weak_column_names = config["weak_column_names"]
             learning_rate = config["learning_rate"]
             epochs = config["epochs"]
             batch_size = config["batch_size"]
@@ -259,6 +262,8 @@ class NeuralDB:
 
             metrics = model.coldstart_distributed_on_data_source(
                 data_source=RayDataSource(stream_split_data_iterator),
+                strong_column_names=strong_column_names,
+                weak_column_names=weak_column_names,
                 learning_rate=learning_rate,
                 epochs=epochs,
                 batch_size=batch_size,
@@ -271,19 +276,20 @@ class NeuralDB:
                 checkpoint=dist.UDTCheckPoint.from_model(model),
             )
 
-        if isinstance(documents, List[CSV]):
-            raise ValueError("Only List[CSV] is supported for distributed training")
-
-        csv_paths = [document.path for document in documents]
+        csv_paths = [str(document.path.resolve()) for document in documents]
 
         train_ray_ds = ray.data.read_csv(csv_paths)
 
         train_loop_config = {}
 
         # we cannot pass the model by default to config given config results in OOM very frequently with bigger model.
-        checkpoint_path = dist.UDTCheckPoint.from_model(
+        checkpoint = dist.UDTCheckPoint.from_model(
             self._savable_state.model.get_model()
         )
+        checkpoint_path = checkpoint.to_directory()
+
+        train_loop_config["strong_column_names"] = documents[0].strong_columns
+        train_loop_config["weak_column_names"] = documents[0].weak_columns
         train_loop_config["learning_rate"] = learning_rate
         train_loop_config["epochs"] = epochs
         train_loop_config["batch_size"] = batch_size
@@ -297,7 +303,7 @@ class NeuralDB:
             backend_config=TorchConfig(backend=communication_backend),
             datasets={"train": train_ray_ds},
             run_config=run_config,
-            resume_from_checkpoint=dist.BoltCheckPoint.from_directory(checkpoint_path),
+            resume_from_checkpoint=dist.UDTCheckPoint.from_directory(checkpoint_path),
         )
 
         result_and_checkpoint = trainer.fit()

@@ -29,4 +29,4 @@ def test_neural_db_training(create_simple_dataset):
 
     scaling_config = setup_ray()
 
-    ndb.train_distributed(documents=[doc], scaling_config=scaling_config)
+    ndb.pretrain_distributed(documents=[doc], scaling_config=scaling_config)
