@@ -217,13 +217,12 @@ class NeuralDB:
         batch_size: int = None,
         metrics=[],
     ):
-        from thirdai._distributed_bolt import Communication
         from thirdai.dataset import RayDataSource
 
         # passing in comm class, will make sure this function runs in distributed
         # training, if this function is running inside ray trainer's training loop
         # with TorchConfig
-        udt.cold_start_on_data_source(
+        udt.coldstart_distributed_on_data_source(
             data_source=RayDataSource(ray_dataset),
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,
@@ -232,7 +231,6 @@ class NeuralDB:
             batch_size=batch_size,
             metrics=metrics,
             max_in_memory_batches=max_in_memory_batches,
-            comm=Communication(),
         )
 
         return udt
