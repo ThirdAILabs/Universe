@@ -225,11 +225,12 @@ class NeuralDB:
             - Ensure that the communication backend specified is compatible with the hardware and network setup for MPI/Gloo backend.
         """
 
-        from ray.train.torch import TorchConfig
-        import thirdai.distributed_bolt as dist
-        import ray
-        from distutils.version import LooseVersion
         import warnings
+        from distutils.version import LooseVersion
+
+        import ray
+        import thirdai.distributed_bolt as dist
+        from ray.train.torch import TorchConfig
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
@@ -242,8 +243,8 @@ class NeuralDB:
             )
 
         def training_loop_per_worker(config):
-            from ray.air import session
             import thirdai.distributed_bolt as dist
+            from ray.air import session
             from thirdai.dataset import RayDataSource
 
             stream_split_data_iterator = session.get_dataset_shard("train")
