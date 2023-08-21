@@ -1,4 +1,4 @@
-#include "UnrollSequence.h"
+#include "Recurrence.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
@@ -41,13 +41,13 @@ static std::exception_ptr mismatchedRowSizeError(uint32_t source_row_size,
                                                  uint32_t target_row_size,
                                                  uint32_t row_number) {
   std::stringstream error_ss;
-  error_ss << "UnrollSequence error: source is not the same size as target ("
+  error_ss << "Recurrence error: source is not the same size as target ("
            << source_row_size << " vs. " << target_row_size << ") in row "
            << row_number << ".";
   return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
 }
 
-ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
+ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto source_column = columns.getArrayColumn<uint32_t>(_source_input_column);
@@ -85,13 +85,13 @@ ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
             std::vector(source_row.begin(), source_row.begin() + row_pos);
         // Target is row_pos-th token; the next token to be predicted.
         unrolled_target_data[offset + row_pos] =
-            tokenOffset(row_pos) + target_row[row_pos];
+            offsetPosition(row_pos) * _target_vocab_size + target_row[row_pos];
       }
       unrolled_source_data[offset + source_row.size()] =
           std::vector(source_row.begin(), source_row.end());
       unrolled_target_data[offset + source_row.size()] =
           _target_vocab_size * _max_position_offset +
-          tokenOffset(source_row.size());
+          offsetPosition(source_row.size());
 
     } catch (std::exception& e) {
 #pragma omp critical
@@ -117,25 +117,25 @@ ColumnMap UnrollSequence::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-bool UnrollSequence::isEOS(uint32_t token) const {
+bool Recurrence::isEOS(uint32_t token) const {
   return token >= _target_vocab_size * _max_position_offset;
 }
 
-void UnrollSequence::assertCorrectTargetInputDim(
+void Recurrence::assertCorrectTargetInputDim(
     const ArrayColumnBase<uint32_t>& target_column) const {
   if (!target_column.dim()) {
     throw std::invalid_argument(
-        "UnrollSequence: Expected target column to have a dimension.");
+        "Recurrence: Expected target column to have a dimension.");
   }
   if (*target_column.dim() != _target_vocab_size) {
-    throw std::invalid_argument("UnrollSequence: Expected target vocab size " +
+    throw std::invalid_argument("Recurrence: Expected target vocab size " +
                                 std::to_string(_target_vocab_size) +
                                 " but received target column with dimension " +
                                 std::to_string(*target_column.dim()));
   }
 }
 
-uint32_t UnrollSequence::tokenOffset(size_t position) const {
+uint32_t Recurrence::offsetPosition(size_t position) const {
   return std::min(position, _max_position_offset - 1);
 }
 }  // namespace thirdai::data

@@ -8,7 +8,7 @@ set(DATA_TESTS
     PermutationTest
     EncodePositionTest
     CountTokensTest
-    UnrollSequenceTest
+    RecurrenceTest
     GraphTests
     ExplanationTests)
 
