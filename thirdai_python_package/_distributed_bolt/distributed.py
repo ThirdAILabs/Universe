@@ -46,6 +46,17 @@ class Communication(bolt.train.Communication):
         dist.all_reduce(all_reduce_num_batches, op=dist.ReduceOp.MIN)
         return all_reduce_num_batches
 
+    @timed
+    def broadcast_metrics(self, train_metrics):
+        import torch
+        import torch.distributed as dist
+
+        dist.barrier()
+        train_metrics_tensor = torch.tensor(train_metrics)
+        dist.broadcast(train_metrics_tensor, src=0)
+
+        return train_metrics_tensor.tolist()
+
 
 class EarlyStopOnMetrics(bolt.train.callbacks.Callback):
     def __init__(

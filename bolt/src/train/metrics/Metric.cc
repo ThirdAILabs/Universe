@@ -51,6 +51,29 @@ std::string MetricCollection::summarizeLastStep() const {
   return summary.str();
 }
 
+std::vector<float> MetricCollection::getFlattenedMetrics() const {
+  std::vector<float> metric_values;
+
+  for (const auto& metric : _metrics) {
+    metric_values.push_back(metric->value());
+  }
+
+  return metric_values;
+}
+
+void MetricCollection::setFlattenedMetrics(History& history,
+                                           std::vector<float> metric_values) {
+  if (_metrics.size() != metric_values.size()) {
+    throw std::invalid_argument(
+        "Number of metric values to set must match the size of internal \
+        metrics placeholder.");
+  }
+  int num_metrics = metric_values.size();
+  for (int idx = 0; idx < num_metrics; idx++) {
+    history[_metrics[idx]->name()].back() = metric_values[idx];
+  }
+}
+
 void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();
