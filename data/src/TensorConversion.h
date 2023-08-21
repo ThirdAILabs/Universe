@@ -5,8 +5,33 @@
 
 namespace thirdai::data {
 
-using IndexValueColumnList =
-    std::vector<std::pair<std::string, std::optional<std::string>>>;
+enum ValueFillType {
+  Ones,
+  SumToOne,
+};
+
+class IndexValueColumn {
+ public:
+  explicit IndexValueColumn(std::string indices,
+                            ValueFillType value_fill_type = ValueFillType::Ones)
+      : _indices(std::move(indices)), _value_fill_type(value_fill_type) {}
+
+  IndexValueColumn(std::string indices, std::string values)
+      : _indices(std::move(indices)), _values(std::move(values)) {}
+
+  const auto& indices() const { return _indices; }
+
+  const auto& values() const { return _values; }
+
+  ValueFillType valueFillType() const { return _value_fill_type; }
+
+ private:
+  std::string _indices;
+  std::optional<std::string> _values;
+  ValueFillType _value_fill_type;
+};
+
+using IndexValueColumnList = std::vector<IndexValueColumn>;
 
 std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,

@@ -97,10 +97,10 @@ void Loader::restart() { _data_iterator.restart(); }
 
 void Loader::recordReturnedColumns(
     const IndexValueColumnList& index_value_columns) {
-  for (const auto& [indices, values] : index_value_columns) {
-    _columns_returned.insert(indices);
-    if (values) {
-      _columns_returned.insert(*values);
+  for (const auto& column : index_value_columns) {
+    _columns_returned.insert(column.indices());
+    if (column.values()) {
+      _columns_returned.insert(*column.values());
     }
   }
 }

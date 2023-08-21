@@ -24,8 +24,8 @@ def load_data(filename):
         data_iterator=data_iter,
         transformation=transformations,
         state=None,
-        input_columns=[("tokens", None)],
-        output_columns=[("category_id", None)],
+        input_columns=[data.IndexValueColumn("tokens")],
+        output_columns=[data.IndexValueColumn("category_id")],
         batch_size=2048,
         shuffle=True,
         shuffle_buffer_size=1000,
@@ -93,7 +93,7 @@ def test_single_sample_featurization(train_bolt_on_clinc):
     for sample, label in inference_samples:
         inputs = data.to_tensors(
             column_map=tokenizer(data.ColumnMap(sample)),
-            columns_to_convert=[("tokens", None)],
+            columns_to_convert=[data.IndexValueColumn("tokens")],
             batch_size=100,
         )[0]
 
@@ -121,7 +121,7 @@ def test_batch_featurization(train_bolt_on_clinc):
     labels = np.array([x[1] for x in inference_samples])
     batch = data.to_tensors(
         column_map=tokenizer(data.ColumnMap(batch)),
-        columns_to_convert=[("tokens", None)],
+        columns_to_convert=[data.IndexValueColumn("tokens")],
         batch_size=10000,
     )[0]
 

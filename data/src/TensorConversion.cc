@@ -12,18 +12,22 @@ std::vector<bolt::TensorList> toTensorBatches(
   size_t num_batches = (columns.numRows() + batch_size - 1) / batch_size;
   std::vector<bolt::TensorList> tensors(num_batches);
 
-  for (const auto& [indices_column, values_column] : columns_to_convert) {
-    auto indices = columns.getArrayColumn<uint32_t>(indices_column);
+  for (const auto& column_info : columns_to_convert) {
+    auto indices = columns.getArrayColumn<uint32_t>(column_info.indices());
 
     ArrayColumnBasePtr<float> values = nullptr;
-    if (values_column) {
-      values = columns.getArrayColumn<float>(*values_column);
+    ValueFillType value_fill_type = ValueFillType::Ones;
+    if (column_info.values()) {
+      values = columns.getArrayColumn<float>(*column_info.values());
+    } else {
+      value_fill_type = column_info.valueFillType();
     }
 
     std::exception_ptr error;
 
-#pragma omp parallel for default(none) \
-    shared(num_batches, batch_size, columns, indices, values, tensors, error)
+#pragma omp parallel for default(none)                                 \
+    shared(num_batches, batch_size, columns, indices, values, tensors, \
+           value_fill_type, error)
     for (size_t batch = 0; batch < num_batches; batch++) {
       size_t batch_start = batch * batch_size;
       size_t batch_end = std::min((batch + 1) * batch_size, columns.numRows());
@@ -57,8 +61,17 @@ std::vector<bolt::TensorList> toTensorBatches(
           batch_values.insert(batch_values.end(), values_row.begin(),
                               values_row.end());
         } else {
+          float fill_value;
+          switch (value_fill_type) {
+            case ValueFillType::Ones:
+              fill_value = 1.0;
+              break;
+            case ValueFillType::SumToOne:
+              fill_value = 1.0 / indices_row.size();
+              break;
+          }
           for (size_t j = 0; j < indices_row.size(); j++) {
-            batch_values.push_back(1.0);
+            batch_values.push_back(fill_value);
           }
         }
 
