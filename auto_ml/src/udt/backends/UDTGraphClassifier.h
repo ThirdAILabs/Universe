@@ -14,7 +14,7 @@ class UDTGraphClassifier final : public UDTBackend {
                      const std::string& target_col, uint32_t n_target_classes,
                      bool integer_target, const data::TabularOptions& options,
                      const std::optional<std::string>& model_config,
-                     config::ArgumentMap user_args);
+                     const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,

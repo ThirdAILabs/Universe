@@ -18,7 +18,7 @@ UDTGraphClassifier::UDTGraphClassifier(
     uint32_t n_target_classes, bool integer_target,
     const data::TabularOptions& options,
     const std::optional<std::string>& model_config,
-    const config::ArgumentMap user_args) {
+    const config::ArgumentMap& user_args) {
   if (!integer_target) {
     throw exceptions::NotImplemented(
         "We do not yet support non integer classes on graphs.");
