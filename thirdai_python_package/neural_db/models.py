@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt
 
 from .documents import DocumentDataSource
-from .utils import clean_text, random_sample
+from .utils import CancelState, clean_text, random_sample
 
 InferSamples = List
 Predictions = Sequence
@@ -14,25 +14,8 @@ TrainLabels = List
 TrainSamples = List
 
 
-# This class can be constructed by clients that use neural_db.
-# The object can then be passed into Model.index_documents(), and if
-# the client calls CancelState.cancel() on the object, training will halt.
-class CancelState:
-    def __init__(self, canceled=False):
-        self.canceled = canceled
-
-    def cancel(self):
-        self.canceled = True
-
-    def uncancel(self):
-        self.canceled = False
-
-    def is_canceled(self):
-        return self.canceled
-
-
 class Model:
-    def get_model(self) -> bolt.UniversalDeepTransformer:
+    def get_model(self):
         raise NotImplementedError()
 
     def index_documents(

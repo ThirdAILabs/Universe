@@ -3,6 +3,23 @@ import math
 import random
 
 
+# This class can be constructed by clients that use neural_db.
+# The object can then be passed into Model.index_documents(), and if
+# the client calls CancelState.cancel() on the object, training will halt.
+class CancelState:
+    def __init__(self, canceled=False):
+        self.canceled = canceled
+
+    def cancel(self):
+        self.canceled = True
+
+    def uncancel(self):
+        self.canceled = False
+
+    def is_canceled(self):
+        return self.canceled
+
+
 def clean_text(text):
     return text.encode("utf-8", "replace").decode("utf-8").lower()
 
