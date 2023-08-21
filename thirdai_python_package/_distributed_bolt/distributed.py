@@ -86,4 +86,17 @@ def adds_distributed_to_bolt():
 
         return metrics
 
+    def udt_coldstart_distributed_on_data_source(self, *args, **kwargs):
+        self._get_model().disable_sparse_parameter_updates()
+
+        kwargs["comm"] = Communication()
+        metrics = self.cold_start_on_data_source(*args, **kwargs)
+
+        self._get_model().enable_sparse_parameter_updates()
+
+        return metrics
+
     bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
+    bolt.UniversalDeepTransformer.coldstart_distributed_on_data_source = (
+        udt_coldstart_distributed_on_data_source
+    )
