@@ -12,7 +12,7 @@ from thirdai import neural_db
 from thirdai_python_package_tests.neural_db.ndb_utils import create_simple_dataset
 
 
-@pytest.mark.unit
+@pytest.mark.distributed
 def test_neural_db_training(create_simple_dataset):
     filename = create_simple_dataset
     ndb = neural_db.NeuralDB("")
