@@ -75,16 +75,7 @@ class EarlyStopOnMetrics(bolt.train.callbacks.Callback):
         import torch.distributed as dist
         from ray.air import session
 
-        if (
-            session.get_world_rank() == 0
-            and self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
-        ):
-            self.stop_training = 1
-
-        stop_training = torch.tensor(self.stop_training)
-        dist.all_reduce(stop_training)
-
-        if stop_training.item():
+        if self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold:
             self.train_state.stop_training()
 
 
