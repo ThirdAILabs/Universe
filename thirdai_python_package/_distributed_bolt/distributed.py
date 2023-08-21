@@ -68,13 +68,8 @@ class EarlyStopOnMetrics(bolt.train.callbacks.Callback):
 
         self.tracked_metric = tracked_metric
         self.metric_threshold = metric_threshold
-        self.stop_training = 0
 
     def on_epoch_end(self):
-        import torch
-        import torch.distributed as dist
-        from ray.air import session
-
         if self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold:
             self.train_state.stop_training()
 
