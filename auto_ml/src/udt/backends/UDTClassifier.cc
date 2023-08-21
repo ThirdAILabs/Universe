@@ -270,7 +270,7 @@ thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
           target_name, LABEL_COL, n_target_classes);
     }
     return std::make_shared<thirdai::data::StringToTokenArray>(
-        target_name, LABEL_COL, target_config->delimiter, n_target_classes);
+        target_name, LABEL_COL, *target_config->delimiter, n_target_classes);
   }
 
   return std::make_shared<thirdai::data::StringIDLookup>(
@@ -321,7 +321,7 @@ void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_CLASSIFIER_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
+  archive(cereal::base_class<UDTBackend>(this), _classifier);
 }
 
 }  // namespace thirdai::automl::udt

@@ -5,6 +5,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
+#include <auto_ml/src/featurization/RecurrentFeaturizer.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -71,18 +72,32 @@ class UDTRecurrentClassifier final : public UDTBackend {
     }
   }
 
+  static uint32_t predictionAtStep(const BoltVector& output, uint32_t step,
+                                   size_t vocab_size);
+
+  static std::string elementString(
+      uint32_t element_id, const thirdai::data::ThreadSafeVocabularyPtr& vocab);
+
+  bool isEOS(uint32_t element_id, size_t vocab_size) const;
+
+  void addPredictionToSample(MapInput& sample,
+                             const std::string& prediction) const;
+
   friend cereal::access;
 
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
+  std::string _target_name;
   data::SequenceDataTypePtr _target;
 
   ModelPtr _model;
-  data::RecurrentDatasetFactoryPtr _dataset_factory;
+
+  RecurrentFeaturizerPtr _featurizer;
+
+  uint32_t _eos_token;
 
   bool _freeze_hash_tables;
-  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai::automl::udt

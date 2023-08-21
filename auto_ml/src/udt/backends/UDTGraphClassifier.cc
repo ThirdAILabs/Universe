@@ -84,7 +84,7 @@ void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
+  archive(cereal::base_class<UDTBackend>(this), _classifier);
 }
 
 ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {

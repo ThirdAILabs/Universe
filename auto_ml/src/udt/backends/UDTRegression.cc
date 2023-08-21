@@ -169,7 +169,7 @@ void UDTRegression::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_REGRESSION_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _model, _featurizer, _binning);
+  archive(cereal::base_class<UDTBackend>(this), _model, _binning);
 }
 
 }  // namespace thirdai::automl::udt

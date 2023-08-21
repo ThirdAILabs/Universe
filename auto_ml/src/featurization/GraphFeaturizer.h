@@ -6,6 +6,7 @@
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/utils/GraphInfo.h>
 
 namespace thirdai::automl {
 
@@ -36,8 +37,8 @@ class GraphFeaturizer {
   static std::pair<thirdai::data::TransformationPtr, std::string> neighborIds(
       const data::ColumnDataTypes& data_types);
 
-  static thirdai::data::TransformationPtr graphBuilder(
-      const data::ColumnDataTypes& data_types);
+  static std::pair<thirdai::data::TransformationPtr, data::GraphInfoPtr>
+  graphBuilder(const data::ColumnDataTypes& data_types);
 
   thirdai::data::TransformationPtr _input_transform;
   thirdai::data::TransformationPtr _label_transform;

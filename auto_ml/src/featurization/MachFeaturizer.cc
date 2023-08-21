@@ -204,7 +204,7 @@ thirdai::data::TransformationPtr MachFeaturizer::makeLabelTransformations(
     const dataset::mach::MachIndexPtr& mach_index) {
   if (auto delim = label_column_info->delimiter) {
     _doc_id_transform = std::make_shared<thirdai::data::StringToTokenArray>(
-        label_column_name, PARSED_DOC_ID_COLUMN, delim, std::nullopt);
+        label_column_name, PARSED_DOC_ID_COLUMN, *delim, std::nullopt);
   } else {
     _doc_id_transform = std::make_shared<thirdai::data::StringToToken>(
         label_column_name, PARSED_DOC_ID_COLUMN, std::nullopt);

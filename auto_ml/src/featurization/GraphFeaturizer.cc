@@ -42,7 +42,10 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
 
   _bolt_label_columns = {{"__todo_labels__", std::nullopt}};
 
-  _graph_builder = graphBuilder(data_types);
+  auto [graph_builder, graph_info] = graphBuilder(data_types);
+  _graph_builder = graph_builder;
+
+  _state = std::make_shared<thirdai::data::State>(graph_info);
 }
 
 thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
@@ -130,8 +133,8 @@ GraphFeaturizer::neighborIds(const data::ColumnDataTypes& data_types) {
   return {transform, output_name};
 }
 
-thirdai::data::TransformationPtr GraphFeaturizer::graphBuilder(
-    const data::ColumnDataTypes& data_types) {
+std::pair<thirdai::data::TransformationPtr, data::GraphInfoPtr>
+GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
   std::vector<std::string> feature_col_names;
 
   for (const auto& [col_name, data_type] : data_types) {
@@ -140,8 +143,12 @@ thirdai::data::TransformationPtr GraphFeaturizer::graphBuilder(
     }
   }
 
-  return std::make_shared<thirdai::data::GraphBuilder>(
+  auto graph_builder = std::make_shared<thirdai::data::GraphBuilder>(
       nodeIdColumn(data_types), neighborsColumn(data_types), feature_col_names);
+
+  auto graph_info = std::make_shared<data::GraphInfo>(feature_col_names.size());
+
+  return {graph_builder, graph_info};
 }
 
 }  // namespace thirdai::automl

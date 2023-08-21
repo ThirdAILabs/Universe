@@ -429,6 +429,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularTransformations.cc
     auto_ml/src/featurization/Featurizer.cc
     auto_ml/src/featurization/MachFeaturizer.cc
+    auto_ml/src/featurization/GraphFeaturizer.cc
+    auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc

@@ -63,7 +63,7 @@ template void RLHFSampler::serialize(cereal::BinaryOutputArchive& archive);
 
 template <class Archive>
 void RLHFSampler::serialize(Archive& archive) {
-  archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
+  archive(_doc_ids, _max_docs, _max_samples_per_doc);
 }
 
 }  // namespace thirdai::automl::udt
