@@ -243,11 +243,20 @@ class NeuralDB:
                 """.strip()
             )
 
+        if not isinstance(documents, list) or not all(
+            isinstance(doc, CSV) for doc in documents
+        ):
+            raise ValueError(
+                "The pretrain_distributed function currently only supports CSV documents."
+            )
+
         def training_loop_per_worker(config):
             import thirdai.distributed_bolt as dist
             from ray.air import session
             from thirdai.dataset import RayDataSource
 
+            # ray data will automatically split the data if the dataset is passed with key "train"
+            # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
             stream_split_data_iterator = session.get_dataset_shard("train")
 
             model = dist.UDTCheckPoint.get_model(session.get_checkpoint())

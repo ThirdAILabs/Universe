@@ -27,6 +27,7 @@ def test_neural_db_training(create_simple_dataset):
 
     ndb.insert(sources=[doc], train=False)
 
-    scaling_config = setup_ray()
+    # we are running just one worker since we get OOM issues with multiple workers
+    scaling_config = setup_ray(num_workers=1)
 
     ndb.pretrain_distributed(documents=[doc], scaling_config=scaling_config)

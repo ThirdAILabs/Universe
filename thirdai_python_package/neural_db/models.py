@@ -293,7 +293,7 @@ class Mach(Model):
 
         if self.model is None:
             self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(intro_documents.size)
+            self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_before_train = False
             min_epochs = 10
@@ -351,7 +351,7 @@ class Mach(Model):
 
     def model_from_scratch(
         self,
-        n_target_classes: int,
+        documents: DocumentDataSource,
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
@@ -359,7 +359,7 @@ class Mach(Model):
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
-            n_target_classes=n_target_classes,
+            n_target_classes=documents.size,
             integer_target=True,
             options={
                 "extreme_classification": True,
