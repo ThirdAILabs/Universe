@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::bolt::python {
 
