@@ -62,7 +62,7 @@ std::vector<float> MetricCollection::getFlattenedMetrics() const {
 }
 
 void MetricCollection::setFlattenedMetrics(History& history,
-                                           std::vector<float> metric_values) {
+                                           std::vector<float>& metric_values) {
   if (_metrics.size() != metric_values.size()) {
     throw std::invalid_argument(
         "Number of metric values to set must match the size of internal \

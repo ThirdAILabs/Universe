@@ -27,6 +27,17 @@ class PyDistributedComm : public DistributedComm {
                                 num_batches        /* Argument(s) */
     );
   }
+
+  std::vector<float> broadcastMetrics(
+      std::vector<float> train_metrics) override {
+    PYBIND11_OVERRIDE_PURE_NAME(
+        std::vector<float>,  /* Return type */
+        DistributedComm,     /* Parent class */
+        "broadcast_metrics", /* Name of Python function */
+        broadcastMetrics,    /* Name of C++ function */
+        train_metrics        /* Argument(s) */
+    );
+  }
 };
 
 }  // namespace thirdai::bolt::python
