@@ -7,6 +7,8 @@
 
 namespace thirdai::bolt::python {
 
+using MetricNameValue = std::pair<std::string, float>;
+
 class PyDistributedComm : public DistributedComm {
  public:
   PyDistributedComm() {}
@@ -29,14 +31,14 @@ class PyDistributedComm : public DistributedComm {
     );
   }
 
-  std::vector<float> broadcastMetrics(
-      std::vector<float> train_metrics) override {
+  std::vector<MetricNameValue> broadcastMetrics(
+      std::vector<MetricNameValue> train_metrics) override {
     PYBIND11_OVERRIDE_PURE_NAME(
-        std::vector<float>,  /* Return type */
-        DistributedComm,     /* Parent class */
-        "broadcast_metrics", /* Name of Python function */
-        broadcastMetrics,    /* Name of C++ function */
-        train_metrics        /* Argument(s) */
+        std::vector<MetricNameValue>, /* Return type */
+        DistributedComm,              /* Parent class */
+        "broadcast_metrics",          /* Name of Python function */
+        broadcastMetrics,             /* Name of C++ function */
+        train_metrics                 /* Argument(s) */
     );
   }
 };

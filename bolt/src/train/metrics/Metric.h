@@ -107,12 +107,14 @@ class MetricCollection {
   /**
    * Returns all the metric values in flattened vector
    */
-  std::vector<float> getFlattenedMetrics() const;
+  std::vector<std::pair<std::string, float>> getFlattenedMetrics() const;
 
   /**
    * Sets metric values from a flattened vector
    */
-  void setFlattenedMetrics(History& history, std::vector<float>& metric_values);
+  void setFlattenedMetrics(
+      History& history,
+      std::vector<std::pair<std::string, float>>& metric_values);
 
  private:
   std::vector<MetricPtr> _metrics;

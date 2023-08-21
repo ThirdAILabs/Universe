@@ -23,17 +23,26 @@ def training_loop_per_worker(config):
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed(
+    tracked_metric = "categorical_accuracy"
+    metric_threshold = 0.95
+    num_epochs = config.get("num_epochs", 1)
+
+    history = trainer.train_distributed(
         train_data=(train_x, train_y),
         learning_rate=0.005,
-        epochs=config.get("num_epochs", 1),
+        epochs=num_epochs,
         train_metrics=["categorical_accuracy"],
         callbacks=[
             bolt.train.callbacks.EarlyStopOnMetrics(
-                tracked_metric="categorical_accuracy", metric_threshold=0.95
+                tracked_metric=tracked_metric, metric_threshold=metric_threshold
             )
         ],
     )
+
+    # Check if early stopping worked or desired threshold
+    # couldn't be reached in given number of epochs.
+    metric_list = history[f"train_{tracked_metric}"]
+    assert len(metric_list) < num_epochs or metric_list[-1] <= metric_threshold
 
     session.report(
         {"model_location": session.get_trial_dir()},
@@ -86,6 +95,9 @@ def test_bolt_distributed():
     check_model_parameters_equal(model_1, model_2)
 
     ray.shutdown()
+
+
+test_bolt_distributed()
 
 
 @pytest.mark.distributed

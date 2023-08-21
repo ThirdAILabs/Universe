@@ -130,7 +130,7 @@ metrics::History Trainer::train(
 
     epoch_timer.stop();
 
-    std::vector<float> metrics_at_rank_0;
+    std::vector<std::pair<std::string, float>> metrics_at_rank_0;
     if (comm) {
       metrics_at_rank_0 =
           comm->broadcastMetrics(train_metrics.getFlattenedMetrics());

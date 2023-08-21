@@ -48,14 +48,12 @@ class Communication(bolt.train.Communication):
 
     @timed
     def broadcast_metrics(self, train_metrics):
-        import torch
         import torch.distributed as dist
 
         dist.barrier()
-        train_metrics_tensor = torch.tensor(train_metrics)
-        dist.broadcast(train_metrics_tensor, src=0)
+        dist.broadcast_object_list(train_metrics, src=0)
 
-        return train_metrics_tensor.tolist()
+        return train_metrics
 
 
 class EarlyStopOnMetrics(bolt.train.callbacks.Callback):
