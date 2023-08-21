@@ -68,10 +68,9 @@ UDT::UDT(data::ColumnDataTypes data_types,
   }
 
   if (as_categorical && has_graph_inputs) {
-    // TODO(Any): Add support for model config and user args
     _backend = std::make_unique<UDTGraphClassifier>(
         data_types, target_col, n_target_classes.value(), integer_target,
-        tabular_options);
+        tabular_options, model_config, user_args);
   } else if (as_categorical && !has_graph_inputs) {
     bool use_mach =
         user_args.get<bool>("extreme_classification", "boolean",

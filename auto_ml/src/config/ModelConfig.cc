@@ -5,6 +5,7 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Activation.h>
+#include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -77,9 +78,16 @@ using CreatedComputations =
 /**
  * Helper function to get the predecessor of a node.
  */
-bolt::ComputationPtr getPredecessor(const json& config,
-                                    const CreatedComputations& created_comps) {
-  std::string predecessor = getString(config, "predecessor");
+bolt::ComputationPtr getPredecessor(
+    const json& config, const CreatedComputations& created_comps,
+    const std::optional<std::string>& predecessor_name = std::nullopt) {
+  std::string predecessor;
+  if (!predecessor_name.has_value()) {
+    predecessor = getString(config, "predecessor");
+  } else {
+    predecessor = predecessor_name.value();
+  }
+
   if (!created_comps.count(predecessor)) {
     throw std::invalid_argument("Could not find node '" + predecessor + "'.");
   }
@@ -191,6 +199,25 @@ bolt::ComputationPtr buildActivation(const json& config,
                               "'. Please use 'relu' or 'tanh'.");
 }
 
+bolt::ComputationPtr buildConcat(const json& config,
+                                 const ArgumentMap& /*args*/,
+                                 const CreatedComputations& created_comps) {
+  bolt::ComputationList preds;
+  auto json_preds = getArray(config, "preds");
+  for (uint32_t i = 0; i < config["preds"].size(); i++) {
+    if (!json_preds[i].is_string()) {
+      throw std::invalid_argument(
+          "Expect concat predecessors to be an array of strings.");
+    }
+
+    std::string pred_node_name = json_preds[i].get<std::string>();
+    auto pred_node = getPredecessor(config, created_comps, pred_node_name);
+    preds.push_back(std::move(pred_node));
+  }
+
+  return bolt::Concatenate::make()->apply(preds);
+}
+
 /**
  * Helper function to construct the inputs. Matches the input dims to the
  * input names provided in the config. Updates created nodes to contain the
@@ -243,6 +270,8 @@ bolt::ModelPtr buildModel(const json& config, const ArgumentMap& args,
       created_comps[name] = buildLayerNorm(node_config, args, created_comps);
     } else if (type == "activation") {
       created_comps[name] = buildActivation(node_config, args, created_comps);
+    } else if (type == "concat") {
+      created_comps[name] = buildConcat(node_config, args, created_comps);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");
