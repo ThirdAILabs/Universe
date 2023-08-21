@@ -10,7 +10,8 @@ set(DATA_TESTS
     CountTokensTest
     UnrollSequenceTest
     GraphTests
-    ExplanationTests)
+    ExplanationTests
+    RegressionBinningTest)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)
