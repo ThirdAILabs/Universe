@@ -112,8 +112,7 @@ class MetricCollection {
   /**
    * Sets metric values from a flattened vector
    */
-  void setFlattenedMetrics(History& history,
-                           std::vector<float>& metrics_values);
+  void setFlattenedMetrics(History& history, std::vector<float>& metric_values);
 
  private:
   std::vector<MetricPtr> _metrics;
