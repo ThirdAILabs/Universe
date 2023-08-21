@@ -1,7 +1,9 @@
 #pragma once
 
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
 #include <cstddef>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::data {
@@ -47,19 +49,37 @@ class HashPositionTransform final : public Transformation {
 class OffsetPositionTransform final : public Transformation {
  public:
   OffsetPositionTransform(std::string input_column, std::string output_column,
-                          size_t max_num_tokens)
+                          size_t vocab_size, size_t max_num_tokens)
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
+        _vocab_size(vocab_size),
         _max_num_tokens(max_num_tokens) {}
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  uint32_t encode(uint32_t token, uint32_t pos) const;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
  private:
+  void assertInputDimIsVocabSize(
+      const ArrayColumnBase<uint32_t>& input_column) const {
+    if (!input_column.dim()) {
+      throw std::invalid_argument(
+          "OffsetPositionTransform: input column must have a dimension.");
+    }
+    if (input_column.dim() != _vocab_size) {
+      throw std::invalid_argument(
+          "OffsetPositionTransform: expected input column with dimension " +
+          std::to_string(_vocab_size) + " but got a column with dimension " +
+          std::to_string(*input_column.dim()));
+    }
+  }
+
   std::string _input_column;
   std::string _output_column;
+  size_t _vocab_size;
   size_t _max_num_tokens;
 };
 
