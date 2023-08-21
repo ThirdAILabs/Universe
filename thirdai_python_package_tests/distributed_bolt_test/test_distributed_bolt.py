@@ -97,9 +97,6 @@ def test_bolt_distributed():
     ray.shutdown()
 
 
-test_bolt_distributed()
-
-
 @pytest.mark.distributed
 def test_distributed_fault_tolerance():
     import sys
