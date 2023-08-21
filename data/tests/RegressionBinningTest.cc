@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/RegressionBinning.h>

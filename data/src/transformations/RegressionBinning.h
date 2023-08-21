@@ -4,6 +4,15 @@
 
 namespace thirdai::data {
 
+/**
+ * This transformation is for converting regression tasks to categorical tasks.
+ * It works by binning the decimal value and then creating categorical labels
+ * for the bin and the surrounding bins. The number of surrounding bins is
+ * determined by the parameter 'correct_label_radius' and it is to control how
+ * much the model is penalized for predicting close the correct bin/value, but
+ * not the exact right bin. For example if the target bin is 10, and the radius
+ * is 3, then the labels will be [7, 8, 9, 10, 11, 12, 13].
+ */
 class RegressionBinning final : public Transformation {
  public:
   RegressionBinning(std::string input_column, std::string output_column,
