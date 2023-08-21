@@ -24,6 +24,39 @@ class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
             for length in [1, 2, 5, 10, 25, 50]
         ]
     }
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 3706,
+                    "sparsity": 0.05,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
     learning_rate = 0.0001
     num_epochs = 5
