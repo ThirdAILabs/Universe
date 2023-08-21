@@ -295,9 +295,14 @@ class CSV(Document):
         if strong_columns == None and weak_columns == None:
             # autotune column types
             text_col_names = []
-            for col_name, udt_col_type in get_udt_col_types(path).items():
-                if type(udt_col_type) == type(bolt.types.text()):
-                    text_col_names.append(col_name)
+            try:
+                for col_name, udt_col_type in get_udt_col_types(path).items():
+                    if type(udt_col_type) == type(bolt.types.text()):
+                        text_col_names.append(col_name)
+            except:
+                text_col_names = list(self.df.columns)
+                text_col_names.remove(id_column)
+                self.df[text_col_names] = self.df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
         elif strong_columns == None:
