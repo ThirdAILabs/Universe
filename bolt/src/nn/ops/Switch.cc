@@ -19,6 +19,19 @@ std::string nextSwitchOpName() {
   return "switch_" + std::to_string(++constructed);
 }
 
+Switch::Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim,
+               float sparsity, const std::string& activation,
+               const SamplingConfigPtr& sampling, bool use_bias,
+               uint32_t rebuild_hash_tables,
+               uint32_t reconstruct_hash_functions)
+    : Op(nextSwitchOpName()) {
+  for (uint32_t layer_id = 0; layer_id < n_layers; layer_id++) {
+    _fc_ops.emplace_back(FullyConnected::make(
+        dim, input_dim, sparsity, activation, sampling, use_bias,
+        rebuild_hash_tables, reconstruct_hash_functions));
+  }
+}
+
 std::shared_ptr<Switch> Switch::make(uint32_t n_layers, uint32_t dim,
                                      uint32_t input_dim, float sparsity,
                                      const std::string& activation,
@@ -151,19 +164,6 @@ void Switch::setBiases(uint32_t layer_id, const float* biases_to_set) {
 void Switch::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   for (auto& op : _fc_ops) {
     op->autotuneRehashRebuild(num_batches, batch_size);
-  }
-}
-
-Switch::Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim,
-               float sparsity, const std::string& activation,
-               const SamplingConfigPtr& sampling, bool use_bias,
-               uint32_t rebuild_hash_tables,
-               uint32_t reconstruct_hash_functions)
-    : Op(nextSwitchOpName()) {
-  for (uint32_t layer_id = 0; layer_id < n_layers; layer_id++) {
-    _fc_ops.emplace_back(FullyConnected::make(
-        dim, input_dim, sparsity, activation, sampling, use_bias,
-        rebuild_hash_tables, reconstruct_hash_functions));
   }
 }
 
