@@ -28,40 +28,6 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
             "QUERY": bolt.types.text(contextual_encoding="local"),
             "DOC_ID": bolt.types.categorical(delimiter=":"),
         }
-    
-    model_config = {
-        "inputs": ["input"],
-        "nodes": [
-                {
-                    "name": "hidden",
-                    "type": "embedding",
-                    "dim": 1024,
-                    "activation": "linear",
-                    "predecessor": "input"
-                },
-                {
-                    "name": "layer_norm",  
-                    "type": "layernorm",
-                    "predecessor": "hidden",
-                },
-                {
-                    "name": "activation",
-                    "type": "activation",
-                    "activation": "ReLU",
-                    "predecessor": "layer_norm",
-                },
-                {
-                    "name": "output",
-                    "type": "fully_connected",
-                    "dim": 5183,
-                    "sparsity": 0.02,
-                    "activation": "Softmax",
-                    "predecessor": "activation",
-                },
-            ],
-            "output": "output",
-            "loss": "BinaryCrossEntropyLoss",
-        }
 
 
 class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):

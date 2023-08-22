@@ -36,40 +36,6 @@ class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
             "movieId": bolt.types.categorical(delimiter=" "),
             "timestamp": bolt.types.date(),
         }
-    
-    model_config = {
-        "inputs": ["input"],
-        "nodes": [
-            {
-                "name": "emb",
-                "type": "embedding",
-                "dim": 512,
-                "activation": "Linear",
-                "predecessor": "input",
-            },
-            {
-                "name": "layer_norm",  
-                "type": "layernorm",
-                "predecessor": "emb",
-            },
-            {
-                "name": "activation",
-                "type": "activation",
-                "activation": "ReLU",
-                "predecessor": "layer_norm",
-            },
-            {
-                "name": "fc",
-                "type": "fully_connected",
-                "dim": 3706,
-                "sparsity": 0.05,
-                "activation": "Softmax",
-                "predecessor": "activation",
-            },
-        ],
-        "output": "fc",
-        "loss": "BinaryCrossEntropyLoss",
-    }
 
 
 class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
@@ -99,40 +65,6 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
             "gameId": bolt.types.categorical(delimiter=" "),
             "timestamp": bolt.types.date(),
         }
-    
-    model_config = {
-        "inputs": ["input"],
-        "nodes": [
-            {
-                "name": "emb",
-                "type": "embedding",
-                "dim": 512,
-                "activation": "Linear",
-                "predecessor": "input",
-            },
-            {
-                "name": "layer_norm",  
-                "type": "layernorm",
-                "predecessor": "emb",
-            },
-            {
-                "name": "activation",
-                "type": "activation",
-                "activation": "ReLU",
-                "predecessor": "layer_norm",
-            },
-            {
-                "name": "fc",
-                "type": "fully_connected",
-                "dim": 33388,
-                "sparsity": 0.005,
-                "activation": "Softmax",
-                "predecessor": "activation",
-            },
-        ],
-        "output": "fc",
-        "loss": "BinaryCrossEntropyLoss",
-    }
 
 
 class NetflixUDTBenchmark(TemporalBenchmarkConfig):
@@ -165,37 +97,3 @@ class NetflixUDTBenchmark(TemporalBenchmarkConfig):
             "movie": bolt.types.categorical(delimiter=" "),
             "date": bolt.types.date(),
         }
-    
-    model_config = {
-        "inputs": ["input"],
-        "nodes": [
-            {
-                "name": "emb",
-                "type": "embedding",
-                "dim": 512,
-                "activation": "Linear",
-                "predecessor": "input",
-            },
-            {
-                "name": "layer_norm",  
-                "type": "layernorm",
-                "predecessor": "emb",
-            },
-            {
-                "name": "activation",
-                "type": "activation",
-                "activation": "ReLU",
-                "predecessor": "layer_norm",
-            },
-            {
-                "name": "fc",
-                "type": "fully_connected",
-                "dim": 17770,
-                "sparsity": 0.01,
-                "activation": "Softmax",
-                "predecessor": "activation",
-            },
-        ],
-        "output": "fc",
-        "loss": "BinaryCrossEntropyLoss",
-    }

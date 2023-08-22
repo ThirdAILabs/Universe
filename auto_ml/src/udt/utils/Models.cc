@@ -4,6 +4,7 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -64,11 +65,15 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       bool normalize_embeddings) {
   auto input = bolt::Input::make(input_dim);
 
-  const auto* hidden_activation = use_tanh ? "tanh" : "relu";
+  const auto* hidden_activation = use_tanh ? "tanh" : "linear";
 
   auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
                                       /* bias= */ hidden_bias)
                     ->apply(input);
+  
+  auto norm_layer = bolt::LayerNorm::make()->apply(hidden);
+
+  auto activation_layer = bolt::Relu::make()->apply(norm_layer);
 
   if (normalize_embeddings) {
     hidden = bolt::LayerNorm::make()->apply(hidden);
@@ -77,9 +82,9 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::FullyConnected::make(
-                    output_dim, hidden->dim(), sparsity, activation,
+                    output_dim, activation_layer->dim(), sparsity, activation,
                     /* sampling= */ nullptr, /* use_bias= */ output_bias)
-                    ->apply(hidden);
+                    ->apply(activation_layer);
 
   auto labels = bolt::Input::make(output_dim);
 
