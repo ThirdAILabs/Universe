@@ -6,10 +6,10 @@ import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import (
     check_model_parameters_equal,
+    extract_metrics_from_file,
     gen_numpy_training_data,
     get_bolt_model,
     setup_ray,
-    extract_metrics_from_file,
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
