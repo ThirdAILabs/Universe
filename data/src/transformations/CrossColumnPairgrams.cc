@@ -5,7 +5,6 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TokenEncoding.h>
 
