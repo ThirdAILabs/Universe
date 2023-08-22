@@ -101,11 +101,9 @@ void Switch::summary(std::ostream& summary,
                      const autograd::Computation* output) const {
   summary << "Switch(" << name() << "): switch on " << inputs.front()->name()
           << std::endl;
-  for (const auto& op : _fc_ops) {
-    summary << "\t";
-    op->summary(summary, fcInputs(inputs), output);
-    summary << std::endl;
-  }
+  summary << "Contains: ";
+  _fc_ops.front()->summary(summary, fcInputs(inputs), output);
+  summary << std::endl;
 }
 
 void Switch::setSerializeOptimizer(bool should_serialize_optimizer) {
