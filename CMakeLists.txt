@@ -427,6 +427,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/ReservedColumns.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc

@@ -25,13 +25,17 @@ namespace thirdai::automl::tests {
 
 TEST(TabularTransformationTests, TextOnlyTransformation) {
   auto [transformation, outputs] = inputTransformations(
-      {{"text", std::make_shared<data::TextDataType>()},
-       {"label", std::make_shared<data::CategoricalDataType>()}},
-      "label", {}, data::TabularOptions(), false);
+      /* data_types= */ {{"text", std::make_shared<data::TextDataType>()},
+                         {"label",
+                          std::make_shared<data::CategoricalDataType>()}},
+      /* label_column= */ "label", /* temporal_relationships= */ {},
+      /* options= */ data::TabularOptions(),
+      /* should_update_history= */ false);
 
   ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
   ASSERT_EQ(outputs.at(0).first, "__text_tokenized__");
+  // There should not be a specified values column, just indices.
   ASSERT_FALSE(outputs.at(0).second.has_value());
 }
 
@@ -76,7 +80,9 @@ void checkOutputs(const thirdai::data::IndexValueColumnList& outputs) {
 
 TEST(TabularTransformationTests, TabularTransformations) {
   auto [transformation, outputs] = inputTransformations(
-      getTabularDataTypes(), "label", {}, data::TabularOptions(), false);
+      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
+      /* temporal_relationships= */ {}, /* options= */ data::TabularOptions(),
+      /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
@@ -121,8 +127,10 @@ TEST(TabularTransformationTests, TabularTransformations) {
 TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
   data::TabularOptions options;
   options.contextual_columns = true;
-  auto [transformation, outputs] =
-      inputTransformations(getTabularDataTypes(), "label", {}, options, false);
+  auto [transformation, outputs] = inputTransformations(
+      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
+      /* temporal_relationships= */ {}, /* options= */ options,
+      /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
@@ -185,7 +193,9 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
         data::TemporalConfig::categorical("label", 4)}}};
 
   auto [transformation, outputs] = inputTransformations(
-      getTabularDataTypes(), "label", relationships, options, false);
+      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
+      /* temporal_relationships= */ relationships, /* options= */ options,
+      /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
