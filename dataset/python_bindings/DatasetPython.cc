@@ -21,6 +21,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
+#include <dataset/src/featurizers/llm/ContextAwareTextFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
@@ -288,6 +289,17 @@ void createDatasetSubmodule(py::module_& module) {
            &TextGenerationFeaturizer::featurizeInferenceSample,
            py::arg("prompt"), py::arg("context"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
+
+  py::class_<ContextAwareTextFeaturizer, Featurizer,
+             std::shared_ptr<ContextAwareTextFeaturizer>>(
+      dataset_submodule, "ContextAwareTextFeaturizer")
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, bool>(),
+           py::arg("lrc_len"), py::arg("irc_len"), py::arg("src_len"),
+           py::arg("vocab_size"), py::arg("include_position") = false)
+      .def("featurize_for_inference",
+           &ContextAwareTextFeaturizer::featurizeInferenceSample,
+           py::arg("prompt"), py::arg("context"))
+      .def(bolt::python::getPickleFunction<ContextAwareTextFeaturizer>());
 
   py::class_<TextClassificationFeaturizer, Featurizer,
              TextClassificationFeaturizerPtr>(dataset_submodule,

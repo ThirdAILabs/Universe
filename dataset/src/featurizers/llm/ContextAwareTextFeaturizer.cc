@@ -1,4 +1,4 @@
-#include "TextGenerationFeaturizer.h"
+#include "ContextAwareTextFeaturizer.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
@@ -13,7 +13,7 @@
 
 namespace thirdai::dataset {
 
-std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
+std::vector<std::vector<BoltVector>> ContextAwareTextFeaturizer::featurize(
     const std::vector<std::string>& lines) {
   std::vector<std::vector<std::vector<BoltVector>>> featurized_samples(
       lines.size());
@@ -38,39 +38,32 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
 
 
 
-std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
+std::vector<std::vector<BoltVector>> ContextAwareTextFeaturizer::featurizeText(
     const std::string& line) const {
   auto line_content = json::parse(line);
   if (!line_content.is_object()) {
     throw std::invalid_argument("Expected line to be a json object.");
   }
 
-  auto tokens = getAllTokens(line_content);
+  auto [tokens, predict_start] = getContext(line_content);
 
   BoltVector prompt = promptContext(getPrompt(line_content));
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  size_t chunk_size = _context_featurizer.contextSize() + 1;
+  for (uint32_t i = predict_start; i < tokens.size(); i++) {
+    BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-  for (size_t chunk_start = 0; chunk_start < tokens.size();
-       chunk_start += chunk_size) {
-    size_t chunk_end = std::min(tokens.size(), chunk_start + chunk_size);
-
-    for (size_t i = chunk_start + 1; i < chunk_end; i++) {
-      BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
-      vectors.push_back({prompt,
-                         _context_featurizer.lrcContext(tokens, chunk_start, i),
-                         _context_featurizer.ircContext(tokens, chunk_start, i),
-                         _context_featurizer.srcContext(tokens, chunk_start, i),
-                         std::move(label)});
-    }
+    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens,0, i),
+                       _context_featurizer.ircContext(tokens,0, i),
+                       _context_featurizer.srcContext(tokens,0, i),
+                       std::move(label)});
   }
 
   return vectors;
 }
 
-BoltVector TextGenerationFeaturizer::promptContext(
+BoltVector ContextAwareTextFeaturizer::promptContext(
     const std::vector<uint32_t>& prompt_tokens) {
   if (prompt_tokens.empty()) {
     // We use a single padding token if the prompt is empty to avoid passing
@@ -84,7 +77,7 @@ BoltVector TextGenerationFeaturizer::promptContext(
   return prompt;
 }
 
-std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
+std::vector<BoltVector> ContextAwareTextFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& prompt,
     const std::vector<uint32_t>& context) const {
   return {promptContext(prompt), _context_featurizer.lrcContext(context),
@@ -92,7 +85,7 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-std::vector<uint32_t> TextGenerationFeaturizer::getAllTokens(
+std::pair<std::vector<uint32_t>, uint32_t> ContextAwareTextFeaturizer::getContext(
     const json& line_content) {
   if (!line_content.contains("target")) {
     throw std::invalid_argument("Expected field 'target' in json object'");
@@ -101,10 +94,23 @@ std::vector<uint32_t> TextGenerationFeaturizer::getAllTokens(
   std::vector<uint32_t> target_tokens =
       token_encoding::tokenIds(getStringField(line_content, "target"));
 
-  return target_tokens;
+  if (line_content.contains("context")) {
+    std::vector<uint32_t> context_tokens =
+        token_encoding::tokenIds(getStringField(line_content, "context"));
+
+    // This assumes the we dont have any token to skip at the start of target.
+    uint32_t predict_start = context_tokens.size();
+
+    context_tokens.insert(context_tokens.end(), target_tokens.begin(),
+                          target_tokens.end());
+
+    return {std::move(context_tokens), predict_start};
+  }
+
+  return {std::move(target_tokens), 1};
 }
 
-std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(
+std::vector<uint32_t> ContextAwareTextFeaturizer::getPrompt(
     const json& line_content) {
   if (line_content.contains("prompt")) {
     return token_encoding::tokenIds(getStringField(line_content, "prompt"));
@@ -112,33 +118,33 @@ std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(
   return {};
 }
 
-void TextGenerationFeaturizer::save(const std::string& filename) const {
+void ContextAwareTextFeaturizer::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void TextGenerationFeaturizer::save_stream(std::ostream& output_stream) const {
+void ContextAwareTextFeaturizer::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
-TextGenerationFeaturizerPtr TextGenerationFeaturizer::load(
+ContextAwareTextFeaturizerPtr ContextAwareTextFeaturizer::load(
     const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-TextGenerationFeaturizerPtr TextGenerationFeaturizer::load_stream(
+ContextAwareTextFeaturizerPtr ContextAwareTextFeaturizer::load_stream(
     std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
-  std::shared_ptr<TextGenerationFeaturizer> deserialize_into(
-      new TextGenerationFeaturizer());
+  std::shared_ptr<ContextAwareTextFeaturizer> deserialize_into(
+      new ContextAwareTextFeaturizer());
   iarchive(*deserialize_into);
   return deserialize_into;
 }
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::TextGenerationFeaturizer)
+CEREAL_REGISTER_TYPE(thirdai::dataset::ContextAwareTextFeaturizer)

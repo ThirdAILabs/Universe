@@ -4,6 +4,7 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
+#include <dataset/src/featurizers/llm/ContextAwareTextFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <limits>
 #include <optional>
@@ -41,7 +42,7 @@ void verifyGeneratedSamples(
   }
 }
 
-void checkDataFeaturization(
+void checkDataTextGenerationFeaturization(
     const std::vector<std::string>& phrases,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices,
     bool include_position = false) {
@@ -56,7 +57,7 @@ void checkDataFeaturization(
   verifyGeneratedSamples(data, expected_indices);
 }
 
-void checkInferenceFeaturization(
+void checkInferenceTextGenerationFeaturization(
     const std::vector<uint32_t>& prompt, const std::vector<uint32_t>& tokens,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
   TextGenerationFeaturizer processor(/* lrc_len= */ LRC_LEN,
@@ -74,6 +75,42 @@ void checkInferenceFeaturization(
 
   verifyGeneratedSamples(data, expected_indices);
 }
+
+
+void checkDataContextAwareTextFeaturization(
+    const std::vector<std::string>& phrases,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices,
+    bool include_position = false) {
+  ContextAwareTextFeaturizer processor(/* lrc_len= */ LRC_LEN,
+                                     /* irc_len= */ IRC_LEN,
+                                     /* src_len= */ SRC_LEN,
+                                     /* vocab_size= */ VOCAB_SIZE,
+                                     include_position);
+
+  auto data = processor.featurize(phrases);
+
+  verifyGeneratedSamples(data, expected_indices);
+}
+
+void checkInferenceContextAwareTextFeaturization(
+    const std::vector<uint32_t>& prompt, const std::vector<uint32_t>& tokens,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
+  ContextAwareTextFeaturizer processor(/* lrc_len= */ LRC_LEN,
+                                     /* irc_len= */ IRC_LEN,
+                                     /* src_len= */ SRC_LEN,
+                                     /* vocab_size= */ VOCAB_SIZE);
+
+  auto vectors = processor.featurizeInferenceSample(prompt, tokens);
+
+  std::vector<std::vector<BoltVector>> data;
+  data.reserve(vectors.size());
+  for (const auto& vector : vectors) {
+    data.push_back({vector});
+  }
+
+  verifyGeneratedSamples(data, expected_indices);
+}
+
 
 std::vector<uint32_t> expectedPairgrams(std::vector<uint32_t> tokens) {
   return token_encoding::unigramPreservingPairgrams(tokens.data(),
@@ -102,7 +139,7 @@ TEST(TextGenerationFeaturizerTest, Featurization) {
       // Labels
       {{2}, {3}, {4}, {5}, {7}, {8}}};
 
-  checkDataFeaturization(phrases, expected_indices);
+  checkDataTextGenerationFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
@@ -127,7 +164,7 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
       // Labels
       {{4}, {5}, {6}, {7}, {9}}};
 
-  checkDataFeaturization(phrases, expected_indices);
+  checkDataTextGenerationFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithPosition) {
@@ -152,7 +189,7 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithPosition) {
       // Labels
       {{2}, {3}, {4}, {5}, {7}, {8}}};
 
-  checkDataFeaturization(phrases, expected_indices,
+  checkDataTextGenerationFeaturization(phrases, expected_indices,
                          /* include_position= */ true);
 }
 
@@ -167,7 +204,7 @@ TEST(TextGenerationFeaturizerTest, InferenceFeaturization) {
       // SRC context input
       {{4, 5}}};
 
-  checkInferenceFeaturization({}, {1, 2, 3, 4, 5}, expected_indices);
+  checkInferenceTextGenerationFeaturization({}, {1, 2, 3, 4, 5}, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, InferenceFeaturizationWithPrompt) {
@@ -181,7 +218,80 @@ TEST(TextGenerationFeaturizerTest, InferenceFeaturizationWithPrompt) {
       // SRC context input
       {{1, 2}}};
 
-  checkInferenceFeaturization({7, 8, 9}, {1, 2}, expected_indices);
+  checkInferenceTextGenerationFeaturization({7, 8, 9}, {1, 2}, expected_indices);
+}
+
+TEST(ContextAwareTextFeaturizerTest, FeaturizationWithContext) {
+  std::vector<std::string> phrases = {
+      R"({"context": "1 2", "target": "3 4 5 6"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}, {0}, {0}},
+      //  LRC context input
+      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      // IRC context input
+      {
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+      },
+      // SRC context input
+      {{2, 3}, {3, 4}, {4, 5}},
+      // Labels
+      {{4}, {5}, {6}}};
+
+  checkDataContextAwareTextFeaturization(phrases, expected_indices);
+}
+
+TEST(ContextAwareTextFeaturizerTest, FeaturizationWithPrompt) {
+  std::vector<std::string> phrases = {
+      R"({"prompt": "1 2", "context": "3 4", "target": "5 6 7"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{1, 2}, {1, 2}},
+      //  LRC context input
+      {{3, 4, 5}, {3, 4, 5, 6}},
+      // IRC context input
+      {
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+      },
+      // SRC context input
+      {{4, 5}, {5, 6}},
+      // Labels
+      {{6}, {7}}};
+
+  checkDataContextAwareTextFeaturization(phrases, expected_indices);
+}
+
+TEST(ContextAwareTextFeaturizerTest, InferenceFeaturization) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}},
+      //  LRC context input
+      {{2, 3, 4, 5}},
+      // IRC context input
+      {expectedPairgrams({3, 4, 5})},
+      // SRC context input
+      {{4, 5}}};
+
+  checkInferenceContextAwareTextFeaturization({}, {1, 2, 3, 4, 5}, expected_indices);
+}
+
+TEST(ContextAwareTextFeaturizerTest, InferenceFeaturizationWithPrompt) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{7, 8, 9}},
+      //  LRC context input
+      {{1, 2}},
+      // IRC context input
+      {expectedPairgrams({1, 2})},
+      // SRC context input
+      {{1, 2}}};
+
+  checkInferenceContextAwareTextFeaturization({7, 8, 9}, {1, 2}, expected_indices);
 }
 
 TEST(TextClassifierFeaturizerTest, Featurization) {

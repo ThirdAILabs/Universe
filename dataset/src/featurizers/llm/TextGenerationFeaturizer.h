@@ -14,50 +14,7 @@ using json = nlohmann::json;
 
 namespace thirdai::dataset {
 
-/**
- * Featurizes a list of rows from a text dataset for next word prediction.
- * Expects that each line will be a json object containing the fields 'target'
- * and optional 'prompt' or 'context'. Each of these fields should be a string
- * containing a list of space separate bert tokens (integer ids) for the text of
- * a given document/text. Returns a list of the input samples and labels for the
- * documents/texts in the input rows.
- *
- * The tokens in the 'target' field are featurized into 3 parts. The long range
- * context (lrc), the intermediate range context (irc), and the short range
- * context (src). The long range context will be featurized using unigrams, the
- * intermediate range context will be featurized using pairgrams, and the short
- * range context will be featurized with unigrams and padded to a constistent
- * length, this is so these token embeddings can be concatenated in the text
- * generation model.
- *
- * For example the tokens [1, 2, 3, 4, 5, 6] with src_len=4, irc_len=3,
- * src_len=2 will be featurized as follows:
- *
- * +--------------+----------------------+-------------+-------+
- * | LRC Context  | IRC Context          | SRC Context | Label |
- * +--------------+----------------------+-------------+-------+
- * | [1]          | pairgrams([1])       | [0, 1]      | 2     |
- * | [1, 2]       | pairgrams([1, 2])    | [1, 2]      | 3     |
- * | [1, 2, 3]    | pairgrams([1, 2, 3]) | [2, 3]      | 4     |
- * | [1, 2, 3, 4] | pairgrams([2, 3, 4]) | [3, 4]      | 5     |
- * | [2, 3, 4, 5] | pairgrams([3, 4, 5]) | [4, 5]      | 6     |
- * +--------------+----------------------+-------------+-------+
- *
- * If the 'context' field is specified then the context is prepended to the
- * target tokens, however the generation begins at the begining of the target
- * tokens. The context tokens will be included in the lrc, irc, and src contexts
- * but will not be used as labels during training.
- *
- * Note: note that the first token is assumed to be [CLS], and the token 0
- * denotes [PAD].
- *
- * The prompt field indicates which tokens to return as the prompt inputs to the
- * model. If no prompt field is specified, then a single padding token is
- * returned.
- *
- * The featurizer returns 5 inputs to the model:
- *     (prompt), (lrc context), (irc context), (src context), (label)
- */
+
 class TextGenerationFeaturizer;
 using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 
@@ -86,6 +43,13 @@ class TextGenerationFeaturizer final : public Featurizer {
         "getDimensions is not supported for TextGenerationFeaturizer.");
   }
 
+  static std::string getStringField(const json& json_object, const std::string& name) {
+  if (!json_object[name].is_string()) {
+    throw std::invalid_argument("Expected field '" + name +
+                                "' to be a string.");
+  }
+  return json_object[name].get<std::string>();
+}
   // There is no target because we are only making a single prediction at the
   // end of the context, and thus no need for a set of target tokens.
   std::vector<BoltVector> featurizeInferenceSample(

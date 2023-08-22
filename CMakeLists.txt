@@ -378,6 +378,7 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/llm/TextContextFeaturizer.cc
     dataset/src/featurizers/llm/TextGenerationFeaturizer.cc
     dataset/src/featurizers/llm/TextClassificationFeaturizer.cc
+    dataset/src/featurizers/llm/ContextAwareTextFeaturizer.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
