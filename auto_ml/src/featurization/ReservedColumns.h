@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <auto_ml/src/featurization/DataTypes.h>
