@@ -48,9 +48,9 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
         deduped_indices[i].push_back(index);
         deduped_values[i].push_back(value);
       }
-    } catch (std::exception& e) {
+    } catch (...) {
 #pragma omp critical
-      error = std::make_exception_ptr(e);
+      error = std::current_exception();
     }
   }
 
