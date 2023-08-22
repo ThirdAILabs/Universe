@@ -178,3 +178,57 @@ def test_distributed_fault_tolerance():
     trainer.fit()
 
     ray.shutdown()
+
+
+@pytest.mark.distributed
+def test_distributed_resume_training():
+    def training_loop_per_worker(config):
+        ckpt = session.get_checkpoint()
+        if ckpt:
+            model = dist.BoltCheckPoint.get_model(ckpt)
+            print("\nResumed training from last checkpoint...\n")
+        else:
+            model = get_bolt_model()
+            model = dist.prepare_model(model)
+            print("\nLoading model from scratch...\n")
+
+        num_epochs = config.get("num_epochs", 1)
+
+        trainer = bolt.train.Trainer(model)
+        train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
+        train_x = bolt.train.convert_dataset(train_x, dim=10)
+        train_y = bolt.train.convert_dataset(train_y, dim=10)
+
+        for epoch in range(num_epochs):
+            trainer.train_distributed(
+                train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+            )
+
+        session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
+
+    scaling_config = setup_ray()
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=training_loop_per_worker,
+        train_loop_config={"num_epochs": 3},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )
+    result = trainer.fit()
+    checkpoint_path = result.checkpoint.to_directory()
+
+    ray.shutdown()
+
+    # Now we start a new training using previously saved checkpoint
+    scaling_config = setup_ray()
+
+    trainer2 = dist.BoltTrainer(
+        train_loop_per_worker=training_loop_per_worker,
+        train_loop_config={"num_epochs": 3},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+        resume_from_checkpoint=dist.BoltCheckPoint.from_directory(checkpoint_path),
+    )
+    trainer2.fit()
+
+    ray.shutdown()
