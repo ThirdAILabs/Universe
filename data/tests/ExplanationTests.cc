@@ -255,7 +255,7 @@ TEST(ExplanationTests, ComposedTransformations) {
           std::vector<std::string>{"c_binned", "hash"}, "column_pairgrams",
           100000),
       std::make_shared<FeatureHash>(
-          std::vector<std::string>{"words", "b_binned", "c_binned", "hash",
+          std::vector<std::string>{"words", "b_binned", "column_pairgrams",
                                    "tokens"},
           "indices", "values", /* hash_range= */ 100000),
   });
