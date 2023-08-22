@@ -14,7 +14,7 @@ namespace thirdai::data {
 ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
   (void)state;
   auto indices = columns.getArrayColumn<uint32_t>(_input_indices_column);
-  std::optional<ArrayColumnBasePtr<float>> values;
+  ArrayColumnBasePtr<float> values = nullptr;
   if (_input_values_column) {
     values = columns.getArrayColumn<float>(*_input_values_column);
   }
@@ -32,7 +32,7 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
       std::unordered_map<uint32_t, float> features;
 
       if (values) {
-        auto values_row = (*values)->row(i);
+        auto values_row = values->row(i);
         for (uint32_t pos = 0; pos < indices_row.size(); pos++) {
           features[indices_row[pos]] += values_row[pos];
         }
