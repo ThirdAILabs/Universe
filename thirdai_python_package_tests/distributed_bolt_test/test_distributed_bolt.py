@@ -170,7 +170,7 @@ def test_distributed_resume_training():
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-            session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
+        session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
 
     scaling_config = setup_ray()
 
