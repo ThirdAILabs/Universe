@@ -2,6 +2,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <algorithm>
 #include <numeric>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -15,7 +16,11 @@ RegressionBinning::RegressionBinning(std::string input_column,
       _max(max),
       _binsize((max - min) / num_bins),
       _num_bins(num_bins),
-      _correct_label_radius(correct_label_radius) {}
+      _correct_label_radius(correct_label_radius) {
+  if (min >= max) {
+    throw std::invalid_argument("min must be < max in RegressionBinning.");
+  }
+}
 
 ColumnMap RegressionBinning::apply(ColumnMap columns, State& state) const {
   (void)state;
