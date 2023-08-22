@@ -12,11 +12,11 @@
 #include <stdexcept>
 #include <utility>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
-Trainer::Trainer(nn::model::ModelPtr model,
+Trainer::Trainer(ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
                  InterruptCheck interrupt_check)
     : _model(std::move(model)),
@@ -76,8 +76,8 @@ metrics::History Trainer::train(
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       callbacks.onBatchBegin();
 
-      const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
-      const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
+      const TensorList& inputs = train_data.first.at(batch_idx);
+      const TensorList& labels = train_data.second.at(batch_idx);
 
       utils::Timer train_on_batch_timer;
       _model->trainOnBatch(inputs, labels);
@@ -130,7 +130,17 @@ metrics::History Trainer::train(
 
     epoch_timer.stop();
 
+    std::vector<std::pair<std::string, float>> metrics_at_rank_0;
+    if (comm && train_metrics.hasMetrics()) {
+      metrics_at_rank_0 =
+          comm->broadcastMetrics(train_metrics.getFlattenedMetrics());
+    }
+
     train_metrics.updateHistory(*_history);
+
+    if (comm && train_metrics.hasMetrics()) {
+      train_metrics.setFlattenedMetrics(*_history, metrics_at_rank_0);
+    }
 
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
@@ -254,8 +264,8 @@ metrics::History Trainer::validate(const LabeledDataset& data,
   utils::Timer val_timer;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    const nn::tensor::TensorList& inputs = data.first.at(batch_idx);
-    const nn::tensor::TensorList& labels = data.second.at(batch_idx);
+    const TensorList& inputs = data.first.at(batch_idx);
+    const TensorList& labels = data.second.at(batch_idx);
 
     _model->forward(inputs, labels, /* use_sparsity= */ use_sparsity);
 
@@ -314,9 +324,10 @@ void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
 }
 
 std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
-                                        uint32_t batches, int64_t time) {
+                                        uint32_t batches, double time) {
   std::string logline = fmt::format(
-      "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
+      "train | epoch {} | train_steps {} | {} | train_batches {} | time "
+      "{:.3f}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
@@ -341,9 +352,10 @@ std::string Trainer::formatIntermediateLogLine(
 }
 
 std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
-                                           uint32_t batches, int64_t time) {
+                                           uint32_t batches, double time) {
   std::string logline = fmt::format(
-      "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}s",
+      "validate | epoch {} | train_steps {} | {} | val_batches {} | time "
+      "{:.3f}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
@@ -351,7 +363,7 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
 
 void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   for (const auto& op : _model->ops()) {
-    if (auto fc = std::dynamic_pointer_cast<nn::ops::FullyConnected>(op)) {
+    if (auto fc = FullyConnected::cast(op)) {
       fc->autotuneRehashRebuild(/* num_batches= */ num_batches,
                                 /* batch_size= */ batch_size);
     }
@@ -399,4 +411,4 @@ std::optional<LabeledDataset> Trainer::loadSomeWrapper(
       convertDatasets(label_datasets, label_dims, /* copy= */ false));
 }
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

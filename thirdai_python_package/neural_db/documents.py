@@ -298,8 +298,8 @@ class CSV(Document):
             for col_name, udt_col_type in get_udt_col_types(path).items():
                 if type(udt_col_type) == type(bolt.types.text()):
                     text_col_names.append(col_name)
-            strong_columns = text_col_names
-            weak_columns = []
+            strong_columns = []
+            weak_columns = text_col_names
         elif strong_columns == None:
             strong_columns = []
         elif weak_columns == None:
@@ -335,15 +335,15 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.strong_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.weak_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
-        text = " ".join([str(row[col]) for col in self.reference_columns])
+        text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
             element_id=element_id,
@@ -397,10 +397,12 @@ class CSV(Document):
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True):
-        self.path = Path(path)
+        path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
         self._save_extra_info = save_extra_info
+
+        self.path = Path(path)
 
     def process_data(
         self,
@@ -421,7 +423,7 @@ class Extracted(Document):
         return self.path.name
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["passage"].iloc[element_id]
+        return ""
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
@@ -445,17 +447,26 @@ class Extracted(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
-        return "\n".join(rows["passage"])
+        return "\n".join(rows["para"])
 
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
-        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        # Remove filename attribute because this is a deprecated attribute for Extracted
         if "filename" in state:
             del state["filename"]
+
+        # In older versions of neural_db, we accidentally stored Path objects in the df.
+        # This changes those objects to a string, because PosixPath can't be loaded in Windows
+        def path_to_str(element):
+            if isinstance(element, Path):
+                return element.name
+            return element
+
+        state["df"] = state["df"].applymap(path_to_str)
+
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
 
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
@@ -624,8 +635,7 @@ class SentenceLevelExtracted(Extracted):
         self,
         df: pd.DataFrame,
     ) -> pd.DataFrame:
-        df["sentences"] = df["passage"].apply(SentenceLevelExtracted.get_sentences)
-        df.drop("passage", axis=1, inplace=True)
+        df["sentences"] = df["para"].apply(SentenceLevelExtracted.get_sentences)
 
         num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
         df["id_offsets"] = np.zeros(len(df))
@@ -640,7 +650,7 @@ class SentenceLevelExtracted(Extracted):
         df = pd.DataFrame.from_records(
             [
                 {
-                    "passage": sentence,
+                    "sentence": sentence,
                     "para_id": para_id,
                     "sentence_id": i + record["id_offsets"],
                     "sentence_ids_in_para": get_ids(record),
@@ -674,7 +684,7 @@ class SentenceLevelExtracted(Extracted):
         return self.path.name if self.path else None
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["passage"].iloc[element_id]
+        return self.df["sentence"].iloc[element_id]
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]

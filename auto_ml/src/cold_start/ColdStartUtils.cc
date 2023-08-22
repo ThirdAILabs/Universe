@@ -7,6 +7,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
+#include <utils/StringManipulation.h>
 
 namespace thirdai::automl::cold_start {
 
@@ -118,7 +119,8 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
       output_sample.append(column->value(row_id));
       output_sample.append(" ");
     }
-    samples.push_back(output_sample);
+    text::replacePunctuationWithSpaces(output_sample);
+    samples.push_back(std::move(output_sample));
   }
 
   thirdai::data::ValueColumnPtr<std::string> augmented_data_column =

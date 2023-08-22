@@ -1,5 +1,6 @@
 import functools
 import re
+from pathlib import Path
 
 import fitz
 import pandas as pd
@@ -59,12 +60,12 @@ def process_pdf_file(filename):
                         paras[-1] = (
                             paras[-1][0] + " " + current,  # text
                             paras[-1][1],  # page number
-                            doc.name,  # pdf filename
+                            Path(filename).name,  # pdf filename
                             temp_prev,  # page to block dictionary
                         )
                     else:
                         prev = current
-                        paras.append((current, page_no, doc.name, temp))
+                        paras.append((current, page_no, Path(filename).name, temp))
 
                     # Occurrences of space is proxy for number of words.
                     # If there are 10 words or less, this paragraph is
@@ -99,14 +100,14 @@ def process_pdf_file(filename):
 def create_train_df(elements):
     df = pd.DataFrame(
         index=range(len(elements)),
-        columns=["passage", "para", "filename", "page", "display", "highlight"],
+        columns=["para", "filename", "page", "display", "highlight"],
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(elem[1])
         sents = list(map(lambda x: x.lower(), sents))
-        passage = " ".join(sents)
+        para = " ".join(sents)
         # elem[-1] is id
-        df.iloc[i] = [passage, passage, elem[3], elem[2], elem[1], elem[4]]
-    for column in ["passage", "para", "display"]:
+        df.iloc[i] = [para, elem[3], elem[2], elem[1], elem[4]]
+    for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
