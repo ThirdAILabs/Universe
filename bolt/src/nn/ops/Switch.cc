@@ -10,6 +10,7 @@
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace thirdai::bolt::nn::ops {
@@ -171,8 +172,11 @@ FullyConnectedPtr Switch::getFcOpForInputs(
     const autograd::ComputationList& inputs, uint32_t index_in_batch) {
   uint32_t fc_id =
       inputs[0]->tensor()->getVector(index_in_batch).active_neurons[0];
-  // Default to last op if fc_id >= number of ops.
-  fc_id = std::min<uint32_t>(fc_id, _fc_ops.size() - 1);
+  if (fc_id >= _fc_ops.size()) {
+    throw std::runtime_error("Switch: FCID out of range " +
+                             std::to_string(fc_id) +
+                             "; size = " + std::to_string(_fc_ops.size()));
+  }
   return _fc_ops[fc_id];
 }
 
