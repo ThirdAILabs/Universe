@@ -39,9 +39,9 @@ void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
 
   ValueFillType fill_type =
       values_sum_to_one ? ValueFillType::SumToOne : ValueFillType::Ones;
-  IndexValueColumn to_convert = specify_values
-                                    ? IndexValueColumn("indices", "values")
-                                    : IndexValueColumn("indices", fill_type);
+  OutputColumns to_convert = specify_values
+                                 ? OutputColumns("indices", "values")
+                                 : OutputColumns("indices", fill_type);
 
   auto tensors = toTensorBatches(columns, {to_convert}, /* batch_size= */ 3);
 
@@ -109,8 +109,8 @@ TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
                      {"indices_2", indices_2}});
 
   auto tensors = toTensorBatches(columns,
-                                 {IndexValueColumn("indices_1", "values_1"),
-                                  IndexValueColumn("indices_2")},
+                                 {OutputColumns("indices_1", "values_1"),
+                                  OutputColumns("indices_2")},
                                  /* batch_size= */ 2);
 
   ASSERT_EQ(tensors.size(), 2);

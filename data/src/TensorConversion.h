@@ -10,13 +10,13 @@ enum ValueFillType {
   SumToOne,
 };
 
-class IndexValueColumn {
+class OutputColumns {
  public:
-  explicit IndexValueColumn(std::string indices,
-                            ValueFillType value_fill_type = ValueFillType::Ones)
+  explicit OutputColumns(std::string indices,
+                         ValueFillType value_fill_type = ValueFillType::Ones)
       : _indices(std::move(indices)), _value_fill_type(value_fill_type) {}
 
-  IndexValueColumn(std::string indices, std::string values)
+  OutputColumns(std::string indices, std::string values)
       : _indices(std::move(indices)), _values(std::move(values)) {}
 
   const auto& indices() const { return _indices; }
@@ -31,13 +31,13 @@ class IndexValueColumn {
   ValueFillType _value_fill_type;
 };
 
-using IndexValueColumnList = std::vector<IndexValueColumn>;
+using OutputColumnsList = std::vector<OutputColumns>;
 
 std::vector<bolt::TensorList> toTensorBatches(
-    const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
+    const ColumnMap& columns, const OutputColumnsList& columns_to_convert,
     size_t batch_size);
 
 bolt::TensorList toTensors(const ColumnMap& columns,
-                           const IndexValueColumnList& columns_to_convert);
+                           const OutputColumnsList& columns_to_convert);
 
 }  // namespace thirdai::data

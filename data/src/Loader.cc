@@ -10,8 +10,8 @@ namespace thirdai::data {
 
 Loader::Loader(ColumnMapIterator data_iterator,
                TransformationPtr transformation, StatePtr state,
-               IndexValueColumnList model_input_columns,
-               IndexValueColumnList model_label_columns, size_t batch_size,
+               OutputColumnsList model_input_columns,
+               OutputColumnsList model_label_columns, size_t batch_size,
                bool shuffle, bool verbose, size_t shuffle_buffer_size,
                uint32_t shuffle_seed)
     : _data_iterator(std::move(data_iterator)),
@@ -96,7 +96,7 @@ bolt::LabeledDataset Loader::all() {
 void Loader::restart() { _data_iterator.restart(); }
 
 void Loader::recordReturnedColumns(
-    const IndexValueColumnList& index_value_columns) {
+    const OutputColumnsList& index_value_columns) {
   for (const auto& column : index_value_columns) {
     _columns_returned.insert(column.indices());
     if (column.values()) {

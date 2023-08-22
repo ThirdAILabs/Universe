@@ -7,7 +7,7 @@
 namespace thirdai::data {
 
 std::vector<bolt::TensorList> toTensorBatches(
-    const ColumnMap& columns, const IndexValueColumnList& columns_to_convert,
+    const ColumnMap& columns, const OutputColumnsList& columns_to_convert,
     size_t batch_size) {
   size_t num_batches = (columns.numRows() + batch_size - 1) / batch_size;
   std::vector<bolt::TensorList> tensors(num_batches);
@@ -94,7 +94,7 @@ std::vector<bolt::TensorList> toTensorBatches(
 }
 
 bolt::TensorList toTensors(const ColumnMap& columns,
-                           const IndexValueColumnList& columns_to_convert) {
+                           const OutputColumnsList& columns_to_convert) {
   return toTensorBatches(columns, columns_to_convert,
                          /* batch_size= */ columns.numRows())
       .at(0);
