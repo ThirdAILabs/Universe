@@ -3,6 +3,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
+#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
@@ -41,6 +42,30 @@ TEST(ExplanationTests, Binning) {
   auto explanations = binning.explain(columns, state);
 
   ASSERT_EQ(explanations.explain("bbb", 4), "decimal 14.7 from column 'aaa'");
+}
+
+TEST(ExplanationTests, CrossColumnPairgrams) {
+  CrossColumnPairgrams cross_column_pairgrams({"aa", "bb", "cc"}, "dd", 100000);
+
+  ColumnMap columns({
+      {"aa", ValueColumn<uint32_t>::make({0}, std::nullopt)},
+      {"bb", ValueColumn<uint32_t>::make({10}, std::nullopt)},
+      {"cc", ValueColumn<uint32_t>::make({100}, std::nullopt)},
+  });
+
+  State state;
+  auto explanations = cross_column_pairgrams.explain(columns, state);
+
+  std::set<std::string> expected_msgs = {
+      "token 0 from column 'aa'",
+      "token 0 from column 'aa' and token 10 from column 'bb'",
+      "token 10 from column 'bb'",
+      "token 0 from column 'aa' and token 100 from column 'cc'",
+      "token 10 from column 'bb' and token 100 from column 'cc'",
+      "token 100 from column 'cc'",
+  };
+
+  compareAllExplanations(explanations, "dd", expected_msgs);
 }
 
 TEST(ExplanationTests, Date) {
@@ -226,6 +251,9 @@ TEST(ExplanationTests, ComposedTransformations) {
       std::make_shared<StringHash>("d", "hash"),
       std::make_shared<StringToTokenArray>("e", "tokens", /* delimiter= */ ',',
                                            /* dim= */ std::nullopt),
+      std::make_shared<CrossColumnPairgrams>(
+          std::vector<std::string>{"c_binned", "hash"}, "column_pairgrams",
+          100000),
       std::make_shared<FeatureHash>(
           std::vector<std::string>{"words", "b_binned", "c_binned", "hash",
                                    "tokens"},
@@ -244,11 +272,16 @@ TEST(ExplanationTests, ComposedTransformations) {
   auto explanations = transformations.explain(columns, state);
 
   std::set<std::string> expected_msgs = {
-      "word 'we' from column 'a'",      "word 'baked' from column 'a'",
-      "word 'cookies' from column 'a'", "decimal 16.4 from column 'b'",
-      "decimal 7.5 from column 'c'",    "item 'to_hash' from column 'd'",
-      "token 6 from column 'e'",        "token 4 from column 'e'",
+      "word 'we' from column 'a'",
+      "word 'baked' from column 'a'",
+      "word 'cookies' from column 'a'",
+      "decimal 16.4 from column 'b'",
+      "token 6 from column 'e'",
+      "token 4 from column 'e'",
       "token 2 from column 'e'",
+      "decimal 7.5 from column 'c'",
+      "item 'to_hash' from column 'd'",
+      "decimal 7.5 from column 'c' and item 'to_hash' from column 'd'",
   };
 
   compareAllExplanations(explanations, "indices", expected_msgs);

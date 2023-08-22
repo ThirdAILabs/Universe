@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
@@ -15,6 +16,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::automl::tests {
 
@@ -254,6 +256,17 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   thirdai::data::State state;
   thirdai::data::TransformationList pipeline(t_list);
   pipeline.apply(getInput(), state);
+}
+
+TEST(TabularTransformationTests, CheckRejectsReservedColumns) {
+  ASSERT_THROW(  // NOLINT clang-tidy doens't like ASSERT_THROW
+      inputTransformations(
+          /* data_types= */ {{"__text__",
+                              std::make_shared<data::TextDataType>()}},
+          /* label_column= */ "label", /* temporal_relationships= */ {},
+          /* options= */ data::TabularOptions(),
+          /* should_update_history= */ false),
+      std::invalid_argument);
 }
 
 }  // namespace thirdai::automl::tests
