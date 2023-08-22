@@ -56,7 +56,8 @@ namespace thirdai::dataset {
  * returned.
  *
  * The featurizer returns 5 inputs to the model:
- *     (prompt), (lrc context), (irc context), (src context), (label), (include_positions)
+ *     (prompt), (lrc context), (irc context), (src context), (label),
+ * (include_positions)
  */
 class ContextAwareTextFeaturizer;
 using ContextAwareTextFeaturizerPtr =

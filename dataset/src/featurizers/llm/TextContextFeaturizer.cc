@@ -39,6 +39,11 @@ BoltVector TextContextFeaturizer::srcContext(
     const std::vector<uint32_t>& tokens, uint32_t start_index,
     uint32_t end_index) const {
   uint32_t src_len = std::min(end_index - start_index, _src_len);
+  if (_include_position) {
+    // decreasing the src context size to accomodate position without changes
+    // src context
+    src_len--;
+  }
   uint32_t padding_len = _src_len - src_len;
 
   const uint32_t* context_start = tokens.data() + end_index - src_len;

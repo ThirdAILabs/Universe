@@ -90,7 +90,6 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-
 static std::string getStringField(const json& json_object,
                                   const std::string& name) {
   if (!json_object[name].is_string()) {
