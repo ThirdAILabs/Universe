@@ -3,21 +3,25 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/DeduplicateTokens.h>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::data::tests {
 
-static std::unordered_map<uint32_t, float> indexValuePairs(
-    RowView<uint32_t> indices, RowView<float> values) {
-  std::unordered_map<uint32_t, float> features;
+void compareIndexValues(RowView<uint32_t> indices, RowView<float> values,
+                        const std::unordered_map<uint32_t, float>& expected) {
+  ASSERT_EQ(indices.size(), expected.size());
+  ASSERT_EQ(values.size(), expected.size());
+  std::unordered_set<uint32_t> unique_idxs = {indices.begin(), indices.end()};
+  ASSERT_EQ(unique_idxs.size(), expected.size());
+
   for (uint32_t i = 0; i < indices.size(); i++) {
-    // Assign instead of add since we assume each index is unique.
-    features[indices[i]] = values[i];
+    ASSERT_EQ(expected.at(indices[i]), values[i]);
   }
-  return features;
 }
 
 TEST(DeduplicateTokensTest, InputIndicesOnly) {
@@ -31,19 +35,10 @@ TEST(DeduplicateTokensTest, InputIndicesOnly) {
   auto deduped_indices = columns.getArrayColumn<uint32_t>("deduped_indices");
   auto deduped_values = columns.getArrayColumn<float>("deduped_values");
 
-  auto features_row_0 =
-      indexValuePairs(deduped_indices->row(0), deduped_values->row(0));
-  ASSERT_EQ(features_row_0.size(), 2);
-  ASSERT_EQ(features_row_0[1], 3.0);
-  ASSERT_EQ(features_row_0[2], 1.0);
-
-  auto features_row_1 =
-      indexValuePairs(deduped_indices->row(1), deduped_values->row(1));
-  ASSERT_EQ(features_row_1.size(), 4);
-  ASSERT_EQ(features_row_1[1], 1.0);
-  ASSERT_EQ(features_row_1[2], 1.0);
-  ASSERT_EQ(features_row_1[3], 1.0);
-  ASSERT_EQ(features_row_1[4], 1.0);
+  compareIndexValues(deduped_indices->row(0), deduped_values->row(0),
+                     /* expected= */ {{1, 3.0}, {2, 1.0}});
+  compareIndexValues(deduped_indices->row(1), deduped_values->row(1),
+                     /* expected= */ {{1, 1.0}, {2, 1.0}, {3, 1.0}, {4, 1.0}});
 
   ASSERT_EQ(deduped_indices->dim().value(), 5);
   ASSERT_EQ(deduped_values->dim(), std::nullopt);
@@ -62,19 +57,10 @@ TEST(DeduplicateTokensTest, InputIndicesAndValues) {
   auto deduped_indices = columns.getArrayColumn<uint32_t>("deduped_indices");
   auto deduped_values = columns.getArrayColumn<float>("deduped_values");
 
-  auto features_row_0 =
-      indexValuePairs(deduped_indices->row(0), deduped_values->row(0));
-  ASSERT_EQ(features_row_0.size(), 2);
-  ASSERT_EQ(features_row_0[1], 5);
-  ASSERT_EQ(features_row_0[2], 2);
-
-  auto features_row_1 =
-      indexValuePairs(deduped_indices->row(1), deduped_values->row(1));
-  ASSERT_EQ(features_row_1.size(), 4);
-  ASSERT_EQ(features_row_1[1], 1);
-  ASSERT_EQ(features_row_1[2], 2);
-  ASSERT_EQ(features_row_1[3], 3);
-  ASSERT_EQ(features_row_1[4], 4);
+  compareIndexValues(deduped_indices->row(0), deduped_values->row(0),
+                     /* expected= */ {{1, 5.0}, {2, 2.0}});
+  compareIndexValues(deduped_indices->row(1), deduped_values->row(1),
+                     /* expected= */ {{1, 1.0}, {2, 2.0}, {3, 3.0}, {4, 4.0}});
 
   ASSERT_EQ(deduped_indices->dim().value(), 5);
   ASSERT_EQ(deduped_values->dim(), std::nullopt);
