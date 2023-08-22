@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
@@ -197,6 +199,10 @@ class UDTBackend {
       const std::variant<uint32_t, std::string>& label) {
     (void)label;
     throw notSupported("entity_embedding");
+  }
+
+  virtual bolt::nn::ops::FullyConnectedPtr outputOp() const {
+    throw notSupported("output_op");
   }
 
   /**

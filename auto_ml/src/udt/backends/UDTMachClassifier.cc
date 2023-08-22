@@ -462,6 +462,11 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   return std::move(np_weights);
 }
 
+bolt::nn::ops::FullyConnectedPtr UDTMachClassifier::outputOp() const {
+  return bolt::nn::ops::FullyConnected::cast(
+      _classifier->model()->outputs().front()->op());
+}
+
 std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {

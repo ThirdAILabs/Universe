@@ -159,6 +159,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
            py::arg("label_id"))
+      .def("get_output_op", &udt::UDT::outputOp)
       .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
            py::arg("input_samples"))

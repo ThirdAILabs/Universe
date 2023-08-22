@@ -1,12 +1,13 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <dataset/src/DataSource.h>
 #include <memory>
 #include <optional>
@@ -106,6 +107,10 @@ class UDT {
 
   py::object entityEmbedding(const std::variant<uint32_t, std::string>& label) {
     return _backend->entityEmbedding(label);
+  }
+
+  bolt::nn::ops::FullyConnectedPtr outputOp() const {
+    return _backend->outputOp();
   }
 
   std::string className(uint32_t class_id) const {

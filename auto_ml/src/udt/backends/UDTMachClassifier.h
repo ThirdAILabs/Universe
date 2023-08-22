@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -105,6 +106,8 @@ class UDTMachClassifier final : public UDTBackend {
    * vs reul make a difference.
    */
   py::object entityEmbedding(const Label& label) final;
+
+  bolt::nn::ops::FullyConnectedPtr outputOp() const final;
 
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
