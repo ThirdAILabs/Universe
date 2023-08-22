@@ -250,7 +250,7 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
 
   uint32_t num_classes = _mach_label_block->index()->numEntities();
 
-  if (top_k && top_k > num_classes) {
+  if (top_k && *top_k > num_classes) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
         "predict. "
