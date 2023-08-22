@@ -75,6 +75,8 @@ void MetricCollection::setFlattenedMetrics(
   }
 }
 
+bool MetricCollection::hasMetrics() { return !_metrics.empty(); }
+
 void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();

@@ -116,6 +116,8 @@ class MetricCollection {
       History& history,
       std::vector<std::pair<std::string, float>>& metric_values);
 
+  bool hasMetrics();
+
  private:
   std::vector<MetricPtr> _metrics;
 };
