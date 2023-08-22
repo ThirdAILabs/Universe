@@ -43,13 +43,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   }
 
   static std::string getStringField(const json& json_object,
-                                    const std::string& name) {
-    if (!json_object[name].is_string()) {
-      throw std::invalid_argument("Expected field '" + name +
-                                  "' to be a string.");
-    }
-    return json_object[name].get<std::string>();
-  }
+                                    const std::string& name);
   // There is no target because we are only making a single prediction at the
   // end of the context, and thus no need for a set of target tokens.
   std::vector<BoltVector> featurizeInferenceSample(

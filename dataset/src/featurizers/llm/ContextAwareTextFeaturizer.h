@@ -56,7 +56,7 @@ namespace thirdai::dataset {
  * returned.
  *
  * The featurizer returns 5 inputs to the model:
- *     (prompt), (lrc context), (irc context), (src context), (label)
+ *     (prompt), (lrc context), (irc context), (src context), (label), (include_positions)
  */
 class ContextAwareTextFeaturizer;
 using ContextAwareTextFeaturizerPtr =
@@ -79,14 +79,6 @@ class ContextAwareTextFeaturizer final : public Featurizer {
 
   size_t getNumDatasets() final { return 5; }
 
-  static std::string getStringField(const json& json_object,
-                                    const std::string& name) {
-    if (!json_object[name].is_string()) {
-      throw std::invalid_argument("Expected field '" + name +
-                                  "' to be a string.");
-    }
-    return json_object[name].get<std::string>();
-  }
   std::vector<uint32_t> getDimensions() final {
     throw std::runtime_error(
         "getDimensions is not supported for ContextAwareTextFeaturizer.");

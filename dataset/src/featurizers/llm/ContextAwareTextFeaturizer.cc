@@ -1,4 +1,5 @@
 #include "ContextAwareTextFeaturizer.h"
+#include "TextGenerationFeaturizer.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
@@ -90,11 +91,11 @@ ContextAwareTextFeaturizer::getContext(const json& line_content) {
   }
 
   std::vector<uint32_t> target_tokens =
-      token_encoding::tokenIds(getStringField(line_content, "target"));
+      token_encoding::tokenIds(thirdai::dataset::TextGenerationFeaturizer::getStringField(line_content, "target"));
 
   if (line_content.contains("context")) {
     std::vector<uint32_t> context_tokens =
-        token_encoding::tokenIds(getStringField(line_content, "context"));
+        token_encoding::tokenIds(thirdai::dataset::TextGenerationFeaturizer::getStringField(line_content, "context"));
 
     // This assumes the we dont have any token to skip at the start of target.
     uint32_t predict_start = context_tokens.size();
@@ -111,7 +112,7 @@ ContextAwareTextFeaturizer::getContext(const json& line_content) {
 std::vector<uint32_t> ContextAwareTextFeaturizer::getPrompt(
     const json& line_content) {
   if (line_content.contains("prompt")) {
-    return token_encoding::tokenIds(getStringField(line_content, "prompt"));
+    return token_encoding::tokenIds(thirdai::dataset::TextGenerationFeaturizer::getStringField(line_content, "prompt"));
   }
   return {};
 }
