@@ -11,6 +11,7 @@
 #include <bolt/src/train/metrics/PrecisionAtK.h>
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -461,6 +462,11 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   return std::move(np_weights);
 }
 
+bolt::FullyConnectedPtr UDTMachClassifier::outputOp() const {
+  return bolt::FullyConnected::cast(
+      _classifier->model()->outputs().front()->op());
+}
+
 std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
@@ -477,7 +483,7 @@ std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   return _dataset_factory->inputDataTypes().begin()->first;
 }
 
-void UDTMachClassifier::updateSamplingStrategy() {
+void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
   auto mach_index = _mach_label_block->index();
 
   auto output_layer = bolt::FullyConnected::cast(
@@ -485,15 +491,22 @@ void UDTMachClassifier::updateSamplingStrategy() {
 
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
+  std::cout << "Current neuron index: ";
+  neuron_index->summarize(std::cout);
+  std::cout << std::endl;
+
   float index_sparsity = mach_index->sparsity();
-  if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
+  if (!force_lsh && index_sparsity > 0 &&
+      index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
     auto new_index = bolt::MachNeuronIndex::make(mach_index);
     output_layer->kernel()->setNeuronIndex(new_index);
 
   } else {
-    if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index)) {
+    if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index) ||
+        force_lsh) {
+      std::cout << "Setting lsh index..." << std::endl;
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
       auto sampling_config = bolt::DWTASamplingConfig::autotune(
@@ -516,7 +529,17 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
+    bool use_sparsity) {
+  if (use_sparsity) {
+    // Note: Force the model to use LSH sparsity here because otherwise, the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
+    std::cout << "Updating sampling strategy..." << std::endl;
+    updateSamplingStrategy(/* force_lsh= */ true);
+    std::cout << "Updated sampling strategy." << std::endl;
+  }
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -549,11 +572,7 @@ void UDTMachClassifier::introduceDocuments(
   bolt::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
-    // Note: using sparse inference here could cause issues because the
-    // mach index sampler will only return nonempty buckets, which could
-    // cause new docs to only be mapped to buckets already containing
-    // entities.
-    auto scores = _classifier->model()->forward(batch).at(0);
+    auto scores = _classifier->model()->forward(batch, use_sparsity).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));

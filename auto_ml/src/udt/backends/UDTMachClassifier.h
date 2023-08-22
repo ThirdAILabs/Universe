@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -106,12 +107,14 @@ class UDTMachClassifier final : public UDTBackend {
    */
   py::object entityEmbedding(const Label& label) final;
 
+  bolt::FullyConnectedPtr outputOp() const final;
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose) final;
+                          bool verbose, bool use_sparsity) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
@@ -208,7 +211,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::string textColumnForDocumentIntroduction();
 
-  void updateSamplingStrategy();
+  void updateSamplingStrategy(bool force_lsh = false);
 
   void addBalancingSamples(const dataset::DataSourcePtr& data);
 
