@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
-import unidecode
 import thirdai
+import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
 
@@ -255,7 +255,7 @@ class NeuralDB:
             import thirdai.distributed_bolt as dist
             from ray.air import session
             from thirdai.dataset import RayDataSource
-            
+
             if config["licensing_lambda"]:
                 config["licensing_lambda"]()
 
