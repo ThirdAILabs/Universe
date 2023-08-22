@@ -2,7 +2,6 @@ import hashlib
 import os
 import shutil
 import string
-from collections import OrderedDict
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -188,8 +187,12 @@ class DocumentManager:
         self.strong_column = strong_column
         self.weak_column = weak_column
 
-        # After python 3.8, we don't need to use OrderedDict as Dict is ordered by default
-        self.registry: OrderedDict[str, Tuple[Document, int]] = OrderedDict()
+        # 'registry' is a dict from doc hash to (document object, start index)
+        # 'hashes' is a dict from document index (based on insertion order) to doc hash
+        # Both variables have the documents ordered by insertion order
+        self.registry: dict[str, Tuple[Document, int]] = {}
+        self.hashes: dict[int, str] = {}
+
         self.source_id_prefix_trie = StringTrie()
 
     def _next_id(self):
@@ -207,6 +210,7 @@ class DocumentManager:
                 start_id = self._next_id()
                 doc_and_id = (doc, start_id)
                 self.registry[doc_hash] = doc_and_id
+                self.hashes[len(self.hashes)] = doc_hash
                 self.source_id_prefix_trie[doc_hash] = doc_hash
                 intro.add(doc, start_id)
             doc, start_id = self.registry[doc_hash]
@@ -228,10 +232,21 @@ class DocumentManager:
         return self.registry[source_id]
 
     def clear(self):
-        self.registry = OrderedDict()
+        self.registry = {}
+        self.hashes = {}
         self.source_id_prefix_trie = StringTrie()
 
     def _get_doc_and_start_id(self, element_id: int):
+
+        start, end = 0, len(self.hashes) - 1
+        while start <= end:
+            mid = (start + end) // 2
+            if self.registry[self.hashes[mid]][1] <= element_id:
+                start += 1
+            else:
+                end -= 1
+        return self.registry[self.hashes[end]]
+
         for doc, start_id in reversed(self.registry.values()):
             if start_id <= element_id:
                 return doc, start_id
