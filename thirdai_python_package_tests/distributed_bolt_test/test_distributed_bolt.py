@@ -9,6 +9,7 @@ from distributed_utils import (
     gen_numpy_training_data,
     get_bolt_model,
     setup_ray,
+    extract_metrics_from_file,
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
@@ -32,17 +33,12 @@ def training_loop_per_worker(config):
         learning_rate=0.005,
         epochs=num_epochs,
         train_metrics=["categorical_accuracy"],
-        callbacks=[
-            bolt.train.callbacks.EarlyStopOnMetrics(
-                tracked_metric=tracked_metric, metric_threshold=metric_threshold
-            )
-        ],
     )
 
-    # Check if early stopping worked or desired threshold
-    # couldn't be reached in given number of epochs.
-    metric_list = history[f"train_{tracked_metric}"]
-    assert len(metric_list) < num_epochs or metric_list[-1] <= metric_threshold
+    # logs train_metrics from worker nodes which can be compared later
+    thirdai.logging.setup(log_to_stderr=False, path="log_metrics.txt", level="info")
+    history.pop("epoch_times")
+    thirdai.logging.info(f"{history}")
 
     session.report(
         {"model_location": session.get_trial_dir()},
@@ -93,6 +89,27 @@ def test_bolt_distributed():
     )
 
     check_model_parameters_equal(model_1, model_2)
+
+    model_1_metrics = extract_metrics_from_file(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_0/log_metrics.txt",
+        )
+    )
+
+    model_2_metrics = extract_metrics_from_file(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_1/log_metrics.txt",
+        )
+    )
+
+    assert (
+        model_1_metrics == model_2_metrics
+    ), "Train metrics on worker nodes aren't synced"
+
+    print(model_1_metrics)
+    print(model_2_metrics)
 
     ray.shutdown()
 

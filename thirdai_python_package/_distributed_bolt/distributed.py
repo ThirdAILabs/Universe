@@ -56,22 +56,6 @@ class Communication(bolt.train.Communication):
         return train_metrics
 
 
-class EarlyStopOnMetrics(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        tracked_metric: str,
-        metric_threshold: float,
-    ):
-        super().__init__()
-
-        self.tracked_metric = tracked_metric
-        self.metric_threshold = metric_threshold
-
-    def on_epoch_end(self):
-        if self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold:
-            self.train_state.stop_training()
-
-
 # Note: We need to disable sparse updates neural network updates as after allreduce
 # during sparse training, we only update the parameters selected by hash tables, rather we
 # need to update all the parameters, since during all-reduce some other neuron could be non-zero
@@ -122,8 +106,6 @@ def adds_distributed_to_bolt():
         return metrics
 
     bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
-
-    bolt.train.callbacks.EarlyStopOnMetrics = EarlyStopOnMetrics
 
     bolt.UniversalDeepTransformer.coldstart_distributed_on_data_source = (
         udt_coldstart_distributed_on_data_source
