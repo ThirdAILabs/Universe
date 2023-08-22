@@ -10,7 +10,7 @@ namespace thirdai::automl {
 // TODO(Nicholas): Remove the data subnamespace from automl so it doesn't clash
 // with thirdai::data.
 
-std::pair<thirdai::data::TransformationPtr, thirdai::data::IndexValueColumnList>
+std::pair<thirdai::data::TransformationPtr, thirdai::data::OutputColumnsList>
 inputTransformations(const data::ColumnDataTypes& data_types,
                      const std::string& label_column,
                      const data::TemporalRelationships& temporal_relationships,

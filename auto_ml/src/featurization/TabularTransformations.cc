@@ -316,7 +316,7 @@ data::ColumnDataTypes removeTrackedColumns(
   return data_types;
 }
 
-std::pair<thirdai::data::TransformationPtr, thirdai::data::IndexValueColumnList>
+std::pair<thirdai::data::TransformationPtr, thirdai::data::OutputColumnsList>
 inputTransformations(const data::ColumnDataTypes& data_types,
                      const std::string& label_column,
                      const data::TemporalRelationships& temporal_relationships,
@@ -345,7 +345,7 @@ inputTransformations(const data::ColumnDataTypes& data_types,
       auto [transforms, output_name] =
           text(name, text_type, /* dim= */ options.feature_hash_range);
 
-      return {transforms.at(0), {{output_name, std::nullopt}}};
+      return {transforms.at(0), {thirdai::data::OutputColumns(output_name)}};
     }
   }
 
@@ -374,7 +374,9 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   auto t_list =
       std::make_shared<thirdai::data::TransformationList>(transformations);
 
-  return {t_list, {{FEATURE_HASH_INDICES, FEATURE_HASH_VALUES}}};
+  return {t_list,
+          {thirdai::data::OutputColumns(FEATURE_HASH_INDICES,
+                                        FEATURE_HASH_VALUES)}};
 }
 
 }  // namespace thirdai::automl
