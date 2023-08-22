@@ -63,7 +63,8 @@ class UDTGraphClassifier final : public UDTBackend {
 
   static ModelPtr createGNN(std::vector<uint32_t> input_dims,
                             uint32_t output_dim,
-                            const std::optional<std::string>& model_config);
+                            const std::optional<std::string>& model_config,
+                            const config::ArgumentMap& user_args);
 
   friend cereal::access;
 

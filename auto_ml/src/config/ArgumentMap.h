@@ -46,7 +46,7 @@ class ArgumentMap {
  private:
   std::unordered_map<
       std::string,
-      std::variant<bool, uint32_t, float, std::string, std::vector<int32_t>>>
+      std::variant<bool, uint32_t, uint64_t, float, std::string, std::vector<int32_t>>>
       _arguments;
 };
 
