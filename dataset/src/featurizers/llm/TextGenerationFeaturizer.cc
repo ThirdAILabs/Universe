@@ -20,7 +20,11 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
 
 #pragma omp parallel for default(none) shared(lines, featurized_samples)
   for (uint32_t i = 0; i < lines.size(); i++) {
-    featurized_samples[i] = featurizeText(lines[i]);
+    if (_featurize_in_chunks) {
+      featurized_samples[i] = featurizeTextChunks(lines[i]);
+    } else {
+      featurized_samples[i] = featurizeTextSlidingWindow(lines[i]);
+    }
   }
 
   std::vector<std::vector<BoltVector>> data(5);
@@ -44,14 +48,14 @@ std::string getStringField(const json& json_object, const std::string& name) {
   return json_object[name].get<std::string>();
 }
 
-std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
-    const std::string& line) const {
+std::vector<std::vector<BoltVector>>
+TextGenerationFeaturizer::featurizeTextChunks(const std::string& line) const {
   auto line_content = json::parse(line);
   if (!line_content.is_object()) {
     throw std::invalid_argument("Expected line to be a json object.");
   }
 
-  auto tokens = getAllTokens(line_content);
+  auto [tokens, _] = getAllTokens(line_content, /* with_context= */ false);
 
   BoltVector prompt = promptContext(getPrompt(line_content));
 
@@ -71,6 +75,33 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
                          _context_featurizer.srcContext(tokens, chunk_start, i),
                          std::move(label)});
     }
+  }
+
+  return vectors;
+}
+
+std::vector<std::vector<BoltVector>>
+TextGenerationFeaturizer::featurizeTextSlidingWindow(
+    const std::string& line) const {
+  auto line_content = json::parse(line);
+  if (!line_content.is_object()) {
+    throw std::invalid_argument("Expected line to be a json object.");
+  }
+
+  auto [tokens, context_size] =
+      getAllTokens(line_content, /* with_context= */ true);
+
+  BoltVector prompt = promptContext(getPrompt(line_content));
+
+  std::vector<std::vector<BoltVector>> vectors;
+
+  for (uint32_t i = std::max(context_size, 1UL); i < tokens.size(); i++) {
+    BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
+
+    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, 0, i),
+                       _context_featurizer.ircContext(tokens, 0, i),
+                       _context_featurizer.srcContext(tokens, 0, i),
+                       std::move(label)});
   }
 
   return vectors;
@@ -98,8 +129,8 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-std::vector<uint32_t> TextGenerationFeaturizer::getAllTokens(
-    const json& line_content) {
+std::pair<std::vector<uint32_t>, size_t> TextGenerationFeaturizer::getAllTokens(
+    const json& line_content, bool with_context) {
   if (!line_content.contains("target")) {
     throw std::invalid_argument("Expected field 'target' in json object'");
   }
@@ -107,7 +138,19 @@ std::vector<uint32_t> TextGenerationFeaturizer::getAllTokens(
   std::vector<uint32_t> target_tokens =
       token_encoding::tokenIds(getStringField(line_content, "target"));
 
-  return target_tokens;
+  if (line_content.contains("context") && with_context) {
+    std::vector<uint32_t> context_tokens =
+        token_encoding::tokenIds(getStringField(line_content, "context"));
+
+    size_t context_size = context_tokens.size();
+
+    context_tokens.insert(context_tokens.end(), target_tokens.begin(),
+                          target_tokens.end());
+
+    return {std::move(context_tokens), context_size};
+  }
+
+  return {std::move(target_tokens), 0};
 }
 
 std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(
