@@ -63,6 +63,40 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {"text": bolt.types.text(), "label": bolt.types.categorical()}
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 2,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
@@ -82,6 +116,40 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {"content": bolt.types.text(), "label": bolt.types.categorical()}
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 2,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class CriteoUDTConfig(UDTBenchmarkConfig):
@@ -128,6 +196,40 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
         # Add label column
         data_types["label"] = bolt.types.categorical()
         return data_types
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 2,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
@@ -167,6 +269,40 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
         data_types["label"] = bolt.types.categorical()
 
         return data_types
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 2,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
@@ -206,6 +342,40 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
             "newbalanceDest": bolt.types.numerical(range=(0, 356179279)),
             "isFraud": bolt.types.categorical(),
             "isFlaggedFraud": bolt.types.categorical(),
+        }
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 2,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
         }
 
 
@@ -261,6 +431,40 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     num_epochs = 1
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
 
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 1024,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 931,
+                    "sparsity": 0.1,
+                    "activation": "Sigmoid",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
+
 
 class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     config_name = "forest_cover_type_udt"
@@ -280,6 +484,40 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {f"col{i}": bolt.types.categorical() for i in range(55)}
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 7,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
@@ -322,6 +560,40 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
             "Product_Category_2": bolt.types.categorical(),
             "Product_Category_3": bolt.types.categorical(),
             "Purchase": bolt.types.numerical(range=(5, 11)),
+        }
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 100,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
         }
 
 
@@ -366,6 +638,40 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
                 range=(5.7899601708972535, 9.842887930407198)
             ),
         }
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 100,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
@@ -407,6 +713,40 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
 
         data_types["y"] = bolt.types.numerical(range=(72.5, 265.32))
         return data_types
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 100,
+                    "sparsity": 1.0,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class TranslitUDTBenchmark(UDTBenchmarkConfig):
@@ -429,4 +769,38 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
         return {
             "input_seq": bolt.types.sequence(delimiter=" "),
             "output_seq": bolt.types.sequence(max_length=30, delimiter=" "),
+        }
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 512,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 810,
+                    "sparsity": 0.2,
+                    "activation": "Softmax",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
         }

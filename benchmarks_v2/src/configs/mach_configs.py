@@ -27,6 +27,39 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
             "QUERY": bolt.types.text(contextual_encoding="local"),
             "DOC_ID": bolt.types.categorical(delimiter=":"),
         }
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 1024,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 207,
+                    "sparsity": 1.0,
+                    "activation": "Sigmoid",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
+        }
 
 
 class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
@@ -59,4 +92,38 @@ class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
         return {
             "QUERY": bolt.types.text(tokenizer="char-4", contextual_encoding="local"),
             "DOC_ID": bolt.types.categorical(delimiter=":"),
+        }
+    
+    model_config = {
+        "inputs": ["input"],
+        "nodes": [
+                {
+                    "name": "hidden",
+                    "type": "embedding",
+                    "dim": 3000,
+                    "activation": "linear",
+                    "predecessor": "input"
+                },
+                {
+                    "name": "layer_norm",  
+                    "type": "layernorm",
+                    "predecessor": "hidden",
+                },
+                {
+                    "name": "activation",
+                    "type": "activation",
+                    "activation": "ReLU",
+                    "predecessor": "layer_norm",
+                },
+                {
+                    "name": "output",
+                    "type": "fully_connected",
+                    "dim": 20000,
+                    "sparsity": 0.005,
+                    "activation": "Sigmoid",
+                    "predecessor": "activation",
+                },
+            ],
+            "output": "output",
+            "loss": "BinaryCrossEntropyLoss",
         }
