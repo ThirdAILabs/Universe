@@ -36,9 +36,9 @@ TEST(TabularTransformationTests, TextOnlyTransformation) {
 
   ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).first, "__text_tokenized__");
+  ASSERT_EQ(outputs.at(0).indices(), "__text_tokenized__");
   // There should not be a specified values column, just indices.
-  ASSERT_FALSE(outputs.at(0).second.has_value());
+  ASSERT_FALSE(outputs.at(0).values().has_value());
 }
 
 data::ColumnDataTypes getTabularDataTypes() {
@@ -74,10 +74,10 @@ thirdai::data::ColumnMap getInput() {
   });
 }
 
-void checkOutputs(const thirdai::data::IndexValueColumnList& outputs) {
+void checkOutputs(const thirdai::data::OutputColumnsList& outputs) {
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).first, "__featurized_input_indices__");
-  ASSERT_EQ(outputs.at(0).second, "__featurized_input_values__");
+  ASSERT_EQ(outputs.at(0).indices(), "__featurized_input_indices__");
+  ASSERT_EQ(outputs.at(0).values(), "__featurized_input_values__");
 }
 
 TEST(TabularTransformationTests, TabularTransformations) {
