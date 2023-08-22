@@ -31,6 +31,8 @@ class TransformationList final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  const auto& transformations() const { return _transformations; }
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
