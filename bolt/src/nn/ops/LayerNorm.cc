@@ -19,20 +19,22 @@ std::string nextLayerNormOpName() {
 
 LayerNorm::LayerNorm() : Op(nextLayerNormOpName()) {}
 
-LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
+LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim,
+                     const std::optional<std::string>& grad_clip)
     : Op(nextLayerNormOpName()),
       _gamma(gamma, gamma + dim),
       _beta(beta, beta + dim),
-      _gamma_optimizer(dim),
-      _beta_optimizer(dim) {}
+      _gamma_optimizer(dim, grad_clip),
+      _beta_optimizer(dim, grad_clip) {}
 
 std::shared_ptr<LayerNorm> LayerNorm::make() {
   return std::shared_ptr<LayerNorm>(new LayerNorm());
 }
 
-std::shared_ptr<LayerNorm> LayerNorm::make(const float* gamma,
-                                           const float* beta, size_t dim) {
-  return std::shared_ptr<LayerNorm>(new LayerNorm(gamma, beta, dim));
+std::shared_ptr<LayerNorm> LayerNorm::make(
+    const float* gamma, const float* beta, size_t dim,
+    const std::optional<std::string>& grad_clip) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(gamma, beta, dim, grad_clip));
 }
 
 void LayerNorm::forward(const ComputationList& inputs, TensorPtr& output,

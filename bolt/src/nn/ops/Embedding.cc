@@ -20,7 +20,8 @@ std::string nextEmbeddingOpName() {
 }
 
 Embedding::Embedding(size_t dim, size_t input_dim,
-                     const std::string& activation, bool bias)
+                     const std::string& activation, bool bias,
+                     std::optional<std::string> grad_clip)
     : Op(nextEmbeddingOpName()),
       _dim(dim),
       _input_dim(input_dim),
@@ -30,7 +31,8 @@ Embedding::Embedding(size_t dim, size_t input_dim,
       _biases(dim, 0.0),
       _disable_sparse_parameter_updates(false),
       _should_serialize_optimizer(false),
-      _embeddings_used(input_dim, false) {
+      _embeddings_used(input_dim, false),
+      _grad_clip(std::move(grad_clip)) {
   std::mt19937 rng(global_random::nextSeed());
   std::normal_distribution<float> dist(0.0, 0.01);
 
@@ -40,8 +42,8 @@ Embedding::Embedding(size_t dim, size_t input_dim,
     std::generate(_biases.begin(), _biases.end(), gen);
   }
 
-  _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-  _bias_optimizer = AdamOptimizer(_dim);
+  _embedding_optimizer = AdamOptimizer(_dim * _input_dim, _grad_clip);
+  _bias_optimizer = AdamOptimizer(_dim, _grad_clip);
 }
 
 void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
@@ -251,7 +253,7 @@ template <class Archive>
 void Embedding::save(Archive& archive) const {
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
-          _should_serialize_optimizer);
+          _should_serialize_optimizer, _grad_clip);
 
   if (_should_serialize_optimizer) {
     archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
@@ -264,13 +266,13 @@ template <class Archive>
 void Embedding::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
-          _should_serialize_optimizer);
+          _should_serialize_optimizer, _grad_clip);
 
   if (_should_serialize_optimizer) {
     archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
   } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
+    _embedding_optimizer = AdamOptimizer(_dim * _input_dim, _grad_clip);
+    _bias_optimizer = AdamOptimizer(_dim, _grad_clip);
     _embeddings_used.assign(_input_dim, false);
   }
 }

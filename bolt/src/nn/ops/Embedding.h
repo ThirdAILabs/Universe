@@ -4,6 +4,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -12,13 +13,14 @@ class Embedding final : public Op,
                         public std::enable_shared_from_this<Embedding> {
  private:
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
-            bool bias);
+            bool bias, std::optional<std::string> grad_clip);
 
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
-                   bool bias = true) {
+                   bool bias = true,
+                   std::optional<std::string> grad_clip = std::nullopt) {
     return std::shared_ptr<Embedding>(
-        new Embedding(dim, input_dim, activation, bias));
+        new Embedding(dim, input_dim, activation, bias, std::move(grad_clip)));
   }
 
   void forward(const ComputationList& inputs, TensorPtr& output,
@@ -113,6 +115,7 @@ class Embedding final : public Op,
   std::optional<AdamOptimizer> _embedding_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
   std::vector<bool> _embeddings_used;
+  std::optional<std::string> _grad_clip;
 
   Embedding() {}
 

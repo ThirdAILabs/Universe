@@ -297,7 +297,8 @@ void defineOps(py::module_& nn) {
 
   py::class_<Embedding, EmbeddingPtr, Op>(nn, "Embedding")
       .def(py::init(&Embedding::make), py::arg("dim"), py::arg("input_dim"),
-           py::arg("activation"), py::arg("bias") = true)
+           py::arg("activation"), py::arg("bias") = true,
+           py::arg("grad_clip") = std::nullopt)
       .def("__call__", &Embedding::apply)
       .def_property_readonly(
           "weights",
