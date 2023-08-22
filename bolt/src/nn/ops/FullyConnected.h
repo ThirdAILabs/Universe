@@ -173,6 +173,9 @@ namespace cereal {
  * this Op uses a load/save pair. This tells cereal to use the load save pair
  * instead of the serialize method of the parent class. See docs here:
  * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ *
+ * This needs to be in the header file because the Switch op needs to know about
+ * it.
  */
 template <class Archive>
 struct specialize<Archive, thirdai::bolt::nn::ops::FullyConnected,
