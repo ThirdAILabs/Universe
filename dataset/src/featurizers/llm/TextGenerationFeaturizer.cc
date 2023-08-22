@@ -36,8 +36,6 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
   return data;
 }
 
-
-
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     const std::string& line) const {
   auto line_content = json::parse(line);

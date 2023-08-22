@@ -59,30 +59,34 @@ namespace thirdai::dataset {
  *     (prompt), (lrc context), (irc context), (src context), (label)
  */
 class ContextAwareTextFeaturizer;
-using ContextAwareTextFeaturizerPtr = std::shared_ptr<ContextAwareTextFeaturizer>;
+using ContextAwareTextFeaturizerPtr =
+    std::shared_ptr<ContextAwareTextFeaturizer>;
 
 class ContextAwareTextFeaturizer final : public Featurizer {
  public:
-  ContextAwareTextFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
-                           uint32_t vocab_size, bool include_position=false)
-      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size, include_position) {}
+  ContextAwareTextFeaturizer(uint32_t lrc_len, uint32_t irc_len,
+                             uint32_t src_len, uint32_t vocab_size,
+                             bool include_position = false)
+      : _context_featurizer(lrc_len, irc_len, src_len, vocab_size,
+                            include_position) {}
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& lines) final;
 
   bool expectsHeader() const final { return false; }
-    
+
   void processHeader(const std::string& header) final { (void)header; }
 
   size_t getNumDatasets() final { return 5; }
 
-  static std::string getStringField(const json& json_object, const std::string& name) {
-  if (!json_object[name].is_string()) {
-        throw std::invalid_argument("Expected field '" + name +
-                                    "' to be a string.");
+  static std::string getStringField(const json& json_object,
+                                    const std::string& name) {
+    if (!json_object[name].is_string()) {
+      throw std::invalid_argument("Expected field '" + name +
+                                  "' to be a string.");
     }
     return json_object[name].get<std::string>();
-    }
+  }
   std::vector<uint32_t> getDimensions() final {
     throw std::runtime_error(
         "getDimensions is not supported for ContextAwareTextFeaturizer.");

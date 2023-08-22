@@ -14,7 +14,6 @@ using json = nlohmann::json;
 
 namespace thirdai::dataset {
 
-
 class TextGenerationFeaturizer;
 using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 
@@ -43,13 +42,14 @@ class TextGenerationFeaturizer final : public Featurizer {
         "getDimensions is not supported for TextGenerationFeaturizer.");
   }
 
-  static std::string getStringField(const json& json_object, const std::string& name) {
-  if (!json_object[name].is_string()) {
-    throw std::invalid_argument("Expected field '" + name +
-                                "' to be a string.");
+  static std::string getStringField(const json& json_object,
+                                    const std::string& name) {
+    if (!json_object[name].is_string()) {
+      throw std::invalid_argument("Expected field '" + name +
+                                  "' to be a string.");
+    }
+    return json_object[name].get<std::string>();
   }
-  return json_object[name].get<std::string>();
-}
   // There is no target because we are only making a single prediction at the
   // end of the context, and thus no need for a set of target tokens.
   std::vector<BoltVector> featurizeInferenceSample(

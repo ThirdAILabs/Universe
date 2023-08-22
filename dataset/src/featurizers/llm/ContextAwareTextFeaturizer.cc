@@ -36,8 +36,6 @@ std::vector<std::vector<BoltVector>> ContextAwareTextFeaturizer::featurize(
   return data;
 }
 
-
-
 std::vector<std::vector<BoltVector>> ContextAwareTextFeaturizer::featurizeText(
     const std::string& line) const {
   auto line_content = json::parse(line);
@@ -54,9 +52,9 @@ std::vector<std::vector<BoltVector>> ContextAwareTextFeaturizer::featurizeText(
   for (uint32_t i = predict_start; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens,0, i),
-                       _context_featurizer.ircContext(tokens,0, i),
-                       _context_featurizer.srcContext(tokens,0, i),
+    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, 0, i),
+                       _context_featurizer.ircContext(tokens, 0, i),
+                       _context_featurizer.srcContext(tokens, 0, i),
                        std::move(label)});
   }
 
@@ -85,8 +83,8 @@ std::vector<BoltVector> ContextAwareTextFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-std::pair<std::vector<uint32_t>, uint32_t> ContextAwareTextFeaturizer::getContext(
-    const json& line_content) {
+std::pair<std::vector<uint32_t>, uint32_t>
+ContextAwareTextFeaturizer::getContext(const json& line_content) {
   if (!line_content.contains("target")) {
     throw std::invalid_argument("Expected field 'target' in json object'");
   }
@@ -124,7 +122,8 @@ void ContextAwareTextFeaturizer::save(const std::string& filename) const {
   save_stream(filestream);
 }
 
-void ContextAwareTextFeaturizer::save_stream(std::ostream& output_stream) const {
+void ContextAwareTextFeaturizer::save_stream(
+    std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
