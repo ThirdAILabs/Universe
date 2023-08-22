@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/columns/Column.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::data {
@@ -15,7 +16,7 @@ template <typename T>
 class ArrayColumn : public ArrayColumnBase<T> {
  public:
   static ArrayColumnPtr<T> make(std::vector<std::vector<T>>&& data,
-                                std::optional<size_t> dim);
+                                std::optional<size_t> dim = std::nullopt);
 
   size_t numRows() const final { return _data.size(); }
 
@@ -29,6 +30,8 @@ class ArrayColumn : public ArrayColumnBase<T> {
   }
 
   void shuffle(const std::vector<size_t>& permutation) final;
+
+  ColumnPtr permute(const std::vector<size_t>& permutation) const final;
 
   ColumnPtr concat(ColumnPtr&& other) final;
 

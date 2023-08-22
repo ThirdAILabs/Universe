@@ -18,7 +18,7 @@
 
 namespace thirdai::automl::udt {
 
-using bolt::train::metrics::fromMetricNames;
+using bolt::metrics::fromMetricNames;
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -49,8 +49,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
     _model =
         utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                            output_dim, /* use_sigmoid_bce= */ false, use_tanh,
-                            /* use_bias= */ true);
+                            output_dim, /* use_sigmoid_bce= */ false, use_tanh);
   }
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
@@ -63,7 +62,7 @@ py::object UDTRecurrentClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm) {
   size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   dataset::DatasetLoaderPtr val_dataset = nullptr;
@@ -77,8 +76,8 @@ py::object UDTRecurrentClassifier::train(
     freeze_hash_tables_epoch = 1;
   }
 
-  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
-                               bolt::train::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        bolt::python::CtrlCCheck{});
 
   auto train_dataset = _dataset_factory->getDatasetLoader(
       data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
@@ -110,8 +109,7 @@ py::object UDTRecurrentClassifier::evaluate(
 
   throwIfSparseInference(sparse_inference);
 
-  bolt::train::Trainer trainer(_model, std::nullopt,
-                               bolt::train::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 

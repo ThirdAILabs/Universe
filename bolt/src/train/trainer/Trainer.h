@@ -12,7 +12,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 using InterruptCheck = std::optional<std::function<void()>>;
 
@@ -26,7 +26,7 @@ using InterruptCheck = std::optional<std::function<void()>>;
 class Trainer {
  public:
   explicit Trainer(
-      nn::model::ModelPtr model,
+      ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
       InterruptCheck interrupt_check = std::nullopt);
 
@@ -104,7 +104,8 @@ class Trainer {
       const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
-  nn::model::ModelPtr getModel() { return _model; }
+  ModelPtr getModel() { return _model; }
+
   // Synchronizes the outer epoch count maintained by the distributed framework
   // with the epoch count maintained within Bolt.
   void incrementEpochCount() { _epoch++; }
@@ -116,7 +117,7 @@ class Trainer {
    * Returns a formatted log line for the end of each epoch.
    */
   std::string formatTrainLogLine(const std::string& metric_summary,
-                                 uint32_t batches, int64_t time);
+                                 uint32_t batches, double time);
 
   /**
    * Format intermediate train log line for reporting metrics and status within
@@ -128,12 +129,7 @@ class Trainer {
    * Returns a formatted log line for the result of each call to validate.
    */
   std::string formatValidateLogLine(const std::string& metric_summary,
-                                    uint32_t batches, int64_t time);
-
-  /**
-   * Invokes the autotuner for rehash and rebuild based on the size of the
-   * dataset.
-   */
+                                    uint32_t batches, double time);
 
   /**
    * Returns a formatted log line for function call
@@ -141,6 +137,10 @@ class Trainer {
   std::string formatFuncCallLogLine(const std::string& func_call,
                                     uint32_t batches, int64_t time);
 
+  /**
+   * Invokes the autotuner for rehash and rebuild based on the size of the
+   * dataset.
+   */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
   // TODO(Nicholas): These are just wrappers to convert the datasets to tensors.
@@ -159,7 +159,7 @@ class Trainer {
     }
   }
 
-  nn::model::ModelPtr _model;
+  ModelPtr _model;
 
   std::shared_ptr<metrics::History> _history;
 
@@ -169,4 +169,4 @@ class Trainer {
   InterruptCheck _interrupt_check;
 };
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

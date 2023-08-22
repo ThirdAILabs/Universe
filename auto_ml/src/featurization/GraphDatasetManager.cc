@@ -146,7 +146,7 @@ void GraphDatasetManager::serialize(Archive& archive) {
           _graph_info);
 }
 
-TensorList GraphDatasetManager::featurizeInputBatch(
+bolt::TensorList GraphDatasetManager::featurizeInputBatch(
     const dataset::MapInputBatch& inputs) {
   dataset::MapBatchRef inputs_ref(inputs);
   std::vector<std::vector<BoltVector>> batches =
@@ -158,15 +158,15 @@ TensorList GraphDatasetManager::featurizeInputBatch(
     result.emplace_back(std::move(batch));
   }
 
-  return bolt::train::convertBatch(std::move(result),
-                                   _inference_featurizer->getDimensions());
+  return bolt::convertBatch(std::move(result),
+                            _inference_featurizer->getDimensions());
 }
 
-TensorList GraphDatasetManager::featurizeInput(const dataset::MapInput& input) {
+bolt::TensorList GraphDatasetManager::featurizeInput(
+    const dataset::MapInput& input) {
   dataset::MapSampleRef input_ref(input);
-  return bolt::train::convertVectors(
-      _inference_featurizer->featurize(input_ref),
-      _inference_featurizer->getDimensions());
+  return bolt::convertVectors(_inference_featurizer->featurize(input_ref),
+                              _inference_featurizer->getDimensions());
 }
 
 }  // namespace thirdai::automl::data

@@ -30,7 +30,10 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+        # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/build.py --extras test
 
       # Install go (necessary for running go unit tests)
       - name: Set up Go
@@ -52,7 +55,10 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package release version and install test dependencies
-        run: pip3 install .[test]
+        # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          pip3 install .[test]
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -73,7 +79,10 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+        # Issue: https://github.com/pypa/pip/issues/10851
+        run: |
+          python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          bin/build.py --extras test
 
       - name: Run python distributed tests
         run: bin/python-test.sh -m distributed --durations=0

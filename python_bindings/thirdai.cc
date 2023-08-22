@@ -131,8 +131,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Bolt Submodule
   auto bolt_submodule = m.def_submodule("bolt");
-  thirdai::bolt::nn::python::createBoltNNSubmodule(bolt_submodule);
-  thirdai::bolt::train::python::createBoltTrainSubmodule(bolt_submodule);
+  thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
+  thirdai::bolt::python::createBoltTrainSubmodule(bolt_submodule);
   thirdai::bolt::compression::python::createCompressionSubmodule(
       bolt_submodule);
 
