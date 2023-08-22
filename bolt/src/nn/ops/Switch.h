@@ -10,7 +10,7 @@
 #include <memory>
 #include <vector>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 /**
  * An wrapper around n_layer FullyConnected ops that allows the model to
@@ -38,18 +38,17 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
    * the model's outputs. This allows the layer to include label neurons in the
    * active neurons set when the layer is sparse.
    */
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
@@ -60,8 +59,8 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   std::vector<std::vector<float>*> parameters() final;
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
@@ -69,8 +68,7 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.
    */
-  autograd::ComputationPtr apply(autograd::ComputationPtr index,
-                                 autograd::ComputationPtr input);
+  ComputationPtr apply(ComputationPtr index, ComputationPtr input);
 
   /**
    * Returns the input dim of the switch connected layer.
@@ -95,7 +93,7 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
    */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
-  static auto cast(const ops::OpPtr& op) {
+  static auto cast(const OpPtr& op) {
     return std::dynamic_pointer_cast<Switch>(op);
   }
 
@@ -107,13 +105,12 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
          uint32_t reconstruct_hash_functions =
              std::numeric_limits<uint32_t>::max());
 
-  FullyConnectedPtr getFcOpForInputs(const autograd::ComputationList& inputs,
+  FullyConnectedPtr getFcOpForInputs(const ComputationList& inputs,
                                      uint32_t index_in_batch);
 
   FullyConnectedPtr getFcOpById(uint32_t layer_id);
 
-  static autograd::ComputationList fcInputs(
-      const autograd::ComputationList& inputs);
+  static ComputationList fcInputs(const ComputationList& inputs);
 
   std::vector<FullyConnectedPtr> _fc_ops;
 
@@ -126,4 +123,4 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
 using SwitchPtr = std::shared_ptr<Switch>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

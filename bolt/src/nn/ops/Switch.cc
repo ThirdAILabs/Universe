@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextSwitchOpName() {
   static uint32_t constructed = 0;
@@ -45,9 +45,8 @@ std::shared_ptr<Switch> Switch::make(uint32_t n_layers, uint32_t dim,
                  use_bias, rebuild_hash_tables, reconstruct_hash_functions));
 }
 
-void Switch::forward(const autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch,
-                     bool training) {
+void Switch::forward(const ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch, bool training) {
   assert(inputs.size() == 2 || inputs.size() == 3);
 
   auto fc_inputs = fcInputs(inputs);
@@ -55,8 +54,8 @@ void Switch::forward(const autograd::ComputationList& inputs,
       ->forward(fc_inputs, output, index_in_batch, training);
 }
 
-void Switch::backpropagate(autograd::ComputationList& inputs,
-                           tensor::TensorPtr& output, uint32_t index_in_batch) {
+void Switch::backpropagate(ComputationList& inputs, TensorPtr& output,
+                           uint32_t index_in_batch) {
   assert(inputs.size() == 2 || inputs.size() == 3);
 
   auto fc_inputs = fcInputs(inputs);
@@ -74,8 +73,8 @@ void Switch::updateParameters(float learning_rate, uint32_t train_steps) {
 
 uint32_t Switch::dim() const { return _fc_ops.front()->dim(); }
 
-std::optional<uint32_t> Switch::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> Switch::nonzeros(const ComputationList& inputs,
+                                         bool use_sparsity) const {
   return _fc_ops.front()->nonzeros(inputs, use_sparsity);
 }
 
@@ -110,9 +109,8 @@ std::vector<std::vector<float>*> Switch::parameters() {
   return parameters;
 }
 
-void Switch::summary(std::ostream& summary,
-                     const autograd::ComputationList& inputs,
-                     const autograd::Computation* output) const {
+void Switch::summary(std::ostream& summary, const ComputationList& inputs,
+                     const Computation* output) const {
   summary << "Switch(" << name() << "): switch on " << inputs.front()->name()
           << std::endl;
   summary << "Contains: ";
@@ -126,8 +124,7 @@ void Switch::setSerializeOptimizer(bool should_serialize_optimizer) {
   }
 }
 
-autograd::ComputationPtr Switch::apply(autograd::ComputationPtr index,
-                                       autograd::ComputationPtr input) {
+ComputationPtr Switch::apply(ComputationPtr index, ComputationPtr input) {
   if (index->dim() != _fc_ops.size()) {
     std::stringstream error;
     error << "Cannot apply Switch op with n_layers = " << _fc_ops.size()
@@ -142,8 +139,8 @@ autograd::ComputationPtr Switch::apply(autograd::ComputationPtr index,
 
     throw std::invalid_argument(error.str());
   }
-  return autograd::Computation::make(shared_from_this(),
-                                     {std::move(index), std::move(input)});
+  return Computation::make(shared_from_this(),
+                           {std::move(index), std::move(input)});
 }
 
 uint32_t Switch::inputDim() const { return _fc_ops.front()->inputDim(); }
@@ -168,8 +165,8 @@ void Switch::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   }
 }
 
-FullyConnectedPtr Switch::getFcOpForInputs(
-    const autograd::ComputationList& inputs, uint32_t index_in_batch) {
+FullyConnectedPtr Switch::getFcOpForInputs(const ComputationList& inputs,
+                                           uint32_t index_in_batch) {
   uint32_t fc_id =
       inputs[0]->tensor()->getVector(index_in_batch).active_neurons[0];
   if (fc_id >= _fc_ops.size()) {
@@ -190,8 +187,7 @@ FullyConnectedPtr Switch::getFcOpById(uint32_t layer_id) {
   return _fc_ops[layer_id];
 }
 
-autograd::ComputationList Switch::fcInputs(
-    const autograd::ComputationList& inputs) {
+ComputationList Switch::fcInputs(const ComputationList& inputs) {
   return {inputs.begin() + 1, inputs.end()};
 }
 
@@ -203,6 +199,6 @@ void Switch::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _fc_ops);
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Switch)
+CEREAL_REGISTER_TYPE(thirdai::bolt::Switch)

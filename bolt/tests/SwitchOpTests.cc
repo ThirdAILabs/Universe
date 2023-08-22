@@ -10,14 +10,14 @@ namespace thirdai::bolt::nn::tests {
 
 static uint32_t N_LAYERS = 5;
 
-model::ModelPtr buildModel() {
-  auto index = bolt::nn::ops::Input::make(N_LAYERS);
-  auto input = bolt::nn::ops::Input::make(/* dim= */ 1);
-  auto label = bolt::nn::ops::Input::make(/* dim= */ 1);
+ModelPtr buildModel() {
+  auto index = bolt::Input::make(N_LAYERS);
+  auto input = bolt::Input::make(/* dim= */ 1);
+  auto label = bolt::Input::make(/* dim= */ 1);
   auto output_op =
-      bolt::nn::ops::Switch::make(N_LAYERS, /* dim= */ 1, /* input_dim= */ 1,
-                                  /* sparsity= */ 1.0,
-                                  /* activation= */ "linear");
+      bolt::Switch::make(N_LAYERS, /* dim= */ 1, /* input_dim= */ 1,
+                         /* sparsity= */ 1.0,
+                         /* activation= */ "linear");
   auto output = output_op->apply(index, input);
 
   for (uint32_t layer_id = 0; layer_id < N_LAYERS; layer_id++) {
@@ -27,21 +27,21 @@ model::ModelPtr buildModel() {
     output_op->setBiases(layer_id, &bias);
   }
 
-  auto loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, label);
-  return model::Model::make({index, input}, {output}, {loss});
+  auto loss = bolt::CategoricalCrossEntropy::make(output, label);
+  return Model::make({index, input}, {output}, {loss});
 }
 
 TEST(SwitchOpTests, SwitchesToCorrectOp) {
   auto model = buildModel();
 
-  auto index = tensor::Tensor::sparse(/* batch_size= */ N_LAYERS,
-                                      /* dim= */ N_LAYERS, /* nonzeros= */ 1);
+  auto index = Tensor::sparse(/* batch_size= */ N_LAYERS,
+                              /* dim= */ N_LAYERS, /* nonzeros= */ 1);
   for (uint32_t vector_id = 0; vector_id < index->batchSize(); vector_id++) {
     index->getVector(vector_id).active_neurons[0] = vector_id;
     index->getVector(vector_id).activations[0] = 1.0;
   }
 
-  auto input = tensor::Tensor::dense(/* batch_size= */ N_LAYERS, /* dim= */ 1);
+  auto input = Tensor::dense(/* batch_size= */ N_LAYERS, /* dim= */ 1);
   for (uint32_t vector_id = 0; vector_id < input->batchSize(); vector_id++) {
     input->getVector(vector_id).activations[0] = 1.0;
   }
