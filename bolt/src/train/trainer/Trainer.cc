@@ -130,7 +130,17 @@ metrics::History Trainer::train(
 
     epoch_timer.stop();
 
+    std::vector<std::pair<std::string, float>> metrics_at_rank_0;
+    if (comm && train_metrics.hasMetrics()) {
+      metrics_at_rank_0 =
+          comm->broadcastMetrics(train_metrics.getFlattenedMetrics());
+    }
+
     train_metrics.updateHistory(*_history);
+
+    if (comm && train_metrics.hasMetrics()) {
+      train_metrics.setFlattenedMetrics(*_history, metrics_at_rank_0);
+    }
 
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 

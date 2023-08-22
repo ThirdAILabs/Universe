@@ -6,6 +6,7 @@ import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import (
     check_model_parameters_equal,
+    extract_metrics_from_file,
     gen_numpy_training_data,
     get_bolt_model,
     setup_ray,
@@ -23,9 +24,21 @@ def training_loop_per_worker(config):
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed(
-        train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+    tracked_metric = "categorical_accuracy"
+    metric_threshold = 0.95
+    num_epochs = config.get("num_epochs", 1)
+
+    history = trainer.train_distributed(
+        train_data=(train_x, train_y),
+        learning_rate=0.005,
+        epochs=num_epochs,
+        train_metrics=["categorical_accuracy"],
     )
+
+    # logs train_metrics from worker nodes which can be compared later
+    thirdai.logging.setup(log_to_stderr=False, path="log_metrics.txt", level="info")
+    history.pop("epoch_times")
+    thirdai.logging.info(f"{history}")
 
     session.report(
         {"model_location": session.get_trial_dir()},
@@ -76,6 +89,27 @@ def test_bolt_distributed():
     )
 
     check_model_parameters_equal(model_1, model_2)
+
+    model_1_metrics = extract_metrics_from_file(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_0/log_metrics.txt",
+        )
+    )
+
+    model_2_metrics = extract_metrics_from_file(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_1/log_metrics.txt",
+        )
+    )
+
+    assert (
+        model_1_metrics == model_2_metrics
+    ), "Train metrics on worker nodes aren't synced"
+
+    print(model_1_metrics)
+    print(model_2_metrics)
 
     ray.shutdown()
 
