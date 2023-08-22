@@ -11,7 +11,8 @@ set(DATA_TESTS
     UnrollSequenceTest
     GraphTests
     ExplanationTests
-    RegressionBinningTest)
+    RegressionBinningTest
+    DeduplicateTokensTest)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)
