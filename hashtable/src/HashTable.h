@@ -2,7 +2,10 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <cstdint>
+#include <stdexcept>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace thirdai::hashtable {
@@ -33,6 +36,12 @@ class HashTable {
    */
   virtual void insertSequential(uint64_t n, LABEL_T start,
                                 uint32_t const* hashes) = 0;
+
+  virtual std::vector<std::pair<uint32_t, std::vector<LABEL_T>>> manualQuery(
+      uint32_t const* hashes) const {
+    (void)hashes;
+    throw std::runtime_error("manual_query not supported.");
+  }
 
   /**
    * The hashes array should have length equal to the number of tables, and

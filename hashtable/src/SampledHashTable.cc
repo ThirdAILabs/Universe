@@ -8,6 +8,7 @@
 #include <memory>
 #include <random>
 #include <stdexcept>
+#include <vector>
 
 namespace thirdai::hashtable {
 
@@ -61,6 +62,25 @@ inline void SampledHashTable::insertIntoTables(uint32_t label,
       }
     }
   }
+}
+
+std::vector<std::pair<uint32_t, std::vector<uint32_t>>>
+SampledHashTable::manualQuery(uint32_t const* hashes) const {
+  std::vector<std::pair<uint32_t, std::vector<uint32_t>>> hash_to_neurons;
+  for (uint64_t table = 0; table < _num_tables; table++) {
+    uint32_t row_index = hashes[table];
+    hash_to_neurons.push_back({row_index, {}});
+    assert(row_index < _range);
+
+    uint32_t counter = _counters[CounterIdx(table, row_index)];
+
+    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
+         i++) {
+      hash_to_neurons.back().second.push_back(
+          _data[DataIdx(table, row_index, i)]);
+    }
+  }
+  return hash_to_neurons;
 }
 
 void SampledHashTable::queryBySet(const uint32_t* hashes,

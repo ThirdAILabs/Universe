@@ -92,6 +92,23 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
   }
 }
 
+std::vector<std::pair<uint32_t, std::vector<uint32_t>>> LshIndex::manualQuery(
+    const BoltVector& input) const {
+  assert(!output.isDense());
+
+  std::unordered_set<uint32_t> selected_neurons;
+
+  std::vector<uint32_t> hashes(_hash_fn->numTables());
+  if (input.isDense()) {
+    _hash_fn->hashSingleDense(input.activations, input.len, hashes.data());
+  } else {
+    _hash_fn->hashSingleSparse(input.active_neurons, input.activations,
+                               input.len, hashes.data());
+  }
+
+  return _hash_table->manualQuery(hashes.data());
+}
+
 void LshIndex::buildIndex(const std::vector<float>& weights, uint32_t dim,
                           bool use_new_seed) {
   if (use_new_seed) {

@@ -62,6 +62,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString)
+      .def_static("from_dense_numpy", numpy::denseNumpyToBoltVector,
+                  py::arg("array"))
       .def("to_numpy", [](const BoltVector& vector) -> py::object {
         NumpyArray<float> activations_array(vector.len);
         std::copy(vector.activations, vector.activations + vector.len,

@@ -5,6 +5,8 @@
 #include <hashtable/src/SampledHashTable.h>
 #include <memory>
 #include <random>
+#include <utility>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -18,6 +20,9 @@ class LshIndex final : public NeuronIndex {
     return std::make_shared<LshIndex>(layer_dim, std::move(hash_fn),
                                       std::move(hash_table));
   }
+
+  std::vector<std::pair<uint32_t, std::vector<uint32_t>>> manualQuery(
+      const BoltVector& input) const;
 
   void query(const BoltVector& input, BoltVector& output,
              const BoltVector* labels) const final;

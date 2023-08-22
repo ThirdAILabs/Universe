@@ -65,6 +65,19 @@ inline bool isNumpyFloat32(const py::object& obj) {
   return checkNumpyDtype(obj, "float32");
 }
 
+inline BoltVector denseNumpyToBoltVector(const NumpyArray<float>& array) {
+  const py::buffer_info array_buf = array.request();
+  if (array_buf.shape.size() > 1) {
+    throw std::invalid_argument("Numpy dense data must be a 1D array.");
+  }
+  size_t len = static_cast<size_t>(array_buf.shape.at(0));
+  float* activations = static_cast<float*>(array_buf.ptr);
+  BoltVector non_owning(/* an= */ nullptr, /* a= */ activations,
+                        /* g= */ nullptr, /* l= */ len);
+  auto owning = non_owning.copy();
+  return owning;
+}
+
 inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
     const NumpyArray<float>& examples, uint32_t batch_size) {
   // Get information from examples

@@ -1,6 +1,7 @@
 #include "BoltNNPython.h"
 #include "PybindUtils.h"
 #include <bolt/python_bindings/Porting.h>
+#include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -27,6 +28,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -237,6 +239,9 @@ void defineOps(py::module_& nn) {
            hashtable::SampledHashTable>());
 #endif
 
+  py::class_<LshIndex, std::shared_ptr<LshIndex>>(nn, "LshIndex")
+      .def("manual_query", &LshIndex::manualQuery, py::arg("input"));
+
   py::class_<FullyConnected, FullyConnectedPtr, Op>(nn, "FullyConnected")
       .def(py::init(&FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
@@ -279,6 +284,7 @@ void defineOps(py::module_& nn) {
              }
              op.setBiases(biases.data());
            })
+      .def("get_lsh_index", &FullyConnected::getLshIndex)
       .def("get_hash_table", &FullyConnected::getHashTable)
       .def("set_hash_table", &FullyConnected::setHashTable, py::arg("hash_fn"),
            py::arg("hash_table"));

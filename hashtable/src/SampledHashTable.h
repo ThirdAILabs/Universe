@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -87,6 +88,9 @@ class SampledHashTable final : public HashTable<uint32_t> {
    */
   void insertSequential(uint64_t n, uint32_t start,
                         const uint32_t* hashes) override;
+
+  std::vector<std::pair<uint32_t, std::vector<uint32_t>>> manualQuery(
+      uint32_t const* hashes) const override;
 
   /**
    * Queries the table and returns a set that is the union of the reservoirs

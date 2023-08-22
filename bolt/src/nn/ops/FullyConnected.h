@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -103,6 +104,10 @@ class FullyConnected final
 
   std::pair<hashing::HashFunctionPtr, hashtable::SampledHashTablePtr>
   getHashTable() const;
+
+  std::shared_ptr<LshIndex> getLshIndex() const {
+    return LshIndex::cast(_kernel->neuronIndex());
+  }
 
   void setHashTable(hashing::HashFunctionPtr hash_fn,
                     hashtable::SampledHashTablePtr hash_table);
