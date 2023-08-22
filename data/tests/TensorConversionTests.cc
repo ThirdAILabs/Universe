@@ -108,10 +108,10 @@ TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
                      {"values_1", values_1},
                      {"indices_2", indices_2}});
 
-  auto tensors = toTensorBatches(columns,
-                                 {OutputColumns("indices_1", "values_1"),
-                                  OutputColumns("indices_2")},
-                                 /* batch_size= */ 2);
+  auto tensors = toTensorBatches(
+      columns,
+      {OutputColumns("indices_1", "values_1"), OutputColumns("indices_2")},
+      /* batch_size= */ 2);
 
   ASSERT_EQ(tensors.size(), 2);
   ASSERT_EQ(tensors.at(0).size(), 2);
