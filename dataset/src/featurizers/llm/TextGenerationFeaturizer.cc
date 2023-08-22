@@ -36,6 +36,15 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
   return data;
 }
 
+static std::string getStringField(const json& json_object,
+                                  const std::string& name) {
+  if (!json_object[name].is_string()) {
+    throw std::invalid_argument("Expected field '" + name +
+                                "' to be a string.");
+  }
+  return json_object[name].get<std::string>();
+}
+
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     const std::string& line) const {
   auto line_content = json::parse(line);
@@ -90,14 +99,6 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-static std::string getStringField(const json& json_object,
-                                  const std::string& name) {
-  if (!json_object[name].is_string()) {
-    throw std::invalid_argument("Expected field '" + name +
-                                "' to be a string.");
-  }
-  return json_object[name].get<std::string>();
-}
 std::vector<uint32_t> TextGenerationFeaturizer::getAllTokens(
     const json& line_content) {
   if (!line_content.contains("target")) {
