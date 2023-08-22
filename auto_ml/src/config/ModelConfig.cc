@@ -161,8 +161,13 @@ bolt::ComputationPtr buildEmbedding(const json& config, const ArgumentMap& args,
     use_bias = booleanParameter(config, "use_bias", args);
   }
 
-  auto layer =
-      bolt::Embedding::make(dim, predecessor->dim(), activation, use_bias);
+  std::optional<std::string> grad_clip = std::nullopt;
+  if (config.contains("grad_clip")) {
+    grad_clip = stringParameter(config, "grad_clip", args);
+  }
+
+  auto layer = bolt::Embedding::make(dim, predecessor->dim(), activation,
+                                     use_bias, grad_clip);
 
   return layer->apply(predecessor);
 }
