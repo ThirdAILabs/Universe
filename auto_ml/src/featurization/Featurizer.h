@@ -33,7 +33,7 @@ class Featurizer {
              const data::TemporalRelationships& temporal_relationships,
              const std::string& label_column,
              thirdai::data::TransformationPtr label_transform,
-             thirdai::data::IndexValueColumnList bolt_label_columns,
+             thirdai::data::OutputColumnsList bolt_label_columns,
              const data::TabularOptions& options);
 
   thirdai::data::LoaderPtr getDataLoader(
@@ -93,8 +93,8 @@ class Featurizer {
   thirdai::data::TransformationPtr _input_transform_non_updating;
   thirdai::data::TransformationPtr _label_transform;
 
-  thirdai::data::IndexValueColumnList _bolt_input_columns;
-  thirdai::data::IndexValueColumnList _bolt_label_columns;
+  thirdai::data::OutputColumnsList _bolt_input_columns;
+  thirdai::data::OutputColumnsList _bolt_label_columns;
 
   char _delimiter;
 

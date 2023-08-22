@@ -45,8 +45,9 @@ RecurrentFeaturizer::RecurrentFeaturizer(
 
   _input_transform = thirdai::data::TransformationList::make(input_transforms);
 
-  _bolt_input_columns = {{"__featurized_indices__", "__featurized_values__"}};
-  _bolt_label_columns = {{"__next_tokens__", std::nullopt}};
+  _bolt_input_columns = {thirdai::data::OutputColumns("__featurized_indices__",
+                                                      "__featurized_values__")};
+  _bolt_label_columns = {thirdai::data::OutputColumns("__next_tokens__")};
 }
 
 thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(

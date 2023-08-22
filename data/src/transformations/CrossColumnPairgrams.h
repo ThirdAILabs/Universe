@@ -12,6 +12,9 @@ class CrossColumnPairgrams : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
   const auto& inputColumns() const { return _input_column_names; }
 
  private:

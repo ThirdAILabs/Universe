@@ -44,8 +44,8 @@ class GraphFeaturizer {
   thirdai::data::TransformationPtr _label_transform;
   thirdai::data::TransformationPtr _graph_builder;
 
-  thirdai::data::IndexValueColumnList _bolt_input_columns;
-  thirdai::data::IndexValueColumnList _bolt_label_columns;
+  thirdai::data::OutputColumnsList _bolt_input_columns;
+  thirdai::data::OutputColumnsList _bolt_label_columns;
 
   char _delimiter;
 

@@ -28,8 +28,8 @@ MachFeaturizer::MachFeaturizer(
           makeLabelTransformations(
               label_column, data::asCategorical(data_types.at(label_column)),
               mach_index),
-          {{MACH_LABEL_COLUMN, std::nullopt},
-           {PARSED_DOC_ID_COLUMN, std::nullopt}},
+          {thirdai::data::OutputColumns(MACH_LABEL_COLUMN),
+           thirdai::data::OutputColumns(PARSED_DOC_ID_COLUMN)},
           options) {
   _state = std::make_shared<thirdai::data::State>(mach_index);
 }
@@ -105,16 +105,16 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
 
   // Remove intermediate columns.
   thirdai::data::ColumnMap output({});
-  for (const auto& [index_col, value_col] : _bolt_input_columns) {
-    output.setColumn(index_col, columns.getColumn(index_col));
-    if (value_col) {
-      output.setColumn(*value_col, columns.getColumn(*value_col));
+  for (const auto& column : _bolt_input_columns) {
+    output.setColumn(column.indices(), columns.getColumn(column.indices()));
+    if (column.values()) {
+      output.setColumn(*column.values(), columns.getColumn(*column.values()));
     }
   }
-  for (const auto& [index_col, value_col] : _bolt_label_columns) {
-    output.setColumn(index_col, columns.getColumn(index_col));
-    if (value_col) {
-      output.setColumn(*value_col, columns.getColumn(*value_col));
+  for (const auto& column : _bolt_label_columns) {
+    output.setColumn(column.indices(), columns.getColumn(column.indices()));
+    if (column.values()) {
+      output.setColumn(*column.values(), columns.getColumn(*column.values()));
     }
   }
 

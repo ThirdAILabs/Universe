@@ -63,6 +63,42 @@ uint32_t CrossColumnPairgrams::hashToken(uint32_t token, uint32_t column_seed) {
                              sizeof(uint32_t), column_seed);
 }
 
+void CrossColumnPairgrams::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  std::vector<uint32_t> tokens;
+  for (const auto& column : _input_column_names) {
+    tokens.push_back(input.getValueColumn<uint32_t>(column)->value(0));
+  }
+
+  auto output = apply(input, state);
+
+  auto output_tokens =
+      output.getArrayColumn<uint32_t>(_output_column_name)->row(0);
+
+  size_t output_idx = 0;
+  for (size_t col_a = 0; col_a < tokens.size(); col_a++) {
+    for (size_t col_b = 0; col_b <= col_a; col_b++) {
+      uint32_t token = tokens[col_a];
+      uint32_t prev_token = tokens[col_b];
+
+      auto token_exp =
+          explanations.explain(_input_column_names.at(col_a), token);
+
+      auto prev_token_exp =
+          explanations.explain(_input_column_names.at(col_b), prev_token);
+
+      auto output_token = output_tokens[output_idx++];
+
+      if (col_a == col_b) {
+        explanations.store(_output_column_name, output_token, token_exp);
+      } else {
+        auto explanation = prev_token_exp.append(" and ").append(token_exp);
+        explanations.store(_output_column_name, output_token, explanation);
+      }
+    }
+  }
+}
+
 template void CrossColumnPairgrams::serialize(cereal::BinaryInputArchive&);
 template void CrossColumnPairgrams::serialize(cereal::BinaryOutputArchive&);
 

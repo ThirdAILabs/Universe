@@ -48,8 +48,8 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
   // TODO(Nicholas) new transformation
   // defaults::REGRESSION_CORRECT_LABEL_RADIUS
 
-  thirdai::data::IndexValueColumnList bolt_labels = {
-      {BINNED_COLUMN, std::nullopt}};
+  thirdai::data::OutputColumnsList bolt_labels = {
+      thirdai::data::OutputColumns(BINNED_COLUMN)};
 
   auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,

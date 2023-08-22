@@ -9,25 +9,30 @@ def test_cross_column_pairgrams_consistency():
     N = 20
 
     """
-    This creates a column map that looks like this (this is if N=10 to save space):
+    This creates a column map that looks like this (this is if N=8 to save space):
 
-    [ 0  1  2  3  4  5  6  7  8  9]
-    [ 0  1  2  3  4  5  6  7  8 11]
-    [ 0  1  2  3  4  5  6  7 11 12]
-    [ 0  1  2  3  4  5  6 11 12 13]
-    [ 0  1  2  3  4  5 11 12 13 14]
-    [ 0  1  2  3  4 11 12 13 14 15]
-    [ 0  1  2  3 11 12 13 14 15 16]
-    [ 0  1  2 11 12 13 14 15 16 17]
-    [ 0  1 11 12 13 14 15 16 17 18]
-    [ 0 11 12 13 14 15 16 17 18 19]
+    Col 0 | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 | Col 6 | Col 7
+      0   |   1   |   2   |   3   |   4   |   5   |   6   |   7 
+      0   |   1   |   2   |   3   |   4   |   5   |   6   |   9 
+      0   |   1   |   2   |   3   |   4   |   5   |   9   |  10 
+      0   |   1   |   2   |   3   |   4   |   9   |  10   |  11 
+      0   |   1   |   2   |   3   |   9   |  10   |  11   |  12 
+      0   |   1   |   2   |   9   |  10   |  11   |  12   |  13 
+      0   |   1   |   9   |  10   |  11   |  12   |  13   |  14 
+      0   |   9   |  10   |  11   |  12   |  13   |  14   |  15 
+
 
     In each row 1 column is changed from the previous row. This pattern means that
     there is an exact number of pairgrams that should overlap between any two rows. 
 
-    For rows i, j (j < i) we have the expected number of pairgrams that overlap 
-    to be (N - i) * (N - i + 1) / 2. Note that (N - i) is the number of elements that 
-    are unchanged from the first row. 
+    For rows i, j (with j < i), the number of columns whose values match is (N - i)
+    since (N - i) is the number of elements that are unchanged from the first row.
+    Thus the expected number of pairgrams that overlap is (N - i) * (N - i + 1) / 2, 
+    since M * (M + 1) / 2 is the number of pairgrams that are created from M tokens.
+
+    Additionally, the non overlapping elements between two rows have the same values, 
+    but in different columns. This also tests that the same values in different 
+    columns don't overlap.
     """
 
     columns = data.ColumnMap(

@@ -17,7 +17,7 @@ Featurizer::Featurizer(
     const data::TemporalRelationships& temporal_relationships,
     const std::string& label_column,
     thirdai::data::TransformationPtr label_transform,
-    thirdai::data::IndexValueColumnList bolt_label_columns,
+    thirdai::data::OutputColumnsList bolt_label_columns,
     const data::TabularOptions& options)
     : _label_transform(std::move(label_transform)),
       _bolt_label_columns(std::move(bolt_label_columns)),

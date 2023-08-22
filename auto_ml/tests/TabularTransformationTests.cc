@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
@@ -15,6 +16,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::automl::tests {
 
@@ -25,14 +27,18 @@ namespace thirdai::automl::tests {
 
 TEST(TabularTransformationTests, TextOnlyTransformation) {
   auto [transformation, outputs] = inputTransformations(
-      {{"text", std::make_shared<data::TextDataType>()},
-       {"label", std::make_shared<data::CategoricalDataType>()}},
-      "label", {}, data::TabularOptions(), false);
+      /* data_types= */ {{"text", std::make_shared<data::TextDataType>()},
+                         {"label",
+                          std::make_shared<data::CategoricalDataType>()}},
+      /* label_column= */ "label", /* temporal_relationships= */ {},
+      /* options= */ data::TabularOptions(),
+      /* should_update_history= */ false);
 
   ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).first, "__text_tokenized__");
-  ASSERT_FALSE(outputs.at(0).second.has_value());
+  ASSERT_EQ(outputs.at(0).indices(), "__text_tokenized__");
+  // There should not be a specified values column, just indices.
+  ASSERT_FALSE(outputs.at(0).values().has_value());
 }
 
 data::ColumnDataTypes getTabularDataTypes() {
@@ -68,15 +74,17 @@ thirdai::data::ColumnMap getInput() {
   });
 }
 
-void checkOutputs(const thirdai::data::IndexValueColumnList& outputs) {
+void checkOutputs(const thirdai::data::OutputColumnsList& outputs) {
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).first, "__featurized_input_indices__");
-  ASSERT_EQ(outputs.at(0).second, "__featurized_input_values__");
+  ASSERT_EQ(outputs.at(0).indices(), "__featurized_input_indices__");
+  ASSERT_EQ(outputs.at(0).values(), "__featurized_input_values__");
 }
 
 TEST(TabularTransformationTests, TabularTransformations) {
   auto [transformation, outputs] = inputTransformations(
-      getTabularDataTypes(), "label", {}, data::TabularOptions(), false);
+      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
+      /* temporal_relationships= */ {}, /* options= */ data::TabularOptions(),
+      /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
@@ -121,8 +129,10 @@ TEST(TabularTransformationTests, TabularTransformations) {
 TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
   data::TabularOptions options;
   options.contextual_columns = true;
-  auto [transformation, outputs] =
-      inputTransformations(getTabularDataTypes(), "label", {}, options, false);
+  auto [transformation, outputs] = inputTransformations(
+      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
+      /* temporal_relationships= */ {}, /* options= */ options,
+      /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
@@ -185,7 +195,9 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
         data::TemporalConfig::categorical("label", 4)}}};
 
   auto [transformation, outputs] = inputTransformations(
-      getTabularDataTypes(), "label", relationships, options, false);
+      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
+      /* temporal_relationships= */ relationships, /* options= */ options,
+      /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
@@ -244,6 +256,17 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   thirdai::data::State state;
   thirdai::data::TransformationList pipeline(t_list);
   pipeline.apply(getInput(), state);
+}
+
+TEST(TabularTransformationTests, CheckRejectsReservedColumns) {
+  ASSERT_THROW(  // NOLINT clang-tidy doens't like ASSERT_THROW
+      inputTransformations(
+          /* data_types= */ {{"__text__",
+                              std::make_shared<data::TextDataType>()}},
+          /* label_column= */ "label", /* temporal_relationships= */ {},
+          /* options= */ data::TabularOptions(),
+          /* should_update_history= */ false),
+      std::invalid_argument);
 }
 
 }  // namespace thirdai::automl::tests

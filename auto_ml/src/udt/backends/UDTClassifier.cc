@@ -60,7 +60,8 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
-  thirdai::data::IndexValueColumnList bolt_labels = {{LABEL_COL, std::nullopt}};
+  thirdai::data::OutputColumnsList bolt_labels = {
+      thirdai::data::OutputColumns(LABEL_COL)};
 
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,

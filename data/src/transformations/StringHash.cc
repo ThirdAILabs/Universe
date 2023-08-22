@@ -21,7 +21,10 @@ ColumnMap StringHash::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none) shared(column, hashed_values)
     for (uint64_t i = 0; i < column->numRows(); i++) {
-      for (const auto& value : parseLine(column->value(i), *_delimiter)) {
+      auto values = parseLine(column->value(i), *_delimiter);
+      hashed_values[i].reserve(values.size());
+
+      for (const auto& value : values) {
         hashed_values[i].push_back(hash(value));
       }
     }

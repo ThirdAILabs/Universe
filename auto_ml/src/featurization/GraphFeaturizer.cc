@@ -40,7 +40,7 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   _label_transform = std::make_shared<thirdai::data::StringToToken>(
       target_col, "__todo_labels__", n_target_classes);
 
-  _bolt_label_columns = {{"__todo_labels__", std::nullopt}};
+  _bolt_label_columns = {thirdai::data::OutputColumns("__todo_labels__")};
 
   auto [graph_builder, graph_info] = graphBuilder(data_types);
   _graph_builder = graph_builder;

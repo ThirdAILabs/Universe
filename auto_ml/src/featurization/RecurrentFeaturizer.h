@@ -32,8 +32,8 @@ class RecurrentFeaturizer {
   thirdai::data::TransformationPtr _input_transform;
   thirdai::data::TransformationPtr _recurrence_augmentation;
 
-  thirdai::data::IndexValueColumnList _bolt_input_columns;
-  thirdai::data::IndexValueColumnList _bolt_label_columns;
+  thirdai::data::OutputColumnsList _bolt_input_columns;
+  thirdai::data::OutputColumnsList _bolt_label_columns;
 
   char _delimiter;
 
