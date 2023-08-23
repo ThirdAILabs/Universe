@@ -15,7 +15,7 @@ To use Bolt for distributed training, you need to initialize a Ray cluster to ma
 .. code-block:: python
 
     import ray
-    from thirdai import bolt_v2 as bolt
+    from thirdai import bolt
 
 
 2. Initialize Ray:
@@ -33,7 +33,7 @@ You can configure the resources allocated to Ray workers using the `num_cpus` an
 
 .. code-block:: python
 
-    ray.init(num_cpus=4, num_gpus=2)
+    ray.init(num_cpus=4)
 
 
    This configures Ray to use 4 CPUs and 2 GPUs for distributed training.
@@ -74,7 +74,7 @@ To use the distributed Bolt module, you need to import the necessary modules fro
 .. code-block:: python
     
     import thirdai.distributed_bolt as dist
-    from thirdai import bolt_v2 as bolt
+    from thirdai import bolt
 
 
 Distributed Training Workflow
@@ -103,7 +103,9 @@ Here's an example usage of the Bolt distributed module:
 .. code-block:: python
 
     import thirdai.distributed_bolt as dist
-    from thirdai import bolt_v2 as bolt
+    from thirdai import bolt
+    from ray.train.torch import TorchConfig
+    from ray.air import ScalingConfig
 
     def train_loop_per_worker(config):
         # Training logic goes here
@@ -117,11 +119,16 @@ Here's an example usage of the Bolt distributed module:
     test_x, test_y = ...
 
     # Create a Bolt trainer
-    scaling_config = bolt.ScalingConfig(num_workers=4, use_gpu=True)
+    scaling_config = ScalingConfig(
+        num_workers=3,
+        resources_per_worker={"CPU": 3},
+        placement_strategy="PACK",
+    )
     trainer = dist.BoltTrainer(
         train_loop_per_worker=train_loop_per_worker,
         train_loop_config={...},
         scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="<comm-type>")
     )
 
     # Start distributed training
@@ -133,13 +140,9 @@ Here's an example usage of the Bolt distributed module:
     history = trainer.validate(...)
 
     # Save and load checkpoints
-    checkpoint = dist.BoltCheckPoint.from_model(model)
-    checkpoint.save("checkpoint.pth")
-    loaded_checkpoint = dist.BoltCheckPoint.load("checkpoint.pth")
+    checkpoint = dist.UDTCheckPoint.from_model(model)
+    checkpoint_path = checkpoint.to_directory()
+    loaded_checkpoint = dist.UDTCheckPoint.from_directory(checkpoint_path)
     loaded_model = loaded_checkpoint.get_model()
 
 
-Documentation Reference
------------------------
-
-For detailed API reference and usage examples, please refer to the Bolt documentation.
