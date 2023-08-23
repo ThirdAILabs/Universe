@@ -32,11 +32,14 @@ class GraphFeaturizer {
   void clearGraph() { _state->graph()->clear(); }
 
  private:
+  static std::pair<thirdai::data::TransformationPtr, std::string> nodeId(
+      const data::ColumnDataTypes& data_types);
+
   static std::pair<thirdai::data::TransformationPtr, std::string>
-  neighborFeatures(const data::ColumnDataTypes& data_types);
+  neighborFeatures(const std::string& nod_id_col);
 
   static std::pair<thirdai::data::TransformationPtr, std::string> neighborIds(
-      const data::ColumnDataTypes& data_types);
+      const std::string& nod_id_col);
 
   static std::pair<thirdai::data::TransformationPtr, data::GraphInfoPtr>
   graphBuilder(const data::ColumnDataTypes& data_types);

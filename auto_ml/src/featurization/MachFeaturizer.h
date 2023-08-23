@@ -49,10 +49,13 @@ class MachFeaturizer final : public Featurizer {
   const auto& machIndex() const { return _state->machIndex(); }
 
  private:
-  thirdai::data::TransformationPtr makeLabelTransformations(
+  static thirdai::data::TransformationPtr makeDocIdTransformation(
       const std::string& label_column_name,
-      const data::CategoricalDataTypePtr& label_column_info,
-      const dataset::mach::MachIndexPtr& mach_index);
+      const data::CategoricalDataTypePtr& label_column_info);
+
+  static thirdai::data::TransformationPtr makeLabelTransformations(
+      const std::string& label_column_name,
+      const data::CategoricalDataTypePtr& label_column_info);
 
   static void addDummyDocIds(thirdai::data::ColumnMap& columns);
 

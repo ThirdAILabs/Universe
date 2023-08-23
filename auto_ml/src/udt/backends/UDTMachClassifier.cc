@@ -146,9 +146,9 @@ py::object UDTMachClassifier::train(
 
   addBalancingSamples(data);
 
-  auto train_data_loader = _featurizer->getDataLoader(
-      val_data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      options.shuffle_config);
+  auto train_data_loader =
+      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
+                                 options.verbose, options.shuffle_config);
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),

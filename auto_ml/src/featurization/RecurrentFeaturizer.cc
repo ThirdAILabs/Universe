@@ -60,9 +60,9 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  data_source->restart();
+  csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(data_source, _delimiter);
+  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
 
   auto transformation_list = thirdai::data::TransformationList::make(
       {_input_transform, _recurrence_augmentation});

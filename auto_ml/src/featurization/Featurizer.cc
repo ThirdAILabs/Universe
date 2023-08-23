@@ -71,7 +71,7 @@ thirdai::data::LoaderPtr Featurizer::getDataLoaderHelper(
     const thirdai::data::TransformationPtr& cold_start_transform) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  thirdai::data::ColumnMapIterator data_iter(data_source, _delimiter);
+  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
 
   std::vector<thirdai::data::TransformationPtr> transformations;
   if (cold_start_transform) {
@@ -143,7 +143,7 @@ thirdai::data::TransformationPtr Featurizer::coldStartTransform(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bool fast_approximation) {
-  if (_text_dataset) {
+  if (!_text_dataset) {
     throw std::invalid_argument("Cold start is not supported for this model.");
   }
 
