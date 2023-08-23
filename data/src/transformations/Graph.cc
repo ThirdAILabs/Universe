@@ -70,6 +70,9 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
     for (auto nbr : graph->neighbors(node_ids->value(i))) {
       neighbors[i].push_back(nbr);
     }
+    if (neighbors[i].empty()) {
+      neighbors[i].push_back(std::numeric_limits<uint32_t>::max() - 1);
+    }
   }
 
   auto neighbors_col = ArrayColumn<uint32_t>::make(
@@ -107,8 +110,11 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
     // Normalize neighbor features.
     float total =
         std::reduce(sum_nbr_features.begin(), sum_nbr_features.end(), 0.0);
-    for (float& feature : sum_nbr_features) {
-      feature /= total;
+
+    if (total != 0) {
+      for (float& feature : sum_nbr_features) {
+        feature /= total;
+      }
     }
 
     features[i] = std::move(sum_nbr_features);
