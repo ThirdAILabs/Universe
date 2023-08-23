@@ -6,7 +6,6 @@ import pytest
 from ndb_utils import (
     create_simple_dataset,
     train_simple_neural_db,
-    doc_choices,
     all_docs,
 )
 from thirdai import neural_db as ndb
@@ -156,11 +155,11 @@ def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
 
-def test_neural_db_all_methods_work_on_new_model(all_docs):
+def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
-    all_methods_work(db, all_docs.values(), assert_acc=False)
+    all_methods_work(db, all_docs(), assert_acc=False)
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model(all_docs):
     db = db_from_bazaar()
-    all_methods_work(db, all_docs.values(), assert_acc=True)
+    all_methods_work(db, all_docs(), assert_acc=True)

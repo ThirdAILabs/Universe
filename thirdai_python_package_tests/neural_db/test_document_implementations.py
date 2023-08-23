@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 from thirdai import neural_db as ndb
-from ndb_utils import all_docs, doc_choices
+from ndb_utils import all_docs
 
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.parametrize("choice", doc_choices),
+    pytest.mark.parametrize("doc", all_docs()),
 ]
 
 
@@ -17,8 +17,7 @@ pytestmark = [
 # consistent set of methods and properties, not to check the correctness of each
 # individual implementation. This is important since Python does not enforce
 # this.
-def test_size_property(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_size_property(doc):
     assert type(doc.size) == int
     assert doc.size > 0
     for i in range(doc.size):
@@ -28,13 +27,11 @@ def test_size_property(all_docs, choice):
         doc.reference(doc.size)
 
 
-def test_name_property(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_name_property(doc):
     assert type(doc.name) == str
 
 
-def test_reference_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_reference_method(doc):
     for i in range(doc.size):
         reference: ndb.Reference = doc.reference(i)
         assert type(reference.id) == int
@@ -52,25 +49,21 @@ def test_reference_method(all_docs, choice):
         assert type(reference.context(radius=0)) == str
 
 
-def test_hash_property(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_hash_property(doc):
     assert type(doc.hash) == str
 
 
-def test_strong_text_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_strong_text_method(doc):
     for i in range(doc.size):
         assert type(doc.strong_text(i)) == str
 
 
-def test_weak_text_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_weak_text_method(doc):
     for i in range(doc.size):
         assert type(doc.weak_text(i)) == str
 
 
-def test_context_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_context_method(doc):
     for i in range(doc.size):
         assert type(doc.context(i, radius=0)) == str
         if doc.size > 1:
@@ -78,10 +71,10 @@ def test_context_method(all_docs, choice):
             assert len(doc.context(i, radius=1)) > len(doc.context(i, radius=0))
 
 
-def test_save_load_meta_method(all_docs, choice):
+def test_save_load_meta_method(doc):
     save_dir = Path("doc_save_dir")
     os.mkdir(save_dir)
-    doc: ndb.Document = all_docs[choice]
+
     # We just want to know that it does not throw.
     doc.save_meta(save_dir)
     doc.load_meta(save_dir)
