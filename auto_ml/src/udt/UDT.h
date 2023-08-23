@@ -163,6 +163,8 @@ class UDT {
 
   data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
 
+  void updateLshSamplingStrategy() { _backend->updateLshSamplingStrategy(); }
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,

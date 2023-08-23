@@ -28,6 +28,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -240,6 +241,7 @@ void defineOps(py::module_& nn) {
 #endif
 
   py::class_<LshIndex, std::shared_ptr<LshIndex>>(nn, "LshIndex")
+      .def("summary", [](const LshIndex& index) { index.summarize(std::cout); })
       .def("manual_query", &LshIndex::manualQuery, py::arg("input"));
 
   py::class_<FullyConnected, FullyConnectedPtr, Op>(nn, "FullyConnected")

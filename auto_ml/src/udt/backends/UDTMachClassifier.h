@@ -109,6 +109,10 @@ class UDTMachClassifier final : public UDTBackend {
 
   bolt::FullyConnectedPtr outputOp() const final;
 
+  void updateLshSamplingStrategy() final {
+    updateSamplingStrategy(/* force_lsh= */ true);
+  }
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,

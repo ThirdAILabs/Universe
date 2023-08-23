@@ -254,6 +254,10 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
+  virtual void updateLshSamplingStrategy() {
+    throw notSupported("update_lsh_sampling_strategy");
+  }
+
   /**
    * Introduces new documents to the model from a data source. Used in
    * conjunction with coldstart.

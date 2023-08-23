@@ -159,6 +159,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
            py::arg("label_id"))
+      .def("get_output_op", &udt::UDT::outputOp)
       .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
            py::arg("input_samples"))
@@ -166,6 +167,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("clear_graph", &udt::UDT::clearGraph)
       .def("set_decode_params", &udt::UDT::setDecodeParams,
            py::arg("top_k_to_return"), py::arg("num_buckets_to_eval"))
+      .def("update_lsh", &udt::UDT::updateLshSamplingStrategy)
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
