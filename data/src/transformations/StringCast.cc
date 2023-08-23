@@ -57,7 +57,12 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 #pragma omp parallel for default(none) shared(str_column, rows, error)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
-      rows[i] = parse(str_column->value(i));
+      const auto& str = str_column->value(i);
+      if (str.empty()) {
+        rows[i] = 0;
+      } else {
+        rows[i] = parse(str_column->value(i));
+      }
     } catch (...) {
 #pragma omp critical
       error = formatParseError(str_column->value(i), _input_column_name);

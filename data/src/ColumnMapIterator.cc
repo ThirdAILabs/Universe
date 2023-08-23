@@ -54,7 +54,7 @@ std::optional<ColumnMap> ColumnMapIterator::next() {
         throw std::invalid_argument(
             "Expected " + std::to_string(_column_names.size()) +
             " columns. But received row '" + row + "' with " +
-            std::to_string(row.size()) + " columns.");
+            std::to_string(row_columns.size()) + " columns.");
       }
 
       for (size_t i = 0; i < columns.size(); i++) {

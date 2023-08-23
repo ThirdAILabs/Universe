@@ -732,7 +732,7 @@ def test_upvote():
     assert predicted_label != 200
 
     for _ in range(10):
-        model.upvote([(source_sample, 200)], learning_rate=0.01)
+        model.upvote([(source_sample["text"], 200)], learning_rate=0.01)
         predicted_label = model.predict(source_sample)[0][0]
         if predicted_label == 200:
             break

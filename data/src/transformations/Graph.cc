@@ -1,4 +1,7 @@
 #include "Graph.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
@@ -54,6 +57,15 @@ ColumnMap GraphBuilder::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+template void GraphBuilder::serialize(cereal::BinaryInputArchive&);
+template void GraphBuilder::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void GraphBuilder::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _node_id_column,
+          _neighbors_column, _feature_columns);
+}
+
 NeighborIds::NeighborIds(std::string node_id_column,
                          std::string output_neighbors_column)
     : _node_id_column(std::move(node_id_column)),
@@ -88,6 +100,15 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_neighbors_column, neighbors_col);
 
   return columns;
+}
+
+template void NeighborIds::serialize(cereal::BinaryInputArchive&);
+template void NeighborIds::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void NeighborIds::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _node_id_column,
+          _output_neighbors_column);
 }
 
 NeighborFeatures::NeighborFeatures(std::string node_id_column,
@@ -146,4 +167,17 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+template void NeighborFeatures::serialize(cereal::BinaryInputArchive&);
+template void NeighborFeatures::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void NeighborFeatures::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _node_id_column,
+          _output_features_column);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::GraphBuilder)
+CEREAL_REGISTER_TYPE(thirdai::data::NeighborIds)
+CEREAL_REGISTER_TYPE(thirdai::data::NeighborFeatures)

@@ -224,12 +224,12 @@ def test_entity_embedding(embedding_dim, integer_label):
         embedding_dim=embedding_dim, integer_label=integer_label
     )
     output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
-    for output_id, output_label in enumerate(output_labels):
+    for  output_label in output_labels:
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
         weights = model._get_model().ops()[1].weights
 
-        assert (weights[output_id] == embedding).all()
+        assert (weights[model.class_name(output_label)] == embedding).all()
 
 
 @pytest.mark.release
