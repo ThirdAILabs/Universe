@@ -3,9 +3,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from thirdai import neural_db as ndb
 from ndb_utils import all_docs
-
+from thirdai import neural_db as ndb
 
 pytestmark = [
     pytest.mark.unit,

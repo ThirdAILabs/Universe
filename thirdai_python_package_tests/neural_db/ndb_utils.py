@@ -1,6 +1,7 @@
 import os
-import requests
+
 import pytest
+import requests
 from thirdai import neural_db as ndb
 
 

@@ -1,15 +1,11 @@
 import os
 import shutil
+from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import (
-    create_simple_dataset,
-    train_simple_neural_db,
-    all_docs,
-)
+from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
 from thirdai import neural_db as ndb
-from pathlib import Path
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

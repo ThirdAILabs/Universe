@@ -163,7 +163,7 @@ class DocumentDataSource(PyDataSource):
                 self.weak_column: [weak],
             }
         )
-        
+
         return df.to_csv(header=None, index=None).strip("\n")
 
     def _get_line_iterator(self):
