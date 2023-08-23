@@ -104,6 +104,8 @@ TensorList Model::forward(const TensorList& inputs, bool use_sparsity) {
 }
 
 void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
+  requireOptimizer();
+
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -133,6 +135,8 @@ TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
 }
 
 void Model::updateParameters(float learning_rate) {
+  requireOptimizer();
+
   ++_train_steps;
   for (auto& op : _ops) {
     op->updateParameters(learning_rate, _train_steps);
@@ -310,7 +314,9 @@ void setValues(const std::vector<std::vector<float>*>& values,
   }
 }
 
-std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() {
+  requireOptimizer();
+
   return concatenateValues(gradients());
 }
 
@@ -319,7 +325,9 @@ std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
 }
 
 void Model::setFlattenedGradients(const float* concatenated_values,
-                                  uint64_t flattened_dim) const {
+                                  uint64_t flattened_dim) {
+  requireOptimizer();
+
   setValues(gradients(), concatenated_values, flattened_dim);
 }
 
@@ -453,6 +461,15 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
   for (auto tensor = _computation_order.rbegin();
        tensor != _computation_order.rend(); ++tensor) {
     (*tensor)->backpropagate(index_in_batch);
+  }
+}
+
+void Model::requireOptimizer() {
+  if (!_optimizer_initialized) {
+    for (auto& op : _ops) {
+      op->initOptimizer();
+    }
+    _optimizer_initialized = true;
   }
 }
 

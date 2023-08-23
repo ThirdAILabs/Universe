@@ -29,6 +29,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;

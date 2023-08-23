@@ -38,6 +38,8 @@ class Embedding final : public Op,
     return dim();
   }
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final {
     _disable_sparse_parameter_updates = true;
   }
