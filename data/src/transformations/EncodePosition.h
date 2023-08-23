@@ -23,6 +23,9 @@ class HashPositionTransform final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
  private:
   std::string _input_column;
   std::string _output_column;
@@ -50,6 +53,9 @@ class OffsetPositionTransform final : public Transformation {
         _max_num_tokens(max_num_tokens) {}
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
 
  private:
   std::string _input_column;

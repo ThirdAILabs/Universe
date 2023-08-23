@@ -3,14 +3,17 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-namespace thirdai::bolt::train::python {
+namespace thirdai::bolt::python {
+
+using MetricNameValue = std::pair<std::string, float>;
 
 class PyDistributedComm : public DistributedComm {
  public:
   PyDistributedComm() {}
 
-  void communicate(const bolt::nn::model::ModelPtr& model) override {
+  void communicate(const ModelPtr& model) override {
     PYBIND11_OVERRIDE_PURE_NAME(void,            /* Return type */
                                 DistributedComm, /* Parent class */
                                 "communicate",   /* Name of Python function */
@@ -27,6 +30,17 @@ class PyDistributedComm : public DistributedComm {
                                 num_batches        /* Argument(s) */
     );
   }
+
+  std::vector<MetricNameValue> broadcastMetrics(
+      std::vector<MetricNameValue> train_metrics) override {
+    PYBIND11_OVERRIDE_PURE_NAME(
+        std::vector<MetricNameValue>, /* Return type */
+        DistributedComm,              /* Parent class */
+        "broadcast_metrics",          /* Name of Python function */
+        broadcastMetrics,             /* Name of C++ function */
+        train_metrics                 /* Argument(s) */
+    );
+  }
 };
 
-}  // namespace thirdai::bolt::train::python
+}  // namespace thirdai::bolt::python

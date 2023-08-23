@@ -4,9 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/ops/Op.h>
 
-namespace thirdai::bolt::nn::model {
+namespace thirdai::bolt {
 
-AllocationManager::AllocationManager(autograd::ComputationList computations)
+AllocationManager::AllocationManager(ComputationList computations)
     : _computations(std::move(computations)),
       _allocated_batch_size(0),
       _using_sparsity(true) {}
@@ -42,4 +42,4 @@ void AllocationManager::serialize(Archive& archive) {
   archive(_computations, _allocated_batch_size, _using_sparsity);
 }
 
-}  // namespace thirdai::bolt::nn::model
+}  // namespace thirdai::bolt

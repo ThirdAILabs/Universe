@@ -12,7 +12,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
-namespace thirdai::bolt::train::callbacks {
+namespace thirdai::bolt::callbacks {
 
 /**
  * @brief This callback is intended to schedule learning rate changes during
@@ -172,4 +172,4 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
       _iter_restart_multiplicative_factor;
   float _min_lr, _base_learning_rate;
 };
-}  // namespace thirdai::bolt::train::callbacks
+}  // namespace thirdai::bolt::callbacks
