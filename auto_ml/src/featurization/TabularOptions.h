@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <auto_ml/src/udt/Defaults.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <string>
 
 namespace thirdai::automl::data {
@@ -13,6 +14,14 @@ struct TabularOptions {
   uint32_t lookahead = udt::defaults::LOOKAHEAD;
   uint32_t feature_hash_range = udt::defaults::FEATURE_HASH_RANGE;
   char delimiter = udt::defaults::CSV_DELIMITER;
+
+  int64_t timeLag() const {
+    dataset::QuantityTrackingGranularity granularity =
+        dataset::stringToGranularity(time_granularity);
+
+    return lookahead *
+           dataset::QuantityHistoryTracker::granularityToSeconds(granularity);
+  }
 
  private:
   friend class cereal::access;
