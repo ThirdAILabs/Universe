@@ -593,7 +593,9 @@ void UDTMachClassifier::introduceDocuments(
 
   addBalancingSamples(cold_start_data);
 
-  updateSamplingStrategy(force_lsh_index);
+  if (!force_lsh_index) {
+    updateSamplingStrategy();
+  }
 }
 
 void UDTMachClassifier::introduceDocument(
