@@ -1,8 +1,7 @@
 import os
-
+import requests
 import pytest
 from thirdai import neural_db as ndb
-from enum import Enum
 
 
 @pytest.fixture
@@ -58,9 +57,14 @@ def all_docs():
             weak_columns=["text"],
             reference_columns=["text"],
         ),
+        ndb.CSV(CSV_FILE),
         ndb.PDF(PDF_FILE),
         ndb.DOCX(DOCX_FILE),
         ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
+        ndb.URL(
+            "https://en.wikipedia.org/wiki/Rice_University",
+            requests.get("https://en.wikipedia.org/wiki/Rice_University"),
+        ),
         ndb.SentenceLevelPDF(PDF_FILE),
         ndb.SentenceLevelDOCX(DOCX_FILE),
     ]
