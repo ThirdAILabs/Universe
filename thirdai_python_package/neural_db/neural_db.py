@@ -376,10 +376,10 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, on_error: Callable = None
+        self, query: str, top_k: int, on_error: Callable = None, sparse: bool = False
     ) -> List[Reference]:
         result_ids = self._savable_state.model.infer_labels(
-            samples=[query], n_results=top_k
+            samples=[query], n_results=top_k, sparse=sparse
         )[0]
 
         references = []

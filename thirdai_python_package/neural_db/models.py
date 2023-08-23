@@ -382,11 +382,11 @@ class Mach(Model):
         return self.n_ids != 0
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
+        self, samples: InferSamples, n_results: int, sparse: bool = False, **kwargs
     ) -> Predictions:
         self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        all_predictions = self.model.predict_batch(infer_batch)
+        all_predictions = self.model.predict_batch(infer_batch, sparse_inference=sparse)
         num_hashes = self.model.get_index().num_hashes()
         if num_hashes == 0:
             raise ValueError("Model in invalid state. Num hashes should not be 0.")
