@@ -153,7 +153,7 @@ with open("thirdai.version") as version_file:
 
 neural_db_deps = [
     "PyTrie",
-    "PyMuPDF",
+    "PyMuPDF==1.22.5",
     "langchain",
     "bs4",
     "trafilatura",
