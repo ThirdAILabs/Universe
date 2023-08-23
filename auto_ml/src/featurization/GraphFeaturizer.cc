@@ -47,7 +47,8 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
 
   auto [graph_builder, graph_info] = graphBuilder(data_types);
-  _graph_builder = graph_builder;
+  // clang-tidy things this can be done in the member initialization above.
+  _graph_builder = graph_builder;  // NOLINT
 
   _state = std::make_shared<thirdai::data::State>(graph_info);
 }

@@ -20,7 +20,8 @@ namespace thirdai::automl {
 MachFeaturizer::MachFeaturizer(
     data::ColumnDataTypes data_types,
     const data::TemporalRelationships& temporal_relationship,
-    const std::string& label_column, dataset::mach::MachIndexPtr mach_index,
+    const std::string& label_column,
+    const dataset::mach::MachIndexPtr& mach_index,
     const data::TabularOptions& options)
     : Featurizer(
           data_types, temporal_relationship, label_column,

@@ -171,15 +171,23 @@ auto asTemporal(const thirdai::data::TransformationPtr& t) {
 }
 
 bool hasTemporalTransformation(const thirdai::data::TransformationPtr& t) {
-  if (auto tlist = asTransformationList(t)) {
-    for (const auto& tt : tlist->transformations()) {
-      if (hasTemporalTransformation(tt)) {
-        return true;
+  std::queue<thirdai::data::TransformationPtr> queue;
+  queue.push(t);
+
+  while (!queue.empty()) {
+    auto next = queue.front();
+    queue.pop();
+    if (asTemporal(next)) {
+      return true;
+    }
+    if (auto list = asTransformationList(next)) {
+      for (const auto& transform : list->transformations()) {
+        queue.push(transform);
       }
     }
   }
 
-  return asTemporal(t) != nullptr;
+  return false;
 }
 
 bool Featurizer::hasTemporalTransformations() const {

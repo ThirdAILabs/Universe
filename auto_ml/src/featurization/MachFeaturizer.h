@@ -16,7 +16,7 @@ class MachFeaturizer final : public Featurizer {
   MachFeaturizer(data::ColumnDataTypes data_types,
                  const data::TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
-                 dataset::mach::MachIndexPtr mach_index,
+                 const dataset::mach::MachIndexPtr& mach_index,
                  const data::TabularOptions& options);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
