@@ -508,7 +508,7 @@ void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
         force_lsh) {
       std::cout << "Setting lsh index..." << std::endl;
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
-      
+
       auto sampling_config = bolt::DWTASamplingConfig::autotune(
           mach_index->numBuckets(), sparsity,
           /* experimental_autotune= */ false);
@@ -530,7 +530,7 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool fast_approximation, bool verbose,
-    bool use_sparsity) {
+    bool use_sparsity, bool force_lsh_index) {
   if (use_sparsity) {
     // Note: Force the model to use LSH sparsity here because otherwise, the
     // mach index sampler will only return nonempty buckets, which could
@@ -593,7 +593,7 @@ void UDTMachClassifier::introduceDocuments(
 
   addBalancingSamples(cold_start_data);
 
-  updateSamplingStrategy();
+  updateSamplingStrategy(force_lsh_index);
 }
 
 void UDTMachClassifier::introduceDocument(

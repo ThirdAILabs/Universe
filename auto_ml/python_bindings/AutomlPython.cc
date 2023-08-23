@@ -174,7 +174,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("num_buckets_to_sample") = std::nullopt,
            py::arg("num_random_hashes") = 0,
            py::arg("fast_approximation") = false, py::arg("verbose") = true,
-           py::arg("use_sparsity") = false)
+           py::arg("use_sparsity") = false, py::arg("force_lsh_index") = false)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),

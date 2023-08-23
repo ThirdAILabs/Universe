@@ -267,7 +267,8 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool fast_approximation, bool verbose, bool use_sparsity) {
+      bool fast_approximation, bool verbose, bool use_sparsity,
+      bool force_lsh_index) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -276,6 +277,7 @@ class UDTBackend {
     (void)fast_approximation;
     (void)verbose;
     (void)use_sparsity;
+    (void)force_lsh_index;
     throw notSupported("introduce_documents");
   }
 

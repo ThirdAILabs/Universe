@@ -170,12 +170,14 @@ class UDT {
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool use_sparsity) {
+                          bool verbose, bool use_sparsity,
+                          bool force_lsh_index) {
     licensing::entitlements().verifyDataSource(data);
 
     _backend->introduceDocuments(data, strong_column_names, weak_column_names,
                                  num_buckets_to_sample, num_random_hashes,
-                                 fast_approximation, verbose, use_sparsity);
+                                 fast_approximation, verbose, use_sparsity,
+                                 force_lsh_index);
   }
 
   void introduceDocument(const MapInput& document,
