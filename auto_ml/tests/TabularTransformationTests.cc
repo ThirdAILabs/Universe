@@ -207,7 +207,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
                     transformation)
                     ->transformations();
 
-  ASSERT_EQ(t_list.size(), 14);
+  ASSERT_EQ(t_list.size(), 13);
 
   ASSERT_TRANSFORM_TYPE(t_list[0], thirdai::data::TextTokenizer);
   ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::StringHash);
@@ -220,9 +220,8 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_TRANSFORM_TYPE(t_list[8], thirdai::data::StringToTimestamp);
   ASSERT_TRANSFORM_TYPE(t_list[9], thirdai::data::StringHash);
   ASSERT_TRANSFORM_TYPE(t_list[10], thirdai::data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[11], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[12], thirdai::data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[13], thirdai::data::FeatureHash);
+  ASSERT_TRANSFORM_TYPE(t_list[11], thirdai::data::CategoricalTemporal);
+  ASSERT_TRANSFORM_TYPE(t_list[12], thirdai::data::FeatureHash);
 
   auto ccp_cols =
       std::dynamic_pointer_cast<thirdai::data::CrossColumnPairgrams>(t_list[7])
@@ -235,7 +234,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_EQ(ccp_cols, expected_ccp_cols);
 
   auto fh_cols =
-      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[13])
+      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[12])
           ->inputColumns();
 
   // The transformations on columns b and d are at the end because after
