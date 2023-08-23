@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 from docx import Document
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -12,9 +14,9 @@ def get_elements(filename):
     for p in document.paragraphs:
         if len(p.text.strip()) > 3:
             if prev_short:
-                temp[-1] = (temp[-1][0] + " " + p.text.strip(), filename)
+                temp[-1] = (temp[-1][0] + " " + p.text.strip(), Path(filename).name)
             else:
-                temp.append((p.text.strip(), filename))
+                temp.append((p.text.strip(), Path(filename).name))
             prev_short = len(word_tokenize(p.text.strip())) < ATTACH_N_WORD_THRESHOLD
     temp = [
         (chunk, filename) for passage, filename in temp for chunk in chunk_text(passage)
