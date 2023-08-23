@@ -220,14 +220,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
-      .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
-           py::arg("update"))
-      .def("index_metadata_batch", &udt::UDT::updateMetadataBatch,
-           py::arg("column_name"), py::arg("updates"))
       .def("explain", &udt::UDT::explain, py::arg("input_sample"),
            py::arg("target_class") = std::nullopt)
       .def("class_name", &udt::UDT::className)
-      .def("get_data_processor", &udt::UDT::tabularDatasetFactory)
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)

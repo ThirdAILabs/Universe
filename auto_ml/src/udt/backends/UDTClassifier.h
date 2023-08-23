@@ -94,6 +94,8 @@ class UDTClassifier final : public UDTBackend {
     curr_model = model;
   }
 
+  FeaturizerPtr featurizer() const final { return _featurizer; }
+
   void verifyCanDistribute() const final {
     if (!integerTarget()) {
       throw std::invalid_argument(

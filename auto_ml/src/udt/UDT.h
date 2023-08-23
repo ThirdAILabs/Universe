@@ -156,33 +156,20 @@ class UDT {
   }
 
   void updateTemporalTrackers(const MapInput& sample) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateTemporalTrackers(sample);
+    if (auto featurizer = _backend->featurizer()) {
+      featurizer->updateTemporalTrackers(sample);
     }
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateTemporalTrackersBatch(samples);
+    if (auto featurizer = _backend->featurizer()) {
+      featurizer->updateTemporalTrackersBatch(samples);
     }
   }
 
   void resetTemporalTrackers() {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->resetTemporalTrackers();
-    }
-  }
-
-  void updateMetadata(const std::string& column, const MapInput& sample) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateMetadata(column, sample);
-    }
-  }
-
-  void updateMetadataBatch(const std::string& column,
-                           const MapInputBatch& samples) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateMetadataBatch(column, samples);
+    if (auto featurizer = _backend->featurizer()) {
+      featurizer->resetTemporalTrackers();
     }
   }
 
@@ -449,15 +436,6 @@ class UDT {
    */
   void setMachSamplingThreshold(float threshold) {
     _backend->setMachSamplingThreshold(threshold);
-  }
-
-  /**
-   * Returns the tabular dataset factor if it is used for the model. If a
-   * backend implements this method then UDT instances that use it will support
-   * methods relating to temporal tracking and metadata.
-   */
-  data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
-    return _backend->tabularDatasetFactory();
   }
 
   /**

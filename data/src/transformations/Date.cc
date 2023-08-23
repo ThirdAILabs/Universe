@@ -118,3 +118,5 @@ void Date::serialize(Archive& archive) {
 }
 
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::Date)

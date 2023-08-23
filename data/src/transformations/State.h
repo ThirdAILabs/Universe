@@ -112,6 +112,8 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  void clearHistoryTrackers() { _item_history_trackers.clear(); }
+
   const auto& graph() const {
     if (!_graph) {
       throw std::invalid_argument(

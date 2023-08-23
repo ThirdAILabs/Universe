@@ -194,6 +194,18 @@ bool Featurizer::hasTemporalTransformations() const {
   return hasTemporalTransformation(_input_transform);
 }
 
+void Featurizer::updateTemporalTrackers(const MapInput& sample) {
+  auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
+  _input_transform->apply(columns, *_state);
+}
+
+void Featurizer::updateTemporalTrackersBatch(const MapInputBatch& samples) {
+  auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
+  _input_transform->apply(columns, *_state);
+}
+
+void Featurizer::resetTemporalTrackers() { _state->clearHistoryTrackers(); }
+
 template void Featurizer::serialize(cereal::BinaryInputArchive&);
 template void Featurizer::serialize(cereal::BinaryOutputArchive&);
 

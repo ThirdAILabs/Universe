@@ -12,6 +12,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace thirdai::data {
 
@@ -148,6 +149,9 @@ template <class Archive>
 void CastToValue<T>::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column_name,
           _output_column_name, _dim);
+  if constexpr (std::is_same_v<T, int64_t>) {
+    archive(_format);
+  }
 }
 
 template void CastToValue<uint32_t>::serialize(cereal::BinaryInputArchive&);

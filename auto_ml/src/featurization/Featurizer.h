@@ -1,5 +1,6 @@
 #pragma once
 
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
@@ -71,10 +72,14 @@ class Featurizer {
 
   thirdai::data::ExplanationMap explain(
       const thirdai::data::ColumnMap& columns) {
-    return _input_transform->explain(columns, *_state);
+    return _input_transform_non_updating->explain(columns, *_state);
   }
 
   const auto& state() const { return _state; }
+
+  void updateTemporalTrackers(const MapInput& sample);
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples);
 
   bool hasTemporalTransformations() const;
 
@@ -85,6 +90,8 @@ class Featurizer {
     }
     return *_text_dataset;
   }
+
+  void resetTemporalTrackers();
 
  protected:
   thirdai::data::LoaderPtr getDataLoaderHelper(

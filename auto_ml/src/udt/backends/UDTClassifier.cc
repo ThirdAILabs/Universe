@@ -26,6 +26,7 @@
 #include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <variant>
 
 namespace thirdai::automl::udt {
@@ -181,6 +182,17 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
   auto sorted_gradients =
       bolt::sortGradientsBySignificance(gradients.gradients, gradients.indices);
 
+  float total_grad = 0;
+  for (auto [grad, _] : sorted_gradients) {
+    total_grad += std::abs(grad);
+  }
+
+  if (total_grad == 0) {
+    throw std::invalid_argument(
+        "The model has not learned enough to give explanations. Try "
+        "decreasing the learning rate.");
+  }
+
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
   auto explanation_map = _featurizer->explain(columns);
 
@@ -189,7 +201,8 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
 
   for (const auto& [weight, feature] : sorted_gradients) {
     explanations.emplace_back(
-        explanation_map.explain("TODO: OUTPUT_COL", feature), weight);
+        explanation_map.explain(FEATURE_HASH_INDICES, feature),
+        weight / total_grad);
   }
 
   return explanations;
@@ -229,6 +242,14 @@ py::object UDTClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   uint32_t neuron_id = labelToNeuronId(label);
 
+  if (std::holds_alternative<std::string>(label)) {
+    std::cerr << "labels is str: " << std::get<std::string>(label) << std::endl;
+  } else {
+    std::cerr << "labels is int: " << std::get<uint32_t>(label) << std::endl;
+  }
+  std::cerr << "NERUON ID: " << neuron_id << " integer_t=" << integerTarget()
+            << std::endl;
+
   auto outputs = _classifier->model()->outputs();
 
   if (outputs.size() != 1) {
@@ -253,7 +274,7 @@ py::object UDTClassifier::entityEmbedding(
 }
 
 std::string UDTClassifier::className(uint32_t class_id) const {
-  if (!integerTarget()) {
+  if (integerTarget()) {
     return std::to_string(class_id);
   }
   auto& vocab = _featurizer->state()->getVocab(LABEL_VOCAB);
@@ -303,7 +324,7 @@ uint32_t UDTClassifier::labelToNeuronId(
 }
 
 bool UDTClassifier::integerTarget() const {
-  return _featurizer->state()->containsVocab(LABEL_VOCAB);
+  return !_featurizer->state()->containsVocab(LABEL_VOCAB);
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,

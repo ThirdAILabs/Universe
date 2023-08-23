@@ -6,6 +6,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -105,6 +106,8 @@ class UDTBackend {
     throw notSupported("modifying underlying model");
   }
 
+  virtual FeaturizerPtr featurizer() const { return nullptr; }
+
   virtual void verifyCanDistribute() const {
     throw notSupported("train_distributed");
   }
@@ -154,10 +157,6 @@ class UDTBackend {
   virtual std::string className(uint32_t class_id) const {
     (void)class_id;
     throw notSupported("class_name");
-  }
-
-  virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
-    return nullptr;
   }
 
   virtual data::ColumnDataTypes dataTypes() const {

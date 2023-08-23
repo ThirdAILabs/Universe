@@ -1,6 +1,7 @@
 #include "Graph.h"
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <exception>
 #include <limits>
 #include <numeric>
 #include <stdexcept>
@@ -65,13 +66,20 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::vector<uint32_t>> neighbors(columns.numRows());
 
-#pragma omp parallel for default(none) shared(graph, node_ids, neighbors)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(graph, node_ids, neighbors, error)
   for (size_t i = 0; i < node_ids->numRows(); i++) {
-    for (auto nbr : graph->neighbors(node_ids->value(i))) {
-      neighbors[i].push_back(nbr);
-    }
-    if (neighbors[i].empty()) {
-      neighbors[i].push_back(std::numeric_limits<uint32_t>::max() - 1);
+    try {
+      for (auto nbr : graph->neighbors(node_ids->value(i))) {
+        neighbors[i].push_back(nbr);
+      }
+      if (neighbors[i].empty()) {
+        neighbors[i].push_back(std::numeric_limits<uint32_t>::max() - 1);
+      }
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
   }
 
@@ -94,30 +102,41 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::vector<float>> features(columns.numRows());
 
-#pragma omp parallel for default(none) shared(node_ids, features, graph)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(node_ids, features, graph, error)
   for (size_t i = 0; i < node_ids->numRows(); i++) {
-    uint32_t node_id = node_ids->value(i);
+    try {
+      uint32_t node_id = node_ids->value(i);
 
-    std::vector<float> sum_nbr_features(graph->featureDim());
+      std::vector<float> sum_nbr_features(graph->featureDim());
 
-    for (auto nbr : graph->neighbors(node_id)) {
-      const auto& nbr_features = graph->featureVector(nbr);
-      for (size_t j = 0; j < nbr_features.size(); j++) {
-        sum_nbr_features.at(j) += nbr_features.at(j);
+      for (auto nbr : graph->neighbors(node_id)) {
+        const auto& nbr_features = graph->featureVector(nbr);
+        for (size_t j = 0; j < nbr_features.size(); j++) {
+          sum_nbr_features.at(j) += nbr_features.at(j);
+        }
       }
-    }
 
-    // Normalize neighbor features.
-    float total =
-        std::reduce(sum_nbr_features.begin(), sum_nbr_features.end(), 0.0);
+      // Normalize neighbor features.
+      float total =
+          std::reduce(sum_nbr_features.begin(), sum_nbr_features.end(), 0.0);
 
-    if (total != 0) {
-      for (float& feature : sum_nbr_features) {
-        feature /= total;
+      if (total != 0) {
+        for (float& feature : sum_nbr_features) {
+          feature /= total;
+        }
       }
-    }
 
-    features[i] = std::move(sum_nbr_features);
+      features[i] = std::move(sum_nbr_features);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   auto features_col =

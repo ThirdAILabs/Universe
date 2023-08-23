@@ -83,6 +83,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setModel(const ModelPtr& model) final;
 
+  FeaturizerPtr featurizer() const final { return _featurizer; }
+
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
                        const std::vector<std::string>& weak_column_names,

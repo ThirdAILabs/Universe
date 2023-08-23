@@ -262,17 +262,19 @@ MergedTransformSeries temporalTransformations(
 
       // This is just an additional check to ensure that we don't leak labels if
       // the tracked column is the labels.
+      bool tracking_labels = categorical_temporal.column_name == label_column;
       bool include_current_row =
-          categorical_temporal.include_current_row &&
-          (categorical_temporal.column_name != label_column);
+          categorical_temporal.include_current_row && !tracking_labels;
 
       std::string item_column =
           temporalItemIdsOutput(categorical_temporal.column_name);
 
-      auto item_hash = std::make_shared<thirdai::data::StringHash>(
-          categorical_temporal.column_name, item_column,
-          tracked_column->delimiter);
-      transformations.push_back(item_hash);
+      if (should_update_history || !tracking_labels) {
+        auto item_hash = std::make_shared<thirdai::data::StringHash>(
+            categorical_temporal.column_name, item_column,
+            tracked_column->delimiter);
+        transformations.push_back(item_hash);
+      }
 
       std::string output = temporalTrackingOutput(temporal_id++);
 
