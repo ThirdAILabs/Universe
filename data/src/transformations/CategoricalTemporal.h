@@ -1,6 +1,5 @@
 #pragma once
 
-#include <_types/_uint32_t.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/Transformation.h>
