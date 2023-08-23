@@ -160,6 +160,6 @@ def test_neural_db_all_methods_work_on_new_model():
     all_methods_work(db, all_docs(), assert_acc=False)
 
 
-def test_neural_db_all_methods_work_on_loaded_bazaar_model(all_docs):
+def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_methods_work(db, all_docs(), assert_acc=True)
