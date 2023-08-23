@@ -1,4 +1,7 @@
 #include "FeatureHash.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -62,8 +65,10 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
       ArrayColumn<uint32_t>::make(std::move(indices), _hash_range);
   auto values_col = ArrayColumn<float>::make(std::move(values), std::nullopt);
 
-  return ColumnMap({{_output_indices_column, indices_col},
-                    {_output_values_column, values_col}});
+  columns.setColumn(_output_indices_column, indices_col);
+  columns.setColumn(_output_values_column, values_col);
+
+  return columns;
 }
 
 void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
@@ -123,4 +128,15 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
   }
 }
 
+template void FeatureHash::serialize(cereal::BinaryInputArchive&);
+template void FeatureHash::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void FeatureHash::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _hash_range, _input_columns,
+          _output_indices_column, _output_values_column);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::FeatureHash)

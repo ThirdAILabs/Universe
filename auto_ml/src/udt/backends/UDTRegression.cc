@@ -6,12 +6,15 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/Loader.h>
+#include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/TransformationList.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -20,8 +23,6 @@
 namespace thirdai::automl::udt {
 
 using bolt::metrics::fromMetricNames;
-
-static const std::string BINNED_COLUMN = "__bins__";
 
 UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                              const data::UserProvidedTemporalRelationships&
@@ -39,24 +40,30 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
       /* output_dim= */ output_bins, /* args= */ user_args,
       /* model_config= */ model_config);
 
-  _binning = std::make_shared<thirdai::data::BinningTransformation>(
-      target_name, BINNED_COLUMN, target->range.first, target->range.second,
-      output_bins);
+  auto cast = std::make_shared<thirdai::data::StringToDecimal>(target_name,
+                                                               target_name);
 
-  bool normalize_target_categories = utils::hasSoftmaxOutput(_model);
-  (void)normalize_target_categories;
-  // TODO(Nicholas) new transformation
-  // defaults::REGRESSION_CORRECT_LABEL_RADIUS
+  _binning = std::make_shared<thirdai::data::RegressionBinning>(
+      target_name, FEATURIZED_LABELS, target->range.first, target->range.second,
+      output_bins, defaults::REGRESSION_CORRECT_LABEL_RADIUS);
+
+  auto label_transform =
+      thirdai::data::TransformationList::make({cast, _binning});
+
+  bool softmax_output = utils::hasSoftmaxOutput(_model);
+  thirdai::data::ValueFillType value_fill =
+      softmax_output ? thirdai::data::ValueFillType::SumToOne
+                     : thirdai::data::ValueFillType::Ones;
 
   thirdai::data::OutputColumnsList bolt_labels = {
-      thirdai::data::OutputColumns(BINNED_COLUMN)};
+      thirdai::data::OutputColumns(FEATURIZED_LABELS, value_fill)};
 
   auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
   _featurizer = std::make_shared<Featurizer>(
-      input_data_types, temporal_relationships, target_name, _binning,
+      input_data_types, temporal_relationships, target_name, label_transform,
       bolt_labels, tabular_options);
 }
 
@@ -169,7 +176,7 @@ void UDTRegression::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_REGRESSION_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _model, _binning);
+  archive(cereal::base_class<UDTBackend>(this), _model, _featurizer, _binning);
 }
 
 }  // namespace thirdai::automl::udt

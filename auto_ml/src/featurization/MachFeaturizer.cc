@@ -1,6 +1,8 @@
 #include "MachFeaturizer.h"
-#include <_types/_uint32_t.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -15,9 +17,6 @@
 
 namespace thirdai::automl {
 
-static const std::string PARSED_DOC_ID_COLUMN = "__doc_ids__";
-static const std::string MACH_LABEL_COLUMN = "__mach_labels__";
-
 MachFeaturizer::MachFeaturizer(
     data::ColumnDataTypes data_types,
     const data::TemporalRelationships& temporal_relationship,
@@ -28,8 +27,8 @@ MachFeaturizer::MachFeaturizer(
           makeLabelTransformations(
               label_column, data::asCategorical(data_types.at(label_column)),
               mach_index),
-          {thirdai::data::OutputColumns(MACH_LABEL_COLUMN),
-           thirdai::data::OutputColumns(PARSED_DOC_ID_COLUMN)},
+          {thirdai::data::OutputColumns(MACH_LABELS),
+           thirdai::data::OutputColumns(MACH_DOC_IDS)},
           options) {
   _state = std::make_shared<thirdai::data::State>(mach_index);
 }
@@ -57,7 +56,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   auto input_tensors =
       thirdai::data::toTensorBatches(columns, _bolt_input_columns, batch_size);
 
-  auto doc_ids = columns.getValueColumn<uint32_t>(PARSED_DOC_ID_COLUMN);
+  auto doc_ids = columns.getValueColumn<uint32_t>(MACH_DOC_IDS);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>> batches;
 
@@ -140,9 +139,8 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
 
   _input_transform->apply(columns, *_state);
 
-  columns.setColumn(
-      MACH_LABEL_COLUMN,
-      thirdai::data::ArrayColumn<uint32_t>::make(std::move(labels)));
+  columns.setColumn(MACH_LABELS, thirdai::data::ArrayColumn<uint32_t>::make(
+                                     std::move(labels)));
 
   addDummyDocIds(columns);
 
@@ -181,8 +179,8 @@ MachFeaturizer::getBalancingSamples(
 
   auto text_col =
       columns.getValueColumn<std::string>(textDatasetConfig().textColumn());
-  auto mach_label_col = columns.getArrayColumn<uint32_t>(MACH_LABEL_COLUMN);
-  auto doc_id_col = columns.getValueColumn<uint32_t>(PARSED_DOC_ID_COLUMN);
+  auto mach_label_col = columns.getArrayColumn<uint32_t>(MACH_LABELS);
+  auto doc_id_col = columns.getValueColumn<uint32_t>(MACH_DOC_IDS);
 
   size_t n_to_return = std::min(n_balancing_samples, columns.numRows());
   std::vector<std::pair<uint32_t, RlhfSample>> samples;
@@ -204,18 +202,18 @@ thirdai::data::TransformationPtr MachFeaturizer::makeLabelTransformations(
     const dataset::mach::MachIndexPtr& mach_index) {
   if (auto delim = label_column_info->delimiter) {
     _doc_id_transform = std::make_shared<thirdai::data::StringToTokenArray>(
-        label_column_name, PARSED_DOC_ID_COLUMN, *delim, std::nullopt);
+        label_column_name, MACH_DOC_IDS, *delim, std::nullopt);
   } else {
     _doc_id_transform = std::make_shared<thirdai::data::StringToToken>(
-        label_column_name, PARSED_DOC_ID_COLUMN, std::nullopt);
+        label_column_name, MACH_DOC_IDS, std::nullopt);
   }
 
-  auto mach_label_transform = std::make_shared<thirdai::data::MachLabel>(
-      PARSED_DOC_ID_COLUMN, MACH_LABEL_COLUMN);
+  auto mach_label_transform =
+      std::make_shared<thirdai::data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
 
   _prehashed_labels_transform =
       std::make_shared<thirdai::data::StringToTokenArray>(
-          label_column_name, MACH_LABEL_COLUMN, ' ', mach_index->numBuckets());
+          label_column_name, MACH_LABELS, ' ', mach_index->numBuckets());
 
   return thirdai::data::TransformationList::make(
       {_doc_id_transform, mach_label_transform});
@@ -225,7 +223,17 @@ void MachFeaturizer::addDummyDocIds(thirdai::data::ColumnMap& columns) {
   auto dummy_doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
       std::vector<uint32_t>(columns.numRows(), 0), std::nullopt);
 
-  columns.setColumn(PARSED_DOC_ID_COLUMN, dummy_doc_ids);
+  columns.setColumn(MACH_DOC_IDS, dummy_doc_ids);
+}
+
+template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
+template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void MachFeaturizer::serialize(Archive& archive) {
+  archive(_input_transform, _input_transform_non_updating, _label_transform,
+          _bolt_input_columns, _bolt_label_columns, _delimiter, _state,
+          _text_dataset, _doc_id_transform, _prehashed_labels_transform);
 }
 
 }  // namespace thirdai::automl

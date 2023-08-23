@@ -1,4 +1,6 @@
 #include "StringIDLookup.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <string>
@@ -81,4 +83,15 @@ void StringIDLookup::buildExplanationMap(const ColumnMap& input, State& state,
   }
 }
 
+template void StringIDLookup::serialize(cereal::BinaryInputArchive&);
+template void StringIDLookup::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void StringIDLookup::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column_name,
+          _output_column_name, _vocab_key, _max_vocab_size, _delimiter);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::StringIDLookup)

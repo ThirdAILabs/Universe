@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
@@ -38,6 +39,14 @@ class RecurrentFeaturizer {
   char _delimiter;
 
   thirdai::data::StatePtr _state;
+
+  const std::string TARGET_VOCAB = "__recurrent_vocab__";
+
+  RecurrentFeaturizer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using RecurrentFeaturizerPtr = std::shared_ptr<RecurrentFeaturizer>;

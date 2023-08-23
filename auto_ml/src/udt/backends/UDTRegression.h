@@ -4,7 +4,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <data/src/transformations/Binning.h>
+#include <data/src/transformations/RegressionBinning.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -59,7 +59,7 @@ class UDTRegression final : public UDTBackend {
 
   FeaturizerPtr _featurizer;
 
-  std::shared_ptr<thirdai::data::BinningTransformation> _binning;
+  std::shared_ptr<thirdai::data::RegressionBinning> _binning;
 };
 
 }  // namespace thirdai::automl::udt

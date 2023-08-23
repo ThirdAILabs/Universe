@@ -39,8 +39,11 @@ ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
 }
 
 std::optional<uint32_t> BinningTransformation::getBin(float value) const {
-  if (value >= _exclusive_max_value || value < _inclusive_min_value) {
-    return std::nullopt;
+  if (value < _inclusive_min_value) {
+    return 0;
+  }
+  if (value >= _exclusive_max_value) {
+    return _num_bins - 1;
   }
   return (value - _inclusive_min_value) / _binsize;
 }

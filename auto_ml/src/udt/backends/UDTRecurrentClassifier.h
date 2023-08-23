@@ -95,7 +95,7 @@ class UDTRecurrentClassifier final : public UDTBackend {
 
   RecurrentFeaturizerPtr _featurizer;
 
-  uint32_t _eos_token;
+  uint32_t _eos_token;  // TODO(nicholas) remove this once sequential PR merges.
 
   bool _freeze_hash_tables;
 };

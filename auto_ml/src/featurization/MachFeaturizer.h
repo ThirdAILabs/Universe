@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
@@ -57,6 +58,12 @@ class MachFeaturizer final : public Featurizer {
 
   thirdai::data::TransformationPtr _doc_id_transform;
   thirdai::data::TransformationPtr _prehashed_labels_transform;
+
+  MachFeaturizer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using MachFeaturizerPtr = std::shared_ptr<MachFeaturizer>;

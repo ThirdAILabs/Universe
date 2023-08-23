@@ -987,7 +987,7 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier,
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
           _default_top_k_to_return, _num_buckets_to_eval,
           _mach_sampling_threshold, _rlhf_sampler);
 }

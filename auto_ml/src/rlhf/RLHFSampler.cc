@@ -1,5 +1,6 @@
 #include "RLHFSampler.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/utility.hpp>
@@ -63,7 +64,7 @@ template void RLHFSampler::serialize(cereal::BinaryOutputArchive& archive);
 
 template <class Archive>
 void RLHFSampler::serialize(Archive& archive) {
-  archive(_doc_ids, _max_docs, _max_samples_per_doc);
+  archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
 }
 
 }  // namespace thirdai::automl::udt

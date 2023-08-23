@@ -33,10 +33,6 @@ class BinningTransformation final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
-  float unbin(uint32_t category) const {
-    return _inclusive_min_value + category * _binsize + (_binsize / 2);
-  }
-
  private:
   // Private constructor for cereal.
   BinningTransformation()

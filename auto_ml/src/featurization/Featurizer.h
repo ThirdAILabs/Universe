@@ -22,9 +22,17 @@ class TextDatasetConfig {
 
   const auto& labelColumn() const { return _label_column; }
 
+  TextDatasetConfig() {}  // For cereal
+
  private:
   std::string _text_column;
   std::string _label_column;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_text_column, _label_column);
+  }
 };
 
 class Featurizer {
@@ -102,16 +110,12 @@ class Featurizer {
 
   std::optional<TextDatasetConfig> _text_dataset;
 
- private:
-  Featurizer() {}
+  Featurizer() {}  // For cereal
 
+ private:
   friend class cereal::access;
   template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(_input_transform, _input_transform_non_updating, _label_transform,
-            _bolt_input_columns, _bolt_label_columns, _delimiter);
-    // TODO(Nicholas) finish this
-  }
+  void serialize(Archive& archive);
 };
 
 using FeaturizerPtr = std::shared_ptr<Featurizer>;

@@ -1,4 +1,8 @@
 #include "RecurrentFeaturizer.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
+#include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
@@ -8,8 +12,6 @@
 #include <optional>
 
 namespace thirdai::automl {
-
-static const std::string VOCAB = "__recurrent_vocab__";
 
 RecurrentFeaturizer::RecurrentFeaturizer(
     const data::ColumnDataTypes& data_types, const std::string& target_name,
@@ -21,33 +23,36 @@ RecurrentFeaturizer::RecurrentFeaturizer(
       nonTemporalTransformations(data_types, target_name, tabular_options);
 
   auto target_lookup = std::make_shared<thirdai::data::StringIDLookup>(
-      target_name, target_name, target_name, n_target_classes,
+      /* input_column= */ target_name, /* output_column= */ target_name,
+      /* vocab_key= */ TARGET_VOCAB, /* max_vocab_size= */ n_target_classes,
       target->delimiter);
 
   auto target_encoding =
       std::make_shared<thirdai::data::OffsetPositionTransform>(
-          target_name, "__target_sequence__", target->max_length.value());
+          target_name, RECURRENT_SEQUENCE, target->max_length.value());
 
   input_transforms.push_back(target_lookup);
   input_transforms.push_back(target_encoding);
 
-  outputs.push_back("__target_sequence__");
+  outputs.push_back(RECURRENT_SEQUENCE);
 
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
-      outputs, "__featurized_indices__", "__featurized_values__",
+      outputs, FEATURE_HASH_INDICES, FEATURE_HASH_VALUES,
       tabular_options.feature_hash_range);
 
   input_transforms.push_back(fh);
 
   _recurrence_augmentation = std::make_shared<thirdai::data::UnrollSequence>(
-      "__target_sequence__", "__target_sequence__", "__target_sequence__",
-      "__next_tokens__");
+      /* source_input_column= */ RECURRENT_SEQUENCE,
+      /* target_input_column= */ RECURRENT_SEQUENCE,
+      /* source_output_column= */ RECURRENT_SEQUENCE,
+      /* target_output_column= */ FEATURIZED_LABELS);
 
   _input_transform = thirdai::data::TransformationList::make(input_transforms);
 
-  _bolt_input_columns = {thirdai::data::OutputColumns("__featurized_indices__",
-                                                      "__featurized_values__")};
-  _bolt_label_columns = {thirdai::data::OutputColumns("__next_tokens__")};
+  _bolt_input_columns = {
+      thirdai::data::OutputColumns(FEATURE_HASH_INDICES, FEATURE_HASH_VALUES)};
+  _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
 }
 
 thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
@@ -89,7 +94,16 @@ bolt::TensorList RecurrentFeaturizer::featurizeInputBatch(
 
 const thirdai::data::ThreadSafeVocabularyPtr& RecurrentFeaturizer::vocab()
     const {
-  return _state->getVocab(VOCAB);
+  return _state->getVocab(TARGET_VOCAB);
+}
+
+template void RecurrentFeaturizer::serialize(cereal::BinaryInputArchive&);
+template void RecurrentFeaturizer::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void RecurrentFeaturizer::serialize(Archive& archive) {
+  archive(_input_transform, _recurrence_augmentation, _bolt_input_columns,
+          _bolt_label_columns, _delimiter, _state);
 }
 
 }  // namespace thirdai::automl

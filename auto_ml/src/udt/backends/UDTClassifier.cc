@@ -10,6 +10,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
@@ -28,9 +29,6 @@
 #include <variant>
 
 namespace thirdai::automl::udt {
-
-static const std::string LABEL_COL = "__labels__";
-static const std::string VOCAB = "__vocab__";
 
 UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
                              const data::UserProvidedTemporalRelationships&
@@ -51,17 +49,20 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
                                   defaults::USE_SIGMOID_BCE)),
           user_args.get<bool>("freeze_hash_tables", "boolean",
                               defaults::FREEZE_HASH_TABLES))) {
-  bool normalize_target_categories = utils::hasSoftmaxOutput(model());
-  auto label_transform =
-      labelTransformation(target_name, target, n_target_classes, integer_target,
-                          normalize_target_categories);
+  auto label_transform = labelTransformation(target_name, target,
+                                             n_target_classes, integer_target);
 
   auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
+  bool softmax_output = utils::hasSoftmaxOutput(model());
+  thirdai::data::ValueFillType value_fill =
+      softmax_output ? thirdai::data::ValueFillType::SumToOne
+                     : thirdai::data::ValueFillType::Ones;
+
   thirdai::data::OutputColumnsList bolt_labels = {
-      thirdai::data::OutputColumns(LABEL_COL)};
+      thirdai::data::OutputColumns(FEATURIZED_LABELS, value_fill)};
 
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,
@@ -255,27 +256,25 @@ std::string UDTClassifier::className(uint32_t class_id) const {
   if (!integerTarget()) {
     return std::to_string(class_id);
   }
-  auto& vocab = _featurizer->state()->getVocab(VOCAB);
+  auto& vocab = _featurizer->state()->getVocab(LABEL_VOCAB);
   return vocab->getString(class_id);
 }
 
 thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
     const std::string& target_name, data::CategoricalDataTypePtr& target_config,
-    uint32_t n_target_classes, bool integer_target,
-    bool normalize_target_categories) {
-  (void)normalize_target_categories;
-  // TODO(Nicholas): add normalization
+    uint32_t n_target_classes, bool integer_target) const {
   if (integer_target) {
     if (target_config->delimiter) {
       return std::make_shared<thirdai::data::StringToToken>(
-          target_name, LABEL_COL, n_target_classes);
+          target_name, FEATURIZED_LABELS, n_target_classes);
     }
     return std::make_shared<thirdai::data::StringToTokenArray>(
-        target_name, LABEL_COL, *target_config->delimiter, n_target_classes);
+        target_name, FEATURIZED_LABELS, *target_config->delimiter,
+        n_target_classes);
   }
 
   return std::make_shared<thirdai::data::StringIDLookup>(
-      target_name, LABEL_COL, VOCAB, n_target_classes,
+      target_name, FEATURIZED_LABELS, LABEL_VOCAB, n_target_classes,
       target_config->delimiter);
 }
 
@@ -292,7 +291,7 @@ uint32_t UDTClassifier::labelToNeuronId(
   }
   if (std::holds_alternative<std::string>(label)) {
     if (!integerTarget()) {
-      auto& vocab = _featurizer->state()->getVocab(VOCAB);
+      auto& vocab = _featurizer->state()->getVocab(LABEL_VOCAB);
       return vocab->getUid(std::get<std::string>(label));
     }
     throw std::invalid_argument(
@@ -304,7 +303,7 @@ uint32_t UDTClassifier::labelToNeuronId(
 }
 
 bool UDTClassifier::integerTarget() const {
-  return _featurizer->state()->containsVocab(VOCAB);
+  return _featurizer->state()->containsVocab(LABEL_VOCAB);
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
@@ -322,7 +321,7 @@ void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_CLASSIFIER_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier);
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
 }
 
 }  // namespace thirdai::automl::udt

@@ -1,4 +1,8 @@
 #include "Featurizer.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
@@ -180,6 +184,16 @@ bool hasTemporalTransformation(const thirdai::data::TransformationPtr& t) {
 
 bool Featurizer::hasTemporalTransformations() const {
   return hasTemporalTransformation(_input_transform);
+}
+
+template void Featurizer::serialize(cereal::BinaryInputArchive&);
+template void Featurizer::serialize(cereal::BinaryOutputArchive&);
+
+template <typename Archive>
+void Featurizer::serialize(Archive& archive) {
+  archive(_input_transform, _input_transform_non_updating, _label_transform,
+          _bolt_input_columns, _bolt_label_columns, _delimiter, _state,
+          _text_dataset);
 }
 
 }  // namespace thirdai::automl

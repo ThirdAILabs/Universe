@@ -278,8 +278,8 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
 
   // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _target, _model,
-          _freeze_hash_tables);
+  archive(cereal::base_class<UDTBackend>(this), _target_name, _target, _model,
+          _featurizer, _eos_token, _freeze_hash_tables);
 }
 
 }  // namespace thirdai::automl::udt

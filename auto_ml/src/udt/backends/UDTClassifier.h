@@ -111,10 +111,10 @@ class UDTClassifier final : public UDTBackend {
   }
 
  private:
-  static thirdai::data::TransformationPtr labelTransformation(
+  thirdai::data::TransformationPtr labelTransformation(
       const std::string& target_name,
       data::CategoricalDataTypePtr& target_config, uint32_t n_target_classes,
-      bool integer_target, bool normalize_target_categories);
+      bool integer_target) const;
 
   uint32_t labelToNeuronId(
       const std::variant<uint32_t, std::string>& label) const;
@@ -131,6 +131,8 @@ class UDTClassifier final : public UDTBackend {
   utils::ClassifierPtr _classifier;
 
   FeaturizerPtr _featurizer;
+
+  const std::string LABEL_VOCAB = "__label_vocab__";
 };
 
 }  // namespace thirdai::automl::udt
