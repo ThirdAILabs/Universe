@@ -144,8 +144,8 @@ def clear_sources_works(db: ndb.NeuralDB):
 
 
 def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
-    insert_works(db, docs, assert_acc)
-    search_works(db, docs)
+    insert_works(db, docs)
+    search_works(db, docs, assert_acc)
     upvote_works(db)
     associate_works(db)
     save_load_works(db)
@@ -157,9 +157,6 @@ def test_neural_db_loads_from_model_bazaar():
 
 
 def test_neural_db_all_methods_work_on_new_model(all_docs):
-    # all_docs is a fixture
-    # docs = all_docs
-    # docs = docs.values()
     db = ndb.NeuralDB("user")
     all_methods_work(db, all_docs.values(), assert_acc=False)
 
