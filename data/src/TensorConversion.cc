@@ -61,8 +61,10 @@ std::vector<bolt::TensorList> toTensorBatches(
           batch_values.insert(batch_values.end(), values_row.begin(),
                               values_row.end());
         } else {
-          float fill_value = (value_fill_type == ValueFillType::SumToOne) ? 1.0 / indices_row.size() : 1.0;
-          
+          float fill_value = (value_fill_type == ValueFillType::SumToOne)
+                                 ? 1.0 / indices_row.size()
+                                 : 1.0;
+
           for (size_t j = 0; j < indices_row.size(); j++) {
             batch_values.push_back(fill_value);
           }
