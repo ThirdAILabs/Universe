@@ -73,7 +73,6 @@ void defineTrainer(py::module_& train) {
 
   train.def("convert_datasets", convertDatasets, py::arg("datasets"),
             py::arg("dims"), py::arg("copy") = true);
-#endif
 
   /*
    * DistributedTrainer inherits Trainer objects. Hence, we need to expose
