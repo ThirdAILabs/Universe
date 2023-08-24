@@ -115,9 +115,6 @@ void createBoltNNSubmodule(py::module_& module) {
            py::arg("losses"), py::arg("additional_labels") = ComputationList{})
       .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
-      .def("forward",
-           py::overload_cast<const TensorList&, bool>(&Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity") = false)
       .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
@@ -136,6 +133,9 @@ void createBoltNNSubmodule(py::module_& module) {
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.
+      .def("forward",
+           py::overload_cast<const TensorList&, bool>(&Model::forward),
+           py::arg("inputs"), py::arg("use_sparsity") = false)
       .def("disable_sparse_parameter_updates",
            &Model::disableSparseParameterUpdates)
       .def("get_gradients", &getGradients,
@@ -154,12 +154,11 @@ void createBoltNNSubmodule(py::module_& module) {
       .def(thirdai::bolt::python::getPickleFunction<Model>());
 
 #if THIRDAI_EXPOSE_ALL
-  defineTensor(nn);
-
   defineOps(nn);
 
   defineLosses(nn);
 #endif
+  defineTensor(nn);
 }
 
 void defineTensor(py::module_& nn) {
