@@ -1,5 +1,6 @@
 import functools
 import re
+from pathlib import Path
 
 import fitz
 import pandas as pd
@@ -59,12 +60,12 @@ def process_pdf_file(filename):
                         paras[-1] = (
                             paras[-1][0] + " " + current,  # text
                             paras[-1][1],  # page number
-                            doc.name,  # pdf filename
+                            Path(filename).name,  # pdf filename
                             temp_prev,  # page to block dictionary
                         )
                     else:
                         prev = current
-                        paras.append((current, page_no, doc.name, temp))
+                        paras.append((current, page_no, Path(filename).name, temp))
 
                     # Occurrences of space is proxy for number of words.
                     # If there are 10 words or less, this paragraph is

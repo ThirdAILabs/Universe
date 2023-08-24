@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import thirdai
 import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
@@ -89,15 +90,12 @@ class NeuralDB:
         self,
         user_id: str = "user",
         savable_state: State = None,
-        model_config: str = None,
         **kwargs,
     ) -> None:
         self._user_id: str = user_id
         if savable_state == None:
             self._savable_state: State = State(
-                model=Mach(
-                    id_col="id", query_col="query", model_config=model_config, **kwargs
-                ),
+                model=Mach(id_col="id", query_col="query", **kwargs),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
             )
         else:
@@ -191,6 +189,152 @@ class NeuralDB:
             savable_state.model.set_n_ids(csv_doc.size)
 
         return NeuralDB(user_id, savable_state)
+
+    def pretrain_distributed(
+        self,
+        documents,
+        scaling_config,
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        batch_size: int = None,
+        metrics: List[str] = [],
+        max_in_memory_batches: Optional[int] = None,
+        communication_backend="gloo",
+        run_config=None,
+    ):
+        """
+        Pretrains a model in a distributed manner using the provided documents.
+
+        Args:
+            documents: List of documents for pretraining.
+            scaling_config: Configuration related to the scaling aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.ScalingConfig.html
+            learning_rate (float, optional): Learning rate for the optimizer. Default is 0.001.
+            epochs (int, optional): Number of epochs to train. Default is 5.
+            batch_size (int, optional): Size of each batch for training. If not provided, will be determined automatically.
+            metrics (List[str], optional): List of metrics to evaluate during training. Default is an empty list.
+            max_in_memory_batches (Optional[int], optional): Number of batches to load in memory at once. Useful for
+                streaming support when dataset is too large to fit in memory. If None, all batches will be loaded.
+            communication_backend (str, optional): Bolt Distributed Training uses Torch Communication Backend. This
+                refers to backend for inter-worker communication. Default is "gloo".
+            run_config: Configuration related to the runtime aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.RunConfig.html
+
+        Notes:
+            - Make sure to pass id_column to neural_db.CSV() making sure the ids are in ascending order starting from 0.
+            - The `scaling_config`, `run_config`, and `resume_from_checkpoint` arguments are related to the Ray trainer configuration. Read
+                https://docs.ray.io/en/latest/ray-air/trainers.html#trainer-basics
+            - Ensure that the communication backend specified is compatible with the hardware and network setup for MPI/Gloo backend.
+        """
+
+        import warnings
+        from distutils.version import LooseVersion
+
+        import ray
+        import thirdai.distributed_bolt as dist
+        from ray.train.torch import TorchConfig
+
+        ray_version = ray.__version__
+        if LooseVersion(ray_version) >= LooseVersion("2.7"):
+            warnings.warn(
+                """
+                Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
+                Support for local checkpoints has been discontinued in these versions. 
+                Refer to https://github.com/ray-project/ray/issues/37177 for details.
+                """.strip()
+            )
+
+        if not isinstance(documents, list) or not all(
+            isinstance(doc, CSV) for doc in documents
+        ):
+            raise ValueError(
+                "The pretrain_distributed function currently only supports CSV documents."
+            )
+
+        def training_loop_per_worker(config):
+            import thirdai.distributed_bolt as dist
+            from ray.air import session
+            from thirdai.dataset import RayDataSource
+
+            if config["licensing_lambda"]:
+                config["licensing_lambda"]()
+
+            # ray data will automatically split the data if the dataset is passed with key "train"
+            # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
+            stream_split_data_iterator = session.get_dataset_shard("train")
+
+            model = dist.UDTCheckPoint.get_model(session.get_checkpoint())
+
+            strong_column_names = config["strong_column_names"]
+            weak_column_names = config["weak_column_names"]
+            learning_rate = config["learning_rate"]
+            epochs = config["epochs"]
+            batch_size = config["batch_size"]
+            metrics = config["metrics"]
+            max_in_memory_batches = config["max_in_memory_batches"]
+
+            metrics = model.coldstart_distributed_on_data_source(
+                data_source=RayDataSource(stream_split_data_iterator),
+                strong_column_names=strong_column_names,
+                weak_column_names=weak_column_names,
+                learning_rate=learning_rate,
+                epochs=epochs,
+                batch_size=batch_size,
+                metrics=metrics,
+                max_in_memory_batches=max_in_memory_batches,
+            )
+
+            session.report(
+                metrics=metrics,
+                checkpoint=dist.UDTCheckPoint.from_model(model),
+            )
+
+        csv_paths = [str(document.path.resolve()) for document in documents]
+
+        train_ray_ds = ray.data.read_csv(csv_paths)
+
+        train_loop_config = {}
+
+        # we cannot pass the model by default to config given config results in OOM very frequently with bigger model.
+        checkpoint = dist.UDTCheckPoint.from_model(
+            self._savable_state.model.get_model()
+        )
+        checkpoint_path = checkpoint.to_directory()
+
+        # If this is a file based license, it will assume the license to available at the same location on each of the
+        # machine
+        licensing_lambda = None
+        if hasattr(thirdai._thirdai, "licensing"):
+            license_state = thirdai._thirdai.licensing._get_license_state()
+            licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+                license_state
+            )
+
+        train_loop_config["licensing_lambda"] = licensing_lambda
+        train_loop_config["strong_column_names"] = documents[0].strong_columns
+        train_loop_config["weak_column_names"] = documents[0].weak_columns
+        train_loop_config["learning_rate"] = learning_rate
+        train_loop_config["epochs"] = epochs
+        train_loop_config["batch_size"] = batch_size
+        train_loop_config["metrics"] = metrics
+        train_loop_config["max_in_memory_batches"] = max_in_memory_batches
+
+        trainer = dist.BoltTrainer(
+            train_loop_per_worker=training_loop_per_worker,
+            train_loop_config=train_loop_config,
+            scaling_config=scaling_config,
+            backend_config=TorchConfig(backend=communication_backend),
+            datasets={"train": train_ray_ds},
+            run_config=run_config,
+            resume_from_checkpoint=dist.UDTCheckPoint.from_directory(checkpoint_path),
+        )
+
+        result_and_checkpoint = trainer.fit()
+
+        # TODO(pratik/mritunjay): This will stop working with ray==2.7 if runconfig doesnt specify s3 storage path.
+        model = result_and_checkpoint.checkpoint.get_model()
+
+        self._savable_state.model.set_model(model)
 
     def ready_to_search(self) -> bool:
         return self._savable_state.ready()

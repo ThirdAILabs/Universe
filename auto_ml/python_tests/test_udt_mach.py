@@ -822,3 +822,22 @@ def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
     model.introduce_label(
         [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
     )
+
+
+def test_udt_mach_fast_approximation_handles_commas():
+    model = train_simple_mach_udt()
+    model.clear_index()
+
+    with open("temp.csv", "w") as out:
+        out.write("strong,weak,label\n")
+        out.write('"a string, with, commas","another, one",0\n')
+
+    # We only care that it doesn't throw an error
+    model.introduce_documents(
+        "temp.csv",
+        strong_column_names=["strong"],
+        weak_column_names=["weak"],
+        fast_approximation=True,
+    )
+
+    os.remove("temp.csv")

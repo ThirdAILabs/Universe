@@ -20,16 +20,16 @@ class Loader {
   static constexpr size_t DEFAULT_SHUFFLE_BUFFER_SIZE = 64000;
 
   Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
-         StatePtr state, IndexValueColumnList input_columns,
-         IndexValueColumnList label_columns, size_t batch_size, bool shuffle,
+         StatePtr state, OutputColumnsList input_columns,
+         OutputColumnsList label_columns, size_t batch_size, bool shuffle,
          bool verbose = true,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
          uint32_t shuffle_seed = global_random::nextSeed());
 
   static auto make(ColumnMapIterator data_iterator,
                    TransformationPtr transformation, StatePtr state,
-                   IndexValueColumnList input_columns,
-                   IndexValueColumnList label_columns, size_t batch_size,
+                   OutputColumnsList input_columns,
+                   OutputColumnsList label_columns, size_t batch_size,
                    bool shuffle, bool verbose = true,
                    size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
                    uint32_t shuffle_seed = global_random::nextSeed()) {
@@ -39,15 +39,14 @@ class Loader {
         verbose, shuffle_buffer_size, shuffle_seed);
   }
 
-  std::optional<bolt::train::LabeledDataset> next(
-      size_t max_batches = NO_LIMIT);
+  std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
-  bolt::train::LabeledDataset all();
+  bolt::LabeledDataset all();
 
   void restart();
 
  private:
-  void recordReturnedColumns(const IndexValueColumnList& index_value_columns);
+  void recordReturnedColumns(const OutputColumnsList& index_value_columns);
 
   ColumnMap removeIntermediateColumns(ColumnMap&& columns) const;
 
@@ -63,8 +62,8 @@ class Loader {
   ColumnMapIterator _data_iterator;
   TransformationPtr _transformation;
 
-  IndexValueColumnList _model_input_columns;
-  IndexValueColumnList _model_label_columns;
+  OutputColumnsList _model_input_columns;
+  OutputColumnsList _model_label_columns;
   std::unordered_set<std::string> _columns_returned;
 
   size_t _batch_size;
