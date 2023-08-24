@@ -12,6 +12,9 @@ class DistributedComm {
 
   virtual uint64_t minNumBatches(uint64_t num_batches) = 0;
 
+  virtual std::vector<std::pair<std::string, float>> broadcastMetrics(
+      std::vector<std::pair<std::string, float>> train_metrics) = 0;
+
   virtual ~DistributedComm() = default;
 };
 

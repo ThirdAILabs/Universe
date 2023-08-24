@@ -146,3 +146,20 @@ def setup_ray(num_workers=2):
         placement_strategy="PACK",
     )
     return scaling_config
+
+
+def extract_metrics_from_file(filename):
+    import re
+
+    with open(filename, "r") as file:
+        content = file.read()
+
+        # Use regular expression to find the dictionary part
+        dictionary_match = re.search(r"\{.*\}", content, re.DOTALL)
+
+        if dictionary_match:
+            dictionary_text = dictionary_match.group(0)
+            dictionary = eval(dictionary_text)
+            return dictionary
+        else:
+            return None

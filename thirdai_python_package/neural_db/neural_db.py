@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import thirdai
 import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
@@ -255,6 +256,9 @@ class NeuralDB:
             from ray.air import session
             from thirdai.dataset import RayDataSource
 
+            if config["licensing_lambda"]:
+                config["licensing_lambda"]()
+
             # ray data will automatically split the data if the dataset is passed with key "train"
             # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
             stream_split_data_iterator = session.get_dataset_shard("train")
@@ -297,6 +301,16 @@ class NeuralDB:
         )
         checkpoint_path = checkpoint.to_directory()
 
+        # If this is a file based license, it will assume the license to available at the same location on each of the
+        # machine
+        licensing_lambda = None
+        if hasattr(thirdai._thirdai, "licensing"):
+            license_state = thirdai._thirdai.licensing._get_license_state()
+            licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+                license_state
+            )
+
+        train_loop_config["licensing_lambda"] = licensing_lambda
         train_loop_config["strong_column_names"] = documents[0].strong_columns
         train_loop_config["weak_column_names"] = documents[0].weak_columns
         train_loop_config["learning_rate"] = learning_rate
