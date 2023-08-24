@@ -29,8 +29,9 @@ if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
     is_public_release = "THIRDAI_EXPOSE_ALL" not in feature_flags
 else:
-    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
-    is_public_release = True
+    # feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
+    feature_flags = ""
+    is_public_release = False
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
@@ -221,8 +222,7 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
-        ]
-        + neural_db_deps,
+        ] + neural_db_deps,
         "benchmark": [
             "toml",
             "psutil",
