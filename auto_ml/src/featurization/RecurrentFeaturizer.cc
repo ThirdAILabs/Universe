@@ -78,7 +78,7 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
 bolt::TensorList RecurrentFeaturizer::featurizeInput(const MapInput& sample) {
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
 
-  columns = _input_transform->apply(columns, *_state);
+  columns = _input_transform->apply(std::move(columns), *_state);
 
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
@@ -87,7 +87,7 @@ bolt::TensorList RecurrentFeaturizer::featurizeInputBatch(
     const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
-  columns = _input_transform->apply(columns, *_state);
+  columns = _input_transform->apply(std::move(columns), *_state);
 
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }

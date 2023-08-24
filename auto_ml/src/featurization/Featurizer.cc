@@ -94,7 +94,7 @@ thirdai::data::LoaderPtr Featurizer::getDataLoaderHelper(
 bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
 
-  columns = _input_transform_non_updating->apply(columns, *_state);
+  columns = _input_transform_non_updating->apply(std::move(columns), *_state);
 
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
@@ -102,7 +102,7 @@ bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
 bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples) {
   auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
-  columns = _input_transform_non_updating->apply(columns, *_state);
+  columns = _input_transform_non_updating->apply(std::move(columns), *_state);
 
   return thirdai::data::toTensors(columns, _bolt_input_columns);
 }
