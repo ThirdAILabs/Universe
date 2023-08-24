@@ -143,7 +143,7 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string summary(bool print = true) const;
 
   /**
-   * Returns the thirdai package version that the model was trained with
+   * Returns the thirdai package version that the model was created with.
    */
   std::string thirdaiVersion() const;
 
