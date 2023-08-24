@@ -123,7 +123,7 @@ def test_load_model_from_config():
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     Total Paramters: 3410
-    thirdai Version: {thirdai.__version__.split("+")[0]}
+    thirdai Version: {thirdai.__version__}
     =================================================
     """
 
@@ -169,7 +169,7 @@ def test_robez_layer_config():
     RobeZ(robez_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concat, num_tokens_per_input=5]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax]
     Total Paramters: 2642
-    thirdai Version: {thirdai.__version__.split("+")[0]}
+    thirdai Version: {thirdai.__version__}
     =================================================
     """
 
@@ -206,7 +206,7 @@ def test_udt_model_config_override():
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     Total Paramters: 1002100
-    thirdai Version: {thirdai.__version__.split("+")[0]}
+    thirdai Version: {thirdai.__version__}
     =================================================
     """
 

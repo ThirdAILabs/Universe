@@ -143,7 +143,10 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string summary(bool print = true) const;
 
   /**
-   * Returns the thirdai package version that the model was created with.
+   * Returns the thirdai package version that the model was most recently saved
+   * with. One use case for this is to automatically determine which version of
+   * thirdai a neuraldb checkpoint was saved with when uploading a model to
+   * model bazaar.
    */
   std::string thirdaiVersion() const;
 
