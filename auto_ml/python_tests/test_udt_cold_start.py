@@ -128,7 +128,7 @@ def test_coldstart_missing_values():
 def test_coldstart_bad_csv_line():
     with pytest.raises(
         ValueError,
-        match=r"Expected 4 columns. But received row ',' with 1 columns.",
+        match=r"Expected 4 columns. But received row ',' with 2 columns.",
     ):
         run_coldstart(bad_csv_line=True)
 

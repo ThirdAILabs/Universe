@@ -89,7 +89,9 @@ def test_header_missing_cols():
     # TODO(Nicholas): Is it ok to display the intermediate column names?
     with pytest.raises(
         ValueError,
-        match="Unable to find column with name 'c'. ColumnMap contains columns ['__featurized_input_values__', '__b_tokenized__', '__featurized_input_indices__', '__a_tokenized__', 'b', 'a'].",
+        match=re.escape(
+            "Unable to find column with name 'c'. ColumnMap contains columns ['__featurized_input_values__', '__b_tokenized__', '__featurized_input_indices__', '__a_tokenized__', 'b', 'a']."
+        ),
     ):
         model.train("header_missing_cols", epochs=100)
 

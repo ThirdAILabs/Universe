@@ -223,13 +223,20 @@ def test_entity_embedding(embedding_dim, integer_label):
     model = make_simple_trained_model(
         embedding_dim=embedding_dim, integer_label=integer_label
     )
-    output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
+
+    if integer_label:
+        output_labels = [0, 1, 2]
+        labels_to_neurons = output_labels
+    else:
+        output_labels = ["0", "1", "4"]
+        labels_to_neurons = {model.class_name(n): n for n in range(3)}
+
     for output_label in output_labels:
         embedding = model.get_entity_embedding(output_label)
         assert embedding.shape == (embedding_dim,)
         weights = model._get_model().ops()[1].weights
 
-        assert (weights[model.class_name(output_label)] == embedding).all()
+        assert (weights[labels_to_neurons[output_label]] == embedding).all()
 
 
 @pytest.mark.release

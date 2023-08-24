@@ -49,6 +49,9 @@ class MachFeaturizer final : public Featurizer {
   const auto& machIndex() const { return _state->machIndex(); }
 
  private:
+  thirdai::data::ColumnMap removeIntermediateColumns(
+      const thirdai::data::ColumnMap& columns);
+
   static thirdai::data::TransformationPtr makeDocIdTransformation(
       const std::string& label_column_name,
       const data::CategoricalDataTypePtr& label_column_info);

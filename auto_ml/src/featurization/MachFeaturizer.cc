@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -15,6 +16,8 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::automl {
 
@@ -110,22 +113,7 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
   columns = _input_transform->apply(columns, *_state);
   columns = _label_transform->apply(columns, *_state);
 
-  // Remove intermediate columns.
-  thirdai::data::ColumnMap output({});
-  for (const auto& column : _bolt_input_columns) {
-    output.setColumn(column.indices(), columns.getColumn(column.indices()));
-    if (column.values()) {
-      output.setColumn(*column.values(), columns.getColumn(*column.values()));
-    }
-  }
-  for (const auto& column : _bolt_label_columns) {
-    output.setColumn(column.indices(), columns.getColumn(column.indices()));
-    if (column.values()) {
-      output.setColumn(*column.values(), columns.getColumn(*column.values()));
-    }
-  }
-
-  return output;
+  return removeIntermediateColumns(columns);
 }
 
 thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
@@ -153,7 +141,7 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
 
   addDummyDocIds(columns);
 
-  return columns;
+  return removeIntermediateColumns(columns);
 }
 
 bolt::LabeledDataset MachFeaturizer::columnsToTensors(
@@ -203,6 +191,24 @@ MachFeaturizer::getBalancingSamples(
   }
 
   return samples;
+}
+
+thirdai::data::ColumnMap MachFeaturizer::removeIntermediateColumns(
+    const thirdai::data::ColumnMap& columns) {
+  std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
+  for (const auto& column : _bolt_input_columns) {
+    new_columns[column.indices()] = columns.getColumn(column.indices());
+    if (column.values()) {
+      new_columns[*column.values()] = columns.getColumn(*column.values());
+    }
+  }
+  for (const auto& column : _bolt_label_columns) {
+    new_columns[column.indices()] = columns.getColumn(column.indices());
+    if (column.values()) {
+      new_columns[*column.values()] = columns.getColumn(*column.values());
+    }
+  }
+  return thirdai::data::ColumnMap(std::move(new_columns));
 }
 
 thirdai::data::TransformationPtr MachFeaturizer::makeDocIdTransformation(

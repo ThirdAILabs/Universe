@@ -57,12 +57,7 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 #pragma omp parallel for default(none) shared(str_column, rows, error)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
-      const auto& str = str_column->value(i);
-      if (str.empty()) {
-        rows[i] = 0;
-      } else {
-        rows[i] = parse(str_column->value(i));
-      }
+      rows[i] = parse(str_column->value(i));
     } catch (...) {
 #pragma omp critical
       error = formatParseError(str_column->value(i), _input_column_name);
@@ -86,6 +81,9 @@ uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
 
 template <>
 float CastToValue<float>::parse(const std::string& row) const {
+  if (row.empty()) {
+    return 0.0;  // Handles missing values in tabular datasets.
+  }
   return std::stof(row);
 }
 

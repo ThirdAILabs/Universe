@@ -242,14 +242,6 @@ py::object UDTClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   uint32_t neuron_id = labelToNeuronId(label);
 
-  if (std::holds_alternative<std::string>(label)) {
-    std::cerr << "labels is str: " << std::get<std::string>(label) << std::endl;
-  } else {
-    std::cerr << "labels is int: " << std::get<uint32_t>(label) << std::endl;
-  }
-  std::cerr << "NERUON ID: " << neuron_id << " integer_t=" << integerTarget()
-            << std::endl;
-
   auto outputs = _classifier->model()->outputs();
 
   if (outputs.size() != 1) {
