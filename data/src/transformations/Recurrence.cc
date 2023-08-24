@@ -78,21 +78,20 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
     try {
       const size_t offset = row_offsets[i];
-      for (uint32_t row_pos = 0; row_pos < source_row.size(); ++row_pos) {
+      for (uint32_t row_pos = 0; row_pos <= source_row.size(); ++row_pos) {
         // Simulate next token prediction by giving the model an array of tokens
         // up to the (row_pos - 1)th token.
+        // Source row is not position-encoded. Since the transformation accepts
+        // separate source and target columns, the source column can be
+        // position-encoded in a preceeding transformation. This means the 
         unrolled_source_data[offset + row_pos] =
             std::vector(source_row.begin(), source_row.begin() + row_pos);
         // Target is row_pos-th token; the next token to be predicted.
+        uint32_t target_token =
+            row_pos < source_row.size() ? target_row[row_pos] : EOS;
         unrolled_target_data[offset + row_pos] =
             offsetPosition(row_pos) * _target_vocab_size + target_row[row_pos];
       }
-      unrolled_source_data[offset + source_row.size()] =
-          std::vector(source_row.begin(), source_row.end());
-      unrolled_target_data[offset + source_row.size()] =
-          _target_vocab_size * _max_position_offset +
-          offsetPosition(source_row.size());
-
     } catch (std::exception& e) {
 #pragma omp critical
       error = std::make_exception_ptr(e);
