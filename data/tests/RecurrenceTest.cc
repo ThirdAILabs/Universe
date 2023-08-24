@@ -207,7 +207,10 @@ TEST(RecurrenceTest,
 
   ASSERT_TRUE(recurrence.isEOS(100));
   ASSERT_TRUE(recurrence.isEOS(201));
-  for (uint32_t i = 0; i < 200; i++) {
+  for (uint32_t i = 0; i < 100; i++) {
+    ASSERT_FALSE(recurrence.isEOS(i));
+  }
+  for (uint32_t i = 101; i < 201; i++) {
     ASSERT_FALSE(recurrence.isEOS(i));
   }
 
