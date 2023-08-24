@@ -44,12 +44,14 @@ void verifyGeneratedSamples(
 void checkDataFeaturization(
     const std::vector<std::string>& phrases,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices,
-    bool include_position = false) {
-  TextGenerationFeaturizer processor(/* lrc_len= */ LRC_LEN,
-                                     /* irc_len= */ IRC_LEN,
-                                     /* src_len= */ SRC_LEN,
-                                     /* vocab_size= */ VOCAB_SIZE,
-                                     include_position);
+    bool include_position = false, bool featurize_in_chunks = true) {
+  TextGenerationFeaturizer processor(
+      /* lrc_len= */ LRC_LEN,
+      /* irc_len= */ IRC_LEN,
+      /* src_len= */ SRC_LEN,
+      /* vocab_size= */ VOCAB_SIZE,
+      /* include_position= */ include_position,
+      /* featurize_in_chunks= */ featurize_in_chunks);
 
   auto data = processor.featurize(phrases);
 
@@ -80,7 +82,7 @@ std::vector<uint32_t> expectedPairgrams(std::vector<uint32_t> tokens) {
                                                     tokens.size(), VOCAB_SIZE);
 }
 
-TEST(TextGenerationFeaturizerTest, Featurization) {
+TEST(TextGenerationFeaturizerTest, FeaturizationWithChunks) {
   std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6 7 8"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
@@ -103,6 +105,123 @@ TEST(TextGenerationFeaturizerTest, Featurization) {
       {{2}, {3}, {4}, {5}, {7}, {8}}};
 
   checkDataFeaturization(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, FeaturizationWithSlidingWindow) {
+  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6 7 8"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}, {0}, {0}, {0}, {0}, {0}, {0}},
+      //  LRC context input
+      {{1},
+       {1, 2},
+       {1, 2, 3},
+       {1, 2, 3, 4},
+       {2, 3, 4, 5},
+       {3, 4, 5, 6},
+       {4, 5, 6, 7}},
+      // IRC context input
+      {
+          {1},
+          expectedPairgrams({1, 2}),
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+          expectedPairgrams({5, 6, 7}),
+      },
+      // SRC context input
+      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}},
+      // Labels
+      {{2}, {3}, {4}, {5}, {6}, {7}, {8}}};
+
+  checkDataFeaturization(phrases, expected_indices,
+                         /* include_position= */ false,
+                         /* featurize_in_chunks= */ false);
+}
+
+TEST(TextGenerationFeaturizerTest, FeaturizationWithSlidingWindowContext) {
+  std::vector<std::string> phrases = {
+      R"({"target": "4 5 6 7 8", "context": "1 2 3"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}, {0}, {0}, {0}, {0}},
+      //  LRC context input
+      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}},
+      // IRC context input
+      {
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+          expectedPairgrams({5, 6, 7}),
+      },
+      // SRC context input
+      {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}},
+      // Labels
+      {{4}, {5}, {6}, {7}, {8}}};
+
+  checkDataFeaturization(phrases, expected_indices,
+                         /* include_position= */ false,
+                         /* featurize_in_chunks= */ false);
+}
+
+TEST(TextGenerationFeaturizerTest,
+     FeaturizationWithSlidingWindowContextPosition) {
+  std::vector<std::string> phrases = {
+      R"({"target": "4 5 6 7 8", "context": "1 2 3"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{0}, {0}, {0}, {0}, {0}},
+      //  LRC context input
+      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}},
+      // IRC context input
+      {
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+          expectedPairgrams({5, 6, 7}),
+      },
+      // SRC context input
+      {{2, 3, 11}, {3, 4, 12}, {4, 5, 13}, {5, 6, 14}, {6, 7, 15}},
+      // Labels
+      {{4}, {5}, {6}, {7}, {8}}};
+
+  checkDataFeaturization(phrases, expected_indices,
+                         /* include_position= */ true,
+                         /* featurize_in_chunks= */ false);
+}
+
+TEST(TextGenerationFeaturizerTest,
+     FeaturizationWithSlidingWindowContextPrompt) {
+  std::vector<std::string> phrases = {
+      R"({"target": "4 5 6 7 8", "context": "1 2 3", "prompt": "2 4 6"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // Prompt input
+      {{2, 4, 6}, {2, 4, 6}, {2, 4, 6}, {2, 4, 6}, {2, 4, 6}},
+      //  LRC context input
+      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}, {4, 5, 6, 7}},
+      // IRC context input
+      {
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+          expectedPairgrams({5, 6, 7}),
+      },
+      // SRC context input
+      {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}},
+      // Labels
+      {{4}, {5}, {6}, {7}, {8}}};
+
+  checkDataFeaturization(phrases, expected_indices,
+                         /* include_position= */ false,
+                         /* featurize_in_chunks= */ false);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
