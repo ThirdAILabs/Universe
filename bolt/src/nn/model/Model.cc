@@ -582,12 +582,13 @@ template <class Archive>
 void Model::serialize(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
-  _thirdai_version = thirdai::version();
   archive(_thirdai_version);
 
   std::string class_name = "BOLT_MODEL";
   versions::checkVersion(version, versions::BOLT_MODEL_VERSION,
                          _thirdai_version, thirdai::version(), class_name);
+
+  _thirdai_version = thirdai::version();
 
   // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
