@@ -95,6 +95,12 @@ void defineAutomlInModule(py::module_& module) {
       .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval)
       .def_readwrite("shuffle_config", &udt::TrainOptions::shuffle_config);
 
+  py::class_<TextDatasetConfig>(module, "TextDatasetConfig")
+      .def_property_readonly("text_column", &TextDatasetConfig::textColumn)
+      .def_property_readonly("label_column", &TextDatasetConfig::labelColumn)
+      .def_property_readonly("label_delimiter",
+                             &TextDatasetConfig::labelDelimiter);
+
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
       .def(py::init(&makeUDT), py::arg("data_types"),
@@ -226,7 +232,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)
-      .def("data_types", &udt::UDT::dataTypes)
+      .def("text_dataset_config", &udt::UDT::textDatasetConfig)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))

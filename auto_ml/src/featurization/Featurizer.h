@@ -15,19 +15,24 @@ namespace thirdai::automl {
 
 class TextDatasetConfig {
  public:
-  TextDatasetConfig(std::string text_column, std::string label_column)
+  TextDatasetConfig(std::string text_column, std::string label_column,
+                    std::optional<char> label_delimiter)
       : _text_column(std::move(text_column)),
-        _label_column(std::move(label_column)) {}
+        _label_column(std::move(label_column)),
+        _label_delimiter(label_delimiter) {}
 
   const auto& textColumn() const { return _text_column; }
 
   const auto& labelColumn() const { return _label_column; }
+
+  auto labelDelimiter() const { return _label_delimiter; }
 
   TextDatasetConfig() {}  // For cereal
 
  private:
   std::string _text_column;
   std::string _label_column;
+  std::optional<char> _label_delimiter;
 
   friend class cereal::access;
   template <class Archive>
@@ -86,7 +91,8 @@ class Featurizer {
   const auto& textDatasetConfig() const {
     if (!_text_dataset) {
       throw std::runtime_error(
-          "This method is only supported for text models.");
+          "This method is only supported for models with a text input and a "
+          "categorical output.");
     }
     return *_text_dataset;
   }

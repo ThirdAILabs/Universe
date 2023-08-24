@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 from ndb_utils import create_simple_dataset, train_simple_neural_db
-from thirdai import neural_db
+from thirdai import bolt, neural_db
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -45,3 +45,19 @@ def test_neural_db_reference_scores(train_simple_neural_db):
 
     scores = [r.score for r in results]
     assert scores == sorted(scores, reverse=True)
+
+
+def test_neural_db_from_udt():
+    udt = bolt.UniversalDeepTransformer(
+        data_types={"text": bolt.types.text(), "label": bolt.types.categorical()},
+        target="label",
+        n_target_classes=100,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": 10,
+            "enable_rlhf": True,
+        },
+    )
+
+    neural_db.NeuralDB.from_udt(udt)

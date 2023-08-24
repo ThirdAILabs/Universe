@@ -204,7 +204,13 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
-  data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
+  const TextDatasetConfig& textDatasetConfig() const {
+    if (auto featurizer = _backend->featurizer()) {
+      return featurizer->textDatasetConfig();
+    }
+    throw std::invalid_argument(
+        "This method is only supported on Text Models.");
+  }
 
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a

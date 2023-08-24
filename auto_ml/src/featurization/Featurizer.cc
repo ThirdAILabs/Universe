@@ -37,10 +37,12 @@ Featurizer::Featurizer(
           .first;
 
   if (data_types.size() == 2 && temporal_relationships.empty()) {
+    auto cat_label = data::asCategorical(data_types.at(label_column));
     data_types.erase(label_column);
-    if (data::asText(data_types.begin()->second)) {
-      _text_dataset =
-          TextDatasetConfig(data_types.begin()->first, label_column);
+    auto text_type = data::asText(data_types.begin()->second);
+    if (text_type && cat_label) {
+      _text_dataset = TextDatasetConfig(data_types.begin()->first, label_column,
+                                        cat_label->delimiter);
     }
   }
 }

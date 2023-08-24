@@ -138,17 +138,17 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  thirdai::data::LoaderPtr val_data_loader;
-  if (val_data) {
-    val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
-  }
-
   addBalancingSamples(data);
 
   auto train_data_loader =
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
                                  options.verbose, options.shuffle_config);
+
+  thirdai::data::LoaderPtr val_data_loader;
+  if (val_data) {
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+  }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
@@ -371,6 +371,8 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
+  addBalancingSamples(data, strong_column_names, weak_column_names);
+
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names,
       /* fast_approximation= */ false, options.batchSize(),
@@ -383,10 +385,9 @@ py::object UDTMachClassifier::coldstart(
                                    /* shuffle= */ false, options.verbose);
   }
 
-  addBalancingSamples(data);
-
   return _classifier->train(train_data_loader, learning_rate, epochs,
-                            train_metrics, val_data_loader, val_metrics,
+                            getMetrics(train_metrics, "train_"),
+                            val_data_loader, getMetrics(val_metrics, "val_"),
                             callbacks, options, comm);
 }
 
