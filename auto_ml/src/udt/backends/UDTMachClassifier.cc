@@ -509,9 +509,9 @@ void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
       std::cout << "Setting lsh index..." << std::endl;
       float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
 
-      auto sampling_config = bolt::DWTASamplingConfig::autotune(
-          mach_index->numBuckets(), sparsity,
-          /* experimental_autotune= */ false);
+      auto sampling_config =
+          bolt::DWTASamplingConfig::autotune(mach_index->numBuckets(), sparsity,
+                                             /* experimental_autotune= */ true);
 
       output_layer->setSparsity(sparsity, false, false);
 
