@@ -38,13 +38,13 @@ class Recurrence final : public Transformation {
  public:
   Recurrence(std::string source_input_column, std::string target_input_column,
              std::string source_output_column, std::string target_output_column,
-             size_t target_vocab_size, size_t max_positions)
+             size_t target_vocab_size, size_t expected_sequence_length)
       : _source_input_column(std::move(source_input_column)),
         _target_input_column(std::move(target_input_column)),
         _source_output_column(std::move(source_output_column)),
         _target_output_column(std::move(target_output_column)),
         _target_vocab_size(target_vocab_size),
-        _max_position_offset(max_positions) {}
+        _expected_seq_len(expected_sequence_length) {}
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -68,7 +68,7 @@ class Recurrence final : public Transformation {
   std::string _source_output_column;
   std::string _target_output_column;
   size_t _target_vocab_size;
-  size_t _max_position_offset;
+  size_t _expected_seq_len;
 };
 
 }  // namespace thirdai::data

@@ -113,7 +113,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   auto unrolled_source_column = ArrayColumn<uint32_t>::make(
       std::move(unrolled_source_data), source_column->dim());
   auto unrolled_target_column = ValueColumn<uint32_t>::make(
-      std::move(unrolled_target_data), totalVocabSize() * _max_position_offset);
+      std::move(unrolled_target_data), totalVocabSize() * _expected_seq_len);
 
   auto permutation_indices = permutation(row_offsets);
   columns = columns.permute(permutation_indices);
@@ -142,8 +142,7 @@ void Recurrence::assertCorrectTargetInputDim(
 
 uint32_t Recurrence::positionEncodedToken(uint32_t token,
                                           size_t position) const {
-  return std::min(position, _max_position_offset - 1) * totalVocabSize() +
-         token;
+  return std::min(position, _expected_seq_len - 1) * totalVocabSize() + token;
 }
 
 }  // namespace thirdai::data
