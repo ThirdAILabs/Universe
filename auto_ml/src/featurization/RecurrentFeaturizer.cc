@@ -6,10 +6,12 @@
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/TransformationList.h>
-#include <data/src/transformations/UnrollSequence.h>
+#include <memory>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::automl {
 
@@ -19,6 +21,11 @@ RecurrentFeaturizer::RecurrentFeaturizer(
     const data::TabularOptions& tabular_options)
     : _delimiter(tabular_options.delimiter),
       _state(std::make_shared<thirdai::data::State>()) {
+  if (!target->max_length) {
+    throw std::invalid_argument(
+        "Paramter max_length must be specified for target sequence.");
+  }
+
   auto [input_transforms, outputs] =
       nonTemporalTransformations(data_types, target_name, tabular_options);
 
@@ -26,27 +33,24 @@ RecurrentFeaturizer::RecurrentFeaturizer(
       /* input_column= */ target_name, /* output_column= */ target_name,
       /* vocab_key= */ TARGET_VOCAB, /* max_vocab_size= */ n_target_classes,
       target->delimiter);
-
-  auto target_encoding =
-      std::make_shared<thirdai::data::OffsetPositionTransform>(
-          target_name, RECURRENT_SEQUENCE, target->max_length.value());
-
   input_transforms.push_back(target_lookup);
-  input_transforms.push_back(target_encoding);
 
+  auto target_encoding = std::make_shared<thirdai::data::HashPositionTransform>(
+      target_name, RECURRENT_SEQUENCE, tabular_options.feature_hash_range);
+  input_transforms.push_back(target_encoding);
   outputs.push_back(RECURRENT_SEQUENCE);
 
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
       outputs, FEATURE_HASH_INDICES, FEATURE_HASH_VALUES,
       tabular_options.feature_hash_range);
-
   input_transforms.push_back(fh);
 
-  _recurrence_augmentation = std::make_shared<thirdai::data::UnrollSequence>(
+  _recurrence_augmentation = std::make_shared<thirdai::data::Recurrence>(
       /* source_input_column= */ RECURRENT_SEQUENCE,
-      /* target_input_column= */ RECURRENT_SEQUENCE,
+      /* target_input_column= */ target_name,
       /* source_output_column= */ RECURRENT_SEQUENCE,
-      /* target_output_column= */ FEATURIZED_LABELS);
+      /* target_output_column= */ FEATURIZED_LABELS, n_target_classes,
+      target->max_length.value());
 
   _input_transform = thirdai::data::TransformationList::make(input_transforms);
 

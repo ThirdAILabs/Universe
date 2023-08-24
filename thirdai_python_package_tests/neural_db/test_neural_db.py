@@ -4,13 +4,9 @@ from pathlib import Path
 from typing import List
 
 import pytest
-<<<<<<< HEAD
-from ndb_utils import create_simple_dataset, train_simple_neural_db
-from thirdai import bolt, neural_db
-=======
 from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
+from thirdai import bolt
 from thirdai import neural_db as ndb
->>>>>>> 10bb032fc37b764a38332e49c343fe250007d3ef
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

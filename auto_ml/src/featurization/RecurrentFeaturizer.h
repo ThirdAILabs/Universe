@@ -4,6 +4,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
+#include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 
@@ -29,9 +30,17 @@ class RecurrentFeaturizer {
 
   const thirdai::data::ThreadSafeVocabularyPtr& vocab() const;
 
+  bool isEos(uint32_t token) const {
+    return _recurrence_augmentation->isEOS(token);
+  }
+
+  size_t vocabSize() const {
+    return _recurrence_augmentation->totalVocabSize();
+  }
+
  private:
   thirdai::data::TransformationPtr _input_transform;
-  thirdai::data::TransformationPtr _recurrence_augmentation;
+  std::shared_ptr<thirdai::data::Recurrence> _recurrence_augmentation;
 
   thirdai::data::OutputColumnsList _bolt_input_columns;
   thirdai::data::OutputColumnsList _bolt_label_columns;

@@ -78,8 +78,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
   static std::string elementString(
       uint32_t element_id, const thirdai::data::ThreadSafeVocabularyPtr& vocab);
 
-  bool isEOS(uint32_t element_id, size_t vocab_size) const;
-
   void addPredictionToSample(MapInput& sample,
                              const std::string& prediction) const;
 
@@ -94,8 +92,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
   ModelPtr _model;
 
   RecurrentFeaturizerPtr _featurizer;
-
-  uint32_t _eos_token;  // TODO(nicholas) remove this once sequential PR merges.
 
   bool _freeze_hash_tables;
 };

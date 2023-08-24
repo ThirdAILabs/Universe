@@ -41,7 +41,9 @@ ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
       if (_delimiter) {
         auto items = parseLine(strings->value(i), *_delimiter);
         for (const auto& item : items) {
-          ids[i].push_back(vocab->getUid(item));
+          if (!item.empty()) {
+            ids[i].push_back(vocab->getUid(item));
+          }
         }
       } else {
         ids[i] = {vocab->getUid(strings->value(i))};

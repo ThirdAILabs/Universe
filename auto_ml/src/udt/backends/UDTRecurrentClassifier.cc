@@ -28,7 +28,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     uint32_t n_target_classes, const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _target(target) {
+    : _target_name(target_name), _target(target) {
   if (!temporal_tracking_relationships.empty()) {
     throw std::invalid_argument(
         "UDT does not support temporal tracking when doing recurrent "
@@ -38,8 +38,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   _featurizer = std::make_shared<RecurrentFeaturizer>(
       input_data_types, target_name, target, n_target_classes, tabular_options);
 
-  auto output_dim = target->max_length.value() * n_target_classes;
-
+  uint32_t output_dim = _featurizer->vocabSize() * target->max_length.value();
   if (model_config) {
     _model = utils::loadModel({tabular_options.feature_hash_range}, output_dim,
                               *model_config);
@@ -129,9 +128,10 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
   (void)top_k;
 
   const auto& vocab = _featurizer->vocab();
-  size_t vocab_size = vocab->maxSize().value();
+  size_t vocab_size = _featurizer->vocabSize();
 
   auto mutable_sample = sample;
+  mutable_sample[_target_name] = "";
 
   std::vector<std::string> predictions;
 
@@ -142,7 +142,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                       .at(0);
     auto predicted_id =
         predictionAtStep(output->getVector(0), step, vocab_size);
-    if (isEOS(predicted_id, vocab_size)) {
+    if (_featurizer->isEos(predicted_id)) {
       break;
     }
 
@@ -184,11 +184,19 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   (void)top_k;
 
   const auto& vocab = _featurizer->vocab();
-  size_t vocab_size = vocab->maxSize().value();
+  size_t vocab_size = _featurizer->vocabSize();
+
+  for (uint32_t i = 0; i < vocab->size(); i++) {
+    std::cerr << "VOCAB: " << i << " -> " << vocab->getString(i) << std::endl;
+  }
 
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
   auto mutable_samples = samples;
+
+  for (auto& sample : mutable_samples) {
+    sample[_target_name] = "";
+  }
 
   for (uint32_t step = 0; step < _target->max_length && !progress.allDone();
        step++) {
@@ -203,7 +211,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
       if (!progress.sampleIsDone(i)) {
         auto predicted_id =
             predictionAtStep(batch_activations->getVector(i), step, vocab_size);
-        if (isEOS(predicted_id, vocab_size)) {
+        if (_featurizer->isEos(predicted_id)) {
           progress.markSampleDone(i);
           continue;
         }
@@ -239,18 +247,13 @@ uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
     }
   }
 
-  return arg_max;
+  return arg_max - begin;
 }
 
 std::string UDTRecurrentClassifier::elementString(
     uint32_t element_id, const thirdai::data::ThreadSafeVocabularyPtr& vocab) {
   uint32_t element_id_without_position = element_id % vocab->maxSize().value();
   return vocab->getString(element_id_without_position);
-}
-
-bool UDTRecurrentClassifier::isEOS(uint32_t element_id,
-                                   size_t vocab_size) const {
-  return (element_id % vocab_size) == _eos_token;
 }
 
 void UDTRecurrentClassifier::addPredictionToSample(
@@ -279,7 +282,7 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
   // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _target_name, _target, _model,
-          _featurizer, _eos_token, _freeze_hash_tables);
+          _featurizer, _freeze_hash_tables);
 }
 
 }  // namespace thirdai::automl::udt

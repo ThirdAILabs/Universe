@@ -1,4 +1,7 @@
 #include "EncodePosition.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <hashing/src/HashUtils.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -54,6 +57,15 @@ void HashPositionTransform::buildExplanationMap(
                           explanations);
 }
 
+template void HashPositionTransform::serialize(cereal::BinaryInputArchive&);
+template void HashPositionTransform::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void HashPositionTransform::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _dim);
+}
+
 ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
                                          State& state) const {
   (void)state;
@@ -92,4 +104,16 @@ void OffsetPositionTransform::buildExplanationMap(
                           explanations);
 }
 
+template void OffsetPositionTransform::serialize(cereal::BinaryInputArchive&);
+template void OffsetPositionTransform::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void OffsetPositionTransform::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _max_num_tokens);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::HashPositionTransform)
+CEREAL_REGISTER_TYPE(thirdai::data::OffsetPositionTransform)
