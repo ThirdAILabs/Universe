@@ -68,7 +68,6 @@ void defineTrainer(py::module_& train) {
   // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
   // this.
 
-#if THIRDAI_EXPOSE_ALL
   train.def("convert_dataset", convertDataset, py::arg("dataset"),
             py::arg("dim"), py::arg("copy") = true);
 
