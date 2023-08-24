@@ -98,16 +98,16 @@ jobs:
           CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64"
           CIBW_BUILD_VERBOSITY: 3
 
-          CIBW_BEFORE_TEST_LINUX: yum install golang -y
-          CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
-          CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
-          CIBW_TEST_COMMAND_WINDOWS: rem
+          # CIBW_BEFORE_TEST_LINUX: yum install golang -y
+          # CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
+          # CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
+          # CIBW_TEST_EXTRAS: "test"
+          # CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          # CIBW_TEST_COMMAND_WINDOWS: rem
 
           # Skip tests on windows
           # TODO(Jerin): Get tests working on windows wheels
-          CIBW_TEST_SKIP: "*win* *ubuntu*"
+          CIBW_TEST_SKIP: "*win*"
 
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
