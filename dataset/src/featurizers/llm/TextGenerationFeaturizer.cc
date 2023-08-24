@@ -95,7 +95,7 @@ TextGenerationFeaturizer::featurizeTextSlidingWindow(
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (size_t i = std::max(context_size, 1UL); i < tokens.size(); i++) {
+  for (size_t i = std::max<size_t>(context_size, 1); i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
     vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, 0, i),
