@@ -13,7 +13,7 @@ ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
 
   std::optional<float> invalid_value = std::nullopt;
 #pragma omp parallel for default(none) \
-    shared(column, binned_values, invalid_value)
+    shared(column, binned_values, invalid_value) if (columns.numRows() > 1)
   for (uint64_t i = 0; i < column->numRows(); i++) {
     if (auto bin = getBin(column->value(i))) {
       binned_values[i] = *bin;

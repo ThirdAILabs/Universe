@@ -34,7 +34,8 @@ ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(ids, strings, vocab, error)
+#pragma omp parallel for default(none) \
+    shared(ids, strings, vocab, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < ids.size(); i++) {
     try {
       if (_delimiter) {

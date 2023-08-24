@@ -54,7 +54,8 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       rows[i] = parse(str_column->value(i));
@@ -189,7 +190,8 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       for (const auto& item : text::split(str_column->value(i), _delimiter)) {

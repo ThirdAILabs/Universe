@@ -80,7 +80,8 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(graph, node_ids, neighbors, error)
+#pragma omp parallel for default(none) \
+    shared(graph, node_ids, neighbors, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < node_ids->numRows(); i++) {
     try {
       for (auto nbr : graph->neighbors(node_ids->value(i))) {
@@ -125,7 +126,8 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(node_ids, features, graph, error)
+#pragma omp parallel for default(none) \
+    shared(node_ids, features, graph, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < node_ids->numRows(); i++) {
     try {
       uint32_t node_id = node_ids->value(i);

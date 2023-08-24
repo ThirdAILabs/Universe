@@ -15,7 +15,8 @@ ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
   (void)state;
   auto input_column = columns.getArrayColumn<uint32_t>(_input_column);
   std::vector<std::vector<uint32_t>> hashed_tokens(input_column->numRows());
-#pragma omp parallel for default(none) shared(input_column, hashed_tokens)
+#pragma omp parallel for default(none) \
+    shared(input_column, hashed_tokens) if (columns.numRows() > 1)
   for (uint32_t i = 0; i < input_column->numRows(); i++) {
     hashed_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
