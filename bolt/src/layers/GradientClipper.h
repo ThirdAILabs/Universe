@@ -44,7 +44,7 @@ class GradientClipperByNorm : public GradientClipper {
   explicit GradientClipperByNorm(float max_norm) : _max_norm(max_norm) {}
 
   void clipVector(std::vector<float>& gradients) final {
-    float grad_norm = compute_norm(gradients);
+    float grad_norm = computeNorm(gradients);
     uint32_t len = gradients.size();
 
     if (grad_norm > _max_norm) {
@@ -57,7 +57,7 @@ class GradientClipperByNorm : public GradientClipper {
   }
 
  private:
-  static float compute_norm(const std::vector<float>& gradients) {
+  static float computeNorm(const std::vector<float>& gradients) {
     float result = 0.0;
 
 #pragma omp parallel for reduction(+ : result)
@@ -79,7 +79,7 @@ class GradientClipperByFraction : public GradientClipper {
   }
 
   void clipVector(std::vector<float>& gradients) final {
-    float threshold = getthreshold(gradients);
+    float threshold = getThreshold(gradients);
     uint32_t len = gradients.size();
 
 #pragma omp parallel for default(none) shared(len, gradients, threshold)
@@ -89,25 +89,23 @@ class GradientClipperByFraction : public GradientClipper {
   }
 
  private:
-  float getthreshold(const std::vector<float>& gradients) const {
+  float getThreshold(const std::vector<float>& gradients) const {
     std::vector<float> abs_gradients(gradients.size());
 
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(abs_gradients, gradients)
     for (size_t i = 0; i < gradients.size(); ++i) {
       abs_gradients[i] = std::abs(gradients[i]);
     }
 
-    // Sort the absolute gradients in descending order
-    std::sort(abs_gradients.begin(), abs_gradients.end(),
-              std::greater<float>());
-
-    size_t index = static_cast<size_t>(std::ceil(_frac * abs_gradients.size()));
-
-    if (index >= abs_gradients.size()) {
-      index = abs_gradients.size() - 1;
+    size_t k = static_cast<size_t>(std::ceil(_frac * abs_gradients.size()));
+    if (k >= abs_gradients.size()) {
+      k = abs_gradients.size() - 1;
     }
 
-    return abs_gradients[index];
+    std::nth_element(abs_gradients.begin(), abs_gradients.begin() + k,
+                     abs_gradients.end(), std::greater<float>());
+
+    return abs_gradients[k];
   }
 
   float _frac;
