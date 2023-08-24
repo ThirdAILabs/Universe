@@ -143,6 +143,11 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string summary(bool print = true) const;
 
   /**
+   * Returns the thirdai package version that the model was trained with
+   */
+  std::string thirdaiVersion() const;
+
+  /**
    * Returns the number of parameters in the model.
    */
   size_t numParams() const;
@@ -312,6 +317,7 @@ class Model : public std::enable_shared_from_this<Model> {
   uint32_t _train_steps;
 
   std::string _model_uuid;
+  std::string _thirdai_version;
   uint64_t _total_training_samples = 0;
 
   Model() : _allocation_manager() { licensing::checkLicense(); }

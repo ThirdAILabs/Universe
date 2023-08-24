@@ -106,7 +106,7 @@ std::vector<std::vector<Path>> beamSearchBatch(
 
 #pragma omp parallel for default(none)                                        \
     shared(batch_size, seq_len, output_dim, probabilities, transition_matrix, \
-           beam_size, results)
+               beam_size, results)
   for (uint32_t i = 0; i < batch_size; i++) {
     results[i] = beamSearch(probabilities.data(i), seq_len, output_dim,
                             transition_matrix.data(), beam_size);
