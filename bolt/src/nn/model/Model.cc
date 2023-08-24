@@ -582,7 +582,6 @@ template <class Archive>
 void Model::serialize(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
-  _thirdai_version = thirdai::version();
   archive(_thirdai_version);
 
   std::string class_name = "BOLT_MODEL";
