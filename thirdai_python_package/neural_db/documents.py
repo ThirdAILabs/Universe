@@ -357,8 +357,13 @@ class CSV(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
+
         return " ".join(
-            [row[col] for col in self.reference_columns for _, row in rows.iterrows()]
+            [
+                str(row[col])
+                for col in self.reference_columns
+                for _, row in rows.iterrows()
+            ]
         )
 
     def __getstate__(self):
