@@ -235,7 +235,12 @@ void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
   summary << "Embedding(" << name() << "): " << inputs.at(0)->name() << " -> "
           << output->name() << " [dim=" << _dim
           << ", activation=" << activationFunctionToStr(_act_func)
-          << ", bias=" << std::boolalpha << _bias << "]";
+          << ", bias=" << std::boolalpha << _bias;
+
+  if (_grad_clip) {
+    summary << ", grad_clip= " << *_grad_clip;
+  }
+  summary << "]";
 }
 
 ComputationPtr Embedding::apply(ComputationPtr input) {
