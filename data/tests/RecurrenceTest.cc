@@ -188,23 +188,24 @@ TEST(RecurrenceTest,
       /* column= */ *target_unrolled,
       /* expected= */ {
           // pos is at most 1 since max_positions = 2
+          // EOS token = target vocab size.
           // from the sequence {}
-          {200},  // EOS = max_positions * vocab_size + pos = 2 * 100 + 0
+          {100},  // EOS = pos * (vocab_size + 1) + EOS = 0 * 101 + 100
           // from the sequence {6}
-          {6},    // pos * vocab_size + token = 0 * 100 + 6 = 6
-          {201},  // EOS = max_positions * vocab_size + pos = 2 * 100 + 1
+          {6},    // pos * (vocab_size + 1) + token = 0 * 101 + 6 = 6
+          {201},  // EOS = pos * (vocab_size + 1) + EOS = 1 * 101 + 100
           // from the sequence {7, 8}
-          {7},    // pos * vocab_size + token = 0 * 100 + 7 = 7
-          {108},  // pos * vocab_size + token = 1 * 100 + 8 = 108
-          {201},  // EOS = max_positions * vocab_size + pos = 2 * 100 + 1
+          {7},    // pos * (vocab_size + 1) + token = 0 * 101 + 7 = 7
+          {109},  // pos * (vocab_size + 1) + token = 1 * 101 + 8 = 109
+          {201},  // EOS = pos * (vocab_size + 1) + EOS = 1 * 101 + 100
           // from the sequence {9, 10, 11}
-          {9},    // pos * vocab_size + token = 0 * 100 + 9 = 9
-          {110},  // pos * vocab_size + token = 1 * 100 + 10 = 110
-          {111},  // pos * vocab_size + token = 1 * 100 + 11 = 111
-          {201},  // EOS = max_positions * vocab_size + pos = 2 * 100 + 1
+          {9},    // pos * (vocab_size + 1) + token = 0 * 101 + 9 = 9
+          {111},  // pos * (vocab_size + 1) + token = 1 * 101 + 10 = 111
+          {112},  // pos * (vocab_size + 1) + token = 1 * 101 + 11 = 112
+          {201},  // EOS = pos * (vocab_size + 1) + EOS = 1 * 101 + 100
       });
 
-  ASSERT_TRUE(recurrence.isEOS(200));
+  ASSERT_TRUE(recurrence.isEOS(100));
   ASSERT_TRUE(recurrence.isEOS(201));
   for (uint32_t i = 0; i < 200; i++) {
     ASSERT_FALSE(recurrence.isEOS(i));

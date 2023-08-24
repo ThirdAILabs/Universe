@@ -54,7 +54,14 @@ class Recurrence final : public Transformation {
   void assertCorrectTargetInputDim(
       const ArrayColumnBase<uint32_t>& target_column) const;
 
-  uint32_t offsetPosition(size_t position) const;
+  uint32_t positionEncodedToken(uint32_t token, size_t position) const;
+
+  inline constexpr uint32_t EOS() const { return _target_vocab_size; }
+
+  inline constexpr size_t totalVocabSize() const {
+    // +1 for EOS.
+    return _target_vocab_size + 1;
+  }
 
   std::string _source_input_column;
   std::string _target_input_column;

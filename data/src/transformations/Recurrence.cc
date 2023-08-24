@@ -79,18 +79,26 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
     try {
       const size_t offset = row_offsets[i];
       for (uint32_t row_pos = 0; row_pos <= source_row.size(); ++row_pos) {
-        // Simulate next token prediction by giving the model an array of tokens
-        // up to the (row_pos - 1)th token.
-        // Source row is not position-encoded. Since the transformation accepts
-        // separate source and target columns, the source column can be
-        // position-encoded in a preceeding transformation. This means the 
+        /*
+          Simulate next token prediction by giving the model an array of tokens
+          up to the (row_pos - 1)th token.
+          Source row is not position-encoded. Since the transformation accepts
+          separate source and target columns, the source column can be
+          position-encoded in a preceeding transformation. We chose to decouple
+          the featurization of the source column from the recurrence
+          transformation because while the source column needs to be featurized
+          during both training and inference, the recurrence transformation is
+          only used during training. Thus, decoupling these transformations
+          allows us to use the same transformation to featurize the source
+          column during training and inference.
+        */
         unrolled_source_data[offset + row_pos] =
             std::vector(source_row.begin(), source_row.begin() + row_pos);
-        // Target is row_pos-th token; the next token to be predicted.
+        // The next token to be predicted; row_pos-th token or EOS.
         uint32_t target_token =
-            row_pos < source_row.size() ? target_row[row_pos] : EOS;
+            row_pos < source_row.size() ? target_row[row_pos] : EOS();
         unrolled_target_data[offset + row_pos] =
-            offsetPosition(row_pos) * _target_vocab_size + target_row[row_pos];
+            positionEncodedToken(target_token, row_pos);
       }
     } catch (std::exception& e) {
 #pragma omp critical
@@ -105,9 +113,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   auto unrolled_source_column = ArrayColumn<uint32_t>::make(
       std::move(unrolled_source_data), source_column->dim());
   auto unrolled_target_column = ValueColumn<uint32_t>::make(
-      std::move(unrolled_target_data),
-      // +1 for EOS.
-      (_target_vocab_size + 1) * _max_position_offset);
+      std::move(unrolled_target_data), totalVocabSize() * _max_position_offset);
 
   auto permutation_indices = permutation(row_offsets);
   columns = columns.permute(permutation_indices);
@@ -117,7 +123,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 }
 
 bool Recurrence::isEOS(uint32_t token) const {
-  return token >= _target_vocab_size * _max_position_offset;
+  return token % totalVocabSize() == EOS();
 }
 
 void Recurrence::assertCorrectTargetInputDim(
@@ -134,7 +140,10 @@ void Recurrence::assertCorrectTargetInputDim(
   }
 }
 
-uint32_t Recurrence::offsetPosition(size_t position) const {
-  return std::min(position, _max_position_offset - 1);
+uint32_t Recurrence::positionEncodedToken(uint32_t token,
+                                          size_t position) const {
+  return std::min(position, _max_position_offset - 1) * totalVocabSize() +
+         token;
 }
+
 }  // namespace thirdai::data
