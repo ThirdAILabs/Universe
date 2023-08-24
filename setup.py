@@ -29,9 +29,8 @@ if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
     is_public_release = "THIRDAI_EXPOSE_ALL" not in feature_flags
 else:
-    # feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
-    feature_flags = ""
-    is_public_release = False
+    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
+    is_public_release = True
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
