@@ -185,7 +185,7 @@ setup(
         "numpy",
         "typing_extensions",
         "requests",
-        "pandas>=2.0.0",
+        "pandas",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
@@ -209,7 +209,7 @@ setup(
             "toml",
             "psutil",
             "transformers",
-            "pandas>=2.0.0",
+            "pandas",
             "cryptography",
             "tokenizers",
             "pyarrow",
