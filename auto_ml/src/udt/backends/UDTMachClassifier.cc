@@ -522,6 +522,10 @@ void UDTMachClassifier::updateSamplingStrategy(bool force_lsh) {
       }
     }
   }
+
+  std::cout << "New neuron index: ";
+  neuron_index->summarize(std::cout);
+  std::cout << std::endl;
 }
 
 void UDTMachClassifier::introduceDocuments(
