@@ -4,10 +4,8 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
-#include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -161,10 +159,6 @@ class UDTBackend {
 
   virtual data::ColumnDataTypes dataTypes() const {
     throw notSupported("data_types");
-  }
-
-  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    throw notSupported("get_cold_start_meta_data");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {

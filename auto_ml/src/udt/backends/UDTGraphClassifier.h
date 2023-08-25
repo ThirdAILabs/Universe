@@ -1,6 +1,5 @@
 #pragma once
 
-#include <auto_ml/src/featurization/GraphDatasetManager.h>
 #include <auto_ml/src/featurization/GraphFeaturizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>

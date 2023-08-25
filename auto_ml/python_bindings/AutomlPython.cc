@@ -2,7 +2,6 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
@@ -234,7 +233,6 @@ void defineAutomlInModule(py::module_& module) {
       .def("model_dims", &udt::UDT::modelDims)
       .def("text_dataset_config", &udt::UDT::textDatasetConfig)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
-      .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
@@ -248,18 +246,6 @@ void defineAutomlInModule(py::module_& module) {
            })
       .def(bolt::python::getPickleFunction<udt::UDT>());
   ;
-}
-
-void createModelsSubmodule(py::module_& module) {
-  auto models_submodule = module.def_submodule("models");
-
-  py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
-      models_submodule, "TabularDatasetFactory")
-      .def("get_dataset_loader",
-           &data::TabularDatasetFactory::getLabeledDatasetLoader,
-           py::arg("data_source"), py::arg("training"),
-           py::arg("shuffle_config") = std::nullopt)
-      .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

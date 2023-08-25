@@ -424,10 +424,6 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
-    auto_ml/src/featurization/TabularBlockComposer.cc
-    auto_ml/src/featurization/TabularDatasetFactory.cc
-    auto_ml/src/featurization/RecurrentDatasetFactory.cc
-    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/featurization/TabularTransformations.cc
     auto_ml/src/featurization/Featurizer.cc
     auto_ml/src/featurization/MachFeaturizer.cc
@@ -437,7 +433,6 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
     utils/Logging.cc
     utils/StringManipulation.cc

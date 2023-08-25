@@ -122,16 +122,6 @@ class UDT {
                        const bolt::DistributedCommPtr& comm);
 
   /**
-   * Returns metadata for ColdStart which are needed to be passed to
-   * ColdStartPreprocessing. Optional Method that is not supported by
-   * defaults for backends. This method is primarily used for distributed
-   * training.
-   */
-  cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    return _backend->getColdStartMetaData();
-  }
-
-  /**
    * Returns some embedding representation for the given sample. Optional method
    * that is not supported by default for backends.
    */
