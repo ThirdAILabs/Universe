@@ -149,17 +149,17 @@ def setup_ray(num_workers=2):
 
 
 def extract_metrics_from_file(filename):
-    import re
+    import json
 
+    # Read the metrics dictionary from the JSON file
     with open(filename, "r") as file:
-        content = file.read()
+        data = json.load(file)
+    return data
 
-        # Use regular expression to find the dictionary part
-        dictionary_match = re.search(r"\{.*\}", content, re.DOTALL)
 
-        if dictionary_match:
-            dictionary_text = dictionary_match.group(0)
-            dictionary = eval(dictionary_text)
-            return dictionary
-        else:
-            return None
+def write_metrics_to_file(filename, metrics):
+    import json
+
+    # Write the metrics dictionary to the file in JSON format
+    with open(filename, "w") as file:
+        json.dump(metrics, file)
