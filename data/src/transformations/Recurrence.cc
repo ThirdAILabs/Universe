@@ -14,16 +14,6 @@
 
 namespace thirdai::data {
 
-static std::vector<size_t> offsets(const ArrayColumnBase<uint32_t>& column) {
-  std::vector<size_t> offsets(column.numRows() + 1);
-  offsets[0] = 0;
-  for (uint32_t i = 0; i < column.numRows(); i++) {
-    // +1 for EOS token.
-    offsets[i + 1] = offsets[i] + column.row(i).size() + 1;
-  }
-  return offsets;
-}
-
 static std::vector<size_t> permutation(const std::vector<size_t>& offsets) {
   std::vector<size_t> permutation(offsets.back());
 
@@ -78,7 +68,8 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
     try {
       const size_t offset = row_offsets[i];
-      for (uint32_t row_pos = 0; row_pos <= source_row.size(); ++row_pos) {
+      for (uint32_t row_pos = 0; row_pos < effectiveSize(source_row);
+           row_pos++) {
         /*
           Simulate next token prediction by giving the model an array of tokens
           up to the (row_pos - 1)th token.
@@ -113,7 +104,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   auto unrolled_source_column = ArrayColumn<uint32_t>::make(
       std::move(unrolled_source_data), source_column->dim());
   auto unrolled_target_column = ValueColumn<uint32_t>::make(
-      std::move(unrolled_target_data), totalVocabSize() * _expected_seq_len);
+      std::move(unrolled_target_data), totalVocabSize() * _max_seq_len);
 
   auto permutation_indices = permutation(row_offsets);
   columns = columns.permute(permutation_indices);
@@ -124,6 +115,21 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
 bool Recurrence::isEOS(uint32_t token) const {
   return token % totalVocabSize() == EOS();
+}
+
+size_t Recurrence::effectiveSize(const RowView<uint32_t>& row) const {
+  return std::min(row.size() + 1, _max_seq_len);
+}
+
+std::vector<size_t> Recurrence::offsets(
+    const ArrayColumnBase<uint32_t>& column) const {
+  std::vector<size_t> offsets(column.numRows() + 1);
+  offsets[0] = 0;
+  for (uint32_t i = 0; i < column.numRows(); i++) {
+    // +1 for EOS token.
+    offsets[i + 1] = offsets[i] + effectiveSize(column.row(i));
+  }
+  return offsets;
 }
 
 void Recurrence::assertCorrectTargetInputDim(
@@ -142,7 +148,7 @@ void Recurrence::assertCorrectTargetInputDim(
 
 uint32_t Recurrence::positionEncodedToken(uint32_t token,
                                           size_t position) const {
-  return std::min(position, _expected_seq_len - 1) * totalVocabSize() + token;
+  return std::min(position, _max_seq_len - 1) * totalVocabSize() + token;
 }
 
 }  // namespace thirdai::data
