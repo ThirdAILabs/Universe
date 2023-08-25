@@ -175,4 +175,4 @@ def test_neural_db_from_udt():
         },
     )
 
-    neural_db.NeuralDB.from_udt(udt)
+    ndb.NeuralDB.from_udt(udt)

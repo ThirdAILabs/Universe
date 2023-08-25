@@ -40,16 +40,19 @@ TEST(RecurrenceTest, DifferentRowSizesThrowsError) {
       /* source_output_column= */ "source_unrolled",
       /* target_output_column= */ "target_unrolled",
       /* target_vocab_size= */ vocab_size,
-      /* max_positions= */ 1);
+      /* max_sequence_length= */ 100);
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       recurrence.applyStateless(columns), std::invalid_argument);
 }
 
 TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
+  uint32_t TOKEN_VOCAB_SIZE = 99;
+  uint32_t MAX_SEQ_LEN = 10;
+
   auto tokens =
       ArrayColumn<uint32_t>::make(/* data= */ {{0}, {1, 2}, {3, 4, 5}},
-                                  /* dim= */ 100);
+                                  /* dim= */ TOKEN_VOCAB_SIZE);
 
   ColumnMap columns(/* columns= */ {{"tokens", tokens}});
 
@@ -58,8 +61,8 @@ TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
       /* target_input_column= */ "tokens",
       /* source_output_column= */ "source_unrolled",
       /* target_output_column= */ "target_unrolled",
-      /* target_vocab_size= */ 100,
-      /* max_positions= */ 1);
+      /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
+      /* max_sequence_length= */ MAX_SEQ_LEN);
 
   columns = recurrence.applyStateless(columns);
 
@@ -82,25 +85,41 @@ TEST(RecurrenceTest, CorrectUnrollingSameSourceTargetColumn) {
 
   assertRowsEqual(
       /* column= */ *target_unrolled,
-      // 100 is EOS token.
-      /* expected= */ {{0}, {100}, {1}, {2}, {100}, {3}, {4}, {5}, {100}});
+      // vocab_size = 99 is EOS token before position encoding
+      /* expected= */ {
+          {0},    // pos * (vocab_size + 1) + token = 0 * 100 + 0 = 1
+          {199},  // EOS. pos * (vocab_size + 1) + token = 1 * 100 + 99 = 199
+          {1},    // pos * (vocab_size + 1) + token = 0 * 100 + 1 = 1
+          {102},  // pos * (vocab_size + 1) + token = 1 * 100 + 2 = 102
+          {299},  // EOS. pos * (vocab_size + 1) + token = 2 * 100 + 99 = 299
+          {3},    // pos * (vocab_size + 1) + token = 0 * 100 + 3 = 3
+          {104},  // pos * (vocab_size + 1) + token = 1 * 100 + 4 = 104
+          {205},  // pos * (vocab_size + 1) + token = 2 * 100 + 5 = 205
+          {399},  // pos * (vocab_size + 1) + token = 3 * 100 + 99 = 399
+      });
 
-  ASSERT_TRUE(recurrence.isEOS(100));
-  for (uint32_t i = 0; i < 100; i++) {
-    ASSERT_FALSE(recurrence.isEOS(i));
+  for (uint32_t i = 0; i < (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN; i++) {
+    if (i % (TOKEN_VOCAB_SIZE + 1) == TOKEN_VOCAB_SIZE) {
+      ASSERT_TRUE(recurrence.isEOS(i));
+    } else {
+      ASSERT_FALSE(recurrence.isEOS(i));
+    }
   }
 
   ASSERT_EQ(source_unrolled->dim(), tokens->dim());
-  ASSERT_EQ(target_unrolled->dim(), *tokens->dim() + 1);
+  ASSERT_EQ(target_unrolled->dim(), (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN);
 }
 
 TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
+  uint32_t TOKEN_VOCAB_SIZE = 99;
+  uint32_t MAX_SEQ_LEN = 10;
+
   auto source =
       ArrayColumn<uint32_t>::make(/* data= */ {{0}, {1, 2}, {3, 4, 5}},
                                   /* dim= */ std::nullopt);
   auto target =
       ArrayColumn<uint32_t>::make(/* data= */ {{6}, {7, 8}, {9, 10, 11}},
-                                  /* dim= */ 100);
+                                  /* dim= */ TOKEN_VOCAB_SIZE);
 
   ColumnMap columns(/* columns= */ {{"source", source}, {"target", target}});
 
@@ -109,8 +128,8 @@ TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
       /* target_input_column= */ "target",
       /* source_output_column= */ "source_unrolled",
       /* target_output_column= */ "target_unrolled",
-      /* target_vocab_size= */ 100,
-      /* max_positions= */ 1);
+      /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
+      /* max_positions= */ MAX_SEQ_LEN);
 
   columns = recurrence.applyStateless(columns);
 
@@ -133,26 +152,41 @@ TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
 
   assertRowsEqual(
       /* column= */ *target_unrolled,
-      // 100 is EOS token.
-      /* expected= */ {{6}, {100}, {7}, {8}, {100}, {9}, {10}, {11}, {100}});
+      // vocab_size = 99 is EOS token before position encoding
+      /* expected= */ {
+          {6},    // pos * (vocab_size + 1) + token = 0 * 100 + 6 = 6
+          {199},  // EOS. pos * (vocab_size + 1) + token = 1 * 100 + 99 = 199
+          {7},    // pos * (vocab_size + 1) + token = 0 * 100 + 7 = 7
+          {108},  // pos * (vocab_size + 1) + token = 1 * 100 + 8 = 108
+          {299},  // EOS. pos * (vocab_size + 1) + token = 2 * 100 + 99 = 299
+          {9},    // pos * (vocab_size + 1) + token = 0 * 100 + 9 = 9
+          {110},  // pos * (vocab_size + 1) + token = 1 * 100 + 10 = 110
+          {211},  // pos * (vocab_size + 1) + token = 2 * 100 + 11 = 211
+          {399},  // pos * (vocab_size + 1) + token = 3 * 100 + 99 = 399
+      });
 
-  ASSERT_TRUE(recurrence.isEOS(100));
-  for (uint32_t i = 0; i < 100; i++) {
-    ASSERT_FALSE(recurrence.isEOS(i));
+  for (uint32_t i = 0; i < (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN; i++) {
+    if (i % (TOKEN_VOCAB_SIZE + 1) == TOKEN_VOCAB_SIZE) {
+      ASSERT_TRUE(recurrence.isEOS(i));
+    } else {
+      ASSERT_FALSE(recurrence.isEOS(i));
+    }
   }
 
   ASSERT_EQ(source_unrolled->dim(), source->dim());
-  ASSERT_EQ(target_unrolled->dim(), *target->dim() + 1);
+  ASSERT_EQ(target_unrolled->dim(), (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN);
 }
 
-TEST(RecurrenceTest,
-     CorrectUnrollingDifferentSourceTargetColumnWithPositionalOffsets) {
+TEST(RecurrenceTest, CorrectUnrollingWithSequencesLongerThanMaxSequenceLength) {
+  uint32_t TOKEN_VOCAB_SIZE = 99;
+  uint32_t MAX_SEQ_LEN = 2;
+
   auto source =
       ArrayColumn<uint32_t>::make(/* data= */ {{}, {0}, {1, 2}, {3, 4, 5}},
-                                  /* dim= */ 100);
+                                  /* dim= */ std::nullopt);
   auto target =
       ArrayColumn<uint32_t>::make(/* data= */ {{}, {6}, {7, 8}, {9, 10, 11}},
-                                  /* dim= */ 100);
+                                  /* dim= */ TOKEN_VOCAB_SIZE);
 
   ColumnMap columns(/* columns= */ {{"source", source}, {"target", target}});
 
@@ -161,8 +195,8 @@ TEST(RecurrenceTest,
       /* target_input_column= */ "target",
       /* source_output_column= */ "source_unrolled",
       /* target_output_column= */ "target_unrolled",
-      /* target_vocab_size= */ 100,
-      /* max_positions= */ 2);
+      /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
+      /* max_seq_len= */ MAX_SEQ_LEN);
 
   columns = recurrence.applyStateless(columns);
 
@@ -172,50 +206,46 @@ TEST(RecurrenceTest,
   assertRowsEqual(
       /* column= */ *source_unrolled,
       /* expected= */ {
-          {},      // First unrolling of {}
-          {},      // First unrolling of {0} (First is always empty)
-          {0},     // Last unrolling of {0} (Whole sequence, next token is EOS)
-          {},      // First unrolling of {1, 2} (First is always empty)
-          {1},     // Second unrolling of {1, 2}
-          {1, 2},  // Last unrolling of {1, 2} (Whole sequence, next is EOS)
-          {},      // First unrolling of {3, 4, 5}
-          {3},     // Second unrolling of {3, 4, 5}
-          {3, 4},  // Third unrolling of {3, 4, 5}
-          {3, 4, 5},  // Last unrolling of {3, 4, 5}
+          {},   // First unrolling of {}
+          {},   // First unrolling of {0} (First is always empty)
+          {0},  // Last unrolling of {0} (Whole sequence, next token is EOS)
+          {},   // First unrolling of {1, 2} (First is always empty)
+          {1},  // Second unrolling of {1, 2}
+          // Skip last unrolling of {1, 2} since we already predicted 2 tokens.
+          {},   // First unrolling of {3, 4, 5}
+          {3},  // Second unrolling of {3, 4, 5}
+                // Skip third and last unrolling of {3, 4, 5} since we already
+                // predicted 2 tokens.
       });
 
   assertRowsEqual(
       /* column= */ *target_unrolled,
       /* expected= */ {
-          // pos is at most 1 since max_positions = 2
-          // EOS token = target vocab size.
-          // from the sequence {}
-          {100},  // EOS = pos * (vocab_size + 1) + EOS = 0 * 101 + 100
-          // from the sequence {6}
-          {6},    // pos * (vocab_size + 1) + token = 0 * 101 + 6 = 6
-          {201},  // EOS = pos * (vocab_size + 1) + EOS = 1 * 101 + 100
-          // from the sequence {7, 8}
-          {7},    // pos * (vocab_size + 1) + token = 0 * 101 + 7 = 7
-          {109},  // pos * (vocab_size + 1) + token = 1 * 101 + 8 = 109
-          {201},  // EOS = pos * (vocab_size + 1) + EOS = 1 * 101 + 100
-          // from the sequence {9, 10, 11}
-          {9},    // pos * (vocab_size + 1) + token = 0 * 101 + 9 = 9
-          {111},  // pos * (vocab_size + 1) + token = 1 * 101 + 10 = 111
-          {112},  // pos * (vocab_size + 1) + token = 1 * 101 + 11 = 112
-          {201},  // EOS = pos * (vocab_size + 1) + EOS = 1 * 101 + 100
+          // From sequence {}
+          {99},  // EOS. pos * (vocab_size + 1) + token = 0 * 100 + 99 = 99
+          // From sequence {6}
+          {6},    // pos * (vocab_size + 1) + token = 0 * 100 + 6 = 6
+          {199},  // EOS. pos * (vocab_size + 1) + token = 1 * 100 + 99 = 199
+          // From sequence {7, 8}
+          {7},    // pos * (vocab_size + 1) + token = 0 * 100 + 7 = 7
+          {108},  // pos * (vocab_size + 1) + token = 1 * 100 + 8 = 108
+          // Skip EOS at third position (pos=2) since max seq len is 2
+          // From sequence {9, 10, 11}
+          {9},    // pos * (vocab_size + 1) + token = 0 * 100 + 9 = 9
+          {110},  // pos * (vocab_size + 1) + token = 1 * 100 + 10 = 110
+                  // Skip third element and EOS since max seq len is 2
       });
 
-  ASSERT_TRUE(recurrence.isEOS(100));
-  ASSERT_TRUE(recurrence.isEOS(201));
-  for (uint32_t i = 0; i < 100; i++) {
-    ASSERT_FALSE(recurrence.isEOS(i));
-  }
-  for (uint32_t i = 101; i < 201; i++) {
-    ASSERT_FALSE(recurrence.isEOS(i));
+  for (uint32_t i = 0; i < (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN; i++) {
+    if (i % (TOKEN_VOCAB_SIZE + 1) == TOKEN_VOCAB_SIZE) {
+      ASSERT_TRUE(recurrence.isEOS(i));
+    } else {
+      ASSERT_FALSE(recurrence.isEOS(i));
+    }
   }
 
   ASSERT_EQ(source_unrolled->dim(), source->dim());
-  ASSERT_EQ(target_unrolled->dim(), 2 * (*target->dim() + 1));
+  ASSERT_EQ(target_unrolled->dim(), (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN);
 }
 
 }  // namespace thirdai::data::tests
