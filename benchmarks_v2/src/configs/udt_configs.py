@@ -75,6 +75,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     target = "label"
     n_target_classes = 2
     delimiter = "\t"
+    max_in_memory_batches = 5000
 
     learning_rate = 0.01
     num_epochs = 3
