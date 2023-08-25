@@ -38,19 +38,23 @@ class Recurrence final : public Transformation {
  public:
   Recurrence(std::string source_input_column, std::string target_input_column,
              std::string source_output_column, std::string target_output_column,
-             size_t target_vocab_size, size_t expected_sequence_length)
+             size_t target_vocab_size, size_t max_sequence_length)
       : _source_input_column(std::move(source_input_column)),
         _target_input_column(std::move(target_input_column)),
         _source_output_column(std::move(source_output_column)),
         _target_output_column(std::move(target_output_column)),
         _target_vocab_size(target_vocab_size),
-        _expected_seq_len(expected_sequence_length) {}
+        _max_seq_len(max_sequence_length) {}
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   bool isEOS(uint32_t token) const;
 
  private:
+  size_t effectiveSize(const RowView<uint32_t>& row) const;
+
+  std::vector<size_t> offsets(const ArrayColumnBase<uint32_t>& column) const;
+
   void assertCorrectTargetInputDim(
       const ArrayColumnBase<uint32_t>& target_column) const;
 
@@ -68,7 +72,7 @@ class Recurrence final : public Transformation {
   std::string _source_output_column;
   std::string _target_output_column;
   size_t _target_vocab_size;
-  size_t _expected_seq_len;
+  size_t _max_seq_len;
 };
 
 }  // namespace thirdai::data
