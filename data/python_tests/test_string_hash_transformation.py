@@ -58,3 +58,33 @@ def test_string_hash_distribution():
     expected_count = col_length / output_range
     for count in hash_counts:
         assert count / expected_count < 2 and count / expected_count > 0.5
+
+
+def test_string_hash_with_delimiter():
+    ROWS = 100
+    columns = data.ColumnMap(
+        {
+            "col": data.columns.StringColumn(
+                [f"{i}-{i+1}-{i}-{i+1}" for i in range(ROWS)]
+            )
+        }
+    )
+
+    str_hash = data.transformations.StringHash(
+        input_column="col",
+        output_column=f"hashes",
+        delimiter="-",
+        output_range=10000,
+    )
+
+    columns = str_hash(columns)
+
+    hashes = columns["hashes"].data()
+
+    for i, row in enumerate(hashes):
+        assert row[0] == row[2]
+        assert row[1] == row[3]
+        assert row[0] != row[1]
+
+        if i < len(hashes) - 1:
+            assert row[1] == hashes[i + 1][0]

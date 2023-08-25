@@ -126,6 +126,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
       .def("num_params", &Model::numParams)
+      .def("thirdai_version", &Model::thirdaiVersion)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))

@@ -63,10 +63,12 @@ inline std::vector<T> concatVectors(std::vector<T>&& a, std::vector<T>&& b) {
   }
   std::vector<T> new_vec(a.size() + b.size());
 
+#pragma omp parallel for default(none) shared(new_vec, a)
   for (size_t i = 0; i < a.size(); i++) {
     new_vec[i] = std::move(a[i]);
   }
 
+#pragma omp parallel for default(none) shared(new_vec, a, b)
   for (size_t i = 0; i < b.size(); i++) {
     new_vec[a.size() + i] = std::move(b[i]);
   }

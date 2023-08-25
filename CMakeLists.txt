@@ -428,16 +428,20 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
     data/src/transformations/Date.cc
+    data/src/transformations/CrossColumnPairgrams.cc
+    data/src/transformations/DeduplicateTokens.cc
     data/src/transformations/EncodePosition.cc
-    data/src/transformations/UnrollSequence.cc
+    data/src/transformations/Recurrence.cc
     data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
+    data/src/transformations/RegressionBinning.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
     data/src/TensorConversion.cc
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
+    data/src/rca/ExplanationMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
@@ -445,6 +449,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
+    auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/ReservedColumns.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc

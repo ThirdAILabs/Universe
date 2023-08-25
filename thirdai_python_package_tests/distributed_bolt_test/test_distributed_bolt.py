@@ -6,9 +6,11 @@ import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import (
     check_model_parameters_equal,
+    extract_metrics_from_file,
     gen_numpy_training_data,
     get_bolt_model,
     setup_ray,
+    write_metrics_to_file,
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
@@ -23,9 +25,20 @@ def training_loop_per_worker(config):
     train_x = bolt.train.convert_dataset(train_x, dim=10)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    trainer.train_distributed(
-        train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+    tracked_metric = "categorical_accuracy"
+    metric_threshold = 0.95
+    num_epochs = config.get("num_epochs", 1)
+
+    history = trainer.train_distributed(
+        train_data=(train_x, train_y),
+        learning_rate=0.005,
+        epochs=num_epochs,
+        train_metrics=["categorical_accuracy"],
     )
+
+    # logs train_metrics from worker nodes which can be compared later
+    history.pop("epoch_times")
+    write_metrics_to_file(filename="metrics.json", metrics=history)
 
     session.report(
         {"model_location": session.get_trial_dir()},
@@ -76,6 +89,24 @@ def test_bolt_distributed():
     )
 
     check_model_parameters_equal(model_1, model_2)
+
+    model_1_metrics = extract_metrics_from_file(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_0/metrics.json",
+        )
+    )
+
+    model_2_metrics = extract_metrics_from_file(
+        os.path.join(
+            result_checkpoint_and_history.metrics["model_location"],
+            "rank_1/metrics.json",
+        )
+    )
+
+    assert (
+        model_1_metrics == model_2_metrics
+    ), "Train metrics on worker nodes aren't synced"
 
     ray.shutdown()
 
@@ -142,5 +173,59 @@ def test_distributed_fault_tolerance():
     )
 
     trainer.fit()
+
+    ray.shutdown()
+
+
+@pytest.mark.distributed
+def test_distributed_resume_training():
+    def training_loop_per_worker(config):
+        ckpt = session.get_checkpoint()
+        if ckpt:
+            model = dist.BoltCheckPoint.get_model(ckpt)
+            print("\nResumed training from last checkpoint...\n")
+        else:
+            model = get_bolt_model()
+            model = dist.prepare_model(model)
+            print("\nLoading model from scratch...\n")
+
+        num_epochs = config.get("num_epochs", 1)
+
+        trainer = bolt.train.Trainer(model)
+        train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
+        train_x = bolt.train.convert_dataset(train_x, dim=10)
+        train_y = bolt.train.convert_dataset(train_y, dim=10)
+
+        for epoch in range(num_epochs):
+            trainer.train_distributed(
+                train_data=(train_x, train_y), learning_rate=0.005, epochs=1
+            )
+
+        session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
+
+    scaling_config = setup_ray()
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=training_loop_per_worker,
+        train_loop_config={"num_epochs": 3},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+    )
+    result = trainer.fit()
+    checkpoint_path = result.checkpoint.to_directory()
+
+    ray.shutdown()
+
+    # Now we start a new training using previously saved checkpoint
+    scaling_config = setup_ray()
+
+    trainer2 = dist.BoltTrainer(
+        train_loop_per_worker=training_loop_per_worker,
+        train_loop_config={"num_epochs": 3},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+        resume_from_checkpoint=dist.BoltCheckPoint.from_directory(checkpoint_path),
+    )
+    trainer2.fit()
 
     ray.shutdown()
