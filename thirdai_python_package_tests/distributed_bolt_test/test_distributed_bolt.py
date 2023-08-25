@@ -10,6 +10,7 @@ from distributed_utils import (
     gen_numpy_training_data,
     get_bolt_model,
     setup_ray,
+    write_metrics_to_file,
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
@@ -36,9 +37,8 @@ def training_loop_per_worker(config):
     )
 
     # logs train_metrics from worker nodes which can be compared later
-    thirdai.logging.setup(log_to_stderr=False, path="log_metrics.txt", level="info")
     history.pop("epoch_times")
-    thirdai.logging.info(f"{history}")
+    write_metrics_to_file(filename="metrics.json", metrics=history)
 
     session.report(
         {"model_location": session.get_trial_dir()},
@@ -93,23 +93,20 @@ def test_bolt_distributed():
     model_1_metrics = extract_metrics_from_file(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_0/log_metrics.txt",
+            "rank_0/metrics.json",
         )
     )
 
     model_2_metrics = extract_metrics_from_file(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_1/log_metrics.txt",
+            "rank_1/metrics.json",
         )
     )
 
     assert (
         model_1_metrics == model_2_metrics
     ), "Train metrics on worker nodes aren't synced"
-
-    print(model_1_metrics)
-    print(model_2_metrics)
 
     ray.shutdown()
 
