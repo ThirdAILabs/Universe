@@ -51,6 +51,32 @@ std::string MetricCollection::summarizeLastStep() const {
   return summary.str();
 }
 
+std::vector<std::pair<std::string, float>>
+MetricCollection::getFlattenedMetrics() const {
+  std::vector<std::pair<std::string, float>> metric_values;
+
+  for (const auto& metric : _metrics) {
+    metric_values.push_back(std::make_pair(metric->name(), metric->value()));
+  }
+
+  return metric_values;
+}
+
+void MetricCollection::setFlattenedMetrics(
+    History& history,
+    std::vector<std::pair<std::string, float>>& metric_values) {
+  if (_metrics.size() != metric_values.size()) {
+    throw std::invalid_argument(
+        "The number of metric values must match the number of metrics.");
+  }
+
+  for (const auto& [name, value] : metric_values) {
+    history[name].back() = value;
+  }
+}
+
+bool MetricCollection::hasMetrics() { return !_metrics.empty(); }
+
 void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();
