@@ -46,13 +46,12 @@ class TemporalRunner(Runner):
                 metrics = model.evaluate(test_file, metrics=config.metrics)
 
                 model.reset_temporal_trackers()
-                
+
                 if mlflow_logger:
                     for k, v in metrics.items():
                         mlflow_logger.log_additional_metric(
                             key=k, value=v[-1], step=epoch
                         )
-
 
         # indexing train file so that train data user history is used for predictions
         train_data = pd.read_csv(

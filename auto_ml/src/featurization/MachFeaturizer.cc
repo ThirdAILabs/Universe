@@ -53,7 +53,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
   thirdai::data::ColumnMap columns =
-      thirdai::data::ColumnMapIterator::all(data_source, _delimiter);
+      thirdai::data::ColumnMapIterator::all(csv_data_source, _delimiter);
 
   auto transform = thirdai::data::TransformationList::make({
       coldStartTransform(strong_column_names, weak_column_names,
@@ -67,7 +67,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   auto input_tensors =
       thirdai::data::toTensorBatches(columns, _bolt_input_columns, batch_size);
 
-  auto doc_ids = columns.getValueColumn<uint32_t>(MACH_DOC_IDS);
+  auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>> batches;
 
@@ -75,7 +75,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   for (const auto& tensor : input_tensors) {
     std::vector<uint32_t> batch_doc_ids(tensor.at(0)->batchSize());
     for (uint32_t& batch_doc_id : batch_doc_ids) {
-      batch_doc_id = doc_ids->value(row_idx++);
+      batch_doc_id = doc_ids->row(row_idx++)[0];
     }
     batches.emplace_back(tensor, std::move(batch_doc_ids));
   }
@@ -102,8 +102,10 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
+
   thirdai::data::ColumnMap columns =
-      thirdai::data::ColumnMapIterator::all(data_source, _delimiter);
+      thirdai::data::ColumnMapIterator::all(csv_data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names)
@@ -160,8 +162,10 @@ MachFeaturizer::getBalancingSamples(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     size_t n_balancing_samples, size_t rows_to_read) {
+  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
+
   thirdai::data::ColumnMapIterator data_iter(
-      data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
+      csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
 
   auto columns = data_iter.next().value();
 
@@ -177,7 +181,7 @@ MachFeaturizer::getBalancingSamples(
   auto text_col =
       columns.getValueColumn<std::string>(textDatasetConfig().textColumn());
   auto mach_label_col = columns.getArrayColumn<uint32_t>(MACH_LABELS);
-  auto doc_id_col = columns.getValueColumn<uint32_t>(MACH_DOC_IDS);
+  auto doc_id_col = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
 
   size_t n_to_return = std::min(n_balancing_samples, columns.numRows());
   std::vector<std::pair<uint32_t, RlhfSample>> samples;
@@ -187,7 +191,7 @@ MachFeaturizer::getBalancingSamples(
     RlhfSample sample(text_col->value(i),
                       std::vector<uint32_t>(labels.begin(), labels.end()));
 
-    samples.emplace_back(doc_id_col->value(i), std::move(sample));
+    samples.emplace_back(doc_id_col->row(i)[0], std::move(sample));
   }
 
   return samples;
