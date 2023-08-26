@@ -13,7 +13,7 @@
 #include <random>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextEmbeddingOpName() {
   static uint32_t constructed = 0;
@@ -85,9 +85,8 @@ Embedding::Embedding(const std::string& name,
   }
 }
 
-void Embedding::forward(const autograd::ComputationList& inputs,
-                        tensor::TensorPtr& output, uint32_t index_in_batch,
-                        bool training) {
+void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
+                        uint32_t index_in_batch, bool training) {
   (void)training;
 
   assert(inputs.size() == 1);
@@ -113,8 +112,7 @@ void Embedding::forward(const autograd::ComputationList& inputs,
   applyActivationFunction(output_vec.activations);
 }
 
-void Embedding::backpropagate(autograd::ComputationList& inputs,
-                              tensor::TensorPtr& output,
+void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
@@ -270,6 +268,31 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
   }
 }
 
+void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
+                        const Computation* output) const {
+  summary << "Embedding(" << name() << "): " << inputs.at(0)->name() << " -> "
+          << output->name() << " [dim=" << _dim
+          << ", activation=" << activationFunctionToStr(_act_func)
+          << ", bias=" << std::boolalpha << _bias << "]";
+}
+
+ComputationPtr Embedding::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Embedding op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr Embedding::applyUnary(ComputationPtr input) {
+  if (input->dim() != _input_dim) {
+    throw std::invalid_argument(
+        "Input has too large of a dimension for embedding.");
+  }
+
+  return Computation::make(shared_from_this(), {std::move(input)});
+}
+
 proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
   proto::bolt::Op* op = new proto::bolt::Op();
   op->set_name(name());
@@ -296,33 +319,6 @@ proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
   emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
 
   return op;
-}
-
-void Embedding::summary(std::ostream& summary,
-                        const autograd::ComputationList& inputs,
-                        const autograd::Computation* output) const {
-  summary << "Embedding(" << name() << "): " << inputs.at(0)->name() << " -> "
-          << output->name() << " [dim=" << _dim
-          << ", activation=" << activationFunctionToStr(_act_func)
-          << ", bias=" << std::boolalpha << _bias << "]";
-}
-
-autograd::ComputationPtr Embedding::apply(
-    const autograd::ComputationList& inputs) {
-  if (inputs.size() != 1) {
-    throw std::invalid_argument("Embedding op expects a single input.");
-  }
-
-  return applyUnary(inputs.at(0));
-}
-
-autograd::ComputationPtr Embedding::applyUnary(autograd::ComputationPtr input) {
-  if (input->dim() != _input_dim) {
-    throw std::invalid_argument(
-        "Input has too large of a dimension for embedding.");
-  }
-
-  return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
 template void Embedding::save(cereal::BinaryOutputArchive&) const;
@@ -355,7 +351,7 @@ void Embedding::load(Archive& archive) {
   }
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
 namespace cereal {
 
@@ -366,9 +362,10 @@ namespace cereal {
  * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
  */
 template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::Embedding,
+struct specialize<Archive, thirdai::bolt::Embedding,
                   cereal::specialization::member_load_save> {};
 
 }  // namespace cereal
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Embedding,
+                               "thirdai::bolt::nn::ops::Embedding")

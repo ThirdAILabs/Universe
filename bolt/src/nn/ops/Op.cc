@@ -1,13 +1,15 @@
 #include "Op.h"
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/CosineSimilarity.h>
+#include <bolt/src/nn/ops/DotProduct.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::shared_ptr<Op> Op::fromProto(const proto::bolt::Op& op_proto) {
   const std::string& name = op_proto.name();
@@ -29,12 +31,18 @@ std::shared_ptr<Op> Op::fromProto(const proto::bolt::Op& op_proto) {
     case proto::bolt::Op::kLayerNorm:
       return LayerNorm::fromProto(name, op_proto.layer_norm());
 
-    case proto::bolt::Op::kTanh:
-      return Tanh::fromProto(name, op_proto.tanh());
+    case proto::bolt::Op::kDotProduct:
+      return DotProduct::fromProto(name, op_proto.dot_product());
+
+    case proto::bolt::Op::kCosineSimilarity:
+      return CosineSimilarity::fromProto(name, op_proto.cosine_similarity());
+
+    case proto::bolt::Op::kActivation:
+      return activationOpFromProto(name, op_proto.activation());
 
     default:
       throw std::invalid_argument("Invalid op type in fromProto.");
   }
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

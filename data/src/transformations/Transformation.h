@@ -1,9 +1,11 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
+#include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
 #include <proto/transformations.pb.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::data {
 
@@ -29,12 +31,32 @@ class Transformation {
    */
   virtual ColumnMap apply(ColumnMap columns, State& state) const = 0;
 
-  virtual proto::data::Transformation* toProto() const = 0;
-
   ColumnMap applyStateless(ColumnMap columns) const {
     State state;
     return apply(std::move(columns), state);
   }
+
+  virtual void buildExplanationMap(const ColumnMap& input, State& state,
+                                   ExplanationMap& explanations) const {
+    (void)input;
+    (void)state;
+    (void)explanations;
+    throw std::runtime_error("RCA is not supported for this transformation.");
+  }
+
+  ExplanationMap explain(const ColumnMap& input, State& state) const {
+    if (input.numRows() != 1) {
+      throw std::invalid_argument(
+          "Can only call explain on column maps with a single row.");
+    }
+    ExplanationMap explanations(input);
+
+    buildExplanationMap(input, state, explanations);
+
+    return explanations;
+  }
+
+  virtual proto::data::Transformation* toProto() const = 0;
 
   static std::shared_ptr<Transformation> fromProto(
       const proto::data::Transformation& transformation);
@@ -44,6 +66,13 @@ class Transformation {
   static std::shared_ptr<Transformation> deserialize(const std::string& binary);
 
   virtual ~Transformation() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using TransformationPtr = std::shared_ptr<Transformation>;

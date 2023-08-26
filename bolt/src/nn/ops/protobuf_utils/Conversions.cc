@@ -2,7 +2,7 @@
 #include <google/protobuf/repeated_field.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 proto::bolt::ActivationFunction activationToProto(
     ActivationFunction activation) {
@@ -128,4 +128,4 @@ AdamOptimizer optimizerFromProto(const proto::bolt::Optimizer& opt_proto) {
   return opt;
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

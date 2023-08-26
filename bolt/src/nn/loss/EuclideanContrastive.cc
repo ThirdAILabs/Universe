@@ -10,11 +10,11 @@
 #include <string>
 #include <utility>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
-EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
-                                           autograd::ComputationPtr output_2,
-                                           autograd::ComputationPtr labels,
+EuclideanContrastive::EuclideanContrastive(ComputationPtr output_1,
+                                           ComputationPtr output_2,
+                                           ComputationPtr labels,
                                            float dissimilar_cutoff_distance)
     : _output_1(std::move(output_1)),
       _output_2(std::move(output_2)),
@@ -41,9 +41,8 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
 }
 
 std::shared_ptr<EuclideanContrastive> EuclideanContrastive::make(
-    const autograd::ComputationPtr& output_1,
-    const autograd::ComputationPtr& output_2,
-    const autograd::ComputationPtr& labels, float dissimilar_cutoff_distance) {
+    const ComputationPtr& output_1, const ComputationPtr& output_2,
+    const ComputationPtr& labels, float dissimilar_cutoff_distance) {
   return std::make_shared<EuclideanContrastive>(output_1, output_2, labels,
                                                 dissimilar_cutoff_distance);
 }
@@ -106,13 +105,11 @@ float EuclideanContrastive::loss(uint32_t index_in_batch) const {
          (1 - label) * cutoff_distance_squared;
 }
 
-autograd::ComputationList EuclideanContrastive::outputsUsed() const {
+ComputationList EuclideanContrastive::outputsUsed() const {
   return {_output_1, _output_2};
 }
 
-autograd::ComputationList EuclideanContrastive::labels() const {
-  return {_labels};
-}
+ComputationList EuclideanContrastive::labels() const { return {_labels}; }
 
 float EuclideanContrastive::euclideanDistanceSquared(
     uint32_t index_in_batch) const {
@@ -140,6 +137,7 @@ void EuclideanContrastive::serialize(Archive& archive) {
           _dissimilar_cutoff_distance);
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::EuclideanContrastive)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::EuclideanContrastive,
+                               "thirdai::bolt::nn::loss::EuclideanContrastive")

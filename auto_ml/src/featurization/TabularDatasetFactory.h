@@ -20,8 +20,6 @@
 
 namespace thirdai::automl::data {
 
-using bolt::nn::tensor::TensorList;
-
 class TabularDatasetFactory {
  public:
   TabularDatasetFactory(
@@ -50,7 +48,7 @@ class TabularDatasetFactory {
   dataset::DatasetLoaderPtr getUnLabeledDatasetLoader(
       const dataset::DataSourcePtr& data_source);
 
-  TensorList featurizeInput(const MapInput& input) {
+  bolt::TensorList featurizeInput(const MapInput& input) {
     for (const auto& [column_name, _] : input) {
       if (!_data_types.count(column_name)) {
         throw std::invalid_argument("Input column name '" + column_name +
@@ -58,14 +56,13 @@ class TabularDatasetFactory {
       }
     }
     dataset::MapSampleRef input_ref(input);
-    return bolt::train::convertVectors(
-        _inference_featurizer->featurize(input_ref),
-        _inference_featurizer->getDimensions());
+    return bolt::convertVectors(_inference_featurizer->featurize(input_ref),
+                                _inference_featurizer->getDimensions());
   }
 
-  TensorList featurizeInputBatch(const MapInputBatch& inputs);
+  bolt::TensorList featurizeInputBatch(const MapInputBatch& inputs);
 
-  std::pair<TensorList, TensorList> featurizeTrainingBatch(
+  std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
       const MapInputBatch& batch);
 
   void updateTemporalTrackers(const MapInput& input) {

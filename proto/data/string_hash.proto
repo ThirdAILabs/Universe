@@ -7,5 +7,6 @@ message StringHash {
   required string input_column = 1;
   required string output_column = 2;
   optional uint64 hash_range = 3;
-  required uint32 seed = 4;
+  optional uint32 delimiter = 4;
+  required uint32 seed = 5;
 }

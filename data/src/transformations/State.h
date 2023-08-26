@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <proto/state.pb.h>
 #include <limits>
@@ -53,6 +54,8 @@ class State {
   explicit State(MachIndexPtr mach_index)
       : _mach_index(std::move(mach_index)) {}
 
+  explicit State(automl::data::GraphInfoPtr graph) : _graph(std::move(graph)) {}
+
   State() {}
 
   explicit State(const proto::data::State& state);
@@ -96,6 +99,14 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  const auto& graph() const {
+    if (!_graph) {
+      throw std::invalid_argument(
+          "Transformation state does not contain Graph object.");
+    }
+    return _graph;
+  }
+
   proto::data::State* toProto() const;
 
  private:
@@ -104,6 +115,14 @@ class State {
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
+
+  automl::data::GraphInfoPtr _graph;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_mach_index);
+  }
 };
 
 using StatePtr = std::shared_ptr<State>;

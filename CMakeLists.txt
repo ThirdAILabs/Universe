@@ -347,8 +347,10 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
-    bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
+    bolt/src/nn/ops/DotProduct.cc
+    bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -428,12 +430,20 @@ set(THIRDAI_SOURCES
     data/src/transformations/Date.cc
     data/src/transformations/Transformation.cc
     data/src/transformations/State.cc
+    data/src/transformations/CrossColumnPairgrams.cc
+    data/src/transformations/DeduplicateTokens.cc
+    data/src/transformations/EncodePosition.cc
+    data/src/transformations/Recurrence.cc
+    data/src/transformations/CountTokens.cc
+    data/src/transformations/Graph.cc
+    data/src/transformations/RegressionBinning.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
     data/src/TensorConversion.cc
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
+    data/src/rca/ExplanationMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
@@ -441,6 +451,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
+    auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/ReservedColumns.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc

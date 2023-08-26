@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 /**
  * This class contains information about the current state of training that is
@@ -55,4 +55,4 @@ class TrainState {
 
 using TrainStatePtr = std::shared_ptr<TrainState>;
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

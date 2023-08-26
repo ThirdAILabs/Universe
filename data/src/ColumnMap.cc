@@ -1,4 +1,5 @@
 #include "ColumnMap.h"
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -56,7 +57,7 @@ ColumnMap ColumnMap::fromMapInputBatch(const automl::MapInputBatch& samples) {
 
 template <typename T>
 ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ArrayColumnBase<T>>(getColumn(name));
+  auto column = ArrayColumnBase<T>::cast(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ArrayColumn.");
@@ -73,7 +74,7 @@ template ArrayColumnBasePtr<std::string> ColumnMap::getArrayColumn(
 
 template <typename T>
 ValueColumnBasePtr<T> ColumnMap::getValueColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ValueColumnBase<T>>(getColumn(name));
+  auto column = ValueColumnBase<T>::cast(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ValueColumn.");
@@ -128,6 +129,14 @@ void ColumnMap::shuffle(uint32_t seed) {
   for (auto& [_, column] : _columns) {
     column->shuffle(permutation);
   }
+}
+
+ColumnMap ColumnMap::permute(const std::vector<size_t>& permutation) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (auto [name, column] : _columns) {
+    new_columns[name] = column->permute(permutation);
+  }
+  return ColumnMap(std::move(new_columns));
 }
 
 ColumnMap ColumnMap::concat(ColumnMap& other) {

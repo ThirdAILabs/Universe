@@ -16,8 +16,6 @@ std::unordered_set<std::string> getNonTemporalColumnNames(
     const ColumnDataTypes& data_types,
     const TemporalRelationships& temporal_relationships);
 
-uint32_t granularityToNumBins(const std::string& granularity_size);
-
 std::string getTimestampColumnName(const ColumnDataTypes& input_data_types);
 
 dataset::BlockPtr makeTemporalCategoricalBlock(
@@ -106,7 +104,7 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
       // tabular_datatypes.size() is the index of the next tabular data type.
       tabular_columns.push_back(dataset::TabularColumn::Numeric(
           /* identifier= */ col_name, /* range= */ numerical->range,
-          /* num_bins= */ granularityToNumBins(numerical->granularity)));
+          /* num_bins= */ numerical->numBins()));
     }
 
     if (auto text_meta = asText(data_type)) {
@@ -219,30 +217,6 @@ std::unordered_set<std::string> getNonTemporalColumnNames(
     non_temporal_columns.insert(tracking_key_col_name);
   }
   return non_temporal_columns;
-}
-
-uint32_t granularityToNumBins(const std::string& granularity_size) {
-  auto lower_size = text::lower(granularity_size);
-  if (lower_size == "xs" || lower_size == "extrasmall") {
-    return 10;
-  }
-  if (lower_size == "s" || lower_size == "small") {
-    return 75;
-  }
-  if (lower_size == "m" || lower_size == "medium") {
-    return 300;
-  }
-  if (lower_size == "l" || lower_size == "large") {
-    return 1000;
-  }
-  if (lower_size == "xl" || lower_size == "extralarge") {
-    return 3000;
-  }
-  throw std::invalid_argument("Invalid numerical granularity \"" +
-                              granularity_size +
-                              "\". Choose one of \"extrasmall\"/\"xs\", "
-                              "\"small\"/\"s\", \"medium\"/\"m\", "
-                              "\"large\"/\"l\", or \"extralarge\"/\"xl\".");
 }
 
 std::string getTimestampColumnName(const ColumnDataTypes& input_data_types) {

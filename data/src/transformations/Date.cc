@@ -13,6 +13,16 @@ static constexpr uint32_t WEEKS_IN_YEAR = 53;
 
 using dataset::TimeObject;
 
+uint32_t dayOfWeek(const TimeObject& time) {
+  return (time.secondsSinceEpoch() / TimeObject::SECONDS_IN_DAY) % 7;
+}
+
+uint32_t weekOfMonth(const TimeObject& time) {
+  return time.dayOfMonthZeroIndexed() / 7;
+}
+
+uint32_t weekOfYear(const TimeObject& time) { return time.dayOfYear() / 7; }
+
 Date::Date(std::string input_column_name, std::string output_column_name,
            std::string format)
     : _input_column_name(std::move(input_column_name)),
@@ -38,16 +48,15 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
     try {
       TimeObject time(dates->value(i), _format);
 
-      uint32_t day_of_week =
-          (time.secondsSinceEpoch() / TimeObject::SECONDS_IN_DAY) % 7;
+      uint32_t day_of_week = dayOfWeek(time);
 
       uint32_t month = time.month();
       month += DAYS_IN_WEEK;
 
-      uint32_t week_of_month = time.dayOfMonthZeroIndexed() / 7;
+      uint32_t week_of_month = weekOfMonth(time);
       week_of_month += DAYS_IN_WEEK + MONTHS_IN_YEAR;
 
-      uint32_t week_of_year = time.dayOfYear() / 7;
+      uint32_t week_of_year = weekOfYear(time);
       week_of_year += DAYS_IN_WEEK + MONTHS_IN_YEAR + WEEKS_IN_MONTH;
 
       date_attributes[i] = {day_of_week, month, week_of_month, week_of_year};
@@ -67,6 +76,39 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, output);
 
   return columns;
+}
+
+void Date::buildExplanationMap(const ColumnMap& input, State& state,
+                               ExplanationMap& explanation) const {
+  (void)state;
+
+  auto output = apply(input, state);
+
+  const auto& time_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+  TimeObject time(
+      input.getValueColumn<std::string>(_input_column_name)->value(0), _format);
+
+  auto date_attributes =
+      output.getArrayColumn<uint32_t>(_output_column_name)->row(0);
+
+  std::string origin = explanation.explain(_input_column_name, time_str);
+
+  explanation.store(_output_column_name, date_attributes[0],
+                    "day of the week = " + std::to_string(dayOfWeek(time)) +
+                        " from " + origin);
+
+  explanation.store(_output_column_name, date_attributes[1],
+                    "month of the year = " + std::to_string(time.month()) +
+                        " from " + origin);
+
+  explanation.store(_output_column_name, date_attributes[2],
+                    "week of the month = " + std::to_string(weekOfMonth(time)) +
+                        " from " + origin);
+
+  explanation.store(_output_column_name, date_attributes[3],
+                    "week of the year = " + std::to_string(weekOfYear(time)) +
+                        " from " + origin);
 }
 
 proto::data::Transformation* Date::toProto() const {

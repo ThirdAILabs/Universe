@@ -13,6 +13,9 @@ class Date final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanation) const final;
+
   proto::data::Transformation* toProto() const final;
 
  private:

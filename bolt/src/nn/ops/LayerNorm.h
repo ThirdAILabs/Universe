@@ -5,7 +5,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class LayerNorm final : public Op,
                         public std::enable_shared_from_this<LayerNorm> {
@@ -15,21 +15,17 @@ class LayerNorm final : public Op,
   static std::shared_ptr<LayerNorm> make(const float* gamma, const float* beta,
                                          size_t dim);
 
-  static std::shared_ptr<LayerNorm> fromProto(
-      const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto);
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
-
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
@@ -40,14 +36,17 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
+
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyUnary(const ComputationPtr& input);
+
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
-
-  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
-
-  autograd::ComputationPtr applyUnary(const autograd::ComputationPtr& input);
+  static std::shared_ptr<LayerNorm> fromProto(
+      const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto);
 
   const auto& gamma() const { return _gamma; }
 
@@ -84,4 +83,4 @@ class LayerNorm final : public Op,
 
 using LayerNormPtr = std::shared_ptr<LayerNorm>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

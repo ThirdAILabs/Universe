@@ -100,11 +100,7 @@ def main(**kwargs):
 
         for config in configs:
             if args.mlflow_uri and args.run_name:
-                mlflow_callback = MlflowCallback
-                if runner == UDTRunner or runner == TemporalRunner:
-                    mlflow_callback = MlflowCallbackV2
-
-                mlflow_logger = mlflow_callback(
+                mlflow_logger = MlflowCallback(
                     tracking_uri=args.mlflow_uri,
                     experiment_name=experiment_name(
                         config.config_name,

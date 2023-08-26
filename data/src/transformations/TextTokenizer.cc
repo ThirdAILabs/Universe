@@ -5,6 +5,7 @@
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <proto/tokenizers.pb.h>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::data {
 
@@ -85,6 +86,27 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
 
   columns.setColumn(_output_column, token_col);
   return columns;
+}
+
+void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
+                                        ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& text =
+      input.getValueColumn<std::string>(_input_column)->value(0);
+
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(text);
+  std::vector<uint32_t> indices = _encoder->encode(tokens);
+  dataset::token_encoding::mod(indices, _dim);
+
+  for (const auto& index : indices) {
+    uint32_t token = _encoder->undoEncoding(tokens, index, _dim);
+    auto word = _tokenizer->getResponsibleWord(text, token);
+
+    explanations.store(_output_column, index,
+                       "word '" + word + "' from " +
+                           explanations.explain(_input_column, text));
+  }
 }
 
 proto::data::Transformation* TextTokenizer::toProto() const {

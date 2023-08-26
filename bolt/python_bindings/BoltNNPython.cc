@@ -7,15 +7,17 @@
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/CosineSimilarity.h>
 #include <bolt/src/nn/ops/DlrmAttention.h>
+#include <bolt/src/nn/ops/DotProduct.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -30,7 +32,7 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::nn::python {
+namespace thirdai::bolt::python {
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
@@ -45,7 +47,7 @@ py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
 }
 
 template <typename T>
-py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
+py::object toNumpy(const TensorPtr& tensor, const T* data) {
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
     throw std::runtime_error(
@@ -63,6 +65,34 @@ py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
+TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
+                          const NumpyArray<float>& values, uint32_t last_dim) {
+  if (indices.ndim() != 2) {
+    throw std::invalid_argument("Expected indices to be 2D.");
+  }
+  if (values.ndim() != 2) {
+    throw std::invalid_argument("Expected values to be 2D.");
+  }
+
+  uint32_t batch_size = indices.shape(0);
+  uint32_t nonzeros = indices.shape(1);
+
+  return Tensor::fromArray(indices.data(), values.data(), batch_size, last_dim,
+                           nonzeros, /* with_grad= */ false);
+}
+
+TensorPtr fromNumpyDense(const NumpyArray<float>& values) {
+  if (values.ndim() != 2) {
+    throw std::invalid_argument("Expected values to be 2D.");
+  }
+
+  uint32_t batch_size = values.shape(0);
+  uint32_t dim = values.shape(1);
+
+  return Tensor::fromArray(nullptr, values.data(), batch_size, dim,
+                           /* nonzeros= */ dim, /* with_grad= */ false);
+}
+
 void defineTensor(py::module_& nn);
 
 void defineOps(py::module_& nn);
@@ -72,7 +102,7 @@ void defineLosses(py::module_& nn);
 void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
-  py::class_<model::Model, model::ModelPtr>(nn, "Model")
+  py::class_<Model, ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**
        * ==============================================================
@@ -81,50 +111,48 @@ void createBoltNNSubmodule(py::module_& module) {
        * summary, ops, __getitem__, etc. should remain hidden.
        * ==============================================================
        */
-      .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"),
-           py::arg("additional_labels") = autograd::ComputationList{})
-      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
+      .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
+           py::arg("losses"), py::arg("additional_labels") = ComputationList{})
+      .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",
-           py::overload_cast<const tensor::TensorList&, bool>(
-               &model::Model::forward),
+           py::overload_cast<const TensorList&, bool>(&Model::forward),
            py::arg("inputs"), py::arg("use_sparsity") = false)
-      .def("update_parameters", &model::Model::updateParameters,
+      .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
-      .def("ops", &model::Model::opExecutionOrder)
-      .def("__getitem__", &model::Model::getOp, py::arg("name"))
-      .def("outputs", &model::Model::outputs)
-      .def("labels", &model::Model::labels)
-      .def("summary", &model::Model::summary, py::arg("print") = true)
-      .def("get_parameters", &::thirdai::bolt::python::getParameters,
+      .def("ops", &Model::opExecutionOrder)
+      .def("__getitem__", &Model::getOp, py::arg("name"))
+      .def("outputs", &Model::outputs)
+      .def("labels", &Model::labels)
+      .def("summary", &Model::summary, py::arg("print") = true)
+      .def("num_params", &Model::numParams)
+      .def("thirdai_version", &Model::thirdaiVersion)
+      .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
-      .def("set_parameters", &::thirdai::bolt::python::setParameters,
-           py::arg("new_values"))
-      .def("train_steps", &model::Model::trainSteps)
-      .def("override_train_steps", &model::Model::overrideTrainSteps,
+      .def("set_parameters", &setParameters, py::arg("new_values"))
+      .def("train_steps", &Model::trainSteps)
+      .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.
       .def("disable_sparse_parameter_updates",
-           &model::Model::disableSparseParameterUpdates)
-      .def("get_gradients", &::thirdai::bolt::python::getGradients,
+           &Model::disableSparseParameterUpdates)
+      .def("get_gradients", &getGradients,
            py::return_value_policy::reference_internal)
-      .def("set_gradients", &::thirdai::bolt::python::setGradients,
-           py::arg("new_values"))
+      .def("set_gradients", &setGradients, py::arg("new_values"))
       .def("enable_sparse_parameter_updates",
-           &model::Model::enableSparseParameterUpdates)
-      .def("freeze_hash_tables", &model::Model::freezeHashTables,
+           &Model::enableSparseParameterUpdates)
+      .def("freeze_hash_tables", &Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
-      .def("unfreeze_hash_tables", &model::Model::unfreezeHashTables)
-      .def("save", &model::Model::save, py::arg("filename"),
+      .def("unfreeze_hash_tables", &Model::unfreezeHashTables)
+      .def("save", &Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
-      .def("checkpoint", &model::Model::checkpoint, py::arg("filename"),
+      .def("checkpoint", &Model::checkpoint, py::arg("filename"),
            py::arg("save_metadata") = true)
-      .def_static("load", &model::Model::load, py::arg("filename"))
-      .def(thirdai::bolt::python::getPickleFunction<model::Model>());
+      .def_static("load", &Model::load, py::arg("filename"))
+      .def(thirdai::bolt::python::getPickleFunction<Model>());
 
 #if THIRDAI_EXPOSE_ALL
   defineTensor(nn);
@@ -136,43 +164,49 @@ void createBoltNNSubmodule(py::module_& module) {
 }
 
 void defineTensor(py::module_& nn) {
-  py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
+  py::class_<Tensor, TensorPtr>(nn, "Tensor")
       .def(py::init([](BoltVector vector, uint32_t dim) {
-             return tensor::Tensor::convert(std::move(vector), dim);
+             return Tensor::convert(std::move(vector), dim);
            }),
            py::arg("vector"), py::arg("dim"))
+      .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
+           py::arg("dense_dim"))
+      .def(py::init(&fromNumpyDense), py::arg("values"))
+      .def("__getitem__", &Tensor::getVector)
+      .def("__len__", &Tensor::batchSize)
       .def_property_readonly(
           "active_neurons",
-          [](const tensor::TensorPtr& tensor) {
+          [](const TensorPtr& tensor) {
             return toNumpy(tensor, tensor->activeNeuronsPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "activations",
-          [](const tensor::TensorPtr& tensor) {
+          [](const TensorPtr& tensor) {
             return toNumpy(tensor, tensor->activationsPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "gradients",
-          [](const tensor::TensorPtr& tensor) {
+          [](const TensorPtr& tensor) {
             return toNumpy(tensor, tensor->gradientsPtr());
           },
           py::return_value_policy::reference_internal);
 }
 
 void defineOps(py::module_& nn) {
-  py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
-      .def("dim", &autograd::Computation::dim)
-      .def("tensor", &autograd::Computation::tensor)
-      .def("name", &autograd::Computation::name);
-
-  py::class_<ops::Op, ops::OpPtr>(nn, "Op")
-      .def("dim", &ops::Op::dim)
-      .def_property("name", &ops::Op::name, &ops::Op::setName);
-
 #if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
+#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
+
+  py::class_<Computation, ComputationPtr>(nn, "Computation")
+      .def("dim", &Computation::dim)
+      .def("tensor", &Computation::tensor)
+      .def("name", &Computation::name);
+
+  py::class_<Op, OpPtr>(nn, "Op")
+      .def("dim", &Op::dim)
+      .def_property("name", &Op::name, &Op::setName);
+
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn, "SamplingConfig");
 
@@ -204,30 +238,29 @@ void defineOps(py::module_& nn) {
            hashtable::SampledHashTable>());
 #endif
 
-  py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
-      nn, "FullyConnected")
-      .def(py::init(&ops::FullyConnected::make), py::arg("dim"),
+  py::class_<FullyConnected, FullyConnectedPtr, Op>(nn, "FullyConnected")
+      .def(py::init(&FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
            py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
-      .def("__call__", &ops::FullyConnected::applyUnary)
-      .def("dim", &ops::FullyConnected::dim)
-      .def("get_sparsity", &ops::FullyConnected::getSparsity)
-      .def("set_sparsity", &ops::FullyConnected::setSparsity,
-           py::arg("sparsity"), py::arg("rebuild_hash_tables") = true,
+      .def("__call__", &FullyConnected::applyUnary)
+      .def("dim", &FullyConnected::dim)
+      .def("get_sparsity", &FullyConnected::getSparsity)
+      .def("set_sparsity", &FullyConnected::setSparsity, py::arg("sparsity"),
+           py::arg("rebuild_hash_tables") = true,
            py::arg("experimental_autotune") = false)
       .def_property_readonly(
           "weights",
-          [](const ops::FullyConnected& op) {
+          [](const FullyConnected& op) {
             return toNumpy(op.weightsPtr(), {op.dim(), op.inputDim()});
           })
       .def_property_readonly("biases",
-                             [](const ops::FullyConnected& op) {
+                             [](const FullyConnected& op) {
                                return toNumpy(op.biasesPtr(), {op.dim()});
                              })
       .def("set_weights",
-           [](ops::FullyConnected& op, const NumpyArray<float>& weights) {
+           [](FullyConnected& op, const NumpyArray<float>& weights) {
              if (weights.ndim() != 2 || weights.shape(0) != op.dim() ||
                  weights.shape(1) != op.inputDim()) {
                std::stringstream error;
@@ -238,7 +271,7 @@ void defineOps(py::module_& nn) {
              op.setWeights(weights.data());
            })
       .def("set_biases",
-           [](ops::FullyConnected& op, const NumpyArray<float>& biases) {
+           [](FullyConnected& op, const NumpyArray<float>& biases) {
              if (biases.ndim() != 1 || biases.shape(0) != op.dim()) {
                std::stringstream error;
                error << "Expected biases to be 1D array with shape ("
@@ -247,36 +280,35 @@ void defineOps(py::module_& nn) {
              }
              op.setBiases(biases.data());
            })
-      .def("get_hash_table", &ops::FullyConnected::getHashTable)
-      .def("set_hash_table", &ops::FullyConnected::setHashTable,
-           py::arg("hash_fn"), py::arg("hash_table"));
+      .def("get_hash_table", &FullyConnected::getHashTable)
+      .def("set_hash_table", &FullyConnected::setHashTable, py::arg("hash_fn"),
+           py::arg("hash_table"));
 
-  py::class_<ops::RobeZ, ops::RobeZPtr, ops::Op>(nn, "RobeZ")
-      .def(py::init(&ops::RobeZ::make), py::arg("num_embedding_lookups"),
+  py::class_<RobeZ, RobeZPtr, Op>(nn, "RobeZ")
+      .def(py::init(&RobeZ::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
            py::arg("seed") = global_random::nextSeed())
-      .def("__call__", &ops::RobeZ::applyUnary)
-      .def("duplicate_with_new_reduction",
-           &ops::RobeZ::duplicateWithNewReduction, py::arg("reduction"),
-           py::arg("num_tokens_per_input"));
+      .def("__call__", &RobeZ::applyUnary)
+      .def("duplicate_with_new_reduction", &RobeZ::duplicateWithNewReduction,
+           py::arg("reduction"), py::arg("num_tokens_per_input"));
 
-  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
-      .def(py::init(&ops::Embedding::make), py::arg("dim"),
-           py::arg("input_dim"), py::arg("activation"), py::arg("bias") = true)
-      .def("__call__", &ops::Embedding::applyUnary)
+  py::class_<Embedding, EmbeddingPtr, Op>(nn, "Embedding")
+      .def(py::init(&Embedding::make), py::arg("dim"), py::arg("input_dim"),
+           py::arg("activation"), py::arg("bias") = true)
+      .def("__call__", &Embedding::applyUnary)
       .def_property_readonly(
           "weights",
-          [](const ops::EmbeddingPtr& op) {
+          [](const EmbeddingPtr& op) {
             return toNumpy(op->embeddingsPtr(), {op->inputDim(), op->dim()});
           })
       .def_property_readonly("biases",
-                             [](const ops::EmbeddingPtr& op) {
+                             [](const EmbeddingPtr& op) {
                                return toNumpy(op->biasesPtr(), {op->dim()});
                              })
       .def("set_weights",
-           [](ops::EmbeddingPtr& op, const NumpyArray<float>& weights) {
+           [](EmbeddingPtr& op, const NumpyArray<float>& weights) {
              if (weights.ndim() != 2 || weights.shape(0) != op->inputDim() ||
                  weights.shape(1) != op->dim()) {
                std::stringstream error;
@@ -286,57 +318,67 @@ void defineOps(py::module_& nn) {
              }
              op->setEmbeddings(weights.data());
            })
-      .def("set_biases",
-           [](ops::EmbeddingPtr& op, const NumpyArray<float>& biases) {
-             if (biases.ndim() != 1 || biases.shape(0) != op->dim()) {
-               std::stringstream error;
-               error << "Expected biases to be 1D array with shape ("
-                     << op->dim() << ",).";
-               throw std::invalid_argument(error.str());
-             }
-             op->setBiases(biases.data());
-           });
+      .def("set_biases", [](EmbeddingPtr& op, const NumpyArray<float>& biases) {
+        if (biases.ndim() != 1 || biases.shape(0) != op->dim()) {
+          std::stringstream error;
+          error << "Expected biases to be 1D array with shape (" << op->dim()
+                << ",).";
+          throw std::invalid_argument(error.str());
+        }
+        op->setBiases(biases.data());
+      });
 
-  py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
-      .def(py::init(&ops::Concatenate::make))
-      .def("__call__", &ops::Concatenate::apply);
+  py::class_<Concatenate, ConcatenatePtr, Op>(nn, "Concatenate")
+      .def(py::init(&Concatenate::make))
+      .def("__call__", &Concatenate::apply);
 
-  py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
-      .def(py::init(py::overload_cast<>(&ops::LayerNorm::make)))
-      .def("__call__", &ops::LayerNorm::applyUnary);
+  py::class_<LayerNorm, LayerNormPtr, Op>(nn, "LayerNorm")
+      .def(py::init(py::overload_cast<>(&LayerNorm::make)))
+      .def("__call__", &LayerNorm::applyUnary);
 
-  py::class_<ops::Tanh, ops::TanhPtr, ops::Op>(nn, "Tanh")
-      .def(py::init(&ops::Tanh::make))
-      .def("__call__", &ops::Tanh::applyUnary);
+  py::class_<Tanh, TanhPtr, Op>(nn, "Tanh")
+      .def(py::init(&Tanh::make))
+      .def("__call__", &Tanh::applyUnary);
 
-  py::class_<ops::DlrmAttention, ops::DlrmAttentionPtr, ops::Op>(
-      nn, "DlrmAttention")
-      .def(py::init(&ops::DlrmAttention::make))
-      .def("__call__", &ops::DlrmAttention::applyBinary);
+  py::class_<Relu, ReluPtr, Op>(nn, "Relu")
+      .def(py::init(&Relu::make))
+      .def("__call__", &Relu::applyUnary);
 
-  nn.def("Input", &ops::Input::make, py::arg("dim"));
+  py::class_<DotProduct, DotProductPtr, Op>(nn, "DotProduct")
+      .def(py::init<>(&DotProduct::make))
+      .def("__call__", &DotProduct::applyBinary);
+
+  py::class_<CosineSimilarity, CosineSimilarityPtr, Op>(nn, "CosineSimilarity")
+      .def(py::init<>(&CosineSimilarity::make))
+      .def("__call__", &CosineSimilarity::applyBinary);
+
+  py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
+      .def(py::init(&DlrmAttention::make))
+      .def("__call__", &DlrmAttention::applyBinary);
+
+  nn.def("Input", &Input::make, py::arg("dim"));
 }
 
 void defineLosses(py::module_& nn) {
   auto loss = nn.def_submodule("losses");
 
-  py::class_<loss::Loss, loss::LossPtr>(loss, "Loss");  // NOLINT
+  py::class_<Loss, LossPtr>(loss, "Loss");  // NOLINT
 
-  py::class_<loss::CategoricalCrossEntropy, loss::CategoricalCrossEntropyPtr,
-             loss::Loss>(loss, "CategoricalCrossEntropy")
-      .def(py::init(&loss::CategoricalCrossEntropy::make),
-           py::arg("activations"), py::arg("labels"));
-
-  py::class_<loss::BinaryCrossEntropy, loss::BinaryCrossEntropyPtr, loss::Loss>(
-      loss, "BinaryCrossEntropy")
-      .def(py::init(&loss::BinaryCrossEntropy::make), py::arg("activations"),
+  py::class_<CategoricalCrossEntropy, CategoricalCrossEntropyPtr, Loss>(
+      loss, "CategoricalCrossEntropy")
+      .def(py::init(&CategoricalCrossEntropy::make), py::arg("activations"),
            py::arg("labels"));
 
-  py::class_<loss::EuclideanContrastive, loss::EuclideanContrastivePtr,
-             loss::Loss>(loss, "EuclideanContrastive")
-      .def(py::init(&loss::EuclideanContrastive::make), py::arg("output_1"),
+  py::class_<BinaryCrossEntropy, BinaryCrossEntropyPtr, Loss>(
+      loss, "BinaryCrossEntropy")
+      .def(py::init(&BinaryCrossEntropy::make), py::arg("activations"),
+           py::arg("labels"));
+
+  py::class_<EuclideanContrastive, EuclideanContrastivePtr, Loss>(
+      loss, "EuclideanContrastive")
+      .def(py::init(&EuclideanContrastive::make), py::arg("output_1"),
            py::arg("output_2"), py::arg("labels"),
            py::arg("dissimilar_cutoff_distance"));
 }
 
-}  // namespace thirdai::bolt::nn::python
+}  // namespace thirdai::bolt::python

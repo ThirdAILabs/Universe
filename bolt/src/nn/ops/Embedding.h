@@ -6,7 +6,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class Embedding final : public Op,
                         public std::enable_shared_from_this<Embedding> {
@@ -23,23 +23,17 @@ class Embedding final : public Op,
         new Embedding(dim, input_dim, activation, bias));
   }
 
-  static auto fromProto(const std::string& name,
-                        const proto::bolt::Embedding& emb_proto) {
-    return std::shared_ptr<Embedding>(new Embedding(name, emb_proto));
-  }
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
-
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final { return _dim; }
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final {
     (void)inputs;
     (void)use_sparsity;
@@ -62,18 +56,23 @@ class Embedding final : public Op,
     return {&_embeddings, &_biases};
   }
 
-  proto::bolt::Op* toProto(bool with_optimizer) const final;
-
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final {
     _should_serialize_optimizer = should_serialize_optimizer;
   }
 
-  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) final;
+  ComputationPtr apply(const ComputationList& inputs) final;
 
-  autograd::ComputationPtr applyUnary(autograd::ComputationPtr input);
+  ComputationPtr applyUnary(ComputationPtr input);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  static auto fromProto(const std::string& name,
+                        const proto::bolt::Embedding& emb_proto) {
+    return std::shared_ptr<Embedding>(new Embedding(name, emb_proto));
+  }
 
   uint32_t inputDim() const { return _input_dim; }
 
@@ -93,7 +92,7 @@ class Embedding final : public Op,
     std::copy(biases, biases + _dim, _biases.begin());
   }
 
-  static auto cast(const ops::OpPtr& op) {
+  static auto cast(const OpPtr& op) {
     return std::dynamic_pointer_cast<Embedding>(op);
   }
 
@@ -139,4 +138,4 @@ class Embedding final : public Op,
 
 using EmbeddingPtr = std::shared_ptr<Embedding>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

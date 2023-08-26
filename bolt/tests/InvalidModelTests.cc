@@ -3,7 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 // NOLINTNEXTLINE (clang-tidy doesn't like #define)
 #define CHECK_MODEL_EXCEPTION(statement, msg)                 \
@@ -25,8 +25,8 @@ TEST(InvalidModelTests, OutputInLossWithDependentOps) {
   auto loss = MockLoss::make({comp_2, comp_3});
 
   CHECK_MODEL_EXCEPTION(
-      model::Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
-                         /* losses= */ {loss}),
+      Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
+                  /* losses= */ {loss}),
       "Computations used in loss functions must not be inputs to any further "
       "ops. Found computation that is used in a loss function and as an input "
       "to another computation.");
@@ -42,8 +42,8 @@ TEST(InvalidModelTests, AllOutputsUsedInLoss) {
   auto loss = MockLoss::make({comp_2});
 
   CHECK_MODEL_EXCEPTION(
-      model::Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
-                         /* losses= */ {loss}),
+      Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
+                  /* losses= */ {loss}),
       "Model contains an output that is not found in the computation graph "
       "created from traversing backward from the specified loss functions.");
 }
@@ -59,8 +59,8 @@ TEST(InvalidModelTests, OutputsCannotBeReusedInLosses) {
   auto loss_2 = MockLoss::make({comp_2, comp_3});
 
   CHECK_MODEL_EXCEPTION(
-      model::Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
-                         /* losses= */ {loss_1, loss_2}),
+      Model::make(/* inputs= */ {input}, /* outputs= */ {comp_2, comp_3},
+                  /* losses= */ {loss_1, loss_2}),
       "Two loss functions cannot be applied to the same computation.");
 }
 
@@ -72,9 +72,9 @@ TEST(InvalidModelTests, UnusedInput) {
 
   auto loss = MockLoss::make({comp_1});
 
-  CHECK_MODEL_EXCEPTION(model::Model::make(/* inputs= */ {input_1, input_2},
-                                           /* outputs= */ {comp_1},
-                                           /* losses= */ {loss}),
+  CHECK_MODEL_EXCEPTION(Model::make(/* inputs= */ {input_1, input_2},
+                                    /* outputs= */ {comp_1},
+                                    /* losses= */ {loss}),
                         "The input passed at index 1 was not used by any "
                         "computation in the model.");
 }
@@ -88,10 +88,10 @@ TEST(InvalidModelTests, MissingInput) {
   auto loss = MockLoss::make({comp_1});
 
   CHECK_MODEL_EXCEPTION(
-      model::Model::make(/* inputs= */ {input_1}, /* outputs= */ {comp_1},
-                         /* losses= */ {loss}),
+      Model::make(/* inputs= */ {input_1}, /* outputs= */ {comp_1},
+                  /* losses= */ {loss}),
       "Model computation depends on an input that is not present in the list "
       "of inputs to the model.");
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

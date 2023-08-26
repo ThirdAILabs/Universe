@@ -10,8 +10,8 @@ namespace thirdai::data {
 
 Loader::Loader(ColumnMapIterator data_iterator,
                TransformationPtr transformation, StatePtr state,
-               IndexValueColumnList model_input_columns,
-               IndexValueColumnList model_label_columns, size_t batch_size,
+               OutputColumnsList model_input_columns,
+               OutputColumnsList model_label_columns, size_t batch_size,
                bool shuffle, bool verbose, size_t shuffle_buffer_size,
                uint32_t shuffle_seed)
     : _data_iterator(std::move(data_iterator)),
@@ -33,7 +33,7 @@ Loader::Loader(ColumnMapIterator data_iterator,
   recordReturnedColumns(_model_label_columns);
 }
 
-std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
+std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
   logLoadStart();
   bolt::utils::Timer timer;
 
@@ -83,7 +83,7 @@ std::optional<bolt::train::LabeledDataset> Loader::next(size_t max_batches) {
   return std::make_pair(std::move(inputs), std::move(labels));
 }
 
-bolt::train::LabeledDataset Loader::all() {
+bolt::LabeledDataset Loader::all() {
   auto result = next(NO_LIMIT);
   if (!result) {
     throw std::invalid_argument("Could not load data from '" +
@@ -96,11 +96,11 @@ bolt::train::LabeledDataset Loader::all() {
 void Loader::restart() { _data_iterator.restart(); }
 
 void Loader::recordReturnedColumns(
-    const IndexValueColumnList& index_value_columns) {
-  for (const auto& [indices, values] : index_value_columns) {
-    _columns_returned.insert(indices);
-    if (values) {
-      _columns_returned.insert(*values);
+    const OutputColumnsList& index_value_columns) {
+  for (const auto& column : index_value_columns) {
+    _columns_returned.insert(column.indices());
+    if (column.values()) {
+      _columns_returned.insert(*column.values());
     }
   }
 }
@@ -148,7 +148,7 @@ void Loader::logLoadStart() const {
 #endif
 }
 
-void Loader::logLoadEnd(size_t vectors, size_t batches, int64_t time) const {
+void Loader::logLoadEnd(size_t vectors, size_t batches, double time) const {
 #if THIRDAI_EXPOSE_ALL
   if (_verbose) {
     std::cout << "loading data | source '" << _data_iterator.resourceName()

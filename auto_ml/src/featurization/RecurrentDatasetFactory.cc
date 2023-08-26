@@ -101,14 +101,14 @@ dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
       /* shuffle= */ shuffle, shuffle_config.value());
 }
 
-TensorList RecurrentDatasetFactory::featurizeInput(const MapInput& sample) {
+bolt::TensorList RecurrentDatasetFactory::featurizeInput(
+    const MapInput& sample) {
   dataset::MapSampleRef sample_ref(sample);
-  return bolt::train::convertVectors(
-      _inference_featurizer->featurize(sample_ref),
-      _inference_featurizer->getDimensions());
+  return bolt::convertVectors(_inference_featurizer->featurize(sample_ref),
+                              _inference_featurizer->getDimensions());
 }
 
-TensorList RecurrentDatasetFactory::featurizeInputBatch(
+bolt::TensorList RecurrentDatasetFactory::featurizeInputBatch(
     const MapInputBatch& samples) {
   dataset::MapBatchRef batch_ref(samples);
   auto batches = _inference_featurizer->featurize(batch_ref);
@@ -117,8 +117,8 @@ TensorList RecurrentDatasetFactory::featurizeInputBatch(
   // deleted for BoltBatch.
   std::vector<BoltBatch> batch_list;
   batch_list.emplace_back(std::move(batches.at(0)));
-  return bolt::train::convertBatch(std::move(batch_list),
-                                   _inference_featurizer->getDimensions());
+  return bolt::convertBatch(std::move(batch_list),
+                            _inference_featurizer->getDimensions());
 }
 
 uint32_t RecurrentDatasetFactory::elementIdAtStep(const BoltVector& output,

@@ -31,7 +31,12 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
   proto::data::Transformation* toProto() const final;
+
+  const auto& transformations() const { return _transformations; }
 
  private:
   std::vector<TransformationPtr> _transformations;

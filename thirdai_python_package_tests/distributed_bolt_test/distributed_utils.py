@@ -121,7 +121,7 @@ def copy_file_or_folder(source_path, destination_path):
         print(f"Permission denied while copying '{source_path}'.")
 
 
-def setup_ray():
+def setup_ray(num_workers=2):
     import ray
     import thirdai.distributed_bolt as dist
     from ray.air import ScalingConfig
@@ -140,9 +140,26 @@ def setup_ray():
         ignore_reinit_error=True,
     )
     scaling_config = ScalingConfig(
-        num_workers=2,
+        num_workers=num_workers,
         use_gpu=False,
         resources_per_worker={"CPU": num_cpu_per_node},
         placement_strategy="PACK",
     )
     return scaling_config
+
+
+def extract_metrics_from_file(filename):
+    import json
+
+    # Read the metrics dictionary from the JSON file
+    with open(filename, "r") as file:
+        data = json.load(file)
+    return data
+
+
+def write_metrics_to_file(filename, metrics):
+    import json
+
+    # Write the metrics dictionary to the file in JSON format
+    with open(filename, "w") as file:
+        json.dump(metrics, file)

@@ -7,8 +7,8 @@ import "optimizers.proto";
 
 enum EmbeddingReduction {
   CONCAT = 0;
-  SUM = 2;
-  AVG = 3;
+  SUM = 1;
+  AVG = 2;
 }
 
 message RobeZ {

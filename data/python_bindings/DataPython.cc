@@ -7,6 +7,7 @@
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
@@ -14,7 +15,6 @@
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
-#include <data/src/transformations/TabularHashedFeatures.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -67,7 +67,18 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   py::class_<ColumnMapIterator>(dataset_submodule, "ColumnMapIterator")
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"), py::arg("rows_per_load") = 10000);
+           py::arg("delimiter"), py::arg("rows_per_load") = 1000000);
+
+  py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
+      .value("Ones", ValueFillType::Ones)
+      .value("SumToOne", ValueFillType::SumToOne)
+      .export_values();
+
+  py::class_<OutputColumns>(dataset_submodule, "OutputColumns")
+      .def(py::init<std::string, std::string>(), py::arg("indices"),
+           py::arg("values"))
+      .def(py::init<std::string, ValueFillType>(), py::arg("indices"),
+           py::arg("value_fill_type") = ValueFillType::Ones);
 
   py::class_<Loader, LoaderPtr>(dataset_submodule, "Loader")
       .def(py::init(&Loader::make), py::arg("data_iterator"),
@@ -140,12 +151,8 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
   py::class_<Column, ColumnPtr>(columns_submodule, "Column")
-      .def("dimension", &Column::dimension)
+      .def("dim", &Column::dim)
       .def("__len__", &Column::numRows);
-
-  py::class_<ColumnDimension>(columns_submodule, "Dimension")
-      .def_readonly("dim", &ColumnDimension::dim)
-      .def_readonly("is_dense", &ColumnDimension::is_dense);
 
   py::class_<ValueColumn<uint32_t>, Column, ValueColumnPtr<uint32_t>>(
       columns_submodule, "TokenColumn")
@@ -287,16 +294,17 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
       transformations_submodule, "StringHash")
       .def(py::init<std::string, std::string, std::optional<uint32_t>,
-                    uint32_t>(),
+                    std::optional<char>, uint32_t>(),
            py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
+           py::arg("output_range") = std::nullopt,
+           py::arg("delimiter") = std::nullopt, py::arg("seed") = 42);
 
-  py::class_<TabularHashedFeatures, Transformation,
-             std::shared_ptr<TabularHashedFeatures>>(transformations_submodule,
-                                                     "TabularHashedFeatures")
-      .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
+  py::class_<CrossColumnPairgrams, Transformation,
+             std::shared_ptr<CrossColumnPairgrams>>(transformations_submodule,
+                                                    "CrossColumnPairgrams")
+      .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
            py::arg("input_columns"), py::arg("output_column"),
-           py::arg("output_range"), py::arg("use_pairgrams") = false);
+           py::arg("hash_range") = std::numeric_limits<size_t>::max());
 
   py::class_<FeatureHash, Transformation, std::shared_ptr<FeatureHash>>(
       transformations_submodule, "FeatureHash")

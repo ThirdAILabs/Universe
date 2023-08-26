@@ -5,11 +5,13 @@
 #include <data/src/columns/Column.h>
 #include <dataset/src/Datasets.h>
 #include <utils/Random.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::data {
 
@@ -47,6 +49,11 @@ class ColumnMap {
    * Shuffles the ColumnMap in place.
    */
   void shuffle(uint32_t seed = global_random::nextSeed());
+
+  /**
+   * Creates a new column map whose rows are permuted in the given order
+   */
+  ColumnMap permute(const std::vector<size_t>& permutation) const;
 
   /**
    * Concatenates with another ColumnMap, returning the result. This will

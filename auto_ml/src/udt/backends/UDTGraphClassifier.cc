@@ -39,7 +39,7 @@ py::object UDTGraphClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm) {
   auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
       data, /* shuffle = */ true, /* shuffle_config= */ options.shuffle_config);
 
@@ -89,43 +89,42 @@ ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
                                        uint32_t output_dim) {
   assert(input_dims.size() == 2);
 
-  auto node_features_input = bolt::nn::ops::Input::make(input_dims.at(0));
-  auto neighbor_token_input = bolt::nn::ops::Input::make(input_dims.at(1));
+  auto node_features_input = bolt::Input::make(input_dims.at(0));
+  auto neighbor_token_input = bolt::Input::make(input_dims.at(1));
 
   auto embedding_1 =
-      bolt::nn::ops::RobeZ::make(
+      bolt::RobeZ::make(
           /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
           /* log_embedding_block_size = */ 20, /* reduction = */ "average")
           ->applyUnary(neighbor_token_input);
 
   auto hidden_1 =
-      bolt::nn::ops::FullyConnected::make(
+      bolt::FullyConnected::make(
           /* dim = */ 256,
           /* input_dim= */ node_features_input->dim(), /* sparsity = */ 1.0,
           /* activation = */ "relu")
           ->applyUnary(node_features_input);
 
-  auto concat_node =
-      bolt::nn::ops::Concatenate::make()->apply({hidden_1, embedding_1});
+  auto concat_node = bolt::Concatenate::make()->apply({hidden_1, embedding_1});
 
   auto hidden_3 =
-      bolt::nn::ops::FullyConnected::make(
+      bolt::FullyConnected::make(
           /* dim = */ 256, /* input_dim= */ concat_node->dim(),
           /* sparsity = */ 0.5, /* activation = */ "relu",
           /* sampling = */ std::make_shared<bolt::RandomSamplingConfig>())
           ->applyUnary(concat_node);
 
-  auto output = bolt::nn::ops::FullyConnected::make(
+  auto output = bolt::FullyConnected::make(
                     /* dim = */ output_dim, /* input_dim= */ hidden_3->dim(),
                     /* sparsity = */ 1, /* activation =*/"softmax")
                     ->applyUnary(hidden_3);
 
-  auto labels = bolt::nn::ops::Input::make(output_dim);
+  auto labels = bolt::Input::make(output_dim);
 
-  auto loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+  auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
 
-  auto model = bolt::nn::model::Model::make(
-      {node_features_input, neighbor_token_input}, {output}, {loss});
+  auto model = bolt::Model::make({node_features_input, neighbor_token_input},
+                                 {output}, {loss});
 
   return model;
 }

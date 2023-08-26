@@ -4,7 +4,7 @@
 #include <pybind11/pytypes.h>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::python {
+namespace thirdai::bolt::python {
 
 template <typename T>
 py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
@@ -28,7 +28,7 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
       {rows, cols}, data_copy, free_when_done);
 }
 
-void can_convert_tensor_to_numpy(const tensor::TensorPtr& tensor) {
+void can_convert_tensor_to_numpy(const TensorPtr& tensor) {
   auto nonzeros = tensor->nonzeros();
   if (!nonzeros) {
     throw std::runtime_error(
@@ -41,8 +41,7 @@ void can_convert_tensor_to_numpy(const tensor::TensorPtr& tensor) {
   }
 }
 
-py::object tensorToNumpy(const tensor::TensorPtr& tensor,
-                         bool single_row_to_vector) {
+py::object tensorToNumpy(const TensorPtr& tensor, bool single_row_to_vector) {
   auto nonzeros = tensor->nonzeros();
 
   can_convert_tensor_to_numpy(tensor);
@@ -64,8 +63,8 @@ py::object tensorToNumpy(const tensor::TensorPtr& tensor,
   return std::move(activations);
 }
 
-py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
-                             bool single_row_to_vector, uint32_t top_k) {
+py::object tensorToNumpyTopK(const TensorPtr& tensor, bool single_row_to_vector,
+                             uint32_t top_k) {
   can_convert_tensor_to_numpy(tensor);
 
   std::pair<std::vector<uint32_t>, std::vector<float> > topkIdxValuePair =
@@ -83,4 +82,4 @@ py::object tensorToNumpyTopK(const tensor::TensorPtr& tensor,
       py::make_tuple(std::move(active_neurons), std::move(activations)));
 }
 
-}  // namespace thirdai::bolt::nn::python
+}  // namespace thirdai::bolt::python
