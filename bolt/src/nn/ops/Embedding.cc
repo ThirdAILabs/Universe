@@ -179,6 +179,8 @@ inline float adam(float momentum, float velocity, float learning_rate,
 }
 
 void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
+  if (!trainable)
+    return;
   if (_disable_sparse_parameter_updates) {
     _embedding_optimizer->applyUpdate(_embeddings, learning_rate, train_steps);
   } else {

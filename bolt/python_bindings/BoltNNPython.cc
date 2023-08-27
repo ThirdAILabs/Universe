@@ -205,6 +205,9 @@ void defineOps(py::module_& nn) {
 
   py::class_<Op, OpPtr>(nn, "Op")
       .def("dim", &Op::dim)
+      .def("set_trainable", &Op::set_trainable, py::arg("trainable"))
+      .def("is_trainable", &Op::is_trainable)
+      .def_property("trainable", &Op::is_trainable, &Op::set_trainable)
       .def_property("name", &Op::name, &Op::setName);
 
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT

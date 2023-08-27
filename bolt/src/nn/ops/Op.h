@@ -27,7 +27,7 @@ class Model;
  */
 class Op {
  public:
-  explicit Op(std::string name) : _name(std::move(name)) {}
+  explicit Op(std::string name) :  trainable(true), _name(std::move(name)){}
 
   /**
    * Computes the forward computation of the op. This should use the inputs in
@@ -137,7 +137,17 @@ class Op {
 
   void setName(std::string name) { _name = std::move(name); }
 
+  void set_trainable(bool flag){
+    trainable = flag;
+  }
+
+  bool is_trainable(){
+    return trainable;
+  }
+
   virtual ~Op() = default;
+
+  bool trainable;
 
  protected:
   Op() : Op("unnamed-op") {}
