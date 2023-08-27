@@ -4,12 +4,19 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/rca/ExplanationMap.h>
+#include <proto/sequence.pb.h>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
 namespace thirdai::data {
+
+HashPositionTransform::HashPositionTransform(
+    const proto::data::HashedPositionEncoding& hash_position)
+    : _input_column(hash_position.input_column()),
+      _output_column(hash_position.output_column()),
+      _dim(hash_position.dim()) {}
 
 ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -53,6 +60,23 @@ void HashPositionTransform::buildExplanationMap(
                           explanations);
 }
 
+proto::data::Transformation* HashPositionTransform::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* hash_position = transformation->mutable_hashed_position_encoding();
+
+  hash_position->set_input_column(_input_column);
+  hash_position->set_output_column(_output_column);
+  hash_position->set_dim(_dim);
+
+  return transformation;
+}
+
+OffsetPositionTransform::OffsetPositionTransform(
+    const proto::data::OffsetPositionEncoding& offset_position)
+    : _input_column(offset_position.input_column()),
+      _output_column(offset_position.output_column()),
+      _max_num_tokens(offset_position.max_tokens()) {}
+
 ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
                                          State& state) const {
   (void)state;
@@ -89,6 +113,17 @@ void OffsetPositionTransform::buildExplanationMap(
 
   explainEncodedPositions(input, output, _input_column, _output_column,
                           explanations);
+}
+
+proto::data::Transformation* OffsetPositionTransform::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* hash_position = transformation->mutable_offset_position_encoding();
+
+  hash_position->set_input_column(_input_column);
+  hash_position->set_output_column(_output_column);
+  hash_position->set_max_tokens(_max_num_tokens);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

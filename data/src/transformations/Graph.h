@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/graph.pb.h>
 
 namespace thirdai::data {
 
@@ -8,6 +9,8 @@ class GraphBuilder final : public Transformation {
  public:
   GraphBuilder(std::string node_id_column, std::string neighbors_column,
                std::vector<std::string> feature_columns);
+
+  explicit GraphBuilder(const proto::data::GraphBuilder& graph_builder);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -23,6 +26,8 @@ class NeighborIds final : public Transformation {
  public:
   NeighborIds(std::string node_id_column, std::string output_neighbors_column);
 
+  explicit NeighborIds(const proto::data::NeighborIds& nbr_ids);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;
@@ -36,6 +41,8 @@ class NeighborFeatures final : public Transformation {
  public:
   NeighborFeatures(std::string node_id_column,
                    std::string output_feature_column);
+
+  explicit NeighborFeatures(const proto::data::NeighborFeatures& nbr_features);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

@@ -2,6 +2,7 @@
 
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
+#include <proto/recurrence.pb.h>
 #include <algorithm>
 #include <cstddef>
 #include <optional>
@@ -45,6 +46,8 @@ class Recurrence final : public Transformation {
         _target_output_column(std::move(target_output_column)),
         _target_vocab_size(target_vocab_size),
         _max_seq_len(max_sequence_length) {}
+
+  explicit Recurrence(const proto::data::RecurrenceAugmentation& recurrence);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

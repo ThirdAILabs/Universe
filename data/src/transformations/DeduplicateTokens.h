@@ -28,6 +28,9 @@ class DeduplicateTokens final : public Transformation {
         _output_indices_column(std::move(output_indices_column)),
         _output_values_column(std::move(output_values_column)) {}
 
+  explicit DeduplicateTokens(
+      const proto::data::DeduplicateTokens& deduplicate_tokens);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   proto::data::Transformation* toProto() const final;

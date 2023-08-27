@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/binning.pb.h>
 
 namespace thirdai::data {
 
@@ -18,6 +19,8 @@ class RegressionBinning final : public Transformation {
   RegressionBinning(std::string input_column, std::string output_column,
                     float min, float max, size_t num_bins,
                     uint32_t correct_label_radius);
+
+  explicit RegressionBinning(const proto::data::RegressionBinning& regression);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

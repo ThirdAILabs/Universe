@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/sequence.pb.h>
 #include <cstddef>
 #include <string>
 
@@ -20,6 +21,9 @@ class HashPositionTransform final : public Transformation {
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
         _dim(hash_range) {}
+
+  explicit HashPositionTransform(
+      const proto::data::HashedPositionEncoding& hash_position);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -53,6 +57,9 @@ class OffsetPositionTransform final : public Transformation {
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
         _max_num_tokens(max_num_tokens) {}
+
+  explicit OffsetPositionTransform(
+      const proto::data::OffsetPositionEncoding& offset_position);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

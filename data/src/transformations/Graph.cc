@@ -1,6 +1,8 @@
 #include "Graph.h"
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <proto/graph.pb.h>
+#include <proto/transformations.pb.h>
 #include <limits>
 #include <numeric>
 #include <stdexcept>
@@ -14,6 +16,12 @@ GraphBuilder::GraphBuilder(std::string node_id_column,
     : _node_id_column(std::move(node_id_column)),
       _neighbors_column(std::move(neighbors_column)),
       _feature_columns(std::move(feature_columns)) {}
+
+GraphBuilder::GraphBuilder(const proto::data::GraphBuilder& graph_builder)
+    : _node_id_column(graph_builder.node_id_column()),
+      _neighbors_column(graph_builder.neighbors_column()),
+      _feature_columns(graph_builder.feature_columns().begin(),
+                       graph_builder.feature_columns().end()) {}
 
 ColumnMap GraphBuilder::apply(ColumnMap columns, State& state) const {
   std::vector<ValueColumnBasePtr<float>> features;
@@ -53,10 +61,26 @@ ColumnMap GraphBuilder::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* GraphBuilder::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* graph_builder = transformation->mutable_graph_builder();
+
+  graph_builder->set_node_id_column(_node_id_column);
+  graph_builder->set_neighbors_column(_neighbors_column);
+  *graph_builder->mutable_feature_columns() = {_feature_columns.begin(),
+                                               _feature_columns.end()};
+
+  return transformation;
+}
+
 NeighborIds::NeighborIds(std::string node_id_column,
                          std::string output_neighbors_column)
     : _node_id_column(std::move(node_id_column)),
       _output_neighbors_column(std::move(output_neighbors_column)) {}
+
+NeighborIds::NeighborIds(const proto::data::NeighborIds& nbr_ids)
+    : _node_id_column(nbr_ids.node_id_column()),
+      _output_neighbors_column(nbr_ids.output_column()) {}
 
 ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
   auto node_ids = columns.getValueColumn<uint32_t>(_node_id_column);
@@ -79,10 +103,25 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+proto::data::Transformation* NeighborIds::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* neighbor_ids = transformation->mutable_neighbor_ids();
+
+  neighbor_ids->set_node_id_column(_node_id_column);
+  neighbor_ids->set_output_column(_output_neighbors_column);
+
+  return transformation;
+}
+
 NeighborFeatures::NeighborFeatures(std::string node_id_column,
                                    std::string output_feature_column)
     : _node_id_column(std::move(node_id_column)),
       _output_features_column(std::move(output_feature_column)) {}
+
+NeighborFeatures::NeighborFeatures(
+    const proto::data::NeighborFeatures& nbr_features)
+    : _node_id_column(nbr_features.node_id_column()),
+      _output_features_column(nbr_features.output_column()) {}
 
 ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
   auto node_ids = columns.getValueColumn<uint32_t>(_node_id_column);
@@ -119,6 +158,16 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_features_column, features_col);
 
   return columns;
+}
+
+proto::data::Transformation* NeighborFeatures::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* neighbor_features = transformation->mutable_neighbor_features();
+
+  neighbor_features->set_node_id_column(_node_id_column);
+  neighbor_features->set_output_column(_output_features_column);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

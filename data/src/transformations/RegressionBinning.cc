@@ -1,5 +1,6 @@
 #include "RegressionBinning.h"
 #include <data/src/columns/ArrayColumns.h>
+#include <proto/transformations.pb.h>
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
@@ -21,6 +22,16 @@ RegressionBinning::RegressionBinning(std::string input_column,
     throw std::invalid_argument("min must be < max in RegressionBinning.");
   }
 }
+
+RegressionBinning::RegressionBinning(
+    const proto::data::RegressionBinning& regression)
+    : _input_column(regression.input_column()),
+      _output_column(regression.output_column()),
+      _min(regression.min()),
+      _max(regression.max()),
+      _binsize(regression.binsize()),
+      _num_bins(regression.num_bins()),
+      _correct_label_radius(regression.correct_label_radius()) {}
 
 ColumnMap RegressionBinning::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -55,6 +66,21 @@ uint32_t RegressionBinning::bin(float x) const {
   bin = std::min<uint32_t>(bin, _num_bins - 1);
 
   return bin;
+}
+
+proto::data::Transformation* RegressionBinning::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* regression = transformation->mutable_regression_binning();
+
+  regression->set_input_column(_input_column);
+  regression->set_output_column(_output_column);
+  regression->set_min(_min);
+  regression->set_max(_max);
+  regression->set_binsize(_binsize);
+  regression->set_num_bins(_num_bins);
+  regression->set_correct_label_radius(_correct_label_radius);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
