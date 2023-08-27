@@ -17,7 +17,7 @@ def train_model(trainer, data):
     )
 
 
-def test_freeze_layers():
+def test_non_trainable_layer():
     n_classes = 100
 
     input_layer = bolt.nn.Input(dim=n_classes)
