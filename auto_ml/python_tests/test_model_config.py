@@ -214,6 +214,44 @@ def test_udt_model_config_override():
 
 
 @pytest.mark.unit
+def test_model_config_output_dim_mismatch():
+    from thirdai import deployment
+
+    config = {
+        "inputs": ["input"],
+        "nodes": [
+            {
+                "name": "fc",
+                "type": "fully_connected",
+                "dim": 10,
+                "sparsity": 1.0,
+                "activation": "softmax",
+                "predecessor": "input",
+            },
+        ],
+        "output": "fc",
+        "loss": "CategoricalCrossEntropyLoss",
+    }
+
+    BAD_CONFIG_FILE = "./model_config"
+
+    deployment.dump_config(json.dumps(config), BAD_CONFIG_FILE)
+
+    with pytest.raises(
+        ValueError,
+        match="Expected model with output dim 40, but the model config yielded a model with output dim 10.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={"col": bolt.types.categorical()},
+            target="col",
+            n_target_classes=40,
+            model_config=BAD_CONFIG_FILE,
+        )
+
+    os.remove(BAD_CONFIG_FILE)
+
+
+@pytest.mark.unit
 def test_config_dump_load():
     from thirdai import deployment
 
