@@ -54,24 +54,24 @@ class TemporalRunner(Runner):
                         )
 
         # indexing train file so that train data user history is used for predictions
-        train_data = pd.read_csv(
-            train_file, low_memory=False, delimiter=config.delimiter
-        )
-        for _, row in train_data.iterrows():
-            sample = dict(row)
-            sample = {x: str(y) for x, y in sample.items()}
-            model.index(sample)
-        del train_data
+        # train_data = pd.read_csv(
+        #     train_file, low_memory=False, delimiter=config.delimiter
+        # )
+        # for _, row in train_data.iterrows():
+        #     sample = dict(row)
+        #     sample = {x: str(y) for x, y in sample.items()}
+        #     model.index(sample)
+        # del train_data
 
-        average_predict_time_ms = cls.get_average_predict_time(
-            model, test_file, config, path_prefix, num_samples=1000
-        )
+        # average_predict_time_ms = cls.get_average_predict_time(
+        #     model, test_file, config, path_prefix, num_samples=1000
+        # )
 
-        print(f"average_predict_time_ms = {average_predict_time_ms}ms")
-        if mlflow_logger:
-            mlflow_logger.log_additional_metric(
-                key="average_predict_time_ms", value=average_predict_time_ms
-            )
+        # print(f"average_predict_time_ms = {average_predict_time_ms}ms")
+        # if mlflow_logger:
+        #     mlflow_logger.log_additional_metric(
+        #         key="average_predict_time_ms", value=average_predict_time_ms
+        #     )
 
     @staticmethod
     def get_average_predict_time(
