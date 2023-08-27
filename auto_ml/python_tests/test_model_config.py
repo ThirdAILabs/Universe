@@ -233,7 +233,7 @@ def test_model_config_output_dim_mismatch():
         "loss": "CategoricalCrossEntropyLoss",
     }
 
-    BAD_CONFIG_FILE = "./model_config"
+    BAD_CONFIG_FILE = "./bad_model_config"
 
     deployment.dump_config(json.dumps(config), BAD_CONFIG_FILE)
 
