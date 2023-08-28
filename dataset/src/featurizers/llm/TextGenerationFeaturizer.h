@@ -64,9 +64,11 @@ using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
-                           uint32_t vocab_size, bool include_position = false)
+                           uint32_t vocab_size, bool include_position = false,
+                           bool featurize_in_chunks = true)
       : _context_featurizer(lrc_len, irc_len, src_len, vocab_size,
-                            include_position) {
+                            include_position),
+        _featurize_in_chunks(featurize_in_chunks) {
     if (irc_len > lrc_len || src_len > lrc_len) {
       throw std::invalid_argument("LRC size should be at least IRC/SRC size.");
     }
@@ -116,18 +118,23 @@ class TextGenerationFeaturizer final : public Featurizer {
    * Helper function to featurize a single line from the text dataset and
    * returns the created input samples and labels.
    */
-  std::vector<std::vector<BoltVector>> featurizeText(
+  std::vector<std::vector<BoltVector>> featurizeTextChunks(
+      const std::string& line) const;
+
+  std::vector<std::vector<BoltVector>> featurizeTextSlidingWindow(
       const std::string& line) const;
 
   /**
    * Returns the context tokens (the concatenation of the context and target) as
    * well as the index to start predicting from.
    */
-  static std::vector<uint32_t> getAllTokens(const json& line_content);
+  static std::pair<std::vector<uint32_t>, size_t> getAllTokens(
+      const json& line_content, bool with_context);
 
   static std::vector<uint32_t> getPrompt(const json& line_content);
 
   TextContextFeaturizer _context_featurizer;
+  bool _featurize_in_chunks;
 };
 
 }  // namespace thirdai::dataset

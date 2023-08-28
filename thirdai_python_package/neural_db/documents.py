@@ -163,6 +163,7 @@ class DocumentDataSource(PyDataSource):
                 self.weak_column: [weak],
             }
         )
+
         return df.to_csv(header=None, index=None).strip("\n")
 
     def _get_line_iterator(self):
@@ -295,9 +296,14 @@ class CSV(Document):
         if strong_columns == None and weak_columns == None:
             # autotune column types
             text_col_names = []
-            for col_name, udt_col_type in get_udt_col_types(path).items():
-                if type(udt_col_type) == type(bolt.types.text()):
-                    text_col_names.append(col_name)
+            try:
+                for col_name, udt_col_type in get_udt_col_types(path).items():
+                    if type(udt_col_type) == type(bolt.types.text()):
+                        text_col_names.append(col_name)
+            except:
+                text_col_names = list(self.df.columns)
+                text_col_names.remove(id_column)
+                self.df[text_col_names] = self.df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
         elif strong_columns == None:
@@ -356,8 +362,13 @@ class CSV(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
+
         return " ".join(
-            [row[col] for col in self.reference_columns for _, row in rows.iterrows()]
+            [
+                str(row[col])
+                for col in self.reference_columns
+                for _, row in rows.iterrows()
+            ]
         )
 
     def __getstate__(self):
@@ -397,10 +408,12 @@ class CSV(Document):
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True):
-        self.path = Path(path)
+        path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
         self._save_extra_info = save_extra_info
+
+        self.path = Path(path)
 
     def process_data(
         self,
@@ -450,12 +463,21 @@ class Extracted(Document):
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
-        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        # Remove filename attribute because this is a deprecated attribute for Extracted
         if "filename" in state:
             del state["filename"]
+
+        # In older versions of neural_db, we accidentally stored Path objects in the df.
+        # This changes those objects to a string, because PosixPath can't be loaded in Windows
+        def path_to_str(element):
+            if isinstance(element, Path):
+                return element.name
+            return element
+
+        state["df"] = state["df"].applymap(path_to_str)
+
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
 
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name

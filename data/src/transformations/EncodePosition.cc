@@ -1,4 +1,7 @@
 #include "EncodePosition.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <hashing/src/HashUtils.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -15,7 +18,8 @@ ColumnMap HashPositionTransform::apply(ColumnMap columns, State& state) const {
   (void)state;
   auto input_column = columns.getArrayColumn<uint32_t>(_input_column);
   std::vector<std::vector<uint32_t>> hashed_tokens(input_column->numRows());
-#pragma omp parallel for default(none) shared(input_column, hashed_tokens)
+#pragma omp parallel for default(none) \
+    shared(input_column, hashed_tokens) if (columns.numRows() > 1)
   for (uint32_t i = 0; i < input_column->numRows(); i++) {
     hashed_tokens[i].reserve(input_column->row(i).size());
     uint32_t pos = 0;
@@ -51,6 +55,15 @@ void HashPositionTransform::buildExplanationMap(
 
   explainEncodedPositions(input, output, _input_column, _output_column,
                           explanations);
+}
+
+template void HashPositionTransform::serialize(cereal::BinaryInputArchive&);
+template void HashPositionTransform::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void HashPositionTransform::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _dim);
 }
 
 ColumnMap OffsetPositionTransform::apply(ColumnMap columns,
@@ -91,4 +104,16 @@ void OffsetPositionTransform::buildExplanationMap(
                           explanations);
 }
 
+template void OffsetPositionTransform::serialize(cereal::BinaryInputArchive&);
+template void OffsetPositionTransform::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void OffsetPositionTransform::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _max_num_tokens);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::HashPositionTransform)
+CEREAL_REGISTER_TYPE(thirdai::data::OffsetPositionTransform)
