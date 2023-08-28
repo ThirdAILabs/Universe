@@ -63,15 +63,15 @@ class TemporalRunner(Runner):
         #     model.index(sample)
         # del train_data
 
-        # average_predict_time_ms = cls.get_average_predict_time(
-        #     model, test_file, config, path_prefix, num_samples=1000
-        # )
+        average_predict_time_ms = cls.get_average_predict_time(
+            model, test_file, config, path_prefix, num_samples=1000
+        )
 
-        # print(f"average_predict_time_ms = {average_predict_time_ms}ms")
-        # if mlflow_logger:
-        #     mlflow_logger.log_additional_metric(
-        #         key="average_predict_time_ms", value=average_predict_time_ms
-        #     )
+        print(f"average_predict_time_ms = {average_predict_time_ms}ms")
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(
+                key="average_predict_time_ms", value=average_predict_time_ms
+            )
 
     @staticmethod
     def get_average_predict_time(
