@@ -135,7 +135,7 @@ class UDT {
    * Returns some embedding representation for the given sample. Optional method
    * that is not supported by default for backends.
    */
-  py::object embedding(const MapInput& sample) {
+  py::object embedding(const MapInputBatch& sample) {
     return _backend->embedding(sample);
   }
 
