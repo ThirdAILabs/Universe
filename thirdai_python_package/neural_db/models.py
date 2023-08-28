@@ -405,12 +405,7 @@ class Mach(Model):
         return predictions
 
     def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
-        query_col = self.get_query_col()
-
-        return [
-            ({query_col: clean_text(source)}, {query_col: clean_text(target)})
-            for source, target in pairs
-        ]
+        return [(clean_text(source), clean_text(target)) for source, target in pairs]
 
     def associate(
         self,
@@ -438,9 +433,7 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        query_col = self.get_query_col()
-        query_col = self.get_query_col()
-        samples = [({query_col: clean_text(text)}, label) for text, label in pairs]
+        samples = [(clean_text(text), label) for text, label in pairs]
 
         self.model.upvote(
             source_target_samples=samples,

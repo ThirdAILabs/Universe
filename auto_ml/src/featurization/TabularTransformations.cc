@@ -25,12 +25,6 @@ namespace thirdai::automl {
 using TransformSeries =
     std::pair<std::vector<thirdai::data::TransformationPtr>, std::string>;
 
-// This represents the transformations and outputs for a set of columns in the
-// input.
-using MergedTransformSeries =
-    std::pair<std::vector<thirdai::data::TransformationPtr>,
-              std::vector<std::string>>;
-
 TransformSeries text(const std::string& column_name,
                      const data::TextDataTypePtr& text,
                      size_t dim = std::numeric_limits<uint32_t>::max()) {
@@ -268,17 +262,19 @@ MergedTransformSeries temporalTransformations(
 
       // This is just an additional check to ensure that we don't leak labels if
       // the tracked column is the labels.
+      bool tracking_labels = categorical_temporal.column_name == label_column;
       bool include_current_row =
-          categorical_temporal.include_current_row &&
-          (categorical_temporal.column_name != label_column);
+          categorical_temporal.include_current_row && !tracking_labels;
 
       std::string item_column =
           temporalItemIdsOutput(categorical_temporal.column_name);
 
-      auto item_hash = std::make_shared<thirdai::data::StringHash>(
-          categorical_temporal.column_name, item_column,
-          tracked_column->delimiter);
-      transformations.push_back(item_hash);
+      if (should_update_history || !tracking_labels) {
+        auto item_hash = std::make_shared<thirdai::data::StringHash>(
+            categorical_temporal.column_name, item_column,
+            tracked_column->delimiter);
+        transformations.push_back(item_hash);
+      }
 
       std::string output = temporalTrackingOutput(temporal_id++);
 
@@ -377,6 +373,21 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   return {t_list,
           {thirdai::data::OutputColumns(FEATURE_HASH_INDICES,
                                         FEATURE_HASH_VALUES)}};
+}
+
+MergedTransformSeries nonTemporalTransformations(
+    data::ColumnDataTypes data_types, const std::string& label_column,
+    const data::TabularOptions& options) {
+  if (!data_types.count(label_column)) {
+    throw std::invalid_argument(
+        "Target column was not specified in data_types.");
+  }
+
+  checkNoReservedColumnNames(data_types);
+
+  data_types.erase(label_column);
+
+  return nonTemporalTransformations(data_types, options);
 }
 
 }  // namespace thirdai::automl
