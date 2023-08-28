@@ -1,7 +1,4 @@
 #include "FeatureHash.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>

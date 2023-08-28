@@ -36,12 +36,6 @@ class HashPositionTransform final : public Transformation {
   std::string _input_column;
   std::string _output_column;
   size_t _dim;
-
-  HashPositionTransform() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 /**
@@ -78,12 +72,6 @@ class OffsetPositionTransform final : public Transformation {
   std::string _input_column;
   std::string _output_column;
   size_t _max_num_tokens;
-
-  OffsetPositionTransform() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

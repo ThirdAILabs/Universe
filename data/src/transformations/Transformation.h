@@ -66,13 +66,6 @@ class Transformation {
   static std::shared_ptr<Transformation> deserialize(const std::string& binary);
 
   virtual ~Transformation() = default;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
 };
 
 using TransformationPtr = std::shared_ptr<Transformation>;

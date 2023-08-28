@@ -47,12 +47,6 @@ class RegressionBinning final : public Transformation {
   float _min, _max, _binsize;
   size_t _num_bins;
   uint32_t _correct_label_radius;
-
-  RegressionBinning() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

@@ -1,7 +1,4 @@
 #include "CategoricalTemporal.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <limits>

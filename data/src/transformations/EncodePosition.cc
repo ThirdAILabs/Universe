@@ -1,7 +1,4 @@
 #include "EncodePosition.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <hashing/src/HashUtils.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
