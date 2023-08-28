@@ -26,6 +26,8 @@ class FeatureHash final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  const auto& inputColumns() const { return _input_columns; }
+
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {
     return hashing::combineHashes(index, column_salt) % _hash_range;

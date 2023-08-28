@@ -8,7 +8,7 @@
 
 namespace thirdai::data::tests {
 
-void runConversionTest(bool specify_values) {
+void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
   std::vector<std::vector<uint32_t>> indices;
   std::vector<std::vector<float>> values;
 
@@ -37,10 +37,13 @@ void runConversionTest(bool specify_values) {
 
   ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
 
-  std::optional<std::string> values_col_name =
-      specify_values ? std::make_optional("values") : std::nullopt;
-  auto tensors = toTensorBatches(columns, {{"indices", values_col_name}},
-                                 /* batch_size= */ 3);
+  ValueFillType fill_type =
+      values_sum_to_one ? ValueFillType::SumToOne : ValueFillType::Ones;
+  OutputColumns to_convert = specify_values
+                                 ? OutputColumns("indices", "values")
+                                 : OutputColumns("indices", fill_type);
+
+  auto tensors = toTensorBatches(columns, {to_convert}, /* batch_size= */ 3);
 
   size_t row_cnt = 0;
   size_t value_cnt = 0;
@@ -60,7 +63,12 @@ void runConversionTest(bool specify_values) {
         if (specify_values) {
           EXPECT_EQ(vec.activations[j], static_cast<float>(value_cnt));
         } else {
-          EXPECT_EQ(vec.activations[i], 1.0);
+          if (values_sum_to_one) {
+            EXPECT_FLOAT_EQ(vec.activations[i],
+                            1.0 / indices.at(row_cnt).size());
+          } else {
+            EXPECT_EQ(vec.activations[i], 1.0);
+          }
         }
         value_cnt++;
       }
@@ -75,8 +83,13 @@ TEST(TensorConversionTests, WithValues) {
   runConversionTest(/* specify_values= */ true);
 }
 
-TEST(TensorConversionTests, WithoutValues) {
-  runConversionTest(/* specify_values= */ false);
+TEST(TensorConversionTests, FillValuesOnes) {
+  runConversionTest(/* specify_values= */ false,
+                    /* values_sum_to_one= */ false);
+}
+
+TEST(TensorConversionTests, FillValuesSumToOne) {
+  runConversionTest(/* specify_values= */ false, /* values_sum_to_one= */ true);
 }
 
 using thirdai::tests::BoltVectorTestUtils;
@@ -96,7 +109,8 @@ TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
                      {"indices_2", indices_2}});
 
   auto tensors = toTensorBatches(
-      columns, {{"indices_1", "values_1"}, {"indices_2", std::nullopt}},
+      columns,
+      {OutputColumns("indices_1", "values_1"), OutputColumns("indices_2")},
       /* batch_size= */ 2);
 
   ASSERT_EQ(tensors.size(), 2);
