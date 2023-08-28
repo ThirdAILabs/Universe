@@ -3,8 +3,10 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/DeduplicateTokens.h>
+#include <data/src/transformations/Transformation.h>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
@@ -44,16 +46,13 @@ TEST(DeduplicateTokensTest, InputIndicesOnly) {
   ASSERT_EQ(deduped_values->dim(), std::nullopt);
 }
 
-TEST(DeduplicateTokensTest, InputIndicesAndValues) {
+void testDeduplicateTokens(const Transformation& transform) {
   auto indices = ArrayColumn<uint32_t>::make({{1, 2, 1, 1}, {1, 2, 3, 4}}, 5);
   auto values =
       ArrayColumn<float>::make({{1, 2, 1, 3}, {1, 2, 3, 4}}, std::nullopt);
   ColumnMap columns({{"indices", indices}, {"values", values}});
-  DeduplicateTokens deduplicate(/* input_indices_column= */ "indices",
-                                /* input_values_column= */ "values",
-                                /* output_indices_column= */ "deduped_indices",
-                                /* output_values_column= */ "deduped_values");
-  columns = deduplicate.applyStateless(columns);
+
+  columns = transform.applyStateless(columns);
   auto deduped_indices = columns.getArrayColumn<uint32_t>("deduped_indices");
   auto deduped_values = columns.getArrayColumn<float>("deduped_values");
 
@@ -64,6 +63,29 @@ TEST(DeduplicateTokensTest, InputIndicesAndValues) {
 
   ASSERT_EQ(deduped_indices->dim().value(), 5);
   ASSERT_EQ(deduped_values->dim(), std::nullopt);
+}
+
+TEST(DeduplicateTokensTest, InputIndicesAndValues) {
+  DeduplicateTokens deduplicate(
+      /* input_indices_column= */ "indices",
+      /* input_values_column= */ "values",
+      /* output_indices_column= */ "deduped_indices",
+      /* output_values_column= */ "deduped_values");
+
+  testDeduplicateTokens(deduplicate);
+}
+
+TEST(DeduplicateTokensTest, Serialization) {
+  DeduplicateTokens deduplicate(
+      /* input_indices_column= */ "indices",
+      /* input_values_column= */ "values",
+      /* output_indices_column= */ "deduped_indices",
+      /* output_values_column= */ "deduped_values");
+
+  auto new_transformation =
+      Transformation::deserialize(deduplicate.serialize());
+
+  testDeduplicateTokens(*new_transformation);
 }
 
 }  // namespace thirdai::data::tests

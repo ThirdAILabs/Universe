@@ -2,13 +2,11 @@
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/RegressionBinning.h>
+#include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data::tests {
 
-TEST(RegressionBinningTest, CorrectLabels) {
-  RegressionBinning binning("input", "output", /* min= */ 10, /* max= */ 50,
-                            /* num_bins= */ 10, /* correct_label_radius= */ 3);
-
+void testRegressionBinning(const Transformation& binning) {
   ColumnMap columns(
       {{"input", ValueColumn<float>::make({2, 11, 13, 17, 31, 42, 99})}});
 
@@ -27,6 +25,22 @@ TEST(RegressionBinningTest, CorrectLabels) {
     auto row = bins->row(i);
     ASSERT_EQ(std::vector<uint32_t>(row.begin(), row.end()), expected_bins[i]);
   }
+}
+
+TEST(RegressionBinningTest, CorrectLabels) {
+  RegressionBinning binning("input", "output", /* min= */ 10, /* max= */ 50,
+                            /* num_bins= */ 10, /* correct_label_radius= */ 3);
+
+  testRegressionBinning(binning);
+}
+
+TEST(RegressionBinningTest, Serialization) {
+  RegressionBinning binning("input", "output", /* min= */ 10, /* max= */ 50,
+                            /* num_bins= */ 10, /* correct_label_radius= */ 3);
+
+  auto transformation = Transformation::deserialize(binning.serialize());
+
+  testRegressionBinning(*transformation);
 }
 
 }  // namespace thirdai::data::tests

@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
+#include <_types/_uint32_t.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Recurrence.h>
+#include <data/src/transformations/Transformation.h>
 #include <cstddef>
 #include <optional>
 #include <stdexcept>
@@ -129,7 +131,7 @@ TEST(RecurrenceTest, CorrectUnrollingDifferentSourceTargetColumn) {
       /* source_output_column= */ "source_unrolled",
       /* target_output_column= */ "target_unrolled",
       /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
-      /* max_positions= */ MAX_SEQ_LEN);
+      /* max_sequence_length= */ MAX_SEQ_LEN);
 
   columns = recurrence.applyStateless(columns);
 
@@ -196,7 +198,7 @@ TEST(RecurrenceTest, CorrectUnrollingWithSequencesLongerThanMaxSequenceLength) {
       /* source_output_column= */ "source_unrolled",
       /* target_output_column= */ "target_unrolled",
       /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
-      /* max_seq_len= */ MAX_SEQ_LEN);
+      /* max_sequence_length= */ MAX_SEQ_LEN);
 
   columns = recurrence.applyStateless(columns);
 
@@ -246,6 +248,38 @@ TEST(RecurrenceTest, CorrectUnrollingWithSequencesLongerThanMaxSequenceLength) {
 
   ASSERT_EQ(source_unrolled->dim(), source->dim());
   ASSERT_EQ(target_unrolled->dim(), (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN);
+}
+
+TEST(RecurrenceTest, Serialization) {
+  uint32_t TOKEN_VOCAB_SIZE = 99;
+  uint32_t MAX_SEQ_LEN = 3;
+
+  auto source =
+      ArrayColumn<uint32_t>::make(/* data= */ {{1, 2}, {3, 4, 5}, {6}},
+                                  /* dim= */ std::nullopt);
+  auto target =
+      ArrayColumn<uint32_t>::make(/* data= */ {{10, 20}, {30, 40, 50}, {60}},
+                                  /* dim= */ TOKEN_VOCAB_SIZE);
+
+  ColumnMap columns(/* columns= */ {{"source", source}, {"target", target}});
+
+  Recurrence recurrence(
+      /* source_input_column= */ "source",
+      /* target_input_column= */ "target",
+      /* source_output_column= */ "source_unrolled",
+      /* target_output_column= */ "target_unrolled",
+      /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
+      /* max_sequence_length= */ MAX_SEQ_LEN);
+
+  auto new_recurrence = Transformation::deserialize(recurrence.serialize());
+
+  auto output = new_recurrence->applyStateless(columns);
+
+  assertRowsEqual(*output.getArrayColumn<uint32_t>("source_unrolled"),
+                  {{}, {1}, {1, 2}, {}, {3}, {3, 4}, {}, {6}});
+
+  assertRowsEqual(*output.getArrayColumn<uint32_t>("target_unrolled"),
+                  {{10}, {120}, {299}, {30}, {140}, {250}, {60}, {199}});
 }
 
 }  // namespace thirdai::data::tests

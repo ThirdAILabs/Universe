@@ -5,6 +5,25 @@ from thirdai import data
 pytestmark = [pytest.mark.unit]
 
 
+def get_column_map(N):
+    return data.ColumnMap(
+        {
+            str(i): data.columns.TokenColumn(
+                [i] * (N - i) + list(range(N + 1, N + i + 1))
+            )
+            for i in range(N)
+        }
+    )
+
+
+def get_transform(N):
+    return data.transformations.CrossColumnPairgrams(
+        input_columns=[str(i) for i in range(N)],
+        output_column="pairgrams",
+        hash_range=100000000,
+    )
+
+
 def test_cross_column_pairgrams_consistency():
     N = 20
 
@@ -35,22 +54,11 @@ def test_cross_column_pairgrams_consistency():
     columns don't overlap.
     """
 
-    columns = data.ColumnMap(
-        {
-            str(i): data.columns.TokenColumn(
-                [i] * (N - i) + list(range(N + 1, N + i + 1))
-            )
-            for i in range(N)
-        }
-    )
+    columns = get_column_map(N)
 
-    featurizer = data.transformations.CrossColumnPairgrams(
-        input_columns=[str(i) for i in range(N)],
-        output_column="pairgrams",
-        hash_range=100000000,
-    )
+    transform = get_transform(N)
 
-    columns = featurizer(columns)
+    columns = transform(columns)
 
     pairgrams = columns["pairgrams"].data()
     pairgram_sets = [set(x) for x in pairgrams]
@@ -63,6 +71,22 @@ def test_cross_column_pairgrams_consistency():
         for j in range(i):
             overlap = (N - i) * (N - i + 1) / 2
             assert len(pairgram_sets[j].intersection(pairgram_sets[i])) == overlap
+
+
+def test_cross_column_pairgram_serialization():
+    N = 10
+
+    columns = get_column_map(N)
+
+    transform = get_transform(N)
+
+    original_output = transform(columns)["pairgrams"].data()
+
+    new_transform = data.transformations.deserialize(transform.serialize())
+
+    new_output = new_transform(columns)["pairgrams"].data()
+
+    assert original_output == new_output
 
 
 def test_cross_column_pairgram_hash_distribution():
