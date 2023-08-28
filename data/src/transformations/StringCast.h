@@ -74,4 +74,6 @@ using StringToTimestamp = CastToValue<int64_t>;
 using StringToDecimal = CastToValue<float>;
 using StringToDecimalArray = CastToArray<float>;
 
+TransformationPtr stringCastFromProto(const proto::data::StringCast& cast);
+
 }  // namespace thirdai::data
