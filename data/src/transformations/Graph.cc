@@ -88,6 +88,10 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
         neighbors[i].push_back(nbr);
       }
       if (neighbors[i].empty()) {
+        // This is a special token for no neighbors, it improves performance by
+        // allowing the model to learn when there are no neighbors present. It
+        // also prevents issues with bolt having undefined outputs from the
+        // first layer when you pass in an empty sparse input.
         neighbors[i].push_back(std::numeric_limits<uint32_t>::max() - 1);
       }
     } catch (...) {
@@ -145,7 +149,7 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
       float total =
           std::reduce(sum_nbr_features.begin(), sum_nbr_features.end(), 0.0);
 
-      if (total != 0) {
+      if (total != 0) {  // To prevent division by zero.
         for (float& feature : sum_nbr_features) {
           feature /= total;
         }
