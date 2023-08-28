@@ -59,10 +59,11 @@ LabeledDataset getDataset() {
   columns.shuffle(rng());
 
   auto data_batches = data::toTensorBatches(
-      columns, {{"lhs", std::nullopt}, {"rhs", std::nullopt}}, BATCH_SIZE);
+      columns, {data::OutputColumns("lhs"), data::OutputColumns("rhs")},
+      BATCH_SIZE);
 
   auto label_batches = data::toTensorBatches(
-      columns, {{"labels", std::nullopt}, {"labels", std::nullopt}},
+      columns, {data::OutputColumns("labels"), data::OutputColumns("labels")},
       BATCH_SIZE);
 
   return {data_batches, label_batches};
