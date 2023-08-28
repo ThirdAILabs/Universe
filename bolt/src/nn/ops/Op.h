@@ -155,6 +155,7 @@ class Op {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_name);
+    archive(trainable);
   }
 };
 

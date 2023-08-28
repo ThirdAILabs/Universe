@@ -72,11 +72,3 @@ def test_non_trainable_layer():
     for key in ["weights", "biases"]:
         # The weights mustn't remain the same
         assert not np.allclose(before[key], after[key])
-
-
-n_classes = 100
-input_layer = bolt.nn.Input(dim=n_classes)
-
-hidden_layer = bolt.nn.FullyConnected(
-    dim=1000, input_dim=n_classes, sparsity=0.15, activation="relu"
-)(input_layer)
