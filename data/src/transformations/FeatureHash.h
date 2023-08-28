@@ -41,11 +41,11 @@ class FeatureHash final : public Transformation {
     return hashing::MurmurHash(name.data(), name.size(), 932042);
   }
 
-  size_t _hash_range;
-
   std::vector<std::string> _input_columns;
   std::string _output_indices_column;
   std::string _output_values_column;
+
+  size_t _hash_range;
 };
 
 }  // namespace thirdai::data

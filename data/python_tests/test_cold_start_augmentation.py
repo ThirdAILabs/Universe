@@ -390,6 +390,9 @@ def test_real_input():
 
 
 def test_cold_start_serialization():
+    # Because the output may not be deterministic, it is simplier to compare the
+    # output of the serialized transformation against the original, vs just comparing
+    # the output of the serialized transformation against the expected output.
     strong_list, weak_list, label_list = get_real_dataset()
     columns = create_test_column_map(
         {"strong": strong_list, "weak": weak_list}, label_list

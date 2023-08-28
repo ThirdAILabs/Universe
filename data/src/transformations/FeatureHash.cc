@@ -14,17 +14,17 @@ namespace thirdai::data {
 FeatureHash::FeatureHash(std::vector<std::string> input_columns,
                          std::string output_indices_column,
                          std::string output_values_column, size_t hash_range)
-    : _hash_range(hash_range),
-      _input_columns(std::move(input_columns)),
+    : _input_columns(std::move(input_columns)),
       _output_indices_column(std::move(output_indices_column)),
-      _output_values_column(std::move(output_values_column)) {}
+      _output_values_column(std::move(output_values_column)),
+      _hash_range(hash_range) {}
 
 FeatureHash::FeatureHash(const proto::data::FeatureHash& feature_hash)
-    : _hash_range(feature_hash.hash_range()),
-      _input_columns(feature_hash.input_columns().begin(),
+    : _input_columns(feature_hash.input_columns().begin(),
                      feature_hash.input_columns().end()),
       _output_indices_column(feature_hash.output_indices_column()),
-      _output_values_column(feature_hash.output_values_column()) {}
+      _output_values_column(feature_hash.output_values_column()),
+      _hash_range(feature_hash.hash_range()) {}
 
 ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
   (void)state;

@@ -212,6 +212,8 @@ proto::data::Tokenizer* WordpieceTokenizer::toProto() const {
   for (size_t i = 0; i < _id_to_token.size(); i++) {
     auto* entry = word_piece->add_tokens();
     entry->set_id(i);
+    // Protobuf doesn't have wchar so we use uint32. We also add one at a time
+    // to ensure the conversion is done correctly.
     for (wchar_t c : _id_to_token[i]) {
       entry->add_chars(c);
     }

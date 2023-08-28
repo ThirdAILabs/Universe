@@ -20,6 +20,9 @@ import "string_id_lookup.proto";
 import "text_tokenizer.proto";
 
 message Transformation {
+  // We use a nested message here because the List message needs to know about
+  // the Transformation message since it contains them, and the Transformation
+  // message needs to contain a List message as an option.
   message List {
     repeated Transformation transformations = 1;
   }
