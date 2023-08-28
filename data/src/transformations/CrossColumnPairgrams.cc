@@ -33,7 +33,7 @@ ColumnMap CrossColumnPairgrams::apply(ColumnMap columns, State& state) const {
   uint32_t num_rows = columns.numRows();
   std::vector<std::vector<uint32_t>> cross_column_pairgrams(num_rows);
 #pragma omp parallel for default(none) \
-    shared(num_rows, token_columns, cross_column_pairgrams)
+    shared(num_rows, token_columns, cross_column_pairgrams) if (num_rows > 1)
   for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
     std::vector<uint32_t> salted_unigrams;
     salted_unigrams.reserve(token_columns.size());
