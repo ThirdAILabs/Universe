@@ -37,7 +37,8 @@ ColumnMap StringHash::apply(ColumnMap columns, State& state) const {
   } else {
     std::vector<uint32_t> hashed_values(column->numRows());
 
-#pragma omp parallel for default(none) shared(column, hashed_values)
+#pragma omp parallel for default(none) \
+    shared(column, hashed_values) if (column->numRows() > 1)
     for (uint64_t i = 0; i < column->numRows(); i++) {
       hashed_values[i] = hash(column->value(i));
     }
