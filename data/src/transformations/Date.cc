@@ -43,7 +43,8 @@ ColumnMap Date::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(dates, date_attributes, error)
+#pragma omp parallel for default(none) \
+    shared(dates, date_attributes, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < dates->numRows(); i++) {
     try {
       TimeObject time(dates->value(i), _format);
@@ -123,3 +124,5 @@ proto::data::Transformation* Date::toProto() const {
 }
 
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::Date)

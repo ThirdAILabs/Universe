@@ -1,4 +1,7 @@
 #include "FeatureHash.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -38,8 +41,8 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
     uint32_t column_salt = columnSalt(name);
 
     if (auto token_arrays = ArrayColumnBase<uint32_t>::cast(column)) {
-#pragma omp parallel for default(none) \
-    shared(token_arrays, indices, values, column_salt)
+#pragma omp parallel for default(none) shared( \
+    token_arrays, indices, values, column_salt) if (columns.numRows() > 1)
       for (size_t i = 0; i < token_arrays->numRows(); i++) {
         for (uint32_t token : token_arrays->row(i)) {
           indices[i].push_back(hash(token, column_salt));
@@ -47,8 +50,8 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
         }
       }
     } else if (auto decimal_arrays = ArrayColumnBase<float>::cast(column)) {
-#pragma omp parallel for default(none) \
-    shared(decimal_arrays, indices, values, column_salt)
+#pragma omp parallel for default(none) shared( \
+    decimal_arrays, indices, values, column_salt) if (columns.numRows() > 1)
       for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
         size_t j = 0;
         for (float decimal : decimal_arrays->row(i)) {
@@ -69,8 +72,10 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
       ArrayColumn<uint32_t>::make(std::move(indices), _hash_range);
   auto values_col = ArrayColumn<float>::make(std::move(values), std::nullopt);
 
-  return ColumnMap({{_output_indices_column, indices_col},
-                    {_output_values_column, values_col}});
+  columns.setColumn(_output_indices_column, indices_col);
+  columns.setColumn(_output_values_column, values_col);
+
+  return columns;
 }
 
 void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,

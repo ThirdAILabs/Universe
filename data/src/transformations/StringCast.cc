@@ -52,7 +52,8 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       rows[i] = parse(str_column->value(i));
@@ -79,6 +80,9 @@ uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
 
 template <>
 float CastToValue<float>::parse(const std::string& row) const {
+  if (row.empty()) {
+    return 0.0;  // Handles missing values in tabular datasets.
+  }
   return std::stof(row);
 }
 
@@ -205,7 +209,8 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       for (const auto& item : text::split(str_column->value(i), _delimiter)) {

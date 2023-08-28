@@ -1,4 +1,6 @@
 #include "RegressionBinning.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <proto/transformations.pb.h>
 #include <algorithm>

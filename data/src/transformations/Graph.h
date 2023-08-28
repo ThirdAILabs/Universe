@@ -20,6 +20,12 @@ class GraphBuilder final : public Transformation {
   std::string _node_id_column;
   std::string _neighbors_column;
   std::vector<std::string> _feature_columns;
+
+  GraphBuilder() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 class NeighborIds final : public Transformation {
@@ -35,6 +41,12 @@ class NeighborIds final : public Transformation {
  private:
   std::string _node_id_column;
   std::string _output_neighbors_column;
+
+  NeighborIds() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 class NeighborFeatures final : public Transformation {
@@ -51,6 +63,12 @@ class NeighborFeatures final : public Transformation {
  private:
   std::string _node_id_column;
   std::string _output_features_column;
+
+  NeighborFeatures() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

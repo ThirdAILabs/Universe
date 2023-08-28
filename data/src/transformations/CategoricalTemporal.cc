@@ -1,8 +1,13 @@
 #include "CategoricalTemporal.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/transformations/Transformation.h>
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::data {
 
@@ -35,7 +40,7 @@ CategoricalTemporal::CategoricalTemporal(
 
 ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto user_col = columns.getValueColumn<std::string>(_user_column);
-  auto item_col = columns.getArrayColumn<uint32_t>(_item_column);
+  auto item_col = getItemColumn(columns);
   auto timestamp_col = columns.getValueColumn<int64_t>(_timestamp_column);
 
   auto& item_history_tracker = state.getItemHistoryTracker(_tracker_key);
@@ -95,10 +100,22 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   }
 
   auto output =
-      ArrayColumn<uint32_t>::make(std::move(last_n_items), item_col->dim());
+      ArrayColumn<uint32_t>::make(std::move(last_n_items), std::nullopt);
   columns.setColumn(_output_column, output);
 
   return columns;
+}
+
+void CategoricalTemporal::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  auto output = apply(input, state).getArrayColumn<uint32_t>(_output_column);
+
+  for (uint32_t token : output->row(0)) {
+    std::string explanation =
+        "User interaction with item: " + std::to_string(token);
+
+    explanations.store(_output_column, token, explanation);
+  }
 }
 
 proto::data::Transformation* CategoricalTemporal::toProto() const {

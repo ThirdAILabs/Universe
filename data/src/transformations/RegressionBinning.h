@@ -26,6 +26,10 @@ class RegressionBinning final : public Transformation {
 
   proto::data::Transformation* toProto() const final;
 
+  float unbin(uint32_t category) const {
+    return _min + category * _binsize + (_binsize / 2);
+  }
+
  private:
   uint32_t bin(float x) const;
 
@@ -43,6 +47,12 @@ class RegressionBinning final : public Transformation {
   float _min, _max, _binsize;
   size_t _num_bins;
   uint32_t _correct_label_radius;
+
+  RegressionBinning() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

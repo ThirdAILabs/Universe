@@ -99,6 +99,8 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  void clearHistoryTrackers() { _item_history_trackers.clear(); }
+
   const auto& graph() const {
     if (!_graph) {
       throw std::invalid_argument(
@@ -117,12 +119,6 @@ class State {
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
 
   automl::data::GraphInfoPtr _graph;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_mach_index);
-  }
 };
 
 using StatePtr = std::shared_ptr<State>;

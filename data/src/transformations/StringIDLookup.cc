@@ -1,4 +1,6 @@
 #include "StringIDLookup.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <string>
@@ -45,13 +47,16 @@ ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(ids, strings, vocab, error)
+#pragma omp parallel for default(none) \
+    shared(ids, strings, vocab, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < ids.size(); i++) {
     try {
       if (_delimiter) {
         auto items = parseLine(strings->value(i), *_delimiter);
         for (const auto& item : items) {
-          ids[i].push_back(vocab->getUid(item));
+          if (!item.empty()) {
+            ids[i].push_back(vocab->getUid(item));
+          }
         }
       } else {
         ids[i] = {vocab->getUid(strings->value(i))};
