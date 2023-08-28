@@ -149,11 +149,7 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
       float total =
           std::reduce(sum_nbr_features.begin(), sum_nbr_features.end(), 0.0);
 
-<<<<<<< HEAD
-      if (total != 0) {
-=======
       if (total != 0) {  // To prevent division by zero.
->>>>>>> 6d99b1a283a8849322a8a0c9c76d9641902a6754
         for (float& feature : sum_nbr_features) {
           feature /= total;
         }
