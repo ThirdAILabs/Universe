@@ -4,6 +4,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/RobeZ.h>
+#include <auto_ml/src/featurization/GraphFeaturizer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <data/src/Loader.h>
@@ -33,6 +34,11 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
   _classifier =
       utils::Classifier::make(model, /* freeze_hash_tables = */ false);
 }
+
+UDTGraphClassifier::UDTGraphClassifier(
+    const proto::udt::UDTGraphClassifier& graph)
+    : _classifier(utils::Classifier::fromProto(graph.classifier())),
+      _featurizer(std::make_shared<GraphFeaturizer>(graph.featurizer())) {}
 
 py::object UDTGraphClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
@@ -67,6 +73,17 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
 
   return _classifier->evaluate(eval_dataset_loader, metrics, sparse_inference,
                                verbose);
+}
+
+proto::udt::UDT* UDTGraphClassifier::toProto(bool with_optimizer) const {
+  auto* udt = new proto::udt::UDT();
+
+  auto* graph = udt->mutable_graph();
+
+  graph->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  graph->set_allocated_featurizer(_featurizer->toProto());
+
+  return udt;
 }
 
 template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,

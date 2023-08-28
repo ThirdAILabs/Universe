@@ -9,12 +9,15 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl {
+
+using thirdai::data::Transformation;
 
 GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
                                  const std::string& target_col,
@@ -56,6 +59,17 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
 
   _state = std::make_shared<thirdai::data::State>(graph_info);
 }
+
+GraphFeaturizer::GraphFeaturizer(const proto::udt::GraphFeaturizer& featurizer)
+    : _input_transform(Transformation::fromProto(featurizer.input_transform())),
+      _label_transform(Transformation::fromProto(featurizer.label_transform())),
+      _graph_builder(Transformation::fromProto(featurizer.graph_builder())),
+      _bolt_input_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_input_columns())),
+      _bolt_label_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_label_columns())),
+      _delimiter(featurizer.delimiter()),
+      _state(thirdai::data::State::fromProto(featurizer.state())) {}
 
 thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
@@ -183,13 +197,31 @@ GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
   return {thirdai::data::TransformationList::make(transforms), graph_info};
 }
 
+proto::udt::GraphFeaturizer* GraphFeaturizer::toProto() const {
+  auto* featurizer = new proto::udt::GraphFeaturizer();
+
+  featurizer->set_allocated_input_transform(_input_transform->toProto());
+  featurizer->set_allocated_label_transform(_label_transform->toProto());
+  featurizer->set_allocated_graph_builder(_graph_builder->toProto());
+
+  featurizer->set_allocated_bolt_input_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_input_columns));
+  featurizer->set_allocated_bolt_label_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_label_columns));
+
+  featurizer->set_delimiter(_delimiter);
+
+  featurizer->set_allocated_state(_state->toProto());
+
+  return featurizer;
+}
+
 template void GraphFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void GraphFeaturizer::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void GraphFeaturizer::serialize(Archive& archive) {
-  archive(_input_transform, _label_transform, _graph_builder,
-          _bolt_input_columns, _bolt_label_columns, _delimiter, _state);
+  (void)archive;
 }
 
 }  // namespace thirdai::automl

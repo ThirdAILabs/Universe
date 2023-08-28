@@ -111,6 +111,10 @@ class State {
 
   proto::data::State* toProto() const;
 
+  static auto fromProto(const proto::data::State& state) {
+    return std::make_shared<State>(state);
+  }
+
  private:
   MachIndexPtr _mach_index = nullptr;
 

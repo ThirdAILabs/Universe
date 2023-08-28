@@ -7,6 +7,7 @@
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <proto/featurizers.pb.h>
 
 namespace thirdai::automl {
 
@@ -17,6 +18,9 @@ class RecurrentFeaturizer {
                       const data::SequenceDataTypePtr& target,
                       uint32_t n_target_classes,
                       const data::TabularOptions& tabular_options);
+
+  explicit RecurrentFeaturizer(
+      const proto::udt::RecurrentFeaturizer& featurizer);
 
   thirdai::data::LoaderPtr getDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -37,6 +41,8 @@ class RecurrentFeaturizer {
   size_t vocabSize() const {
     return _recurrence_augmentation->totalVocabSize();
   }
+
+  proto::udt::RecurrentFeaturizer* toProto() const;
 
  private:
   thirdai::data::TransformationPtr _input_transform;

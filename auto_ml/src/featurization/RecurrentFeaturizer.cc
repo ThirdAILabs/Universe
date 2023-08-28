@@ -8,12 +8,16 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/StringIDLookup.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
+#include <proto/featurizers.pb.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl {
+
+using thirdai::data::Transformation;
 
 RecurrentFeaturizer::RecurrentFeaturizer(
     const data::ColumnDataTypes& data_types, const std::string& target_name,
@@ -59,6 +63,30 @@ RecurrentFeaturizer::RecurrentFeaturizer(
   _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
 }
 
+RecurrentFeaturizer::RecurrentFeaturizer(
+    const proto::udt::RecurrentFeaturizer& featurizer)
+    : _input_transform(Transformation::fromProto(featurizer.input_transform())),
+      _bolt_input_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_input_columns())),
+      _bolt_label_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_label_columns())),
+      _delimiter(featurizer.delimiter()),
+      _state(thirdai::data::State::fromProto(featurizer.state())) {
+  auto augmentation =
+      Transformation::fromProto(featurizer.recurrence_augmentation());
+
+  // The toProto method on the recurrent transformation returns a Transformation
+  // proto object, and when we invoke Transformation::fromProto we get an
+  // instance of the Transformation base class, thus we need to downcast it to
+  // get the recurrence augmentation.
+  _recurrence_augmentation =
+      std::dynamic_pointer_cast<thirdai::data::Recurrence>(augmentation);
+  if (!_recurrence_augmentation) {
+    throw std::invalid_argument(
+        "Expected recurrence augmentation transformation in fromProto.");
+  }
+}
+
 thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
@@ -101,13 +129,31 @@ const thirdai::data::ThreadSafeVocabularyPtr& RecurrentFeaturizer::vocab()
   return _state->getVocab(TARGET_VOCAB);
 }
 
+proto::udt::RecurrentFeaturizer* RecurrentFeaturizer::toProto() const {
+  auto* featurizer = new proto::udt::RecurrentFeaturizer();
+
+  featurizer->set_allocated_input_transform(_input_transform->toProto());
+  featurizer->set_allocated_recurrence_augmentation(
+      _recurrence_augmentation->toProto());
+
+  featurizer->set_allocated_bolt_input_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_input_columns));
+  featurizer->set_allocated_bolt_label_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_label_columns));
+
+  featurizer->set_delimiter(_delimiter);
+
+  featurizer->set_allocated_state(_state->toProto());
+
+  return featurizer;
+}
+
 template void RecurrentFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void RecurrentFeaturizer::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void RecurrentFeaturizer::serialize(Archive& archive) {
-  archive(_input_transform, _recurrence_augmentation, _bolt_input_columns,
-          _bolt_label_columns, _delimiter, _state);
+  (void)archive;
 }
 
 }  // namespace thirdai::automl

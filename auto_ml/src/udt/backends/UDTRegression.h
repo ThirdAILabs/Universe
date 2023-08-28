@@ -21,6 +21,8 @@ class UDTRegression final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
+  explicit UDTRegression(const proto::udt::UDTRegression& regression);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -42,6 +44,8 @@ class UDTRegression final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  proto::udt::UDT* toProto(bool with_optimizer) const final;
 
   ModelPtr model() const final { return _model; }
 

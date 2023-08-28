@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "featurizers.proto";
+import "classifier.proto";
+
+message RlhfSample {
+  required string source = 1;
+  repeated uint32 targets = 2;
+}
+
+message RlhfSamples {
+  repeated RlhfSample samples = 1;
+}
+
+message RlhfSampler {
+  map<uint64, RlhfSamples> samples_per_doc = 1;
+  required uint64 max_docs = 2;
+  required uint64 max_samples_per_doc = 3;
+}
+
+message UDTMachClassifier {
+  required Classifier classifier = 1;
+  required MachFeaturizer featurizer = 2;
+
+  required uint64 top_k_to_return = 3;
+  required uint64 num_buckets_to_eval = 4;
+  required float mach_sampling_threshold = 5;
+
+  optional RlhfSampler rlhf_smapler = 6;
+}

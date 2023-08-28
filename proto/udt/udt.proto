@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "udt_classifier.proto";
+import "udt_graph_classifier.proto";
+import "udt_mach.proto";
+import "udt_query_reformulation.proto";
+import "udt_recurrent_classifier.proto";
+import "udt_regression.proto";
+import "udt_svm_classifier.proto";
+
+message UDT {
+  oneof backend {
+    UDTClassifier classifier = 1;
+    UDTGraphClassifier graph = 2;
+    UDTMachClassifier mach = 3;
+    UDTQueryReformulation query_reformulation = 4;
+    UDTRecurrentClassifier recurrent = 5;
+    UDTRegression regression = 6;
+    UDTSvmClassifier svm = 7;
+  }
+}

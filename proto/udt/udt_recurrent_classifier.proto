@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "featurizers.proto";
+import "model.proto";
+
+message UDTRecurrentClassifier {
+  required bolt.Model model = 1;
+  required RecurrentFeaturizer featurizer = 2;
+
+  required bool freeze_hash_tables = 3;
+
+  required string target_column = 4;
+  required uint64 max_seq_len = 5;
+  required uint32 target_delimiter = 6;
+}

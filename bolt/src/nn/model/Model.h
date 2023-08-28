@@ -231,7 +231,7 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
-  proto::bolt::Model toProto(bool with_optimizer) const;
+  proto::bolt::Model* toProto(bool with_optimizer) const;
 
   static std::shared_ptr<Model> fromProto(
       const proto::bolt::Model& model_proto);

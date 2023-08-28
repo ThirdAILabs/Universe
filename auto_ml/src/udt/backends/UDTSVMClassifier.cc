@@ -27,6 +27,9 @@ UDTSVMClassifier::UDTSVMClassifier(
           user_args.get<bool>("freeze_hash_tables", "boolean",
                               defaults::FREEZE_HASH_TABLES))) {}
 
+UDTSVMClassifier::UDTSVMClassifier(const proto::udt::UDTSvmClassifier& svm)
+    : _classifier(utils::Classifier::fromProto(svm.classifier())) {}
+
 py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::vector<std::string>& train_metrics,
@@ -79,6 +82,16 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                          _classifier->model()->inputDims());
   return _classifier->predict(inputs, sparse_inference, return_predicted_class,
                               /* single= */ false, top_k);
+}
+
+proto::udt::UDT* UDTSVMClassifier::toProto(bool with_optimizer) const {
+  auto* udt = new proto::udt::UDT();
+
+  auto* svm = udt->mutable_svm();
+
+  svm->set_allocated_classifier(_classifier->toProto(with_optimizer));
+
+  return udt;
 }
 
 template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,

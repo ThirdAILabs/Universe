@@ -11,6 +11,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <limits>
@@ -20,6 +21,8 @@
 #include <unordered_map>
 
 namespace thirdai::automl {
+
+using thirdai::data::Transformation;
 
 MachFeaturizer::MachFeaturizer(
     data::ColumnDataTypes data_types,
@@ -43,6 +46,13 @@ MachFeaturizer::MachFeaturizer(
   _doc_id_transform = makeDocIdTransformation(
       label_column, data::asCategorical(data_types.at(label_column)));
 }
+
+MachFeaturizer::MachFeaturizer(const proto::udt::MachFeaturizer& featurizer)
+    : Featurizer(featurizer.base()),
+      _doc_id_transform(
+          Transformation::fromProto(featurizer.doc_id_transform())),
+      _prehashed_labels_transform(
+          Transformation::fromProto(featurizer.prehashed_labels_transform())) {}
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
 MachFeaturizer::featurizeForIntroduceDocuments(
@@ -248,14 +258,23 @@ void MachFeaturizer::addDummyDocIds(thirdai::data::ColumnMap& columns) {
   columns.setColumn(MACH_DOC_IDS, dummy_doc_ids);
 }
 
+proto::udt::MachFeaturizer* MachFeaturizer::toProto() const {
+  auto* featurizer = new proto::udt::MachFeaturizer();
+
+  featurizer->set_allocated_base(Featurizer::toProto());
+  featurizer->set_allocated_doc_id_transform(_doc_id_transform->toProto());
+  featurizer->set_allocated_prehashed_labels_transform(
+      _prehashed_labels_transform->toProto());
+
+  return featurizer;
+}
+
 template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachFeaturizer::serialize(Archive& archive) {
-  archive(_input_transform, _input_transform_non_updating, _label_transform,
-          _bolt_input_columns, _bolt_label_columns, _delimiter, _state,
-          _text_dataset, _doc_id_transform, _prehashed_labels_transform);
+  (void)archive;
 }
 
 }  // namespace thirdai::automl

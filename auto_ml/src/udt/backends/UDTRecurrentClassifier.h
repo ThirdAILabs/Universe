@@ -25,6 +25,9 @@ class UDTRecurrentClassifier final : public UDTBackend {
                          const std::optional<std::string>& model_config,
                          const config::ArgumentMap& user_args);
 
+  explicit UDTRecurrentClassifier(
+      const proto::udt::UDTRecurrentClassifier& recurrent);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -46,6 +49,8 @@ class UDTRecurrentClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  proto::udt::UDT* toProto(bool with_optimizer) const final;
 
   ModelPtr model() const final { return _model; }
 
@@ -84,12 +89,13 @@ class UDTRecurrentClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  std::string _target_name;
-  data::SequenceDataTypePtr _target;
-
   ModelPtr _model;
 
   RecurrentFeaturizerPtr _featurizer;
+
+  std::string _target_name;
+  size_t _max_seq_len;
+  char _target_delimiter;
 
   bool _freeze_hash_tables;
 };

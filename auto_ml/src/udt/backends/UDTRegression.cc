@@ -13,11 +13,14 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/Loader.h>
+#include <data/src/transformations/Binning.h>
+#include <data/src/transformations/RegressionBinning.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/TransformationList.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <memory>
 #include <optional>
 
 namespace thirdai::automl::udt {
@@ -65,6 +68,23 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,
       bolt_labels, tabular_options);
+}
+
+UDTRegression::UDTRegression(const proto::udt::UDTRegression& regression)
+    : _model(bolt::Model::fromProto(regression.model())),
+      _featurizer(std::make_shared<Featurizer>(regression.featurizer())) {
+  auto binning = thirdai::data::Transformation::fromProto(regression.binning());
+
+  // The toProto method on the regression binning transformation returns a
+  // Transformation proto object, and when we invoke Transformation::fromProto
+  // we get an instance of the Transformation base class, thus we need to
+  // downcast it to get the regression binning transformation.
+  _binning =
+      std::dynamic_pointer_cast<thirdai::data::RegressionBinning>(_binning);
+  if (!_binning) {
+    throw std::invalid_argument(
+        "Expected regression label transformation in fromProto.");
+  }
 }
 
 py::object UDTRegression::train(const dataset::DataSourcePtr& data,
@@ -153,6 +173,18 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
   return py::object(std::move(predictions));
 }
 
+proto::udt::UDT* UDTRegression::toProto(bool with_optimizer) const {
+  auto* udt = new proto::udt::UDT();
+
+  auto* regression = udt->mutable_regression();
+
+  regression->set_allocated_model(_model->toProto(with_optimizer));
+  regression->set_allocated_featurizer(_featurizer->toProto());
+  regression->set_allocated_binning(_binning->toProto());
+
+  return udt;
+}
+
 float UDTRegression::unbinActivations(const BoltVector& output) const {
   assert(output.len > 0);
 
@@ -176,7 +208,7 @@ void UDTRegression::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_REGRESSION_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _model, _featurizer, _binning);
+  archive(cereal::base_class<UDTBackend>(this), _model, _featurizer);
 }
 
 }  // namespace thirdai::automl::udt

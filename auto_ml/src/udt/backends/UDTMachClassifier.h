@@ -37,6 +37,8 @@ class UDTMachClassifier final : public UDTBackend {
                     const std::optional<std::string>& model_config,
                     config::ArgumentMap user_args);
 
+  explicit UDTMachClassifier(const proto::udt::UDTMachClassifier& mach);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -64,6 +66,8 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  proto::udt::UDT* toProto(bool with_optimizer) const final;
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,

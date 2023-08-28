@@ -11,6 +11,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <proto/udt.pb.h>
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
@@ -83,6 +84,8 @@ class UDTBackend {
                                   bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
+
+  virtual proto::udt::UDT* toProto(bool with_optimizer) const = 0;
 
   virtual py::object outputCorrectness(const MapInputBatch& sample,
                                        const std::vector<uint32_t>& labels,

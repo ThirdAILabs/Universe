@@ -13,6 +13,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/featurization/MachFeaturizer.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -129,6 +130,17 @@ UDTMachClassifier::UDTMachClassifier(
 
     _rlhf_sampler = std::make_optional<RLHFSampler>(
         num_balancing_docs, num_balancing_samples_per_doc);
+  }
+}
+
+UDTMachClassifier::UDTMachClassifier(const proto::udt::UDTMachClassifier& mach)
+    : _classifier(utils::Classifier::fromProto(mach.classifier())),
+      _featurizer(std::make_shared<MachFeaturizer>(mach.featurizer())),
+      _default_top_k_to_return(mach.top_k_to_return()),
+      _num_buckets_to_eval(mach.num_buckets_to_eval()),
+      _mach_sampling_threshold(mach.mach_sampling_threshold()) {
+  if (mach.has_rlhf_smapler()) {
+    _rlhf_sampler = RLHFSampler(mach.rlhf_smapler());
   }
 }
 
@@ -265,6 +277,24 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return py::cast(predictImpl(samples, sparse_inference, top_k));
+}
+
+proto::udt::UDT* UDTMachClassifier::toProto(bool with_optimizer) const {
+  auto* udt = new proto::udt::UDT();
+
+  auto* mach = udt->mutable_mach();
+
+  mach->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  mach->set_allocated_featurizer(_featurizer->toProto());
+  mach->set_top_k_to_return(_default_top_k_to_return);
+  mach->set_num_buckets_to_eval(_num_buckets_to_eval);
+  mach->set_mach_sampling_threshold(_mach_sampling_threshold);
+
+  if (_rlhf_sampler) {
+    mach->set_allocated_rlhf_smapler(_rlhf_sampler->toProto());
+  }
+
+  return udt;
 }
 
 py::object UDTMachClassifier::predictHashes(

@@ -356,24 +356,24 @@ void Model::enableSparseParameterUpdates() {
   }
 }
 
-proto::bolt::Model Model::toProto(bool with_optimizer) const {
-  proto::bolt::Model model;
+proto::bolt::Model* Model::toProto(bool with_optimizer) const {
+  auto* model = new proto::bolt::Model();
 
   // Record all of the model ops.
   for (const auto& op : ops()) {
-    model.mutable_ops()->AddAllocated(op->toProto(with_optimizer));
+    model->mutable_ops()->AddAllocated(op->toProto(with_optimizer));
   }
 
   // Record the inputs to the model.
   for (const auto& input : _inputs) {
-    auto* placeholder = model.add_inputs();
+    auto* placeholder = model->add_inputs();
     placeholder->set_name(input->name());
     placeholder->set_dim(input->dim());
   }
 
   // Record the labels of the model.
   for (const auto& label : _labels) {
-    auto* placeholder = model.add_labels();
+    auto* placeholder = model->add_labels();
     placeholder->set_name(label->name());
     placeholder->set_dim(label->dim());
   }
@@ -381,7 +381,7 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
   // Construct a representation of the model computation graph. Ops are refered
   // to by name, as are the inputs to a computation.
   for (const auto& comp : _computation_order) {
-    auto* comp_proto = model.mutable_computation_graph()->Add();
+    auto* comp_proto = model->mutable_computation_graph()->Add();
     comp_proto->set_name(comp->name());
     comp_proto->set_op(comp->op()->name());
     for (const auto& input : comp->inputs()) {
@@ -391,15 +391,15 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
 
   // Record the loss functions the model uses.
   for (const auto& loss : _losses) {
-    model.mutable_losses()->AddAllocated(loss->toProto());
+    model->mutable_losses()->AddAllocated(loss->toProto());
   }
 
   // Record which computations should be returned as outputs.
   for (const auto& output : _outputs) {
-    model.add_outputs(output->name());
+    model->add_outputs(output->name());
   }
 
-  auto* meta = model.mutable_metadata();
+  auto* meta = model->mutable_metadata();
   meta->set_train_steps(_train_steps);
   meta->set_total_training_samples(_total_training_samples);
   meta->set_uuid(_model_uuid);
@@ -470,10 +470,12 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
 }
 
 void Model::saveProto(const std::string& filename, bool with_optimizer) const {
-  auto proto = toProto(with_optimizer);
+  auto* proto = toProto(with_optimizer);
 
   std::ofstream output = dataset::SafeFileIO::ofstream(filename);
-  proto.SerializeToOstream(&output);
+  proto->SerializeToOstream(&output);
+
+  delete proto;
 }
 
 std::shared_ptr<Model> Model::loadProto(const std::string& filename) {
@@ -488,8 +490,11 @@ std::shared_ptr<Model> Model::loadProto(const std::string& filename) {
 }
 
 std::string Model::serializeProto(bool with_optimizer) const {
-  auto proto = toProto(with_optimizer);
-  return proto.SerializeAsString();
+  auto* proto = toProto(with_optimizer);
+  std::string binary = proto->SerializeAsString();
+  delete proto;
+
+  return binary;
 }
 
 std::shared_ptr<Model> Model::deserializeProto(const std::string& binary) {

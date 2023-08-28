@@ -11,6 +11,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -23,6 +24,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/udt.pb.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -71,6 +73,10 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       input_data_types, temporal_relationships, target_name, label_transform,
       bolt_labels, tabular_options);
 }
+
+UDTClassifier::UDTClassifier(const proto::udt::UDTClassifier& classifier)
+    : _classifier(utils::Classifier::fromProto(classifier.classifier())),
+      _featurizer(std::make_shared<Featurizer>(classifier.featurizer())) {}
 
 py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 float learning_rate, uint32_t epochs,
@@ -166,6 +172,17 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
   return _classifier->predict(_featurizer->featurizeInputBatch(samples),
                               sparse_inference, return_predicted_class,
                               /* single= */ false, top_k);
+}
+
+proto::udt::UDT* UDTClassifier::toProto(bool with_optimizer) const {
+  auto* udt = new proto::udt::UDT();
+
+  auto* classifier = udt->mutable_classifier();
+
+  classifier->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  classifier->set_allocated_featurizer(_featurizer->toProto());
+
+  return udt;
 }
 
 std::vector<std::pair<std::string, float>> UDTClassifier::explain(

@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
@@ -30,6 +31,16 @@ Classifier::Classifier(bolt::ModelPtr model, bool freeze_hash_tables)
   // TODO(Nicholas): should this be configurable using the model config, and
   // have a default for the default model.
   _emb = computations.at(computations.size() - 2);
+}
+
+Classifier::Classifier(const proto::udt::Classifier& classifier)
+    : _model(bolt::Model::fromProto(classifier.model())),
+      _freeze_hash_tables(classifier.freeze_hash_tables()) {
+  _emb = _model->getComputation(classifier.embedding_name());
+
+  if (classifier.has_binary_prediction_threshold()) {
+    _binary_prediction_threshold = classifier.binary_prediction_threshold();
+  }
 }
 
 py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
@@ -357,6 +368,19 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+proto::udt::Classifier* Classifier::toProto(bool with_optimizer) const {
+  auto* classifier = new proto::udt::Classifier();
+
+  classifier->set_allocated_model(_model->toProto(with_optimizer));
+  classifier->set_embedding_name(_emb->name());
+  classifier->set_freeze_hash_tables(_freeze_hash_tables);
+  if (_binary_prediction_threshold) {
+    classifier->set_binary_prediction_threshold(*_binary_prediction_threshold);
+  }
+
+  return classifier;
 }
 
 template void Classifier::serialize(cereal::BinaryInputArchive&);

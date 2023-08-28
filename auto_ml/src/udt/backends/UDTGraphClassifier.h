@@ -3,6 +3,7 @@
 #include <auto_ml/src/featurization/GraphFeaturizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <proto/udt_graph_classifier.pb.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -12,6 +13,8 @@ class UDTGraphClassifier final : public UDTBackend {
   UDTGraphClassifier(const data::ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
                      bool integer_target, const data::TabularOptions& options);
+
+  explicit UDTGraphClassifier(const proto::udt::UDTGraphClassifier& graph);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -42,6 +45,8 @@ class UDTGraphClassifier final : public UDTBackend {
                                 sparse_inference, return_predicted_class,
                                 /* single= */ false, top_k);
   }
+
+  proto::udt::UDT* toProto(bool with_optimizer) const final;
 
   void indexNodes(const dataset::DataSourcePtr& source) final {
     _featurizer->index(source);

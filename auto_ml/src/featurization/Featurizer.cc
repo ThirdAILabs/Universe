@@ -5,16 +5,20 @@
 #include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
+#include <proto/featurizers.pb.h>
 #include <memory>
 #include <stdexcept>
 
 namespace thirdai::automl {
+
+using thirdai::data::Transformation;
 
 Featurizer::Featurizer(
     data::ColumnDataTypes data_types,
@@ -44,6 +48,22 @@ Featurizer::Featurizer(
       _text_dataset = TextDatasetConfig(data_types.begin()->first, label_column,
                                         cat_label->delimiter);
     }
+  }
+}
+
+Featurizer::Featurizer(const proto::udt::Featurizer& featurizer)
+    : _input_transform(Transformation::fromProto(featurizer.input_transform())),
+      _input_transform_non_updating(
+          Transformation::fromProto(featurizer.input_transform_non_updating())),
+      _label_transform(Transformation::fromProto(featurizer.label_transform())),
+      _bolt_input_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_input_columns())),
+      _bolt_label_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_label_columns())),
+      _delimiter(featurizer.delimiter()),
+      _state(thirdai::data::State::fromProto(featurizer.state())) {
+  if (featurizer.has_text_dataset_config()) {
+    _text_dataset = TextDatasetConfig(featurizer.text_dataset_config());
   }
 }
 
@@ -208,14 +228,57 @@ void Featurizer::updateTemporalTrackersBatch(const MapInputBatch& samples) {
 
 void Featurizer::resetTemporalTrackers() { _state->clearHistoryTrackers(); }
 
+proto::udt::Featurizer* Featurizer::toProto() const {
+  auto* featurizer = new proto::udt::Featurizer();
+
+  featurizer->set_allocated_input_transform(_input_transform->toProto());
+  featurizer->set_allocated_input_transform_non_updating(
+      _input_transform_non_updating->toProto());
+  featurizer->set_allocated_label_transform(_label_transform->toProto());
+
+  featurizer->set_allocated_bolt_input_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_input_columns));
+  featurizer->set_allocated_bolt_label_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_label_columns));
+
+  featurizer->set_delimiter(_delimiter);
+
+  featurizer->set_allocated_state(_state->toProto());
+
+  if (_text_dataset) {
+    featurizer->set_allocated_text_dataset_config(_text_dataset->toProto());
+  }
+
+  return featurizer;
+}
+
+TextDatasetConfig::TextDatasetConfig(
+    const proto::udt::TextDatasetConfig& text_dataset)
+    : _text_column(text_dataset.text_column()),
+      _label_column(text_dataset.label_column()) {
+  if (text_dataset.has_label_delimiter()) {
+    _label_delimiter = text_dataset.label_delimiter();
+  }
+}
+
+proto::udt::TextDatasetConfig* TextDatasetConfig::toProto() const {
+  auto* text_dataset = new proto::udt::TextDatasetConfig();
+
+  text_dataset->set_text_column(_text_column);
+  text_dataset->set_label_column(_label_column);
+  if (_label_delimiter) {
+    text_dataset->set_label_delimiter(*_label_delimiter);
+  }
+
+  return text_dataset;
+}
+
 template void Featurizer::serialize(cereal::BinaryInputArchive&);
 template void Featurizer::serialize(cereal::BinaryOutputArchive&);
 
 template <typename Archive>
 void Featurizer::serialize(Archive& archive) {
-  archive(_input_transform, _input_transform_non_updating, _label_transform,
-          _bolt_input_columns, _bolt_label_columns, _delimiter, _state,
-          _text_dataset);
+  (void)archive;
 }
 
 }  // namespace thirdai::automl

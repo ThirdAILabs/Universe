@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <proto/udt_mach.pb.h>
 #include <cstddef>
 #include <iterator>
 #include <random>
@@ -21,6 +22,8 @@ class RLHFSampler {
         _max_samples_per_doc(max_samples_per_doc),
         _rng(RNG_SEED) {}
 
+  explicit RLHFSampler(const proto::udt::RlhfSampler& rlhf_sampler);
+
   std::vector<RlhfSample> balancingSamples(size_t num_samples);
 
   void addSample(uint32_t doc_id, const RlhfSample& sample);
@@ -34,6 +37,8 @@ class RLHFSampler {
     _samples_per_doc.erase(doc_id);
     _doc_ids.erase(doc_id);
   }
+
+  proto::udt::RlhfSampler* toProto() const;
 
  private:
   static constexpr uint32_t RNG_SEED = 7240924;

@@ -8,6 +8,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <proto/classifier.pb.h>
 #include <pybind11/pybind11.h>
 #include <memory>
 #include <optional>
@@ -20,6 +21,8 @@ using bolt::metrics::InputMetrics;
 class Classifier {
  public:
   Classifier(bolt::ModelPtr model, bool freeze_hash_tables);
+
+  explicit Classifier(const proto::udt::Classifier& classifier);
 
   static std::shared_ptr<Classifier> make(const bolt::ModelPtr& model,
                                           bool freeze_hash_tables) {
@@ -81,6 +84,12 @@ class Classifier {
   auto& model() { return _model; }
 
   const auto& model() const { return _model; }
+
+  proto::udt::Classifier* toProto(bool with_optimizer) const;
+
+  static auto fromProto(const proto::udt::Classifier& classifier) {
+    return std::make_shared<Classifier>(classifier);
+  }
 
  private:
   uint32_t predictedClass(const BoltVector& output);

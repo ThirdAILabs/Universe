@@ -22,6 +22,7 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/udt.pb.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -229,6 +230,25 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
   }
 
   return py::make_tuple(py::cast(phrases), py::cast(phrase_scores));
+}
+
+proto::udt::UDT* UDTQueryReformulation::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto* udt = new proto::udt::UDT();
+
+  auto* query_reformulation = udt->mutable_query_reformulation();
+
+  // query_reformulation->unsafe_arena_set_allocated_index();
+  // query_reformulation->set_allocated_phrase_id_map(_phrase_id_map->toProto());
+  if (_incorrect_column_name) {
+    query_reformulation->set_incorrect_column_name(*_incorrect_column_name);
+  }
+  query_reformulation->set_correct_column_name(_correct_column_name);
+  *query_reformulation->mutable_n_grams() = {_n_grams.begin(), _n_grams.end()};
+  query_reformulation->set_delimiter(_delimiter);
+
+  return udt;
 }
 
 bool UDTQueryReformulation::containsColumn(
