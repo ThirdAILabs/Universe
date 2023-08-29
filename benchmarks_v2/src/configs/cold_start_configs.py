@@ -30,6 +30,33 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
         }
 
 
+class ScifactColdStartMachUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "scifact_cold_start_mach_udt"
+    dataset_name = "scifact"
+
+    cold_start_train_file = "scifact/unsupervised.csv"
+    test_file = "scifact/tst_supervised.csv"
+
+    target = "DOC_ID"
+    integer_target = True
+    n_target_classes = 5183
+    delimiter = ","
+
+    metrics = ["precision@1", "recall@5"]
+    cold_start_num_epochs = 5
+    cold_start_learning_rate = 0.001
+    strong_column_names = ["TITLE"]
+    weak_column_names = ["TEXT"]
+    options = {"extreme_classification": True, "embedding_dimension": 1024}
+
+    @staticmethod
+    def get_data_types(path_prefix):
+        return {
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+            "DOC_ID": bolt.types.categorical(delimiter=":"),
+        }
+
+
 class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
     config_name = "cooking_cold_start_udt"
     dataset_name = "cooking"
