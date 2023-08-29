@@ -236,8 +236,8 @@ py::object UDTClassifier::coldstart(
                             callbacks, options, comm);
 }
 
-py::object UDTClassifier::embedding(const MapInput& sample) {
-  return _classifier->embedding(_featurizer->featurizeInput(sample));
+py::object UDTClassifier::embedding(const MapInputBatch& sample) {
+  return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
 }
 
 py::object UDTClassifier::entityEmbedding(

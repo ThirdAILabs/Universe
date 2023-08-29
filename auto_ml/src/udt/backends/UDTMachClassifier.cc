@@ -392,8 +392,8 @@ py::object UDTMachClassifier::coldstart(
                             callbacks, options, comm);
 }
 
-py::object UDTMachClassifier::embedding(const MapInput& sample) {
-  return _classifier->embedding(_featurizer->featurizeInput(sample));
+py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
+  return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
 }
 
 uint32_t expectInteger(const Label& label) {
