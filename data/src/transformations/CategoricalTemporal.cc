@@ -39,10 +39,12 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     const std::string& user_id = user_col->value(i);
     int64_t timestamp = timestamp_col->value(i);
 
-    if (timestamp < item_history_tracker.last_timestamp) {
-      throw std::invalid_argument("Expected increasing timestamps in column '" +
-                                  _timestamp_column + "'.");
-    }
+    // if (timestamp < item_history_tracker.last_timestamp) {
+    //   throw std::invalid_argument("Expected increasing timestamps in column
+    //   '" +
+    //                               _timestamp_column + "'.");
+    // }
+
     item_history_tracker.last_timestamp = timestamp;
 
     std::vector<uint32_t> user_last_n_items;
