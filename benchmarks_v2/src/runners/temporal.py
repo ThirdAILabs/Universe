@@ -40,12 +40,8 @@ class TemporalRunner(Runner):
                 callbacks=config.callbacks + ([mlflow_logger] if mlflow_logger else []),
             )
 
-            model.reset_temporal_trackers()
-
             if len(config.metrics) > 0:
                 metrics = model.evaluate(test_file, metrics=config.metrics)
-
-                model.reset_temporal_trackers()
 
                 if mlflow_logger:
                     for k, v in metrics.items():
@@ -53,15 +49,17 @@ class TemporalRunner(Runner):
                             key=k, value=v[-1], step=epoch
                         )
 
+            model.reset_temporal_trackers()
+
         # indexing train file so that train data user history is used for predictions
-        # train_data = pd.read_csv(
-        #     train_file, low_memory=False, delimiter=config.delimiter
-        # )
-        # for _, row in train_data.iterrows():
-        #     sample = dict(row)
-        #     sample = {x: str(y) for x, y in sample.items()}
-        #     model.index(sample)
-        # del train_data
+        train_data = pd.read_csv(
+            train_file, low_memory=False, delimiter=config.delimiter
+        )
+        for _, row in train_data.iterrows():
+            sample = dict(row)
+            sample = {x: str(y) for x, y in sample.items()}
+            model.index(sample)
+        del train_data
 
         average_predict_time_ms = cls.get_average_predict_time(
             model, test_file, config, path_prefix, num_samples=1000
