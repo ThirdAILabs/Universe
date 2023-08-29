@@ -116,16 +116,17 @@ def test_without_updating_history(include_current_row):
 
 
 def test_non_increasing_timestamps():
-    users = ["user_1", "user_2", "user_1"]
-    items = [[0, 1], [10, 11], [12, 13]]
-    timestamps = [2, 3, 1]
+    users = ["user_1", "user_2", "user_2", "user_1"]
+    items = [[0, 1], [10, 11], [12, 13], [2, 3]]
+    timestamps = [4, 1, 2, 3]
 
     columns = make_column_map(users, items, timestamps)
 
     transformation = categorical_temporal(include_current_row=True)
 
     with pytest.raises(
-        ValueError, match="Expected increasing timestamps in column 'timestamps'."
+        ValueError,
+        match="Expected increasing timestamps for each tracking key. Found timestamp 3 after seeing timestamp 4 for tracking key 'user_1'.",
     ):
         transformation(columns)
 
