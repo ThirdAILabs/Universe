@@ -53,6 +53,9 @@ class State {
 
   explicit State(automl::data::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
+  State(MachIndexPtr mach_index, automl::data::GraphInfoPtr graph)
+      : _mach_index(std::move(mach_index)), _graph(std::move(graph)) {}
+
   State() {}
 
   explicit State(const proto::data::State& state);

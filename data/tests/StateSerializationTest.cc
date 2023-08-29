@@ -31,9 +31,21 @@ void compareVocab(const VocabMap& expected,
   }
 }
 
-void compareTrackers(const ItemHistoryTracker& a, const ItemHistoryTracker& b) {
-  ASSERT_EQ(a.last_timestamp, b.last_timestamp);
-  ASSERT_EQ(a.trackers, b.trackers);
+automl::data::GraphInfoPtr makeGraph() {
+  auto graph = std::make_shared<automl::data::GraphInfo>(/* feature_dim= */ 3);
+
+  graph->insertNode(10, {10.5, 20.5, 30.5}, {2, 4, 6, 8});
+  graph->insertNode(100, {100.5, 200.5, 300.5}, {5, 2, 7});
+  graph->insertNode(1000, {1000.5, 2000.5, 3000.5}, {73, 28, 54, 89, 46});
+
+  return graph;
+}
+
+void compareGraphs(const automl::data::GraphInfoPtr& old_graph,
+                   const automl::data::GraphInfoPtr& new_graph) {
+  ASSERT_EQ(old_graph->featureDim(), new_graph->featureDim());
+  ASSERT_EQ(old_graph->nodeFeatures(), new_graph->nodeFeatures());
+  ASSERT_EQ(old_graph->neighbors(), new_graph->neighbors());
 }
 
 TEST(StateSerializationTest, StateIsMaintained) {
@@ -43,7 +55,7 @@ TEST(StateSerializationTest, StateIsMaintained) {
   auto mach_index = std::make_shared<dataset::mach::MachIndex>(
       entity_to_hashes, /* num_buckets= */ 10, /* num_hashes= */ 3);
 
-  State state(mach_index);
+  State state(mach_index, makeGraph());
 
   VocabMap vocab_a = {{"a", 1}, {"b", 0}, {"c", 2}};
 
@@ -77,8 +89,10 @@ TEST(StateSerializationTest, StateIsMaintained) {
   compareVocab(vocab_a, 100, new_state.getVocab("vocab_a"));
   compareVocab(vocab_b, std::nullopt, new_state.getVocab("vocab_b"));
 
-  compareTrackers(new_state.getItemHistoryTracker("tracker_1"), tracker_1);
-  compareTrackers(new_state.getItemHistoryTracker("tracker_2"), tracker_2);
+  ASSERT_EQ(new_state.getItemHistoryTracker("tracker_1"), tracker_1);
+  ASSERT_EQ(new_state.getItemHistoryTracker("tracker_1"), tracker_1);
+
+  compareGraphs(state.graph(), new_state.graph());
 }
 
 }  // namespace thirdai::data::tests

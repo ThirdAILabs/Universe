@@ -7,14 +7,12 @@ message ItemRecord {
   required int64 timestamp = 2;
 }
 
-message ItemRecordList {
-  required string key = 1;
+message ItemRecordHistory {
   repeated ItemRecord history = 2;
 }
 
 message ItemHistoryTracker {
-  repeated ItemRecordList trackers = 1;
-  required int64 last_timestamp = 2;
+  map<string, ItemRecordHistory> trackers = 1;
 }
 
 message Vocabulary {
@@ -34,10 +32,26 @@ message MachIndex {
   repeated Entity entities = 3;
 }
 
+message GraphFeatureVector {
+  repeated float features = 1;
+}
+
+message GraphNeighbors {
+  repeated uint64 neighbors = 2;
+}
+
+message GraphInfo {
+  required uint64 feature_dim = 1;
+  map<uint64, GraphFeatureVector> node_features = 2;
+  map<uint64, GraphNeighbors> neighbors = 3;
+}
+
 message State {
   optional MachIndex mach_index = 1;
 
   map<string, Vocabulary> vocabs = 2;
 
   map<string, ItemHistoryTracker> item_history_trackers = 3;
+
+  optional GraphInfo graph = 4;
 }
