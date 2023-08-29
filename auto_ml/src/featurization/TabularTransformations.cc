@@ -15,6 +15,7 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -82,7 +83,9 @@ TransformSeries sequence(const std::string& column_name,
   std::string output = sequenceOutputColumn(column_name);
 
   auto hash = std::make_shared<thirdai::data::StringHash>(
-      column_name, column_name, sequence->delimiter);
+      column_name, column_name,
+      /* hash_range= */ std::numeric_limits<uint32_t>::max(),
+      /* delimiter= */ sequence->delimiter);
 
   auto transformation = std::make_shared<thirdai::data::HashPositionTransform>(
       column_name, output,
@@ -271,7 +274,7 @@ MergedTransformSeries temporalTransformations(
 
       if (should_update_history || !tracking_labels) {
         auto item_hash = std::make_shared<thirdai::data::StringHash>(
-            categorical_temporal.column_name, item_column,
+            categorical_temporal.column_name, item_column, std::nullopt,
             tracked_column->delimiter);
         transformations.push_back(item_hash);
       }

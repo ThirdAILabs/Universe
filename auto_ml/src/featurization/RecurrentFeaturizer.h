@@ -39,7 +39,14 @@ class RecurrentFeaturizer {
   }
 
  private:
-  thirdai::data::TransformationPtr _input_transform;
+  thirdai::data::TransformationPtr makeTransformation(
+      const data::ColumnDataTypes& data_types, const std::string& target_name,
+      const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
+      const data::TabularOptions& tabular_options,
+      const thirdai::data::TransformationPtr& augmentation) const;
+
+  thirdai::data::TransformationPtr _augmentating_transform;
+  thirdai::data::TransformationPtr _non_augmenting_transform;
   std::shared_ptr<thirdai::data::Recurrence> _recurrence_augmentation;
 
   thirdai::data::OutputColumnsList _bolt_input_columns;
