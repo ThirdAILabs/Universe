@@ -237,7 +237,28 @@ class DocumentManager:
         self.hashes = {}
         self.source_id_prefix_trie = StringTrie()
 
+    # This should not be used until delete classes from Mach is possible
+    # This function removes documents from the document manager
+    def _delete_docs(self, doc_hashes: set[str]):
+        # Remove and reindex documents.
+        # Since we are only removing docs, order will be preserved.
+        offset = 0
+        for i, doc_hash in enumerate(self.hashes):
+            if doc_hash in doc_hashes:
+                del self.registry[doc_hash]
+                offset += 1
+            else:
+                self.hashes[i - offset] = doc_hash
+
+        # Delete all keys that are out of range
+        for i in range(len(self.hashes) - len(doc_hashes), len(self.hashes)):
+            del self.hashes[i]
+
     def _get_doc_and_start_id(self, element_id: int):
+        last_doc, last_start_idx = next(reversed(self.registry.values()))
+        last_element_id = last_doc.size + last_start_idx
+        if not 0 <= element_id < last_element_id:
+            raise ValueError(f"Unable to find document that has id {element_id}.")
 
         start, end = 0, len(self.hashes) - 1
         while start <= end:
@@ -247,12 +268,6 @@ class DocumentManager:
             else:
                 end -= 1
         return self.registry[self.hashes[end]]
-
-        for doc, start_id in reversed(self.registry.values()):
-            if start_id <= element_id:
-                return doc, start_id
-
-        raise ValueError(f"Unable to find document that has id {element_id}.")
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
