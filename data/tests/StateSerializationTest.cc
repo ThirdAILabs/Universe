@@ -48,11 +48,6 @@ void compareGraphs(const automl::data::GraphInfoPtr& old_graph,
   ASSERT_EQ(old_graph->neighbors(), new_graph->neighbors());
 }
 
-void compareTrackers(const ItemHistoryTracker& a, const ItemHistoryTracker& b) {
-  ASSERT_EQ(a.last_timestamp, b.last_timestamp);
-  ASSERT_EQ(a.trackers, b.trackers);
-}
-
 TEST(StateSerializationTest, StateIsMaintained) {
   std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes = {
       {1, {2, 8, 3}}, {2, {0, 6, 9}}, {3, {4, 1, 7}}};
@@ -94,8 +89,8 @@ TEST(StateSerializationTest, StateIsMaintained) {
   compareVocab(vocab_a, 100, new_state.getVocab("vocab_a"));
   compareVocab(vocab_b, std::nullopt, new_state.getVocab("vocab_b"));
 
-  compareTrackers(new_state.getItemHistoryTracker("tracker_1"), tracker_1);
-  compareTrackers(new_state.getItemHistoryTracker("tracker_2"), tracker_2);
+  ASSERT_EQ(new_state.getItemHistoryTracker("tracker_1"), tracker_1);
+  ASSERT_EQ(new_state.getItemHistoryTracker("tracker_1"), tracker_1);
 
   compareGraphs(state.graph(), new_state.graph());
 }

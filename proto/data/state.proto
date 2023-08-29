@@ -7,14 +7,12 @@ message ItemRecord {
   required int64 timestamp = 2;
 }
 
-message ItemRecordList {
-  required string key = 1;
+message ItemRecordHistory {
   repeated ItemRecord history = 2;
 }
 
 message ItemHistoryTracker {
-  repeated ItemRecordList trackers = 1;
-  required int64 last_timestamp = 2;
+  map<string, ItemRecordHistory> trackers = 1;
 }
 
 message Vocabulary {
