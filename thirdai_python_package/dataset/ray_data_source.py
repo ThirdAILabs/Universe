@@ -1,7 +1,4 @@
-import os
-
 import pandas as pd
-import ray
 from thirdai.dataset.data_source import PyDataSource
 
 
@@ -20,6 +17,12 @@ class RayDataSource(PyDataSource):
         PyDataSource.__init__(self)
         self.ray_dataset = ray_dataset
         self.restart()
+        try:
+            import ray
+        except ImportError:
+            raise ImportError(
+                "ray is not installed. Please install it to use RayDataSource."
+            )
 
     def _get_line_iterator(self):
         # return the header first

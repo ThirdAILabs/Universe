@@ -146,3 +146,20 @@ def setup_ray(num_workers=2):
         placement_strategy="PACK",
     )
     return scaling_config
+
+
+def extract_metrics_from_file(filename):
+    import json
+
+    # Read the metrics dictionary from the JSON file
+    with open(filename, "r") as file:
+        data = json.load(file)
+    return data
+
+
+def write_metrics_to_file(filename, metrics):
+    import json
+
+    # Write the metrics dictionary to the file in JSON format
+    with open(filename, "w") as file:
+        json.dump(metrics, file)

@@ -22,7 +22,7 @@ class TransformationList final : public Transformation {
     for (const auto& transformation : _transformations) {
       // This is a shallow copy and not expensive since columns are stored as
       // shared pointers.
-      columns = transformation->apply(columns, state);
+      columns = transformation->apply(std::move(columns), state);
     }
 
     return columns;
@@ -30,6 +30,8 @@ class TransformationList final : public Transformation {
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  const auto& transformations() const { return _transformations; }
 
   void save(const std::string& filename) const;
 
