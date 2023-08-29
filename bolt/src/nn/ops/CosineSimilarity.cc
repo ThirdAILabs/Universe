@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <unordered_map>
@@ -38,7 +39,17 @@ void CosineSimilarity::forward(const ComputationList& inputs, TensorPtr& output,
     }
   }
 
-  out.activations[0] = sim;
+  switch (_clipping_mode) {
+    case ClippingMode::Identity:
+      out.activations[0] = sim;
+      break;
+    case ClippingMode::Sigmoid:
+      out.activations[0] = 1 / (1 + std::exp(-sim));
+      break;
+    case ClippingMode::LinearScaling:
+      out.activations[0] = 0.5 * (1 + sim);
+      break;
+  }
 }
 
 void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
@@ -54,6 +65,27 @@ void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
 
   float cos_sim = out.activations[0];
   float grad = out.gradients[0];
+
+  switch (_clipping_mode) {
+    case ClippingMode::Identity: {
+      float label = grad + (1 / (1 + std::exp(cos_sim)));
+      float clipped_cosine_sim = std::clamp(cos_sim, 1e-6F, 1 - 1e-6F);
+      grad =
+          (label / clipped_cosine_sim) + (1 - label) / (1 - clipped_cosine_sim);
+      break;
+    }
+    case ClippingMode::Sigmoid: {
+      break;
+    }
+    case ClippingMode::LinearScaling: {
+      float label = grad + (1 / (1 + std::exp(cos_sim)));
+      float clipped_cosine_sim = std::clamp(cos_sim, 1e-6F, 1 - 1e-6F);
+      grad =
+          (label / clipped_cosine_sim) + (1 - label) / (1 - clipped_cosine_sim);
+      grad = grad * 0.25;
+      break;
+    }
+  }
 
   if (a.isDense()) {
     if (b.isDense()) {
@@ -204,7 +236,7 @@ void CosineSimilarity::sparseSparseBackprop(float grad, float cos_sim,
 
 template <class Archive>
 void CosineSimilarity::serialize(Archive& archive) {
-  archive(cereal::base_class<Op>(this));
+  archive(cereal::base_class<Op>(this), _clipping_mode);
 }
 }  // namespace thirdai::bolt
 
