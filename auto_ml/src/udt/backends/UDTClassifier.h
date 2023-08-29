@@ -75,7 +75,7 @@ class UDTClassifier final : public UDTBackend {
                        TrainOptions options,
                        const bolt::DistributedCommPtr& comm) final;
 
-  py::object embedding(const MapInput& sample) final;
+  py::object embedding(const MapInputBatch& sample) final;
 
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
