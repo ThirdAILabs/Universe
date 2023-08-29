@@ -61,8 +61,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
   }
 
  private:
-  UDTRecurrentClassifier() {}
-
   static void throwIfSparseInference(bool sparse_inference) {
     if (sparse_inference) {
       // TODO(Geordie): We can actually use a special case of sparse inference
@@ -83,11 +81,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
 
   void addPredictionToSample(MapInput& sample,
                              const std::string& prediction) const;
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   ModelPtr _model;
 

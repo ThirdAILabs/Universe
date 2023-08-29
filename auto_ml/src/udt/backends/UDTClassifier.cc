@@ -1,8 +1,4 @@
 #include "UDTClassifier.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -338,26 +334,4 @@ bool UDTClassifier::integerTarget() const {
   return !_featurizer->state()->containsVocab(LABEL_VOCAB);
 }
 
-template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
-                                       const uint32_t version);
-template void UDTClassifier::serialize(cereal::BinaryOutputArchive&,
-                                       const uint32_t version);
-
-template <class Archive>
-void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_CLASSIFIER_VERSION after serialization
-  // changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTClassifier,
-                     thirdai::versions::UDT_CLASSIFIER_VERSION)

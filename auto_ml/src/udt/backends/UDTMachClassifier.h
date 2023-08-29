@@ -258,13 +258,6 @@ class UDTMachClassifier final : public UDTBackend {
     return defaults::MACH_DEFAULT_NUM_REPETITIONS;
   }
 
-  UDTMachClassifier() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
-
   std::shared_ptr<utils::Classifier> _classifier;
 
   MachFeaturizerPtr _featurizer;

@@ -36,13 +36,14 @@ class Model : public std::enable_shared_from_this<Model> {
    * outputs, loss functions, and labels so it is ok to add additonal labels.
    */
   Model(ComputationList inputs, ComputationList outputs,
-        std::vector<LossPtr> losses, ComputationList additional_labels = {});
+        std::vector<LossPtr> losses,
+        const ComputationList& expected_labels = {});
 
  public:
-  static std::shared_ptr<Model> make(ComputationList inputs,
-                                     ComputationList outputs,
-                                     std::vector<LossPtr> losses,
-                                     ComputationList additional_labels = {});
+  static std::shared_ptr<Model> make(
+      ComputationList inputs, ComputationList outputs,
+      std::vector<LossPtr> losses,
+      const ComputationList& additional_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.

@@ -1,8 +1,4 @@
 #include "Featurizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/TensorConversion.h>
@@ -271,14 +267,6 @@ proto::udt::TextDatasetConfig* TextDatasetConfig::toProto() const {
   }
 
   return text_dataset;
-}
-
-template void Featurizer::serialize(cereal::BinaryInputArchive&);
-template void Featurizer::serialize(cereal::BinaryOutputArchive&);
-
-template <typename Archive>
-void Featurizer::serialize(Archive& archive) {
-  (void)archive;
 }
 
 }  // namespace thirdai::automl

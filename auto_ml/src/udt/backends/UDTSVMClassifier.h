@@ -56,13 +56,6 @@ class UDTSVMClassifier final : public UDTBackend {
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
-  UDTSVMClassifier() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
-
   utils::ClassifierPtr _classifier;
 };
 

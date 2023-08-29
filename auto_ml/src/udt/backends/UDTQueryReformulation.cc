@@ -1,9 +1,4 @@
 #include "UDTQueryReformulation.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashFunction.h>
@@ -411,16 +406,4 @@ uint32_t UDTQueryReformulation::recall(
   return correct;
 }
 
-template void UDTQueryReformulation::serialize(cereal::BinaryInputArchive&);
-template void UDTQueryReformulation::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void UDTQueryReformulation::serialize(Archive& archive) {
-  archive(cereal::base_class<UDTBackend>(this), _flash_index,
-          _inference_featurizer, _phrase_id_map, _incorrect_column_name,
-          _correct_column_name, _delimiter, _n_grams);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTQueryReformulation)

@@ -1,8 +1,4 @@
 #include "UDTSVMClassifier.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -94,24 +90,6 @@ proto::udt::UDT* UDTSVMClassifier::toProto(bool with_optimizer) const {
   return udt;
 }
 
-template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,
-                                          const uint32_t version);
-template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&,
-                                          const uint32_t version);
-
-template <class Archive>
-void UDTSVMClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_SVM_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_SVM_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_SVM_CLASSIFIER_VERSION after serialization
-  // changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier);
-}
-
 dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
     dataset::DataSourcePtr data_source, bool shuffle,
     dataset::DatasetShuffleConfig shuffle_config) {
@@ -122,8 +100,5 @@ dataset::DatasetLoaderPtr UDTSVMClassifier::svmDatasetLoader(
 
   return dataset_loader;
 }
-}  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTSVMClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTSVMClassifier,
-                     thirdai::versions::UDT_SVM_CLASSIFIER_VERSION)
+}  // namespace thirdai::automl::udt

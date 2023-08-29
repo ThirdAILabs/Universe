@@ -52,13 +52,6 @@ class UDTRegression final : public UDTBackend {
  private:
   float unbinActivations(const BoltVector& output) const;
 
-  UDTRegression() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
-
   ModelPtr _model;
 
   FeaturizerPtr _featurizer;

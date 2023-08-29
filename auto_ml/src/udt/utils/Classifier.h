@@ -102,12 +102,6 @@ class Classifier {
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
       const thirdai::data::LoaderPtr& dataset, const std::string& metric_name);
 
-  Classifier() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
-
   bolt::ModelPtr _model;
   bolt::ComputationPtr _emb;
 

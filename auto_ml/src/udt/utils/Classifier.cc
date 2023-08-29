@@ -1,5 +1,4 @@
 #include "Classifier.h"
-#include <cereal/archives/binary.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -381,14 +380,6 @@ proto::udt::Classifier* Classifier::toProto(bool with_optimizer) const {
   }
 
   return classifier;
-}
-
-template void Classifier::serialize(cereal::BinaryInputArchive&);
-template void Classifier::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void Classifier::serialize(Archive& archive) {
-  archive(_model, _emb, _freeze_hash_tables, _binary_prediction_threshold);
 }
 
 }  // namespace thirdai::automl::udt::utils

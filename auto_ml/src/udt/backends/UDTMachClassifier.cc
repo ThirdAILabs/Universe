@@ -1,5 +1,4 @@
 #include "UDTMachClassifier.h"
-#include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
@@ -42,6 +41,7 @@
 #include <random>
 #include <regex>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -949,7 +949,10 @@ InputMetrics UDTMachClassifier::getMetrics(
       model->losses().size() != 1) {
     throw std::invalid_argument(
         "Expected model to have single input, two labels, and one "
-        "loss.");
+        "loss. GOT: " +
+        std::to_string(model->outputs().size()) + " " +
+        std::to_string(model->labels().size()) + " " +
+        std::to_string(model->losses().size()));
   }
 
   bolt::ComputationPtr output = model->outputs().front();
@@ -1004,28 +1007,4 @@ bolt::TensorPtr UDTMachClassifier::placeholderDocIds(uint32_t batch_size) {
                               /* nonzeros= */ 1);
 }
 
-template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
-                                           const uint32_t version);
-template void UDTMachClassifier::serialize(cereal::BinaryOutputArchive&,
-                                           const uint32_t version);
-
-template <class Archive>
-void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_MACH_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_MACH_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
-          _default_top_k_to_return, _num_buckets_to_eval,
-          _mach_sampling_threshold, _rlhf_sampler);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTMachClassifier,
-                     thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)

@@ -1,10 +1,4 @@
 #include "RLHFSampler.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/unordered_set.hpp>
-#include <cereal/types/utility.hpp>
-#include <cereal/types/vector.hpp>
 #include <proto/udt_mach.pb.h>
 #include <stdexcept>
 
@@ -94,14 +88,6 @@ proto::udt::RlhfSampler* RLHFSampler::toProto() const {
   rlhf_sampler->set_max_samples_per_doc(_max_samples_per_doc);
 
   return rlhf_sampler;
-}
-
-template void RLHFSampler::serialize(cereal::BinaryInputArchive& archive);
-template void RLHFSampler::serialize(cereal::BinaryOutputArchive& archive);
-
-template <class Archive>
-void RLHFSampler::serialize(Archive& archive) {
-  archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
 }
 
 }  // namespace thirdai::automl::udt

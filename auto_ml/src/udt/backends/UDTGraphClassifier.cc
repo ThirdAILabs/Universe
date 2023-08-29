@@ -86,24 +86,6 @@ proto::udt::UDT* UDTGraphClassifier::toProto(bool with_optimizer) const {
   return udt;
 }
 
-template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,
-                                            const uint32_t version);
-template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,
-                                            const uint32_t version);
-
-template <class Archive>
-void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_GRAPH_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_GRAPH_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
-}
-
 ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
   auto node_features_input = bolt::Input::make(defaults::FEATURE_HASH_RANGE);
   auto neighbor_token_input =
@@ -147,7 +129,3 @@ ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
 }
 
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTGraphClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTGraphClassifier,
-                     thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION)

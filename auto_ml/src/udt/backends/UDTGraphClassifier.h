@@ -57,14 +57,7 @@ class UDTGraphClassifier final : public UDTBackend {
   ModelPtr model() const final { return _classifier->model(); }
 
  private:
-  UDTGraphClassifier() {}
-
   static ModelPtr createGNN(uint32_t output_dim);
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   utils::ClassifierPtr _classifier;
 

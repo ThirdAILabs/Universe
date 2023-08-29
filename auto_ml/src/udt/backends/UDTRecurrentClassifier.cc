@@ -21,6 +21,14 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::fromMetricNames;
 
+static uint32_t expectMaxLength(const std::optional<uint32_t>& max_length) {
+  if (!max_length) {
+    throw std::invalid_argument(
+        "Parameter max_length must be specified for target sequence.");
+  }
+  return *max_length;
+}
+
 UDTRecurrentClassifier::UDTRecurrentClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
@@ -30,7 +38,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _target_name(target_name),
-      _max_seq_len(target->max_length.value()),  // TODO(Nicholas) add check
+      _max_seq_len(expectMaxLength(target->max_length)),
       _target_delimiter(target->delimiter) {
   if (!temporal_tracking_relationships.empty()) {
     throw std::invalid_argument(
@@ -199,10 +207,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();
 
-  for (uint32_t i = 0; i < vocab->size(); i++) {
-    std::cerr << "VOCAB: " << i << " -> " << vocab->getString(i) << std::endl;
-  }
-
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
   auto mutable_samples = samples;
@@ -292,28 +296,4 @@ void UDTRecurrentClassifier::addPredictionToSample(
   intermediate_column += prediction;
 }
 
-template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
-                                                const uint32_t version);
-template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&,
-                                                const uint32_t version);
-
-template <class Archive>
-void UDTRecurrentClassifier::serialize(Archive& archive,
-                                       const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_RECURRENT_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_RECURRENT_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _target_name, _model,
-          _featurizer, _freeze_hash_tables);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRecurrentClassifier,
-                     thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION)

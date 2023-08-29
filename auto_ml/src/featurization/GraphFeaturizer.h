@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
@@ -59,12 +58,6 @@ class GraphFeaturizer {
   char _delimiter;
 
   thirdai::data::StatePtr _state;
-
-  GraphFeaturizer() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 using GraphFeaturizerPtr = std::shared_ptr<GraphFeaturizer>;

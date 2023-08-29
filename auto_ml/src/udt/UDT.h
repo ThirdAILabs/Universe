@@ -461,11 +461,6 @@ class UDT {
       const data::SequenceDataTypePtr& target_as_sequence,
       bool has_graph_inputs);
 
-  friend class cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
-
   std::unique_ptr<UDTBackend> _backend;
 };
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "HashTable.h"
-#include <_types/_uint64_t.h>
 #include <proto/hashtable.pb.h>
 #include <utils/Random.h>
 #include <atomic>
@@ -84,7 +84,8 @@ class VectorHashTable final : public HashTable<uint32_t> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    (void)archive;
+    archive(_num_tables, _table_range, _reservoir_size, _buckets,
+            _insertions_per_bucket, _gen_rand);
   }
 };
 

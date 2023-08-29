@@ -1,7 +1,4 @@
 #include "RecurrentFeaturizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/EncodePosition.h>
@@ -83,7 +80,7 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
 
 RecurrentFeaturizer::RecurrentFeaturizer(
     const proto::udt::RecurrentFeaturizer& featurizer)
-    : _augmentating_transform(
+    : _augmenting_transform(
           Transformation::fromProto(featurizer.augmenting_transform())),
       _non_augmenting_transform(
           Transformation::fromProto(featurizer.non_augmenting_transform())),
@@ -151,7 +148,7 @@ proto::udt::RecurrentFeaturizer* RecurrentFeaturizer::toProto() const {
   auto* featurizer = new proto::udt::RecurrentFeaturizer();
 
   featurizer->set_allocated_augmenting_transform(
-      _augmentating_transform->toProto());
+      _augmenting_transform->toProto());
   featurizer->set_allocated_non_augmenting_transform(
       _non_augmenting_transform->toProto());
   featurizer->set_allocated_recurrence_augmentation(
@@ -167,14 +164,6 @@ proto::udt::RecurrentFeaturizer* RecurrentFeaturizer::toProto() const {
   featurizer->set_allocated_state(_state->toProto());
 
   return featurizer;
-}
-
-template void RecurrentFeaturizer::serialize(cereal::BinaryInputArchive&);
-template void RecurrentFeaturizer::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void RecurrentFeaturizer::serialize(Archive& archive) {
-  (void)archive;
 }
 
 }  // namespace thirdai::automl

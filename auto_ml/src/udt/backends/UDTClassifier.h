@@ -127,13 +127,6 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const;
 
-  UDTClassifier() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
-
   utils::ClassifierPtr _classifier;
 
   FeaturizerPtr _featurizer;

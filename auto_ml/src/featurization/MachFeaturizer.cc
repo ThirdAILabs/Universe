@@ -1,6 +1,4 @@
 #include "MachFeaturizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <data/src/ColumnMap.h>
@@ -267,14 +265,6 @@ proto::udt::MachFeaturizer* MachFeaturizer::toProto() const {
       _prehashed_labels_transform->toProto());
 
   return featurizer;
-}
-
-template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
-template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void MachFeaturizer::serialize(Archive& archive) {
-  (void)archive;
 }
 
 }  // namespace thirdai::automl

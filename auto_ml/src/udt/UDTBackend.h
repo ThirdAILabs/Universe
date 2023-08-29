@@ -352,14 +352,6 @@ class UDTBackend {
     return std::runtime_error("Method '" + name +
                               "' is not supported for this type of model.");
   }
-
- private:
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
 };
 
 }  // namespace thirdai::automl::udt

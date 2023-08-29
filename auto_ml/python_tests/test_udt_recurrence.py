@@ -103,7 +103,7 @@ def test_udt_recurrence_short_output_does_not_break():
 
 def test_udt_recurrence_target_no_max_length_throws():
     with pytest.raises(
-        ValueError, match="Paramter max_length must be specified for target sequence."
+        ValueError, match="Parameter max_length must be specified for target sequence."
     ):
         model = bolt.UniversalDeepTransformer(
             data_types={

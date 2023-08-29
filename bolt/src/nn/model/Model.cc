@@ -28,7 +28,8 @@
 namespace thirdai::bolt {
 
 Model::Model(ComputationList inputs, ComputationList outputs,
-             std::vector<LossPtr> losses, ComputationList additional_labels)
+             std::vector<LossPtr> losses,
+             const ComputationList& expected_labels)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -42,8 +43,11 @@ Model::Model(ComputationList inputs, ComputationList outputs,
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
-  _labels.insert(_labels.end(), additional_labels.begin(),
-                 additional_labels.end());
+  for (const auto& label : expected_labels) {
+    if (std::find(_labels.begin(), _labels.end(), label) == _labels.end()) {
+      _labels.push_back(label);
+    }
+  }
 
   _computation_order = getComputationOrder(_inputs, _outputs, _losses);
 
@@ -76,10 +80,10 @@ Model::Model(ComputationList inputs, ComputationList outputs,
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
-                                   ComputationList additional_labels) {
-  auto model = std::shared_ptr<Model>(
-      new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                std::move(additional_labels)));
+                                   const ComputationList& additional_labels) {
+  auto model =
+      std::shared_ptr<Model>(new Model(std::move(inputs), std::move(outputs),
+                                       std::move(losses), additional_labels));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -459,7 +463,13 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
     outputs.push_back(computations.at(output));
   }
 
-  auto model = Model::make(inputs, outputs, losses);
+  auto model = Model::make(inputs, outputs, losses, labels);
+
+  size_t expected_labels = model_proto.labels_size();
+  if (model->labels().size() < expected_labels) {
+    for (size_t i = model->labels().size(); i < expected_labels; i++) {
+    }
+  }
 
   model->_model_uuid = model_proto.metadata().uuid();
   model->_train_steps = model_proto.metadata().train_steps();

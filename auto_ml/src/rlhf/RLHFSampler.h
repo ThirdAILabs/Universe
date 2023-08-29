@@ -50,10 +50,6 @@ class RLHFSampler {
   size_t _max_samples_per_doc;
 
   std::mt19937 _rng{RNG_SEED};
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::automl::udt

@@ -124,13 +124,6 @@ class Featurizer {
   thirdai::data::StatePtr _state;
 
   std::optional<TextDatasetConfig> _text_dataset;
-
-  Featurizer() {}  // For cereal
-
- private:
-  friend class cereal::access;
-  template <typename Archive>
-  void serialize(Archive& archive);
 };
 
 using FeaturizerPtr = std::shared_ptr<Featurizer>;

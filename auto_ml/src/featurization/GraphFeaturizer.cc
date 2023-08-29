@@ -1,7 +1,4 @@
 #include "GraphFeaturizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
@@ -214,14 +211,6 @@ proto::udt::GraphFeaturizer* GraphFeaturizer::toProto() const {
   featurizer->set_allocated_state(_state->toProto());
 
   return featurizer;
-}
-
-template void GraphFeaturizer::serialize(cereal::BinaryInputArchive&);
-template void GraphFeaturizer::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void GraphFeaturizer::serialize(Archive& archive) {
-  (void)archive;
 }
 
 }  // namespace thirdai::automl

@@ -48,7 +48,7 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   auto query_batches = createBatches(query_vectors, batch_size);
 
   // Create a Flash object
-  auto flash_index = Flash<uint32_t>(
+  auto flash_index = Flash(
       std::make_shared<DensifiedMinHash>(HASHES_PER_TABLE, NUM_TABLES, RANGE));
 
   uint32_t label_offset = 0;
@@ -74,7 +74,7 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
     output_archive(flash_index);
   }
 
-  Flash<uint32_t> deserialized_flash_index;
+  Flash deserialized_flash_index;
   {
     cereal::BinaryInputArchive input_archive(stream);
     input_archive(deserialized_flash_index);
