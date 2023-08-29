@@ -10,6 +10,7 @@
 #include <dataset/src/Datasets.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <proto/udt_query_reformulation.pb.h>
 
 namespace thirdai::search {
 
@@ -30,6 +31,8 @@ class Flash {
    * implementation).
    **/
   explicit Flash(std::shared_ptr<hashing::HashFunction> hash_function);
+
+  explicit Flash(const proto::udt::Flash& flash);
 
   /**
    * This is the same as the single argument constructor, except the supporting
@@ -67,6 +70,8 @@ class Flash {
   std::pair<std::vector<std::vector<LABEL_T>>, std::vector<std::vector<float>>>
   queryBatch(const BoltBatch& batch, uint32_t top_k,
              bool pad_zeros = false) const;
+
+  proto::udt::Flash* toProto() const;
 
  private:
   /**

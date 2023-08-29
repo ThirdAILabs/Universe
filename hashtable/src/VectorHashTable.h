@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/vector.hpp>
 #include "HashTable.h"
+#include <proto/hashtable.pb.h>
 #include <utils/Random.h>
 #include <atomic>
 #include <random>
@@ -47,6 +48,8 @@ class VectorHashTable final : public HashTable<LABEL_T> {
     }
   }
 
+  explicit VectorHashTable(const proto::hashtable::VectorHashTable& hashtable);
+
   void insert(uint64_t n, LABEL_T const* labels,
               uint32_t const* hashes) override;
 
@@ -70,6 +73,8 @@ class VectorHashTable final : public HashTable<LABEL_T> {
 
   /** Sorts the contents of each bucket */
   void sortBuckets();
+
+  proto::hashtable::VectorHashTable* toProto() const;
 
  private:
   /** Insert a label into a hashtable, including reservoir sampling if enabled

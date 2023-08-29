@@ -132,6 +132,20 @@ class ThreadSafeVocabulary {
     return vocab;
   }
 
+  proto::data::Vocabulary* toProtoAllocated() const {
+    auto* vocab = new proto::data::Vocabulary();
+
+    if (_max_vocab_size) {
+      vocab->set_max_vocab_size(*_max_vocab_size);
+    }
+
+    for (const auto& word : _uid_to_string) {
+      vocab->add_vocab(word);
+    }
+
+    return vocab;
+  }
+
   static std::shared_ptr<ThreadSafeVocabulary> fromProto(
       const proto::data::Vocabulary& vocab) {
     std::unordered_map<std::string, uint32_t> string_to_id;

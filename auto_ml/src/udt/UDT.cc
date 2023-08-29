@@ -13,6 +13,7 @@
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/udt.pb.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -251,39 +252,24 @@ std::vector<uint32_t> UDT::modelDims() const {
   return dims;
 }
 
-void UDT::saveImpl(const std::string& filename) const {
+void UDT::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+
   save_stream(filestream);
 }
 
-void UDT::save(const std::string& filename) const {
-  /*
-   * setting `should_save_optimizer` to false prevents unnecessary checkpointing
-   * of the model. If we load the model from a checkpoint and intend to save it,
-   * by default `_should_save_optimizer` variable is set to true could result in
-   * redundant saving of the optimizer.
-   */
-  // Since UDTQueryReformulation doesn't defines model()
-  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
-    _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ false);
-  }
-  saveImpl(filename);
-}
-
 void UDT::checkpoint(const std::string& filename) const {
-  // Since UDTQueryReformulation doesn't defines model()
-  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
-    _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ true);
-  }
-  saveImpl(filename);
+  auto* backend_proto = _backend->toProto(/* with_optimizer= */ true);
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  backend_proto->SerializeToOstream(&filestream);
 }
 
 void UDT::save_stream(std::ostream& output_stream) const {
-  cereal::BinaryOutputArchive oarchive(output_stream);
-  oarchive(*this);
+  auto* backend_proto = _backend->toProto(/* with_optimizer= */ false);
+  backend_proto->SerializeToOstream(&output_stream);
+  delete backend_proto;
 }
 
 std::shared_ptr<UDT> UDT::load(const std::string& filename) {
@@ -293,11 +279,40 @@ std::shared_ptr<UDT> UDT::load(const std::string& filename) {
 }
 
 std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
-  cereal::BinaryInputArchive iarchive(input_stream);
-  std::shared_ptr<UDT> deserialize_into(new UDT());
-  iarchive(*deserialize_into);
+  proto::udt::UDT udt_proto;
+  udt_proto.ParseFromIstream(&input_stream);
 
-  return deserialize_into;
+  std::shared_ptr<UDT> udt(new UDT());
+
+  switch (udt_proto.backend_case()) {
+    case proto::udt::UDT::kClassifier:
+      udt->_backend = std::make_unique<UDTClassifier>(udt_proto.classifier());
+      break;
+    case proto::udt::UDT::kGraph:
+      udt->_backend = std::make_unique<UDTGraphClassifier>(udt_proto.graph());
+      break;
+    case proto::udt::UDT::kMach:
+      udt->_backend = std::make_unique<UDTMachClassifier>(udt_proto.mach());
+      break;
+    case proto::udt::UDT::kQueryReformulation:
+      udt->_backend = std::make_unique<UDTQueryReformulation>(
+          udt_proto.query_reformulation());
+      break;
+    case proto::udt::UDT::kRecurrent:
+      udt->_backend =
+          std::make_unique<UDTRecurrentClassifier>(udt_proto.recurrent());
+      break;
+    case proto::udt::UDT::kRegression:
+      udt->_backend = std::make_unique<UDTRegression>(udt_proto.regression());
+      break;
+    case proto::udt::UDT::kSvm:
+      udt->_backend = std::make_unique<UDTSVMClassifier>(udt_proto.svm());
+      break;
+    default:
+      throw std::invalid_argument("Invalid UDT Backend in from proto.");
+  }
+
+  return udt;
 }
 
 bool UDT::hasGraphInputs(const data::ColumnDataTypes& data_types) {

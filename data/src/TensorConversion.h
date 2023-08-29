@@ -42,6 +42,7 @@ proto::data::OutputColumnsList* outputColumnsListToProto(
     const OutputColumnsList& output_columns_list);
 
 OutputColumnsList outputColumnsListFromProto(
+
     const proto::data::OutputColumnsList& output_columns_list);
 
 std::vector<bolt::TensorList> toTensorBatches(

@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/array.hpp>
+#include <proto/universal_hash.pb.h>
 #include <array>
 #include <cstdint>
 #include <string>
@@ -14,6 +15,8 @@ namespace thirdai::hashing {
 class UniversalHash {
  public:
   explicit UniversalHash(uint32_t seed);
+
+  explicit UniversalHash(const proto::hashing::UniversalHash& hash_fn);
 
   /**
    * Hash string key.
@@ -29,6 +32,8 @@ class UniversalHash {
    * Returns the seed of the universal hash.
    */
   uint32_t seed() const;
+
+  proto::hashing::UniversalHash* toProto() const;
 
   // Constructor for cereal.
   UniversalHash() {}

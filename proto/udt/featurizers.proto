@@ -9,7 +9,7 @@ import "state.proto";
 message TextDatasetConfig {
   required string text_column = 1;
   required string label_column = 2;
-  required uint32 label_delimiter = 3;
+  optional uint32 label_delimiter = 3;
 }
 
 message Featurizer {

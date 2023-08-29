@@ -115,8 +115,10 @@ OutputColumns::OutputColumns(const proto::data::OutputColumns& output_columns)
     switch (output_columns.value_fill_type()) {
       case proto::data::ValueFillType::ONES:
         _value_fill_type = ValueFillType::Ones;
+        break;
       case proto::data::ValueFillType::SUM_TO_ONE:
         _value_fill_type = ValueFillType::SumToOne;
+        break;
       default:
         throw std::invalid_argument("Invalid ValueFillType in fromProto.");
     }
@@ -133,9 +135,11 @@ proto::data::OutputColumns* OutputColumns::toProto() const {
     switch (_value_fill_type) {
       case ValueFillType::Ones:
         output_columns->set_value_fill_type(proto::data::ValueFillType::ONES);
+        break;
       case ValueFillType::SumToOne:
         output_columns->set_value_fill_type(
             proto::data::ValueFillType::SUM_TO_ONE);
+        break;
     }
   }
 

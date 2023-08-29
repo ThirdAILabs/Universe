@@ -1,8 +1,12 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <hashing/src/DWTA.h>
+#include <hashing/src/MinHash.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/InMemoryDataset.h>
+#include <proto/hashing.pb.h>
+#include <proto/udt_query_reformulation.pb.h>
 #include <search/src/Flash.h>
 #include <utils/Logging.h>
 #include <algorithm>
@@ -35,6 +39,35 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
           _num_tables, reservoir_size, _range)) {
   thirdai::licensing::checkLicense();
+}
+
+template <typename LABEL_T>
+Flash<LABEL_T>::Flash(const proto::udt::Flash& flash)
+    : _num_tables(flash.hash_table().num_tables()),
+      _range(flash.hash_table().table_range()),
+      _total_samples_indexed(flash.total_samples_indexed()) {
+  thirdai::licensing::checkLicense();
+
+  if (flash.hash_table().has_reservoir_size()) {
+    _hashtable = std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
+        flash.hash_table());
+  } else {
+    _hashtable = std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
+        flash.hash_table());
+  }
+
+  switch (flash.hash_function().type_case()) {
+    case proto::hashing::HashFunction::kDwta:
+      _hash_function = std::make_shared<hashing::DWTAHashFunction>(
+          flash.hash_function().dwta());
+      break;
+    case proto::hashing::HashFunction::kMinhash:
+      _hash_function =
+          std::make_shared<hashing::MinHash>(flash.hash_function().minhash());
+      break;
+    default:
+      throw std::invalid_argument("Invalid HashFunction in fromProto.");
+  }
 }
 
 template <typename LABEL_T>
@@ -144,6 +177,28 @@ Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
   std::reverse(result.begin(), result.end());
   std::reverse(scores.begin(), scores.end());
   return {result, scores};
+}
+
+template <typename LABEL_T>
+proto::udt::Flash* Flash<LABEL_T>::toProto() const {
+  auto* flash = new proto::udt::Flash();
+
+  flash->set_allocated_hash_function(_hash_function->toProto());
+
+  if (auto hashtable =
+          std::dynamic_pointer_cast<hashtable::VectorHashTable<LABEL_T, true>>(
+              _hashtable)) {
+    flash->set_allocated_hash_table(hashtable->toProto());
+  } else if (auto hashtable = std::dynamic_pointer_cast<
+                 hashtable::VectorHashTable<LABEL_T, false>>(_hashtable)) {
+    flash->set_allocated_hash_table(hashtable->toProto());
+  } else {
+    throw std::invalid_argument("Expected VectorHashTable in toProto.");
+  }
+
+  flash->set_total_samples_indexed(_total_samples_indexed);
+
+  return flash;
 }
 
 template void Flash<uint32_t>::serialize(cereal::BinaryInputArchive&);

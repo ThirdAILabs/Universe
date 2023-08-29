@@ -67,6 +67,24 @@ UDTQueryReformulation::UDTQueryReformulation(
       dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
 }
 
+UDTQueryReformulation::UDTQueryReformulation(
+    const proto::udt::UDTQueryReformulation& query_reformulation)
+    : _flash_index(std::make_unique<search::Flash<uint32_t>>(
+          query_reformulation.index())),
+      _phrase_id_map(dataset::ThreadSafeVocabulary::fromProto(
+          query_reformulation.phrase_id_map())),
+      _correct_column_name(query_reformulation.correct_column_name()),
+      _n_grams(query_reformulation.n_grams().begin(),
+               query_reformulation.n_grams().end()),
+      _delimiter(query_reformulation.delimiter()) {
+  if (query_reformulation.has_incorrect_column_name()) {
+    _incorrect_column_name = query_reformulation.incorrect_column_name();
+  }
+
+  _inference_featurizer =
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
+}
+
 py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::vector<std::string>& train_metrics,
@@ -239,8 +257,10 @@ proto::udt::UDT* UDTQueryReformulation::toProto(bool with_optimizer) const {
 
   auto* query_reformulation = udt->mutable_query_reformulation();
 
-  // query_reformulation->unsafe_arena_set_allocated_index();
-  // query_reformulation->set_allocated_phrase_id_map(_phrase_id_map->toProto());
+  query_reformulation->unsafe_arena_set_allocated_index(
+      _flash_index->toProto());
+  query_reformulation->set_allocated_phrase_id_map(
+      _phrase_id_map->toProtoAllocated());
   if (_incorrect_column_name) {
     query_reformulation->set_incorrect_column_name(*_incorrect_column_name);
   }

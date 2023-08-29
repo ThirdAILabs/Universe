@@ -9,6 +9,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <proto/udt_query_reformulation.pb.h>
 #include <search/src/Flash.h>
 #include <optional>
 #include <unordered_map>
@@ -22,6 +23,9 @@ class UDTQueryReformulation final : public UDTBackend {
                         const std::string& dataset_size, char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
+
+  explicit UDTQueryReformulation(
+      const proto::udt::UDTQueryReformulation& query_reformulation);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,

@@ -24,6 +24,6 @@ message VectorHashTable {
   repeated Bucket buckets = 4;
 
   repeated uint32 gen_rand = 5;
-  repeated uint64 insertions_per_bucket = 6;
+  repeated uint32 insertions_per_bucket = 6;
   required uint64 total_insertions = 7;
 }

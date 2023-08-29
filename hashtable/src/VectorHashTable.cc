@@ -6,6 +6,29 @@
 namespace thirdai::hashtable {
 
 template <typename LABEL_T, bool USE_RESERVOIR>
+VectorHashTable<LABEL_T, USE_RESERVOIR>::VectorHashTable(
+    const proto::hashtable::VectorHashTable& hashtable)
+    : _num_tables(hashtable.num_tables()),
+      _table_range(hashtable.table_range()),
+      _generated_rand_nums(hashtable.gen_rand().begin(),
+                           hashtable.gen_rand().end()),
+      _num_elements_tried_insert_into_bucket(
+          hashtable.insertions_per_bucket().begin(),
+          hashtable.insertions_per_bucket().end()),
+      counter(hashtable.total_insertions()) {
+  if (hashtable.has_reservoir_size()) {
+    _max_reservoir_size = hashtable.reservoir_size();
+  } else {
+    _max_reservoir_size = 0;
+  }
+
+  _buckets.reserve(hashtable.buckets_size());
+  for (const auto& bucket : hashtable.buckets()) {
+    _buckets.emplace_back(bucket.ids().begin(), bucket.ids().end());
+  }
+}
+
+template <typename LABEL_T, bool USE_RESERVOIR>
 void VectorHashTable<LABEL_T, USE_RESERVOIR>::insert(uint64_t n,
                                                      LABEL_T const* labels,
                                                      uint32_t const* hashes) {
@@ -96,6 +119,34 @@ void VectorHashTable<LABEL_T, USE_RESERVOIR>::sortBuckets() {
   for (uint64_t index = 0; index < _num_tables * _table_range; index++) {
     std::sort(_buckets[index].begin(), _buckets[index].end());
   }
+}
+
+template <typename LABEL_T, bool USE_RESERVOIR>
+proto::hashtable::VectorHashTable*
+VectorHashTable<LABEL_T, USE_RESERVOIR>::toProto() const {
+  auto* hashtable = new proto::hashtable::VectorHashTable();
+
+  hashtable->set_num_tables(_num_tables);
+  hashtable->set_table_range(_table_range);
+  if (USE_RESERVOIR) {
+    hashtable->set_reservoir_size(_max_reservoir_size);
+  }
+
+  for (const auto& bucket : _buckets) {
+    auto* bucket_proto = hashtable->add_buckets();
+    *bucket_proto->mutable_ids() = {bucket.begin(), bucket.end()};
+  }
+
+  *hashtable->mutable_gen_rand() = {_generated_rand_nums.begin(),
+                                    _generated_rand_nums.end()};
+
+  *hashtable->mutable_insertions_per_bucket() = {
+      _num_elements_tried_insert_into_bucket.begin(),
+      _num_elements_tried_insert_into_bucket.end()};
+
+  hashtable->set_total_insertions(counter);
+
+  return hashtable;
 }
 
 template class VectorHashTable<uint8_t, true>;
