@@ -57,6 +57,10 @@ State::State(const proto::data::State& state_proto) {
        state_proto.item_history_trackers()) {
     _item_history_trackers[tracker_key] = trackerFromProto(tracker);
   }
+
+  if (state_proto.has_graph()) {
+    _graph = automl::data::GraphInfo::fromProto(state_proto.graph());
+  }
 }
 
 proto::data::State* State::toProto() const {
@@ -73,6 +77,10 @@ proto::data::State* State::toProto() const {
   for (const auto& [tracker_key, tracker] : _item_history_trackers) {
     state->mutable_item_history_trackers()->emplace(tracker_key,
                                                     trackerToProto(tracker));
+  }
+
+  if (_graph) {
+    state->set_allocated_graph(_graph->toProto());
   }
 
   return state;
