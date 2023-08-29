@@ -45,7 +45,7 @@ class RecurrentFeaturizer {
       const data::TabularOptions& tabular_options,
       const thirdai::data::TransformationPtr& augmentation) const;
 
-  thirdai::data::TransformationPtr _augmentating_transform;
+  thirdai::data::TransformationPtr _augmenting_transform;
   thirdai::data::TransformationPtr _non_augmenting_transform;
   std::shared_ptr<thirdai::data::Recurrence> _recurrence_augmentation;
 
