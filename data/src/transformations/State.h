@@ -27,17 +27,18 @@ struct ItemRecord {
   }
 };
 
-struct ItemHistoryTracker {
-  std::unordered_map<std::string, std::deque<ItemRecord>> trackers;
+struct UserItemRecords {
+  std::deque<ItemRecord> history;
   int64_t last_timestamp = std::numeric_limits<int64_t>::min();
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(trackers, last_timestamp);
+    archive(history, last_timestamp);
   }
 };
 
+using ItemHistoryTracker = std::unordered_map<std::string, UserItemRecords>;
 /**
  * The purpose of this state object is to have a central location where stateful
  * information is stored in the data pipeline. Having a unique owner for all the

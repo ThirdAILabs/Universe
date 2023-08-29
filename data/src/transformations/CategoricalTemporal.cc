@@ -6,6 +6,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <limits>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -39,12 +40,6 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     const std::string& user_id = user_col->value(i);
     int64_t timestamp = timestamp_col->value(i);
 
-    if (timestamp < item_history_tracker.last_timestamp) {
-      throw std::invalid_argument("Expected increasing timestamps in column '" +
-                                  _timestamp_column + "'.");
-    }
-    item_history_tracker.last_timestamp = timestamp;
-
     std::vector<uint32_t> user_last_n_items;
 
     if (_include_current_row && _time_lag == 0) {
@@ -61,11 +56,23 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
       }
     }
 
-    auto& user_item_history = item_history_tracker.trackers[user_id];
+    auto& user_item_records = item_history_tracker[user_id];
+
+    if (timestamp < user_item_records.last_timestamp) {
+      std::stringstream error;
+      error << "Expected increasing timestamps for each tracking key. Found "
+               "timestamp "
+            << timestamp << " after seeing timestamp "
+            << user_item_records.last_timestamp << " for tracking key '"
+            << user_id << "'.";
+      throw std::invalid_argument(error.str());
+    }
+
+    user_item_records.last_timestamp = timestamp;
 
     size_t seen = 0;
-    for (auto it = user_item_history.rbegin();
-         it != user_item_history.rend() &&
+    for (auto it = user_item_records.history.rbegin();
+         it != user_item_records.history.rend() &&
          user_last_n_items.size() < _track_last_n;
          ++it) {
       if (it->timestamp <= (timestamp - _time_lag)) {
@@ -75,12 +82,13 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
     }
 
     if (_should_update_history) {
-      size_t n_outdated = user_item_history.size() - seen;
-      user_item_history.erase(user_item_history.begin(),
-                              user_item_history.begin() + n_outdated);
+      size_t n_outdated = user_item_records.history.size() - seen;
+      user_item_records.history.erase(
+          user_item_records.history.begin(),
+          user_item_records.history.begin() + n_outdated);
 
       for (uint32_t item : item_col->row(i)) {
-        user_item_history.push_back({item, timestamp});
+        user_item_records.history.push_back({item, timestamp});
       }
     }
 
