@@ -20,6 +20,7 @@ class UDTCheckPoint(Checkpoint):
     def from_model(
         cls,
         model,
+        with_optimizers=True,
     ):
         """Create a :py:class:`~ray.air.checkpoint.Checkpoint` that stores a Bolt
         model.
@@ -36,7 +37,10 @@ class UDTCheckPoint(Checkpoint):
             >>> model = checkpoint.get_model()
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
+            if with_optimizers:
+                model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
+            else:
+                model.save(os.path.join(tmpdirname, MODEL_KEY))
 
             checkpoint = cls.from_directory(tmpdirname)
             ckpt_dict = checkpoint.to_dict()
@@ -64,6 +68,7 @@ class BoltCheckPoint(Checkpoint):
     def from_model(
         cls,
         model,
+        with_optimizers=True,
     ):
         """Create a :py:class:`~ray.air.checkpoint.Checkpoint` that stores a Bolt
         model.
@@ -80,7 +85,10 @@ class BoltCheckPoint(Checkpoint):
             >>> model = checkpoint.get_model()
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
+            if with_optimizers:
+                model.checkpoint(os.path.join(tmpdirname, MODEL_KEY))
+            else:
+                model.save(os.path.join(tmpdirname, MODEL_KEY))
 
             checkpoint = cls.from_directory(tmpdirname)
             ckpt_dict = checkpoint.to_dict()
