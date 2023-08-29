@@ -38,6 +38,8 @@ jobs:
 
       - name: Build Package and Run Benchmark
         run: docker run thirdai/run_demos_build bash -c "python3 run_demo_notebooks.py"
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Delete Container
         run: sudo docker system prune -a -f
