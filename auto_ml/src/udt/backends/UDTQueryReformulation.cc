@@ -69,8 +69,8 @@ UDTQueryReformulation::UDTQueryReformulation(
 
 UDTQueryReformulation::UDTQueryReformulation(
     const proto::udt::UDTQueryReformulation& query_reformulation)
-    : _flash_index(std::make_unique<search::Flash<uint32_t>>(
-          query_reformulation.index())),
+    : _flash_index(
+          std::make_unique<search::Flash>(query_reformulation.index())),
       _phrase_id_map(dataset::ThreadSafeVocabulary::fromProto(
           query_reformulation.phrase_id_map())),
       _correct_column_name(query_reformulation.correct_column_name()),
@@ -347,8 +347,8 @@ std::vector<std::string> UDTQueryReformulation::idsToPhrase(
   return phrases;
 }
 
-std::unique_ptr<search::Flash<uint32_t>>
-UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
+std::unique_ptr<search::Flash> UDTQueryReformulation::defaultFlashIndex(
+    const std::string& dataset_size) {
   std::shared_ptr<hashing::HashFunction> hash_fn;
   uint32_t reservoir_size;
 
@@ -373,7 +373,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
         "'large'.");
   }
 
-  return std::make_unique<search::Flash<uint32_t>>(hash_fn, reservoir_size);
+  return std::make_unique<search::Flash>(hash_fn, reservoir_size);
 }
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(

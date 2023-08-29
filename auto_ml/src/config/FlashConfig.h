@@ -8,7 +8,7 @@ using json = nlohmann::json;
 
 namespace thirdai::automl::config {
 
-std::unique_ptr<search::Flash<uint32_t>> buildIndex(const json& config,
-                                                    const ArgumentMap& args);
+std::unique_ptr<search::Flash> buildIndex(const json& config,
+                                          const ArgumentMap& args);
 
 }  // namespace thirdai::automl::config

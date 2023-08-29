@@ -73,7 +73,7 @@ class UDTQueryReformulation final : public UDTBackend {
 
   // Returns the default flash instance to use for the given dataset size if no
   // model_config is specified.
-  static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
+  static std::unique_ptr<search::Flash> defaultFlashIndex(
       const std::string& dataset_size);
 
   static dataset::BlockList ngramBlockList(
@@ -96,7 +96,7 @@ class UDTQueryReformulation final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive);
 
-  std::unique_ptr<search::Flash<uint32_t>> _flash_index;
+  std::unique_ptr<search::Flash> _flash_index;
 
   dataset::TabularFeaturizerPtr _inference_featurizer;
 

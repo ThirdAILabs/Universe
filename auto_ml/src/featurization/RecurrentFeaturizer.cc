@@ -83,7 +83,10 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
 
 RecurrentFeaturizer::RecurrentFeaturizer(
     const proto::udt::RecurrentFeaturizer& featurizer)
-    : _input_transform(Transformation::fromProto(featurizer.input_transform())),
+    : _augmentating_transform(
+          Transformation::fromProto(featurizer.augmenting_transform())),
+      _non_augmenting_transform(
+          Transformation::fromProto(featurizer.non_augmenting_transform())),
       _bolt_input_columns(thirdai::data::outputColumnsListFromProto(
           featurizer.bolt_input_columns())),
       _bolt_label_columns(thirdai::data::outputColumnsListFromProto(
@@ -147,7 +150,10 @@ const thirdai::data::ThreadSafeVocabularyPtr& RecurrentFeaturizer::vocab()
 proto::udt::RecurrentFeaturizer* RecurrentFeaturizer::toProto() const {
   auto* featurizer = new proto::udt::RecurrentFeaturizer();
 
-  featurizer->set_allocated_input_transform(_input_transform->toProto());
+  featurizer->set_allocated_augmenting_transform(
+      _augmentating_transform->toProto());
+  featurizer->set_allocated_non_augmenting_transform(
+      _non_augmenting_transform->toProto());
   featurizer->set_allocated_recurrence_augmentation(
       _recurrence_augmentation->toProto());
 
