@@ -37,7 +37,7 @@ RecurrentFeaturizer::RecurrentFeaturizer(
       /* target_output_column= */ FEATURIZED_LABELS, n_target_classes,
       target->max_length.value());
 
-  _augmentating_transform =
+  _augmenting_transform =
       makeTransformation(data_types, target_name, target, n_target_classes,
                          tabular_options, _recurrence_augmentation);
   _non_augmenting_transform =
@@ -118,7 +118,7 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
   thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
 
   return thirdai::data::Loader::make(
-      data_iter, _augmentating_transform, _state, _bolt_input_columns,
+      data_iter, _augmenting_transform, _state, _bolt_input_columns,
       _bolt_label_columns, /* batch_size= */ batch_size, /* shuffle= */ shuffle,
       /* verbose= */ verbose,
       /* shuffle_buffer_size= */ shuffle_config.min_buffer_size,

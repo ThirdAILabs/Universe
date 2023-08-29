@@ -18,11 +18,8 @@ struct ItemRecord {
   int64_t timestamp;
 };
 
-struct ItemHistoryTracker {
-  std::unordered_map<std::string, std::deque<ItemRecord>> trackers;
-  int64_t last_timestamp = std::numeric_limits<int64_t>::min();
-};
-
+using ItemHistoryTracker =
+    std::unordered_map<std::string, std::deque<ItemRecord>>;
 /**
  * The purpose of this state object is to have a central location where stateful
  * information is stored in the data pipeline. Having a unique owner for all the
