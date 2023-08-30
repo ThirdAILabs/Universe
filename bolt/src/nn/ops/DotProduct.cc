@@ -75,7 +75,8 @@ void DotProduct::backpropagate(ComputationList& inputs, TensorPtr& output,
   }
 }
 
-void DotProduct::updateParameters(float learning_rate, uint32_t train_steps) {
+void DotProduct::updateParametersImp(float learning_rate,
+                                     uint32_t train_steps) {
   (void)learning_rate;
   (void)train_steps;
 }

@@ -178,10 +178,7 @@ inline float adam(float momentum, float velocity, float learning_rate,
          (std::sqrt(velocity / b2_corrected) + EPS);
 }
 
-void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
-  if (!trainable) {
-    return;
-  }
+void Embedding::updateParametersImp(float learning_rate, uint32_t train_steps) {
   if (_disable_sparse_parameter_updates) {
     _embedding_optimizer->applyUpdate(_embeddings, learning_rate, train_steps);
   } else {
