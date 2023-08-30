@@ -1,4 +1,5 @@
 #include <bolt_vector/src/BoltVector.h>
+#include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <gtest/gtest.h>
 #include <functional>
 
@@ -150,5 +151,37 @@ TEST(BoltVectorTests, CopyAssignment) { runTest(testCopyAssign); }
 TEST(BoltVectorTests, MoveConstructor) { runTest(testMove); }
 
 TEST(BoltVectorTests, MoveAssignment) { runTest(testMoveAssign); }
+
+TEST(BoltVectorTests, DenseChunks) {
+  BoltVector vec =
+      BoltVector::makeDenseVectorWithGradients({1.0, 2.0, 3.0, 4.0, 5.0, 6.0});
+
+  auto chunk = vec.viewChunk(1, 2);
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      chunk, BoltVector::makeDenseVectorWithGradients({3.0, 4.0}));
+
+  chunk.activations[0] = 200;
+  chunk.gradients[1] = -10;
+
+  ASSERT_EQ(vec.activations[2], 200);
+  ASSERT_EQ(vec.gradients[3], -10);
+}
+
+TEST(BoltVectorTests, SparseChunks) {
+  BoltVector vec = BoltVector::makeSparseVectorWithGradients(
+      {10, 20, 30, 40, 50, 60}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0});
+
+  auto chunk = vec.viewChunk(1, 2);
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      chunk, BoltVector::makeSparseVectorWithGradients({30, 40}, {3.0, 4.0}));
+
+  chunk.active_neurons[1] = 1000;
+  chunk.activations[0] = 200;
+  chunk.gradients[1] = -10;
+
+  ASSERT_EQ(vec.active_neurons[3], 1000);
+  ASSERT_EQ(vec.activations[2], 200);
+  ASSERT_EQ(vec.gradients[3], -10);
+}
 
 }  // namespace thirdai::tests

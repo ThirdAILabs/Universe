@@ -83,6 +83,8 @@ struct BoltVector {
 
   void zeroOutGradients();
 
+  BoltVector viewChunk(size_t chunk_idx, size_t chunk_size) const;
+
   /**
    * Finds the position and activation (value) of an active neuron.
    * Whether or not the vector is dense is templated because this is
