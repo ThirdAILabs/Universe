@@ -14,7 +14,7 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
     throw std::invalid_argument("Cannot allocate tensor with 0 nonzeros.");
   }
 
-  if (nonzeros != dim) {
+  if (nonzeros < dim) {
     _active_neurons.assign(batch_size * nonzeros, 0);
   }
 
@@ -28,7 +28,7 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
   for (uint32_t offset = 0; offset < batch_size * nonzeros;
        offset += nonzeros) {
     uint32_t* active_neurons = nullptr;
-    if (nonzeros != dim) {
+    if (nonzeros < dim) {
       active_neurons = _active_neurons.data() + offset;
     }
 

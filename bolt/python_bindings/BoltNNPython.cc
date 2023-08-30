@@ -18,6 +18,7 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/PatchEmbedding.h>
+#include <bolt/src/nn/ops/PatchSum.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -392,6 +393,11 @@ void defineOps(py::module_& nn) {
            })
       .def("set_hash_table", &PatchEmbedding::setHashTable, py::arg("hash_fn"),
            py::arg("hash_table"));
+
+  py::class_<PatchSum, PatchSumPtr, Op>(nn, "PatchSum")
+      .def(py::init(&PatchSum::make), py::arg("n_patches"),
+           py::arg("patch_dim"))
+      .def("__call__", &PatchSum::apply);
 
   nn.def("Input", &Input::make);
 }

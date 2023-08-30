@@ -11,8 +11,8 @@ def build_model(patches, patch_emb):
     return bolt.nn.Model(inputs=[patches], outputs=[], losses=[loss])
 
 
-BATCH_SIZE = 1
-N_PATCHES = 4
+BATCH_SIZE = 4
+N_PATCHES = 8
 PATCH_DIM = 6
 EMB_DIM = 20
 
