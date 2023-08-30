@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <data/src/ColumnMap.h>
 
@@ -25,10 +27,18 @@ class OutputColumns {
 
   ValueFillType valueFillType() const { return _value_fill_type; }
 
+  OutputColumns() {}  // For cereal
+
  private:
   std::string _indices;
   std::optional<std::string> _values;
   ValueFillType _value_fill_type;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_indices, _values, _value_fill_type);
+  }
 };
 
 using OutputColumnsList = std::vector<OutputColumns>;

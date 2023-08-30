@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -17,13 +19,16 @@ using dataset::mach::MachIndexPtr;
 struct ItemRecord {
   uint32_t item;
   int64_t timestamp;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(item, timestamp);
+  }
 };
 
-struct ItemHistoryTracker {
-  std::unordered_map<std::string, std::deque<ItemRecord>> trackers;
-  int64_t last_timestamp = std::numeric_limits<int64_t>::min();
-};
-
+using ItemHistoryTracker =
+    std::unordered_map<std::string, std::deque<ItemRecord>>;
 /**
  * The purpose of this state object is to have a central location where stateful
  * information is stored in the data pipeline. Having a unique owner for all the
@@ -98,6 +103,8 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  void clearHistoryTrackers() { _item_history_trackers.clear(); }
+
   const auto& graph() const {
     if (!_graph) {
       throw std::invalid_argument(
@@ -118,7 +125,7 @@ class State {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_mach_index);
+    archive(_mach_index, _vocabs, _item_history_trackers, _graph);
   }
 };
 
