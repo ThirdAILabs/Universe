@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from thirdai import bolt
 
-from utils import gen_numpy_training_data
+from utils import build_simple_model, gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 
@@ -17,23 +17,11 @@ def train_model(trainer, data):
     )
 
 
+@pytest.mark.unit
 def test_non_trainable_layer():
     n_classes = 100
 
-    input_layer = bolt.nn.Input(dim=n_classes)
-
-    hidden_layer = bolt.nn.FullyConnected(
-        dim=1000, input_dim=n_classes, sparsity=0.15, activation="relu"
-    )(input_layer)
-    output = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=1000, activation="softmax"
-    )(hidden_layer)
-
-    labels = bolt.nn.Input(dim=n_classes)
-
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
-
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+    model = build_simple_model(n_classes)
 
     data = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
@@ -44,17 +32,17 @@ def test_non_trainable_layer():
     ops = model.ops()
 
     before = {
-        "weights": ops[1].weights.copy().flatten(),
-        "biases": ops[1].biases.copy().flatten(),
+        "weights": ops[0].weights.copy().flatten(),
+        "biases": ops[0].biases.copy().flatten(),
     }
 
     # Freeze and train
-    ops[1].trainable = False
+    ops[0].trainable = False
     train_model(trainer, data)
 
     after = {
-        "weights": ops[1].weights.copy().flatten(),
-        "biases": ops[1].biases.copy().flatten(),
+        "weights": ops[0].weights.copy().flatten(),
+        "biases": ops[0].biases.copy().flatten(),
     }
 
     for key in ["weights", "biases"]:
@@ -62,21 +50,13 @@ def test_non_trainable_layer():
         assert np.allclose(before[key], after[key])
 
     # Undo freeze and train
-    ops[1].trainable = True
+    ops[0].trainable = True
     train_model(trainer, data)
     after = {
-        "weights": ops[1].weights.copy().flatten(),
-        "biases": ops[1].biases.copy().flatten(),
+        "weights": ops[0].weights.copy().flatten(),
+        "biases": ops[0].biases.copy().flatten(),
     }
 
     for key in ["weights", "biases"]:
         # The weights mustn't remain the same
         assert not np.allclose(before[key], after[key])
-
-
-n_classes = 100
-input_layer = bolt.nn.Input(dim=n_classes)
-
-hidden_layer = bolt.nn.FullyConnected(
-    dim=1000, input_dim=n_classes, sparsity=0.15, activation="relu"
-)(input_layer)

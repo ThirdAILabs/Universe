@@ -64,7 +64,17 @@ class Op {
    * the model. This is for logging and also optimizers like Adam which requires
    * this for bias correction.
    */
-  virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
+  virtual void updateParameters(float learning_rate, uint32_t train_steps) {
+    if (_trainable) {
+      updateParametersImpl(learning_rate, train_steps);
+    }
+  }
+
+  /**
+   * Implementation of the parameter update step of the op.
+   */
+  virtual void updateParametersImpl(float learning_rate,
+                                    uint32_t train_steps) = 0;
 
   /**
    * Returns the output dimension of the op. Does not include batch size. For
@@ -137,19 +147,18 @@ class Op {
 
   void setName(std::string name) { _name = std::move(name); }
 
-  void set_trainable(bool flag) { trainable = flag; }
+  void setTrainable(bool flag) { _trainable = flag; }
 
-  bool is_trainable() const { return trainable; }
+  bool isTrainable() const { return _trainable; }
 
   virtual ~Op() = default;
-
-  bool trainable = true;
 
  protected:
   Op() : Op("unnamed-op") {}
 
  private:
   std::string _name;
+  bool _trainable = true;
 
   friend class cereal::access;
   template <class Archive>

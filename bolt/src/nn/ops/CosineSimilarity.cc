@@ -70,8 +70,8 @@ void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
   }
 }
 
-void CosineSimilarity::updateParameters(float learning_rate,
-                                        uint32_t train_steps) {
+void CosineSimilarity::updateParametersImpl(float learning_rate,
+                                            uint32_t train_steps) {
   (void)learning_rate;
   (void)train_steps;
 }

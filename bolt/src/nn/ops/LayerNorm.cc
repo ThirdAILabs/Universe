@@ -140,10 +140,8 @@ std::pair<float, float> LayerNorm::moments(const BoltVector& vector) {
   return {mean, variance};
 }
 
-void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
-  if (!trainable) {
-    return;
-}
+void LayerNorm::updateParametersImpl(float learning_rate,
+                                     uint32_t train_steps) {
   _gamma_optimizer.applyUpdate(_gamma, learning_rate, train_steps);
   _beta_optimizer.applyUpdate(_beta, learning_rate, train_steps);
 }

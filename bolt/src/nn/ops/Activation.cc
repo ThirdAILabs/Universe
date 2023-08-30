@@ -58,8 +58,8 @@ void Activation<Impl>::backpropagate(ComputationList& inputs, TensorPtr& output,
 }
 
 template <typename Impl>
-void Activation<Impl>::updateParameters(float learning_rate,
-                                        uint32_t train_steps) {
+void Activation<Impl>::updateParametersImpl(float learning_rate,
+                                            uint32_t train_steps) {
   (void)learning_rate;
   (void)train_steps;
 }

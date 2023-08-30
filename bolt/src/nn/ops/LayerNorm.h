@@ -21,7 +21,7 @@ class LayerNorm final : public Op,
   void backpropagate(ComputationList& inputs, TensorPtr& output,
                      uint32_t index_in_batch) final;
 
-  void updateParameters(float learning_rate, uint32_t train_steps) final;
+  void updateParametersImpl(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final;
 
