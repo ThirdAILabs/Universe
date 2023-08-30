@@ -17,7 +17,11 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
 
     num_epochs = 10
     learning_rate = 0.001
-    options = {"extreme_classification": True, "embedding_dimension": 1024, "extreme_output_dim": 1000}
+    options = {
+        "extreme_classification": True,
+        "embedding_dimension": 1024,
+        "extreme_output_dim": 1000,
+    }
     metrics = ["precision@1", "recall@5"]
     callbacks = []
 
