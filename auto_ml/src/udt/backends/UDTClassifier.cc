@@ -284,7 +284,7 @@ thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
           target_name, FEATURIZED_LABELS, n_target_classes);
     }
     return std::make_shared<thirdai::data::StringToTokenArray>(
-        target_name, FEATURIZED_LABELS, *target_config->delimiter,
+        target_name, FEATURIZED_LABELS, target_config->delimiter.value(),
         n_target_classes);
   }
 
