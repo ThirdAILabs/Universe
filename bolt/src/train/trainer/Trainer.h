@@ -4,13 +4,15 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <unordered_map>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 using InterruptCheck = std::optional<std::function<void()>>;
 
@@ -24,7 +26,7 @@ using InterruptCheck = std::optional<std::function<void()>>;
 class Trainer {
  public:
   explicit Trainer(
-      nn::model::ModelPtr model,
+      ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
       InterruptCheck interrupt_check = std::nullopt);
 
@@ -56,7 +58,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_metric_names(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
@@ -67,7 +70,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_dataset_loader(
       const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
@@ -80,7 +84,8 @@ class Trainer {
       bool use_sparsity_in_validation = false,
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
-      std::optional<uint32_t> logging_interval = std::nullopt);
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   /**
    * Performs evaluation on the model using the given validation data and
@@ -99,7 +104,8 @@ class Trainer {
       const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
-  nn::model::ModelPtr getModel() { return _model; }
+  ModelPtr getModel() { return _model; }
+
   // Synchronizes the outer epoch count maintained by the distributed framework
   // with the epoch count maintained within Bolt.
   void incrementEpochCount() { _epoch++; }
@@ -111,7 +117,7 @@ class Trainer {
    * Returns a formatted log line for the end of each epoch.
    */
   std::string formatTrainLogLine(const std::string& metric_summary,
-                                 uint32_t batches, int64_t time);
+                                 uint32_t batches, double time);
 
   /**
    * Format intermediate train log line for reporting metrics and status within
@@ -123,6 +129,12 @@ class Trainer {
    * Returns a formatted log line for the result of each call to validate.
    */
   std::string formatValidateLogLine(const std::string& metric_summary,
+                                    uint32_t batches, double time);
+
+  /**
+   * Returns a formatted log line for function call
+   */
+  std::string formatFuncCallLogLine(const std::string& func_call,
                                     uint32_t batches, int64_t time);
 
   /**
@@ -147,7 +159,7 @@ class Trainer {
     }
   }
 
-  nn::model::ModelPtr _model;
+  ModelPtr _model;
 
   std::shared_ptr<metrics::History> _history;
 
@@ -157,4 +169,4 @@ class Trainer {
   InterruptCheck _interrupt_check;
 };
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

@@ -3,7 +3,7 @@
 #include <cereal/access.hpp>
 #include <vector>
 
-namespace thirdai::bolt::nn::optimizers {
+namespace thirdai::bolt {
 
 class Optimizer {
  public:
@@ -63,11 +63,11 @@ class Optimizer {
 
 using OptimizerPtr = std::unique_ptr<Optimizer>;
 
-class Factory {
+class OptimizerFactory {
  public:
   virtual OptimizerPtr makeOptimizer(size_t rows, size_t cols) const = 0;
 
-  virtual ~Factory() = default;
+  virtual ~OptimizerFactory() = default;
 };
 
-}  // namespace thirdai::bolt::nn::optimizers
+}  // namespace thirdai::bolt

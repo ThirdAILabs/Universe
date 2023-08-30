@@ -151,6 +151,18 @@ with open("thirdai.version") as version_file:
     if suffix:
         version = "{}+{}".format(version, suffix)
 
+neural_db_deps = [
+    "PyTrie",
+    "PyMuPDF==1.22.5",
+    "langchain",
+    "bs4",
+    "trafilatura",
+    "python-docx",
+    "url-normalize",
+    "nltk",
+    "unidecode",
+    "pydantic",
+]
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -173,8 +185,7 @@ setup(
         "numpy",
         "typing_extensions",
         "requests",
-        "pandas>=1.2.0",
-        "PyTrie",
+        "pandas>=2.0.0",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
@@ -185,6 +196,7 @@ setup(
         # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
+        "neural_db": neural_db_deps,
         "test": [
             "pytest",
             "pytest-mock",
@@ -192,14 +204,14 @@ setup(
             "moto[server]",
             "mlflow",
             "protobuf",
-            "datasets",
+            "datasets==2.13.1",
             "torch",
             "toml",
             "psutil",
             "transformers",
-            "pandas>=1.2.0",
+            "pandas>=2.0.0",
             "cryptography",
-            "tokenizers==0.11.6",
+            "tokenizers",
             "pyarrow",
             "prometheus_client",
             "gcsfs",
@@ -209,7 +221,8 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
-        ],
+        ]
+        + neural_db_deps,
         "benchmark": [
             "toml",
             "psutil",
@@ -219,6 +232,9 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
+            "nltk",
+            "ray",
+            "torch",
         ],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],

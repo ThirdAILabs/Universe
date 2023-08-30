@@ -304,6 +304,7 @@ include_directories(${CMAKE_BINARY_DIR})
 add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
+add_subdirectory(data)
 add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
@@ -327,8 +328,10 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
-    bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
+    bolt/src/nn/ops/DotProduct.cc
+    bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -349,28 +352,12 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
-    bolt/src/train/trainer/DistributedTrainingWrapper.cc
-    bolt/src/graph/Graph.cc
-    bolt/src/graph/ExecutionConfig.cc
-    bolt/src/graph/nodes/FullyConnected.cc
-    bolt/src/graph/DatasetContext.cc
-    bolt/src/graph/Node.cc
-    bolt/src/graph/nodes/Switch.cc
-    bolt/src/graph/nodes/Concatenate.cc
-    bolt/src/graph/nodes/DlrmAttention.cc
-    bolt/src/graph/nodes/DotProduct.cc
-    bolt/src/graph/nodes/Embedding.cc
-    bolt/src/graph/nodes/FullyConnected.cc
-    bolt/src/graph/nodes/LayerNorm.cc
-    bolt/src/graph/nodes/Input.cc
-    bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
-    bolt/src/loss_functions/LossFunctions.cc
-    bolt/src/metrics/Metric.cc
     bolt/src/root_cause_analysis/RCA.cc
+    bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -409,12 +396,32 @@ set(THIRDAI_SOURCES
     dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
-    new_dataset/src/featurization_pipeline/transformations/Binning.cc
-    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
-    new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
-    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
-    new_dataset/src/featurization_pipeline/ColumnMap.cc
-    new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
+    data/src/transformations/Binning.cc
+    data/src/transformations/StringHash.cc
+    data/src/transformations/TextTokenizer.cc
+    data/src/transformations/ColdStartText.cc
+    data/src/transformations/FeatureHash.cc
+    data/src/transformations/TransformationList.cc
+    data/src/transformations/MachLabel.cc
+    data/src/transformations/StringConcat.cc
+    data/src/transformations/StringCast.cc
+    data/src/transformations/StringIDLookup.cc
+    data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Date.cc
+    data/src/transformations/CrossColumnPairgrams.cc
+    data/src/transformations/DeduplicateTokens.cc
+    data/src/transformations/EncodePosition.cc
+    data/src/transformations/Recurrence.cc
+    data/src/transformations/CountTokens.cc
+    data/src/transformations/Graph.cc
+    data/src/transformations/RegressionBinning.cc
+    data/src/ColumnMap.cc
+    data/src/columns/ArrayColumns.cc
+    data/src/columns/ValueColumns.cc
+    data/src/TensorConversion.cc
+    data/src/Loader.cc
+    data/src/ColumnMapIterator.cc
+    data/src/rca/ExplanationMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
@@ -422,6 +429,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
+    auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/ReservedColumns.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
@@ -472,15 +481,14 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/PybindUtils.cc
-  bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
-  bolt/python_bindings/CallbacksPython.cc
-  bolt/python_bindings/BoltV2NNPython.cc
-  bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/BoltTrainPython.cc
+  bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
+  bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
-  new_dataset/python_bindings/FeaturizationPython.cc
+  data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc

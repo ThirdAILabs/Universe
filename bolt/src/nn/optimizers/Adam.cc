@@ -6,7 +6,7 @@
 #include <chrono>
 #include <vector>
 
-namespace thirdai::bolt::nn::optimizers {
+namespace thirdai::bolt {
 
 Adam::Adam(size_t rows, size_t cols)
     : _momentum(rows * cols, 0.0),
@@ -154,6 +154,6 @@ void Adam::load(Archive& archive) {
   }
 }
 
-}  // namespace thirdai::bolt::nn::optimizers
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::optimizers::Adam)
+CEREAL_REGISTER_TYPE(thirdai::bolt::Adam)

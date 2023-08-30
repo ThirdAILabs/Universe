@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 /**
  * This class contains information about the current state of training that is
@@ -12,11 +12,14 @@ namespace thirdai::bolt::train {
  */
 class TrainState {
  public:
-  explicit TrainState(float learning_rate)
-      : _learning_rate(learning_rate), _stop_training(false) {}
+  explicit TrainState(float learning_rate, uint32_t batches_in_dataset)
+      : _learning_rate(learning_rate),
+        _batches_in_dataset(batches_in_dataset),
+        _stop_training(false) {}
 
-  static std::shared_ptr<TrainState> make(float learning_rate) {
-    return std::make_shared<TrainState>(learning_rate);
+  static std::shared_ptr<TrainState> make(float learning_rate,
+                                          uint32_t batches_in_dataset) {
+    return std::make_shared<TrainState>(learning_rate, batches_in_dataset);
   }
 
   /**
@@ -42,11 +45,14 @@ class TrainState {
    */
   void stopTraining() { _stop_training = true; }
 
+  uint32_t batchesInDataset() const { return _batches_in_dataset; }
+
  private:
   float _learning_rate;
+  uint32_t _batches_in_dataset;
   bool _stop_training;
 };
 
 using TrainStatePtr = std::shared_ptr<TrainState>;
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

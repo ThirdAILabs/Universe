@@ -10,8 +10,6 @@
 
 namespace thirdai::automl::data {
 
-using bolt::nn::tensor::TensorList;
-
 class GraphDatasetManager {
  public:
   GraphDatasetManager(data::ColumnDataTypes data_types, std::string target_col,
@@ -24,9 +22,9 @@ class GraphDatasetManager {
 
   void index(const dataset::DataSourcePtr& data_source);
 
-  TensorList featurizeInput(const dataset::MapInput& input);
+  bolt::TensorList featurizeInput(const dataset::MapInput& input);
 
-  TensorList featurizeInputBatch(const dataset::MapInputBatch& inputs);
+  bolt::TensorList featurizeInputBatch(const dataset::MapInputBatch& inputs);
 
   void clearGraph() { _graph_info->clear(); }
 
@@ -35,6 +33,8 @@ class GraphDatasetManager {
   }
 
   uint32_t getLabelDim() const { return _n_target_classes; }
+
+  data::ColumnDataTypes dataTypes() { return _data_types; }
 
  private:
   data::ColumnDataTypes _data_types;

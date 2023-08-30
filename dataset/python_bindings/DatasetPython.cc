@@ -111,6 +111,10 @@ void createDatasetSubmodule(py::module_& module) {
                     uint32_t, uint32_t>(),
            py::arg("entity_to_hashes"), py::arg("output_range"),
            py::arg("num_hashes"))
+      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"))
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("output_range"),
+           py::arg("num_hashes"), py::arg("num_elements"))
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
@@ -277,9 +281,10 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<TextGenerationFeaturizer, Featurizer,
              std::shared_ptr<TextGenerationFeaturizer>>(
       dataset_submodule, "TextGenerationFeaturizer")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool>(),
            py::arg("lrc_len"), py::arg("irc_len"), py::arg("src_len"),
-           py::arg("vocab_size"))
+           py::arg("vocab_size"), py::arg("include_position") = false,
+           py::arg("featurize_in_chunks") = true)
       .def("featurize_for_inference",
            &TextGenerationFeaturizer::featurizeInferenceSample,
            py::arg("prompt"), py::arg("context"))

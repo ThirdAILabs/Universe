@@ -1,9 +1,8 @@
 #include "RecallAtK.h"
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
-RecallAtK::RecallAtK(nn::autograd::ComputationPtr outputs,
-                     nn::autograd::ComputationPtr labels, uint32_t k)
+RecallAtK::RecallAtK(ComputationPtr outputs, ComputationPtr labels, uint32_t k)
     : _outputs(std::move(outputs)),
       _labels(std::move(labels)),
       _num_correct_predicted(0),
@@ -36,4 +35,4 @@ float RecallAtK::worst() const { return 0.0; }
 
 bool RecallAtK::betterThan(float a, float b) const { return a > b; }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

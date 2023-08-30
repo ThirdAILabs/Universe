@@ -19,7 +19,7 @@
 
 namespace thirdai::automl::udt {
 
-using bolt::train::metrics::fromMetricNames;
+using bolt::metrics::fromMetricNames;
 
 UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                              const data::UserProvidedTemporalRelationships&
@@ -62,7 +62,8 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
                                 const dataset::DataSourcePtr& val_data,
                                 const std::vector<std::string>& val_metrics,
                                 const std::vector<CallbackPtr>& callbacks,
-                                TrainOptions options) {
+                                TrainOptions options,
+                                const bolt::DistributedCommPtr& comm) {
   size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   dataset::DatasetLoaderPtr val_dataset;
@@ -74,8 +75,7 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
   auto train_dataset = _dataset_factory->getLabeledDatasetLoader(
       data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
-  bolt::train::Trainer trainer(_model, std::nullopt,
-                               bolt::train::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
       /* train_data_loader= */ train_dataset,
@@ -91,7 +91,8 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
       /* use_sparsity_in_validation= */ options.sparse_validation,
       /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ true, /* verbose= */ options.verbose,
-      /* logging_interval= */ options.logging_interval);
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ comm);
 
   return py::cast(history);
 }
@@ -102,8 +103,7 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  bolt::train::Trainer trainer(_model, std::nullopt,
-                               bolt::train::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
 
   auto dataset =
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);

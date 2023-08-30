@@ -5,9 +5,15 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::nn::python {
+namespace thirdai::bolt::python {
 
-py::object tensorToNumpy(const tensor::TensorPtr& tensor,
+py::object tensorToNumpy(const TensorPtr& tensor,
                          bool single_row_to_vector = true);
 
-}  // namespace thirdai::bolt::nn::python
+py::object tensorToNumpyTopK(const TensorPtr& tensor,
+                             bool single_row_to_vector = true,
+                             uint32_t top_k = 5);
+
+static void can_convert_tensor_to_numpy(const TensorPtr& tensor);
+
+}  // namespace thirdai::bolt::python

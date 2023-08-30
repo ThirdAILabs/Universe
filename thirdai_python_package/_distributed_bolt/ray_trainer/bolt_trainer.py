@@ -1,11 +1,11 @@
+import os
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
 from ray.air.checkpoint import Checkpoint
-from ray.air.config import DatasetConfig, RunConfig, ScalingConfig
+from ray.air.config import RunConfig, ScalingConfig
+from ray.train import DataConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
 from ray.train.trainer import GenDataset
-
-from .config import BoltBackendConfig
 
 if TYPE_CHECKING:
     from ray.data.preprocessor import Preprocessor
@@ -44,7 +44,7 @@ class BoltTrainer(DataParallelTrainer):
             This can either take in no arguments or a ``config`` dict.
         train_loop_config: Configurations to pass into
             ``train_loop_per_worker`` if it accepts an argument.
-        bolt_config: Configuration for setting up the Bolt backend. If set to
+        backend_config: Configuration for setting up the Bolt backend. If set to
             None, use the default configuration. This replaces the ``backend_config``
             arg of ``DataParallelTrainer``.
         scaling_config: Configuration for how to scale data parallel training.
@@ -65,17 +65,21 @@ class BoltTrainer(DataParallelTrainer):
         self,
         train_loop_per_worker: Union[Callable[[], None], Callable[[Dict], None]],
         *,
-        bolt_config: BoltBackendConfig = None,
+        backend_config=None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
+        dataset_config: Optional[DataConfig] = None,
         run_config: Optional[RunConfig] = None,
+        datasets: Optional[Dict[str, GenDataset]] = None,
         resume_from_checkpoint: Optional[Checkpoint] = None,
     ):
         super(BoltTrainer, self).__init__(
             train_loop_per_worker=train_loop_per_worker,
             train_loop_config=train_loop_config,
-            backend_config=bolt_config,
+            backend_config=backend_config,
             scaling_config=scaling_config,
+            dataset_config=dataset_config,
             run_config=run_config,
+            datasets=datasets,
             resume_from_checkpoint=resume_from_checkpoint,
         )

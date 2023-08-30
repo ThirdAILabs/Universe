@@ -1,5 +1,4 @@
 
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
@@ -9,9 +8,10 @@
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <bolt/tests/TestDatasetGenerators.h>
 #include <gtest/gtest.h>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 /**
  * Tests on a task where the first dataset is a list of vectors of dimension
@@ -26,33 +26,33 @@ namespace thirdai::bolt::nn::tests {
 TEST(DlrmAttentionTests, TestSetMembership) {
   uint32_t n_ids = 1000, n_tokens = 5, batch_size = 100, n_batches = 100;
 
-  auto dense_input = ops::Input::make(n_ids);
+  auto dense_input = Input::make(n_ids);
 
-  auto fc_hidden = ops::FullyConnected::make(
+  auto fc_hidden = FullyConnected::make(
                        /* dim= */ 20, /* input_dim= */ dense_input->dim(),
                        /* sparsity= */ 1.0, /* activation= */ "relu")
                        ->apply(dense_input);
 
-  auto token_input = ops::Input::make(/* dim= */ n_ids);
+  auto token_input = Input::make(/* dim= */ n_ids);
 
-  auto embedding = ops::RobeZ::make(
+  auto embedding = RobeZ::make(
                        /* num_embedding_lookups */ 4, /* lookup_size= */ 5,
                        /* log_embedding_block_size= */ 14,
                        /* reduction= */ "concatenation",
                        /* num_tokens_per_input= */ n_tokens)
                        ->apply(token_input);
 
-  auto dlrm_attention = ops::DlrmAttention::make()->apply(fc_hidden, embedding);
+  auto dlrm_attention = DlrmAttention::make()->apply(fc_hidden, embedding);
 
-  auto output = ops::FullyConnected::make(
+  auto output = FullyConnected::make(
                     /* dim= */ 2, /* input_dim= */ dlrm_attention->dim(),
                     /* sparsity= */ 1.0, /* activation= */ "softmax")
                     ->apply(dlrm_attention);
 
-  auto labels = ops::Input::make(/* dim= */ 2);
-  auto loss = loss::CategoricalCrossEntropy::make(output, labels);
+  auto labels = Input::make(/* dim= */ 2);
+  auto loss = CategoricalCrossEntropy::make(output, labels);
 
-  auto model = model::Model::make({dense_input, token_input}, {output}, {loss});
+  auto model = Model::make({dense_input, token_input}, {output}, {loss});
 
   model->summary();
 
@@ -61,12 +61,11 @@ TEST(DlrmAttentionTests, TestSetMembership) {
           n_ids, n_tokens, n_batches, batch_size,
           /* seed= */ 24090);
 
-  auto input_dataset = train::convertDatasets(
+  auto input_dataset = convertDatasets(
       {std::get<0>(dataset), std::get<1>(dataset)}, model->inputDims());
-  auto label_dataset =
-      train::convertDataset(std::get<2>(dataset), /* dim= */ 2);
+  auto label_dataset = convertDataset(std::get<2>(dataset), /* dim= */ 2);
 
-  train::Trainer trainer(model);
+  Trainer trainer(model);
 
   auto metrics = trainer.train_with_metric_names(
       /* train_data= */ {input_dataset, label_dataset},
@@ -77,4 +76,4 @@ TEST(DlrmAttentionTests, TestSetMembership) {
   ASSERT_GE(metrics.at("val_categorical_accuracy").back(), 0.9);
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

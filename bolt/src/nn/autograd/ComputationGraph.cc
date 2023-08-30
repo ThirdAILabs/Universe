@@ -4,11 +4,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 ComputationList getComputationOrder(const ComputationList& inputs,
                                     const ComputationList& outputs,
-                                    const std::vector<loss::LossPtr>& losses) {
+                                    const std::vector<LossPtr>& losses) {
   checkLossesOnlyApplyToTerminalOutputs(losses);
 
   auto out_degrees = countDependentComputations(losses);
@@ -45,8 +45,8 @@ ComputationList getComputationOrder(const ComputationList& inputs,
     if ((*comp)->inputs().empty()) {
       if (!inputs_set.count(*comp)) {
         throw std::invalid_argument(
-            "Model computation depends on input '" + (*comp)->name() +
-            "' that is not present in the list of inputs to the model.");
+            "Model computation depends on an input that is not present in the "
+            "list of inputs to the model.");
       }
       inputs_set.erase(*comp);
     } else {
@@ -55,9 +55,13 @@ ComputationList getComputationOrder(const ComputationList& inputs,
   }
 
   if (!inputs_set.empty()) {
+    size_t input_idx = std::distance(
+        inputs.begin(),
+        std::find(inputs.begin(), inputs.end(), *inputs_set.begin()));
+
     throw std::invalid_argument(
-        "Input '" + (*inputs_set.begin())->name() +
-        "' was not used by any computation in the model.");
+        "The input passed at index " + std::to_string(input_idx) +
+        " was not used by any computation in the model.");
   }
 
   checkAllOutputsInComputationOrder(/* computation_order= */ computation_order,
@@ -67,7 +71,7 @@ ComputationList getComputationOrder(const ComputationList& inputs,
 }
 
 std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
-    const std::vector<loss::LossPtr>& losses) {
+    const std::vector<LossPtr>& losses) {
   std::unordered_map<ComputationPtr, uint32_t> out_degrees;
 
   std::unordered_set<ComputationPtr> visited;
@@ -94,8 +98,8 @@ std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
   return out_degrees;
 }
 
-autograd::ComputationList computationsUsedInLossFunctions(
-    const std::vector<loss::LossPtr>& losses) {
+ComputationList computationsUsedInLossFunctions(
+    const std::vector<LossPtr>& losses) {
   std::unordered_set<ComputationPtr> comps;
 
   for (const auto& loss : losses) {
@@ -111,16 +115,15 @@ autograd::ComputationList computationsUsedInLossFunctions(
   return {comps.begin(), comps.end()};
 }
 
-void checkLossesOnlyApplyToTerminalOutputs(
-    const std::vector<loss::LossPtr>& losses) {
-  auto out_degrees = autograd::countDependentComputations(losses);
+void checkLossesOnlyApplyToTerminalOutputs(const std::vector<LossPtr>& losses) {
+  auto out_degrees = countDependentComputations(losses);
 
   for (const auto& output : computationsUsedInLossFunctions(losses)) {
     if (out_degrees.count(output)) {
       throw std::invalid_argument(
-          "Outputs used in loss functions must not be inputs to any further "
-          "ops. Found output '" +
-          output->name() + "' with a dependent op.");
+          "Computations used in loss functions must not be inputs to any "
+          "further ops. Found computation that is used in a loss function and "
+          "as an input to another computation.");
     }
   }
 }
@@ -131,11 +134,11 @@ void checkAllOutputsInComputationOrder(const ComputationList& computation_order,
     if (std::find(computation_order.begin(), computation_order.end(), output) ==
         computation_order.end()) {
       throw std::invalid_argument(
-          "Specified output '" + output->name() +
-          "' is not found in the computation graph created from traversing "
-          "backward from the specified loss functions.");
+          "Model contains an output that is not found in the computation graph "
+          "created from traversing backward from the specified loss "
+          "functions.");
     }
   }
 }
 
-}  // namespace thirdai::bolt::nn::autograd
+}  // namespace thirdai::bolt

@@ -18,8 +18,14 @@ constexpr bool FREEZE_HASH_TABLES = true;
 // Whether to use sigmoid and bce for the output layer in UDT
 constexpr bool USE_SIGMOID_BCE = false;
 
-// Whether there is bias in training in hidden layer
-constexpr bool USE_BIAS = true;
+// Whether the hidden layer has a bias
+constexpr bool HIDDEN_BIAS = true;
+
+// Whether the output layer has a bias
+constexpr bool OUTPUT_BIAS = true;
+
+// Whether to have layer normalization between hidden layer and output layer
+constexpr bool NORMALIZE_EMBEDDINGS = false;
 
 // Whether to use tanh for the hidden layers in UDT
 constexpr bool USE_TANH = false;
@@ -68,17 +74,17 @@ constexpr uint32_t MACH_DEFAULT_NUM_REPETITIONS = 7;
 constexpr uint32_t MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN = 25;
 
 // How many output buckets we restrict decoding to for UDT Mach Classifier.
-constexpr uint32_t MACH_TOP_K_PER_EVAL_AGGREGATION = 25;
+constexpr uint32_t MACH_NUM_BUCKETS_TO_EVAL = 25;
 
 // How many results we're required to decode from the above num buckets for UDT
 // Mach Classifier.
-constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
+constexpr uint32_t MACH_TOP_K_TO_RETURN = 5;
 
 // Any less than this number of target classes should cause no scaledown in Mach
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 
 // When to switch to using the mach index for sparse inference
-constexpr float MACH_SPARSE_INFERENCE_THRESHOLD = 0.2;
+constexpr float MACH_SAMPLING_THRESHOLD = 0.01;
 
 // Whether to use the experimental autotune for fully connected layer hash
 // tables

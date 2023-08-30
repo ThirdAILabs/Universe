@@ -29,7 +29,7 @@ jobs:
       matrix:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
-        os: [ubuntu-20.04, windows-2022]
+        os: [ubuntu-latest-8-cores, windows-2022]
         include:
           - name: macos-x86_64
             os: macos-12
@@ -61,7 +61,8 @@ jobs:
         working-directory: C:\vcpkg
         run: |
           $Env:VCPKG_BUILD_TYPE = 'release'
-          $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static' 
+          $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static'
+          $Env:VCPKG_ROOT = 'C:\'
           .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
         shell: powershell
@@ -85,7 +86,7 @@ jobs:
           #
           # TODO(GH-779): Fix the multiple libraries existing.
           CIBW_ENVIRONMENT_WINDOWS: >
-              CMAKE_ARGS='-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
+              CMAKE_ARGS='-DENABLE_COMPRESSION=OFF -DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
               KMP_DUPLICATE_LIB_OK=TRUE
               THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS:
@@ -97,7 +98,8 @@ jobs:
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
-            yum install openssl11-devel -y
+            yum install openssl11-devel -y &&
+            yum install -y libxslt-devel libxml2-devel
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
           # Online compile cpython wheels (pytorch does this too), no big 
@@ -127,7 +129,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-macox_arm64 cp311-*"
+          CIBW_SKIP: "cp36-* cp37-*"
 
 
       - name: Upload wheels

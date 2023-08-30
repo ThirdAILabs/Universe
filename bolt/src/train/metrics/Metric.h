@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
 /**
  * Metrics represent some value or measure that is computed during training
@@ -73,7 +73,7 @@ using History = std::unordered_map<std::string, std::vector<float>>;
 using HistoryPtr = std::shared_ptr<History>;
 
 // How metrics are provided to the trainer.
-using InputMetrics = std::unordered_map<std::string, metrics::MetricPtr>;
+using InputMetrics = std::unordered_map<std::string, MetricPtr>;
 
 /**
  * Represents a collection of metrics.
@@ -104,6 +104,20 @@ class MetricCollection {
    */
   void reset();
 
+  /**
+   * Returns all the metric values in flattened vector
+   */
+  std::vector<std::pair<std::string, float>> getFlattenedMetrics() const;
+
+  /**
+   * Sets metric values from a flattened vector
+   */
+  void setFlattenedMetrics(
+      History& history,
+      std::vector<std::pair<std::string, float>>& metric_values);
+
+  bool hasMetrics();
+
  private:
   std::vector<MetricPtr> _metrics;
 };
@@ -117,7 +131,7 @@ class MetricCollection {
  * will invoke this method with the prefixes "train_" and "val_" so that the
  * names are distinct.
  */
-InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+InputMetrics fromMetricNames(const ModelPtr& model,
                              const std::vector<std::string>& metric_names,
                              const std::string& prefix);
 
@@ -127,4 +141,4 @@ float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
 uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
                              const uint32_t& k);
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

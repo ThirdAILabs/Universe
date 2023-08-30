@@ -33,7 +33,8 @@ class UDTClassifier final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options) final;
+                   TrainOptions options,
+                   const bolt::DistributedCommPtr& comm) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
@@ -71,9 +72,10 @@ class UDTClassifier final : public UDTBackend {
                        const dataset::DataSourcePtr& val_data,
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options) final;
+                       TrainOptions options,
+                       const bolt::DistributedCommPtr& comm) final;
 
-  py::object embedding(const MapInput& sample) final;
+  py::object embedding(const MapInputBatch& sample) final;
 
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
@@ -97,6 +99,10 @@ class UDTClassifier final : public UDTBackend {
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
+  }
+
+  data::ColumnDataTypes dataTypes() const final {
+    return _dataset_factory->dataTypes();
   }
 
   void verifyCanDistribute() const final {

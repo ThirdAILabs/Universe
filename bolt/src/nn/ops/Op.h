@@ -5,22 +5,14 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 class Computation;
 
 using ComputationPtr = std::shared_ptr<Computation>;
 using ComputationList = std::vector<ComputationPtr>;
 
-}  // namespace thirdai::bolt::nn::autograd
-
-namespace thirdai::bolt::nn::model {
-
 class Model;
-
-}  // namespace thirdai::bolt::nn::model
-
-namespace thirdai::bolt::nn::ops {
 
 /**
  * Represents a operation in a model which takes in one or more inputs and
@@ -47,9 +39,8 @@ class Op {
    * function should be thread safe to being called with different values for
    * index_in_batch at the same time.
    */
-  virtual void forward(const autograd::ComputationList& inputs,
-                       tensor::TensorPtr& output, uint32_t index_in_batch,
-                       bool training) = 0;
+  virtual void forward(const ComputationList& inputs, TensorPtr& output,
+                       uint32_t index_in_batch, bool training) = 0;
 
   /**
    * Computes the gradients of any parameters in the op and with respect to the
@@ -65,8 +56,7 @@ class Op {
    * with different values for index_in_batch at the same time (though benign
    * race conditions to e.g. weight array are sometimes okay for performance).
    */
-  virtual void backpropagate(autograd::ComputationList& inputs,
-                             tensor::TensorPtr& output,
+  virtual void backpropagate(ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch) = 0;
 
   /**
@@ -80,7 +70,7 @@ class Op {
   /**
    * Initializes the optimizer for the op.
    */
-  virtual void initOptimizer(const optimizers::Factory& optimizer_factory) = 0;
+  virtual void initOptimizer(const OptimizerFactory& optimizer_factory) = 0;
 
   /**
    * Returns the output dimension of the op. Does not include batch size.
@@ -101,8 +91,8 @@ class Op {
    * sparse inputs, then if sparsity is being used the number of nonzeros in the
    * output will depend on the number of nonzeros in the inputs.
    */
-  virtual std::optional<uint32_t> nonzeros(
-      const autograd::ComputationList& inputs, bool use_sparsity) const = 0;
+  virtual std::optional<uint32_t> nonzeros(const ComputationList& inputs,
+                                           bool use_sparsity) const = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -110,6 +100,13 @@ class Op {
    * parameters are being updated and dense updates are faster.
    */
   virtual void disableSparseParameterUpdates() = 0;
+
+  /**
+   * Enables sparse parameter updates for updateParameters in the op. This is
+   * used for distributed to enable sparse updates once distributed training is
+   * complete.
+   */
+  virtual void enableSparseParameterUpdates() = 0;
 
   /**
    * Returns references to all of the gradients of the op. Used for distributed
@@ -127,9 +124,8 @@ class Op {
    * inputs and yielding the given output. Ideally this should be in the form:
    * OpType(op name): input(s) -> output(s) [op parameters]
    */
-  virtual void summary(std::ostream& summary,
-                       const autograd::ComputationList& inputs,
-                       const autograd::Computation* output) const = 0;
+  virtual void summary(std::ostream& summary, const ComputationList& inputs,
+                       const Computation* output) const = 0;
 
   /**
    * Controls if the op should save the optimizer along with the parameters.
@@ -138,15 +134,15 @@ class Op {
     (void)setSerializeOptimizer;
   }
 
-  virtual void registerModel(const std::weak_ptr<model::Model>& model) {
-    (void)model;
-  }
+  virtual void registerModel(const std::weak_ptr<Model>& model) { (void)model; }
 
   /**
    * Returns the name of the op. All of the ops in a model must have a
    * unique name.
    */
   const std::string& name() const { return _name; }
+
+  void setName(std::string name) { _name = std::move(name); }
 
   virtual ~Op() = default;
 
@@ -165,4 +161,4 @@ class Op {
 
 using OpPtr = std::shared_ptr<Op>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

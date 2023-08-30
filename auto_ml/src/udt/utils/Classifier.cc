@@ -9,12 +9,13 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
 #include <optional>
+#include <utility>
 
 namespace thirdai::automl::udt::utils {
 
-using bolt::train::metrics::fromMetricNames;
+using bolt::metrics::fromMetricNames;
 
-Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
+Classifier::Classifier(bolt::ModelPtr model, bool freeze_hash_tables)
     : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
@@ -30,17 +31,19 @@ Classifier::Classifier(bolt::nn::model::ModelPtr model, bool freeze_hash_tables)
   _emb = computations.at(computations.size() - 2);
 }
 
-py::object thirdai::automl::udt::utils::Classifier::train(
-    const dataset::DatasetLoaderPtr& dataset, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
-    const dataset::DatasetLoaderPtr& val_dataset,
-    const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
+                             float learning_rate, uint32_t epochs,
+                             const std::vector<std::string>& train_metrics,
+                             const dataset::DatasetLoaderPtr& val_dataset,
+                             const std::vector<std::string>& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options,
+                             const bolt::DistributedCommPtr& comm) {
   auto history = train(
       dataset, learning_rate, epochs,
       fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
       val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
-      callbacks, options);
+      callbacks, options, comm);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
@@ -74,7 +77,8 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
                              const dataset::DatasetLoaderPtr& val_dataset,
                              const InputMetrics& val_metrics,
                              const std::vector<CallbackPtr>& callbacks,
-                             TrainOptions options) {
+                             TrainOptions options,
+                             const bolt::DistributedCommPtr& comm) {
   uint32_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
@@ -82,8 +86,8 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
     freeze_hash_tables_epoch = 1;
   }
 
-  bolt::train::Trainer trainer(_model, freeze_hash_tables_epoch,
-                               bolt::train::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        bolt::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
       /* train_data_loader= */ dataset,
@@ -97,7 +101,8 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       /* use_sparsity_in_validation= */ options.sparse_validation,
       /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
       /* verbose= */ options.verbose,
-      /* logging_interval= */ options.logging_interval);
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ comm);
 
   return py::cast(history);
 }
@@ -113,8 +118,7 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const InputMetrics& metrics,
                                 bool sparse_inference, bool verbose) {
-  bolt::train::Trainer trainer(_model, std::nullopt,
-                               bolt::train::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);
@@ -122,26 +126,46 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
-py::object Classifier::predict(const bolt::nn::tensor::TensorList& inputs,
+py::object Classifier::predict(const bolt::TensorList& inputs,
                                bool sparse_inference,
-                               bool return_predicted_class, bool single) {
+                               bool return_predicted_class, bool single,
+                               std::optional<uint32_t> top_k) {
   auto output = _model->forward(inputs, sparse_inference).at(0);
-
   if (return_predicted_class) {
     return predictedClasses(output, single);
   }
 
-  return bolt::nn::python::tensorToNumpy(output,
-                                         /* single_row_to_vector= */ single);
+  auto nonzeros = output->nonzeros();
+
+  if (!nonzeros) {
+    throw std::runtime_error("Number of nonzeros is not fixed");
+  }
+  if (top_k) {
+    if (top_k.value() > *nonzeros || (top_k.value() == 0)) {
+      if (output->activeNeuronsPtr()) {
+        throw std::runtime_error(
+            "top_k value is invalid.  top_k <= number of target "
+            "classes * sparsity");
+      }
+      throw std::runtime_error(
+          "top_k value is invalid. top_k > 0 and top_k <= number of target "
+          "classes");
+    }
+    return bolt::python::tensorToNumpyTopK(output,
+                                           /* single_row_to_vector= */ single,
+                                           top_k.value());
+  }
+  return bolt::python::tensorToNumpy(output,
+                                     /* single_row_to_vector= */ single);
 }
 
-py::object Classifier::embedding(const bolt::nn::tensor::TensorList& inputs) {
+py::object Classifier::embedding(const bolt::TensorList& inputs) {
   // TODO(Nicholas): Sparsity could speed this up, and wouldn't affect the
   // embeddings if the sparsity is in the output layer and the embeddings are
   // from the hidden layer.
   _model->forward(inputs, /* use_sparsity= */ false);
 
-  return bolt::nn::python::tensorToNumpy(_emb->tensor());
+  return bolt::python::tensorToNumpy(_emb->tensor());
 }
 
 uint32_t Classifier::predictedClass(const BoltVector& output) {
@@ -151,8 +175,8 @@ uint32_t Classifier::predictedClass(const BoltVector& output) {
   return output.getHighestActivationId();
 }
 
-py::object Classifier::predictedClasses(
-    const bolt::nn::tensor::TensorPtr& output, bool single) {
+py::object Classifier::predictedClasses(const bolt::TensorPtr& output,
+                                        bool single) {
   if (output->batchSize() == 1 && single) {
     return py::cast(predictedClass(output->getVector(0)));
   }
@@ -166,8 +190,7 @@ py::object Classifier::predictedClasses(
 
 std::vector<std::vector<float>> Classifier::getBinaryClassificationScores(
     const dataset::BoltDatasetList& dataset) {
-  auto tensor_batches =
-      bolt::train::convertDatasets(dataset, _model->inputDims());
+  auto tensor_batches = bolt::convertDatasets(dataset, _model->inputDims());
 
   std::vector<std::vector<float>> scores;
   scores.reserve(tensor_batches.size());
@@ -216,7 +239,7 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
 
   auto scores = getBinaryClassificationScores(split_data.first);
 
-  double best_metric_value = bolt::makeMetric(metric_name)->worst();
+  double best_metric_value = bolt_v1::makeMetric(metric_name)->worst();
   std::optional<float> best_threshold = std::nullopt;
 
 #pragma omp parallel for default(none) \
@@ -225,7 +248,7 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
     // TODO(Nicholas): This is still using the old metric from bolt v1. The bolt
     // v2 metrics are more intertwined with the computation graph and would be
     // harder to use in this way.
-    auto metric = bolt::makeMetric(metric_name);
+    auto metric = bolt_v1::makeMetric(metric_name);
 
     float threshold =
         static_cast<float>(t_idx) / defaults::NUM_THRESHOLDS_TO_CHECK;

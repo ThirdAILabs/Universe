@@ -114,6 +114,9 @@ struct NumericalDataType final : public DataType {
                              std::string _granularity = "m")
       : range(std::move(_range)), granularity(std::move(_granularity)) {}
 
+  NumericalDataType(double start, double end, std::string _granularity = "m")
+      : range(start, end), granularity(std::move(_granularity)) {}
+
   std::pair<double, double> range;
   std::string granularity;
 
@@ -124,6 +127,8 @@ struct NumericalDataType final : public DataType {
         R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
         range.first, range.second, granularity);
   }
+
+  uint32_t numBins() const;
 
  private:
   friend class cereal::access;

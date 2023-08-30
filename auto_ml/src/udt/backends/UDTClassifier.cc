@@ -17,7 +17,6 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -64,7 +63,8 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const dataset::DataSourcePtr& val_data,
                                 const std::vector<std::string>& val_metrics,
                                 const std::vector<CallbackPtr>& callbacks,
-                                TrainOptions options) {
+                                TrainOptions options,
+                                const bolt::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader =
@@ -77,7 +77,7 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             train_metrics, val_dataset_loader, val_metrics,
-                            callbacks, options);
+                            callbacks, options, comm);
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
@@ -98,8 +98,7 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
 
 void UDTClassifier::setOutputSparsity(float sparsity,
                                       bool rebuild_hash_tables) {
-  bolt::nn::autograd::ComputationList output_computations =
-      _classifier->model()->outputs();
+  bolt::ComputationList output_computations = _classifier->model()->outputs();
 
   /**
    * The method is supported only for models that have a single output
@@ -113,7 +112,7 @@ void UDTClassifier::setOutputSparsity(float sparsity,
   }
 
   auto fc_computation =
-      bolt::nn::ops::FullyConnected::cast(output_computations[0]->op());
+      bolt::FullyConnected::cast(output_computations[0]->op());
   if (fc_computation) {
     fc_computation->setSparsity(sparsity, rebuild_hash_tables,
                                 /*experimental_autotune=*/false);
@@ -139,21 +138,18 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) {
-  (void)top_k;
   return _classifier->predict(_dataset_factory->featurizeInput(sample),
                               sparse_inference, return_predicted_class,
-                              /* single= */ true);
+                              /* single= */ true, top_k);
 }
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k) {
-  (void)top_k;
-
   return _classifier->predict(_dataset_factory->featurizeInputBatch(samples),
                               sparse_inference, return_predicted_class,
-                              /* single= */ false);
+                              /* single= */ false, top_k);
 }
 
 std::vector<dataset::Explanation> UDTClassifier::explain(
@@ -161,13 +157,12 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
   auto input_vec = _dataset_factory->featurizeInput(sample);
 
-  bolt::nn::rca::RCAGradients gradients;
+  bolt::rca::RCAGradients gradients;
   if (target_class) {
-    gradients = bolt::nn::rca::explainNeuron(_classifier->model(), input_vec,
-                                             labelToNeuronId(*target_class));
+    gradients = bolt::rca::explainNeuron(_classifier->model(), input_vec,
+                                         labelToNeuronId(*target_class));
   } else {
-    gradients =
-        bolt::nn::rca::explainPrediction(_classifier->model(), input_vec);
+    gradients = bolt::rca::explainPrediction(_classifier->model(), input_vec);
   }
 
   auto explanation =
@@ -183,18 +178,19 @@ py::object UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   return train(data_source, learning_rate, epochs, train_metrics, val_data,
-               val_metrics, callbacks, options);
+               val_metrics, callbacks, options, comm);
 }
 
-py::object UDTClassifier::embedding(const MapInput& sample) {
-  return _classifier->embedding(_dataset_factory->featurizeInput(sample));
+py::object UDTClassifier::embedding(const MapInputBatch& sample) {
+  return _classifier->embedding(_dataset_factory->featurizeInputBatch(sample));
 }
 
 py::object UDTClassifier::entityEmbedding(
@@ -208,7 +204,7 @@ py::object UDTClassifier::entityEmbedding(
         "This UDT architecture currently doesn't support getting entity "
         "embeddings.");
   }
-  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
   if (!fc) {
     throw std::invalid_argument(
         "This UDT architecture currently doesn't support getting entity "

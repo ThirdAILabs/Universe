@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cmath>
 
-namespace thirdai::bolt::nn::optimizers {
+namespace thirdai::bolt {
 
 class Adam final : public Optimizer {
  public:
@@ -76,7 +76,7 @@ class Adam final : public Optimizer {
   void load(Archive& archive);
 };
 
-class AdamFactory final : public Factory {
+class AdamFactory final : public OptimizerFactory {
  public:
   std::unique_ptr<Optimizer> makeOptimizer(size_t rows,
                                            size_t cols) const final {
@@ -84,4 +84,4 @@ class AdamFactory final : public Factory {
   }
 };
 
-}  // namespace thirdai::bolt::nn::optimizers
+}  // namespace thirdai::bolt

@@ -13,7 +13,7 @@
 #include <random>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextEmbeddingOpName() {
   static uint32_t constructed = 0;
@@ -41,9 +41,8 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   }
 }
 
-void Embedding::forward(const autograd::ComputationList& inputs,
-                        tensor::TensorPtr& output, uint32_t index_in_batch,
-                        bool training) {
+void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
+                        uint32_t index_in_batch, bool training) {
   (void)training;
 
   assert(inputs.size() == 1);
@@ -69,8 +68,7 @@ void Embedding::forward(const autograd::ComputationList& inputs,
   applyActivationFunction(output_vec.activations);
 }
 
-void Embedding::backpropagate(autograd::ComputationList& inputs,
-                              tensor::TensorPtr& output,
+void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
@@ -179,7 +177,7 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   }
 }
 
-void Embedding::initOptimizer(const optimizers::Factory& optimizer_factory) {
+void Embedding::initOptimizer(const OptimizerFactory& optimizer_factory) {
   if (!_embedding_optimizer || !_bias_optimizer) {
     _embedding_optimizer = optimizer_factory.makeOptimizer(_input_dim, _dim);
     _bias_optimizer = optimizer_factory.makeOptimizer(/* rows= */ 1, _dim);
@@ -189,22 +187,21 @@ void Embedding::initOptimizer(const optimizers::Factory& optimizer_factory) {
   }
 }
 
-void Embedding::summary(std::ostream& summary,
-                        const autograd::ComputationList& inputs,
-                        const autograd::Computation* output) const {
+void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
+                        const Computation* output) const {
   summary << "Embedding(" << name() << "): " << inputs.at(0)->name() << " -> "
           << output->name() << " [dim=" << _dim
           << ", activation=" << activationFunctionToStr(_act_func)
           << ", bias=" << std::boolalpha << _bias << "]";
 }
 
-autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
+ComputationPtr Embedding::apply(ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(
         "Input has too large of a dimension for embedding.");
   }
 
-  return autograd::Computation::make(shared_from_this(), {std::move(input)});
+  return Computation::make(shared_from_this(), {std::move(input)});
 }
 
 template void Embedding::serialize(cereal::BinaryInputArchive&);
@@ -231,6 +228,7 @@ void Embedding::serialize(Archive& archive) {
   }
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Embedding,
+                               "thirdai::bolt::nn::ops::Embedding")

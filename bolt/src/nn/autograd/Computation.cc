@@ -6,33 +6,20 @@
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
-std::string nextComputationName() {
-  static uint32_t constructed = 0;
-  /**
-   * We name this tensor because there is a symmetry between tensors and
-   * computations, each computation generates 1 tensor in the model. Calling it
-   * tensor makes it more intuitive when model summaries are displayed and keeps
-   * the computation class hidden from the user.
-   */
-  return "tensor_" + std::to_string(++constructed);
-}
+Computation::Computation(OpPtr op, ComputationList inputs)
+    : _op(std::move(op)), _inputs(std::move(inputs)) {}
 
-Computation::Computation(ops::OpPtr op, ComputationList inputs)
-    : _op(std::move(op)),
-      _inputs(std::move(inputs)),
-      _name(nextComputationName()) {}
-
-ComputationPtr Computation::make(ops::OpPtr op, ComputationList inputs) {
+ComputationPtr Computation::make(OpPtr op, ComputationList inputs) {
   return std::make_shared<Computation>(std::move(op), std::move(inputs));
 }
 
-ops::OpPtr Computation::op() const { return _op; }
+OpPtr Computation::op() const { return _op; }
 
 const ComputationList& Computation::inputs() const { return _inputs; }
 
-tensor::TensorPtr& Computation::tensor() {
+TensorPtr& Computation::tensor() {
   assert(_output);
   return _output;
 }
@@ -61,9 +48,9 @@ void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
   }
 
   if (*nonzeros < dim && use_sparsity) {
-    _output = tensor::Tensor::sparse(batch_size, dim, *nonzeros);
+    _output = Tensor::sparse(batch_size, dim, *nonzeros);
   } else {
-    _output = tensor::Tensor::dense(batch_size, dim);
+    _output = Tensor::dense(batch_size, dim);
   }
 }
 
@@ -71,7 +58,7 @@ void Computation::addInput(ComputationPtr input) {
   _inputs.push_back(std::move(input));
 }
 
-void Computation::setTensor(tensor::TensorPtr tensor) {
+void Computation::setTensor(TensorPtr tensor) {
   if (tensor->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +
@@ -84,7 +71,22 @@ void Computation::summary(std::ostream& summary) {
   _op->summary(summary, _inputs, this);
 }
 
-const std::string& Computation::name() const { return _name; }
+const std::string& Computation::name() const {
+  if (_name.empty()) {
+    throw std::runtime_error(
+        "Attempted to access name of unnamed computation.");
+  }
+  return _name;
+}
+
+void Computation::setName(const std::string& name) {
+  if (!_name.empty()) {
+    throw std::runtime_error(
+        "Computations should only be named by the model, and computations "
+        "should not be reused between models.");
+  }
+  _name = name;
+}
 
 template void Computation::serialize(cereal::BinaryInputArchive&);
 template void Computation::serialize(cereal::BinaryOutputArchive&);
@@ -97,4 +99,4 @@ void Computation::serialize(Archive& archive) {
   archive(_op, _inputs, _name);  // NOLINT
 }
 
-}  // namespace thirdai::bolt::nn::autograd
+}  // namespace thirdai::bolt

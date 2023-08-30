@@ -1,6 +1,5 @@
 #include "DatasetUtils.h"
 #include "gtest/gtest.h"
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -11,7 +10,7 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <unordered_map>
 
-namespace thirdai::bolt::train::tests {
+namespace thirdai::bolt::tests {
 
 // Helper class to check that the callbacks are invoked the correct number of
 // times.
@@ -40,21 +39,21 @@ class InvocationTrackingCallback final : public callbacks::Callback {
 static constexpr uint32_t N_CLASSES = 50;
 
 TEST(TrainerTest, Training) {
-  auto input = nn::ops::Input::make(/* dim= */ N_CLASSES);
+  auto input = Input::make(/* dim= */ N_CLASSES);
 
   auto output =
-      nn::ops::FullyConnected::make(
+      FullyConnected::make(
           /* dim= */ N_CLASSES, /* input_dim= */ N_CLASSES, /* sparsity= */ 1.0,
           /* activation= */ "softmax",
           /* sampling=*/nullptr)
           ->apply(input);
 
-  auto label = nn::ops::Input::make(/* dim= */ N_CLASSES);
-  auto loss = nn::loss::CategoricalCrossEntropy::make(output, label);
+  auto label = Input::make(/* dim= */ N_CLASSES);
+  auto loss = CategoricalCrossEntropy::make(output, label);
 
-  nn::autograd::ComputationList outputs = {output};
+  ComputationList outputs = {output};
 
-  std::vector<nn::loss::LossPtr> losses = {loss};
+  std::vector<LossPtr> losses = {loss};
 
   metrics::InputMetrics train_metrics = {
       {"loss", std::make_shared<metrics::LossMetric>(loss)}};
@@ -62,15 +61,15 @@ TEST(TrainerTest, Training) {
   metrics::InputMetrics val_metrics = {
       {"acc", std::make_shared<metrics::CategoricalAccuracy>(output, label)}};
 
-  auto model = nn::model::Model::make({input}, outputs, losses);
+  auto model = Model::make({input}, outputs, losses);
 
   Trainer trainer(model);
 
-  auto train_data = nn::tests::getLabeledDataset(
+  auto train_data = tests::getLabeledDataset(
       /* n_classes= */ N_CLASSES, /* n_batches= */ 50,
       /* batch_size= */ 50);
 
-  auto val_data = nn::tests::getLabeledDataset(
+  auto val_data = tests::getLabeledDataset(
       /* n_classes= */ N_CLASSES, /* n_batches= */ 10,
       /* batch_size= */ 50);
 
@@ -103,4 +102,4 @@ TEST(TrainerTest, Training) {
   ASSERT_EQ(tracking_callback->counts(), expected_invocation_counts);
 }
 
-}  // namespace thirdai::bolt::train::tests
+}  // namespace thirdai::bolt::tests

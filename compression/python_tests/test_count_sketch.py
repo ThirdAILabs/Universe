@@ -2,9 +2,6 @@ import pytest
 
 pytestmark = [pytest.mark.unit]
 
-import numpy as np
-from thirdai import bolt, dataset
-
 from utils import compressed_training
 
 LEARNING_RATE = 0.002
@@ -17,12 +14,13 @@ def test_compressed_count_sketch_training():
     num_sketches = 3
     compression_density = 0.3
     num_epochs = 50
+    n_classes = 10
 
     acc = compressed_training(
         compression_scheme="count_sketch",
         compression_density=compression_density,
         sample_population_size=num_sketches,
-        hidden_dim=60,
         epochs=num_epochs,
+        n_classes=n_classes,
     )
-    assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+    assert acc >= ACCURACY_THRESHOLD

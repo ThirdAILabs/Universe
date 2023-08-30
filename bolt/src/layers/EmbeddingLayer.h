@@ -42,7 +42,7 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::ostream& summary) const;
 
-  void initOptimizer(const nn::optimizers::Factory& optimizer_factory) {
+  void initOptimizer(const OptimizerFactory& optimizer_factory) {
     if (!_optimizer) {
       _optimizer = optimizer_factory.makeOptimizer(
           _embedding_chunks_used.size(), _update_chunk_size);
@@ -53,6 +53,10 @@ class EmbeddingLayer {
   void disableSparseParameterUpdates() {
     _disable_sparse_parameter_updates = true;
   }
+
+  void enableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = false;
+  };
 
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
 
@@ -65,6 +69,33 @@ class EmbeddingLayer {
   std::unique_ptr<EmbeddingLayer> duplicateWithNewReduction(
       const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input) const;
+
+  uint64_t numEmbeddingLookups() const { return _num_lookups_per_token; }
+
+  uint64_t lookupSize() const { return _lookup_size; }
+
+  uint64_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+
+  std::string reduction() const {
+    switch (_reduction) {
+      case EmbeddingReductionType::AVERAGE:
+        return "avg";
+      case EmbeddingReductionType::SUM:
+        return "sum";
+      case EmbeddingReductionType::CONCATENATION:
+        return "concat";
+      default:
+        return "";
+    }
+  }
+
+  std::optional<uint64_t> numTokensPerInput() const {
+    return _num_tokens_per_input;
+  }
+
+  uint64_t updateChunkSize() const { return _update_chunk_size; }
+
+  uint32_t hashSeed() const { return _hash_fn.seed(); }
 
   ~EmbeddingLayer() = default;
 
@@ -150,7 +181,7 @@ class EmbeddingLayer {
   std::vector<bool> _embedding_chunks_used;
 
   std::vector<float> _gradients;
-  nn::optimizers::OptimizerPtr _optimizer;
+  OptimizerPtr _optimizer;
 
   bool _disable_sparse_parameter_updates;
 };

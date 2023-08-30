@@ -49,6 +49,10 @@ class FullyConnectedLayer final {
     _disable_sparse_parameter_updates = true;
   };
 
+  void enableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = false;
+  };
+
   void saveWithOptimizer(bool should_save_optimizer) {
     _weight_optimizer->setSerializeState(should_save_optimizer);
     _bias_optimizer->setSerializeState(should_save_optimizer);
@@ -68,13 +72,15 @@ class FullyConnectedLayer final {
 
   void unfreezeHashTables() { _index_frozen = false; }
 
+  bool isNeuronIndexFrozen() const { return _index_frozen; }
+
   void buildHashTables();
 
   void reBuildHashFunction();
 
-  const nn::NeuronIndexPtr& neuronIndex() const { return _neuron_index; }
+  const NeuronIndexPtr& neuronIndex() const { return _neuron_index; }
 
-  void setNeuronIndex(nn::NeuronIndexPtr index);
+  void setNeuronIndex(NeuronIndexPtr index);
 
   uint32_t getDim() const { return _dim; }
 
@@ -135,7 +141,7 @@ class FullyConnectedLayer final {
 
   void buildSamplingSummary(std::ostream& summary) const;
 
-  void initOptimizer(const nn::optimizers::Factory& optimizer_factory);
+  void initOptimizer(const OptimizerFactory& optimizer_factory);
 
   ~FullyConnectedLayer() = default;
 
@@ -151,10 +157,10 @@ class FullyConnectedLayer final {
   std::vector<float> _weight_gradients;
   std::vector<float> _bias_gradients;
 
-  nn::optimizers::OptimizerPtr _weight_optimizer;
-  nn::optimizers::OptimizerPtr _bias_optimizer;
+  OptimizerPtr _weight_optimizer;
+  OptimizerPtr _bias_optimizer;
 
-  nn::NeuronIndexPtr _neuron_index;
+  NeuronIndexPtr _neuron_index;
   bool _index_frozen = false;
 
   template <bool DENSE>

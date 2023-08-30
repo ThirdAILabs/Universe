@@ -225,7 +225,7 @@ def test_index_changes_predict_result():
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
-        embedding = model.embedding_representation(single_sample())
+        embedding = model.embedding_representation([single_sample()])
         assert embedding.shape == (embedding_dim,)
         assert (embedding != 0).any()
 
@@ -453,8 +453,45 @@ def test_model_dims_mach():
             "input_dim": 8,
             "embedding_dimension": 4,
             "extreme_classification": True,
+            "extreme_num_hashes": 1,
             "extreme_output_dim": 2,
         },
     )
 
     assert model.model_dims() == [8, 4, 2]
+
+
+def test_data_types():
+    for extreme_classification in [True, False]:
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "cat": bolt.types.categorical(delimiter=":"),
+                "text": bolt.types.text(),
+            },
+            target="cat",
+            n_target_classes=10,
+            integer_target=True,
+            options={
+                "input_dim": 8,
+                "embedding_dimension": 4,
+                "extreme_classification": extreme_classification,
+            },
+        )
+
+        data_types = model.data_types()
+        assert "cat" in data_types.keys()
+        assert "text" in data_types.keys()
+        assert isinstance(data_types["cat"], bolt.types.categorical)
+        assert data_types["cat"].delimiter == ":"
+        assert isinstance(data_types["text"], bolt.types.text)
+
+
+def test_top_k_predictions():
+    model = make_simple_trained_model(integer_label=False)
+    predictions = sorted(model.predict(single_sample()), reverse=True)
+    for topk in range(1, len(predictions)):
+        topk_predictions = model.predict(single_sample(), top_k=topk)
+        check_equal = all(
+            [predictions[i] == topk_predictions[1][i] for i in range(topk)]
+        )
+        assert check_equal

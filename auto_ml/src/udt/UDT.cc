@@ -20,6 +20,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::automl::udt {
 
@@ -128,13 +129,15 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       const dataset::DataSourcePtr& val_data,
                       const std::vector<std::string>& val_metrics,
                       const std::vector<CallbackPtr>& callbacks,
-                      TrainOptions options) {
+                      TrainOptions options,
+                      const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   bolt::utils::Timer timer;
 
-  auto output = _backend->train(data, learning_rate, epochs, train_metrics,
-                                val_data, val_metrics, callbacks, options);
+  auto output =
+      _backend->train(data, learning_rate, epochs, train_metrics, val_data,
+                      val_metrics, callbacks, options, comm);
 
   timer.stop();
   telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
@@ -230,12 +233,13 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
                           const dataset::DataSourcePtr& val_data,
                           const std::vector<std::string>& val_metrics,
                           const std::vector<CallbackPtr>& callbacks,
-                          TrainOptions options) {
+                          TrainOptions options,
+                          const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
                              learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options);
+                             val_metrics, callbacks, options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
@@ -247,15 +251,34 @@ std::vector<uint32_t> UDT::modelDims() const {
   return dims;
 }
 
-void UDT::save(const std::string& filename) const {
+void UDT::saveImpl(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
+void UDT::save(const std::string& filename) const {
+  /*
+   * setting `should_save_optimizer` to false prevents unnecessary checkpointing
+   * of the model. If we load the model from a checkpoint and intend to save it,
+   * by default `_should_save_optimizer` variable is set to true could result in
+   * redundant saving of the optimizer.
+   */
+  // Since UDTQueryReformulation doesn't defines model()
+  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
+    _backend->model()->setSerializeOptimizer(
+        /* should_save_optimizer= */ false);
+  }
+  saveImpl(filename);
+}
+
 void UDT::checkpoint(const std::string& filename) const {
-  _backend->model()->setSerializeOptimizer(/* should_save_optimizer= */ true);
-  save(filename);
+  // Since UDTQueryReformulation doesn't defines model()
+  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
+    _backend->model()->setSerializeOptimizer(
+        /* should_save_optimizer= */ true);
+  }
+  saveImpl(filename);
 }
 
 void UDT::save_stream(std::ostream& output_stream) const {

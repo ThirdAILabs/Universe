@@ -50,6 +50,29 @@ dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
   return contextual_encodings[string];
 }
 
+uint32_t NumericalDataType::numBins() const {
+  auto lower_size = text::lower(granularity);
+  if (lower_size == "xs" || lower_size == "extrasmall") {
+    return 10;
+  }
+  if (lower_size == "s" || lower_size == "small") {
+    return 75;
+  }
+  if (lower_size == "m" || lower_size == "medium") {
+    return 300;
+  }
+  if (lower_size == "l" || lower_size == "large") {
+    return 1000;
+  }
+  if (lower_size == "xl" || lower_size == "extralarge") {
+    return 3000;
+  }
+  throw std::invalid_argument("Invalid numerical granularity \"" + granularity +
+                              "\". Choose one of \"extrasmall\"/\"xs\", "
+                              "\"small\"/\"s\", \"medium\"/\"m\", "
+                              "\"large\"/\"l\", or \"extralarge\"/\"xl\".");
+}
+
 CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type) {
   return std::dynamic_pointer_cast<CategoricalDataType>(data_type);
 }

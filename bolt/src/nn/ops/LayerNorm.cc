@@ -10,7 +10,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextLayerNormOpName() {
   static uint32_t constructed = 0;
@@ -19,13 +19,22 @@ std::string nextLayerNormOpName() {
 
 LayerNorm::LayerNorm() : Op(nextLayerNormOpName()) {}
 
+LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
+    : Op(nextLayerNormOpName()),
+      _gamma(gamma, gamma + dim),
+      _beta(beta, beta + dim) {}
+
 std::shared_ptr<LayerNorm> LayerNorm::make() {
   return std::shared_ptr<LayerNorm>(new LayerNorm());
 }
 
-void LayerNorm::forward(const autograd::ComputationList& inputs,
-                        tensor::TensorPtr& output, uint32_t index_in_batch,
-                        bool training) {
+std::shared_ptr<LayerNorm> LayerNorm::make(const float* gamma,
+                                           const float* beta, size_t dim) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(gamma, beta, dim));
+}
+
+void LayerNorm::forward(const ComputationList& inputs, TensorPtr& output,
+                        uint32_t index_in_batch, bool training) {
   (void)training;
 
   const BoltVector& input_vector =
@@ -60,8 +69,7 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
   }
 }
 
-void LayerNorm::backpropagate(autograd::ComputationList& inputs,
-                              tensor::TensorPtr& output,
+void LayerNorm::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
   BoltVector& input_vector = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vector = output->getVector(index_in_batch);
@@ -137,7 +145,7 @@ void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
                                train_steps);
 }
 
-void LayerNorm::initOptimizer(const optimizers::Factory& optimizer_factory) {
+void LayerNorm::initOptimizer(const OptimizerFactory& optimizer_factory) {
   if (!_gamma_optimizer || !_beta_optimizer) {
     _gamma_optimizer =
         optimizer_factory.makeOptimizer(/* rows= */ 1, _gamma.size());
@@ -151,12 +159,14 @@ void LayerNorm::initOptimizer(const optimizers::Factory& optimizer_factory) {
 
 uint32_t LayerNorm::dim() const { return _gamma.size(); }
 
-std::optional<uint32_t> LayerNorm::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
+                                            bool use_sparsity) const {
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
 void LayerNorm::disableSparseParameterUpdates() {}
+
+void LayerNorm::enableSparseParameterUpdates() {}
 
 std::vector<std::vector<float>*> LayerNorm::gradients() {
   return {&_gamma_gradients, &_beta_gradients};
@@ -166,15 +176,13 @@ std::vector<std::vector<float>*> LayerNorm::parameters() {
   return {&_gamma, &_beta};
 }
 
-void LayerNorm::summary(std::ostream& summary,
-                        const autograd::ComputationList& inputs,
-                        const autograd::Computation* output) const {
+void LayerNorm::summary(std::ostream& summary, const ComputationList& inputs,
+                        const Computation* output) const {
   summary << "LayerNorm(" << name() << "): " << inputs.at(0)->name() << " -> "
           << output->name();
 }
 
-autograd::ComputationPtr LayerNorm::apply(
-    const autograd::ComputationPtr& input) {
+ComputationPtr LayerNorm::apply(const ComputationPtr& input) {
   if (dim() == 0) {
     _gamma.assign(input->dim(), 1.0);
     _beta.assign(input->dim(), 0.0);
@@ -185,7 +193,7 @@ autograd::ComputationPtr LayerNorm::apply(
         std::to_string(input->dim()) + ".");
   }
 
-  return autograd::Computation::make(shared_from_this(), {input});
+  return Computation::make(shared_from_this(), {input});
 }
 
 template void LayerNorm::serialize(cereal::BinaryInputArchive&);
@@ -198,6 +206,7 @@ void LayerNorm::serialize(Archive& archive) {
           _beta_gradients, _gamma_optimizer, _beta_optimizer);
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::LayerNorm)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::LayerNorm,
+                               "thirdai::bolt::nn::ops::LayerNorm")

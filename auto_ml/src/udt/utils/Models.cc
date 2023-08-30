@@ -27,9 +27,22 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                                            defaults::HIDDEN_DIM);
   bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
 
-  bool use_bias = args.get<bool>("use_bias", "bool", defaults::USE_BIAS);
+  if (args.contains("use_bias")) {
+    throw std::invalid_argument(
+        "Option 'use_bias' has been depreciated. Please use 'hidden_bias' or "
+        "'output_bias'.");
+  }
+  bool hidden_bias =
+      args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
+  bool output_bias =
+      args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
+
+  bool normalize_embeddings = args.get<bool>("normalize_embeddings", "bool",
+                                             defaults::NORMALIZE_EMBEDDINGS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
-                             use_tanh, use_bias, mach);
+                             use_tanh, /* hidden_bias= */ hidden_bias,
+                             /* output_bias= */ output_bias, /* mach= */ mach,
+                             /* normalize_embeddings= */ normalize_embeddings);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -47,53 +60,70 @@ float autotuneSparsity(uint32_t dim) {
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
-                      bool use_bias, bool mach) {
-  auto input = bolt::nn::ops::Input::make(input_dim);
+                      bool hidden_bias, bool output_bias, bool mach,
+                      bool normalize_embeddings) {
+  auto input = bolt::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 
-  auto hidden = bolt::nn::ops::Embedding::make(hidden_dim, input_dim,
-                                               hidden_activation, use_bias)
+  auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
+                                      /* bias= */ hidden_bias)
                     ->apply(input);
+
+  if (normalize_embeddings) {
+    hidden = bolt::LayerNorm::make()->apply(hidden);
+  }
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
-  auto output = bolt::nn::ops::FullyConnected::make(output_dim, hidden->dim(),
-                                                    sparsity, activation)
+  auto output = bolt::FullyConnected::make(
+                    output_dim, hidden->dim(), sparsity, activation,
+                    /* sampling= */ nullptr, /* use_bias= */ output_bias)
                     ->apply(hidden);
 
-  auto labels = bolt::nn::ops::Input::make(output_dim);
+  auto labels = bolt::Input::make(output_dim);
 
-  bolt::nn::loss::LossPtr loss;
+  bolt::LossPtr loss;
   if (use_sigmoid_bce) {
-    loss = bolt::nn::loss::BinaryCrossEntropy::make(output, labels);
+    loss = bolt::BinaryCrossEntropy::make(output, labels);
   } else {
-    loss = bolt::nn::loss::CategoricalCrossEntropy::make(output, labels);
+    loss = bolt::CategoricalCrossEntropy::make(output, labels);
   }
 
-  bolt::nn::autograd::ComputationList additional_labels;
+  bolt::ComputationList additional_labels;
   if (mach) {
     // For mach we need the hash based labels for training, but the actual
     // document/class ids to compute metrics. Hence we add two labels to the
     // model.
     additional_labels.push_back(
-        bolt::nn::ops::Input::make(std::numeric_limits<uint32_t>::max()));
+        bolt::Input::make(std::numeric_limits<uint32_t>::max()));
   }
 
-  auto model = bolt::nn::model::Model::make({input}, {output}, {loss},
-                                            additional_labels);
+  auto model = bolt::Model::make({input}, {output}, {loss}, additional_labels);
 
   return model;
 }
 
-ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
+                   uint32_t specified_output_dim,
                    const std::string& config_path, bool mach) {
   config::ArgumentMap parameters;
-  parameters.insert("output_dim", output_dim);
+  parameters.insert("output_dim", specified_output_dim);
 
   auto json_config = json::parse(config::loadConfig(config_path));
 
-  return config::buildModel(json_config, parameters, input_dims, mach);
+  auto model = config::buildModel(json_config, parameters, input_dims, mach);
+
+  uint32_t actual_output_dim = model->outputs().at(0)->dim();
+  if (actual_output_dim != specified_output_dim) {
+    throw std::invalid_argument(
+        "Expected model with output dim " +
+        std::to_string(specified_output_dim) +
+        ", but the model config yielded a model with output dim " +
+        std::to_string(actual_output_dim) + ".");
+  }
+
+  return model;
 }
 
 void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
@@ -129,7 +159,7 @@ bool hasSoftmaxOutput(const ModelPtr& model) {
     return false;  // TODO(Nicholas): Should this throw?
   }
 
-  auto fc = bolt::nn::ops::FullyConnected::cast(outputs.at(0)->op());
+  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
   return fc && (fc->kernel()->getActivationFunction() ==
                 bolt::ActivationFunction::Softmax);
 }

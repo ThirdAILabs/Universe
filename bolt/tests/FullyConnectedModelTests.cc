@@ -1,6 +1,5 @@
 #include "DatasetUtils.h"
 #include "gtest/gtest.h"
-#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
@@ -11,24 +10,25 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <optional>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
-model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
-  auto input = ops::Input::make(/* dim= */ n_classes);
+ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
+  auto input = Input::make(/* dim= */ n_classes);
 
   uint32_t input_dim_to_last_layer;
-  autograd::ComputationPtr input_to_output_layer;
+  ComputationPtr input_to_output_layer;
 
   if (with_hidden_layer) {
     uint32_t dim = 1000;
     float sparsity = 0.2;
-    auto hidden = ops::FullyConnected::make(
+    auto hidden = FullyConnected::make(
         /* dim= */ dim, /* input_dim= */ n_classes, /* sparsity= */ sparsity,
         /* activation*/ "relu",
         /* sampling= */
         DWTASamplingConfig::autotune(dim, sparsity,
                                      /* experimental_autotune=*/false),
-        /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20);
+        /* use_bias= */ true, /* rebuild_hash_tables= */ 4,
+        /* reconstruct_hash_functions= */ 20);
 
     input_dim_to_last_layer = dim;
     input_to_output_layer = hidden->apply(input);
@@ -37,10 +37,10 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
     input_to_output_layer = input;
   }
 
-  autograd::ComputationList outputs;
-  std::vector<loss::LossPtr> losses;
+  ComputationList outputs;
+  std::vector<LossPtr> losses;
   for (uint32_t i = 0; i < 2; i++) {
-    auto output = ops::FullyConnected::make(
+    auto output = FullyConnected::make(
         /* dim= */ n_classes,
         /* input_dim= */ input_dim_to_last_layer, /* sparsity= */ 1.0,
         /* activation*/ "softmax",
@@ -48,18 +48,17 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
 
     outputs.push_back(output->apply(input_to_output_layer));
 
-    auto label = ops::Input::make(/* dim= */ n_classes);
-    losses.push_back(
-        loss::CategoricalCrossEntropy::make(outputs.back(), label));
+    auto label = Input::make(/* dim= */ n_classes);
+    losses.push_back(CategoricalCrossEntropy::make(outputs.back(), label));
   }
 
-  auto model = model::Model::make(/* inputs= */ {input}, /* outputs= */ outputs,
-                                  /* losses= */ losses);
+  auto model = Model::make(/* inputs= */ {input}, /* outputs= */ outputs,
+                           /* losses= */ losses);
 
   return model;
 }
 
-void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
+void trainModel(ModelPtr& model, const LabeledDataset& data,
                 float learning_rate, uint32_t epochs,
                 bool single_output = false) {
   for (uint32_t e = 0; e < epochs; e++) {
@@ -70,8 +69,7 @@ void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
         // In one of the tests the model has two outputs, both for the same
         // labels. Thus we need to pass in 2 label tensors for the batch, these
         // will be the same tensor.
-        tensor::TensorList labels = {data.second.at(i).at(0),
-                                     data.second.at(i).at(0)};
+        TensorList labels = {data.second.at(i).at(0), data.second.at(i).at(0)};
         model->trainOnBatch(data.first.at(i), labels);
       }
       model->updateParameters(learning_rate);
@@ -79,8 +77,8 @@ void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
   }
 }
 
-std::vector<float> computeAccuracy(model::ModelPtr& model,
-                                   const train::LabeledDataset& data) {
+std::vector<float> computeAccuracy(ModelPtr& model,
+                                   const LabeledDataset& data) {
   std::vector<uint32_t> correct(model->outputs().size(), 0);
   std::vector<uint32_t> total(model->outputs().size(), 0);
 
@@ -180,9 +178,9 @@ TEST(FullyConnectedModelTests, SparseOutput) {
   static constexpr uint32_t N_CLASSES = 200;
   static constexpr uint32_t HIDDEN_DIM = 100;
 
-  auto input = ops::Input::make(/* dim= */ N_CLASSES);
+  auto input = Input::make(/* dim= */ N_CLASSES);
 
-  auto hidden = ops::FullyConnected::make(
+  auto hidden = FullyConnected::make(
                     /* dim= */ HIDDEN_DIM, /* input_dim= */ N_CLASSES,
                     /* sparsity= */ 1.0,
                     /* activation*/ "relu",
@@ -190,7 +188,7 @@ TEST(FullyConnectedModelTests, SparseOutput) {
                     ->apply(input);
 
   auto output =
-      ops::FullyConnected::make(
+      FullyConnected::make(
           /* dim= */ N_CLASSES, /* input_dim= */ HIDDEN_DIM,
           /* sparsity= */ 0.2,
           /* activation*/ "softmax",
@@ -198,13 +196,14 @@ TEST(FullyConnectedModelTests, SparseOutput) {
           DWTASamplingConfig::autotune(/* layer_dim=*/N_CLASSES,
                                        /* sparsity=*/0.1,
                                        /* experimental_autotune=*/false),
-          /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20)
+          /* use_bias= */ true, /* rebuild_hash_tables= */ 4,
+          /* reconstruct_hash_functions= */ 20)
           ->apply(hidden);
 
-  auto label = ops::Input::make(/* dim= */ N_CLASSES);
-  auto model = model::Model::make(
+  auto label = Input::make(/* dim= */ N_CLASSES);
+  auto model = Model::make(
       /* inputs= */ {input}, /* outputs= */ {output},
-      /* losses= */ {loss::CategoricalCrossEntropy::make(output, label)});
+      /* losses= */ {CategoricalCrossEntropy::make(output, label)});
 
   auto train_data =
       getLabeledDataset(N_CLASSES, /* n_batches= */ 200, /* batch_size= */ 100);
@@ -226,4 +225,4 @@ TEST(FullyConnectedModelTests, SparseOutput) {
   }
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

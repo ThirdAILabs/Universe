@@ -19,22 +19,22 @@
 #include <numeric>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn::model {
+namespace thirdai::bolt {
 
-Model::Model(autograd::ComputationList inputs,
-             autograd::ComputationList outputs,
-             std::vector<loss::LossPtr> losses,
-             autograd::ComputationList additional_labels,
-             const nn::optimizers::Factory& optimizer)
+Model::Model(ComputationList inputs, ComputationList outputs,
+             std::vector<LossPtr> losses, ComputationList additional_labels,
+             const OptimizerFactory& optimizer)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
       _train_steps(0),
       _model_uuid(
-          utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)) {
+          utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)),
+      _thirdai_version(thirdai::version()) {
   licensing::checkLicense();
 
   for (const auto& loss : _losses) {
@@ -44,14 +44,26 @@ Model::Model(autograd::ComputationList inputs,
   _labels.insert(_labels.end(), additional_labels.begin(),
                  additional_labels.end());
 
-  _computation_order =
-      autograd::getComputationOrder(_inputs, _outputs, _losses);
+  _computation_order = getComputationOrder(_inputs, _outputs, _losses);
+
+  nameComputations(_inputs, _computation_order, _labels);
 
   _allocation_manager = AllocationManager(_computation_order);
 
-  std::unordered_set<ops::OpPtr> ops;
+  std::unordered_set<std::string> op_names;
+  std::unordered_set<OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.insert(comp->op());
+    std::string name = comp->op()->name();
+
+    // Check if we have found a new op with the same name.
+    if (op_names.count(name) && !ops.count(comp->op())) {
+      throw std::invalid_argument(
+          "Found multiple Ops in model with the name '" + name +
+          "'. All ops in a model must have unique names. The name of the op "
+          "can be updated with `op.name = 'op_name'`.");
+    }
+    op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
 
@@ -64,11 +76,11 @@ Model::Model(autograd::ComputationList inputs,
   }
 }
 
-std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
-                                   autograd::ComputationList outputs,
-                                   std::vector<loss::LossPtr> losses,
-                                   autograd::ComputationList additional_labels,
-                                   const nn::optimizers::Factory& optimizer) {
+std::shared_ptr<Model> Model::make(ComputationList inputs,
+                                   ComputationList outputs,
+                                   std::vector<LossPtr> losses,
+                                   ComputationList additional_labels,
+                                   const OptimizerFactory& optimizer) {
   auto model = std::shared_ptr<Model>(
       new Model(std::move(inputs), std::move(outputs), std::move(losses),
                 std::move(additional_labels), optimizer));
@@ -79,8 +91,7 @@ std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
   return model;
 }
 
-tensor::TensorList Model::forward(const tensor::TensorList& inputs,
-                                  bool use_sparsity) {
+TensorList Model::forward(const TensorList& inputs, bool use_sparsity) {
   uint32_t input_batch_size = setInput(inputs);
 
   _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
@@ -92,15 +103,14 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
     forwardVector(index_in_batch, /* training= */ false);
   }
 
-  tensor::TensorList outputs;
+  TensorList outputs;
   for (auto& output : _outputs) {
     outputs.push_back(output->tensor());
   }
   return outputs;
 }
 
-void Model::trainOnBatch(const tensor::TensorList& inputs,
-                         const tensor::TensorList& labels) {
+void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -123,9 +133,8 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
   }
 }
 
-tensor::TensorList Model::forward(const tensor::TensorList& inputs,
-                                  const tensor::TensorList& labels,
-                                  bool use_sparsity) {
+TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
+                          bool use_sparsity) {
   setLabels(labels);
   return forward(inputs, use_sparsity);
 }
@@ -141,31 +150,37 @@ void Model::forceStateReallocation() {
   _allocation_manager.forceReallocation();
 }
 
-std::vector<ops::OpPtr> Model::opExecutionOrder() const {
-  std::vector<ops::OpPtr> ops;
+std::vector<OpPtr> Model::opExecutionOrder() const {
+  std::vector<OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.push_back(comp->op());
   }
   return ops;
 }
 
-autograd::ComputationList Model::computationOrder() const {
-  autograd::ComputationList all_comps;
+ComputationList Model::computationOrder() const {
+  ComputationList all_comps;
   all_comps.insert(all_comps.end(), _inputs.begin(), _inputs.end());
   all_comps.insert(all_comps.end(), _computation_order.begin(),
                    _computation_order.end());
   return all_comps;
 }
 
-const autograd::ComputationList& Model::outputs() const { return _outputs; }
+ComputationList Model::computationOrderWithoutInputs() const {
+  return _computation_order;
+}
 
-const autograd::ComputationList& Model::labels() const { return _labels; }
+const ComputationList& Model::inputs() const { return _inputs; }
 
-const std::vector<loss::LossPtr>& Model::losses() const { return _losses; }
+const ComputationList& Model::outputs() const { return _outputs; }
 
-const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
+const ComputationList& Model::labels() const { return _labels; }
 
-ops::OpPtr Model::getOp(const std::string& name) const {
+const std::vector<LossPtr>& Model::losses() const { return _losses; }
+
+const std::vector<OpPtr>& Model::ops() const { return _ops; }
+
+OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
       return op;
@@ -174,7 +189,7 @@ ops::OpPtr Model::getOp(const std::string& name) const {
   throw std::invalid_argument("Could not find op with name '" + name + "'.");
 }
 
-autograd::ComputationPtr Model::getComputation(const std::string& name) const {
+ComputationPtr Model::getComputation(const std::string& name) const {
   for (const auto& comp : _computation_order) {
     if (comp->name() == name) {
       return comp;
@@ -197,6 +212,8 @@ std::string Model::summary(bool print) const {
     comp->summary(summary);
     summary << "\n";
   }
+  summary << "Total Paramters: " << numParams() << "\n";
+  summary << "thirdai Version: " << thirdaiVersion() << "\n";
   summary << "=================================================\n";
 
   if (print) {
@@ -204,6 +221,16 @@ std::string Model::summary(bool print) const {
   }
 
   return summary.str();
+}
+
+std::string Model::thirdaiVersion() const { return _thirdai_version; }
+
+size_t Model::numParams() const {
+  size_t total_params = 0;
+  for (const auto* param : parameters()) {
+    total_params += param->size();
+  }
+  return total_params;
 }
 
 uint32_t Model::trainSteps() const { return _train_steps; }
@@ -315,7 +342,7 @@ void Model::setFlattenedParameters(const float* concatenated_values,
    * distributed.
    */
   for (const auto& op : _ops) {
-    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+    if (auto fc = std::dynamic_pointer_cast<FullyConnected>(op)) {
       fc->reBuildHashFunction();
     }
   }
@@ -327,9 +354,15 @@ void Model::disableSparseParameterUpdates() {
   }
 }
 
+void Model::enableSparseParameterUpdates() {
+  for (const auto& op : _ops) {
+    op->enableSparseParameterUpdates();
+  }
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
-    if (auto fc = std::dynamic_pointer_cast<ops::FullyConnected>(op)) {
+    if (auto fc = std::dynamic_pointer_cast<FullyConnected>(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->freezeHashTables(insert_labels_if_not_found);
@@ -339,7 +372,7 @@ void Model::freezeHashTables(bool insert_labels_if_not_found) {
 
 void Model::unfreezeHashTables() {
   for (auto& op : _ops) {
-    if (auto fc = ops::FullyConnected::cast(op)) {
+    if (auto fc = FullyConnected::cast(op)) {
       // insert_labels_if_not_found will have no effect on non output layers
       // because they will not have access to labels.
       fc->unfreezeHashTables();
@@ -347,10 +380,9 @@ void Model::unfreezeHashTables() {
   }
 }
 
-std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-Model::outputLabelPairs() const {
-  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-      output_label_pairs;
+std::vector<std::pair<ComputationPtr, ComputationPtr>> Model::outputLabelPairs()
+    const {
+  std::vector<std::pair<ComputationPtr, ComputationPtr>> output_label_pairs;
 
   for (const auto& loss : _losses) {
     auto outputs_used = loss->outputsUsed();
@@ -434,8 +466,8 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
   }
 }
 
-inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
-                               const tensor::TensorList& batches,
+inline uint32_t setBatchHelper(ComputationList& inputs,
+                               const TensorList& batches,
                                const std::string& type) {
   if (batches.size() != inputs.size()) {
     std::stringstream error;
@@ -464,17 +496,17 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
   return batch_size.value();
 }
 
-uint32_t Model::setInput(const tensor::TensorList& input_batches) {
+uint32_t Model::setInput(const TensorList& input_batches) {
   return setBatchHelper(_inputs, input_batches, "input batches");
 }
 
-uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
+uint32_t Model::setLabels(const TensorList& label_batches) {
   return setBatchHelper(_labels, label_batches, "label batches");
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
-    auto fully_connected = ops::FullyConnected::cast(output->op());
+    auto fully_connected = FullyConnected::cast(output->op());
 
     if (fully_connected) {
       output->addInput(label);
@@ -485,6 +517,38 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
 void Model::registerWithOps() {
   for (auto& op : _ops) {
     op->registerModel(weak_from_this());
+  }
+}
+
+void Model::nameComputations(ComputationList& inputs, ComputationList& comps,
+                             ComputationList& labels) {
+  uint32_t comp_count = 0;
+  auto next_name = [&comp_count]() {
+    return "tensor_" + std::to_string(++comp_count);
+  };
+  std::unordered_set<ComputationPtr> visited;
+  for (auto& input : inputs) {
+    // The same computation might be referenced multiple times in the inputs.
+    if (!visited.count(input)) {
+      input->setName(next_name());
+      visited.insert(input);
+    }
+  }
+  for (auto& comp : comps) {
+    if (visited.count(comp)) {
+      throw std::invalid_argument(
+          "A computation must not be used multiple times in the computation "
+          "graph.");
+    }
+    comp->setName(next_name());
+    visited.insert(comp);
+  }
+  // The same computation might be referenced multiple times in the labels.
+  for (auto& label : labels) {
+    if (!visited.count(label)) {
+      label->setName(next_name());
+      visited.insert(label);
+    }
   }
 }
 
@@ -524,12 +588,12 @@ template <class Archive>
 void Model::serialize(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
+  _thirdai_version = thirdai::version();
+  archive(_thirdai_version);
 
   std::string class_name = "BOLT_MODEL";
-  versions::checkVersion(version, versions::BOLT_MODEL_VERSION, thirdai_version,
-                         thirdai::version(), class_name);
+  versions::checkVersion(version, versions::BOLT_MODEL_VERSION,
+                         _thirdai_version, thirdai::version(), class_name);
 
   // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
@@ -541,7 +605,7 @@ void Model::serialize(Archive& archive, const uint32_t version) {
   registerWithOps();
 }
 
-}  // namespace thirdai::bolt::nn::model
+}  // namespace thirdai::bolt
 
-CEREAL_CLASS_VERSION(thirdai::bolt::nn::model::Model,
+CEREAL_CLASS_VERSION(thirdai::bolt::Model,
                      thirdai::versions::BOLT_MODEL_VERSION)

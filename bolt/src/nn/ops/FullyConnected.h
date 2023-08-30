@@ -10,7 +10,7 @@
 #include <limits>
 #include <memory>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class FullyConnected final
     : public Op,
@@ -31,40 +31,41 @@ class FullyConnected final
    * ensure that the label neurons are among the active neurons set if it's
    * sparse.
    */
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  void initOptimizer(const optimizers::Factory& optimizer_factory) final;
+  void initOptimizer(const OptimizerFactory& optimizer_factory) final;
 
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
+
+  void enableSparseParameterUpdates() final;
 
   std::vector<std::vector<float>*> gradients() final;
 
   std::vector<std::vector<float>*> parameters() final;
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  void registerModel(const std::weak_ptr<model::Model>& new_model) final;
+  void registerModel(const std::weak_ptr<Model>& new_model) final;
 
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.
    */
-  autograd::ComputationPtr apply(autograd::ComputationPtr input);
+  ComputationPtr apply(ComputationPtr input);
 
   /**
    * Returns the input dim of the fully connected layer.
@@ -114,7 +115,7 @@ class FullyConnected final
    */
   void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
 
-  static auto cast(const ops::OpPtr& op) {
+  static auto cast(const OpPtr& op) {
     return std::dynamic_pointer_cast<FullyConnected>(op);
   }
 
@@ -122,6 +123,12 @@ class FullyConnected final
 
   void setSparsity(float sparsity, bool rebuild_hash_tables,
                    bool experimental_autotune);
+
+  uint32_t getRebuildHashTables() const { return _rebuild_hash_tables; }
+
+  uint32_t getReconstructHashFunctions() const {
+    return _reconstruct_hash_functions;
+  }
 
  private:
   FullyConnected(
@@ -141,7 +148,7 @@ class FullyConnected final
 
   // This does not need to be serialized because models will register with their
   // ops again once loaded.
-  std::vector<std::weak_ptr<model::Model>> _models_using_op;
+  std::vector<std::weak_ptr<Model>> _models_using_op;
 
   FullyConnected() {}
 
@@ -152,4 +159,4 @@ class FullyConnected final
 
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

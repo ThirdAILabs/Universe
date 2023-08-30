@@ -13,7 +13,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextFullyConnectedOpName() {
   static uint32_t constructed = 0;
@@ -50,9 +50,8 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
       rebuild_hash_tables, reconstruct_hash_functions));
 }
 
-void FullyConnected::forward(const autograd::ComputationList& inputs,
-                             tensor::TensorPtr& output, uint32_t index_in_batch,
-                             bool training) {
+void FullyConnected::forward(const ComputationList& inputs, TensorPtr& output,
+                             uint32_t index_in_batch, bool training) {
   assert(inputs.size() == 1 || inputs.size() == 2);
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
@@ -64,8 +63,7 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
                    output->getVector(index_in_batch), labels);
 }
 
-void FullyConnected::backpropagate(autograd::ComputationList& inputs,
-                                   tensor::TensorPtr& output,
+void FullyConnected::backpropagate(ComputationList& inputs, TensorPtr& output,
                                    uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
@@ -94,15 +92,14 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
-void FullyConnected::initOptimizer(
-    const optimizers::Factory& optimizer_factory) {
+void FullyConnected::initOptimizer(const OptimizerFactory& optimizer_factory) {
   _kernel->initOptimizer(optimizer_factory);
 }
 
 uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
 
-std::optional<uint32_t> FullyConnected::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> FullyConnected::nonzeros(const ComputationList& inputs,
+                                                 bool use_sparsity) const {
   // The number of output nonzeros for a FullyConnected op do not depend on its
   // inputs.
   (void)inputs;
@@ -116,6 +113,10 @@ void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+void FullyConnected::enableSparseParameterUpdates() {
+  _kernel->enableSparseParameterUpdates();
+}
+
 std::vector<std::vector<float>*> FullyConnected::gradients() {
   return {&_kernel->weightsGradient(), &_kernel->biasGradient()};
 }
@@ -125,8 +126,8 @@ std::vector<std::vector<float>*> FullyConnected::parameters() {
 }
 
 void FullyConnected::summary(std::ostream& summary,
-                             const autograd::ComputationList& inputs,
-                             const autograd::Computation* output) const {
+                             const ComputationList& inputs,
+                             const Computation* output) const {
   summary << "FullyConnected(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name();
   summary << " [dim=" << _kernel->getDim()
@@ -150,8 +151,7 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
 }
 
 void FullyConnected::reBuildHashFunction() { _kernel->reBuildHashFunction(); }
-void FullyConnected::registerModel(
-    const std::weak_ptr<model::Model>& new_model) {
+void FullyConnected::registerModel(const std::weak_ptr<Model>& new_model) {
   bool found = false;
 
   // This adds the new model to the list of models that the fully connected
@@ -172,7 +172,7 @@ void FullyConnected::registerModel(
   }
 }
 
-autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
+ComputationPtr FullyConnected::apply(ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
@@ -181,7 +181,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
 
     throw std::invalid_argument(error.str());
   }
-  return autograd::Computation::make(shared_from_this(), {std::move(input)});
+  return Computation::make(shared_from_this(), {std::move(input)});
 }
 
 uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
@@ -262,6 +262,7 @@ void FullyConnected::serialize(Archive& archive) {
           _updates_since_reconstruct_hash_functions);
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::FullyConnected)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::FullyConnected,
+                               "thirdai::bolt::nn::ops::FullyConnected")

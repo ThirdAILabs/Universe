@@ -1,58 +1,23 @@
 import os
+import shutil
 
 import numpy as np
 import pytest
-from thirdai import dataset
+from thirdai import bolt, dataset
 from thirdai.demos import download_mnist_dataset
 
 
-@pytest.fixture(scope="module")
-def ray_two_node_cluster_config():
-    # Do these imports here so pytest collection doesn't fail if ray isn't installed
-    import ray
-    import thirdai.distributed_bolt as db
-    from ray.cluster_utils import Cluster
-
-    num_cpu_per_node = db.get_num_cpus() // 2
-
-    # case if multiprocessing import fails
-    if num_cpu_per_node == 0:
-        num_cpu_per_node = 1
-
-    mini_cluster = Cluster(
-        initialize_head=True,
-        head_node_args={
-            "num_cpus": num_cpu_per_node,
+def get_udt_cold_start_model(n_target_classes):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "QUERY": bolt.types.text(),
+            "PRODUCT_ID": bolt.types.categorical(),
         },
+        target="PRODUCT_ID",
+        n_target_classes=n_target_classes,
+        integer_target=True,
     )
-    mini_cluster.add_node(num_cpus=num_cpu_per_node)
-
-    # directly yielding mini_cluster returns a generator for cluster_config,
-    # rather than cluster_config itself and those generators were just using
-    # the default communication_type(= "linear"), even after parametrizing it
-    # . doing it this way make sure we are getting the cluster_config for the
-    # communication type provided
-    def _make_cluster_config(communication_type="linear"):
-        # We set the working_dir for the cluster equal to this directory
-        # so that pickle works. Otherwise, unpickling functions
-        # defined in the test files would not work, since pickle needs to be
-        # able to import the file the object/function was originally defined in.
-
-        working_dir = os.path.dirname(os.path.realpath(__file__))
-        cluster_config = db.RayTrainingClusterConfig(
-            num_workers=2,
-            requested_cpus_per_node=num_cpu_per_node,
-            communication_type=communication_type,
-            cluster_address=mini_cluster.address,
-            runtime_env={"working_dir": working_dir},
-            ignore_reinit_error=True,
-        )
-        return cluster_config
-
-    yield _make_cluster_config
-
-    ray.shutdown()
-    mini_cluster.shutdown()
+    return model
 
 
 def split_into_2(
@@ -90,42 +55,6 @@ def check_models_are_same_on_first_two_nodes(distributed_model):
     compare_parameters_of_two_models(model_node_1, model_node_2)
 
 
-def remove_files(file_names):
-    for file in file_names:
-        if os.path.exists(file):
-            os.remove(file)
-
-
-def metrics_aggregation_from_workers(train_metrics):
-    overall_metrics = {}
-    for metrics_per_node in train_metrics:
-        for key, value in metrics_per_node.items():
-            if key not in overall_metrics:
-                overall_metrics[key] = 0
-            # Here we are averaging the metrics, hence divding the
-            # metric "categorical_accuracy" by 2(we use only two
-            # workers for testing purpose).
-            overall_metrics[key] += value[-1] / 2
-
-    return overall_metrics
-
-
-@pytest.fixture(scope="session")
-def mnist_distributed_split(download_mnist_dataset):
-    train_file, test_file = download_mnist_dataset
-    path = "mnist_data"
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    split_into_2(
-        file_to_split=train_file,
-        destination_file_1="mnist_data/part1",
-        destination_file_2="mnist_data/part2",
-    )
-
-    return ("mnist_data/part1", "mnist_data/part2"), test_file
-
-
 def gen_numpy_training_data(
     n_classes=10,
     n_samples=1000,
@@ -142,3 +71,95 @@ def gen_numpy_training_data(
         examples = dataset.from_numpy(examples, batch_size=batch_size_for_conversion)
         labels = dataset.from_numpy(labels, batch_size=batch_size_for_conversion)
     return examples, labels
+
+
+def check_model_parameters_equal(model_0, model_1):
+    for op_0, op_1 in zip(model_0.ops(), model_1.ops()):
+        assert np.allclose(op_0.weights, op_1.weights)
+        assert np.allclose(op_0.biases, op_1.biases)
+
+
+def get_bolt_model():
+    from thirdai import bolt
+
+    n_classes = 10
+    input_layer = bolt.nn.Input(dim=n_classes)
+
+    hidden_layer = bolt.nn.FullyConnected(
+        dim=20000,
+        input_dim=n_classes,
+        sparsity=0.01,
+        activation="relu",
+        rebuild_hash_tables=12,
+        reconstruct_hash_functions=40,
+    )(input_layer)
+    output = bolt.nn.FullyConnected(
+        dim=n_classes, input_dim=20000, activation="softmax"
+    )(hidden_layer)
+
+    labels = bolt.nn.Input(dim=n_classes)
+    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
+
+    return model
+
+
+def copy_file_or_folder(source_path, destination_path):
+    try:
+        if os.path.isfile(source_path):
+            shutil.copy2(source_path, destination_path)
+            print(f"File '{source_path}' copied to '{destination_path}' successfully.")
+        elif os.path.isdir(source_path):
+            shutil.copytree(source_path, destination_path)
+            print(
+                f"Folder '{source_path}' copied to '{destination_path}' successfully."
+            )
+        else:
+            print(f"Source '{source_path}' does not exist.")
+    except PermissionError:
+        print(f"Permission denied while copying '{source_path}'.")
+
+
+def setup_ray(num_workers=2):
+    import ray
+    import thirdai.distributed_bolt as dist
+    from ray.air import ScalingConfig
+
+    # reserve one CPU for Ray Trainer
+    num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
+
+    assert num_cpu_per_node >= 1, "Number of CPUs per node should be greater than 0"
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+
+    ray.init(
+        runtime_env={
+            "working_dir": working_dir,
+            "env_vars": {"OMP_NUM_THREADS": f"{num_cpu_per_node}"},
+        },
+        ignore_reinit_error=True,
+    )
+    scaling_config = ScalingConfig(
+        num_workers=num_workers,
+        use_gpu=False,
+        resources_per_worker={"CPU": num_cpu_per_node},
+        placement_strategy="PACK",
+    )
+    return scaling_config
+
+
+def extract_metrics_from_file(filename):
+    import json
+
+    # Read the metrics dictionary from the JSON file
+    with open(filename, "r") as file:
+        data = json.load(file)
+    return data
+
+
+def write_metrics_to_file(filename, metrics):
+    import json
+
+    # Write the metrics dictionary to the file in JSON format
+    with open(filename, "w") as file:
+        json.dump(metrics, file)

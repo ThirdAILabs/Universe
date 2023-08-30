@@ -124,7 +124,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
-           py::arg("options") = udt::TrainOptions(),
+           py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
@@ -150,7 +150,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate"), py::arg("epochs"),
            py::arg("train_metrics"), py::arg("val_data"),
            py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
-           bolt::python::OutputRedirect())
+           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
+      .def("output_correctness", &udt::UDT::outputCorrectness,
+           py::arg("samples"), py::arg("labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("num_hashes") = std::nullopt)
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
@@ -161,14 +165,13 @@ void defineAutomlInModule(py::module_& module) {
       .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
       .def("clear_graph", &udt::UDT::clearGraph)
       .def("set_decode_params", &udt::UDT::setDecodeParams,
-           py::arg("min_num_eval_results"),
-           py::arg("top_k_per_eval_aggregation"))
+           py::arg("top_k_to_return"), py::arg("num_buckets_to_eval"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
            py::arg("num_buckets_to_sample") = std::nullopt,
            py::arg("num_random_hashes") = 0,
-           py::arg("fast_approximation") = false)
+           py::arg("fast_approximation") = false, py::arg("verbose") = true)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),
@@ -183,7 +186,13 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{})
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
-           py::arg("sparse_inference") = false)
+           py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
+           py::arg("num_hashes") = std::nullopt)
+      .def("predict_hashes_batch", &udt::UDT::predictHashesBatch,
+           py::arg("samples"), py::arg("sparse_inference") = false,
+           py::arg("force_non_empty") = true,
+           py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
@@ -192,12 +201,24 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+      .def("associate_train_data_source", &udt::UDT::associateTrain,
+           py::arg("balancing_data"), py::arg("source_target_samples"),
+           py::arg("n_buckets"), py::arg("n_association_samples"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           py::arg("options"))
+      .def("associate_cold_start_data_source", &udt::UDT::associateColdStart,
+           py::arg("balancing_data"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"), py::arg("source_target_samples"),
+           py::arg("n_buckets"), py::arg("n_association_samples"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           py::arg("options"))
       .def("enable_rlhf", &udt::UDT::enableRlhf,
            py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
            py::arg("num_balancing_samples_per_doc") =
                udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
+      .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -210,6 +231,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)
+      .def("data_types", &udt::UDT::dataTypes)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
@@ -224,6 +246,7 @@ void defineAutomlInModule(py::module_& module) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
       .def(bolt::python::getPickleFunction<udt::UDT>());
+  ;
 }
 
 void createModelsSubmodule(py::module_& module) {
@@ -236,20 +259,6 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("data_source"), py::arg("training"),
            py::arg("shuffle_config") = std::nullopt)
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
-}
-
-void createDistributedPreprocessingWrapper(py::module_& module) {
-  auto distributed_preprocessing_submodule =
-      module.def_submodule("distributed_preprocessing");
-  distributed_preprocessing_submodule.def(
-      "preprocess_cold_start_train_source",
-      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
-      py::arg("strong_column_names"), py::arg("weak_column_names"),
-      py::arg("dataset_factory"), py::arg("metadata"));
-
-  py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
-      distributed_preprocessing_submodule, "ColdStartMetaData")
-      .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -286,7 +295,11 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<std::optional<char>,
                     automl::data::CategoricalMetadataConfigPtr>(),
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-           docs::UDT_CATEGORICAL_TEMPORAL);
+           docs::UDT_CATEGORICAL_TEMPORAL)
+      .def_property_readonly(
+          "delimiter", [](automl::data::CategoricalDataType& categorical) {
+            return categorical.delimiter;
+          });
 
   py::class_<automl::data::NumericalDataType, automl::data::DataType,
              automl::data::NumericalDataTypePtr>(udt_types_submodule,
