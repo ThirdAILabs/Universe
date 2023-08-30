@@ -77,7 +77,7 @@ void CosineSimilarity::updateParameters(float learning_rate,
 }
 
 void CosineSimilarity::initOptimizer(
-    const OptimizerFactory& optimizer_factory) {
+    const OptimizerFactoryPtr& optimizer_factory) {
   (void)optimizer_factory;
 }
 

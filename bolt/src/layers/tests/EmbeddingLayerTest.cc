@@ -28,7 +28,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     std::iota(layer->_embedding_block->begin(), layer->_embedding_block->end(),
               1.0);
 
-    layer->initOptimizer(nn::optimizers::AdamFactory());
+    layer->initOptimizer(AdamFactory::make());
 
     return layer;
   }

@@ -19,7 +19,7 @@ class DotProduct final : public Op,
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  void initOptimizer(const OptimizerFactory& optimizer_factory) final;
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final;
 
   uint32_t dim() const final;
 

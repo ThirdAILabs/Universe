@@ -104,6 +104,16 @@ void defineOptimizers(py::module_& nn);
 void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
+#if THIRDAI_EXPOSE_ALL
+  defineTensor(nn);
+
+  defineOps(nn);
+
+  defineLosses(nn);
+
+  defineOptimizers(nn);
+#endif
+
   py::class_<Model, ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**
@@ -156,16 +166,6 @@ void createBoltNNSubmodule(py::module_& module) {
            py::arg("save_metadata") = true)
       .def_static("load", &Model::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<Model>());
-
-#if THIRDAI_EXPOSE_ALL
-  defineTensor(nn);
-
-  defineOps(nn);
-
-  defineLosses(nn);
-
-  defineOptimizers(nn);
-#endif
 }
 
 void defineTensor(py::module_& nn) {
@@ -389,9 +389,11 @@ void defineLosses(py::module_& nn) {
 void defineOptimizers(py::module_& nn) {
   auto optimizers = nn.def_submodule("optimizers");
 
-  py::class_<OptimizerFactory>(optimizers, "Optimizer");  // NOLINT
+  // NOLINTNEXTLINE
+  py::class_<OptimizerFactory, OptimizerFactoryPtr>(optimizers, "Optimizer");
 
-  py::class_<AdamFactory, OptimizerFactory>(optimizers, "Adam")
+  py::class_<AdamFactory, OptimizerFactory, std::shared_ptr<AdamFactory>>(
+      optimizers, "Adam")
       .def(py::init<>());
 }
 

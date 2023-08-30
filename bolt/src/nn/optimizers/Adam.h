@@ -82,6 +82,8 @@ class AdamFactory final : public OptimizerFactory {
                                            size_t cols) const final {
     return std::make_unique<Adam>(rows, cols);
   }
+
+  static auto make() { return std::make_shared<AdamFactory>(); }
 };
 
 }  // namespace thirdai::bolt

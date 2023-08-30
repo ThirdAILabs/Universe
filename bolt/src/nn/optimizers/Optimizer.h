@@ -70,4 +70,6 @@ class OptimizerFactory {
   virtual ~OptimizerFactory() = default;
 };
 
+using OptimizerFactoryPtr = std::shared_ptr<OptimizerFactory>;
+
 }  // namespace thirdai::bolt

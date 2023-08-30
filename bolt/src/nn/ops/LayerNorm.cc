@@ -145,12 +145,12 @@ void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
                                train_steps);
 }
 
-void LayerNorm::initOptimizer(const OptimizerFactory& optimizer_factory) {
+void LayerNorm::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
   if (!_gamma_optimizer || !_beta_optimizer) {
     _gamma_optimizer =
-        optimizer_factory.makeOptimizer(/* rows= */ 1, _gamma.size());
+        optimizer_factory->makeOptimizer(/* rows= */ 1, _gamma.size());
     _beta_optimizer =
-        optimizer_factory.makeOptimizer(/* rows= */ 1, _beta.size());
+        optimizer_factory->makeOptimizer(/* rows= */ 1, _beta.size());
 
     _gamma_gradients.assign(_gamma.size(), 0.0);
     _beta_gradients.assign(_beta.size(), 0.0);

@@ -49,7 +49,7 @@ void Input::updateParameters(float learning_rate, uint32_t train_steps) {
       "UpdateParameters should not be called on input op.");
 }
 
-void Input::initOptimizer(const OptimizerFactory& optimizer_factory) {
+void Input::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
   (void)optimizer_factory;
   throw std::runtime_error("InitOptimizer should not be called on input op.");
 }

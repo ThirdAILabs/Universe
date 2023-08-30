@@ -42,9 +42,9 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::ostream& summary) const;
 
-  void initOptimizer(const OptimizerFactory& optimizer_factory) {
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
     if (!_optimizer) {
-      _optimizer = optimizer_factory.makeOptimizer(
+      _optimizer = optimizer_factory->makeOptimizer(
           _embedding_chunks_used.size(), _update_chunk_size);
       _gradients.assign(_embedding_block->size(), 0.0);
     }

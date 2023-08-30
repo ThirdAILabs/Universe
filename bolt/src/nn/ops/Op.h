@@ -70,7 +70,7 @@ class Op {
   /**
    * Initializes the optimizer for the op.
    */
-  virtual void initOptimizer(const OptimizerFactory& optimizer_factory) = 0;
+  virtual void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) = 0;
 
   /**
    * Returns the output dimension of the op. Does not include batch size.

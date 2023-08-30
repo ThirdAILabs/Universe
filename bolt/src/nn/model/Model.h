@@ -38,13 +38,13 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   Model(ComputationList inputs, ComputationList outputs,
         std::vector<LossPtr> losses, ComputationList additional_labels = {},
-        const OptimizerFactory& optimizer = AdamFactory());
+        OptimizerFactoryPtr optimizer = AdamFactory::make());
 
  public:
   static std::shared_ptr<Model> make(
       ComputationList inputs, ComputationList outputs,
       std::vector<LossPtr> losses, ComputationList additional_labels = {},
-      const OptimizerFactory& optimizer = AdamFactory());
+      OptimizerFactoryPtr optimizer = AdamFactory::make());
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -186,14 +186,14 @@ class Model : public std::enable_shared_from_this<Model> {
   /**
    * Returns a list of references to gradients of all parameters in the model.
    */
-  std::vector<std::vector<float>*> gradients() const;
+  std::vector<std::vector<float>*> gradients();
 
   std::vector<std::vector<float>*> parameters() const;
 
-  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+  std::pair<const float*, uint64_t> getFlattenedGradients();
 
   void setFlattenedGradients(const float* concatenated_values,
-                             uint64_t flattened_dim) const;
+                             uint64_t flattened_dim);
 
   std::pair<const float*, uint64_t> getFlattenedParameters() const;
 
@@ -265,6 +265,11 @@ class Model : public std::enable_shared_from_this<Model> {
   void backpropagateVector(uint32_t index_in_batch, uint32_t batch_size);
 
   /**
+   * Ensures that the optimizer is initialized for the ops in the model.
+   */
+  void requireOptimizer();
+
+  /**
    * Sets the given batch as the inputs to the model.
    */
   uint32_t setInput(const TensorList& input_batches);
@@ -319,6 +324,9 @@ class Model : public std::enable_shared_from_this<Model> {
   ComputationList _computation_order;
 
   AllocationManager _allocation_manager;
+
+  OptimizerFactoryPtr _optimizer_factory;
+  bool _optimizer_initialized = false;
 
   uint32_t _train_steps;
 

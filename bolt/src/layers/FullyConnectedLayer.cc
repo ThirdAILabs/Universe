@@ -564,10 +564,10 @@ void FullyConnectedLayer::setHashTable(
 }
 
 void FullyConnectedLayer::initOptimizer(
-    const OptimizerFactory& optimizer_factory) {
+    const OptimizerFactoryPtr& optimizer_factory) {
   if (!_weight_optimizer || !_bias_optimizer) {
-    _weight_optimizer = optimizer_factory.makeOptimizer(_dim, _prev_dim);
-    _bias_optimizer = optimizer_factory.makeOptimizer(_dim, /* cols= */ 1);
+    _weight_optimizer = optimizer_factory->makeOptimizer(_dim, _prev_dim);
+    _bias_optimizer = optimizer_factory->makeOptimizer(_dim, /* cols= */ 1);
 
     _weight_gradients.assign(_weights.size(), 0.0);
     _bias_gradients.assign(_biases.size(), 0.0);

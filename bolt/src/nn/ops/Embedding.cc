@@ -177,10 +177,10 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   }
 }
 
-void Embedding::initOptimizer(const OptimizerFactory& optimizer_factory) {
+void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
   if (!_embedding_optimizer || !_bias_optimizer) {
-    _embedding_optimizer = optimizer_factory.makeOptimizer(_input_dim, _dim);
-    _bias_optimizer = optimizer_factory.makeOptimizer(/* rows= */ 1, _dim);
+    _embedding_optimizer = optimizer_factory->makeOptimizer(_input_dim, _dim);
+    _bias_optimizer = optimizer_factory->makeOptimizer(/* rows= */ 1, _dim);
 
     _embedding_gradients.assign(_embeddings.size(), 0.0);
     _bias_gradients.assign(_biases.size(), 0.0);

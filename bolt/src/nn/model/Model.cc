@@ -27,10 +27,11 @@ namespace thirdai::bolt {
 
 Model::Model(ComputationList inputs, ComputationList outputs,
              std::vector<LossPtr> losses, ComputationList additional_labels,
-             const OptimizerFactory& optimizer)
+             OptimizerFactoryPtr optimizer)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
+      _optimizer_factory(std::move(optimizer)),
       _train_steps(0),
       _model_uuid(
           utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)),
@@ -70,20 +71,16 @@ Model::Model(ComputationList inputs, ComputationList outputs,
   matchOutputFullyConnectedLayersWithLabels();
 
   verifyAllowedOutputDim();
-
-  for (auto& op : _ops) {
-    op->initOptimizer(optimizer);
-  }
 }
 
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
                                    ComputationList additional_labels,
-                                   const OptimizerFactory& optimizer) {
+                                   OptimizerFactoryPtr optimizer) {
   auto model = std::shared_ptr<Model>(
       new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                std::move(additional_labels), optimizer));
+                std::move(additional_labels), std::move(optimizer)));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -111,6 +108,8 @@ TensorList Model::forward(const TensorList& inputs, bool use_sparsity) {
 }
 
 void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
+  requireOptimizer();
+
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -140,6 +139,8 @@ TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
 }
 
 void Model::updateParameters(float learning_rate) {
+  requireOptimizer();
+
   ++_train_steps;
   for (auto& op : _ops) {
     op->updateParameters(learning_rate, _train_steps);
@@ -255,7 +256,9 @@ std::vector<uint32_t> Model::labelDims() const {
   return dims;
 }
 
-std::vector<std::vector<float>*> Model::gradients() const {
+std::vector<std::vector<float>*> Model::gradients() {
+  requireOptimizer();
+
   std::vector<std::vector<float>*> grads;
 
   for (const auto& op : _ops) {
@@ -320,7 +323,7 @@ void setValues(const std::vector<std::vector<float>*>& values,
   }
 }
 
-std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() {
   return concatenateValues(gradients());
 }
 
@@ -329,7 +332,7 @@ std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
 }
 
 void Model::setFlattenedGradients(const float* concatenated_values,
-                                  uint64_t flattened_dim) const {
+                                  uint64_t flattened_dim) {
   setValues(gradients(), concatenated_values, flattened_dim);
 }
 
@@ -463,6 +466,15 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
   for (auto tensor = _computation_order.rbegin();
        tensor != _computation_order.rend(); ++tensor) {
     (*tensor)->backpropagate(index_in_batch);
+  }
+}
+
+void Model::requireOptimizer() {
+  if (!_optimizer_initialized) {
+    for (auto& op : _ops) {
+      op->initOptimizer(_optimizer_factory);
+    }
+    _optimizer_initialized = true;
   }
 }
 

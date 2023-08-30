@@ -21,7 +21,7 @@ class Concatenate final : public Op,
     (void)train_steps;
   }
 
-  void initOptimizer(const OptimizerFactory& optimizer_factory) final {
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final {
     (void)optimizer_factory;
   }
 

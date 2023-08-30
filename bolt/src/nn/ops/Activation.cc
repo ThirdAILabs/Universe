@@ -66,7 +66,7 @@ void Activation<Impl>::updateParameters(float learning_rate,
 
 template <typename Impl>
 void Activation<Impl>::initOptimizer(
-    const OptimizerFactory& optimizer_factory) {
+    const OptimizerFactoryPtr& optimizer_factory) {
   (void)optimizer_factory;
 }
 
