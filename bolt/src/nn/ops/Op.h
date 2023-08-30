@@ -66,15 +66,15 @@ class Op {
    */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) {
     if (_trainable) {
-      updateParametersImp(learning_rate, train_steps);
+      updateParametersImpl(learning_rate, train_steps);
     }
   }
 
   /**
    * Implementation of the parameter update step of the op.
    */
-  virtual void updateParametersImp(float learning_rate,
-                                   uint32_t train_steps) = 0;
+  virtual void updateParametersImpl(float learning_rate,
+                                    uint32_t train_steps) = 0;
 
   /**
    * Returns the output dimension of the op. Does not include batch size. For

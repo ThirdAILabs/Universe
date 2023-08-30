@@ -42,7 +42,7 @@ void Input::backpropagate(ComputationList& inputs, TensorPtr& output,
   throw std::runtime_error("Backpropagate should not be called on input op.");
 }
 
-void Input::updateParametersImp(float learning_rate, uint32_t train_steps) {
+void Input::updateParametersImpl(float learning_rate, uint32_t train_steps) {
   (void)learning_rate;
   (void)train_steps;
   throw std::runtime_error(

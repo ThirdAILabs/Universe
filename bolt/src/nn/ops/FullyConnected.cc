@@ -76,8 +76,8 @@ void FullyConnected::backpropagate(ComputationList& inputs, TensorPtr& output,
   }
 }
 
-void FullyConnected::updateParametersImp(float learning_rate,
-                                         uint32_t train_steps) {
+void FullyConnected::updateParametersImpl(float learning_rate,
+                                          uint32_t train_steps) {
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
 
   if (++_updates_since_reconstruct_hash_functions ==

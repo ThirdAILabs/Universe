@@ -60,7 +60,7 @@ void RobeZ::backpropagate(ComputationList& inputs, TensorPtr& output,
                          output->getVector(index_in_batch));
 }
 
-void RobeZ::updateParametersImp(float learning_rate, uint32_t train_steps) {
+void RobeZ::updateParametersImpl(float learning_rate, uint32_t train_steps) {
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
 }
 
