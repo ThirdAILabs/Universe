@@ -147,7 +147,7 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
 
         session.report(
             metrics,
-            # Use `with_optimizers=False` to save model without optimizer parameters
+            # Use `with_optimizers=False` to save model without optimizer states
             checkpoint=dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True),
         )
 
@@ -198,7 +198,7 @@ def test_udt_train_distributed():
         # session report should always have a metrics stored, hence added a demo_metric
         session.report(
             {"demo_metric": 1},
-            # Use `with_optimizers=False` to save model without optimizer parameters
+            # Use `with_optimizers=False` to save model without optimizer states
             checkpoint=dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True),
         )
 
@@ -279,7 +279,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
 
         session.report(
             metrics,
-            # Use `with_optimizers=False` to save model without optimizer parameters
+            # Use `with_optimizers=False` to save model without optimizer states
             checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=True),
         )
 
