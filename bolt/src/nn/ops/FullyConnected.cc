@@ -92,7 +92,8 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
-void FullyConnected::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+void FullyConnected::initOptimizer(
+    const OptimizerFactoryPtr& optimizer_factory) {
   _kernel->initOptimizer(optimizer_factory);
 }
 
