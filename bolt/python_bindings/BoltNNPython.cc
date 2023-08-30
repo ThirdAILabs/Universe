@@ -18,6 +18,7 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
+#include <bolt/src/nn/optimizers/SGD.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -394,6 +395,10 @@ void defineOptimizers(py::module_& nn) {
 
   py::class_<AdamFactory, OptimizerFactory, std::shared_ptr<AdamFactory>>(
       optimizers, "Adam")
+      .def(py::init<>());
+
+  py::class_<SGDFactory, OptimizerFactory, std::shared_ptr<SGDFactory>>(
+      optimizers, "SGD")
       .def(py::init<>());
 }
 

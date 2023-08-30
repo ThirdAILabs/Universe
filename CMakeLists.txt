@@ -338,6 +338,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/nn/optimizers/Adam.cc
+    bolt/src/nn/optimizers/SGD.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
