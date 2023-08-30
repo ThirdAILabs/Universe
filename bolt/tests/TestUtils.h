@@ -36,7 +36,7 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     (void)index_in_batch;
   }
 
-  void updateParameters(float lr, uint32_t t) final {
+  void updateParametersImp(float lr, uint32_t t) final {
     (void)lr;
     (void)t;
   }
