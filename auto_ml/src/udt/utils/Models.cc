@@ -104,14 +104,26 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   return model;
 }
 
-ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
+                   uint32_t specified_output_dim,
                    const std::string& config_path, bool mach) {
   config::ArgumentMap parameters;
-  parameters.insert("output_dim", output_dim);
+  parameters.insert("output_dim", specified_output_dim);
 
   auto json_config = json::parse(config::loadConfig(config_path));
 
-  return config::buildModel(json_config, parameters, input_dims, mach);
+  auto model = config::buildModel(json_config, parameters, input_dims, mach);
+
+  uint32_t actual_output_dim = model->outputs().at(0)->dim();
+  if (actual_output_dim != specified_output_dim) {
+    throw std::invalid_argument(
+        "Expected model with output dim " +
+        std::to_string(specified_output_dim) +
+        ", but the model config yielded a model with output dim " +
+        std::to_string(actual_output_dim) + ".");
+  }
+
+  return model;
 }
 
 void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
