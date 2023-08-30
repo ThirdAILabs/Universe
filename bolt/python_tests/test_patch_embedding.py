@@ -1,6 +1,6 @@
-from thirdai import bolt
-import pytest
 import numpy as np
+import pytest
+from thirdai import bolt
 
 
 def build_model(patches, patch_emb):
