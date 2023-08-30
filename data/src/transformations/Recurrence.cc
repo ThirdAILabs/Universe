@@ -1,4 +1,6 @@
 #include "Recurrence.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
@@ -151,4 +153,16 @@ uint32_t Recurrence::positionEncodedToken(uint32_t token,
   return std::min(position, _max_seq_len - 1) * totalVocabSize() + token;
 }
 
+template void Recurrence::serialize(cereal::BinaryInputArchive&);
+template void Recurrence::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Recurrence::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _source_input_column,
+          _target_input_column, _source_output_column, _target_output_column,
+          _target_vocab_size, _max_seq_len);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::Recurrence)
