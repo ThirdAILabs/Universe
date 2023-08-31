@@ -17,9 +17,19 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
 
     num_epochs = 10
     learning_rate = 0.001
-    options = {"extreme_classification": True, "embedding_dimension": 1024}
+    options = {
+        "extreme_classification": True,
+        "embedding_dimension": 1024,
+        "extreme_output_dim": 1000,
+    }
     metrics = ["precision@1", "recall@5"]
     callbacks = []
+
+    cold_start_learning_rate = 0.001
+    cold_start_num_epochs = 5
+    cold_start_train_file = "scifact/unsupervised.csv"
+    strong_column_names = ["TITLE"]
+    weak_column_names = ["TEXT"]
 
     @staticmethod
     def get_data_types(path_prefix):
