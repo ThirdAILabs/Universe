@@ -64,17 +64,14 @@ class Op {
    * the model. This is for logging and also optimizers like Adam which requires
    * this for bias correction.
    */
-  virtual void updateParameters(float learning_rate, uint32_t train_steps) {
+  virtual void updateTrainableParameters(float learning_rate,
+                                         uint32_t train_steps) {
     if (_trainable) {
-      updateParametersImpl(learning_rate, train_steps);
+      updateParameters(learning_rate, train_steps);
     }
   }
 
-  /**
-   * Implementation of the parameter update step of the op.
-   */
-  virtual void updateParametersImpl(float learning_rate,
-                                    uint32_t train_steps) = 0;
+  virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
   /**
    * Returns the output dimension of the op. Does not include batch size. For
