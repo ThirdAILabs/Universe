@@ -11,7 +11,9 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <iostream>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
@@ -39,10 +41,18 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
 
   bool normalize_embeddings = args.get<bool>("normalize_embeddings", "bool",
                                              defaults::NORMALIZE_EMBEDDINGS);
+
+  std::optional<std::string> grad_clip =
+      args.get<std::string>("grad_clip", "string", "no_grad");
+  if (grad_clip && *grad_clip == "no_grad") {
+    grad_clip.reset();
+  }
+
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, /* hidden_bias= */ hidden_bias,
                              /* output_bias= */ output_bias, /* mach= */ mach,
-                             /* normalize_embeddings= */ normalize_embeddings);
+                             /* normalize_embeddings= */ normalize_embeddings,
+                             grad_clip);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -61,13 +71,14 @@ float autotuneSparsity(uint32_t dim) {
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
                       bool hidden_bias, bool output_bias, bool mach,
-                      bool normalize_embeddings) {
+                      bool normalize_embeddings,
+                      const std::optional<std::string>& grad_clip) {
   auto input = bolt::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 
   auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
-                                      /* bias= */ hidden_bias)
+                                      /* bias= */ hidden_bias, grad_clip)
                     ->apply(input);
 
   if (normalize_embeddings) {
@@ -78,7 +89,8 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::FullyConnected::make(
                     output_dim, hidden->dim(), sparsity, activation,
-                    /* sampling= */ nullptr, /* use_bias= */ output_bias)
+                    /* sampling= */ nullptr, /* use_bias= */ output_bias, 4,
+                    100, grad_clip)
                     ->apply(hidden);
 
   auto labels = bolt::Input::make(output_dim);

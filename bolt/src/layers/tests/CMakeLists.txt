@@ -3,7 +3,7 @@ enable_testing()
 include(GoogleTest)
 
 set(BOLT_LAYER_TESTS FullyConnectedLayerTest EmbeddingLayerTest
-                     BoltLayerTestUtilsTest)
+                     BoltLayerTestUtilsTest GradientClippingTest)
 
 foreach(BOLT_LAYER_TEST IN LISTS BOLT_LAYER_TESTS)
   add_executable(${BOLT_LAYER_TEST} ${BOLT_LAYER_TEST}.cc)

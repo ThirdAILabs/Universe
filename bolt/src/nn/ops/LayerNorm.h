@@ -4,6 +4,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
+#include <optional>
 
 namespace thirdai::bolt {
 
@@ -12,8 +13,9 @@ class LayerNorm final : public Op,
  public:
   static std::shared_ptr<LayerNorm> make();
 
-  static std::shared_ptr<LayerNorm> make(const float* gamma, const float* beta,
-                                         size_t dim);
+  static std::shared_ptr<LayerNorm> make(
+      const float* gamma, const float* beta, size_t dim,
+      const std::optional<std::string>& grad_clip = std::nullopt);
 
   void forward(const ComputationList& inputs, TensorPtr& output,
                uint32_t index_in_batch, bool training) final;
@@ -48,7 +50,8 @@ class LayerNorm final : public Op,
  private:
   LayerNorm();
 
-  LayerNorm(const float* gamma, const float* beta, size_t dim);
+  LayerNorm(const float* gamma, const float* beta, size_t dim,
+            const std::optional<std::string>& grad_clip = std::nullopt);
 
   template <bool DENSE>
   void forward(const BoltVector& input, BoltVector& output);

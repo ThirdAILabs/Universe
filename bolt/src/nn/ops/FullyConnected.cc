@@ -24,7 +24,8 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
                                SamplingConfigPtr sampling, bool use_bias,
                                uint32_t rebuild_hash_tables,
-                               uint32_t reconstruct_hash_functions)
+                               uint32_t reconstruct_hash_functions,
+                               std::optional<std::string> grad_clip)
     : Op(nextFullyConnectedOpName()),
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
@@ -35,7 +36,7 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                             /* experimental_autotune=*/false);
   }
   FullyConnectedLayerConfig config(dim, sparsity, activation,
-                                   std::move(sampling));
+                                   std::move(sampling), std::move(grad_clip));
 
   _kernel = std::make_shared<FullyConnectedLayer>(
       config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
@@ -44,10 +45,11 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
     const std::string& activation, SamplingConfigPtr sampling, bool use_bias,
-    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions,
+    std::optional<std::string> grad_clip) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(
       dim, input_dim, sparsity, activation, std::move(sampling), use_bias,
-      rebuild_hash_tables, reconstruct_hash_functions));
+      rebuild_hash_tables, reconstruct_hash_functions, std::move(grad_clip)));
 }
 
 void FullyConnected::forward(const ComputationList& inputs, TensorPtr& output,
@@ -141,6 +143,9 @@ void FullyConnected::summary(std::ostream& summary,
     summary << ", rebuild_hash_tables=" << _rebuild_hash_tables;
     summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
     summary << ")";
+  }
+  if (_kernel->getGradClip()) {
+    summary << ", grad_clip=" << *_kernel->getGradClip();
   }
   summary << "]";
 }

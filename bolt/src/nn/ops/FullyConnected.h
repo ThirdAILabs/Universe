@@ -9,6 +9,7 @@
 #include <hashtable/src/SampledHashTable.h>
 #include <limits>
 #include <memory>
+#include <optional>
 
 namespace thirdai::bolt {
 
@@ -23,7 +24,8 @@ class FullyConnected final
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling = nullptr,
       bool use_bias = true, uint32_t rebuild_hash_tables = 4,
-      uint32_t reconstruct_hash_functions = 100);
+      uint32_t reconstruct_hash_functions = 100,
+      std::optional<std::string> grad_clip = std::nullopt);
 
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
@@ -135,7 +137,8 @@ class FullyConnected final
       bool use_bias = true,
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
-          std::numeric_limits<uint32_t>::max());
+          std::numeric_limits<uint32_t>::max(),
+      std::optional<std::string> grad_clip = std::nullopt);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 

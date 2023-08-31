@@ -5,8 +5,10 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include "bolt/src/layers/GradientClipper.h"
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -16,19 +18,35 @@ constexpr float BETA2 = 0.999;
 constexpr float EPS = 0.0000001;
 
 struct AdamOptimizer {
-  explicit AdamOptimizer(uint64_t len)
-      : gradients(len, 0.0), momentum(len, 0.0), velocity(len, 0.0) {}
+  explicit AdamOptimizer(uint64_t len,
+                         std::optional<std::string> grad_clip = std::nullopt)
+      : gradients(len, 0.0), momentum(len, 0.0), velocity(len, 0.0) {
+    if (grad_clip) {
+      _gradient_clipper = getGradientClipper(*grad_clip);
+    }
+  }
 
   std::vector<float> gradients;
   std::vector<float> momentum;
   std::vector<float> velocity;
+  std::optional<GradientClipperPtr> _gradient_clipper = std::nullopt;
 
   // Cereal needs public empty constructor if it is wrapped around optional
   explicit AdamOptimizer() {}
 
+  void clipGradients() {
+    if (_gradient_clipper) {
+      _gradient_clipper->get()->clipVector(gradients);
+    }
+  }
+
   void applyUpdate(std::vector<float>& params, float learning_rate,
                    uint32_t train_steps) {
     assert(params.size() == gradients.size());
+
+    if (_gradient_clipper) {
+      _gradient_clipper->get()->clipVector(gradients);
+    }
 
     float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
     float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));

@@ -28,6 +28,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
+      _grad_clip(config.getGradClip()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _should_save_optimizer(false),
       _use_bias(use_bias),
@@ -373,6 +374,8 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
    * was thinking of having different blocks. It also make is visually
    * more clear.
    */
+  _weight_optimizer->clipGradients();
+  _bias_optimizer->clipGradients();
   if (_disable_sparse_parameter_updates ||
       (_prev_is_dense && _this_is_dense)) {  // NOLINT
     updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
@@ -696,8 +699,8 @@ void FullyConnectedLayer::setHashTable(
 
 void FullyConnectedLayer::initOptimizer() {
   if (!_weight_optimizer || !_bias_optimizer) {
-    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
+    _weight_optimizer = AdamOptimizer(_dim * _prev_dim, _grad_clip);
+    _bias_optimizer = AdamOptimizer(_dim, _grad_clip);
   }
 }
 

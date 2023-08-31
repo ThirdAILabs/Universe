@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <optional>
 
 namespace thirdai::automl::udt::utils {
 
@@ -12,11 +13,12 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const std::optional<std::string>& model_config,
                     bool use_sigmoid_bce = false, bool mach = false);
 
-ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                      uint32_t output_dim, bool use_sigmoid_bce = false,
-                      bool use_tanh = false, bool hidden_bias = true,
-                      bool output_bias = true, bool mach = false,
-                      bool normalize_embeddings = false);
+ModelPtr defaultModel(
+    uint32_t input_dim, uint32_t hidden_dim, uint32_t output_dim,
+    bool use_sigmoid_bce = false, bool use_tanh = false,
+    bool hidden_bias = true, bool output_bias = true, bool mach = false,
+    bool normalize_embeddings = false,
+    const std::optional<std::string>& grad_clip = std::nullopt);
 
 float autotuneSparsity(uint32_t dim);
 

@@ -4,6 +4,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <utils/Random.h>
 #include <memory>
+#include <optional>
 
 namespace thirdai::bolt {
 
@@ -14,7 +15,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
       uint64_t log_embedding_block_size, const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
       uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
-      uint32_t seed = global_random::nextSeed());
+      uint32_t seed = global_random::nextSeed(),
+      std::optional<std::string> grad_clip = std::nullopt);
 
   void forward(const ComputationList& inputs, TensorPtr& output,
                uint32_t index_in_batch, bool training) final;
@@ -54,7 +56,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
   RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
         uint64_t log_embedding_block_size, const std::string& reduction,
         std::optional<uint64_t> num_tokens_per_input,
-        uint64_t update_chunk_size, uint32_t seed);
+        uint64_t update_chunk_size, uint32_t seed,
+        std::optional<std::string> grad_clip);
 
   RobeZ(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
       : Op(name), _kernel(std::move(kernel)) {}

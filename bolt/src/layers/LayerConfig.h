@@ -6,7 +6,9 @@
 #include <cmath>
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -16,24 +18,30 @@ class FullyConnectedLayerConfig {
   float _sparsity;
   ActivationFunction _activation_fn;
   SamplingConfigPtr _sampling_config;
+  std::optional<std::string> _grad_clip;
 
  public:
   // Public constructor - it should only be called by cereal
   FullyConnectedLayerConfig() {}
 
-  FullyConnectedLayerConfig(uint64_t dim, const std::string& activation)
-      : FullyConnectedLayerConfig(dim, /* sparsity= */ 1.0, activation) {}
-
-  FullyConnectedLayerConfig(uint64_t dim, float sparsity,
-                            const std::string& activation)
-      : FullyConnectedLayerConfig(
-            dim, sparsity, activation,
-            DWTASamplingConfig::autotune(dim, sparsity,
-                                         /* experimental_autotune=*/false)) {}
+  FullyConnectedLayerConfig(uint64_t dim, const std::string& activation,
+                            std::optional<std::string> grad_clip = std::nullopt)
+      : FullyConnectedLayerConfig(dim, /* sparsity= */ 1.0, activation,
+                                  std::move(grad_clip)) {}
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,
-                            SamplingConfigPtr sampling_config);
+                            std::optional<std::string> grad_clip = std::nullopt)
+      : FullyConnectedLayerConfig(
+            dim, sparsity, activation,
+            DWTASamplingConfig::autotune(dim, sparsity,
+                                         /* experimental_autotune=*/false),
+            std::move(grad_clip)) {}
+
+  FullyConnectedLayerConfig(
+      uint64_t dim, float sparsity, const std::string& activation,
+      SamplingConfigPtr sampling_config,
+      std::optional<std::string> grad_clip = std::nullopt);
 
   uint64_t getDim() const { return _dim; }
 
@@ -44,6 +52,8 @@ class FullyConnectedLayerConfig {
   const SamplingConfigPtr& getSamplingConfig() const {
     return _sampling_config;
   }
+
+  std::optional<std::string> getGradClip() const { return _grad_clip; }
 
  private:
   friend class cereal::access;
@@ -100,13 +110,15 @@ class EmbeddingLayerConfig {
   EmbeddingLayerConfig(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, const std::string& reduction,
-      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt,
+      std::optional<std::string> grad_clip = std::nullopt);
 
   EmbeddingLayerConfig(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
       uint64_t log_embedding_block_size, uint64_t update_chunk_size,
       const std::string& reduction,
-      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt,
+      std::optional<std::string> grad_clip = std::nullopt);
 
   uint64_t numEmbeddingLookups() const { return _num_embedding_lookups; }
 
@@ -130,6 +142,8 @@ class EmbeddingLayerConfig {
     return _num_tokens_per_input;
   }
 
+  std::optional<std::string> getGradClip() const { return _grad_clip; }
+
  private:
   uint64_t _num_embedding_lookups;
   uint64_t _lookup_size;
@@ -138,6 +152,7 @@ class EmbeddingLayerConfig {
 
   EmbeddingReductionType _reduction;
   std::optional<uint64_t> _num_tokens_per_input;
+  std::optional<std::string> _grad_clip;
 
   friend class cereal::access;
   template <class Archive>
