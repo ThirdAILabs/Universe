@@ -71,7 +71,14 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"), py::arg("rows_per_load") = 1000000);
+           py::arg("delimiter"),
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
+  py::class_<JsonIterator, std::shared_ptr<JsonIterator>, ColumnMapIterator>(
+      dataset_submodule, "JsonIterator")
+      .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
+           py::arg("data_source"), py::arg("columns"),
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
 
   py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
       .value("Ones", ValueFillType::Ones)
