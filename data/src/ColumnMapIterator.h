@@ -9,7 +9,7 @@ using dataset::DataSourcePtr;
 
 class ColumnMapIterator {
  public:
-  static const size_t DEFAULT_ROWS_PER_LOAD = 1000000;
+  static constexpr size_t DEFAULT_ROWS_PER_LOAD = 1000000;
 
   virtual std::optional<ColumnMap> next() = 0;
 
