@@ -159,3 +159,66 @@ def test_neural_db_all_methods_work_on_new_model():
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_methods_work(db, all_docs(), assert_acc=True)
+
+
+def test_neural_db_supervised_training():
+    # No assertions, we just want to know that it doesn't break.
+    db = ndb.NeuralDB("user")
+
+    with open("mock_unsup.csv", "w") as out:
+        out.write("id,strong\n")
+        out.write("0,this is the first query\n")
+        out.write("1,this is the second query\n")
+    source_id = db.insert(
+        [ndb.CSV("mock_unsup.csv", id_column="id", strong_columns=["strong"])]
+    )[0]
+
+    # Test multi label case (with id delimiter)
+    # One sample has a single label, the other has two labels to make sure both
+    # are handled correclty.
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("0,this is the first query\n")
+        out.write("0:1,this is the second query\n")
+    db.supervised_train(
+        [
+            ndb.Sup(
+                "mock_sup.csv",
+                query_column="query",
+                id_column="id",
+                id_delimiter=":",
+                source_id=source_id,
+            )
+        ]
+    )
+
+    # Test single label case (without id delimiter)
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("0,this is the first query\n")
+        out.write("1,this is the second query\n")
+    db.supervised_train(
+        [
+            ndb.Sup(
+                "mock_sup.csv",
+                query_column="query",
+                id_column="id",
+                source_id=source_id,
+            )
+        ]
+    )
+
+    # Test non-csv input
+    db.supervised_train(
+        [
+            ndb.Sup(
+                "mock_sup.csv",
+                queries=["this is the first query", "this is the second query"],
+                labels=[[0], [0, 1]],
+                source_id=source_id,
+            )
+        ]
+    )
+
+    os.remove("mock_unsup.csv")
+    os.remove("mock_sup.csv")
