@@ -22,7 +22,7 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
   void backpropagate(ComputationList& inputs, TensorPtr& output,
                      uint32_t index_in_batch) final;
 
-  void updateParametersImpl(float learning_rate, uint32_t train_steps) final;
+  void updateParameters(float learning_rate, uint32_t train_steps) final;
 
   uint32_t dim() const final;
 
