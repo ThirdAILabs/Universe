@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/DataSource.h>
 
 namespace thirdai::data::tests {
