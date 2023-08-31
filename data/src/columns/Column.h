@@ -65,6 +65,14 @@ class RowView {
     return _data[i];
   }
 
+  std::vector<T> range(size_t start, size_t end) const {
+    if (end < start || _len < end) {
+      throw std::out_of_range("");
+    }
+
+    return {begin() + start, begin() + end};
+  }
+
   size_t size() const { return _len; }
 
   const T* data() const { return _data; }
