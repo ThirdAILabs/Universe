@@ -58,12 +58,6 @@ class Op {
   virtual void backpropagate(ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch) = 0;
 
-  /**
-   * Performs a parameter update on any parameters in the op. The parameter
-   * train steps represents how many train steps have been completed so far in
-   * the model. This is for logging and also optimizers like Adam which requires
-   * this for bias correction.
-   */
   virtual void updateTrainableParameters(float learning_rate,
                                          uint32_t train_steps) {
     if (_trainable) {
@@ -71,6 +65,12 @@ class Op {
     }
   }
 
+  /**
+   * Performs a parameter update on any parameters in the op. The parameter
+   * train steps represents how many train steps have been completed so far in
+   * the model. This is for logging and also optimizers like Adam which requires
+   * this for bias correction.
+   */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
   /**
