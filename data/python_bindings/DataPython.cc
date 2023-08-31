@@ -64,7 +64,12 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  py::class_<ColumnMapIterator>(dataset_submodule, "ColumnMapIterator")
+  // NOLINTNEXTLINE
+  py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
+                                                      "ColumnMapIterator");
+
+  py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
+      dataset_submodule, "CsvIterator")
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
            py::arg("delimiter"), py::arg("rows_per_load") = 1000000);
 
