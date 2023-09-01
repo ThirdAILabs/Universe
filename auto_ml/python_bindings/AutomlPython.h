@@ -10,8 +10,6 @@ namespace thirdai::automl::python {
 
 void defineAutomlInModule(py::module_& module);
 
-void createModelsSubmodule(py::module_& module);
-
 void createUDTTypesSubmodule(py::module_& module);
 
 void createUDTTemporalSubmodule(py::module_& module);

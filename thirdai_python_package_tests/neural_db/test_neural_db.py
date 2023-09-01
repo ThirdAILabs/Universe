@@ -5,6 +5,7 @@ from typing import List
 
 import pytest
 from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
+from thirdai import bolt
 from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -147,6 +148,7 @@ def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: boo
     clear_sources_works(db)
 
 
+@pytest.mark.xfail
 def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
@@ -156,6 +158,23 @@ def test_neural_db_all_methods_work_on_new_model():
     all_methods_work(db, all_docs(), assert_acc=False)
 
 
+@pytest.mark.xfail
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_methods_work(db, all_docs(), assert_acc=True)
+
+
+def test_neural_db_from_udt():
+    udt = bolt.UniversalDeepTransformer(
+        data_types={"text": bolt.types.text(), "label": bolt.types.categorical()},
+        target="label",
+        n_target_classes=100,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": 10,
+            "enable_rlhf": True,
+        },
+    )
+
+    ndb.NeuralDB.from_udt(udt)

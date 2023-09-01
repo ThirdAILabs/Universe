@@ -219,7 +219,8 @@ TEST(ExplanationTests, StringIDLookup) {
 }
 
 TEST(ExplanationTests, TextTokenizer) {
-  TextTokenizer tokenizer("a", "b", dataset::NaiveSplitTokenizer::make(),
+  TextTokenizer tokenizer("a", "b", std::nullopt,
+                          dataset::NaiveSplitTokenizer::make(),
                           dataset::NGramEncoder::make(1));
 
   ColumnMap columns({{"a", ValueColumn<std::string>::make({"the tree grew"})}});
