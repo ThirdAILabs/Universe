@@ -99,12 +99,11 @@ TEST(DataLoaderTest, Streaming) {
                                   /* rows_per_load= */ 64);
 
   auto transformations = TransformationList::make({
-      std::make_shared<StringToToken>("token", "token_cast", n_rows),
-      std::make_shared<StringToTokenArray>("tokens", "tokens_cast", ' ',
-                                           n_rows + 10),
-      std::make_shared<StringToDecimal>("decimal", "decimal_cast"),
-      std::make_shared<StringToDecimalArray>("decimals", "decimals_cast", ' ',
-                                             std::nullopt),
+      StringToToken::make("token", "token_cast", n_rows),
+      StringToTokenArray::make("tokens", "tokens_cast", ' ', n_rows + 10),
+      StringToDecimal::make("decimal", "decimal_cast"),
+      StringToDecimalArray::make("decimals", "decimals_cast", ' ',
+                                 std::nullopt),
   });
 
   auto loader = Loader::make(

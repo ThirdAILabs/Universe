@@ -67,8 +67,7 @@ TransformSeries binning(const std::string& column_name,
                         const data::NumericalDataTypePtr& numerical) {
   std::string output = binningOutputColumn(column_name);
 
-  auto cast = std::make_shared<thirdai::data::StringToDecimal>(column_name,
-                                                               column_name);
+  auto cast = thirdai::data::StringToDecimal::make(column_name, column_name);
 
   auto transformation = thirdai::data::BinningTransformation::make(
       /* input_column_name= */ column_name,
@@ -134,7 +133,7 @@ TransformSeries timestamp(const data::ColumnDataTypes& data_types) {
         "tracking relationships.");
   }
 
-  auto transformation = std::make_shared<thirdai::data::StringToTimestamp>(
+  auto transformation = thirdai::data::StringToTimestamp::make(
       /* input_column_name= */ *timestamp_column,
       /* output_column_name= */ TIMESTAMP_OUTPUT, /* format= */ "%Y-%m-%d");
 

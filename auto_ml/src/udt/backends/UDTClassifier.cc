@@ -280,10 +280,10 @@ thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
     uint32_t n_target_classes, bool integer_target) const {
   if (integer_target) {
     if (!target_config->delimiter) {
-      return std::make_shared<thirdai::data::StringToToken>(
-          target_name, FEATURIZED_LABELS, n_target_classes);
+      return thirdai::data::StringToToken::make(target_name, FEATURIZED_LABELS,
+                                                n_target_classes);
     }
-    return std::make_shared<thirdai::data::StringToTokenArray>(
+    return thirdai::data::StringToTokenArray::make(
         target_name, FEATURIZED_LABELS, target_config->delimiter.value(),
         n_target_classes);
   }

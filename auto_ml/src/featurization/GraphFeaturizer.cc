@@ -45,7 +45,7 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
       thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES),
       thirdai::data::OutputColumns(nbr_ids_output)};
 
-  _label_transform = std::make_shared<thirdai::data::StringToToken>(
+  _label_transform = thirdai::data::StringToToken::make(
       target_col, FEATURIZED_LABELS, n_target_classes);
 
   _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
@@ -126,9 +126,9 @@ std::pair<thirdai::data::TransformationPtr, std::string>
 GraphFeaturizer::nodeId(const data::ColumnDataTypes& data_types) {
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNodeID(data_type)) {
-      return {std::make_shared<thirdai::data::StringToToken>(col_name, col_name,
-                                                             std::nullopt),
-              col_name};
+      return {
+          thirdai::data::StringToToken::make(col_name, col_name, std::nullopt),
+          col_name};
     }
   }
   throw std::invalid_argument("NodeID column is required for GNN.");
@@ -160,7 +160,7 @@ GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
     if (asNumerical(data_type)) {
       feature_col_names.push_back(col_name);
       transforms.push_back(
-          std::make_shared<thirdai::data::StringToDecimal>(col_name, col_name));
+          thirdai::data::StringToDecimal::make(col_name, col_name));
     }
   }
 
@@ -170,7 +170,7 @@ GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
 
   std::string nbrs_column = neighborsColumn(data_types);
 
-  auto parse_nbrs = std::make_shared<thirdai::data::StringToTokenArray>(
+  auto parse_nbrs = thirdai::data::StringToTokenArray::make(
       nbrs_column, nbrs_column, ' ', std::nullopt);
   transforms.push_back(parse_nbrs);
 

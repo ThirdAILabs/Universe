@@ -40,8 +40,7 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
       /* output_dim= */ output_bins, /* args= */ user_args,
       /* model_config= */ model_config);
 
-  auto cast = std::make_shared<thirdai::data::StringToDecimal>(target_name,
-                                                               target_name);
+  auto cast = thirdai::data::StringToDecimal::make(target_name, target_name);
 
   _binning = thirdai::data::RegressionBinning::make(
       target_name, FEATURIZED_LABELS, target->range.first, target->range.second,

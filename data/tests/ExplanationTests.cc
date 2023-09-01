@@ -152,13 +152,13 @@ TEST(ExplanationTests, FeatureHash) {
 
 TEST(ExplanationTests, StringCast) {
   TransformationList casts({
-      std::make_shared<StringToToken>("a", "aa", /* dim= */ std::nullopt),
-      std::make_shared<StringToDecimal>("b", "bb"),
-      std::make_shared<StringToTimestamp>("c", "cc", /* format= */ "%Y-%m-%d"),
-      std::make_shared<StringToTokenArray>("d", "dd", /* delimiter= */ ',',
-                                           /* dim= */ std::nullopt),
-      std::make_shared<StringToDecimalArray>("e", "ee", /* delimiter= */ ',',
-                                             /* dim= */ std::nullopt),
+      StringToToken::make("a", "aa", /* dim= */ std::nullopt),
+      StringToDecimal::make("b", "bb"),
+      StringToTimestamp::make("c", "cc", /* format= */ "%Y-%m-%d"),
+      StringToTokenArray::make("d", "dd", /* delimiter= */ ',',
+                               /* dim= */ std::nullopt),
+      StringToDecimalArray::make("e", "ee", /* delimiter= */ ',',
+                                 /* dim= */ std::nullopt),
   });
 
   ColumnMap columns({
@@ -240,7 +240,7 @@ TEST(ExplanationTests, ComposedTransformations) {
       TextTokenizer::make("a", "words", std::nullopt,
                           dataset::NaiveSplitTokenizer::make(),
                           dataset::NGramEncoder::make(1)),
-      std::make_shared<StringToDecimal>("b", "b_cast"),
+      StringToDecimal::make("b", "b_cast"),
       BinningTransformation::make("b_cast", "b_binned",
                                   /* inclusive_min_value= */ 10,
                                   /* exlusive_max_value= */ 20,
@@ -250,8 +250,8 @@ TEST(ExplanationTests, ComposedTransformations) {
                                   /* exlusive_max_value= */ 10,
                                   /* num_bins= */ 5),
       StringHash::make("d", "hash"),
-      std::make_shared<StringToTokenArray>("e", "tokens", /* delimiter= */ ',',
-                                           /* dim= */ std::nullopt),
+      StringToTokenArray::make("e", "tokens", /* delimiter= */ ',',
+                               /* dim= */ std::nullopt),
       CrossColumnPairgrams::make(std::vector<std::string>{"c_binned", "hash"},
                                  "column_pairgrams", 100000),
       FeatureHash::make(std::vector<std::string>{"words", "b_binned",

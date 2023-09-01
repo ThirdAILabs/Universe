@@ -36,9 +36,8 @@ MachFeaturizer::MachFeaturizer(
           options) {
   _state = thirdai::data::State::make(mach_index);
 
-  _prehashed_labels_transform =
-      std::make_shared<thirdai::data::StringToTokenArray>(
-          label_column, MACH_LABELS, ' ', mach_index->numBuckets());
+  _prehashed_labels_transform = thirdai::data::StringToTokenArray::make(
+      label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(
       label_column, data::asCategorical(data_types.at(label_column)));
@@ -219,11 +218,11 @@ thirdai::data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
     const std::string& label_column_name,
     const data::CategoricalDataTypePtr& label_column_info) {
   if (auto delim = label_column_info->delimiter) {
-    return std::make_shared<thirdai::data::StringToTokenArray>(
+    return thirdai::data::StringToTokenArray::make(
         label_column_name, MACH_DOC_IDS, *delim,
         std::numeric_limits<uint32_t>::max());
   }
-  return std::make_shared<thirdai::data::StringToToken>(
+  return thirdai::data::StringToToken::make(
       label_column_name, MACH_DOC_IDS, std::numeric_limits<uint32_t>::max());
 }
 
