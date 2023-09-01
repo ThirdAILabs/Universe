@@ -283,17 +283,16 @@ MergedTransformSeries temporalTransformations(
 
       std::string output = temporalTrackingOutput(temporal_id++);
 
-      auto transformation =
-          std::make_shared<thirdai::data::CategoricalTemporal>(
-              /* user_column= */ key_column,
-              /* item_column= */ item_column,
-              /* timestamp_column= */ timestamp_col,
-              /* output_column= */ output,
-              /* tracker_key= */ output,
-              /* track_last_n= */ categorical_temporal.track_last_n,
-              /* should_update_history= */ should_update_history,
-              /* include_current_row= */ include_current_row,
-              /* time_lag= */ options.timeLag());
+      auto transformation = thirdai::data::CategoricalTemporal::make(
+          /* user_column= */ key_column,
+          /* item_column= */ item_column,
+          /* timestamp_column= */ timestamp_col,
+          /* output_column= */ output,
+          /* tracker_key= */ output,
+          /* track_last_n= */ categorical_temporal.track_last_n,
+          /* should_update_history= */ should_update_history,
+          /* include_current_row= */ include_current_row,
+          /* time_lag= */ options.timeLag());
 
       transformations.push_back(transformation);
       output_columns.push_back(output);

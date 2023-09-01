@@ -3,6 +3,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 
 namespace thirdai::data {
 
@@ -13,6 +14,18 @@ class CategoricalTemporal final : public Transformation {
                       std::string tracker_key, size_t track_last_n,
                       bool should_update_history, bool include_current_row,
                       int64_t time_lag);
+
+  static std::shared_ptr<CategoricalTemporal> make(
+      std::string user_column, std::string item_column,
+      std::string timestamp_column, std::string output_column,
+      std::string tracker_key, size_t track_last_n, bool should_update_history,
+      bool include_current_row, int64_t time_lag) {
+    return std::make_shared<CategoricalTemporal>(
+        std::move(user_column), std::move(item_column),
+        std::move(timestamp_column), std::move(output_column),
+        std::move(tracker_key), track_last_n, should_update_history,
+        include_current_row, time_lag);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
