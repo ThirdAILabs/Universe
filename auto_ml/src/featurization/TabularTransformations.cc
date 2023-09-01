@@ -70,7 +70,7 @@ TransformSeries binning(const std::string& column_name,
   auto cast = std::make_shared<thirdai::data::StringToDecimal>(column_name,
                                                                column_name);
 
-  auto transformation = std::make_shared<thirdai::data::BinningTransformation>(
+  auto transformation = thirdai::data::BinningTransformation::make(
       /* input_column_name= */ column_name,
       /* output_column_name= */ output,
       /* inclusive_min_value= */ numerical->range.first,
