@@ -9,6 +9,7 @@
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
+#include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
@@ -26,6 +27,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -389,6 +391,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "MachLabel")
       .def(py::init<std::string, std::string>(), py::arg("input_column"),
            py::arg("output_column"));
+
+  py::class_<DyadicInterval, Transformation, std::shared_ptr<DyadicInterval>>(
+      transformations_submodule, "DyadicInterval")
+      .def(py::init<std::string, std::string, std::string, size_t>(),
+           py::arg("input_column"), py::arg("output_interval_prefix"),
+           py::arg("target_column"), py::arg("n_intervals"));
 #endif
 }
 
