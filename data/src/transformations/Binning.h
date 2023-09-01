@@ -6,6 +6,7 @@
 #include <cereal/types/string.hpp>
 #include <data/src/transformations/Transformation.h>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -27,6 +28,14 @@ class BinningTransformation final : public Transformation {
         _exclusive_max_value(exclusive_max_value),
         _binsize((exclusive_max_value - inclusive_min_value) / num_bins),
         _num_bins(num_bins) {}
+
+  static std::shared_ptr<BinningTransformation> make(
+      std::string input_column_name, std::string output_column_name,
+      float inclusive_min_value, float exclusive_max_value, uint32_t num_bins) {
+    return std::make_shared<BinningTransformation>(
+        std::move(input_column_name), std::move(output_column_name),
+        inclusive_min_value, exclusive_max_value, num_bins);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
