@@ -1,6 +1,8 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <memory>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -8,6 +10,14 @@ class GraphBuilder final : public Transformation {
  public:
   GraphBuilder(std::string node_id_column, std::string neighbors_column,
                std::vector<std::string> feature_columns);
+
+  static std::shared_ptr<GraphBuilder> make(
+      std::string node_id_column, std::string neighbors_column,
+      std::vector<std::string> feature_columns) {
+    return std::make_shared<GraphBuilder>(std::move(node_id_column),
+                                          std::move(neighbors_column),
+                                          std::move(feature_columns));
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

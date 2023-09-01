@@ -174,7 +174,7 @@ GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
       nbrs_column, nbrs_column, ' ', std::nullopt);
   transforms.push_back(parse_nbrs);
 
-  auto graph_builder = std::make_shared<thirdai::data::GraphBuilder>(
+  auto graph_builder = thirdai::data::GraphBuilder::make(
       node_id_col, nbrs_column, feature_col_names);
   transforms.push_back(graph_builder);
 
