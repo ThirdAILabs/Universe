@@ -4,8 +4,10 @@
 #include <data/src/transformations/Transformation.h>
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::data {
@@ -45,6 +47,18 @@ class Recurrence final : public Transformation {
         _target_output_column(std::move(target_output_column)),
         _target_vocab_size(target_vocab_size),
         _max_seq_len(max_sequence_length) {}
+
+  static std::shared_ptr<Recurrence> make(std::string source_input_column,
+                                          std::string target_input_column,
+                                          std::string source_output_column,
+                                          std::string target_output_column,
+                                          size_t target_vocab_size,
+                                          size_t max_sequence_length) {
+    return std::make_shared<Recurrence>(
+        std::move(source_input_column), std::move(target_input_column),
+        std::move(source_output_column), std::move(target_output_column),
+        target_vocab_size, max_sequence_length);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

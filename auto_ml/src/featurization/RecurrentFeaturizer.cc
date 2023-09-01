@@ -27,7 +27,7 @@ RecurrentFeaturizer::RecurrentFeaturizer(
         "Paramter max_length must be specified for target sequence.");
   }
 
-  _recurrence_augmentation = std::make_shared<thirdai::data::Recurrence>(
+  _recurrence_augmentation = thirdai::data::Recurrence::make(
       /* source_input_column= */ RECURRENT_SEQUENCE,
       /* target_input_column= */ target_name,
       /* source_output_column= */ RECURRENT_SEQUENCE,
