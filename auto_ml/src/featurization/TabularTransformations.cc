@@ -32,9 +32,10 @@ TransformSeries text(const std::string& column_name,
   std::string output = textOutputColumn(column_name);
 
   auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-      /* input_column= */ column_name, /* output_column= */ output,
-      /* tokenizer= */ text->tokenizer, /* encoder= */ text->encoder,
-      /* lowercase= */ text->lowercase, /* dim= */ dim);
+      /* input_column= */ column_name, /* output_indices= */ output,
+      /* output_values= */ std::nullopt, /* tokenizer= */ text->tokenizer,
+      /* encoder= */ text->encoder, /* lowercase= */ text->lowercase,
+      /* dim= */ dim);
 
   return {{transformation}, output};
 }
@@ -48,8 +49,9 @@ TransformSeries categorical(const std::string& column_name,
     auto enc = dataset::NGramEncoder::make(/* n = */ 1);
 
     auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-        /* input_column= */ column_name, /* output_column= */ output,
-        /* tokenizer= */ tok, /* encoder= */ enc, /* lowercase= */ false,
+        /* input_column= */ column_name, /* output_indices= */ output,
+        /* output_values= */ std::nullopt, /* tokenizer= */ tok,
+        /* encoder= */ enc, /* lowercase= */ false,
         /* dim= */ std::numeric_limits<uint32_t>::max());
 
     return {{transformation}, output};
@@ -341,10 +343,13 @@ inputTransformations(const data::ColumnDataTypes& data_types,
     auto [name, type] = *non_temporal_input_data_types.begin();
 
     if (auto text_type = data::asText(type)) {
-      auto [transforms, output_name] =
-          text(name, text_type, /* dim= */ options.feature_hash_range);
+      auto transform = std::make_shared<thirdai::data::TextTokenizer>(
+          name, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
+          text_type->encoder, text_type->lowercase, options.feature_hash_range);
 
-      return {transforms.at(0), {thirdai::data::OutputColumns(output_name)}};
+      return {transform,
+              {thirdai::data::OutputColumns(FEATURIZED_INDICES,
+                                            FEATURIZED_VALUES)}};
     }
   }
 
@@ -364,8 +369,8 @@ inputTransformations(const data::ColumnDataTypes& data_types,
 
   auto feature_hash = std::make_shared<thirdai::data::FeatureHash>(
       /* input_columns= */ output_columns,
-      /* output_indices_column= */ FEATURE_HASH_INDICES,
-      /* output_values_column= */ FEATURE_HASH_VALUES,
+      /* output_indices_column= */ FEATURIZED_INDICES,
+      /* output_values_column= */ FEATURIZED_VALUES,
       /* hash_range= */ options.feature_hash_range);
 
   transformations.push_back(feature_hash);
@@ -373,9 +378,9 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   auto t_list =
       std::make_shared<thirdai::data::TransformationList>(transformations);
 
-  return {t_list,
-          {thirdai::data::OutputColumns(FEATURE_HASH_INDICES,
-                                        FEATURE_HASH_VALUES)}};
+  return {
+      t_list,
+      {thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
 }
 
 MergedTransformSeries nonTemporalTransformations(

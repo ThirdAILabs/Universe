@@ -36,9 +36,10 @@ TEST(TabularTransformationTests, TextOnlyTransformation) {
 
   ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).indices(), "__text_tokenized__");
+  ASSERT_EQ(outputs.at(0).indices(), "__featurized_input_indices__");
   // There should not be a specified values column, just indices.
-  ASSERT_FALSE(outputs.at(0).values().has_value());
+  ASSERT_TRUE(outputs.at(0).values().has_value());
+  ASSERT_EQ(outputs.at(0).values(), "__featurized_input_values__");
 }
 
 data::ColumnDataTypes getTabularDataTypes() {

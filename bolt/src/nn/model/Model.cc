@@ -136,7 +136,7 @@ TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
 void Model::updateParameters(float learning_rate) {
   ++_train_steps;
   for (auto& op : _ops) {
-    op->updateParameters(learning_rate, _train_steps);
+    op->updateTrainableParameters(learning_rate, _train_steps);
   }
 }
 
