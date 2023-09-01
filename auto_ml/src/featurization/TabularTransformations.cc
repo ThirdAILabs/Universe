@@ -31,7 +31,7 @@ TransformSeries text(const std::string& column_name,
                      size_t dim = std::numeric_limits<uint32_t>::max()) {
   std::string output = textOutputColumn(column_name);
 
-  auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
+  auto transformation = thirdai::data::TextTokenizer::make(
       /* input_column= */ column_name, /* output_indices= */ output,
       /* output_values= */ std::nullopt, /* tokenizer= */ text->tokenizer,
       /* encoder= */ text->encoder, /* lowercase= */ text->lowercase,
@@ -48,7 +48,7 @@ TransformSeries categorical(const std::string& column_name,
     auto tok = dataset::NaiveSplitTokenizer::make(*categorical->delimiter);
     auto enc = dataset::NGramEncoder::make(/* n = */ 1);
 
-    auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
+    auto transformation = thirdai::data::TextTokenizer::make(
         /* input_column= */ column_name, /* output_indices= */ output,
         /* output_values= */ std::nullopt, /* tokenizer= */ tok,
         /* encoder= */ enc, /* lowercase= */ false,
@@ -342,7 +342,7 @@ inputTransformations(const data::ColumnDataTypes& data_types,
     auto [name, type] = *non_temporal_input_data_types.begin();
 
     if (auto text_type = data::asText(type)) {
-      auto transform = std::make_shared<thirdai::data::TextTokenizer>(
+      auto transform = thirdai::data::TextTokenizer::make(
           name, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
           text_type->encoder, text_type->lowercase, options.feature_hash_range);
 

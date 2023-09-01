@@ -5,6 +5,7 @@
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <memory>
 
 namespace thirdai::data {
 
@@ -16,6 +17,18 @@ class TextTokenizer final : public Transformation {
       dataset::TextTokenizerPtr tokenizer, dataset::TextEncoderPtr encoder,
       bool lowercase = false,
       size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
+
+  static std::shared_ptr<TextTokenizer> make(
+      std::string input_column, std::string output_indices,
+      std::optional<std::string> output_values,
+      dataset::TextTokenizerPtr tokenizer, dataset::TextEncoderPtr encoder,
+      bool lowercase = false,
+      size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
+    return std::make_shared<TextTokenizer>(
+        std::move(input_column), std::move(output_indices),
+        std::move(output_values), std::move(tokenizer), std::move(encoder),
+        lowercase, dim);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
