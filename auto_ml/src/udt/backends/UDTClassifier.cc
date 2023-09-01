@@ -203,7 +203,7 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
 
   for (const auto& [weight, feature] : sorted_gradients) {
     explanations.emplace_back(
-        explanation_map.explain(FEATURE_HASH_INDICES, feature),
+        explanation_map.explain(FEATURIZED_INDICES, feature),
         weight / total_grad);
   }
 

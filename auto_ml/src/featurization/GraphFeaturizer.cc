@@ -35,14 +35,14 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   output_cols.push_back(nbr_features_output);
 
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
-      output_cols, FEATURE_HASH_INDICES, FEATURE_HASH_VALUES,
+      output_cols, FEATURIZED_INDICES, FEATURIZED_VALUES,
       udt::defaults::FEATURE_HASH_RANGE);
   input_transforms.push_back(fh);
 
   _input_transform = thirdai::data::TransformationList::make(input_transforms);
 
   _bolt_input_columns = {
-      thirdai::data::OutputColumns(FEATURE_HASH_INDICES, FEATURE_HASH_VALUES),
+      thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES),
       thirdai::data::OutputColumns(nbr_ids_output)};
 
   _label_transform = std::make_shared<thirdai::data::StringToToken>(

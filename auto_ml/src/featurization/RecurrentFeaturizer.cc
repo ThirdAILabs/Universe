@@ -42,7 +42,7 @@ RecurrentFeaturizer::RecurrentFeaturizer(
                          tabular_options, /* augmentation= */ nullptr);
 
   _bolt_input_columns = {
-      thirdai::data::OutputColumns(FEATURE_HASH_INDICES, FEATURE_HASH_VALUES)};
+      thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
   _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
 }
 
@@ -71,7 +71,7 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
   }
 
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
-      outputs, FEATURE_HASH_INDICES, FEATURE_HASH_VALUES,
+      outputs, FEATURIZED_INDICES, FEATURIZED_VALUES,
       tabular_options.feature_hash_range);
   input_transforms.push_back(fh);
 
