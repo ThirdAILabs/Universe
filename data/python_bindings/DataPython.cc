@@ -352,7 +352,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                        std::optional<uint32_t> strong_max_len,
                        std::optional<uint32_t> strong_sample_num_words,
                        uint32_t seed) {
-             return std::make_shared<ColdStartTextAugmentation>(
+             return ColdStartTextAugmentation::make(
                  std::move(strong_column_names), std::move(weak_column_names),
                  std::move(label_column_name), std::move(output_column_name),
                  ColdStartConfig(weak_min_len, weak_max_len, weak_chunk_len,

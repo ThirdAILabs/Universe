@@ -157,7 +157,7 @@ thirdai::data::TransformationPtr Featurizer::coldStartTransform(
         all_columns, _text_dataset->textColumn());
   }
 
-  return std::make_shared<thirdai::data::ColdStartTextAugmentation>(
+  return thirdai::data::ColdStartTextAugmentation::make(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
       /* label_column_name= */ _text_dataset->labelColumn(),

@@ -136,6 +136,18 @@ class ColdStartTextAugmentation final : public Transformation {
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = global_random::nextSeed());
 
+  static std::shared_ptr<ColdStartTextAugmentation> make(
+      std::vector<std::string> strong_column_names,
+      std::vector<std::string> weak_column_names, std::string label_column_name,
+      std::string output_column_name,
+      const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
+      uint32_t seed = global_random::nextSeed()) {
+    return std::make_shared<ColdStartTextAugmentation>(
+        std::move(strong_column_names), std::move(weak_column_names),
+        std::move(label_column_name), std::move(output_column_name), config,
+        seed);
+  }
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   std::vector<std::string> augmentMapInput(const automl::MapInput& document);
