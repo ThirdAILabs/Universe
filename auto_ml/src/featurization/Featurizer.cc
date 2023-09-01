@@ -153,8 +153,8 @@ thirdai::data::TransformationPtr Featurizer::coldStartTransform(
     std::vector<std::string> all_columns = weak_column_names;
     all_columns.insert(all_columns.end(), strong_column_names.begin(),
                        strong_column_names.end());
-    return std::make_shared<thirdai::data::StringConcat>(
-        all_columns, _text_dataset->textColumn());
+    return thirdai::data::StringConcat::make(all_columns,
+                                             _text_dataset->textColumn());
   }
 
   return thirdai::data::ColdStartTextAugmentation::make(
