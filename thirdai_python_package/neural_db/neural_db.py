@@ -121,7 +121,7 @@ class SupDataSource(PyDataSource):
         self.data = data
         self.id_delimiter = id_delimiter
         if not self.id_delimiter:
-            print("WARNING: this model does not support multi-label datasets.")
+            print("WARNING: this model does not fully support multi-label datasets.")
         self.restart()
 
     def _csv_line(self, query: str, label: str):
@@ -149,9 +149,11 @@ class SupDataSource(PyDataSource):
                     label_str = self.id_delimiter.join(
                         [str(start_id + int(label)) for label in labels]
                     )
+                    yield self._csv_line(query, label_str)
                 else:
-                    label_str = str(start_id + int(labels[0]))
-                yield self._csv_line(query, label_str)
+                    for label in labels:
+                        label_str = str(start_id + int(label))
+                        yield self._csv_line(query, label_str)
 
     def resource_name(self) -> str:
         return "Supervised training samples"
