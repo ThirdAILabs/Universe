@@ -6,6 +6,7 @@ from typing import List
 import pytest
 from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
 from thirdai import neural_db as ndb
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -161,10 +162,32 @@ def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     all_methods_work(db, all_docs(), assert_acc=True)
 
 
-def test_neural_db_supervised_training():
+@pytest.mark.parametrize(
+    "db",
+    [
+        # Supports multilabel datasets
+        ndb.NeuralDB("user"),
+        # Does not support multilabel datasets
+        ndb.NeuralDB.from_udt(
+            bolt.UniversalDeepTransformer(
+                data_types={
+                    "text": bolt.types.text(),
+                    # Note there is no id delimiter
+                    "label": bolt.types.categorical(),
+                },
+                target="label",
+                n_target_classes=3,
+                integer_target=True,
+                options={
+                    "extreme_classification": True,
+                    "extreme_output_dim": 1000,
+                },
+            )
+        ),
+    ],
+)
+def test_neural_db_supervised_training(db):
     # No assertions, we just want to know that it doesn't break.
-    db = ndb.NeuralDB("user")
-
     with open("mock_unsup.csv", "w") as out:
         out.write("id,strong\n")
         out.write("0,this is the first query\n")
@@ -174,23 +197,21 @@ def test_neural_db_supervised_training():
     )[0]
 
     # Test multi label case (with id delimiter)
-    # One sample has a single label, the other has two labels to make sure both
-    # are handled correclty.
     with open("mock_sup.csv", "w") as out:
         out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
         out.write("0,this is the first query\n")
         out.write("0:1,this is the second query\n")
-    db.supervised_train(
-        [
-            ndb.Sup(
-                "mock_sup.csv",
-                query_column="query",
-                id_column="id",
-                id_delimiter=":",
-                source_id=source_id,
-            )
-        ]
+        out.write("0:1:,trailing label delimiter\n")
+    sup_doc = ndb.Sup(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        source_id=source_id,
     )
+    db.supervised_train([sup_doc])
 
     # Test single label case (without id delimiter)
     with open("mock_sup.csv", "w") as out:
