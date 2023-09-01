@@ -2,19 +2,24 @@ import pytest
 from thirdai.neural_db.neural_db import SupDataSource, DocumentManager
 from thirdai import neural_db as ndb
 
-# input uses sequence
-# single label csv input
-# multi lable csv input with trailing delimiter
-# All cases with and without model id delimiter
-
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def multilabel_str(labels, delimiter):
-    if not delimiter:
-        return str(labels[0])
-    return delimiter.join(map(str, labels))
+def expected_rows(queries, labels, delimiter):
+    if delimiter:
+        return [
+            query + "," + delimiter.join(map(str, label_row))
+            for query, label_row in zip(queries, labels)
+        ]
+    return [
+        query + "," + str(label)
+        for query, label_row in zip(queries, labels)
+        for label in label_row
+    ]
+
+
+TARGET_BATCH_SIZE = 1000  # Just something big
 
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
@@ -50,11 +55,17 @@ def test_sup_data_source(model_id_delimiter):
     data_source = SupDataSource(
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
-    assert data_source.next_batch(target_batch_size=5) == [
+    assert data_source.next_batch(TARGET_BATCH_SIZE) == [
         "query,id",
-        "this is the first query,0",
-        "this is the second query," + multilabel_str([0, 1], model_id_delimiter),
-        "trailing label delimiter," + multilabel_str([0, 1], model_id_delimiter),
+        *expected_rows(
+            queries=[
+                "this is the first query",
+                "this is the second query",
+                "trailing label delimiter",
+            ],
+            labels=[[0], [0, 1], [0, 1]],
+            delimiter=model_id_delimiter,
+        ),
     ]
 
     # Test single label case (without id delimiter)
@@ -72,7 +83,7 @@ def test_sup_data_source(model_id_delimiter):
     data_source = SupDataSource(
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
-    assert data_source.next_batch(target_batch_size=5) == [
+    assert data_source.next_batch(TARGET_BATCH_SIZE) == [
         "query,id",
         "this is the first query,0",
         "this is the second query,1",
@@ -91,8 +102,14 @@ def test_sup_data_source(model_id_delimiter):
         ],
         id_delimiter=model_id_delimiter,
     )
-    assert data_source.next_batch(target_batch_size=5) == [
+    assert data_source.next_batch(TARGET_BATCH_SIZE) == [
         "query,id",
-        "this is the first query,0",
-        "this is the second query," + multilabel_str([0, 1], model_id_delimiter),
+        *expected_rows(
+            queries=[
+                "this is the first query",
+                "this is the second query",
+            ],
+            labels=[[0], [0, 1]],
+            delimiter=model_id_delimiter,
+        ),
     ]
