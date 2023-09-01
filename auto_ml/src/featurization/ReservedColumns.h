@@ -28,8 +28,8 @@ const std::string CROSS_COLUMN_PAIRGRAMS_OUTPUT = "__contextual_columns__";
 
 const std::string TIMESTAMP_OUTPUT = "__timestamp__";
 
-const std::string FEATURE_HASH_INDICES = "__featurized_input_indices__";
+const std::string FEATURIZED_INDICES = "__featurized_input_indices__";
 
-const std::string FEATURE_HASH_VALUES = "__featurized_input_values__";
+const std::string FEATURIZED_VALUES = "__featurized_input_values__";
 
 }  // namespace thirdai::automl
