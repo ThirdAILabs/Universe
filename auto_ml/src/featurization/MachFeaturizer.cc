@@ -234,7 +234,7 @@ thirdai::data::TransformationPtr MachFeaturizer::makeLabelTransformations(
       makeDocIdTransformation(label_column_name, label_column_info);
 
   auto mach_label_transform =
-      std::make_shared<thirdai::data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
+      thirdai::data::MachLabel::make(MACH_DOC_IDS, MACH_LABELS);
 
   return thirdai::data::TransformationList::make(
       {doc_id_transform, mach_label_transform});
