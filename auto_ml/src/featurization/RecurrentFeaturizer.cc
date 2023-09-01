@@ -54,7 +54,7 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
   auto [input_transforms, outputs] =
       nonTemporalTransformations(data_types, target_name, tabular_options);
 
-  auto target_lookup = std::make_shared<thirdai::data::StringIDLookup>(
+  auto target_lookup = thirdai::data::StringIDLookup::make(
       /* input_column= */ target_name, /* output_column= */ target_name,
       /* vocab_key= */ TARGET_VOCAB, /* max_vocab_size= */ n_target_classes,
       target->delimiter);

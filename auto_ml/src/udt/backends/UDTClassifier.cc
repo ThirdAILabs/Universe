@@ -288,9 +288,9 @@ thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
         n_target_classes);
   }
 
-  return std::make_shared<thirdai::data::StringIDLookup>(
-      target_name, FEATURIZED_LABELS, LABEL_VOCAB, n_target_classes,
-      target_config->delimiter);
+  return thirdai::data::StringIDLookup::make(target_name, FEATURIZED_LABELS,
+                                             LABEL_VOCAB, n_target_classes,
+                                             target_config->delimiter);
 }
 
 uint32_t UDTClassifier::labelToNeuronId(

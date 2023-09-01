@@ -1,6 +1,8 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <memory>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -9,6 +11,15 @@ class StringIDLookup final : public Transformation {
   StringIDLookup(std::string input_column_name, std::string output_column_name,
                  std::string vocab_key, std::optional<size_t> max_vocab_size,
                  std::optional<char> delimiter);
+
+  static std::shared_ptr<StringIDLookup> make(
+      std::string input_column_name, std::string output_column_name,
+      std::string vocab_key, std::optional<size_t> max_vocab_size,
+      std::optional<char> delimiter) {
+    return std::make_shared<StringIDLookup>(
+        std::move(input_column_name), std::move(output_column_name),
+        std::move(vocab_key), max_vocab_size, delimiter);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
