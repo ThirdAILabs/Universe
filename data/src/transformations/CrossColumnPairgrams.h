@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 
 namespace thirdai::data {
 
@@ -9,6 +10,14 @@ class CrossColumnPairgrams : public Transformation {
  public:
   CrossColumnPairgrams(std::vector<std::string> input_column_names,
                        std::string output_column_name, size_t hash_range);
+
+  static std::shared_ptr<CrossColumnPairgrams> make(
+      std::vector<std::string> input_column_names,
+      std::string output_column_name, size_t hash_range) {
+    return std::make_shared<CrossColumnPairgrams>(std::move(input_column_names),
+                                                  std::move(output_column_name),
+                                                  hash_range);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

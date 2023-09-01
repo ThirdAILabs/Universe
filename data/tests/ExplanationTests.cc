@@ -252,9 +252,8 @@ TEST(ExplanationTests, ComposedTransformations) {
       std::make_shared<StringHash>("d", "hash"),
       std::make_shared<StringToTokenArray>("e", "tokens", /* delimiter= */ ',',
                                            /* dim= */ std::nullopt),
-      std::make_shared<CrossColumnPairgrams>(
-          std::vector<std::string>{"c_binned", "hash"}, "column_pairgrams",
-          100000),
+      CrossColumnPairgrams::make(std::vector<std::string>{"c_binned", "hash"},
+                                 "column_pairgrams", 100000),
       std::make_shared<FeatureHash>(
           std::vector<std::string>{"words", "b_binned", "column_pairgrams",
                                    "tokens"},

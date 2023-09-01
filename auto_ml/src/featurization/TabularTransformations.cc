@@ -110,7 +110,7 @@ TransformSeries date(const std::string& column_name,
 
 TransformSeries crossColumnPaigrams(
     const std::vector<std::string>& tabular_columns) {
-  auto transformation = std::make_shared<thirdai::data::CrossColumnPairgrams>(
+  auto transformation = thirdai::data::CrossColumnPairgrams::make(
       /* input_column_names= */ tabular_columns,
       /* output_column_name= */ CROSS_COLUMN_PAIRGRAMS_OUTPUT,
       /* hash_range= */ std::numeric_limits<uint32_t>::max());
