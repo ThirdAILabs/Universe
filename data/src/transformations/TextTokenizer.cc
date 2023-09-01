@@ -127,7 +127,8 @@ template void TextTokenizer::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void TextTokenizer::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
-          _output_indices, _tokenizer, _encoder, _lowercase, _dim);
+          _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
+          _dim);
 }
 
 }  // namespace thirdai::data
