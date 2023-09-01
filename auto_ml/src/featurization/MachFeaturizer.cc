@@ -34,7 +34,7 @@ MachFeaturizer::MachFeaturizer(
           {thirdai::data::OutputColumns(MACH_LABELS),
            thirdai::data::OutputColumns(MACH_DOC_IDS)},
           options) {
-  _state = std::make_shared<thirdai::data::State>(mach_index);
+  _state = thirdai::data::State::make(mach_index);
 
   _prehashed_labels_transform =
       std::make_shared<thirdai::data::StringToTokenArray>(

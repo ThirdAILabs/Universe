@@ -26,7 +26,7 @@ Loader::Loader(ColumnMapIterator data_iterator,
       _shuffle_buffer(ColumnMap({})),
       _state(std::move(state)) {
   if (!_state) {
-    _state = std::make_shared<State>();
+    _state = State::make();
   }
 
   recordReturnedColumns(_model_input_columns);

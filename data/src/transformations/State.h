@@ -8,6 +8,7 @@
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -63,6 +64,16 @@ class State {
   explicit State(automl::data::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
   State() {}
+
+  static std::shared_ptr<State> make(MachIndexPtr mach_index) {
+    return State::make(std::move(mach_index));
+  }
+
+  static std::shared_ptr<State> make(automl::data::GraphInfoPtr graph) {
+    return State::make(std::move(graph));
+  }
+
+  static std::shared_ptr<State> make() { return State::make(); }
 
   const auto& machIndex() const {
     if (!_mach_index) {

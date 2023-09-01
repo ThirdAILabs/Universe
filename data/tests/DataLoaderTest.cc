@@ -108,7 +108,7 @@ TEST(DataLoaderTest, Streaming) {
   });
 
   auto loader = Loader::make(
-      data_iterator, transformations, std::make_shared<State>(),
+      data_iterator, transformations, State::make(),
       {{"tokens_cast", "decimals_cast"}}, {{"token_cast", "decimal_cast"}},
       /* batch_size= */ batch_size, /* shuffle= */ true, /* verbose= */ true,
       /* shuffle_buffer_size= */ 50);

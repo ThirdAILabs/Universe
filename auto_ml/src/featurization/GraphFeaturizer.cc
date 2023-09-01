@@ -54,7 +54,7 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   // clang-tidy things this can be done in the member initialization above.
   _graph_builder = graph_builder;  // NOLINT
 
-  _state = std::make_shared<thirdai::data::State>(graph_info);
+  _state = thirdai::data::State::make(graph_info);
 }
 
 thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(

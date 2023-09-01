@@ -21,7 +21,7 @@ RecurrentFeaturizer::RecurrentFeaturizer(
     const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
     const data::TabularOptions& tabular_options)
     : _delimiter(tabular_options.delimiter),
-      _state(std::make_shared<thirdai::data::State>()) {
+      _state(thirdai::data::State::make()) {
   if (!target->max_length) {
     throw std::invalid_argument(
         "Paramter max_length must be specified for target sequence.");

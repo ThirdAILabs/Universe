@@ -26,7 +26,7 @@ Featurizer::Featurizer(
     : _label_transform(std::move(label_transform)),
       _bolt_label_columns(std::move(bolt_label_columns)),
       _delimiter(options.delimiter),
-      _state(std::make_shared<thirdai::data::State>()) {
+      _state(thirdai::data::State::make()) {
   std::tie(_input_transform, _bolt_input_columns) =
       inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ true);
