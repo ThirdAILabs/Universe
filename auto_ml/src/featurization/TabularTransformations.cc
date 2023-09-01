@@ -89,7 +89,7 @@ TransformSeries sequence(const std::string& column_name,
       /* hash_range= */ std::numeric_limits<uint32_t>::max(),
       /* delimiter= */ sequence->delimiter);
 
-  auto transformation = std::make_shared<thirdai::data::HashPositionTransform>(
+  auto transformation = thirdai::data::HashPositionTransform::make(
       column_name, output,
       /* hash_range= */ std::numeric_limits<uint32_t>::max());
 

@@ -2,7 +2,9 @@
 
 #include <data/src/transformations/Transformation.h>
 #include <cstddef>
+#include <memory>
 #include <string>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -20,6 +22,13 @@ class HashPositionTransform final : public Transformation {
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
         _dim(hash_range) {}
+
+  static std::shared_ptr<HashPositionTransform> make(std::string input_column,
+                                                     std::string output_column,
+                                                     size_t hash_range) {
+    return std::make_shared<HashPositionTransform>(
+        std::move(input_column), std::move(output_column), hash_range);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -57,6 +66,13 @@ class OffsetPositionTransform final : public Transformation {
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
         _max_num_tokens(max_num_tokens) {}
+
+  static std::shared_ptr<OffsetPositionTransform> make(
+      std::string input_column, std::string output_column,
+      size_t max_num_tokens) {
+    return std::make_shared<OffsetPositionTransform>(
+        std::move(input_column), std::move(output_column), max_num_tokens);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

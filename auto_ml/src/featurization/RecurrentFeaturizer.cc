@@ -60,9 +60,8 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
       target->delimiter);
   input_transforms.push_back(target_lookup);
 
-  auto target_encoding =
-      std::make_shared<thirdai::data::OffsetPositionTransform>(
-          target_name, RECURRENT_SEQUENCE, target->max_length.value());
+  auto target_encoding = thirdai::data::OffsetPositionTransform::make(
+      target_name, RECURRENT_SEQUENCE, target->max_length.value());
   input_transforms.push_back(target_encoding);
   outputs.push_back(RECURRENT_SEQUENCE);
 
