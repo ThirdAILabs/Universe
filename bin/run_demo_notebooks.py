@@ -17,6 +17,7 @@ IGNORED_NBS = [
     "demo.ipynb",
     "run_neural_db.ipynb",
     "amazon_distributed.ipynb",
+    "ColdStartDistributedTraining.ipynb",
 ]
 
 
