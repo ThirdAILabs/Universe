@@ -34,9 +34,9 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   input_transforms.push_back(nbr_features);
   output_cols.push_back(nbr_features_output);
 
-  auto fh = std::make_shared<thirdai::data::FeatureHash>(
-      output_cols, FEATURIZED_INDICES, FEATURIZED_VALUES,
-      udt::defaults::FEATURE_HASH_RANGE);
+  auto fh = thirdai::data::FeatureHash::make(output_cols, FEATURIZED_INDICES,
+                                             FEATURIZED_VALUES,
+                                             udt::defaults::FEATURE_HASH_RANGE);
   input_transforms.push_back(fh);
 
   _input_transform = thirdai::data::TransformationList::make(input_transforms);

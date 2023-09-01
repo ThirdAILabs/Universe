@@ -69,7 +69,7 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
     input_transforms.push_back(augmentation);
   }
 
-  auto fh = std::make_shared<thirdai::data::FeatureHash>(
+  auto fh = thirdai::data::FeatureHash::make(
       outputs, FEATURIZED_INDICES, FEATURIZED_VALUES,
       tabular_options.feature_hash_range);
   input_transforms.push_back(fh);

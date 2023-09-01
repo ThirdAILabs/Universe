@@ -254,10 +254,9 @@ TEST(ExplanationTests, ComposedTransformations) {
                                            /* dim= */ std::nullopt),
       CrossColumnPairgrams::make(std::vector<std::string>{"c_binned", "hash"},
                                  "column_pairgrams", 100000),
-      std::make_shared<FeatureHash>(
-          std::vector<std::string>{"words", "b_binned", "column_pairgrams",
-                                   "tokens"},
-          "indices", "values", /* hash_range= */ 100000),
+      FeatureHash::make(std::vector<std::string>{"words", "b_binned",
+                                                 "column_pairgrams", "tokens"},
+                        "indices", "values", /* hash_range= */ 100000),
   });
 
   ColumnMap columns({

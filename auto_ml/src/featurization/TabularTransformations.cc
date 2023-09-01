@@ -366,7 +366,7 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   output_columns.insert(output_columns.end(), temporal_outputs.begin(),
                         temporal_outputs.end());
 
-  auto feature_hash = std::make_shared<thirdai::data::FeatureHash>(
+  auto feature_hash = thirdai::data::FeatureHash::make(
       /* input_columns= */ output_columns,
       /* output_indices_column= */ FEATURIZED_INDICES,
       /* output_values_column= */ FEATURIZED_VALUES,

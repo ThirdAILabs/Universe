@@ -2,6 +2,8 @@
 
 #include <hashing/src/HashUtils.h>
 #include <data/src/transformations/Transformation.h>
+#include <memory>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -20,6 +22,14 @@ class FeatureHash final : public Transformation {
   FeatureHash(std::vector<std::string> input_columns,
               std::string output_indices_column,
               std::string output_values_columns, size_t hash_range);
+
+  static std::shared_ptr<FeatureHash> make(
+      std::vector<std::string> input_columns, std::string output_indices_column,
+      std::string output_values_columns, size_t hash_range) {
+    return std::make_shared<FeatureHash>(
+        std::move(input_columns), std::move(output_indices_column),
+        std::move(output_values_columns), hash_range);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
