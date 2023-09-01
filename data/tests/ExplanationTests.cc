@@ -237,7 +237,8 @@ TEST(ExplanationTests, TextTokenizer) {
 
 TEST(ExplanationTests, ComposedTransformations) {
   TransformationList transformations({
-      TextTokenizer::make("a", "words", dataset::NaiveSplitTokenizer::make(),
+      TextTokenizer::make("a", "words", std::nullopt,
+                          dataset::NaiveSplitTokenizer::make(),
                           dataset::NGramEncoder::make(1)),
       std::make_shared<StringToDecimal>("b", "b_cast"),
       BinningTransformation::make("b_cast", "b_binned",
