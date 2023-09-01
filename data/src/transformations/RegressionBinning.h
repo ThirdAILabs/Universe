@@ -1,6 +1,8 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <memory>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -18,6 +20,14 @@ class RegressionBinning final : public Transformation {
   RegressionBinning(std::string input_column, std::string output_column,
                     float min, float max, size_t num_bins,
                     uint32_t correct_label_radius);
+
+  static std::shared_ptr<RegressionBinning> make(
+      std::string input_column, std::string output_column, float min, float max,
+      size_t num_bins, uint32_t correct_label_radius) {
+    return std::make_shared<RegressionBinning>(
+        std::move(input_column), std::move(output_column), min, max, num_bins,
+        correct_label_radius);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
