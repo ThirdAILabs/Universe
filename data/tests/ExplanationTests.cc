@@ -249,7 +249,7 @@ TEST(ExplanationTests, ComposedTransformations) {
                                   /* inclusive_min_value= */ 5,
                                   /* exlusive_max_value= */ 10,
                                   /* num_bins= */ 5),
-      std::make_shared<StringHash>("d", "hash"),
+      StringHash::make("d", "hash"),
       std::make_shared<StringToTokenArray>("e", "tokens", /* delimiter= */ ',',
                                            /* dim= */ std::nullopt),
       CrossColumnPairgrams::make(std::vector<std::string>{"c_binned", "hash"},

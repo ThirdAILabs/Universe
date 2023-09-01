@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 #include <optional>
 
 namespace thirdai::data {
@@ -20,6 +21,15 @@ class StringHash final : public Transformation {
         _output_range(output_range),
         _delimiter(delimiter),
         _seed(seed) {}
+
+  static std::shared_ptr<StringHash> make(
+      std::string input_column_name, std::string output_column_name,
+      std::optional<uint32_t> output_range = std::nullopt,
+      std::optional<char> delimiter = std::nullopt, uint32_t seed = 42) {
+    return std::make_shared<StringHash>(std::move(input_column_name),
+                                        std::move(output_column_name),
+                                        output_range, delimiter, seed);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
