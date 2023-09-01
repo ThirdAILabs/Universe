@@ -1,6 +1,8 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <memory>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -8,6 +10,14 @@ class Date final : public Transformation {
  public:
   Date(std::string input_column_name, std::string output_column_name,
        std::string format = "%Y-%m-%d");
+
+  static std::shared_ptr<Date> make(std::string input_column_name,
+                                    std::string output_column_name,
+                                    std::string format = "%Y-%m-%d") {
+    return std::make_shared<Date>(std::move(input_column_name),
+                                  std::move(output_column_name),
+                                  std::move(format));
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

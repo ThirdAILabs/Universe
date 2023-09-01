@@ -102,7 +102,7 @@ TransformSeries date(const std::string& column_name,
 
   std::string output = dateOutputColumn(column_name);
 
-  auto transformation = std::make_shared<thirdai::data::Date>(
+  auto transformation = thirdai::data::Date::make(
       /* input_column_name= */ column_name, /* output_column_name= */ output);
 
   return {{transformation}, output};
