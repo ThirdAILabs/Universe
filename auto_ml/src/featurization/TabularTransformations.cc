@@ -9,6 +9,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
+#include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -147,7 +148,10 @@ MergedTransformSeries nonTemporalTransformations(
     const data::TabularOptions& options) {
   std::vector<thirdai::data::TransformationPtr> pipeline;
   std::vector<std::string> output_columns;
-  std::vector<std::string> tabular_columns;
+  // std::vector<std::string> tabular_columns;
+
+  std::vector<thirdai::data::NumericalColumn> numerical_cols;
+  std::vector<thirdai::data::CategoricalColumn> categorical_cols;
 
   for (const auto& [name, data_type] : data_types) {
     if (auto text_type = data::asText(data_type)) {
@@ -157,19 +161,19 @@ MergedTransformSeries nonTemporalTransformations(
     }
 
     if (auto cat_type = data::asCategorical(data_type)) {
-      auto [transforms, output] = categorical(name, cat_type);
-      pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
       if (!cat_type->delimiter) {
-        tabular_columns.push_back(output);
+        categorical_cols.push_back(thirdai::data::CategoricalColumn(name));
       } else {
+        auto [transforms, output] = categorical(name, cat_type);
+        pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
         output_columns.push_back(output);
       }
     }
 
     if (auto numerical = data::asNumerical(data_type)) {
-      auto [transforms, output] = binning(name, numerical);
-      pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
-      tabular_columns.push_back(output);
+      numerical_cols.push_back(thirdai::data::NumericalColumn(
+          name, numerical->range.first, numerical->range.second,
+          numerical->numBins()));
     }
 
     if (auto sequence_type = data::asSequence(data_type)) {
@@ -185,15 +189,13 @@ MergedTransformSeries nonTemporalTransformations(
     }
   }
 
-  if (!tabular_columns.empty()) {
-    if (options.contextual_columns) {
-      auto [transforms, output] = crossColumnPaigrams(tabular_columns);
-      pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
-      output_columns.push_back(output);
-    } else {
-      output_columns.insert(output_columns.end(), tabular_columns.begin(),
-                            tabular_columns.end());
-    }
+  if (!numerical_cols.empty() || !categorical_cols.empty()) {
+    auto transform = std::make_shared<thirdai::data::Tabular>(
+        numerical_cols, categorical_cols, CROSS_COLUMN_PAIRGRAMS_OUTPUT,
+        options.contextual_columns);
+
+    pipeline.push_back(transform);
+    output_columns.push_back(CROSS_COLUMN_PAIRGRAMS_OUTPUT);
   }
 
   return {pipeline, output_columns};
