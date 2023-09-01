@@ -270,7 +270,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     dataset::TextTokenizerPtr, dataset::TextEncoderPtr, bool,
                     size_t>(),
            py::arg("input_column"), py::arg("output_indices"),
-           py::arg("output_values"),
+           py::arg("output_values") = std::nullopt,
            py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
            py::arg("encoder") = dataset::NGramEncoder(1),
            py::arg("lowercase") = false,
