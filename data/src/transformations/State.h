@@ -66,14 +66,14 @@ class State {
   State() {}
 
   static std::shared_ptr<State> make(MachIndexPtr mach_index) {
-    return State::make(std::move(mach_index));
+    return std::make_shared<State>(std::move(mach_index));
   }
 
   static std::shared_ptr<State> make(automl::data::GraphInfoPtr graph) {
-    return State::make(std::move(graph));
+    return std::make_shared<State>(std::move(graph));
   }
 
-  static std::shared_ptr<State> make() { return State::make(); }
+  static std::shared_ptr<State> make() { return std::make_shared<State>(); }
 
   const auto& machIndex() const {
     if (!_mach_index) {
