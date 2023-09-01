@@ -2,8 +2,10 @@
 
 #include <data/src/transformations/Transformation.h>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::data {
@@ -18,6 +20,13 @@ class CountTokens final : public Transformation {
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
         _max_tokens(max_tokens) {}
+
+  static std::shared_ptr<CountTokens> make(std::string input_column,
+                                           std::string output_column,
+                                           std::optional<uint32_t> max_tokens) {
+    return std::make_shared<CountTokens>(std::move(input_column),
+                                         std::move(output_column), max_tokens);
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
