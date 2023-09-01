@@ -80,7 +80,9 @@ class Sup:
                     )
             if id_delimiter:
                 self.labels = self.labels.apply(
-                    lambda label: list(map(int, str(label).split(id_delimiter)))
+                    lambda label: list(
+                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                    )
                 )
             else:
                 self.labels = self.labels.apply(lambda label: [int(label)])
@@ -145,10 +147,10 @@ class SupDataSource(PyDataSource):
             for query, labels in zip(sup.queries, sup.labels):
                 if self.id_delimiter:
                     label_str = self.id_delimiter.join(
-                        [start_id + int(label) for label in labels]
+                        [str(start_id + int(label)) for label in labels]
                     )
                 else:
-                    label_str = [start_id + int(labels[0])]
+                    label_str = str(start_id + int(labels[0]))
                 yield self._csv_line(query, label_str)
 
     def resource_name(self) -> str:
