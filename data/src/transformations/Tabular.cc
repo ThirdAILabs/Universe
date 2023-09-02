@@ -2,6 +2,8 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
+#include <string>
 #include <vector>
 
 namespace thirdai::data {
@@ -28,13 +30,27 @@ ColumnMap Tabular::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::vector<uint32_t>> tokens(num_rows);
 
-  for (const auto& num_col : _numerical_columns) {
-    auto col = columns.getValueColumn<std::string>(num_col.name);
-#pragma omp parallel for default(none) \
-    shared(col, num_col, tokens) if (num_rows > 1)
-    for (size_t i = 0; i < col->numRows(); i++) {
-      float val = parseFloat(col->value(i));
+  std::vector<ValueColumnBasePtr<std::string>> str_cols;
+  str_cols.reserve(_numerical_columns.size() + _categorical_columns.size());
+  for (const auto& col : _numerical_columns) {
+    str_cols.push_back(columns.getValueColumn<std::string>(col.name));
+  }
+  for (const auto& col : _categorical_columns) {
+    str_cols.push_back(columns.getValueColumn<std::string>(col.name));
+  }
 
+#pragma omp parallel for default(none) \
+    shared(tokens, str_cols) if (num_rows > 1)
+  for (size_t i = 0; i < tokens.size(); i++) {
+    size_t col_idx = 0;
+
+    std::vector<uint32_t> row_tokens;
+    tokens.reserve(str_cols.size());
+
+    for (; col_idx < _numerical_columns.size(); col_idx++) {
+      float val = parseFloat(str_cols[col_idx]->value(i));
+
+      const auto& num_col = _numerical_columns[col_idx];
       uint32_t bin;
       if (val <= num_col.min) {
         bin = 0;
@@ -44,26 +60,19 @@ ColumnMap Tabular::apply(ColumnMap columns, State& state) const {
         bin = (val - num_col.min) / num_col.binsize;
       }
 
-      tokens[i].push_back(hashing::combineHashes(bin, num_col.salt));
+      row_tokens.push_back(hashing::combineHashes(bin, num_col.salt));
     }
-  }
 
-  for (const auto& cat_col : _categorical_columns) {
-    auto col = columns.getValueColumn<std::string>(cat_col.name);
-
-#pragma omp parallel for default(none) \
-    shared(col, cat_col, tokens) if (num_rows > 1)
-    for (size_t i = 0; i < col->numRows(); i++) {
-      const std::string& item = col->value(i);
-      tokens[i].push_back(
-          hashing::MurmurHash(item.data(), item.size(), cat_col.salt));
+    for (; col_idx < str_cols.size(); col_idx++) {
+      const std::string& item = str_cols[col_idx]->value(i);
+      tokens[i].push_back(hashing::MurmurHash(
+          item.data(), item.size(), _categorical_columns[col_idx].salt));
     }
-  }
 
-  if (_cross_column_pairgrams) {
-#pragma omp parallel for default(none) shared(tokens) if (num_rows > 1)
-    for (auto& row : tokens) {
-      row = dataset::token_encoding::pairgrams(row);
+    if (_cross_column_pairgrams) {
+      tokens[i] = dataset::token_encoding::pairgrams(row_tokens);
+    } else {
+      tokens[i] = std::move(row_tokens);
     }
   }
 
