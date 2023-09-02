@@ -69,10 +69,7 @@ def get_association_samples():
         new_sample = " ".join(new_words)
         acronym_samples.append({"text": new_sample})
 
-        association = (
-            {"text": acronym},
-            {"text": " ".join(words[start:end])},
-        )
+        association = (acronym, " ".join(words[start:end]))
         associations.append(association)
 
     return original_samples, acronym_samples, associations

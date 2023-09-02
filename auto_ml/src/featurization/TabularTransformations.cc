@@ -16,6 +16,7 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -26,21 +27,16 @@ namespace thirdai::automl {
 using TransformSeries =
     std::pair<std::vector<thirdai::data::TransformationPtr>, std::string>;
 
-// This represents the transformations and outputs for a set of columns in the
-// input.
-using MergedTransformSeries =
-    std::pair<std::vector<thirdai::data::TransformationPtr>,
-              std::vector<std::string>>;
-
 TransformSeries text(const std::string& column_name,
                      const data::TextDataTypePtr& text,
                      size_t dim = std::numeric_limits<uint32_t>::max()) {
   std::string output = textOutputColumn(column_name);
 
   auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-      /* input_column= */ column_name, /* output_column= */ output,
-      /* tokenizer= */ text->tokenizer, /* encoder= */ text->encoder,
-      /* lowercase= */ text->lowercase, /* dim= */ dim);
+      /* input_column= */ column_name, /* output_indices= */ output,
+      /* output_values= */ std::nullopt, /* tokenizer= */ text->tokenizer,
+      /* encoder= */ text->encoder, /* lowercase= */ text->lowercase,
+      /* dim= */ dim);
 
   return {{transformation}, output};
 }
@@ -54,8 +50,9 @@ TransformSeries categorical(const std::string& column_name,
     auto enc = dataset::NGramEncoder::make(/* n = */ 1);
 
     auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-        /* input_column= */ column_name, /* output_column= */ output,
-        /* tokenizer= */ tok, /* encoder= */ enc, /* lowercase= */ false,
+        /* input_column= */ column_name, /* output_indices= */ output,
+        /* output_values= */ std::nullopt, /* tokenizer= */ tok,
+        /* encoder= */ enc, /* lowercase= */ false,
         /* dim= */ std::numeric_limits<uint32_t>::max());
 
     return {{transformation}, output};
@@ -89,7 +86,9 @@ TransformSeries sequence(const std::string& column_name,
   std::string output = sequenceOutputColumn(column_name);
 
   auto hash = std::make_shared<thirdai::data::StringHash>(
-      column_name, column_name, sequence->delimiter);
+      column_name, column_name,
+      /* hash_range= */ std::numeric_limits<uint32_t>::max(),
+      /* delimiter= */ sequence->delimiter);
 
   auto transformation = std::make_shared<thirdai::data::HashPositionTransform>(
       column_name, output,
@@ -270,17 +269,19 @@ MergedTransformSeries temporalTransformations(
 
       // This is just an additional check to ensure that we don't leak labels if
       // the tracked column is the labels.
+      bool tracking_labels = categorical_temporal.column_name == label_column;
       bool include_current_row =
-          categorical_temporal.include_current_row &&
-          (categorical_temporal.column_name != label_column);
+          categorical_temporal.include_current_row && !tracking_labels;
 
       std::string item_column =
           temporalItemIdsOutput(categorical_temporal.column_name);
 
-      auto item_hash = std::make_shared<thirdai::data::StringHash>(
-          categorical_temporal.column_name, item_column,
-          tracked_column->delimiter);
-      transformations.push_back(item_hash);
+      if (should_update_history || !tracking_labels) {
+        auto item_hash = std::make_shared<thirdai::data::StringHash>(
+            categorical_temporal.column_name, item_column, std::nullopt,
+            tracked_column->delimiter);
+        transformations.push_back(item_hash);
+      }
 
       std::string output = temporalTrackingOutput(temporal_id++);
 
@@ -344,10 +345,13 @@ inputTransformations(const data::ColumnDataTypes& data_types,
     auto [name, type] = *non_temporal_input_data_types.begin();
 
     if (auto text_type = data::asText(type)) {
-      auto [transforms, output_name] =
-          text(name, text_type, /* dim= */ options.feature_hash_range);
+      auto transform = std::make_shared<thirdai::data::TextTokenizer>(
+          name, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
+          text_type->encoder, text_type->lowercase, options.feature_hash_range);
 
-      return {transforms.at(0), {thirdai::data::OutputColumns(output_name)}};
+      return {transform,
+              {thirdai::data::OutputColumns(FEATURIZED_INDICES,
+                                            FEATURIZED_VALUES)}};
     }
   }
 
@@ -367,8 +371,8 @@ inputTransformations(const data::ColumnDataTypes& data_types,
 
   auto feature_hash = std::make_shared<thirdai::data::FeatureHash>(
       /* input_columns= */ output_columns,
-      /* output_indices_column= */ FEATURE_HASH_INDICES,
-      /* output_values_column= */ FEATURE_HASH_VALUES,
+      /* output_indices_column= */ FEATURIZED_INDICES,
+      /* output_values_column= */ FEATURIZED_VALUES,
       /* hash_range= */ options.feature_hash_range);
 
   transformations.push_back(feature_hash);
@@ -376,9 +380,24 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   auto t_list =
       std::make_shared<thirdai::data::TransformationList>(transformations);
 
-  return {t_list,
-          {thirdai::data::OutputColumns(FEATURE_HASH_INDICES,
-                                        FEATURE_HASH_VALUES)}};
+  return {
+      t_list,
+      {thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
+}
+
+MergedTransformSeries nonTemporalTransformations(
+    data::ColumnDataTypes data_types, const std::string& label_column,
+    const data::TabularOptions& options) {
+  if (!data_types.count(label_column)) {
+    throw std::invalid_argument(
+        "Target column was not specified in data_types.");
+  }
+
+  checkNoReservedColumnNames(data_types);
+
+  data_types.erase(label_column);
+
+  return nonTemporalTransformations(data_types, options);
 }
 
 }  // namespace thirdai::automl
