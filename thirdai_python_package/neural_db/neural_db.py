@@ -610,3 +610,11 @@ class NeuralDB:
             learning_rate=learning_rate,
             epochs=epochs,
         )
+    
+    def get_Id_And_DocumentHash(self, paragraph_id: int):
+        """Get the id_in_document and doc_hash given a DOC_ID (OR global paraphraph ID)"""
+        if len(self._savable_state.documents.registry) == 0 or self._savable_state.documents._next_id() <= paragraph_id:
+            #check if there are documents inserted and the paragraph is valid
+            raise ValueError("Invalid pargraph_ID")
+        doc, start_id = self._savable_state.documents._get_doc_and_start_id(paragraph_id)
+        return (paragraph_id - start_id, doc.hash)
