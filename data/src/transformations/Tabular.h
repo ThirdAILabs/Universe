@@ -21,6 +21,13 @@ struct NumericalColumn {
   float binsize;
   uint32_t num_bins;
   uint32_t salt;
+
+  NumericalColumn() {}
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(name, min, max, binsize, num_bins, salt);
+  }
 };
 
 struct CategoricalColumn {
@@ -31,6 +38,13 @@ struct CategoricalColumn {
 
   std::string name;
   uint32_t salt;
+
+  CategoricalColumn() {}
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(name, salt);
+  }
 };
 
 class Tabular final : public Transformation {
@@ -47,6 +61,13 @@ class Tabular final : public Transformation {
 
   std::string _output_column;
   bool _cross_column_pairgrams;
+
+  Tabular() {}
+
+  friend class cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

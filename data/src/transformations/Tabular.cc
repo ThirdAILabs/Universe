@@ -1,8 +1,12 @@
 #include "Tabular.h"
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
+#include <data/src/transformations/Transformation.h>
 #include <string>
 #include <vector>
 
@@ -45,12 +49,11 @@ ColumnMap Tabular::apply(ColumnMap columns, State& state) const {
     size_t col_idx = 0;
 
     std::vector<uint32_t> row_tokens;
-    tokens.reserve(str_cols.size());
+    row_tokens.reserve(str_cols.size());
 
-    for (; col_idx < _numerical_columns.size(); col_idx++) {
-      float val = parseFloat(str_cols[col_idx]->value(i));
+    for (const auto& num_col : _numerical_columns) {
+      float val = parseFloat(str_cols[col_idx++]->value(i));
 
-      const auto& num_col = _numerical_columns[col_idx];
       uint32_t bin;
       if (val <= num_col.min) {
         bin = 0;
@@ -63,10 +66,11 @@ ColumnMap Tabular::apply(ColumnMap columns, State& state) const {
       row_tokens.push_back(hashing::combineHashes(bin, num_col.salt));
     }
 
-    for (; col_idx < str_cols.size(); col_idx++) {
-      const std::string& item = str_cols[col_idx]->value(i);
-      tokens[i].push_back(hashing::MurmurHash(
-          item.data(), item.size(), _categorical_columns[col_idx].salt));
+    for (const auto& cat_col : _categorical_columns) {
+      const std::string& item = str_cols[col_idx++]->value(i);
+
+      row_tokens.push_back(
+          hashing::MurmurHash(item.data(), item.size(), cat_col.salt));
     }
 
     if (_cross_column_pairgrams) {
@@ -82,4 +86,12 @@ ColumnMap Tabular::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+template <class Archive>
+void Tabular::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _numerical_columns,
+          _categorical_columns, _output_column, _cross_column_pairgrams);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::Tabular)
