@@ -1,5 +1,6 @@
 #pragma once
 
+#include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
@@ -10,6 +11,8 @@ class DyadicInterval final : public Transformation {
                  std::string target_column, size_t n_intervals);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  ColumnMap inferenceFeaturization(ColumnMap columns) const;
 
  private:
   static std::vector<size_t> computeOffsets(

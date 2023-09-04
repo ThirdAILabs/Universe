@@ -396,7 +396,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "DyadicInterval")
       .def(py::init<std::string, std::string, std::string, size_t>(),
            py::arg("input_column"), py::arg("output_interval_prefix"),
-           py::arg("target_column"), py::arg("n_intervals"));
+           py::arg("target_column"), py::arg("n_intervals"))
+      .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
+           py::arg("columns"));
 #endif
 }
 

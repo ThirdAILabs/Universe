@@ -83,4 +83,34 @@ std::vector<size_t> DyadicInterval::computeOffsets(
   return offsets;
 }
 
+ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
+  auto tokens = columns.getArrayColumn<uint32_t>(_input_column);
+
+  std::vector<std::vector<std::vector<uint32_t>>> intervals(_n_intervals);
+  for (size_t i = 0; i < _n_intervals; i++) {
+    intervals.at(i).assign(columns.numRows(), {});
+  }
+
+#pragma omp parallel for default(none) \
+    shared(tokens, intervals) if (tokens->numRows() > 1)
+  for (size_t i = 0; i < tokens->numRows(); i++) {
+    auto row_tokens = tokens->row(i);
+
+    for (size_t interval = 0; interval < _n_intervals; interval++) {
+      size_t int_len = std::min(row_tokens.size(), 1UL << interval);
+      size_t int_start = row_tokens.size() - int_len;
+      intervals[interval][i] = row_tokens.range(int_start, row_tokens.size());
+    }
+  }
+
+  for (size_t interval = 0; interval < _n_intervals; interval++) {
+    std::string name = _output_interval_prefix + std::to_string(1 << interval);
+
+    columns.setColumn(name, ArrayColumn<uint32_t>::make(
+                                std::move(intervals[interval]), tokens->dim()));
+  }
+
+  return columns;
+}
+
 }  // namespace thirdai::data
