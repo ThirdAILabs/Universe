@@ -1,5 +1,5 @@
-from thirdai import data
 import pytest
+from thirdai import data
 
 
 @pytest.mark.unit
