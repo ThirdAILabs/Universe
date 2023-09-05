@@ -6,44 +6,55 @@
 namespace thirdai::data {
 
 struct NumericalColumn {
-  explicit NumericalColumn(std::string _name, float _min, float _max,
-                           uint32_t _num_bins)
+  explicit NumericalColumn(std::string _name, float min, float max,
+                           uint32_t num_bins)
       : name(std::move(_name)),
-        min(_min),
-        max(_max),
-        binsize((max - min) / _num_bins),
-        num_bins(_num_bins),
-        salt(dataset::token_encoding::seededMurmurHash(name.data(),
-                                                       name.size())) {}
+        _min(min),
+        _max(max),
+        _binsize((max - min) / num_bins),
+        _num_bins(num_bins),
+        _salt(dataset::token_encoding::seededMurmurHash(name.data(),
+                                                        name.size())) {}
+
+  inline uint32_t encode(const std::string& val) const;
+
   std::string name;
-  float min;
-  float max;
-  float binsize;
-  uint32_t num_bins;
-  uint32_t salt;
 
   NumericalColumn() {}
 
+ private:
+  float _min;
+  float _max;
+  float _binsize;
+  uint32_t _num_bins;
+  uint32_t _salt;
+
+  friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(name, min, max, binsize, num_bins, salt);
+    archive(name, _min, _max, _binsize, _num_bins, _salt);
   }
 };
 
 struct CategoricalColumn {
   explicit CategoricalColumn(std::string _name)
       : name(std::move(_name)),
-        salt(dataset::token_encoding::seededMurmurHash(name.data(),
-                                                       name.size())) {}
+        _salt(dataset::token_encoding::seededMurmurHash(name.data(),
+                                                        name.size())) {}
+
+  inline uint32_t encode(const std::string& val) const;
 
   std::string name;
-  uint32_t salt;
 
   CategoricalColumn() {}
 
+ private:
+  uint32_t _salt;
+
+  friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(name, salt);
+    archive(name, _salt);
   }
 };
 
@@ -54,6 +65,9 @@ class Tabular final : public Transformation {
           std::string output_column, bool cross_column_pairgrams);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
 
   const auto& numericalColumns() const { return _numerical_columns; }
 
