@@ -4,9 +4,9 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
-#include <bolt/src/nn/loss/MarginBCE.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/loss/MarginBCE.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
@@ -126,6 +126,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
+      .def("computation", &Model::getComputation)
       .def("num_params", &Model::numParams)
       .def("thirdai_version", &Model::thirdaiVersion)
       .def("get_parameters", &getParameters,
