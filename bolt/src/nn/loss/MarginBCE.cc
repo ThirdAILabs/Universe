@@ -43,9 +43,8 @@ float MarginBCE::singleGradient(float activation, float label,
   if (_bound) {
     activation = std::clamp(activation, 1e-6F, 1 - 1e-6F);
   }
-  float gradient = (label - activation) *
-                   (original_activation)(1 - original_activation) /
-                   (activation * (1 - activation));
+  float gradient = (label - activation) * (original_activation) *
+                   (1 - original_activation) / (activation * (1 - activation));
 
   return gradient / batch_size;
 }
