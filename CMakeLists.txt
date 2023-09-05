@@ -401,12 +401,12 @@ set(THIRDAI_SOURCES
     data/src/transformations/ColdStartText.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/TransformationList.cc
-    data/src/transformations/Tabular.cc
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/CrossColumnPairgrams.cc
     data/src/transformations/DeduplicateTokens.cc
@@ -425,11 +425,16 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc
+    auto_ml/src/featurization/TabularDatasetFactory.cc
+    auto_ml/src/featurization/RecurrentDatasetFactory.cc
+    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/featurization/TabularTransformations.cc
     auto_ml/src/featurization/ReservedColumns.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
+    auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
     utils/Logging.cc
     utils/StringManipulation.cc
