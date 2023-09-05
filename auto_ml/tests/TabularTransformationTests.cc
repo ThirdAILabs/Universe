@@ -4,9 +4,7 @@
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
-#include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>

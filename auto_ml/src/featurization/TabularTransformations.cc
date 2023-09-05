@@ -118,7 +118,6 @@ MergedTransformSeries nonTemporalTransformations(
     const data::TabularOptions& options) {
   std::vector<thirdai::data::TransformationPtr> pipeline;
   std::vector<std::string> output_columns;
-  // std::vector<std::string> tabular_columns;
 
   std::vector<thirdai::data::NumericalColumn> numerical_cols;
   std::vector<thirdai::data::CategoricalColumn> categorical_cols;
@@ -161,11 +160,11 @@ MergedTransformSeries nonTemporalTransformations(
 
   if (!numerical_cols.empty() || !categorical_cols.empty()) {
     auto transform = std::make_shared<thirdai::data::Tabular>(
-        numerical_cols, categorical_cols, CROSS_COLUMN_PAIRGRAMS_OUTPUT,
+        numerical_cols, categorical_cols, TABULAR_COLUMNS_OUTPUT,
         options.contextual_columns);
 
     pipeline.push_back(transform);
-    output_columns.push_back(CROSS_COLUMN_PAIRGRAMS_OUTPUT);
+    output_columns.push_back(TABULAR_COLUMNS_OUTPUT);
   }
 
   return {pipeline, output_columns};
