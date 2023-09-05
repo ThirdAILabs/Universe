@@ -55,6 +55,10 @@ class Tabular final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  const auto& numericalColumns() const { return _numerical_columns; }
+
+  const auto& categoricalColumns() const { return _categorical_columns; }
+
  private:
   std::vector<NumericalColumn> _numerical_columns;
   std::vector<CategoricalColumn> _categorical_columns;
