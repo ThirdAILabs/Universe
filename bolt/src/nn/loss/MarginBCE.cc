@@ -45,10 +45,9 @@ float MarginBCE::singleGradient(float activation, float label,
   }
   float gradient = (label - activation) *
                    (original_activation)(1 - original_activation) /
-                   (activation * (1 - activation))
+                   (activation * (1 - activation));
 
-                       return gradient /
-                   batch_size;
+  return gradient / batch_size;
 }
 
 template void MarginBCE::serialize(cereal::BinaryInputArchive&);
