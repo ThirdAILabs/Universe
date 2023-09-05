@@ -1,9 +1,7 @@
 #include "TabularTransformations.h"
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
-#include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
@@ -64,23 +62,6 @@ TransformSeries categorical(const std::string& column_name,
   return {{transformation}, output};
 }
 
-TransformSeries binning(const std::string& column_name,
-                        const data::NumericalDataTypePtr& numerical) {
-  std::string output = binningOutputColumn(column_name);
-
-  auto cast = std::make_shared<thirdai::data::StringToDecimal>(column_name,
-                                                               column_name);
-
-  auto transformation = std::make_shared<thirdai::data::BinningTransformation>(
-      /* input_column_name= */ column_name,
-      /* output_column_name= */ output,
-      /* inclusive_min_value= */ numerical->range.first,
-      /* exlusive_max_value= */ numerical->range.second,
-      /* num_bins= */ numerical->numBins());
-
-  return {{cast, transformation}, output};
-}
-
 TransformSeries sequence(const std::string& column_name,
                          const data::SequenceDataTypePtr& sequence) {
   std::string output = sequenceOutputColumn(column_name);
@@ -107,16 +88,6 @@ TransformSeries date(const std::string& column_name,
       /* input_column_name= */ column_name, /* output_column_name= */ output);
 
   return {{transformation}, output};
-}
-
-TransformSeries crossColumnPaigrams(
-    const std::vector<std::string>& tabular_columns) {
-  auto transformation = std::make_shared<thirdai::data::CrossColumnPairgrams>(
-      /* input_column_names= */ tabular_columns,
-      /* output_column_name= */ CROSS_COLUMN_PAIRGRAMS_OUTPUT,
-      /* hash_range= */ std::numeric_limits<uint32_t>::max());
-
-  return {{transformation}, CROSS_COLUMN_PAIRGRAMS_OUTPUT};
 }
 
 TransformSeries timestamp(const data::ColumnDataTypes& data_types) {
