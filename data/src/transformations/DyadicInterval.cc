@@ -2,6 +2,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
+#include <exception>
 #include <string>
 #include <unordered_map>
 
@@ -30,27 +31,39 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
   }
   std::vector<uint32_t> targets(sample_offsets.back());
 
+  std::exception_ptr error;
+
 #pragma omp parallel for default(none) \
-    shared(texts, sample_offsets, intervals, targets, chunk_size)
+    shared(texts, sample_offsets, intervals, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
-    auto tokens = texts->row(i);
+    try {
+      auto tokens = texts->row(i);
 
-    size_t sample_offset = sample_offsets[i];
+      size_t sample_offset = sample_offsets[i];
 
-    for (size_t start = 0; start < tokens.size(); start += chunk_size) {
-      size_t end = std::min(start + chunk_size, tokens.size());
-      for (size_t target = start + 1; target < end; target++) {
-        for (size_t interval = 0; interval < _n_intervals; interval++) {
-          size_t int_len = std::min(target - start, 1UL << interval);
-          size_t int_start = target - int_len;
-          intervals[interval][sample_offset] = tokens.range(int_start, target);
+      for (size_t start = 0; start < tokens.size(); start += chunk_size) {
+        size_t end = std::min(start + chunk_size, tokens.size());
+        for (size_t target = start + 1; target < end; target++) {
+          for (size_t interval = 0; interval < _n_intervals; interval++) {
+            size_t int_len = std::min(target - start, 1UL << interval);
+            size_t int_start = target - int_len;
+            intervals[interval][sample_offset] =
+                tokens.range(int_start, target);
+          }
+
+          targets[sample_offset] = tokens[target];
+
+          sample_offset++;
         }
-
-        targets[sample_offset] = tokens[target];
-
-        sample_offset++;
       }
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   std::unordered_map<std::string, ColumnPtr> output_columns;
