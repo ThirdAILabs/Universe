@@ -146,15 +146,20 @@ void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
 }
 
 void LayerNorm::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  // The optimizer may be saved (to preserve state in optimizers like Adam)
+  // but the gradients are never saved. Thus we only initialize the optimizer
+  // if it's not present, but always initialize the gradients, in case we are
+  // initializing the optimizer for a loaded model.
+
   if (!_gamma_optimizer || !_beta_optimizer) {
     _gamma_optimizer =
         optimizer_factory->makeOptimizer(/* rows= */ 1, _gamma.size());
     _beta_optimizer =
         optimizer_factory->makeOptimizer(/* rows= */ 1, _beta.size());
-
-    _gamma_gradients.assign(_gamma.size(), 0.0);
-    _beta_gradients.assign(_beta.size(), 0.0);
   }
+
+  _gamma_gradients.assign(_gamma.size(), 0.0);
+  _beta_gradients.assign(_beta.size(), 0.0);
 }
 
 uint32_t LayerNorm::dim() const { return _gamma.size(); }

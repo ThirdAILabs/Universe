@@ -179,14 +179,19 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
 }
 
 void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  // The optimizer may be saved (to preserve state in optimizers like Adam)
+  // but the gradients are never saved. Thus we only initialize the optimizer
+  // if it's not present, but always initialize the gradients, in case we are
+  // initializing the optimizer for a loaded model.
+  
   if (!_embedding_optimizer || !_bias_optimizer) {
     _embedding_optimizer = optimizer_factory->makeOptimizer(_input_dim, _dim);
     _bias_optimizer = optimizer_factory->makeOptimizer(/* rows= */ 1, _dim);
-
-    _embedding_gradients.assign(_embeddings.size(), 0.0);
-    _bias_gradients.assign(_biases.size(), 0.0);
-    _embeddings_used.assign(_input_dim, false);
   }
+
+  _embedding_gradients.assign(_embeddings.size(), 0.0);
+  _bias_gradients.assign(_biases.size(), 0.0);
+  _embeddings_used.assign(_input_dim, false);
 }
 
 void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
