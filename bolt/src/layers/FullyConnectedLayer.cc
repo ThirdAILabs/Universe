@@ -572,7 +572,6 @@ void FullyConnectedLayer::initOptimizer(
 
     _weight_gradients.assign(_weights.size(), 0.0);
     _bias_gradients.assign(_biases.size(), 0.0);
-    initActiveNeuronsTrackers();
   }
 }
 

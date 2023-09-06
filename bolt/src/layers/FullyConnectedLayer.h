@@ -241,6 +241,8 @@ class FullyConnectedLayer final {
     if (_should_serialize_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
+
+    initActiveNeuronsTrackers();
   }
 };
 
