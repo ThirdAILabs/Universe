@@ -280,9 +280,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 #if THIRDAI_EXPOSE_ALL
   py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
       transformations_submodule, "Text")
-      .def(py::init<std::string, std::string, dataset::TextTokenizerPtr,
-                    dataset::TextEncoderPtr, bool, size_t>(),
-           py::arg("input_column"), py::arg("output_column"),
+      .def(py::init<std::string, std::string, std::optional<std::string>,
+                    dataset::TextTokenizerPtr, dataset::TextEncoderPtr, bool,
+                    size_t>(),
+           py::arg("input_column"), py::arg("output_indices"),
+           py::arg("output_values") = std::nullopt,
            py::arg("tokenizer") = dataset::NaiveSplitTokenizer::make(),
            py::arg("encoder") = dataset::NGramEncoder(1),
            py::arg("lowercase") = false,

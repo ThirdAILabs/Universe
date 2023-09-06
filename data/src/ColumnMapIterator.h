@@ -29,7 +29,8 @@ class CsvIterator final : public ColumnMapIterator {
 
   static auto make(DataSourcePtr data_source, char delimiter,
                    size_t rows_per_load = DEFAULT_ROWS_PER_LOAD) {
-    return std::make_shared<CsvIterator>(data_source, delimiter, rows_per_load);
+    return std::make_shared<CsvIterator>(std::move(data_source), delimiter,
+                                         rows_per_load);
   }
 
   static ColumnMap all(DataSourcePtr data_source, char delimiter);
