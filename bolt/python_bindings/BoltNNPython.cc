@@ -6,6 +6,7 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/loss/MarginBCE.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
@@ -125,6 +126,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
+      .def("computation", &Model::getComputation)
       .def("num_params", &Model::numParams)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
@@ -367,6 +369,10 @@ void defineLosses(py::module_& nn) {
       loss, "CategoricalCrossEntropy")
       .def(py::init(&CategoricalCrossEntropy::make), py::arg("activations"),
            py::arg("labels"));
+
+  py::class_<MarginBCE, MarginBCEPtr, Loss>(loss, "MarginBCE")
+      .def(py::init(&MarginBCE::make), py::arg("activations"),
+           py::arg("labels"), py::arg("margin"));
 
   py::class_<BinaryCrossEntropy, BinaryCrossEntropyPtr, Loss>(
       loss, "BinaryCrossEntropy")
