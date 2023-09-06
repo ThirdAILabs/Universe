@@ -38,7 +38,7 @@ void CosineSimilarity::forward(const ComputationList& inputs, TensorPtr& output,
     }
   }
 
-  out.activations[0] = sim;
+  out.activations[0] = 1 / (1 + std::exp(-sim));
 }
 
 void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
