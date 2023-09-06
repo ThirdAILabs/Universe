@@ -71,7 +71,7 @@ void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
       float label = grad + (1 / (1 + std::exp(cos_sim)));
       float clipped_cosine_sim = std::clamp(cos_sim, 1e-6F, 1 - 1e-6F);
       grad =
-          (label / clipped_cosine_sim) + (1 - label) / (1 - clipped_cosine_sim);
+          (label / clipped_cosine_sim) - (1 - label) / (1 - clipped_cosine_sim);
       break;
     }
     case ClippingMode::Sigmoid: {
@@ -81,7 +81,7 @@ void CosineSimilarity::backpropagate(ComputationList& inputs, TensorPtr& output,
       float label = grad + (1 / (1 + std::exp(cos_sim)));
       float clipped_cosine_sim = std::clamp(cos_sim, 1e-6F, 1 - 1e-6F);
       grad =
-          (label / clipped_cosine_sim) + (1 - label) / (1 - clipped_cosine_sim);
+          (label / clipped_cosine_sim) - (1 - label) / (1 - clipped_cosine_sim);
       grad = grad * 0.25;
       break;
     }
