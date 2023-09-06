@@ -2,40 +2,17 @@ import os
 import shutil
 from pathlib import Path
 
+import nltk
+
+nltk.download("punkt")
+
 import pytest
+from ndb_utils import all_docs
 from thirdai import neural_db as ndb
-
-BASE_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "document_test_data"
-)
-CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
-PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
-DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
-
-
-@pytest.fixture(scope="session")
-def all_docs():
-    yield {
-        "csv": ndb.CSV(
-            CSV_FILE,
-            id_column="category",
-            strong_columns=["text"],
-            weak_columns=["text"],
-            reference_columns=["text"],
-        ),
-        "pdf": ndb.PDF(PDF_FILE),
-        "docx": ndb.DOCX(DOCX_FILE),
-        "url": ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
-        "sentence_pdf": ndb.SentenceLevelPDF(PDF_FILE),
-        "sentence_docx": ndb.SentenceLevelDOCX(DOCX_FILE),
-    }
-
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.parametrize(
-        "choice", ["csv", "pdf", "docx", "url", "sentence_pdf", "sentence_docx"]
-    ),
+    pytest.mark.parametrize("doc", all_docs()),
 ]
 
 
@@ -43,8 +20,7 @@ pytestmark = [
 # consistent set of methods and properties, not to check the correctness of each
 # individual implementation. This is important since Python does not enforce
 # this.
-def test_size_property(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_size_property(doc):
     assert type(doc.size) == int
     assert doc.size > 0
     for i in range(doc.size):
@@ -54,13 +30,11 @@ def test_size_property(all_docs, choice):
         doc.reference(doc.size)
 
 
-def test_name_property(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_name_property(doc):
     assert type(doc.name) == str
 
 
-def test_reference_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_reference_method(doc):
     for i in range(doc.size):
         reference: ndb.Reference = doc.reference(i)
         assert type(reference.id) == int
@@ -78,25 +52,21 @@ def test_reference_method(all_docs, choice):
         assert type(reference.context(radius=0)) == str
 
 
-def test_hash_property(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_hash_property(doc):
     assert type(doc.hash) == str
 
 
-def test_strong_text_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_strong_text_method(doc):
     for i in range(doc.size):
         assert type(doc.strong_text(i)) == str
 
 
-def test_weak_text_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_weak_text_method(doc):
     for i in range(doc.size):
         assert type(doc.weak_text(i)) == str
 
 
-def test_context_method(all_docs, choice):
-    doc: ndb.Document = all_docs[choice]
+def test_context_method(doc):
     for i in range(doc.size):
         assert type(doc.context(i, radius=0)) == str
         if doc.size > 1:
@@ -104,10 +74,10 @@ def test_context_method(all_docs, choice):
             assert len(doc.context(i, radius=1)) > len(doc.context(i, radius=0))
 
 
-def test_save_load_meta_method(all_docs, choice):
+def test_save_load_meta_method(doc):
     save_dir = Path("doc_save_dir")
     os.mkdir(save_dir)
-    doc: ndb.Document = all_docs[choice]
+
     # We just want to know that it does not throw.
     doc.save_meta(save_dir)
     doc.load_meta(save_dir)

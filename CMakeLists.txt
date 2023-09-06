@@ -411,7 +411,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/CrossColumnPairgrams.cc
     data/src/transformations/DeduplicateTokens.cc
     data/src/transformations/EncodePosition.cc
-    data/src/transformations/UnrollSequence.cc
+    data/src/transformations/Recurrence.cc
     data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc

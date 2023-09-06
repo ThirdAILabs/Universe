@@ -128,6 +128,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("summary", &Model::summary, py::arg("print") = true)
       .def("computation", &Model::getComputation)
       .def("num_params", &Model::numParams)
+      .def("thirdai_version", &Model::thirdaiVersion)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))
@@ -206,6 +207,7 @@ void defineOps(py::module_& nn) {
 
   py::class_<Op, OpPtr>(nn, "Op")
       .def("dim", &Op::dim)
+      .def_property("trainable", &Op::isTrainable, &Op::setTrainable)
       .def_property("name", &Op::name, &Op::setName);
 
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT

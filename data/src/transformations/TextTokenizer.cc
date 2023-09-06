@@ -27,7 +27,8 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::vector<uint32_t>> output_tokens(text_col->numRows());
 
-#pragma omp parallel for default(none) shared(text_col, output_tokens)
+#pragma omp parallel for default(none) \
+    shared(text_col, output_tokens) if (columns.numRows() > 1)
   for (size_t i = 0; i < text_col->numRows(); i++) {
     std::string string = text_col->value(i);
 
