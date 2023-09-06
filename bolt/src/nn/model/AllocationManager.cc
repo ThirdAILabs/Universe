@@ -13,7 +13,7 @@ AllocationManager::AllocationManager(ComputationList computations)
 
 void AllocationManager::reallocateIfNeeded(uint32_t batch_size,
                                            bool use_sparsity) {
-  if (batch_size <= _allocated_batch_size && use_sparsity == _using_sparsity) {
+  if (batch_size == _allocated_batch_size && use_sparsity == _using_sparsity) {
     return;
   }
 
