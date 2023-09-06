@@ -92,8 +92,6 @@ def test_token_deduplication():
     c_token = indices[2][0]
 
     counts = {k: v for k, v in zip(indices[3], values[3])}
-    print(a_token, b_token, c_token)
-    print(counts)
     expected_counts = {a_token: 3.0, b_token: 2.0, c_token: 1.0}
 
     assert counts == expected_counts

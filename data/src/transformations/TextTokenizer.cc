@@ -50,6 +50,9 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
     dataset::token_encoding::mod(indices, _dim);
 
     if (_output_values) {
+      // Deduplicating indices can provide a speedup on longer texts, this
+      // method also has the added benefit of sorting the indices for better
+      // memory access patterns too.
       auto [dedup_indices, dedup_values] =
           deduplicateIndices(std::move(indices));
       output_indices[i] = std::move(dedup_indices);
