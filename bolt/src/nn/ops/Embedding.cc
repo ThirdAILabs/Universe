@@ -183,7 +183,7 @@ void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
   // but the gradients are never saved. Thus we only initialize the optimizer
   // if it's not present, but always initialize the gradients, in case we are
   // initializing the optimizer for a loaded model.
-  
+
   if (!_embedding_optimizer || !_bias_optimizer) {
     _embedding_optimizer = optimizer_factory->makeOptimizer(_input_dim, _dim);
     _bias_optimizer = optimizer_factory->makeOptimizer(/* rows= */ 1, _dim);
