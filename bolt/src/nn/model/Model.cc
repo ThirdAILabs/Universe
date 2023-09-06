@@ -383,6 +383,13 @@ void Model::unfreezeHashTables() {
   }
 }
 
+void Model::changeOptimizer(OptimizerFactoryPtr optimizer) {
+  for (auto& op : _ops) {
+    op->initOptimizer(optimizer);
+  }
+  _optimizer_factory = std::move(optimizer);
+}
+
 std::vector<std::pair<ComputationPtr, ComputationPtr>> Model::outputLabelPairs()
     const {
   std::vector<std::pair<ComputationPtr, ComputationPtr>> output_label_pairs;

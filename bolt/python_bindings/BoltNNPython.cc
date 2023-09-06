@@ -138,6 +138,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("__getitem__", &Model::getOp, py::arg("name"))
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
+      .def("change_optimizer", &Model::changeOptimizer, py::arg("optimizer"))
       .def("summary", &Model::summary, py::arg("print") = true)
       .def("num_params", &Model::numParams)
       .def("thirdai_version", &Model::thirdaiVersion)

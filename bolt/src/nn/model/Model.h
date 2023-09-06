@@ -213,6 +213,8 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   void unfreezeHashTables();
 
+  void changeOptimizer(OptimizerFactoryPtr optimizer);
+
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
    * metadata file should also be created which gives the thirdai version, model
