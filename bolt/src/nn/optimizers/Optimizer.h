@@ -36,18 +36,9 @@ class Optimizer {
                                        float learning_rate,
                                        size_t train_steps) = 0;
 
-  void setSerializeState(bool serialize_state) {
-    _serialize_state = serialize_state;
-  }
-
   virtual ~Optimizer() = default;
 
- protected:
-  bool shouldSerializeState() const { return _serialize_state; }
-
  private:
-  bool _serialize_state = false;
-
   friend class cereal::access;
 
   template <class Archive>
@@ -68,6 +59,13 @@ class OptimizerFactory {
   virtual OptimizerPtr makeOptimizer(size_t rows, size_t cols) const = 0;
 
   virtual ~OptimizerFactory() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using OptimizerFactoryPtr = std::shared_ptr<OptimizerFactory>;

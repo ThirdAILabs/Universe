@@ -28,6 +28,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
+      _should_serialize_optimizer(false),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _use_bias(use_bias),
       _prev_is_active(prev_dim, false),
@@ -571,6 +572,7 @@ void FullyConnectedLayer::initOptimizer(
 
     _weight_gradients.assign(_weights.size(), 0.0);
     _bias_gradients.assign(_biases.size(), 0.0);
+    initActiveNeuronsTrackers();
   }
 }
 

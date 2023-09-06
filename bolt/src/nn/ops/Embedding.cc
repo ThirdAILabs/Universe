@@ -30,6 +30,7 @@ Embedding::Embedding(size_t dim, size_t input_dim,
       _embeddings(dim * input_dim),
       _biases(dim, 0.0),
       _disable_sparse_parameter_updates(false),
+      _should_serialize_optimizer(false),
       _embeddings_used(input_dim, false) {
   std::mt19937 rng(global_random::nextSeed());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -184,6 +185,7 @@ void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
 
     _embedding_gradients.assign(_embeddings.size(), 0.0);
     _bias_gradients.assign(_biases.size(), 0.0);
+    _embeddings_used.assign(_input_dim, false);
   }
 }
 
@@ -211,20 +213,10 @@ template <class Archive>
 void Embedding::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
-          _embedding_optimizer, _bias_optimizer);
+          _should_serialize_optimizer);
 
-  // We never save the gradients from a particular batch. Users should call
-  // updateParameters to apply an update before saving, or process the training
-  // batch again after loading. This will ensure they are properly initialized
-  // when loading.
-  if (_embedding_gradients.empty()) {
-    _embedding_gradients.assign(_embeddings.size(), 0.0);
-  }
-  if (_bias_gradients.empty()) {
-    _bias_gradients.assign(_biases.size(), 0.0);
-  }
-  if (_embeddings_used.empty()) {
-    _embeddings_used.assign(_input_dim, false);
+  if (_should_serialize_optimizer) {
+    archive(_embedding_optimizer, _bias_optimizer);
   }
 }
 

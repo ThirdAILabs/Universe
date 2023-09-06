@@ -54,8 +54,7 @@ class FullyConnectedLayer final {
   };
 
   void saveWithOptimizer(bool should_save_optimizer) {
-    _weight_optimizer->setSerializeState(should_save_optimizer);
-    _bias_optimizer->setSerializeState(should_save_optimizer);
+    _should_serialize_optimizer = should_save_optimizer;
   }
 
   BoltBatch createBatchState(const uint32_t batch_size,
@@ -159,6 +158,7 @@ class FullyConnectedLayer final {
 
   OptimizerPtr _weight_optimizer;
   OptimizerPtr _bias_optimizer;
+  bool _should_serialize_optimizer;
 
   NeuronIndexPtr _neuron_index;
   bool _index_frozen = false;
@@ -235,21 +235,11 @@ class FullyConnectedLayer final {
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
-            _disable_sparse_parameter_updates, _use_bias, _weight_optimizer,
-            _bias_optimizer);
+            _disable_sparse_parameter_updates, _use_bias,
+            _should_serialize_optimizer);
 
-    // We never save the gradients from a particular batch. Users should call
-    // updateParameters to apply an update before saving, or process the
-    // training batch again after loading. This will ensure they are properly
-    // initialized when loading.
-    if (_weight_gradients.empty()) {
-      _weight_gradients.assign(_weights.size(), 0.0);
-    }
-    if (_bias_gradients.empty()) {
-      _bias_gradients.assign(_biases.size(), 0.0);
-    }
-    if (_prev_is_active.empty() || _is_active.empty()) {
-      initActiveNeuronsTrackers();
+    if (_should_serialize_optimizer) {
+      archive(_weight_optimizer, _bias_optimizer);
     }
   }
 };

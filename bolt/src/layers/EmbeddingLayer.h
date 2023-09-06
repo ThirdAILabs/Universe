@@ -61,7 +61,7 @@ class EmbeddingLayer {
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
 
   void saveWithOptimizer(bool should_save_optimizer) {
-    _optimizer->setSerializeState(should_save_optimizer);
+    _should_serialize_optimizer = should_save_optimizer;
   }
 
   std::vector<float>& getRawEmbeddingBlockGradient() { return _gradients; }
@@ -147,14 +147,10 @@ class EmbeddingLayer {
             _log_embedding_block_size, _update_chunk_size, _reduction,
             _num_tokens_per_input, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
-            _disable_sparse_parameter_updates, _optimizer);
+            _disable_sparse_parameter_updates, _should_serialize_optimizer);
 
-    // We never save the gradients from a particular batch. Users should call
-    // updateParameters to apply an update before saving, or process the
-    // training batch again after loading. This will ensure they are properly
-    // initialized when loading.
-    if (_gradients.empty()) {
-      _gradients.assign(_embedding_block->size(), 0.0);
+    if (_should_serialize_optimizer) {
+      archive(_optimizer);
     }
   }
 
@@ -182,6 +178,7 @@ class EmbeddingLayer {
 
   std::vector<float> _gradients;
   OptimizerPtr _optimizer;
+  bool _should_serialize_optimizer;
 
   bool _disable_sparse_parameter_updates;
 };

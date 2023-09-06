@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/optimizers/Optimizer.h>
 #include <cassert>
 #include <cmath>
@@ -84,6 +86,15 @@ class AdamFactory final : public OptimizerFactory {
   }
 
   static auto make() { return std::make_shared<AdamFactory>(); }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<OptimizerFactory>(this));
+  }
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::AdamFactory)

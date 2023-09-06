@@ -59,8 +59,7 @@ class Embedding final : public Op,
                const Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final {
-    _embedding_optimizer->setSerializeState(should_serialize_optimizer);
-    _bias_optimizer->setSerializeState(should_serialize_optimizer);
+    _should_serialize_optimizer = should_serialize_optimizer;
   }
 
   ComputationPtr apply(ComputationPtr input);
@@ -111,6 +110,7 @@ class Embedding final : public Op,
 
   std::vector<float> _embedding_gradients;
   std::vector<float> _bias_gradients;
+  bool _should_serialize_optimizer;
 
   OptimizerPtr _embedding_optimizer;
   OptimizerPtr _bias_optimizer;

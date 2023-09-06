@@ -129,13 +129,8 @@ template void Adam::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
 void Adam::save(Archive& archive) const {
-  archive(cereal::base_class<Optimizer>(this), _rows, _cols);
-
-  if (shouldSerializeState()) {
-    archive(_momentum, _velocity);
-  } else {
-    archive(std::vector<float>{}, std::vector<float>{});
-  }
+  archive(cereal::base_class<Optimizer>(this), _rows, _cols, _momentum,
+          _velocity);
 }
 
 template void Adam::load(cereal::BinaryInputArchive&);
@@ -144,14 +139,6 @@ template <class Archive>
 void Adam::load(Archive& archive) {
   archive(cereal::base_class<Optimizer>(this), _rows, _cols, _momentum,
           _velocity);
-
-  if (_momentum.empty()) {
-    _momentum.assign(_rows * _cols, 0.0);
-  }
-
-  if (_velocity.empty()) {
-    _velocity.assign(_rows * _cols, 0.0);
-  }
 }
 
 }  // namespace thirdai::bolt
