@@ -45,7 +45,7 @@ void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
                         uint32_t index_in_batch, bool training) {
   (void)training;
 
-  assert(inputs.size() == 2);
+  assert(inputs.size() == 1);
 
   const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
@@ -70,7 +70,7 @@ void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
 
 void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
-  assert(inputs.size() == 2);
+  assert(inputs.size() == 1);
 
   const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
