@@ -9,7 +9,7 @@
 
 namespace thirdai::bolt {
 
-enum class ClippingMode { Identity = 0, Sigmoid = 1, LinearScaling = 2 };
+enum class ClippingMode { Identity = 0, Sigmoid = 1 };
 
 inline ClippingMode getClippingMode(
     const std::optional<std::string>& clipping_mode) {
@@ -19,9 +19,6 @@ inline ClippingMode getClippingMode(
   }
   if (clipping_mode_str == "Sigmoid") {
     return ClippingMode::Sigmoid;
-  }
-  if (clipping_mode_str == "LinearScaling") {
-    return ClippingMode::LinearScaling;
   }
   throw std::invalid_argument(
       "Invalid Clipping Mode specified for CosineSimilarity OP");
