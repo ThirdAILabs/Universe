@@ -106,4 +106,13 @@ const std::vector<uint32_t> N_GRAMS_FOR_GENERATOR = {3, 4};
 // Batch size to use during associate.
 constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
 
+// Edit distance to be used in SpellChecker
+constexpr uint32_t MAX_EDIT_DISTANCE = 3;
+
+// Prefix length to be used in SpellChecker
+constexpr uint32_t PREFIX_LENGTH = 7;
+
+// Use Word Segmentation in SymSpell
+constexpr uint32_t USE_WORD_SEGMENTATION = false;
+
 }  // namespace thirdai::automl::udt::defaults

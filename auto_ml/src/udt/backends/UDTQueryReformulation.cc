@@ -34,11 +34,12 @@ namespace thirdai::automl::udt {
 UDTQueryReformulation::UDTQueryReformulation(
     std::optional<std::string> incorrect_column_name,
     std::string correct_column_name, const std::string& dataset_size,
+    bool use_spell_checker,
     char delimiter, const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _incorrect_column_name(std::move(incorrect_column_name)),
       _correct_column_name(std::move(correct_column_name)),
-
+      _use_spell_checker(use_spell_checker),
       _delimiter(delimiter) {
   if (model_config) {
     _flash_index = config::buildIndex(*model_config, user_args);
@@ -46,6 +47,12 @@ UDTQueryReformulation::UDTQueryReformulation(
     _flash_index = defaultFlashIndex(dataset_size);
   }
 
+  if (_use_spell_checker){
+    pretrainer = SymPreTrainer(max_edit_distance = defaults::MAX_EDIT_DISTANCE,
+                               experimental_scores = true,
+                              prefix_length = defaults::PREFIX_LENGTH,
+                              use_word_segmentation = defaults::USE_WORD_SEGMENTATION)
+  }
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
   if (user_args.contains("n_grams")) {
@@ -92,6 +99,13 @@ py::object UDTQueryReformulation::train(
   uint32_t batch_size =
       options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
+
+  // Index words to Spell Checker if use_spell_checker = True
+  if (_use_spell_checker){
+    pretrainer.pretrain_file(data);
+    data.restart();
+  }
+  
   auto [unsupervised_data, labels] =
       loadData(data, /* col_to_hash= */ _correct_column_name,
                /* include_labels= */ true, batch_size, options.verbose);

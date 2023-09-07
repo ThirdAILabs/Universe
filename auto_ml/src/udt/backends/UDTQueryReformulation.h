@@ -3,6 +3,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/symspell.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -19,7 +20,8 @@ class UDTQueryReformulation final : public UDTBackend {
  public:
   UDTQueryReformulation(std::optional<std::string> incorrect_column_name,
                         std::string correct_column_name,
-                        const std::string& dataset_size, char delimiter,
+                        const std::string& dataset_size, bool use_spell_checker, 
+                        char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 
@@ -97,8 +99,10 @@ class UDTQueryReformulation final : public UDTBackend {
   dataset::ThreadSafeVocabularyPtr _phrase_id_map;
 
   std::optional<std::string> _incorrect_column_name;
+  bool _use_spell_checker;
   std::string _correct_column_name;
 
+  SymPreTrainer pretrainer = std::nullopt;
   std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
   char _delimiter;

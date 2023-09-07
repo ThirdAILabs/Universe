@@ -109,6 +109,7 @@ void defineAutomlInModule(py::module_& module) {
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
            py::arg("target_column"), py::arg("dataset_size"),
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("use_spell_checker") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def(py::init(&makeQueryReformulationTargetOnly),
            py::arg("target_column"), py::arg("dataset_size"),
