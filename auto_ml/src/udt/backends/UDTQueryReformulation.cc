@@ -34,7 +34,7 @@ namespace thirdai::automl::udt {
 UDTQueryReformulation::UDTQueryReformulation(
     std::optional<std::string> incorrect_column_name,
     std::string correct_column_name, const std::string& dataset_size,
-    bool use_spell_checker,
+    bool use_spell_checker, 
     char delimiter, const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _incorrect_column_name(std::move(incorrect_column_name)),
@@ -48,10 +48,7 @@ UDTQueryReformulation::UDTQueryReformulation(
   }
 
   if (_use_spell_checker){
-    pretrainer = SymPreTrainer(max_edit_distance = defaults::MAX_EDIT_DISTANCE,
-                               experimental_scores = true,
-                              prefix_length = defaults::PREFIX_LENGTH,
-                              use_word_segmentation = defaults::USE_WORD_SEGMENTATION)
+    pretrainer = SymPreTrainer(defaults::MAX_EDIT_DISTANCE, true, defaults::PREFIX_LENGTH, defaults::USE_WORD_SEGMENTATION);
   }
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
@@ -101,10 +98,10 @@ py::object UDTQueryReformulation::train(
 
 
   // Index words to Spell Checker if use_spell_checker = True
-  if (_use_spell_checker){
-    pretrainer.pretrain_file(data);
-    data.restart();
-  }
+  // if (_use_spell_checker){
+    // pretrainer.pretrain_file(data);
+    // data.restart();
+  // }
   
   auto [unsupervised_data, labels] =
       loadData(data, /* col_to_hash= */ _correct_column_name,

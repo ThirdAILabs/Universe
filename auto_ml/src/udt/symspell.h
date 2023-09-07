@@ -1,5 +1,8 @@
 #include <SymspellCPP/include/SymSpell.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <optional>
 
 class SpellCheckedSentence {
  private:
@@ -7,17 +10,31 @@ class SpellCheckedSentence {
   std::vector<float> scores;
 
  public:
+  SpellCheckedSentence();
+
   SpellCheckedSentence(const std::vector<std::string>& tokens,
                        const std::vector<float>& scores);
 
-  
-  void update_token_and_score(const std::string& token, float score,
-                              size_t index, bool inplace = false);
+  SpellCheckedSentence(const SpellCheckedSentence& other);
 
-  static int get_score(const SpellCheckedSentence& sentence);
+  SpellCheckedSentence update_token_and_score(const std::string& token, float score,
+                              size_t index);
+
+  static float get_score(const SpellCheckedSentence& sentence){
+      float total_score = 0.0F;
+      for (float score : sentence.scores) {
+        total_score += score;
+      }
+      return total_score;
+  }
 
   friend std::ostream& operator<<(std::ostream& os,
-                                  const SpellCheckedSentence& sentence);
+                                  const SpellCheckedSentence& sentence) {
+    for (const std::string& token : sentence.tokens) {
+      os << token << " ";
+    }
+    return os;
+  }
 };
 
 class SymPreTrainer {
@@ -29,12 +46,10 @@ class SymPreTrainer {
   bool use_word_segmentation;
 
  public:
-  static auto make() {
-    return std::shared_ptr<SymPreTrainer>(new SymPreTrainer());
-  }
-  SymPreTrainer(int max_edit_distance, bool experimental_scores = true,
-                int prefix_length,
-                bool use_word_segmentation);
+  SymPreTrainer();
+  
+  SymPreTrainer(int max_edit_distance, bool experimental_scores,
+                int prefix_length, bool use_word_segmentation);
 
   std::tuple<std::vector<std::string>, std::vector<float>>
   get_correct_spelling_single(const std::string& word, int top_k = 1);
@@ -49,8 +64,8 @@ class SymPreTrainer {
       int maximum_candidates, bool stop_if_found);
 
   void index_words(std::vector<std::string> words_to_index,
-                   std::optional<int>& frequency = std::nullopt);
+                   std::vector<int> frequency);
 
-  void pretrain_file(const dataset::DataSourcePtr& data);
+  // void pretrain_file(const thirdai::dataset::DataSourcePtr& data);
   // Implement the remaining methods of SymPreTrainer as needed
 };

@@ -99,10 +99,9 @@ class UDTQueryReformulation final : public UDTBackend {
   dataset::ThreadSafeVocabularyPtr _phrase_id_map;
 
   std::optional<std::string> _incorrect_column_name;
-  bool _use_spell_checker;
   std::string _correct_column_name;
-
-  SymPreTrainer pretrainer = std::nullopt;
+  bool _use_spell_checker;
+  SymPreTrainer pretrainer;
   std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
   char _delimiter;
