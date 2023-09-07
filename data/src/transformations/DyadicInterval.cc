@@ -21,7 +21,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   auto texts = columns.getArrayColumn<uint32_t>(_input_column);
 
-  size_t chunk_size = (1 << (_n_intervals - 1)) + 1;
+  size_t chunk_size = (1UL << (_n_intervals - 1)) + 1;
 
   std::vector<size_t> sample_offsets = computeOffsets(texts, chunk_size);
 

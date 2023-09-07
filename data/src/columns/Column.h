@@ -67,7 +67,9 @@ class RowView {
 
   std::vector<T> range(size_t start, size_t end) const {
     if (end < start || _len < end) {
-      throw std::out_of_range("");
+      throw std::out_of_range("Invalid range [" + std::to_string(start) + ", " +
+                              std::to_string(end) + ") for row with length " +
+                              std::to_string(_len) + ".");
     }
 
     return {begin() + start, begin() + end};
