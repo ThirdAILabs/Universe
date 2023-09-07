@@ -18,7 +18,7 @@ def load_data(filename):
         ]
     )
 
-    data_iter = data.ColumnMapIterator(
+    data_iter = data.CsvIterator(
         data_source=dataset.FileDataSource(filename), delimiter=","
     )
 
