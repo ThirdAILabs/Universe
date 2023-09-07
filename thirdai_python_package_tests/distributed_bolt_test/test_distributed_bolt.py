@@ -10,6 +10,7 @@ from distributed_utils import (
     gen_numpy_training_data,
     get_bolt_model,
     setup_ray,
+    write_metrics_to_file,
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
@@ -36,13 +37,13 @@ def training_loop_per_worker(config):
     )
 
     # logs train_metrics from worker nodes which can be compared later
-    thirdai.logging.setup(log_to_stderr=False, path="log_metrics.txt", level="info")
     history.pop("epoch_times")
-    thirdai.logging.info(f"{history}")
+    write_metrics_to_file(filename="metrics.json", metrics=history)
 
     session.report(
         {"model_location": session.get_trial_dir()},
-        checkpoint=dist.BoltCheckPoint.from_model(model),
+        # Use `with_optimizers=False` to save model without optimizer states
+        checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False),
     )
     trainer.model.save("trained.model")
 
@@ -93,23 +94,20 @@ def test_bolt_distributed():
     model_1_metrics = extract_metrics_from_file(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_0/log_metrics.txt",
+            "rank_0/metrics.json",
         )
     )
 
     model_2_metrics = extract_metrics_from_file(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_1/log_metrics.txt",
+            "rank_1/metrics.json",
         )
     )
 
     assert (
         model_1_metrics == model_2_metrics
     ), "Train metrics on worker nodes aren't synced"
-
-    print(model_1_metrics)
-    print(model_2_metrics)
 
     ray.shutdown()
 
@@ -154,7 +152,10 @@ def test_distributed_fault_tolerance():
                 checkpoint=dist.BoltCheckPoint.from_dict(
                     {
                         "epoch": epoch + 1,
-                        "model": dist.BoltCheckPoint.from_model(model),
+                        # Use `with_optimizers=False` to save model without optimizer states
+                        "model": dist.BoltCheckPoint.from_model(
+                            model, with_optimizers=True
+                        ),
                         "is_worker_killed": True,
                     }
                 ),
@@ -189,9 +190,9 @@ def test_distributed_resume_training():
             print("\nResumed training from last checkpoint...\n")
         else:
             model = get_bolt_model()
-            model = dist.prepare_model(model)
             print("\nLoading model from scratch...\n")
 
+        model = dist.prepare_model(model)
         num_epochs = config.get("num_epochs", 1)
 
         trainer = bolt.train.Trainer(model)
@@ -204,7 +205,10 @@ def test_distributed_resume_training():
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-        session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
+        # Use `with_optimizers=True` to save model with optimizer states
+        session.report(
+            {}, checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False)
+        )
 
     scaling_config = setup_ray()
 

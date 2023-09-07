@@ -32,7 +32,8 @@ Model::Model(ComputationList inputs, ComputationList outputs,
       _losses(std::move(losses)),
       _train_steps(0),
       _model_uuid(
-          utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)) {
+          utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)),
+      _thirdai_version(thirdai::version()) {
   licensing::checkLicense();
 
   for (const auto& loss : _losses) {
@@ -139,7 +140,7 @@ void Model::updateParameters(float learning_rate) {
 
   ++_train_steps;
   for (auto& op : _ops) {
-    op->updateParameters(learning_rate, _train_steps);
+    op->updateTrainableParameters(learning_rate, _train_steps);
   }
 }
 
@@ -210,6 +211,7 @@ std::string Model::summary(bool print) const {
     summary << "\n";
   }
   summary << "Total Paramters: " << numParams() << "\n";
+  summary << "thirdai Version: " << thirdaiVersion() << "\n";
   summary << "=================================================\n";
 
   if (print) {
@@ -218,6 +220,8 @@ std::string Model::summary(bool print) const {
 
   return summary.str();
 }
+
+std::string Model::thirdaiVersion() const { return _thirdai_version; }
 
 size_t Model::numParams() const {
   size_t total_params = 0;
@@ -595,12 +599,12 @@ template <class Archive>
 void Model::serialize(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
+  _thirdai_version = thirdai::version();
+  archive(_thirdai_version);
 
   std::string class_name = "BOLT_MODEL";
-  versions::checkVersion(version, versions::BOLT_MODEL_VERSION, thirdai_version,
-                         thirdai::version(), class_name);
+  versions::checkVersion(version, versions::BOLT_MODEL_VERSION,
+                         _thirdai_version, thirdai::version(), class_name);
 
   // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import thirdai
 import unidecode
 from thirdai._thirdai import bolt
 from thirdai.dataset.data_source import PyDataSource
@@ -20,7 +21,44 @@ def no_op(*args, **kwargs):
     pass
 
 
+"""Sup and SupDataSource are classes that manage entity IDs for supervised
+training.
+
+Entity = an item that can be retrieved by NeuralDB. If we insert an ndb.CSV
+object into NeuralDB, then each row of the CSV file is an entity. If we insert 
+an ndb.PDF object, then each paragraph is an entity. If we insert an 
+ndb.SentenceLevelDOCX object, then each sentence is an entity.
+
+If this still doesn't make sense, consider a scenario where you insert a CSV 
+file into NeuralDB and want to improve the performance of the database by
+training it on supervised training samples. That is, you want the model to 
+learn from (query, ID) pairs.
+
+Since you only inserted one file, the ID of each entity in NeuralDB's index
+is the same as the ID given in the file. Thus, the model can directly ingest
+the (query, ID) pairs from your supervised dataset. However, this is not the 
+case if you inserted multiple CSV files. For example, suppose you insert file A 
+containing entities with IDs 0 through 100 and also insert file B containing 
+its own set of entities with IDs 0 through 100. To disambiguate between entities
+from different files, NeuralDB automatically offsets the IDs of the second file.
+Consequently, you also have to adjust the labels of supervised training samples
+corresponding to entities in file B. 
+
+Instead of leaking the abstraction by making the user manually change the labels
+of their dataset, we created Sup and SupDataSource to handle this.
+"""
+
+
 class Sup:
+    """An object that contains supervised samples. This object is to be passed
+    into NeuralDB.supervised_train().
+
+    It can be initialized either with a CSV file, in which case it needs query
+    and ID column names, or with sequences of queries and labels. It also needs
+    to know which source object (i.e. which inserted CSV or PDF object) contains
+    the relevant entities to the supervised samples.
+    """
+
     def __init__(
         self,
         csv: str = None,
@@ -50,6 +88,11 @@ class Sup:
 
 
 class SupDataSource(PyDataSource):
+    """Combines supervised samples from multiple Sup objects into a single data
+    source. This allows NeuralDB's underlying model to train on all provided
+    supervised datasets simultaneously.
+    """
+
     def __init__(self, doc_manager: DocumentManager, query_col: str, data: List[Sup]):
         PyDataSource.__init__(self)
         self.doc_manager = doc_manager
@@ -85,20 +128,21 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(
-        self,
-        user_id: str = "user",
-        savable_state: State = None,
-        **kwargs,
-    ) -> None:
+    def __init__(self, user_id: str = "user", **kwargs) -> None:
+        """user_id is used for logging purposes only"""
         self._user_id: str = user_id
-        if savable_state == None:
+
+        # The savable_state kwarg is only used in static constructor methods
+        # and should not be used by an external user.
+        # We read savable_state from kwargs so that it doesn't appear in the
+        # arguments list and confuse users.
+        if "savable_state" not in kwargs:
             self._savable_state: State = State(
                 model=Mach(id_col="id", query_col="query", **kwargs),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
             )
         else:
-            self._savable_state = savable_state
+            self._savable_state = kwargs["savable_state"]
 
     @staticmethod
     def from_checkpoint(
@@ -114,7 +158,7 @@ class NeuralDB:
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
             savable_state.logger = loggers.LoggerList([savable_state.logger])
 
-        return NeuralDB(user_id, savable_state)
+        return NeuralDB(user_id, savable_state=savable_state)
 
     @staticmethod
     def from_udt(
@@ -126,6 +170,11 @@ class NeuralDB:
         csv_weak_columns: Optional[List[str]] = None,
         csv_reference_columns: Optional[List[str]] = None,
     ):
+        """Instantiate a NeuralDB, using the given UDT as the underlying model.
+        Usually for porting a pretrained model into the NeuralDB format.
+        Use the optional csv-related arguments to insert the pretraining dataset
+        into the NeuralDB instance.
+        """
         if csv is None:
             udt.clear_index()
 
@@ -187,7 +236,7 @@ class NeuralDB:
             savable_state.documents.add([csv_doc])
             savable_state.model.set_n_ids(csv_doc.size)
 
-        return NeuralDB(user_id, savable_state)
+        return NeuralDB(user_id, savable_state=savable_state)
 
     def pretrain_distributed(
         self,
@@ -255,6 +304,9 @@ class NeuralDB:
             from ray.air import session
             from thirdai.dataset import RayDataSource
 
+            if config["licensing_lambda"]:
+                config["licensing_lambda"]()
+
             # ray data will automatically split the data if the dataset is passed with key "train"
             # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
             stream_split_data_iterator = session.get_dataset_shard("train")
@@ -297,6 +349,16 @@ class NeuralDB:
         )
         checkpoint_path = checkpoint.to_directory()
 
+        # If this is a file based license, it will assume the license to available at the same location on each of the
+        # machine
+        licensing_lambda = None
+        if hasattr(thirdai._thirdai, "licensing"):
+            license_state = thirdai._thirdai.licensing._get_license_state()
+            licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+                license_state
+            )
+
+        train_loop_config["licensing_lambda"] = licensing_lambda
         train_loop_config["strong_column_names"] = documents[0].strong_columns
         train_loop_config["weak_column_names"] = documents[0].weak_columns
         train_loop_config["learning_rate"] = learning_rate
@@ -323,9 +385,16 @@ class NeuralDB:
         self._savable_state.model.set_model(model)
 
     def ready_to_search(self) -> bool:
+        """Returns True if documents have been inserted and the model is
+        prepared to serve queries, False otherwise.
+        """
         return self._savable_state.ready()
 
     def sources(self) -> Dict[str, str]:
+        """Returns a mapping from source IDs to their names. This is useful
+        when you need to know the source ID of a document you inserted, e.g.
+        for creating a Sup object for supervised_train().
+        """
         return self._savable_state.documents.sources()
 
     def save(self, save_to: str, on_progress: Callable = no_op) -> str:
@@ -342,6 +411,15 @@ class NeuralDB:
         on_error: Callable = None,
         cancel_state: CancelState = None,
     ) -> List[str]:
+        """Inserts sources into the database.
+        fast_approximation: much faster insertion with a slight drop in
+        performance.
+        num_buckets_to_sample: when assigning set of MACH buckets to an entity,
+        look at the top num_buckets_to_sample buckets, then choose the least
+        occupied ones. This prevents MACH buckets from overcrowding,
+        cancel_state: an object that can be used to stop an ongoing insertion.
+        Primarily used for PocketLLM.
+        """
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)
@@ -394,6 +472,9 @@ class NeuralDB:
         return self._savable_state.documents.reference(result_id).text
 
     def text_to_result(self, text: str, result_id: int) -> None:
+        """Trains NeuralDB to map the given text to the given entity ID.
+        Also known as "upvoting".
+        """
         teachers.upvote(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
@@ -407,6 +488,9 @@ class NeuralDB:
         )
 
     def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
+        """Trains NeuralDB to map the given texts to the given entity IDs.
+        Also known as "batch upvoting".
+        """
         query_id_para = [
             (query, upvote_id, self._get_text(result_id))
             for query, result_id in text_id_pairs
@@ -459,6 +543,12 @@ class NeuralDB:
         learning_rate=0.0001,
         epochs=3,
     ):
+        """Train on supervised datasets that correspond to specific sources.
+        Suppose you inserted a "sports" product catalog and a "furniture"
+        product catalog. You also have supervised datasets - pairs of queries
+        and correct products - for both categories. You can use this method to
+        train NeuralDB on these supervised datasets.
+        """
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
@@ -468,6 +558,7 @@ class NeuralDB:
         )
 
     def get_associate_samples(self):
+        """Get past associate() and associate_batch() samples from NeuralDB logs."""
         logs = self._savable_state.logger.get_logs()
 
         associate_logs = logs[logs["action"] == "associate"]
@@ -479,6 +570,9 @@ class NeuralDB:
         return associate_samples
 
     def get_upvote_samples(self):
+        """Get past text_to_result() and text_to_result_batch() samples from
+        NeuralDB logs.
+        """
         logs = self._savable_state.logger.get_logs()
 
         upvote_associate_samples = []
@@ -491,6 +585,9 @@ class NeuralDB:
         return upvote_associate_samples
 
     def get_rlhf_samples(self):
+        """Get past associate(), associate_batch(), text_to_result(), and
+        text_to_result_batch() samples from NeuralDB logs.
+        """
         return self.get_associate_samples() + self.get_upvote_samples()
 
     def retrain(
@@ -500,6 +597,7 @@ class NeuralDB:
         epochs: int = 3,
         strength: Strength = Strength.Strong,
     ):
+        """Train NeuralDB on all inserted documents and logged RLHF samples."""
         doc_manager = self._savable_state.documents
 
         if not text_pairs:
