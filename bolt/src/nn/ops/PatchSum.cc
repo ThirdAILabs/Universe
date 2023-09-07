@@ -1,5 +1,6 @@
 #include "PatchSum.h"
 #include <bolt/src/nn/autograd/Computation.h>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -21,6 +22,8 @@ void PatchSum::forward(const ComputationList& inputs, TensorPtr& output,
   const BoltVector& patches = inputs.at(0)->tensor()->getVector(index_in_batch);
 
   BoltVector& sum = output->getVector(index_in_batch);
+
+  std::fill(sum.activations, sum.activations + sum.len, 0.0);
 
   if (patches.isDense()) {
     if (patches.len != _patch_dim * _n_patches) {
