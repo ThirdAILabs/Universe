@@ -1,4 +1,4 @@
-#include <SymspellCPP/SymSpell.h>
+#include <SymspellCPP/include/SymSpell.h>
 #include <dataset/src/DataSource.h>
 
 class SpellCheckedSentence {

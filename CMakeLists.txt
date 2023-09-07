@@ -132,7 +132,6 @@ set(JSON_BuildTests
     CACHE INTERNAL "")
 add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
-include_directories(deps/SymspellCPP/include)
 
 if(MSVC)
   if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -467,7 +466,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc SymspellCPP)
+                 prometheus-cpp::pull utf8proc symspell)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
