@@ -1,4 +1,5 @@
 import math
+import os
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
@@ -259,10 +260,20 @@ class Mach(Model):
         self.model = model
 
     def save_meta(self, directory: Path):
-        pass
+        self.model.save(str(directory / "udt.bolt"))
 
     def load_meta(self, directory: Path):
         pass
+        if os.path.exists(directory / "udt.bolt"):
+            self.model = bolt.UniversalDeepTransformer.load(str(directory / "udt.bolt"))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["model"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
     def set_n_ids(self, n_ids: int):
         self.n_ids = n_ids
