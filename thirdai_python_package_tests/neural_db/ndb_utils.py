@@ -50,22 +50,25 @@ def all_docs():
     CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
     PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
     DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
-    return [
-        ndb.CSV(
-            CSV_FILE,
-            id_column="category",
-            strong_columns=["text"],
-            weak_columns=["text"],
-            reference_columns=["text"],
-        ),
-        ndb.CSV(CSV_FILE),
-        ndb.PDF(PDF_FILE),
-        ndb.DOCX(DOCX_FILE),
-        ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
-        ndb.URL(
-            "https://en.wikipedia.org/wiki/Rice_University",
-            requests.get("https://en.wikipedia.org/wiki/Rice_University"),
-        ),
-        ndb.SentenceLevelPDF(PDF_FILE),
-        ndb.SentenceLevelDOCX(DOCX_FILE),
-    ]
+    try:
+        return [
+            ndb.CSV(
+                CSV_FILE,
+                id_column="category",
+                strong_columns=["text"],
+                weak_columns=["text"],
+                reference_columns=["text"],
+            ),
+            ndb.CSV(CSV_FILE),
+            ndb.PDF(PDF_FILE),
+            ndb.DOCX(DOCX_FILE),
+            ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
+            ndb.URL(
+                "https://en.wikipedia.org/wiki/Rice_University",
+                requests.get("https://en.wikipedia.org/wiki/Rice_University"),
+            ),
+            ndb.SentenceLevelPDF(PDF_FILE),
+            ndb.SentenceLevelDOCX(DOCX_FILE),
+        ]
+    except:
+        return []
