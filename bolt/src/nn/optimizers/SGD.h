@@ -30,7 +30,7 @@ class SGD final : public Optimizer {
                                float learning_rate, size_t train_steps) final;
 
  private:
-  static constexpr float step(float gradient, float learning_rate) {
+  static inline float step(float gradient, float learning_rate) {
     return learning_rate * gradient;
   }
 

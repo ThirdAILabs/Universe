@@ -30,11 +30,11 @@ class Adam final : public Optimizer {
                                float learning_rate, size_t train_steps) final;
 
  private:
-  static constexpr float momentum(float curr_momentum, float grad) {
+  static inline float momentum(float curr_momentum, float grad) {
     return _beta1 * curr_momentum + (1 - _beta1) * grad;
   }
 
-  static constexpr float velocity(float curr_velocity, float grad) {
+  static inline float velocity(float curr_velocity, float grad) {
     return _beta2 * curr_velocity + (1 - _beta2) * grad * grad;
   }
 
