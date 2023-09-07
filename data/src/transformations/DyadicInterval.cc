@@ -45,7 +45,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
         size_t end = std::min(start + chunk_size, tokens.size());
         for (size_t target = start + 1; target < end; target++) {
           for (size_t interval = 0; interval < _n_intervals; interval++) {
-            size_t int_len = std::min(target - start, 1UL << interval);
+            size_t int_len = std::min<size_t>(target - start, 1UL << interval);
             size_t int_start = target - int_len;
             intervals[interval][sample_offset] =
                 tokens.range(int_start, target);
@@ -110,7 +110,7 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
     auto row_tokens = tokens->row(i);
 
     for (size_t interval = 0; interval < _n_intervals; interval++) {
-      size_t int_len = std::min(row_tokens.size(), 1UL << interval);
+      size_t int_len = std::min<size_t>(row_tokens.size(), 1UL << interval);
       size_t int_start = row_tokens.size() - int_len;
       intervals[interval][i] = row_tokens.range(int_start, row_tokens.size());
     }
