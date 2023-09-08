@@ -2,6 +2,8 @@
 
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <proto/tabular.pb.h>
+#include <proto/transformations.pb.h>
 
 namespace thirdai::data {
 
@@ -16,11 +18,13 @@ struct NumericalColumn {
         _salt(dataset::token_encoding::seededMurmurHash(name.data(),
                                                         name.size())) {}
 
+  explicit NumericalColumn(const proto::data::NumericalColumn& num_col);
+
   inline uint32_t encode(const std::string& val) const;
 
-  std::string name;
+  proto::data::NumericalColumn* toProto() const;
 
-  NumericalColumn() {}
+  std::string name;
 
  private:
   float _min;
@@ -28,12 +32,6 @@ struct NumericalColumn {
   float _binsize;
   uint32_t _num_bins;
   uint32_t _salt;
-
-  friend class cereal::access;
-  template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(name, _min, _max, _binsize, _num_bins, _salt);
-  }
 };
 
 struct CategoricalColumn {
@@ -42,20 +40,16 @@ struct CategoricalColumn {
         _salt(dataset::token_encoding::seededMurmurHash(name.data(),
                                                         name.size())) {}
 
+  explicit CategoricalColumn(const proto::data::CategoricalColumn& cat_col);
+
   inline uint32_t encode(const std::string& val) const;
+
+  proto::data::CategoricalColumn* toProto() const;
 
   std::string name;
 
-  CategoricalColumn() {}
-
  private:
   uint32_t _salt;
-
-  friend class cereal::access;
-  template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(name, _salt);
-  }
 };
 
 class Tabular final : public Transformation {
@@ -64,10 +58,14 @@ class Tabular final : public Transformation {
           std::vector<CategoricalColumn> categorical_columns,
           std::string output_column, bool cross_column_pairgrams);
 
+  explicit Tabular(const proto::data::Tabular& tabular);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  proto::data::Transformation* toProto() const final;
 
   const auto& numericalColumns() const { return _numerical_columns; }
 
@@ -79,13 +77,6 @@ class Tabular final : public Transformation {
 
   std::string _output_column;
   bool _cross_column_pairgrams;
-
-  Tabular() {}
-
-  friend class cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

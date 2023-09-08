@@ -2,6 +2,8 @@
 
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
+#include <proto/dyadic_interval.pb.h>
+#include <proto/transformations.pb.h>
 
 namespace thirdai::data {
 
@@ -10,7 +12,11 @@ class DyadicInterval final : public Transformation {
   DyadicInterval(std::string input_column, std::string output_interval_prefix,
                  std::string target_column, size_t n_intervals);
 
+  explicit DyadicInterval(const proto::data::DyadicInterval& dyadic_interval);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  proto::data::Transformation* toProto() const final;
 
   ColumnMap inferenceFeaturization(ColumnMap columns) const;
 

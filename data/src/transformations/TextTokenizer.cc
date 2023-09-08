@@ -27,9 +27,13 @@ TextTokenizer::TextTokenizer(std::string input_column,
 
 TextTokenizer::TextTokenizer(const proto::data::TextTokenizer& text)
     : _input_column(text.input_column()),
-      _output_column(text.output_column()),
+      _output_indices(text.output_indices()),
       _lowercase(text.lowercase()),
       _dim(text.dim()) {
+  if (text.has_output_values()) {
+    _output_values = text.output_values();
+  }
+
   switch (text.tokenizer().tokenizer_case()) {
     case proto::data::Tokenizer::kWordpiece:
       _tokenizer = std::make_shared<dataset::WordpieceTokenizer>(
@@ -140,7 +144,10 @@ proto::data::Transformation* TextTokenizer::toProto() const {
   auto* text = transformation->mutable_text_tokenizer();
 
   text->set_input_column(_input_column);
-  text->set_output_column(_output_column);
+  text->set_output_indices(_output_indices);
+  if (_output_values) {
+    text->set_output_values(*_output_values);
+  }
   text->set_allocated_tokenizer(_tokenizer->toProto());
   text->set_allocated_encoder(_encoder->toProto());
   text->set_lowercase(_lowercase);

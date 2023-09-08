@@ -100,10 +100,11 @@ def test_token_deduplication():
     assert len(values[-1]) == 0
 
 
-def check_text_tokenizer_serialization(tokenizer, encoder):
+def check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens):
     transformation = data.transformations.Text(
         input_column="input",
-        output_column="tokens",
+        output_indices="tokens",
+        output_values="counts" if dedup_tokens else None,
         tokenizer=tokenizer,
         encoder=encoder,
         dim=0xFFFFFFFF,
@@ -117,6 +118,8 @@ def check_text_tokenizer_serialization(tokenizer, encoder):
     output2 = transformation_copy(columns)
 
     assert output1["tokens"].data() == output2["tokens"].data()
+    if dedup_tokens:
+        assert output1["counts"].data() == output2["counts"].data()
 
 
 def test_wordpiece_tokenizer_serialization(download_bert_base_uncased):
@@ -124,7 +127,8 @@ def test_wordpiece_tokenizer_serialization(download_bert_base_uncased):
     tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
     encoder = dataset.NGramEncoder(n=1)
 
-    check_text_tokenizer_serialization(tokenizer, encoder)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=True)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=False)
 
 
 @pytest.mark.parametrize(
@@ -136,4 +140,5 @@ def test_wordpiece_tokenizer_serialization(download_bert_base_uncased):
     ],
 )
 def test_text_tokenizer_serialization(tokenizer, encoder):
-    check_text_tokenizer_serialization(tokenizer, encoder)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=True)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=False)
