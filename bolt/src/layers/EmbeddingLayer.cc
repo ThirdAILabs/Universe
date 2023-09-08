@@ -108,8 +108,6 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
           "Embedding block optimizer does not have expected size in "
           "fromProto.");
     }
-  } else {
-    _optimizer = AdamOptimizer(_embedding_block_size);
   }
 }
 

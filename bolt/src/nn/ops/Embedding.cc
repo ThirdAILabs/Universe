@@ -75,10 +75,6 @@ Embedding::Embedding(const std::string& name,
       throw std::runtime_error(
           "Bias optimizer does not expected size in fromProto.");
     }
-
-  } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
   }
 }
 

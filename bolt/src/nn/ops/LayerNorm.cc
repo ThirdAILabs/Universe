@@ -51,9 +51,6 @@ LayerNorm::LayerNorm(const std::string& name,
           "Beta optimizer does not have expected size in fromProto.");
     }
 
-  } else {
-    _gamma_optimizer = AdamOptimizer(dim());
-    _beta_optimizer = AdamOptimizer(dim());
   }
 }
 

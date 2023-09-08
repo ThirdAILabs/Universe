@@ -23,10 +23,10 @@ class ModelInteractions {
   ModelInteractions() {
     auto input = Input::make(_input_dim);
 
-    auto emb = Embedding::make(100, input->dim(), "relu")->apply(input);
+    auto emb = Embedding::make(100, input->dim(), "relu")->applyUnary(input);
 
     auto out = FullyConnected::make(_label_dim, emb->dim(), 0.2, "softmax")
-                   ->apply(emb);
+                   ->applyUnary(emb);
 
     auto loss = CategoricalCrossEntropy::make(out, Input::make(out->dim()));
 
