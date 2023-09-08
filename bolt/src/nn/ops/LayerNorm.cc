@@ -50,7 +50,6 @@ LayerNorm::LayerNorm(const std::string& name,
       throw std::runtime_error(
           "Beta optimizer does not have expected size in fromProto.");
     }
-
   }
 }
 
