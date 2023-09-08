@@ -53,8 +53,6 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   _embedding_block =
       std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
-  initOptimizer();
-
   _embedding_chunks_used = std::vector<bool>(n_emb_chunks, false);
 
   std::mt19937 gen(seed);

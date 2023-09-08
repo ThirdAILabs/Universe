@@ -78,6 +78,8 @@ std::optional<uint32_t> RobeZ::nonzeros(const ComputationList& inputs,
   return dim();
 }
 
+void RobeZ::initOptimizer() { _kernel->initOptimizer(); }
+
 void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
@@ -147,8 +149,6 @@ template void RobeZ::load(cereal::BinaryInputArchive&);
 template <class Archive>
 void RobeZ::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
-
-  _kernel->initOptimizer();
 }
 
 std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(

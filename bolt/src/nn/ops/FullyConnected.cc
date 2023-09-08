@@ -115,6 +115,8 @@ std::optional<uint32_t> FullyConnected::nonzeros(const ComputationList& inputs,
   return _kernel->getDim();
 }
 
+void FullyConnected::initOptimizer() { _kernel->initOptimizer(); }
+
 void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
@@ -309,8 +311,6 @@ void FullyConnected::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
-
-  _kernel->initOptimizer();
 }
 
 }  // namespace thirdai::bolt

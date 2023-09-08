@@ -19,14 +19,14 @@ class Loader {
   static constexpr size_t NO_LIMIT = std::numeric_limits<size_t>::max();
   static constexpr size_t DEFAULT_SHUFFLE_BUFFER_SIZE = 64000;
 
-  Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
+  Loader(ColumnMapIteratorPtr data_iterator, TransformationPtr transformation,
          StatePtr state, OutputColumnsList input_columns,
          OutputColumnsList label_columns, size_t batch_size, bool shuffle,
          bool verbose = true,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
          uint32_t shuffle_seed = global_random::nextSeed());
 
-  static auto make(ColumnMapIterator data_iterator,
+  static auto make(ColumnMapIteratorPtr data_iterator,
                    TransformationPtr transformation, StatePtr state,
                    OutputColumnsList input_columns,
                    OutputColumnsList label_columns, size_t batch_size,
@@ -59,7 +59,7 @@ class Loader {
 
   void logLoadEnd(size_t vectors, size_t batches, double time) const;
 
-  ColumnMapIterator _data_iterator;
+  ColumnMapIteratorPtr _data_iterator;
   TransformationPtr _transformation;
 
   OutputColumnsList _model_input_columns;
