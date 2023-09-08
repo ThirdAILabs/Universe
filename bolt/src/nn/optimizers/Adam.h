@@ -54,7 +54,7 @@ class Adam final : public Optimizer {
            (std::sqrt(vel / b2_corrected) + _eps);
   }
 
-  static constexpr float biasCorrect(float beta, uint32_t train_steps) {
+  static inline float biasCorrect(float beta, uint32_t train_steps) {
     return static_cast<float>(1 - pow(beta, train_steps));
   }
 
