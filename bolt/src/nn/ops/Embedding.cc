@@ -40,9 +40,6 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   if (_bias) {
     std::generate(_biases.begin(), _biases.end(), gen);
   }
-
-  _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-  _bias_optimizer = AdamOptimizer(_dim);
 }
 
 Embedding::Embedding(const std::string& name,
@@ -78,10 +75,6 @@ Embedding::Embedding(const std::string& name,
       throw std::runtime_error(
           "Bias optimizer does not expected size in fromProto.");
     }
-
-  } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
   }
 }
 
@@ -231,6 +224,13 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   }
 }
 
+void Embedding::initOptimizer() {
+  if (!_embedding_optimizer || !_bias_optimizer) {
+    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+  }
+}
+
 void Embedding::sparseEmbeddingUpdate(float learning_rate,
                                       uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
@@ -345,8 +345,6 @@ void Embedding::load(Archive& archive) {
   if (_should_serialize_optimizer) {
     archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
   } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
     _embeddings_used.assign(_input_dim, false);
   }
 }

@@ -53,8 +53,6 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   _embedding_block =
       std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
-  initOptimizer();
-
   _embedding_chunks_used = std::vector<bool>(n_emb_chunks, false);
 
   std::mt19937 gen(seed);
@@ -110,8 +108,6 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
           "Embedding block optimizer does not have expected size in "
           "fromProto.");
     }
-  } else {
-    _optimizer = AdamOptimizer(_embedding_block_size);
   }
 }
 

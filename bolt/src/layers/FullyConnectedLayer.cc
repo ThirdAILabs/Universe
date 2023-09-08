@@ -51,8 +51,6 @@ FullyConnectedLayer::FullyConnectedLayer(
     buildHashTables();
   }
 
-  initOptimizer();
-
   initActiveNeuronsTrackers();
 }
 
@@ -109,9 +107,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       throw std::runtime_error(
           "Bias optimizer does not expected size in fromProto.");
     }
-  } else {
-    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
   }
 }
 

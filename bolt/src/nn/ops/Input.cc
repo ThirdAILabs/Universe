@@ -53,6 +53,8 @@ std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
   return _nonzeros;
 }
 
+void Input::initOptimizer() {}
+
 void Input::disableSparseParameterUpdates() {}
 
 void Input::enableSparseParameterUpdates() {}

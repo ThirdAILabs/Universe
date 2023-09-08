@@ -51,9 +51,6 @@ LayerNorm::LayerNorm(const std::string& name,
           "Beta optimizer does not have expected size in fromProto.");
     }
 
-  } else {
-    _gamma_optimizer = AdamOptimizer(dim());
-    _beta_optimizer = AdamOptimizer(dim());
   }
 }
 
@@ -181,6 +178,11 @@ uint32_t LayerNorm::dim() const { return _gamma.size(); }
 std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
                                             bool use_sparsity) const {
   return inputs.at(0)->nonzeros(use_sparsity);
+}
+
+void LayerNorm::initOptimizer() {
+  // TODO(Nicholas): right now the optimizer is always saved in LayerNorm
+  // because it is small.
 }
 
 void LayerNorm::disableSparseParameterUpdates() {}

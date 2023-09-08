@@ -104,6 +104,8 @@ std::optional<uint32_t> DlrmAttention::nonzeros(const ComputationList& inputs,
   return dim();
 }
 
+void DlrmAttention::initOptimizer() {}
+
 void DlrmAttention::summary(std::ostream& summary,
                             const ComputationList& inputs,
                             const Computation* output) const {
