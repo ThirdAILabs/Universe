@@ -95,6 +95,11 @@ class Op {
                                            bool use_sparsity) const = 0;
 
   /**
+   * Initializes the optimizer for the op.
+   */
+  virtual void initOptimizer() = 0;
+
+  /**
    * Disables sparse parameter updates for updateParameters in the op. This is
    * used for distributed and also can be beneficial in cases where most of the
    * parameters are being updated and dense updates are faster.

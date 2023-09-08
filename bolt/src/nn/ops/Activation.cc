@@ -76,6 +76,9 @@ std::optional<uint32_t> Activation<Impl>::nonzeros(
 }
 
 template <typename Impl>
+void Activation<Impl>::initOptimizer() {}
+
+template <typename Impl>
 void Activation<Impl>::disableSparseParameterUpdates() {}
 
 template <typename Impl>
