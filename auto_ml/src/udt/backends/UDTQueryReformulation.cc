@@ -48,7 +48,7 @@ UDTQueryReformulation::UDTQueryReformulation(
   }
 
   if (_use_spell_checker){
-    pretrainer = SymPreTrainer(defaults::MAX_EDIT_DISTANCE, true, defaults::PREFIX_LENGTH, defaults::USE_WORD_SEGMENTATION);
+    _pretrainer = SymPreTrainer(defaults::MAX_EDIT_DISTANCE, true, defaults::PREFIX_LENGTH, defaults::USE_WORD_SEGMENTATION);
   }
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
@@ -98,10 +98,10 @@ py::object UDTQueryReformulation::train(
 
 
   // Index words to Spell Checker if use_spell_checker = True
-  // if (_use_spell_checker){
-    // pretrainer.pretrain_file(data);
-    // data.restart();
-  // }
+  if (_use_spell_checker){
+    _pretrainer.pretrain_file(data, _correct_column_name);
+    data->restart();
+  }
   
   auto [unsupervised_data, labels] =
       loadData(data, /* col_to_hash= */ _correct_column_name,

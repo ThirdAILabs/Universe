@@ -27,7 +27,6 @@ SymPreTrainer::SymPreTrainer(int max_edit_distance,
       experimental_scores(experimental_scores),
       prefix_length(prefix_length),
       use_word_segmentation(use_word_segmentation) {
-  pretrainer = SymSpell(max_edit_distance, prefix_length);
   std::cout << "Initialized a Spell Checker from scratch. Index words into "
                "the spell checker for corrections."
             << std::endl;
@@ -151,20 +150,87 @@ SymPreTrainer::index_words(
     std::vector<std::string> words_to_index,
     std::vector<int> frequency) {
 
+      SuggestionStage staging = SuggestionStage(16384);
+
+      // Initialize an empty dictionary for pretrainer if pretraining first time
+      std::ifstream corpusStream;
+      pretrainer.CreateDictionary(corpusStream);
+
   for (size_t i = 0; i < words_to_index.size(); i++) {
     const std::string& word = words_to_index[i];
     int count = frequency[i];
 
     // Check if the word doesn't exist in the dictionary
-    if (pretrainer.Lookup(word, Verbosity::Closest, max_edit_distance = 0).size() == 0) {
-      pretrainer.CreateDictionaryEntry(word, count, NULL);
-    }
+      pretrainer.CreateDictionaryEntry(word, count, &staging);
   }
+  pretrainer.CommitStaged(&staging);
 }
 
-// void
-// SymPreTrainer::pretrain_file(const thirdai::dataset::DataSourcePtr& data) { 
+void
+SymPreTrainer::pretrain_file(const thirdai::dataset::DataSourcePtr& data, std::string correct_column_name) { 
+  std::optional<std::string> header = data->nextLine();
 
-//   return; 
-// }
+  if (header == std::nullopt){
+    throw std::runtime_error("File is empty.");
+  }
+  // Fine correct column name index
+  std::stringstream headerStream(header->c_str());
+  std::string columnHeader;
+  std::vector<std::string> headers;
+
+  // Parse the header to find the "target_queries" column
+  while (std::getline(headerStream, columnHeader, ',')) {
+      headers.push_back(columnHeader);
+  }
+
+  int targetQueriesIndex = -1;
+  for (int i = 0; i < (int)headers.size(); i++) {
+      if (headers[i] == correct_column_name) {
+          targetQueriesIndex = i;
+          break;
+      }
+  }
+
+  if (targetQueriesIndex == -1){
+      throw std::runtime_error("correct queries column not found");
+    }
+  std::optional<std::string> line = data->nextLine();
+  std::unordered_map<std::string, int> frequency;
+
+  while(line != std::nullopt){
+
+    std::string line_str = line->c_str();
+    std::vector<std::string> comma_sep_sents;
+    std::istringstream tokenStream(line_str);
+    std::string token;
+
+    while (std::getline(tokenStream, token, ',')) {
+        comma_sep_sents.push_back(token);
+    }
+    line_str = comma_sep_sents[targetQueriesIndex];
+    std::regex word_pattern("\\b[\\w'-]+\\b");
+
+    std::sregex_iterator word_iterator(line_str.begin(), line_str.end(), word_pattern);
+    std::sregex_iterator end_iterator;
+
+    while (word_iterator != end_iterator) {
+        frequency[word_iterator->str()] ++;
+        ++word_iterator;
+    }
+    line = data->nextLine();
+  }
+    std::vector<std::string> words_to_index;
+    words_to_index.reserve(frequency.size());
+
+    std::vector<int> words_frequency;
+    words_frequency.reserve(frequency.size());
+
+    for(auto kv : frequency) {
+        words_to_index.push_back(kv.first);
+        words_frequency.push_back(kv.second);  
+    }
+
+    index_words(words_to_index,words_frequency);
+  return; 
+}
 // Implement the remaining methods of SymPreTrainer as needed

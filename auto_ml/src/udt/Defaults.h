@@ -113,6 +113,6 @@ constexpr uint32_t MAX_EDIT_DISTANCE = 3;
 constexpr uint32_t PREFIX_LENGTH = 7;
 
 // Use Word Segmentation in SymSpell
-constexpr uint32_t USE_WORD_SEGMENTATION = false;
+constexpr bool USE_WORD_SEGMENTATION = false;
 
 }  // namespace thirdai::automl::udt::defaults

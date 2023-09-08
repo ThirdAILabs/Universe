@@ -3,6 +3,13 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <optional>
+#include <unordered_map>
+#include <regex>
+#include <string>
+#include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 class SpellCheckedSentence {
  private:
@@ -66,6 +73,6 @@ class SymPreTrainer {
   void index_words(std::vector<std::string> words_to_index,
                    std::vector<int> frequency);
 
-  // void pretrain_file(const thirdai::dataset::DataSourcePtr& data);
-  // Implement the remaining methods of SymPreTrainer as needed
+  void pretrain_file(const thirdai::dataset::DataSourcePtr& data, std::string correct_column_name);
+
 };
