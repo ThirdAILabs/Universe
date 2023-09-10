@@ -2,7 +2,7 @@ import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
 
 
-class RayDataSource(PyDataSource):
+class RayCsvDataSource(PyDataSource):
     """
     RayDataSource ingests ray datasets during distributed training.
     Using this ideally we should be able to load data from any of
@@ -36,6 +36,20 @@ class RayDataSource(PyDataSource):
         ):
             for i in range(len(chunk)):
                 yield chunk.iloc[i : i + 1].to_csv(header=None, index=None).strip("\n")
+
+    def resource_name(self) -> str:
+        return f"ray-dataset-sources"
+
+
+class RayFileDataSource(PyDataSource):
+    def __init__(self, ray_dataset):
+        PyDataSource.__init__(self)
+        self.ray_dataset = ray_dataset
+        self.restart()
+
+    def _get_line_iterator(self):
+        for row in self.ray_dataset.iter_rows():
+            yield row
 
     def resource_name(self) -> str:
         return f"ray-dataset-sources"
