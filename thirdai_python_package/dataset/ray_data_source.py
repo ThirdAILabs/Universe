@@ -46,6 +46,12 @@ class RayFileDataSource(PyDataSource):
         PyDataSource.__init__(self)
         self.ray_dataset = ray_dataset
         self.restart()
+        try:
+            import ray
+        except ImportError:
+            raise ImportError(
+                "ray is not installed. Please install it to use RayDataSource."
+            )
 
     def _get_line_iterator(self):
         for row in self.ray_dataset.iter_rows():
