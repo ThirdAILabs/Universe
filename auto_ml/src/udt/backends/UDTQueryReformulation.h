@@ -20,7 +20,7 @@ class UDTQueryReformulation final : public UDTBackend {
  public:
   UDTQueryReformulation(std::optional<std::string> incorrect_column_name,
                         std::string correct_column_name,
-                        const std::string& dataset_size, bool use_spell_checker, 
+                        const std::string& dataset_size, std::optional<bool>  use_spell_checker,
                         char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
@@ -46,10 +46,10 @@ class UDTQueryReformulation final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
-                          
-//   py::object predictSymSpell(const MapInput& sample, bool sparse_inference,
-//                      bool return_predicted_class,
-//                      std::optional<uint32_t> top_k) final;
+
+  //   py::object predictSymSpell(const MapInput& sample, bool sparse_inference,
+  //                      bool return_predicted_class,
+  //                      std::optional<uint32_t> top_k) final;
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,
                       const std::string& column_name) const;
@@ -57,6 +57,14 @@ class UDTQueryReformulation final : public UDTBackend {
   std::pair<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr> loadData(
       const dataset::DataSourcePtr& data, const std::string& col_to_hash,
       bool include_labels, uint32_t batch_size, bool verbose);
+
+  std::pair<MapInputBatch, std::vector<uint32_t>> generate_candidates(
+      const MapInputBatch& samples);
+
+  std::pair<std::vector<std::string>, std::vector<float>> accumulate_scores(
+      std::vector<std::vector<std::string>> phrases,
+      std::vector<std::vector<float>> phrase_scores,
+      std::optional<uint32_t> top_k);
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
                       const dataset::BoltDatasetPtr& labels,
@@ -103,7 +111,7 @@ class UDTQueryReformulation final : public UDTBackend {
 
   std::optional<std::string> _incorrect_column_name;
   std::string _correct_column_name;
-  bool _use_spell_checker;
+  std::optional<bool>  _use_spell_checker;
   SymPreTrainer _pretrainer;
   std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
