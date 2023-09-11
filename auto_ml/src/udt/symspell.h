@@ -1,3 +1,5 @@
+#pragma once
+
 #include <SymspellCPP/include/SymSpell.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
