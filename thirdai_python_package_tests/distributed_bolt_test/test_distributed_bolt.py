@@ -14,7 +14,9 @@ from distributed_utils import (
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
-from thirdai import bolt
+from thirdai import bolt, dataset
+import json
+from thirdai.dataset import RayFileDataSource
 
 
 def training_loop_per_worker(config):
@@ -236,3 +238,44 @@ def test_distributed_resume_training():
     trainer2.fit()
 
     ray.shutdown()
+
+
+@pytest.mark.distributed
+def test_ray_file_data_source():
+    def training_loop_per_worker(config):
+        stream_split_data_iterator = session.get_dataset_shard("train")
+        featurizer = dataset.TextGenerationFeaturizer(
+            lrc_len=3,
+            irc_len=2,
+            src_len=1,
+            vocab_size=25,
+        )
+        data_source = RayFileDataSource(stream_split_data_iterator)
+        dataset_loader = dataset.DatasetLoader(
+            data_source=data_source, featurizer=featurizer, shuffle=True
+        )
+
+        data = dataset_loader.load_all(2048)
+
+    data = [
+        {"target": "1 2 3", "context": "4 5 6"},
+        {"target": "7 8 9", "context": "10 11 12"},
+        {"target": "13 14 15", "context": "16 17 18"},
+        {"target": "19 20 21", "context": "22 23 24"},
+    ]
+    filename = "output.txt"
+    # Write the data to a .txt file
+    with open(filename, "w") as file:
+        for entry in data:
+            file.write(json.dumps(entry) + "\n")
+
+    train_ray_ds = ray.data.read_text(filename)
+
+    scaling_config = setup_ray()
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=training_loop_per_worker,
+        scaling_config=scaling_config,
+        datasets={"train": train_ray_ds},
+    )
+
+    trainer.fit()
