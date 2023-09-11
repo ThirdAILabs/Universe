@@ -50,7 +50,7 @@ class RayFileDataSource(PyDataSource):
             import ray
         except ImportError:
             raise ImportError(
-                "ray is not installed. Please install it to use RayCsvDataSource."
+                "ray is not installed. Please install it to use RayFileDataSource."
             )
 
     def _get_line_iterator(self):
