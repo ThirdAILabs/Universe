@@ -30,7 +30,7 @@ class GenerativeModel {
  public:
   GenerativeModel(std::shared_ptr<GenerativeBackend> model,
                   std::unordered_set<uint32_t> allowed_repeats,
-                  std::unordered_set<uint32_t> punctutation_tokens);
+                  std::unordered_set<uint32_t> punctuation_tokens);
 
   std::vector<uint32_t> generate(
       const std::vector<uint32_t>& input_tokens, size_t n_predictions,
@@ -42,7 +42,7 @@ class GenerativeModel {
 
  private:
   void adjustTokenProbs(const std::vector<uint32_t>& sequence,
-                        BoltVector& probs, size_t n_predictions,
+                        BoltVector& probs, size_t n_input_tokens,
                         std::optional<float> temperature) const;
 
   std::shared_ptr<GenerativeBackend> _model;

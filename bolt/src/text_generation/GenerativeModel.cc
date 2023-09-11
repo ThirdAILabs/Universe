@@ -12,10 +12,10 @@ namespace thirdai::bolt {
 GenerativeModel::GenerativeModel(
     std::shared_ptr<GenerativeBackend> model,
     std::unordered_set<uint32_t> allowed_repeats,
-    std::unordered_set<uint32_t> punctutation_tokens)
+    std::unordered_set<uint32_t> punctuation_tokens)
     : _model(std::move(model)),
       _allowed_repeats(std::move(allowed_repeats)),
-      _punctuation_tokens(std::move(punctutation_tokens)) {}
+      _punctuation_tokens(std::move(punctuation_tokens)) {}
 
 struct CandidateSequence {
   std::vector<uint32_t> sequence;
@@ -58,7 +58,7 @@ std::vector<uint32_t> GenerativeModel::generate(
          candidate++) {
       BoltVector& token_probs = next_token_probs->getVector(candidate);
       adjustTokenProbs(candidate_sequences[candidate], token_probs,
-                       n_predictions, temperature);
+                       input_tokens.size(), temperature);
 
       auto top_tokens = token_probs.findKLargestActivations(beam_width);
 
@@ -93,15 +93,14 @@ std::vector<uint32_t> GenerativeModel::generate(
     }
   }
 
-  return candidate_sequences.back();
+  return {candidate_sequences.back().begin() + input_tokens.size(),
+          candidate_sequences.back().end()};
 }
 
 void GenerativeModel::adjustTokenProbs(const std::vector<uint32_t>& sequence,
-                                       BoltVector& probs, size_t n_predictions,
+                                       BoltVector& probs, size_t n_input_tokens,
                                        std::optional<float> temperature) const {
-  size_t start =
-      sequence.size() < n_predictions ? 0 : sequence.size() - n_predictions;
-  for (size_t i = start; i < sequence.size(); i++) {
+  for (size_t i = n_input_tokens; i < sequence.size(); i++) {
     uint32_t token = sequence[i];
 
     if ((_punctuation_tokens.count(token) && probs.activations[token] < 0.8) ||
