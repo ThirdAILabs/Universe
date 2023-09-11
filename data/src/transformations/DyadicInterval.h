@@ -23,6 +23,12 @@ class DyadicInterval final : public Transformation {
   std::string _target_column;
 
   size_t _n_intervals;
+
+  DyadicInterval() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data
