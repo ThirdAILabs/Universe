@@ -115,4 +115,11 @@ constexpr uint32_t PREFIX_LENGTH = 7;
 // Use Word Segmentation in SymSpell
 constexpr bool USE_WORD_SEGMENTATION = false;
 
+// predictions per token for symspell 
+constexpr bool PREDICTIONS_PER_TOKEN = 2;
+
+// beam search width for symspell 
+constexpr bool BEAM_SEARCH_WIDTH = 3;
+
+constexpr bool STOP_IF_FOUND = false;
 }  // namespace thirdai::automl::udt::defaults

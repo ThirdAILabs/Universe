@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <numeric>
 
 class SpellCheckedSentence {
  private:
@@ -35,13 +36,12 @@ class SpellCheckedSentence {
       return total_score;
   }
 
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const SpellCheckedSentence& sentence) {
-    for (const std::string& token : sentence.tokens) {
-      os << token << " ";
-    }
-    return os;
+  std::string get_string() {
+    std::string result = std::accumulate(tokens.begin(), tokens.end(), std::string(),
+        [](const std::string& a, const std::string& b) { return a + b + " "; });
+    return result;
   }
+
 };
 
 class SymPreTrainer {

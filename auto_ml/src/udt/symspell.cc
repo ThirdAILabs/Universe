@@ -65,14 +65,17 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word,
   bool found = std::find(tokens.begin(), tokens.end(), word) != tokens.end();
 
   if (!found) {
+    tokens.push_back(word);
     if (experimental_scores) {
       if (!scores.empty()) {
-        std::sort(scores.begin(), scores.end());
+        std::vector<int> scores_copy;
+        scores_copy.assign(scores.begin(), scores.end());
+        std::sort(scores_copy.begin(), scores_copy.end());
         int median =
-            (scores.size() % 2 == 0)
-                ? (scores[scores.size() / 2 - 1] + scores[scores.size() / 2]) /
+            (scores_copy.size() % 2 == 0)
+                ? (scores_copy[scores_copy.size() / 2 - 1] + scores_copy[scores_copy.size() / 2]) /
                       2
-                : scores[scores.size() / 2];
+                : scores_copy[scores_copy.size() / 2];
         scores.push_back(median);
       } else {
         scores.push_back(2);
@@ -108,13 +111,10 @@ SymPreTrainer::correct_sentence(std::vector<std::string> tokens_list,
   std::vector<float> scores(tokens_list.size(), 0.0F);
   SpellCheckedSentence prev = SpellCheckedSentence(tokens_list, scores);
   std::vector<SpellCheckedSentence> candidates = {prev};
-
   auto [predictions, prediction_scores] = this->get_correct_spelling_list(tokens_list, predictions_per_token);
-
   for (int i = 0; i < (int)tokens_list.size(); i++) {
     std::vector<std::string> current_candidate_tokens = predictions[i];
     std::vector<float> current_candidate_scores = prediction_scores[i];
-
     std::vector<SpellCheckedSentence> temp_candidates;
     for (auto candidate : candidates) {
       for (int j = 0; j < (int)current_candidate_scores.size(); j++) {
@@ -139,7 +139,6 @@ SymPreTrainer::correct_sentence(std::vector<std::string> tokens_list,
     }
   }
   std::vector<float> new_scores(tokens_list.size(), 1 / tokens_list.size());
-
   candidates.push_back(SpellCheckedSentence(tokens_list, new_scores));
 
   return candidates;
@@ -159,7 +158,6 @@ SymPreTrainer::index_words(
   for (size_t i = 0; i < words_to_index.size(); i++) {
     const std::string& word = words_to_index[i];
     int count = frequency[i];
-
     // Check if the word doesn't exist in the dictionary
       pretrainer.CreateDictionaryEntry(word, count, &staging);
   }
@@ -169,7 +167,6 @@ SymPreTrainer::index_words(
 void
 SymPreTrainer::pretrain_file(const thirdai::dataset::DataSourcePtr& data, std::string correct_column_name) { 
   std::optional<std::string> header = data->nextLine();
-
   if (header == std::nullopt){
     throw std::runtime_error("File is empty.");
   }
@@ -177,12 +174,10 @@ SymPreTrainer::pretrain_file(const thirdai::dataset::DataSourcePtr& data, std::s
   std::stringstream headerStream(header->c_str());
   std::string columnHeader;
   std::vector<std::string> headers;
-
   // Parse the header to find the "target_queries" column
   while (std::getline(headerStream, columnHeader, ',')) {
       headers.push_back(columnHeader);
   }
-
   int targetQueriesIndex = -1;
   for (int i = 0; i < (int)headers.size(); i++) {
       if (headers[i] == correct_column_name) {
@@ -190,13 +185,11 @@ SymPreTrainer::pretrain_file(const thirdai::dataset::DataSourcePtr& data, std::s
           break;
       }
   }
-
   if (targetQueriesIndex == -1){
       throw std::runtime_error("correct queries column not found");
     }
   std::optional<std::string> line = data->nextLine();
   std::unordered_map<std::string, int> frequency;
-
   while(line != std::nullopt){
 
     std::string line_str = line->c_str();
@@ -207,12 +200,15 @@ SymPreTrainer::pretrain_file(const thirdai::dataset::DataSourcePtr& data, std::s
     while (std::getline(tokenStream, token, ',')) {
         comma_sep_sents.push_back(token);
     }
+    if (targetQueriesIndex + 1 > (int)comma_sep_sents.size()){
+      line = data->nextLine();
+      continue;
+    }
     line_str = comma_sep_sents[targetQueriesIndex];
     std::regex word_pattern("\\b[\\w'-]+\\b");
 
     std::sregex_iterator word_iterator(line_str.begin(), line_str.end(), word_pattern);
     std::sregex_iterator end_iterator;
-
     while (word_iterator != end_iterator) {
         frequency[word_iterator->str()] ++;
         ++word_iterator;

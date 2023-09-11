@@ -199,16 +199,93 @@ py::object UDTQueryReformulation::evaluate(
   return std::move(py_metrics);
 }
 
-py::object UDTQueryReformulation::predict(const MapInput& sample,
+// py::object UDTQueryReformulation::predict(const MapInput& sample,
+//                                           bool sparse_inference,
+//                                           bool return_predicted_class,
+//                                           std::optional<uint32_t> top_k) {
+//   (void)sample;
+//   (void)sparse_inference;
+//   (void)return_predicted_class;
+//   (void)top_k;
+//   return predictBatch({sample}, sparse_inference, return_predicted_class,
+//                       top_k);
+// }
+
+py::object UDTQueryReformulation::predict(const MapInput& input_sample,
                                           bool sparse_inference,
                                           bool return_predicted_class,
                                           std::optional<uint32_t> top_k) {
-  (void)sample;
+  (void)input_sample;
   (void)sparse_inference;
   (void)return_predicted_class;
   (void)top_k;
-  return predictBatch({sample}, sparse_inference, return_predicted_class,
-                      top_k);
+  std::string query_str = input_sample.begin()->second;
+  // clean query
+  std::string query_clean;
+    for (char c : query_str) {
+        if (std::isalnum(c) || c == ' ') {
+            query_clean += c;
+        }
+    }
+    std::vector<std::string> tokenizedQuery;
+    std::istringstream iss(query_clean);
+    std::string token;
+    
+    while (iss >> token) {
+        tokenizedQuery.push_back(token);
+    }
+    std::vector<SpellCheckedSentence> candidates = _pretrainer.correct_sentence(tokenizedQuery, defaults::PREDICTIONS_PER_TOKEN, defaults::BEAM_SEARCH_WIDTH, defaults::STOP_IF_FOUND);
+
+    MapInputBatch candidate_samples;
+    for (SpellCheckedSentence& candidate: candidates){
+      MapInput sample;
+      sample[input_sample.begin()->first] = candidate.get_string();
+      candidate_samples.push_back(sample);
+    }
+    dataset::MapBatchRef sample_ref(candidate_samples);
+
+    auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
+
+    auto results = _flash_index->queryBatch(
+        /* batch = */ BoltBatch(std::move(featurized_samples)),
+        /* top_k = */ top_k.value());
+    // We do this instead of directly asigning the elements of the tuple to avoid
+    // a omp error.
+    auto phrase_ids = std::move(results.first);
+    auto phrase_scores = std::move(results.second);
+
+    std::vector<std::vector<std::string>> phrases(phrase_ids.size());
+
+  #pragma omp parallel for default(none) shared(phrase_ids, phrases)
+    for (uint32_t sample_idx = 0; sample_idx < phrase_ids.size(); sample_idx++) {
+      phrases[sample_idx] = idsToPhrase(phrase_ids[sample_idx]);
+    }
+    std::vector<std::string> flattenedPhrases;
+    for (const auto& vec : phrases) {
+        flattenedPhrases.insert(flattenedPhrases.end(), vec.begin(), vec.end());
+    }
+
+    std::vector<float> flattenedScores;
+    for (const auto& vec : phrase_scores) {
+        flattenedScores.insert(flattenedScores.end(), vec.begin(), vec.end());
+    }
+    std::vector<std::pair<std::string, float>> phraseScorePairs;
+
+    for (size_t i = 0; i < flattenedPhrases.size(); ++i) {
+        phraseScorePairs.emplace_back(flattenedPhrases[i], flattenedScores[i]);
+    }
+    std::sort(phraseScorePairs.begin(), phraseScorePairs.end(),
+              [](const std::pair<std::string, float>& a, const std::pair<std::string, float>& b) {
+                  return a.second > b.second; 
+              });
+    std::vector<std::string> topKPhrases;
+    std::vector<float> topKScores;
+
+    for (size_t i = 0; i < (size_t)top_k.value() && i < phraseScorePairs.size(); ++i) {
+        topKPhrases.push_back(phraseScorePairs[i].first);
+        topKScores.push_back(phraseScorePairs[i].second);
+    }
+    return py::make_tuple(py::cast(topKPhrases), py::cast(topKScores));
 }
 
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,

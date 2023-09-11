@@ -46,7 +46,10 @@ class UDTQueryReformulation final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
-
+                          
+//   py::object predictSymSpell(const MapInput& sample, bool sparse_inference,
+//                      bool return_predicted_class,
+//                      std::optional<uint32_t> top_k) final;
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,
                       const std::string& column_name) const;
