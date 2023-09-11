@@ -243,25 +243,33 @@ def test_distributed_resume_training():
 @pytest.mark.distributed
 def test_ray_file_data_source():
     def training_loop_per_worker(config):
+        VOCAB_SIZE = 25
         stream_split_data_iterator = session.get_dataset_shard("train")
         featurizer = dataset.TextGenerationFeaturizer(
             lrc_len=3,
             irc_len=2,
             src_len=1,
-            vocab_size=25,
+            vocab_size=VOCAB_SIZE,
         )
         data_source = RayFileDataSource(stream_split_data_iterator)
         dataset_loader = dataset.DatasetLoader(
             data_source=data_source, featurizer=featurizer, shuffle=True
         )
 
-        data = dataset_loader.load_all(2048)
+        data = dataset_loader.load_all(1)
+        training_inputs, training_labels = (
+            bolt.train.convert_datasets(
+                data[:-1], dims=[VOCAB_SIZE, VOCAB_SIZE, (2**32) - 1, VOCAB_SIZE]
+            ),
+            bolt.train.convert_dataset(data[-1], dim=VOCAB_SIZE),
+        )
+        assert len(training_inputs) == 8 and len(training_labels) == 8
 
     data = [
-        {"target": "1 2 3", "context": "4 5 6"},
-        {"target": "7 8 9", "context": "10 11 12"},
-        {"target": "13 14 15", "context": "16 17 18"},
-        {"target": "19 20 21", "context": "22 23 24"},
+        {"target": "1 2 3 4 5 6"},
+        {"target": "7 8 9 10 11 12"},
+        {"target": "13 14 15 16 17 18"},
+        {"target": "19 20 21 22 23 24"},
     ]
     filename = "output.txt"
     # Write the data to a .txt file
