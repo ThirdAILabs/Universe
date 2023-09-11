@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -15,7 +16,6 @@ from distributed_utils import (
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
 from thirdai import bolt, dataset
-import json
 from thirdai.dataset import RayFileDataSource
 
 
