@@ -20,8 +20,8 @@ class UDTQueryReformulation final : public UDTBackend {
  public:
   UDTQueryReformulation(std::optional<std::string> incorrect_column_name,
                         std::string correct_column_name,
-                        const std::string& dataset_size, std::optional<bool>  use_spell_checker,
-                        char delimiter,
+                        const std::string& dataset_size,
+                        std::optional<bool> use_spell_checker, char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 
@@ -111,7 +111,7 @@ class UDTQueryReformulation final : public UDTBackend {
 
   std::optional<std::string> _incorrect_column_name;
   std::string _correct_column_name;
-  std::optional<bool>  _use_spell_checker;
+  std::optional<bool> _use_spell_checker;
   SymPreTrainer _pretrainer;
   std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
