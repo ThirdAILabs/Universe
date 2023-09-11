@@ -58,7 +58,7 @@ std::vector<uint32_t> GenerativeModel::generate(
          candidate++) {
       BoltVector& token_probs = next_token_probs->getVector(candidate);
       adjustTokenProbs(candidate_sequences[candidate], token_probs,
-                       input_tokens.size(), temperature);
+                       n_predictions, temperature);
 
       auto top_tokens = token_probs.findKLargestActivations(beam_width);
 
@@ -98,9 +98,11 @@ std::vector<uint32_t> GenerativeModel::generate(
 }
 
 void GenerativeModel::adjustTokenProbs(const std::vector<uint32_t>& sequence,
-                                       BoltVector& probs, size_t n_input_tokens,
+                                       BoltVector& probs, size_t n_predictions,
                                        std::optional<float> temperature) const {
-  for (size_t i = n_input_tokens; i < sequence.size(); i++) {
+  size_t start =
+      sequence.size() < n_predictions ? 0 : sequence.size() - n_predictions;
+  for (size_t i = start; i < sequence.size(); i++) {
     uint32_t token = sequence[i];
 
     if ((_punctuation_tokens.count(token) && probs.activations[token] < 0.8) ||
