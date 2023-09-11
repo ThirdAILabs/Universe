@@ -16,6 +16,8 @@ class GenerativeBackend {
   virtual bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) = 0;
 
+  virtual ~GenerativeBackend() = default;
+
  private:
   friend class cereal::access;
   template <class Archive>
