@@ -131,7 +131,8 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
 }
 
 bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
-    const std::vector<std::vector<uint32_t>>& tokens) const {
+    const std::vector<std::vector<uint32_t>>& tokens,
+    const std::vector<uint32_t>& dims) const {
   std::vector<BoltVector> lrc;
   lrc.reserve(tokens.size());
   std::vector<BoltVector> irc;
@@ -148,8 +149,7 @@ bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
   return bolt::convertBatch(
       {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
        BoltBatch(std::move(src))},
-      {_context_featurizer.vocabSize(), std::numeric_limits<uint32_t>::max(),
-       _context_featurizer.vocabSize()});
+      dims);
 }
 
 std::pair<std::vector<uint32_t>, size_t> TextGenerationFeaturizer::getAllTokens(
