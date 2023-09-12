@@ -122,6 +122,7 @@ void createBoltNNSubmodule(py::module_& module) {
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
       .def("__getitem__", &Model::getOp, py::arg("name"))
+      .def("computation", &Model::getComputation, py::arg("name"))
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
@@ -205,6 +206,7 @@ void defineOps(py::module_& nn) {
 
   py::class_<Op, OpPtr>(nn, "Op")
       .def("dim", &Op::dim)
+      .def_property("trainable", &Op::isTrainable, &Op::setTrainable)
       .def_property("name", &Op::name, &Op::setName);
 
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT

@@ -105,6 +105,8 @@ std::optional<uint32_t> Concatenate::nonzeros(const ComputationList& inputs,
   return total_num_nonzeros;
 }
 
+void Concatenate::initOptimizer() {}
+
 void Concatenate::summary(std::ostream& summary, const ComputationList& inputs,
                           const Computation* output) const {
   summary << "Concatenate(" << name() << "): (";

@@ -334,7 +334,7 @@ class NeuralDB:
         def training_loop_per_worker(config):
             import thirdai.distributed_bolt as dist
             from ray.air import session
-            from thirdai.dataset import RayDataSource
+            from thirdai.dataset import RayCsvDataSource
 
             if config["licensing_lambda"]:
                 config["licensing_lambda"]()
@@ -354,7 +354,7 @@ class NeuralDB:
             max_in_memory_batches = config["max_in_memory_batches"]
 
             metrics = model.coldstart_distributed_on_data_source(
-                data_source=RayDataSource(stream_split_data_iterator),
+                data_source=RayCsvDataSource(stream_split_data_iterator),
                 strong_column_names=strong_column_names,
                 weak_column_names=weak_column_names,
                 learning_rate=learning_rate,
