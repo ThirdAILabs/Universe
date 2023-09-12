@@ -1,7 +1,6 @@
 import pytest
-from thirdai.neural_db.neural_db import SupDataSource, DocumentManager
 from thirdai import neural_db as ndb
-
+from thirdai.neural_db.neural_db import DocumentManager, SupDataSource
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

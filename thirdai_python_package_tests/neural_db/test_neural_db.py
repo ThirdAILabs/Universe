@@ -5,8 +5,8 @@ from typing import List
 
 import pytest
 from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
-from thirdai import neural_db as ndb
 from thirdai import bolt
+from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

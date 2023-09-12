@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 from pydantic import BaseModel
 from thirdai import neural_db
 
-from .utils import get_directory_size, hash_path, http_get_with_error
+from utils import get_directory_size, hash_path, http_get_with_error
 
 
 class BazaarEntry(BaseModel):
@@ -40,6 +40,7 @@ class Bazaar:
         url = urljoin(self._base_url, "list")
         response = http_get_with_error(url, params={"name": filter})
         json_entries = json.loads(response.content)["data"]
+        print(json_entries)
         entries = [BazaarEntry.from_dict(entry) for entry in json_entries]
         self._registry = {entry.display_name: entry for entry in entries}
 
@@ -98,6 +99,7 @@ class Bazaar:
             signing_url, params={"display_name": identifier}
         )
         download_url = json.loads(signing_response.content)["url"]
-        download_response = http_get_with_error(download_url, allow_redirects=True)
-        destination = self._cached_model_zip_path(identifier)
-        open(destination, "wb").write(download_response.content)
+        print(download_url)
+        # download_response = http_get_with_error(download_url, allow_redirects=True)
+        # destination = self._cached_model_zip_path(identifier)
+        # open(destination, "wb").write(download_response.content)
