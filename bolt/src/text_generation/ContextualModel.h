@@ -18,12 +18,12 @@ class ContextualModel final : public GenerativeBackend {
   bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) final;
 
-  metrics::History train(
-      const dataset::DataSourcePtr& train_data, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics = {},
-      const dataset::DataSourcePtr& val_data = nullptr,
-      const std::vector<std::string>& validation_metrics = {},
-      const DistributedCommPtr& comm = nullptr);
+  metrics::History train(const dataset::DataSourcePtr& train_data,
+                         float learning_rate, uint32_t epochs,
+                         const std::vector<std::string>& train_metrics,
+                         const dataset::DataSourcePtr& val_data,
+                         const std::vector<std::string>& val_metrics,
+                         const DistributedCommPtr& comm) final;
 
  private:
   LabeledDataset loadDataset(const dataset::DataSourcePtr& data,

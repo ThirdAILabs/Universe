@@ -17,6 +17,13 @@ class GenerativeBackend {
   virtual bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) = 0;
 
+  virtual metrics::History train(const dataset::DataSourcePtr& train_data,
+                                 float learning_rate, uint32_t epochs,
+                                 const std::vector<std::string>& train_metrics,
+                                 const dataset::DataSourcePtr& val_data,
+                                 const std::vector<std::string>& val_metrics,
+                                 const DistributedCommPtr& comm) = 0;
+
   virtual ~GenerativeBackend() = default;
 
  private:
@@ -37,12 +44,12 @@ class GenerativeModel {
       const std::vector<uint32_t>& input_tokens, size_t n_predictions,
       size_t beam_width, std::optional<float> temperature = std::nullopt) const;
 
-  metrics::History train(
-      const dataset::DataSourcePtr& train_data, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics = {},
-      const dataset::DataSourcePtr& val_data = nullptr,
-      const std::vector<std::string>& validation_metrics = {},
-      const DistributedCommPtr& comm = nullptr);
+  metrics::History train(const dataset::DataSourcePtr& train_data,
+                         float learning_rate, uint32_t epochs,
+                         const std::vector<std::string>& train_metrics = {},
+                         const dataset::DataSourcePtr& val_data = nullptr,
+                         const std::vector<std::string>& val_metrics = {},
+                         const DistributedCommPtr& comm = nullptr);
 
   void save(const std::string& filename) const;
 

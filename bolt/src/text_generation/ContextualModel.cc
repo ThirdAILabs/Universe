@@ -18,7 +18,7 @@ metrics::History ContextualModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
-    const std::vector<std::string>& validation_metrics,
+    const std::vector<std::string>& val_metrics,
     const DistributedCommPtr& comm) {
   auto train_dataset = loadDataset(train_data, /* shuffle= */ true);
   auto val_dataset = loadDataset(val_data, /* shuffle= */ false);
@@ -27,8 +27,7 @@ metrics::History ContextualModel::train(
 
   return trainer.train_with_metric_names(
       train_dataset, learning_rate, epochs, train_metrics, val_dataset,
-      validation_metrics,
-      /* steps_per_validation= */ std::nullopt,
+      val_metrics, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
       /* logging_interval= */ std::nullopt, comm);

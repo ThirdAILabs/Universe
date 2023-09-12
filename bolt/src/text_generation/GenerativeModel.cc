@@ -125,6 +125,16 @@ void GenerativeModel::adjustTokenProbs(const std::vector<uint32_t>& sequence,
   }
 }
 
+metrics::History GenerativeModel::train(
+    const dataset::DataSourcePtr& train_data, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const DistributedCommPtr& comm) {
+  return _model->train(train_data, learning_rate, epochs, train_metrics,
+                       val_data, val_metrics, comm);
+}
+
 void GenerativeModel::save(const std::string& filename) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
