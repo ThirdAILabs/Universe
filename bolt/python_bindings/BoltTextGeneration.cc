@@ -42,7 +42,6 @@ void addTextGenerationModels(py::module_& module) {
       .def(py::init(&GenerativeModel::make), py::arg("model"),
            py::arg("allowed_repeats"), py::arg("punctuation_tokens"))
 #endif
-      .def(py::init(&GenerativeModel::load), py::arg("filename"))
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
            py::arg("n_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
@@ -57,7 +56,8 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("comm") = nullptr)
-      .def("save", &GenerativeModel::save);
+      .def("save", &GenerativeModel::save)
+      .def_static("load", &GenerativeModel::load, py::arg("filename"));
 }
 
 }  // namespace thirdai::bolt::python
