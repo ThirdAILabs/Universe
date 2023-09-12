@@ -3,6 +3,7 @@
 #include <SymspellCPP/include/SymSpell.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <fstream>
 #include <numeric>
@@ -13,6 +14,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+using namespace thirdai::dataset;
 
 class SpellCheckedSentence {
  private:
@@ -75,6 +78,9 @@ class SymPreTrainer {
   void index_words(std::vector<std::string> words_to_index,
                    std::vector<int> frequency);
 
-  void pretrain_file(const thirdai::dataset::DataSourcePtr& data,
+  std::vector<MapInputBatch> parse_data(const DataSourcePtr& data,
+                      std::string correct_column_name, uint32_t batch_size);
+
+  void pretrain_file(const DataSourcePtr& data,
                      std::string correct_column_name);
 };
