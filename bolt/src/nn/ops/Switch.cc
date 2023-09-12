@@ -78,6 +78,12 @@ std::optional<uint32_t> Switch::nonzeros(const ComputationList& inputs,
   return _fc_ops.front()->nonzeros(inputs, use_sparsity);
 }
 
+void Switch::initOptimizer() {
+  for (auto& op : _fc_ops) {
+    op->initOptimizer();
+  }
+}
+
 void Switch::disableSparseParameterUpdates() {
   for (auto& op : _fc_ops) {
     op->disableSparseParameterUpdates();
