@@ -24,13 +24,15 @@ class DyadicModel final : public GenerativeBackend {
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
+                         size_t batch_size,
                          const std::vector<std::string>& train_metrics,
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics,
                          const DistributedCommPtr& comm) final;
 
  private:
-  data::Loader getDataLoader(const dataset::DataSourcePtr& data, bool shuffle);
+  data::Loader getDataLoader(const dataset::DataSourcePtr& data,
+                             size_t batch_size, bool shuffle);
 
   bolt::ModelPtr _model;
   std::shared_ptr<data::DyadicInterval> _dyadic_transform;

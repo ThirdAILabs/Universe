@@ -20,6 +20,7 @@ class ContextualModel final : public GenerativeBackend {
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
+                         size_t batch_size,
                          const std::vector<std::string>& train_metrics,
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics,
@@ -27,7 +28,7 @@ class ContextualModel final : public GenerativeBackend {
 
  private:
   LabeledDataset loadDataset(const dataset::DataSourcePtr& data,
-                             bool shuffle) const;
+                             size_t batch_size, bool shuffle) const;
 
   bolt::ModelPtr _model;
   dataset::TextGenerationFeaturizerPtr _featurizer;

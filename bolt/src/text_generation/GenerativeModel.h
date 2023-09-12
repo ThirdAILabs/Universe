@@ -19,6 +19,7 @@ class GenerativeBackend {
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
+                                 size_t batch_size,
                                  const std::vector<std::string>& train_metrics,
                                  const dataset::DataSourcePtr& val_data,
                                  const std::vector<std::string>& val_metrics,
@@ -46,6 +47,7 @@ class GenerativeModel {
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
+                         size_t batch_size,
                          const std::vector<std::string>& train_metrics = {},
                          const dataset::DataSourcePtr& val_data = nullptr,
                          const std::vector<std::string>& val_metrics = {},

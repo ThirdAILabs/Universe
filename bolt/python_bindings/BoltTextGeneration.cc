@@ -5,6 +5,7 @@
 #include <bolt/src/text_generation/GenerativeModel.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <pybind11/stl.h>
+#include <cstddef>
 #include <unordered_set>
 
 namespace thirdai::bolt::python {
@@ -39,8 +40,11 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("temperature") = std::nullopt)
       .def("train", &GenerativeModel::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("train_metrics"), py::arg("val_data"),
-           py::arg("val_metrics"), py::arg("comm"))
+           py::arg("batch_size") = 5000,
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("val_data") = nullptr,
+           py::arg("val_metrics") = std::vector<std::string>{},
+           py::arg("comm") = nullptr)
       .def("save", &GenerativeModel::save);
 }
 

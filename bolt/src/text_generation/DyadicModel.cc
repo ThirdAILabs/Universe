@@ -46,12 +46,15 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
 
 metrics::History DyadicModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    uint32_t epochs, size_t batch_size,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const DistributedCommPtr& comm) {
-  auto train_dataset = getDataLoader(train_data, /* shuffle= */ true).all();
-  auto val_dataset = getDataLoader(val_data, /* shuffle= */ false).all();
+  auto train_dataset =
+      getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
+  auto val_dataset =
+      getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
 
   Trainer trainer(_model);
 
@@ -64,9 +67,8 @@ metrics::History DyadicModel::train(
 }
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
-                                        bool shuffle) {
-  auto data_iter =
-      data::JsonIterator::make(data, {"target"}, /* rows_per_load= */ 1000);
+                                        size_t batch_size, bool shuffle) {
+  auto data_iter = data::JsonIterator::make(data, {"target"});
 
   auto transform = data::TransformationList::make(
       {std::make_shared<data::StringToTokenArray>("target", "target",
@@ -75,7 +77,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
 
   return data::Loader(data_iter, _dyadic_transform, nullptr, _bolt_inputs,
                       {data::OutputColumns("next_word")},
-                      /* batch_size= */ 5000,
+                      /* batch_size= */ batch_size,
                       /* shuffle= */ shuffle, /* verbose= */ true,
                       /* shuffle_buffer_size= */ 200000);
 }

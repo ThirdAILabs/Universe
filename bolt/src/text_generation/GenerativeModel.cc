@@ -132,12 +132,13 @@ void GenerativeModel::reduceProbsForRepeats(
 
 metrics::History GenerativeModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    uint32_t epochs, size_t batch_size,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const DistributedCommPtr& comm) {
-  return _model->train(train_data, learning_rate, epochs, train_metrics,
-                       val_data, val_metrics, comm);
+  return _model->train(train_data, learning_rate, epochs, batch_size,
+                       train_metrics, val_data, val_metrics, comm);
 }
 
 void GenerativeModel::save(const std::string& filename) const {

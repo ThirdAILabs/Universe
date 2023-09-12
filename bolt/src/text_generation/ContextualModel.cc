@@ -16,12 +16,13 @@ bolt::TensorPtr ContextualModel::nextTokenProbs(
 
 metrics::History ContextualModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    uint32_t epochs, size_t batch_size,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const DistributedCommPtr& comm) {
-  auto train_dataset = loadDataset(train_data, /* shuffle= */ true);
-  auto val_dataset = loadDataset(val_data, /* shuffle= */ false);
+  auto train_dataset = loadDataset(train_data, batch_size, /* shuffle= */ true);
+  auto val_dataset = loadDataset(val_data, batch_size, /* shuffle= */ false);
 
   Trainer trainer(_model);
 
@@ -34,10 +35,11 @@ metrics::History ContextualModel::train(
 }
 
 LabeledDataset ContextualModel::loadDataset(const dataset::DataSourcePtr& data,
+                                            size_t batch_size,
                                             bool shuffle) const {
   dataset::DatasetLoader loader(data, _featurizer, shuffle);
 
-  auto dataset = loader.loadAll(/* batch_size= */ 5000);
+  auto dataset = loader.loadAll(batch_size);
   auto labels = dataset.back();
   dataset.pop_back();
 
