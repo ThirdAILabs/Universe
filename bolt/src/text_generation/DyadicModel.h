@@ -7,8 +7,11 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
+#include <bolt/src/train/trainer/Trainer.h>
+#include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/DyadicInterval.h>
+#include <dataset/src/DataSource.h>
 
 namespace thirdai::bolt {
 
@@ -19,7 +22,16 @@ class DyadicModel final : public GenerativeBackend {
   bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) final;
 
+  metrics::History train(
+      const dataset::DataSourcePtr& train_data, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics = {},
+      const dataset::DataSourcePtr& val_data = nullptr,
+      const std::vector<std::string>& validation_metrics = {},
+      const DistributedCommPtr& comm = nullptr);
+
  private:
+  data::Loader getDataLoader(const dataset::DataSourcePtr& data, bool shuffle);
+
   bolt::ModelPtr _model;
   std::shared_ptr<data::DyadicInterval> _dyadic_transform;
   data::OutputColumnsList _bolt_inputs;

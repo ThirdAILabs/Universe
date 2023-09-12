@@ -3,6 +3,9 @@
 #include <cereal/types/base_class.hpp>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
+#include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/train/trainer/Trainer.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 
 namespace thirdai::bolt {
@@ -15,7 +18,16 @@ class ContextualModel final : public GenerativeBackend {
   bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) final;
 
+  metrics::History train(
+      const dataset::DataSourcePtr& train_data, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics = {},
+      const dataset::DataSourcePtr& val_data = nullptr,
+      const std::vector<std::string>& validation_metrics = {},
+      const DistributedCommPtr& comm = nullptr);
+
  private:
+  LabeledDataset loadDataset(const dataset::DataSourcePtr& data, bool shuffle)const;
+
   bolt::ModelPtr _model;
   dataset::TextGenerationFeaturizerPtr _featurizer;
 

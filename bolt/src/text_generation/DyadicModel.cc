@@ -1,8 +1,14 @@
 #include "DyadicModel.h"
+#include <bolt/src/train/trainer/Dataset.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/DyadicInterval.h>
+#include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/TransformationList.h>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -36,6 +42,42 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
   auto tensors = data::toTensors(intervals, _bolt_inputs);
 
   return _model->forward(tensors).at(0);
+}
+
+metrics::History DyadicModel::train(
+    const dataset::DataSourcePtr& train_data, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& validation_metrics,
+    const DistributedCommPtr& comm) {
+  auto train_dataset = getDataLoader(train_data, /* shuffle= */ true).all();
+  auto val_dataset = getDataLoader(val_data, /* shuffle= */ false).all();
+
+  Trainer trainer(_model);
+
+  return trainer.train_with_metric_names(
+      train_dataset, learning_rate, epochs, train_metrics, val_dataset,
+      validation_metrics, /* steps_per_validation= */ std::nullopt,
+      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+      /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
+      /* logging_interval= */ std::nullopt, comm);
+}
+
+data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
+                                        bool shuffle) {
+  auto data_iter =
+      data::JsonIterator::make(data, {"target"}, /* rows_per_load= */ 1000);
+
+  auto transform = data::TransformationList::make(
+      {std::make_shared<data::StringToTokenArray>("target", "target",
+                                                  _vocab_size, ' '),
+       _dyadic_transform});
+
+  return data::Loader(data_iter, _dyadic_transform, nullptr, _bolt_inputs,
+                      {data::OutputColumns("next_word")},
+                      /* batch_size= */ 5000,
+                      /* shuffle= */ shuffle, /* verbose= */ true,
+                      /* shuffle_buffer_size= */ 200000);
 }
 
 }  // namespace thirdai::bolt
