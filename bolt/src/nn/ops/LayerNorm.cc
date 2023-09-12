@@ -152,6 +152,11 @@ std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
+void LayerNorm::initOptimizer() {
+  // TODO(Nicholas): right now the optimizer is always saved in LayerNorm
+  // because it is small.
+}
+
 void LayerNorm::disableSparseParameterUpdates() {}
 
 void LayerNorm::enableSparseParameterUpdates() {}
