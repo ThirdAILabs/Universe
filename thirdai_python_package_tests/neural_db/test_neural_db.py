@@ -162,7 +162,6 @@ def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     all_methods_work(db, all_docs(), assert_acc=True)
 
 
-# supervised training multilabel,,, supervised training multiple un
 def train_model_for_supervised_training_test(model_id_delimiter):
     db = ndb.NeuralDB("user", id_delimiter=model_id_delimiter)
 
