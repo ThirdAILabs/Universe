@@ -8,7 +8,7 @@ import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
 from ray.air import session
 from thirdai import bolt, dataset
-from thirdai.dataset import RayFileDataSource
+from thirdai.dataset import RayTextDataSource
 
 
 @pytest.mark.distributed
@@ -22,7 +22,7 @@ def test_ray_file_data_source():
             src_len=1,
             vocab_size=VOCAB_SIZE,
         )
-        data_source = RayFileDataSource(stream_split_data_iterator)
+        data_source = RayTextDataSource(stream_split_data_iterator)
         dataset_loader = dataset.DatasetLoader(
             data_source=data_source, featurizer=featurizer, shuffle=True
         )
