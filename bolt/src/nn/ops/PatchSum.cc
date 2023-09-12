@@ -102,6 +102,8 @@ std::optional<uint32_t> PatchSum::nonzeros(const ComputationList& inputs,
   return _patch_dim;
 }
 
+void PatchSum::initOptimizer() {}
+
 void PatchSum::disableSparseParameterUpdates() {}
 
 void PatchSum::enableSparseParameterUpdates() {}

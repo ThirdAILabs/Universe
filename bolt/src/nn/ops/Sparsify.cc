@@ -72,6 +72,8 @@ std::optional<uint32_t> Sparsify::nonzeros(const ComputationList& inputs,
   return _dim;
 }
 
+void Sparsify::initOptimizer() {}
+
 void Sparsify::summary(std::ostream& summary, const ComputationList& inputs,
                        const Computation* output) const {
   summary << "Sparsify(" << name() << "): " << inputs[0]->name() << " -> "
