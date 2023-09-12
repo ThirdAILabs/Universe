@@ -236,5 +236,3 @@ def test_distributed_resume_training():
     trainer2.fit()
 
     ray.shutdown()
-
-

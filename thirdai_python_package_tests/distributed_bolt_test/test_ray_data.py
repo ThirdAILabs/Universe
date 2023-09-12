@@ -6,7 +6,6 @@ import ray
 import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-
 from ray.air import session
 from thirdai import bolt, dataset
 from thirdai.dataset import RayFileDataSource
