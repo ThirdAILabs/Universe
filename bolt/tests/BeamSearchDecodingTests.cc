@@ -8,8 +8,6 @@ class MockBackend final : public GenerativeBackend {
  public:
   bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) final {
-    size_t step = tokens.at(0).size();
-
     std::vector<std::vector<float>> transition_matrix = {
         {0.1, 0.6, 0.2, 0.1},
         {0.1, 0.2, 0.4, 0.3},
@@ -35,9 +33,9 @@ TEST(BeamSearchDecoding, GreedySearch) {
   auto output = model.generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
                                /* beam_width= */ 1);
 
-  // 1 -> 2 -> 1 is the "greedy" best path, but it won't predict 1 again, so it
-  // predicts 0.
-  std::vector<uint32_t> expected_output = {1, 2, 0};
+  // 1 -> 2 -> 1 is the "greedy" best path, but it won't predict 0,1,2 again, so
+  // it predicts 0.
+  std::vector<uint32_t> expected_output = {1, 2, 3};
 
   ASSERT_EQ(output, expected_output);
 }
