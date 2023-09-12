@@ -23,6 +23,22 @@ class MockBackend final : public GenerativeBackend {
 
     return output;
   }
+
+  metrics::History train(const dataset::DataSourcePtr& train_data,
+                         float learning_rate, uint32_t epochs,
+                         const std::vector<std::string>& train_metrics,
+                         const dataset::DataSourcePtr& val_data,
+                         const std::vector<std::string>& val_metrics,
+                         const DistributedCommPtr& comm) final {
+    (void)train_data;
+    (void)learning_rate;
+    (void)epochs;
+    (void)train_metrics;
+    (void)val_data;
+    (void)val_metrics;
+    (void)comm;
+    return {};
+  }
 };
 
 TEST(BeamSearchDecoding, GreedySearch) {

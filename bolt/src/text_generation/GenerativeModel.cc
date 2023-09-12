@@ -26,7 +26,8 @@ struct CandidateSequence {
 };
 
 struct MinimizeScore {
-  bool operator()(const CandidateSequence& a, const CandidateSequence& b) {
+  bool operator()(const CandidateSequence& a,
+                  const CandidateSequence& b) const {
     // We are taking the sum of the negative logs of the scores, thus best
     // sequences are the ones with the lowest scores. In the
     // std::priority_queue, the last element in the sorted sequence is the first
@@ -43,6 +44,10 @@ using CandidateQueue =
 std::vector<uint32_t> GenerativeModel::generate(
     const std::vector<uint32_t>& input_tokens, size_t n_predictions,
     size_t beam_width, std::optional<float> temperature) const {
+  // This isues two seperate containers for the sequences and scores instead of
+  // a std::vector<CandidateSequence> so that the sequences can be passed into
+  // nextTokenProbs directly, instead of having to split apart the sequences and
+  // scores.
   std::vector<std::vector<uint32_t>> candidate_sequences = {input_tokens};
   std::vector<double> sequence_scores = {0.0};
 
@@ -57,8 +62,8 @@ std::vector<uint32_t> GenerativeModel::generate(
     for (size_t candidate = 0; candidate < candidate_sequences.size();
          candidate++) {
       BoltVector& token_probs = next_token_probs->getVector(candidate);
-      adjustTokenProbs(candidate_sequences[candidate], token_probs,
-                       n_predictions, temperature);
+      reduceProbsForRepeats(candidate_sequences[candidate], token_probs,
+                            n_predictions, temperature);
 
       auto top_tokens = token_probs.findKLargestActivations(beam_width);
 
@@ -97,9 +102,9 @@ std::vector<uint32_t> GenerativeModel::generate(
           candidate_sequences.back().end()};
 }
 
-void GenerativeModel::adjustTokenProbs(const std::vector<uint32_t>& sequence,
-                                       BoltVector& probs, size_t n_predictions,
-                                       std::optional<float> temperature) const {
+void GenerativeModel::reduceProbsForRepeats(
+    const std::vector<uint32_t>& sequence, BoltVector& probs,
+    size_t n_predictions, std::optional<float> temperature) const {
   size_t start =
       sequence.size() < n_predictions ? 0 : sequence.size() - n_predictions;
   for (size_t i = start; i < sequence.size(); i++) {

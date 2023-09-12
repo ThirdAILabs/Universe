@@ -56,9 +56,9 @@ class GenerativeModel {
   static std::shared_ptr<GenerativeModel> load(const std::string& filename);
 
  private:
-  void adjustTokenProbs(const std::vector<uint32_t>& sequence,
-                        BoltVector& probs, size_t n_predictions,
-                        std::optional<float> temperature) const;
+  void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
+                             BoltVector& probs, size_t n_predictions,
+                             std::optional<float> temperature) const;
 
   std::shared_ptr<GenerativeBackend> _model;
 
