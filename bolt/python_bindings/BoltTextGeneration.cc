@@ -37,6 +37,10 @@ void addTextGenerationModels(py::module_& module) {
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
            py::arg("n_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
+      .def("train", &GenerativeModel::train, py::arg("train_data"),
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("train_metrics"), py::arg("val_data"),
+           py::arg("val_metrics"), py::arg("comm"))
       .def("save", &GenerativeModel::save);
 }
 
