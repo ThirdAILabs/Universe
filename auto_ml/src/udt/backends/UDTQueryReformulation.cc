@@ -47,7 +47,7 @@ UDTQueryReformulation::UDTQueryReformulation(
     _flash_index = defaultFlashIndex(dataset_size);
   }
 
-  if (_use_spell_checker) {
+  if (_use_spell_checker && _use_spell_checker.value()) {
     _pretrainer =
         SymPreTrainer(defaults::MAX_EDIT_DISTANCE, true,
                       defaults::PREFIX_LENGTH, defaults::USE_WORD_SEGMENTATION);
@@ -99,7 +99,7 @@ py::object UDTQueryReformulation::train(
       options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
   // Index words to Spell Checker if use_spell_checker = True
-  if (_use_spell_checker) {
+  if (_use_spell_checker && _use_spell_checker.value()) {
     _pretrainer.pretrain_file(data, _correct_column_name);
     data->restart();
   }
@@ -291,7 +291,7 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   requireTopK(top_k);
 
-  if (_use_spell_checker) {
+  if (_use_spell_checker && _use_spell_checker.value()) {
     std::vector<uint32_t> freq_counts = {0};
 
     std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
@@ -300,6 +300,10 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
     freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                        candidates.second.end());
 
+    // Prefix sum over freq counts
+    for (uint32_t i = 1; i < freq_counts.size(); i++) {
+      freq_counts[i] += freq_counts[i - 1];
+    }
     dataset::MapBatchRef sample_ref(sample_cand);
     auto featurized_samples =
         _inference_featurizer->featurize(sample_ref).at(0);
