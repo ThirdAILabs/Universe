@@ -26,7 +26,8 @@ class ContextualModel final : public GenerativeBackend {
       const DistributedCommPtr& comm = nullptr);
 
  private:
-  LabeledDataset loadDataset(const dataset::DataSourcePtr& data, bool shuffle)const;
+  LabeledDataset loadDataset(const dataset::DataSourcePtr& data,
+                             bool shuffle) const;
 
   bolt::ModelPtr _model;
   dataset::TextGenerationFeaturizerPtr _featurizer;
