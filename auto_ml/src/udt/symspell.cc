@@ -42,10 +42,10 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word, int top_k) {
   std::vector<SuggestItem> results;
   if (!this->use_word_segmentation) {
     results = this->pretrainer.Lookup(
-        word, Verbosity::All, max_edit_distance = this->max_edit_distance);
+        word, Verbosity::All, this->max_edit_distance);
   } else {
     results = this->pretrainer.LookupCompound(
-        word, max_edit_distance = this->max_edit_distance);
+        word, this->max_edit_distance);
   }
 
   for (SuggestItem& res : results) {
@@ -107,19 +107,28 @@ SymPreTrainer::get_correct_spelling_list(
 std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
     std::vector<std::string> tokens_list, int predictions_per_token,
     int maximum_candidates, bool stop_if_found) {
+
   std::vector<float> scores(tokens_list.size(), 0.0F);
+
   SpellCheckedSentence prev = SpellCheckedSentence(tokens_list, scores);
   std::vector<SpellCheckedSentence> candidates = {prev};
+
   auto [predictions, prediction_scores] =
       this->get_correct_spelling_list(tokens_list, predictions_per_token);
+
   for (int i = 0; i < (int)tokens_list.size(); i++) {
+
     std::vector<std::string> current_candidate_tokens = predictions[i];
     std::vector<float> current_candidate_scores = prediction_scores[i];
+
     std::vector<SpellCheckedSentence> temp_candidates;
+
     for (auto candidate : candidates) {
-      for (int j = 0; j < (int)current_candidate_scores.size(); j++) {
+      for (uint32_t j = 0; j < current_candidate_scores.size(); j++) {
+
         std::string token = current_candidate_tokens[j];
         float score = current_candidate_scores[j];
+
         SpellCheckedSentence new_candid =
             candidate.update_token_and_score(token, score, i);
         temp_candidates.push_back(new_candid);
@@ -139,7 +148,7 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
       temp_candidates.resize(maximum_candidates);
     }
   }
-  std::vector<float> new_scores(tokens_list.size(), 1 / tokens_list.size());
+  std::vector<float> new_scores(tokens_list.size(), 1.0F / static_cast<float>(tokens_list.size()));
   candidates.push_back(SpellCheckedSentence(tokens_list, new_scores));
 
   return candidates;
