@@ -189,8 +189,8 @@ py::object UDTClassifier::coldstart(
                val_metrics, callbacks, options, comm);
 }
 
-py::object UDTClassifier::embedding(const MapInput& sample) {
-  return _classifier->embedding(_dataset_factory->featurizeInput(sample));
+py::object UDTClassifier::embedding(const MapInputBatch& sample) {
+  return _classifier->embedding(_dataset_factory->featurizeInputBatch(sample));
 }
 
 py::object UDTClassifier::entityEmbedding(

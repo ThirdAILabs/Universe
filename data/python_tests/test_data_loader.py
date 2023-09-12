@@ -5,7 +5,9 @@ from thirdai import bolt, data, dataset
 
 
 def text_transformation():
-    return data.transformations.Text(input_column="text", output_column="tokens")
+    return data.transformations.Text(
+        input_column="text", output_indices="indices", output_values="values"
+    )
 
 
 def load_data(filename):
@@ -16,7 +18,7 @@ def load_data(filename):
         ]
     )
 
-    data_iter = data.ColumnMapIterator(
+    data_iter = data.CsvIterator(
         data_source=dataset.FileDataSource(filename), delimiter=","
     )
 
@@ -24,7 +26,7 @@ def load_data(filename):
         data_iterator=data_iter,
         transformation=transformations,
         state=None,
-        input_columns=[data.OutputColumns("tokens")],
+        input_columns=[data.OutputColumns("indices", "values")],
         output_columns=[data.OutputColumns("category_id")],
         batch_size=2048,
         shuffle=True,
@@ -93,7 +95,7 @@ def test_single_sample_featurization(train_bolt_on_clinc):
     for sample, label in inference_samples:
         inputs = data.to_tensors(
             column_map=tokenizer(data.ColumnMap(sample)),
-            columns_to_convert=[data.OutputColumns("tokens")],
+            columns_to_convert=[data.OutputColumns("indices", "values")],
             batch_size=100,
         )[0]
 
@@ -121,7 +123,7 @@ def test_batch_featurization(train_bolt_on_clinc):
     labels = np.array([x[1] for x in inference_samples])
     batch = data.to_tensors(
         column_map=tokenizer(data.ColumnMap(batch)),
-        columns_to_convert=[data.OutputColumns("tokens")],
+        columns_to_convert=[data.OutputColumns("indices", "values")],
         batch_size=10000,
     )[0]
 

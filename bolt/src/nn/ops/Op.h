@@ -58,6 +58,13 @@ class Op {
   virtual void backpropagate(ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch) = 0;
 
+  virtual void updateTrainableParameters(float learning_rate,
+                                         uint32_t train_steps) {
+    if (_trainable) {
+      updateParameters(learning_rate, train_steps);
+    }
+  }
+
   /**
    * Performs a parameter update on any parameters in the op. The parameter
    * train steps represents how many train steps have been completed so far in
@@ -86,6 +93,11 @@ class Op {
    */
   virtual std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                            bool use_sparsity) const = 0;
+
+  /**
+   * Initializes the optimizer for the op.
+   */
+  virtual void initOptimizer() = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -137,6 +149,10 @@ class Op {
 
   void setName(std::string name) { _name = std::move(name); }
 
+  void setTrainable(bool flag) { _trainable = flag; }
+
+  bool isTrainable() const { return _trainable; }
+
   virtual ~Op() = default;
 
  protected:
@@ -144,6 +160,7 @@ class Op {
 
  private:
   std::string _name;
+  bool _trainable = true;
 
   friend class cereal::access;
   template <class Archive>

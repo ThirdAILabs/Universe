@@ -407,6 +407,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/CrossColumnPairgrams.cc
     data/src/transformations/DeduplicateTokens.cc
@@ -415,6 +416,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
+    data/src/transformations/DyadicInterval.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc

@@ -137,7 +137,7 @@ class UDTBackend {
     throw notSupported("cold_start");
   }
 
-  virtual py::object embedding(const MapInput& sample) {
+  virtual py::object embedding(const MapInputBatch& sample) {
     (void)sample;
     throw notSupported("embedding");
   }
