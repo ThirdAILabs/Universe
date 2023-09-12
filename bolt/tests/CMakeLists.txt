@@ -13,6 +13,7 @@ set(BOLT_NN_TESTS
     RootCauseAnalysisTests
     DlrmAttentionTests
     UpdateSparsityTests
+    SwitchOpTests
     SaveLoadTests)
 
 foreach(BOLT_NN_TEST IN LISTS BOLT_NN_TESTS)

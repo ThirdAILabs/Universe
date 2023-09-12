@@ -328,6 +328,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
+    bolt/src/nn/ops/Switch.cc
     bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/ops/DotProduct.cc
