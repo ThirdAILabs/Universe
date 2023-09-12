@@ -26,6 +26,7 @@ class MockBackend final : public GenerativeBackend {
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
+                         size_t batch_size,
                          const std::vector<std::string>& train_metrics,
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics,
@@ -33,7 +34,7 @@ class MockBackend final : public GenerativeBackend {
     (void)train_data;
     (void)learning_rate;
     (void)epochs;
-    (void)train_metrics;
+    (void)batch_size, (void)train_metrics;
     (void)val_data;
     (void)val_metrics;
     (void)comm;
@@ -42,12 +43,12 @@ class MockBackend final : public GenerativeBackend {
 };
 
 TEST(BeamSearchDecoding, GreedySearch) {
-  GenerativeModel model(std::make_shared<MockBackend>(),
-                        /* allowed_repeats= */ {},
-                        /* punctuation_tokens= */ {});
+  auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
+                                     /* allowed_repeats= */ {},
+                                     /* punctuation_tokens= */ {});
 
-  auto output = model.generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
-                               /* beam_width= */ 1);
+  auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
+                                /* beam_width= */ 1);
 
   // 1 -> 2 -> 1 is the "greedy" best path, but it won't predict 0,1,2 again, so
   // it predicts 0.
@@ -57,12 +58,12 @@ TEST(BeamSearchDecoding, GreedySearch) {
 }
 
 TEST(BeamSearchDecoding, AllowRepeats) {
-  GenerativeModel model(std::make_shared<MockBackend>(),
-                        /* allowed_repeats= */ {1},
-                        /* punctuation_tokens= */ {});
+  auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
+                                     /* allowed_repeats= */ {1},
+                                     /* punctuation_tokens= */ {});
 
-  auto output = model.generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
-                               /* beam_width= */ 1);
+  auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
+                                /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 1};
 
@@ -70,12 +71,12 @@ TEST(BeamSearchDecoding, AllowRepeats) {
 }
 
 TEST(BeamSearchDecoding, FindBestPath) {
-  GenerativeModel model(std::make_shared<MockBackend>(),
-                        /* allowed_repeats= */ {0, 1, 2, 3},
-                        /* punctuation_tokens= */ {});
+  auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
+                                     /* allowed_repeats= */ {0, 1, 2, 3},
+                                     /* punctuation_tokens= */ {});
 
-  auto output = model.generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
-                               /* beam_width= */ 2);
+  auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
+                                /* beam_width= */ 2);
 
   // The greedy path would be 1 -> 2 -> 1, however the score for 1 -> 3 -> 2 is
   // better overall because 3 -> 2 is very good compared to 2 -> 1, whereas 1 ->

@@ -4,8 +4,10 @@
 #include <bolt/src/text_generation/DyadicModel.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
 #include <cstddef>
+#include <optional>
 #include <unordered_set>
 
 namespace thirdai::bolt::python {
@@ -25,18 +27,28 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("model"), py::arg("featurizer"));
 #endif
 
+  py::class_<BeamSearchDecoder>(module, "GenerativeDecoder")
+      .def("__iter__", [](BeamSearchDecoder& decoder) { return decoder; })
+      .def("__next__", [](BeamSearchDecoder& decoder) {
+        if (auto tokens = decoder.next()) {
+          return *tokens;
+        }
+        throw py::stop_iteration();
+      });
+
   py::class_<GenerativeModel, std::shared_ptr<GenerativeModel>>(
       module, "GenerativeModel")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<std::shared_ptr<GenerativeBackend>,
-                    std::unordered_set<uint32_t>,
-                    std::unordered_set<uint32_t>>(),
-           py::arg("model"), py::arg("allowed_repeats"),
-           py::arg("punctuation_tokens"))
+      .def(py::init(&GenerativeModel::make), py::arg("model"),
+           py::arg("allowed_repeats"), py::arg("punctuation_tokens"))
 #endif
       .def(py::init(&GenerativeModel::load), py::arg("filename"))
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
            py::arg("n_predictions"), py::arg("beam_width"),
+           py::arg("temperature") = std::nullopt)
+      .def("streaming_generation", &GenerativeModel::streamingGeneration,
+           py::arg("input_tokens"), py::arg("prediction_chunk_size"),
+           py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
       .def("train", &GenerativeModel::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"),

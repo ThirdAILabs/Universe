@@ -3,19 +3,12 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cmath>
+#include <optional>
 #include <queue>
 #include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
-
-GenerativeModel::GenerativeModel(
-    std::shared_ptr<GenerativeBackend> model,
-    std::unordered_set<uint32_t> allowed_repeats,
-    std::unordered_set<uint32_t> punctuation_tokens)
-    : _model(std::move(model)),
-      _allowed_repeats(std::move(allowed_repeats)),
-      _punctuation_tokens(std::move(punctuation_tokens)) {}
 
 struct CandidateSequence {
   std::vector<uint32_t> sequence;
@@ -41,77 +34,82 @@ using CandidateQueue =
     std::priority_queue<CandidateSequence, std::vector<CandidateSequence>,
                         MinimizeScore>;
 
-std::vector<uint32_t> GenerativeModel::generate(
-    const std::vector<uint32_t>& input_tokens, size_t n_predictions,
-    size_t beam_width, std::optional<float> temperature) const {
-  // This isues two seperate containers for the sequences and scores instead of
-  // a std::vector<CandidateSequence> so that the sequences can be passed into
-  // nextTokenProbs directly, instead of having to split apart the sequences and
-  // scores.
-  std::vector<std::vector<uint32_t>> candidate_sequences = {input_tokens};
-  std::vector<double> sequence_scores = {0.0};
+std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
+  size_t n_predictions =
+      std::min(_prediction_chunk_size, _n_input_tokens + _max_predictions -
+                                           _candidate_sequences.front().size());
+
+  if (n_predictions == 0) {
+    return std::nullopt;
+  }
 
   for (size_t pred_idx = 0; pred_idx < n_predictions; pred_idx++) {
-    auto next_token_probs = _model->nextTokenProbs(candidate_sequences);
+    auto next_token_probs =
+        _generator->model()->nextTokenProbs(_candidate_sequences);
 
     // This will be ordered such that the worst scoring sequence is on the top
     // of the queue so we can easily check if a given sequence is better than at
     // least one of the candidates already discovered.
     CandidateQueue candidates;
 
-    for (size_t candidate = 0; candidate < candidate_sequences.size();
+    for (size_t candidate = 0; candidate < _candidate_sequences.size();
          candidate++) {
       BoltVector& token_probs = next_token_probs->getVector(candidate);
-      reduceProbsForRepeats(candidate_sequences[candidate], token_probs,
-                            n_predictions, temperature);
+      reduceProbsForRepeats(_candidate_sequences[candidate], token_probs,
+                            _max_predictions, _temperature);
 
-      auto top_tokens = token_probs.findKLargestActivations(beam_width);
+      auto top_tokens = token_probs.findKLargestActivations(_beam_width);
 
       while (!top_tokens.empty()) {
         auto [prob, token] = top_tokens.top();
         top_tokens.pop();
-        double score = sequence_scores[candidate] - std::log(prob);
+        double score = _sequence_scores[candidate] - std::log(prob);
 
         // If the candidates queue is not full, or if the new sequence has a
         // bettter score than the worst scoring sequence in the queue, then we
         // want to add the new sequence to the queue.
-        if (candidates.size() < beam_width || candidates.top().score > score) {
-          std::vector<uint32_t> new_sequence = candidate_sequences[candidate];
+        if (candidates.size() < _beam_width || candidates.top().score > score) {
+          std::vector<uint32_t> new_sequence = _candidate_sequences[candidate];
           new_sequence.push_back(token);
 
           candidates.emplace(std::move(new_sequence), score);
 
-          if (candidates.size() > beam_width) {
+          if (candidates.size() > _beam_width) {
             candidates.pop();
           }
         }
       }
     }
 
-    candidate_sequences.clear();
-    sequence_scores.clear();
+    _candidate_sequences.clear();
+    _sequence_scores.clear();
 
     while (!candidates.empty()) {
-      candidate_sequences.emplace_back(candidates.top().sequence);
-      sequence_scores.push_back(candidates.top().score);
+      _candidate_sequences.emplace_back(candidates.top().sequence);
+      _sequence_scores.push_back(candidates.top().score);
       candidates.pop();
     }
   }
 
-  return {candidate_sequences.back().begin() + input_tokens.size(),
-          candidate_sequences.back().end()};
+  std::vector<uint32_t> tokens = {
+      _candidate_sequences.back().begin() + _n_input_tokens,
+      _candidate_sequences.back().end()};
+
+  return tokens;
 }
 
-void GenerativeModel::reduceProbsForRepeats(
+void BeamSearchDecoder::reduceProbsForRepeats(
     const std::vector<uint32_t>& sequence, BoltVector& probs,
-    size_t n_predictions, std::optional<float> temperature) const {
-  size_t start =
-      sequence.size() < n_predictions ? 0 : sequence.size() - n_predictions;
+    size_t exclude_repeats_range, std::optional<float> temperature) const {
+  size_t start = sequence.size() < exclude_repeats_range
+                     ? 0
+                     : sequence.size() - exclude_repeats_range;
+
   for (size_t i = start; i < sequence.size(); i++) {
     uint32_t token = sequence[i];
 
-    if ((_punctuation_tokens.count(token) && probs.activations[token] < 0.8) ||
-        !_allowed_repeats.count(token)) {
+    if ((_generator->isPunct(token) && probs.activations[token] < 0.8) ||
+        !_generator->isAllowedRepeat(token)) {
       probs.activations[token] = 0.0;
     }
   }
@@ -128,6 +126,32 @@ void GenerativeModel::reduceProbsForRepeats(
       probs.activations[i] = probs.activations[i] / total;
     }
   }
+}
+
+GenerativeModel::GenerativeModel(
+    std::shared_ptr<GenerativeBackend> model,
+    std::unordered_set<uint32_t> allowed_repeats,
+    std::unordered_set<uint32_t> punctuation_tokens)
+    : _model(std::move(model)),
+      _allowed_repeats(std::move(allowed_repeats)),
+      _punctuation_tokens(std::move(punctuation_tokens)) {}
+
+std::vector<uint32_t> GenerativeModel::generate(
+    const std::vector<uint32_t>& input_tokens, size_t n_predictions,
+    size_t beam_width, std::optional<float> temperature) {
+  BeamSearchDecoder decoder(shared_from_this(), input_tokens, n_predictions,
+                            n_predictions, beam_width, temperature);
+
+  return decoder.next().value_or(std::vector<uint32_t>{});
+}
+
+BeamSearchDecoder GenerativeModel::streamingGeneration(
+    const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
+    size_t max_predictions, size_t beam_width,
+    std::optional<float> temperature) {
+  return BeamSearchDecoder(shared_from_this(), input_tokens,
+                           prediction_chunk_size, max_predictions, beam_width,
+                           temperature);
 }
 
 metrics::History GenerativeModel::train(

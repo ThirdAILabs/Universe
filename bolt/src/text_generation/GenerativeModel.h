@@ -35,15 +35,71 @@ class GenerativeBackend {
   }
 };
 
-class GenerativeModel {
+class GenerativeModel;
+
+class BeamSearchDecoder {
  public:
+  BeamSearchDecoder(std::shared_ptr<GenerativeModel> generator,
+                    const std::vector<uint32_t>& input_tokens,
+                    size_t prediction_chunk_size, size_t max_predictions,
+                    size_t beam_width, std::optional<float> temperature)
+      : _generator(std::move(generator)),
+        _n_input_tokens(input_tokens.size()),
+        _prediction_chunk_size(prediction_chunk_size),
+        _max_predictions(max_predictions),
+        _beam_width(beam_width),
+        _temperature(temperature),
+        _candidate_sequences({input_tokens}),
+        _sequence_scores({0.0}) {}
+
+  std::optional<std::vector<uint32_t>> next();
+
+ private:
+  void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
+                             BoltVector& probs, size_t exclude_repeats_range,
+                             std::optional<float> temperature) const;
+
+  std::shared_ptr<GenerativeModel> _generator;
+
+  const size_t _n_input_tokens;
+  const size_t _prediction_chunk_size;
+  const size_t _max_predictions;
+  const size_t _beam_width;
+  const std::optional<float> _temperature;
+
+  // This isues two seperate containers for the sequences and scores instead of
+  // a std::vector<CandidateSequence> so that the sequences can be passed into
+  // nextTokenProbs directly, instead of having to split apart the sequences and
+  // scores.
+  std::vector<std::vector<uint32_t>> _candidate_sequences;
+  std::vector<double> _sequence_scores;
+};
+
+class GenerationStream {};
+
+class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
+ private:
   GenerativeModel(std::shared_ptr<GenerativeBackend> model,
                   std::unordered_set<uint32_t> allowed_repeats,
                   std::unordered_set<uint32_t> punctuation_tokens);
 
+ public:
+  static auto make(std::shared_ptr<GenerativeBackend> model,
+                   std::unordered_set<uint32_t> allowed_repeats,
+                   std::unordered_set<uint32_t> punctuation_tokens) {
+    return std::shared_ptr<GenerativeModel>(
+        new GenerativeModel(std::move(model), std::move(allowed_repeats),
+                            std::move(punctuation_tokens)));
+  }
+
   std::vector<uint32_t> generate(
       const std::vector<uint32_t>& input_tokens, size_t n_predictions,
-      size_t beam_width, std::optional<float> temperature = std::nullopt) const;
+      size_t beam_width, std::optional<float> temperature = std::nullopt);
+
+  BeamSearchDecoder streamingGeneration(
+      const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
+      size_t max_predictions, size_t beam_width,
+      std::optional<float> temperature = std::nullopt);
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
@@ -53,13 +109,23 @@ class GenerativeModel {
                          const std::vector<std::string>& val_metrics = {},
                          const DistributedCommPtr& comm = nullptr);
 
+  const auto& model() const { return _model; }
+
+  bool isAllowedRepeat(uint32_t token) const {
+    return _allowed_repeats.count(token);
+  }
+
+  bool isPunct(uint32_t token) const {
+    return _punctuation_tokens.count(token);
+  }
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<GenerativeModel> load(const std::string& filename);
 
  private:
   void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
-                             BoltVector& probs, size_t n_predictions,
+                             BoltVector& probs, size_t exclude_repeats_range,
                              std::optional<float> temperature) const;
 
   std::shared_ptr<GenerativeBackend> _model;
