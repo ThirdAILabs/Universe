@@ -3,11 +3,11 @@ import json
 from thirdai.dataset.data_source import PyDataSource
 
 
-def tokenize(tokenizer, json_obj):
+def tokenize_and_dump_json(tokenizer, json_obj):
     json_obj["target"] = tokenize_text(tokenizer, json_obj["target"])
     if "context" in json_obj:
         json_obj["context"] = tokenize_text(tokenizer, json_obj["context"])
-    return json_obj
+    return json.dumps(json_obj)
 
 
 def tokenize_text(tokenizer, text):
@@ -32,7 +32,7 @@ class LLMDataSource(PyDataSource):
         with open(self.file_path, "r") as file:
             for line in file:
                 json_obj = json.loads(line.strip())
-                tokenized_json_obj = json.dumps(tokenize(self.tokenizer, json_obj))
+                tokenized_json_obj = tokenize_and_dump_json(self.tokenizer, json_obj)
                 yield tokenized_json_obj
 
     def resource_name(self) -> str:
@@ -60,7 +60,7 @@ class RayTextDataSource(PyDataSource):
             text = row["text"]
             if self.should_tokenize:
                 json_obj = json.loads(text.strip())
-                text = json.dumps(tokenize(self.tokenizer, json_obj))
+                text = tokenize_and_dump_json(self.tokenizer, json_obj)
             yield text
 
     def resource_name(self) -> str:
