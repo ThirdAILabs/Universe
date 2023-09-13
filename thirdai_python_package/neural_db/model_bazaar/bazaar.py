@@ -40,7 +40,6 @@ class Bazaar:
         url = urljoin(self._base_url, "list")
         response = http_get_with_error(url, params={"name": filter})
         json_entries = json.loads(response.content)["data"]
-        print(json_entries)
         entries = [BazaarEntry.from_dict(entry) for entry in json_entries]
         self._registry = {entry.display_name: entry for entry in entries}
 
@@ -64,6 +63,7 @@ class Bazaar:
                 return cached_model_dir
 
         self._download(identifier)
+        print("hello")
         return self._unpack_and_remove_zip(identifier)
 
     def get_model(self, identifier: str):
@@ -99,7 +99,6 @@ class Bazaar:
             signing_url, params={"display_name": identifier}
         )
         download_url = json.loads(signing_response.content)["url"]
-        print(download_url)
-        # download_response = http_get_with_error(download_url, allow_redirects=True)
-        # destination = self._cached_model_zip_path(identifier)
-        # open(destination, "wb").write(download_response.content)
+        download_response = http_get_with_error(download_url, allow_redirects=True)
+        destination = self._cached_model_zip_path(identifier)
+        open(destination, "wb").write(download_response.content)
