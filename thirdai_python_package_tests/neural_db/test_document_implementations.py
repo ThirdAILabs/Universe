@@ -87,6 +87,7 @@ def test_save_load_meta_method(doc):
 @pytest.mark.unit
 def test_doc_save_load_method(doc: ndb.Document):
     doc.save("doc_save_dir")
+    # This calls a static method.
     loaded_doc: ndb.Document = doc.load("doc_save_dir")
 
     assert loaded_doc.name == doc.name

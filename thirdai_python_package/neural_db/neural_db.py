@@ -160,25 +160,53 @@ class SupDataSource(PyDataSource):
 
 
 class RefIdSupDataSource(PyDataSource):
-    """Combines supervised samples from multiple Sup objects into a single data
-    source. This allows NeuralDB's underlying model to train on all provided
-    supervised datasets simultaneously.
+    """A data source that converts either a CSV file or sequences of queries
+    and labels into a stream of query, label pairs with the underlying UDT's
+    expected columns. It assumes that the labels are reference IDs - the IDs
+    given to the document manager to each reference, not IDs from the
+    original unsupervised dataset.
     """
 
     def __init__(
         self,
-        doc_manager: DocumentManager,
-        query_col: str,
-        data: List[Sup],
-        id_delimiter: Optional[str],
+        csv: str = None,
+        query_column: str = None,
+        id_column: str = None,
+        id_delimiter: str = None,
+        queries: Sequence[str] = None,
+        labels: Sequence[Sequence[int]] = None,
     ):
         PyDataSource.__init__(self)
-        self.doc_manager = doc_manager
-        self.query_col = query_col
-        self.data = data
-        self.id_delimiter = id_delimiter
-        if not self.id_delimiter:
-            print("WARNING: this model does not fully support multi-label datasets.")
+        if csv is not None and query_column is not None and id_column is not None:
+            df = pd.read_csv(csv)
+            self.queries = df[query_column]
+            self.labels = df[id_column]
+            for i, label in enumerate(self.labels):
+                if label == None or label == "":
+                    raise ValueError(
+                        f"Got a supervised sample with an empty label, query: '{self.queries[i]}'"
+                    )
+            if id_delimiter:
+                self.labels = self.labels.apply(
+                    lambda label: list(
+                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                    )
+                )
+            else:
+                self.labels = self.labels.apply(lambda label: [int(label)])
+
+        elif queries is not None and labels is not None:
+            if len(queries) != len(labels):
+                raise ValueError(
+                    "Queries and labels sequences must be the same length."
+                )
+            self.queries = queries
+            self.labels = labels
+        # elif csv is None and
+        else:
+            raise ValueError(
+                "Sup must be initialized with csv, query_column and id_column, or queries and labels."
+            )
         self.restart()
 
     def _csv_line(self, query: str, label: str):
@@ -194,26 +222,16 @@ class RefIdSupDataSource(PyDataSource):
         # First yield the header
         yield self._csv_line(self.query_col, self.doc_manager.id_column)
         # Then yield rows
-        for sup in self.data:
-            source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
-            if len(source_ids) == 0:
-                raise ValueError(f"Cannot find source with id {sup.source_id}")
-            if len(source_ids) > 1:
-                raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
-            _, start_id = self.doc_manager.source_by_id(source_ids[0])
-            for query, labels in zip(sup.queries, sup.labels):
-                if self.id_delimiter:
-                    label_str = self.id_delimiter.join(
-                        [str(start_id + int(label)) for label in labels]
-                    )
-                    yield self._csv_line(query, label_str)
-                else:
-                    for label in labels:
-                        label_str = str(start_id + int(label))
-                        yield self._csv_line(query, label_str)
+        for query, labels in zip(self.queries, self.labels):
+            if self.id_delimiter:
+                label_str = self.id_delimiter.join([str(label) for label in labels])
+                yield self._csv_line(query, label_str)
+            else:
+                for label in labels:
+                    yield self._csv_line(query, str(label))
 
     def resource_name(self) -> str:
-        return "Supervised training samples"
+        return "Reference ID supervised training samples"
 
 
 class NeuralDB:
@@ -654,7 +672,12 @@ class NeuralDB:
 
     def supervised_train_with_ref_ids(
         self,
-        data: List[Sup],
+        csv: str = None,
+        query_column: str = None,
+        id_column: str = None,
+        id_delimiter: str = None,
+        queries: Sequence[str] = None,
+        labels: Sequence[Sequence[int]] = None,
         learning_rate=0.0001,
         epochs=3,
     ):
@@ -667,11 +690,13 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(
-                doc_manager=doc_manager,
-                query_col=query_col,
-                data=data,
-                id_delimiter=self._savable_state.model.get_id_delimiter(),
+            data_source=RefIdSupDataSource(
+                csv=csv,
+                query_column=query_column,
+                id_column=id_column,
+                id_delimiter=id_delimiter,
+                queries=queries,
+                labels=labels,
             ),
             learning_rate=learning_rate,
             epochs=epochs,

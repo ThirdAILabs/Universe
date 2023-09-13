@@ -351,3 +351,72 @@ def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
     assert db.search("sixth", top_k=1)[0].id == 9
     assert set([ref.id for ref in db.search("ninth", top_k=2)]) == set([5, 6])
     assert set([ref.id for ref in db.search("seventh", top_k=2)]) == set([7, 8])
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,first\n")
+        out.write("0:1,fourth\n")
+        out.write("8:9:,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("4,first\n")
+        out.write("0,fourth\n")
+        out.write("8,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    assert db.search("fourth", top_k=1)[0].id == 0
+    assert db.search("second", top_k=1)[0].id == 8
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+
+    db.supervised_train(
+        queries=["first", "fourth", "second"],
+        labels=[[4], [0, 1], [8, 9]],
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
