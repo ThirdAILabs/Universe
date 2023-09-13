@@ -234,7 +234,7 @@ class Mach(Model):
     def __init__(
         self,
         id_col="DOC_ID",
-        id_delimiter=None,
+        id_delimiter=" ",
         query_col="QUERY",
         fhr=50_000,
         embedding_dimension=2048,
