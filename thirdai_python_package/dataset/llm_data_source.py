@@ -5,7 +5,8 @@ from thirdai.dataset.data_source import PyDataSource
 
 def tokenize(tokenizer, json_obj):
     json_obj["target"] = tokenize_text(tokenizer, json_obj["target"])
-    json_obj["context"] = tokenize_text(tokenizer, json_obj["context"])
+    if "context" in json_obj:
+        json_obj["context"] = tokenize_text(tokenizer, json_obj["context"])
     return json_obj
 
 
