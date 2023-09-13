@@ -96,6 +96,10 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     entity_scores.pop_back();
   }
 
+  for (auto& item : entity_scores) {
+    item.second /= _num_hashes;
+  }
+
   return entity_scores;
 }
 
