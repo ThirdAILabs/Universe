@@ -3,14 +3,25 @@ import json
 from thirdai.dataset.data_source import PyDataSource
 
 
-class PretrainingTextDataSource(PyDataSource):
+def tokenize(tokenizer, json_obj):
+    json_obj["target"] = tokenize_text(tokenizer, json_obj["target"])
+    json_obj["context"] = tokenize_text(tokenizer, json_obj["context"])
+    return json_obj
+
+
+def tokenize_text(tokenizer, text):
+    tokens = tokenizer.encode(text)
+    return " ".join(map(str, tokens))
+
+
+class LLMDataSource(PyDataSource):
     def __init__(self, file_path):
         self.file_path = file_path
         try:
             from transformers import GPT2Tokenizer
         except ImportError:
             raise ImportError(
-                "transformers library is not installed. Please install it to use PretrainingTextDataSource."
+                "transformers library is not installed. Please install it to use LLMDataSource."
             )
         self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
         PyDataSource.__init__(self)
@@ -19,14 +30,37 @@ class PretrainingTextDataSource(PyDataSource):
     def _get_line_iterator(self):
         with open(self.file_path, "r") as file:
             for line in file:
-                tokenized_line = self._tokenize(line.strip())
-                yield tokenized_line
-
-    def _tokenize(self, text):
-        tokens = self.tokenizer.encode(text)
-        tokenized_text = " ".join(map(str, tokens))
-        json_output = json.dumps({"target": tokenized_text})
-        return json_output
+                json_obj = json.loads(line.strip())
+                tokenized_json_obj = json.dumps(tokenize(self.tokenizer, json_obj))
+                yield tokenized_json_obj
 
     def resource_name(self) -> str:
         return self.file_path
+
+
+class RayTextDataSource(PyDataSource):
+    def __init__(self, ray_dataset, should_tokenize=False):
+        PyDataSource.__init__(self)
+        self.ray_dataset = ray_dataset
+        self.should_tokenize = should_tokenize
+        try:
+            import ray
+            from transformers import GPT2Tokenizer
+        except ImportError:
+            raise ImportError(
+                "This class requires both the 'ray' and 'transformers' libraries. Please ensure they are installed."
+            )
+        if self.should_tokenize:
+            self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+        self.restart()
+
+    def _get_line_iterator(self):
+        for row in self.ray_dataset.iter_rows():
+            text = row["text"]
+            if self.should_tokenize:
+                json_obj = json.loads(text.strip())
+                text = json.dumps(tokenize(self.tokenizer, json_obj))
+            yield text
+
+    def resource_name(self) -> str:
+        return f"ray-dataset-sources"
