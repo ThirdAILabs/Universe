@@ -137,7 +137,9 @@ GenerativeModel::GenerativeModel(
     : _model(std::move(model)),
       _allowed_repeats(std::move(allowed_repeats)),
       _punctuation_tokens(std::move(punctuation_tokens)),
-      _punctuation_repeat_threshold(punctuation_repeat_threshold) {}
+      _punctuation_repeat_threshold(punctuation_repeat_threshold) {
+  licensing::entitlements().verifyFullAccess();
+}
 
 std::vector<uint32_t> GenerativeModel::generate(
     const std::vector<uint32_t>& input_tokens, size_t n_predictions,

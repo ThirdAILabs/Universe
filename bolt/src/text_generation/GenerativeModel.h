@@ -7,6 +7,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <licensing/src/CheckLicense.h>
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -145,7 +146,7 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   std::unordered_set<uint32_t> _punctuation_tokens;
   float _punctuation_repeat_threshold;
 
-  GenerativeModel() {}
+  GenerativeModel() { licensing::entitlements().verifyFullAccess(); }
 
   friend class cereal::access;
   template <class Archive>
