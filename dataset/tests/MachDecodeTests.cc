@@ -17,11 +17,11 @@ void testMachDecode(const BoltVector& output) {
   ASSERT_EQ(results.size(), top_k);
 
   ASSERT_EQ(results[0].first, 2);
-  ASSERT_NEAR(results[0].second, 0.9, 0.0001);
+  ASSERT_NEAR(results[0].second, 0.9 / 2, 0.0001);
   ASSERT_EQ(results[1].first, 3);
-  ASSERT_NEAR(results[1].second, 0.7, 0.0001);
+  ASSERT_NEAR(results[1].second, 0.7 / 2, 0.0001);
   ASSERT_EQ(results[2].first, 1);
-  ASSERT_NEAR(results[2].second, 0.5, 0.0001);
+  ASSERT_NEAR(results[2].second, 0.5 / 2, 0.0001);
 }
 
 TEST(MachDecodeTests, DenseDecode) {
