@@ -1,11 +1,11 @@
 import hashlib
 import os
+import pickle
 import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
 from typing import List, Optional, Tuple
-import pickle
 
 import numpy as np
 import pandas as pd
