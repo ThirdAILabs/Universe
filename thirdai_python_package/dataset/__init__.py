@@ -9,3 +9,4 @@ __all__.extend(dir(thirdai._thirdai.dataset))
 from .csv_data_source import CSVDataSource
 from .parquet_data_source import ParquetSource
 from .ray_data_source import RayCsvDataSource, RayTextDataSource
+from .llm_data_source import PretrainingTextDataSource
