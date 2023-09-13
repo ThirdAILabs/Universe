@@ -1,5 +1,6 @@
-from thirdai.dataset.data_source import PyDataSource
 import json
+
+from thirdai.dataset.data_source import PyDataSource
 
 
 class PretrainingTextDataSource(PyDataSource):

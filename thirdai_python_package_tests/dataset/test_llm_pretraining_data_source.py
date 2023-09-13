@@ -1,6 +1,6 @@
 import pytest
-from thirdai.dataset import PretrainingTextDataSource
 from thirdai import bolt, dataset
+from thirdai.dataset import PretrainingTextDataSource
 
 
 @pytest.mark.unit
