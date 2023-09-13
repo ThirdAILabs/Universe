@@ -82,6 +82,9 @@ def process_url(url, response):
         return f"cannot extract text from {url}", False
 
     index = response.text
+    title_start_pos = index.find("<title>") + len("<title>")
+    title_end_pos = index.find("</title>")
+    title = index[title_start_pos:title_end_pos]
     result = extract(
         index,
         include_formatting=False,
@@ -98,7 +101,7 @@ def process_url(url, response):
 
     for text in texts:
         text = str(text).strip().replace("\r\n", " ").replace("\n", " ")
-        row = [text, url]
+        row = [text, url, title]
         elem.append(row)
 
     return elem, True
@@ -107,7 +110,7 @@ def process_url(url, response):
 def create_train_df(elements):
     df = pd.DataFrame(
         index=range(len(elements)),
-        columns=["text", "display", "url"],
+        columns=["text", "display", "url", "title"],
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(elem[0])
@@ -117,6 +120,7 @@ def create_train_df(elements):
             text,
             elem[0],
             elem[1],
+            elem[2],
         ]
     for column in ["text", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)

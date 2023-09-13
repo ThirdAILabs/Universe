@@ -591,7 +591,9 @@ class URL(Document):
         return self.url
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["text"].iloc[element_id]
+        return self.df["title" if "title" in self.df.columns else "text"].iloc[
+            element_id
+        ]
 
     def weak_text(self, element_id: int) -> str:
         return self.df["text"].iloc[element_id]
@@ -602,7 +604,9 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={},
+            metadata={"title": self.df["title"].iloc[element_id]}
+            if "title" in self.df.columns
+            else {},
         )
 
     def context(self, element_id, radius) -> str:
