@@ -576,6 +576,9 @@ class NeuralDB:
 
         return references
 
+    def reference(self, element_id: int):
+        return self._savable_state.documents.reference(element_id)
+
     def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
 
