@@ -189,6 +189,39 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
   return candidates;
 }
 
+std::pair<std::vector<std::string>, std::vector<float>>
+SymPreTrainer::accumulate_scores(std::vector<std::vector<std::string>> phrases,
+                                 std::vector<std::vector<float>> phrase_scores,
+                                 std::optional<uint32_t> top_k) {
+  std::vector<std::string> flattenedPhrases;
+  for (const auto& vec : phrases) {
+    flattenedPhrases.insert(flattenedPhrases.end(), vec.begin(), vec.end());
+  }
+
+  std::vector<float> flattenedScores;
+  for (const auto& vec : phrase_scores) {
+    flattenedScores.insert(flattenedScores.end(), vec.begin(), vec.end());
+  }
+  std::vector<std::pair<std::string, float>> phraseScorePairs;
+
+  for (size_t i = 0; i < flattenedPhrases.size(); ++i) {
+    phraseScorePairs.emplace_back(flattenedPhrases[i], flattenedScores[i]);
+  }
+  std::sort(phraseScorePairs.begin(), phraseScorePairs.end(),
+            [](const std::pair<std::string, float>& a,
+               const std::pair<std::string, float>& b) {
+              return a.second > b.second;
+            });
+  std::vector<std::string> topKPhrases;
+  std::vector<float> topKScores;
+
+  for (size_t i = 0; i < top_k.value() && i < phraseScorePairs.size(); ++i) {
+    topKPhrases.push_back(phraseScorePairs[i].first);
+    topKScores.push_back(phraseScorePairs[i].second);
+  }
+  return std::make_pair(topKPhrases, topKScores);
+}
+
 void SymPreTrainer::index_words(std::vector<std::string> words_to_index,
                                 std::vector<int> frequency) {
   SuggestionStage staging = SuggestionStage(16384);

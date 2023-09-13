@@ -58,15 +58,10 @@ class UDTQueryReformulation final : public UDTBackend {
       const dataset::DataSourcePtr& data, const std::string& col_to_hash,
       bool include_labels, uint32_t batch_size, bool verbose);
 
-  std::pair<std::vector<std::string>, std::vector<float>> accumulate_scores(
-      std::vector<std::vector<std::string>> phrases,
-      std::vector<std::vector<float>> phrase_scores,
-      std::optional<uint32_t> top_k);
-
   std::tuple<std::vector<std::vector<uint32_t>>,
              std::vector<std::vector<std::string>>,
              std::vector<std::vector<float>>>
-  get_results(const MapInputBatch& sample, std::optional<int> top_k);
+  predictBatchUtil(const MapInputBatch& sample, std::optional<int> top_k);
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
                       const dataset::BoltDatasetPtr& labels,

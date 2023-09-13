@@ -83,6 +83,11 @@ class SymPreTrainer {
   void index_words(std::vector<std::string> words_to_index,
                    std::vector<int> frequency);
 
+  std::pair<std::vector<std::string>, std::vector<float>> accumulate_scores(
+      std::vector<std::vector<std::string>> phrases,
+      std::vector<std::vector<float>> phrase_scores,
+      std::optional<uint32_t> top_k);
+
   std::vector<MapInputBatch> parse_data(const DataSourcePtr& data,
                                         std::string correct_column_name,
                                         uint32_t batch_size);

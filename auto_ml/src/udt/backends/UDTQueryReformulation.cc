@@ -190,14 +190,17 @@ py::object UDTQueryReformulation::evaluate(
           _pretrainer.generate_candidates(input_candidate_batches[batch_id]);
       MapInputBatch sample_cand = candidates.first;
 
+      // Stores the number of candidates generated for each query
       freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                          candidates.second.end());
 
+      // Prefix sum so that freq_counts(i,i+1) holds the start and end idx for
+      // query i
       for (uint32_t i = 1; i < freq_counts.size(); i++) {
         freq_counts[i] += freq_counts[i - 1];
       }
 
-      auto results = get_results(sample_cand, top_k);
+      auto results = predictBatchUtil(sample_cand, top_k);
       auto phrase_ids = std::get<0>(results);
       auto phrases = std::get<1>(results);
       auto phrase_scores = std::get<2>(results);
@@ -209,11 +212,15 @@ py::object UDTQueryReformulation::evaluate(
         uint32_t end_idx = freq_counts[cnt_id + 1];
 
         std::unordered_map<uint32_t, float> id_to_score;
+
+        // candidates for current query lies in [start_idx: end_idx]
         for (uint32_t i = start_idx; i < end_idx; i++) {
           for (uint32_t j = 0; j < phrase_ids[i].size(); j++) {
             id_to_score[phrase_ids[i][j]] += phrase_scores[i][j];
           }
         }
+
+        // Get the top k reformulated phrase ids
         std::vector<std::pair<float, uint32_t>> score_to_id;
 
         for (const auto& pair : id_to_score) {
@@ -274,45 +281,11 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                       top_k);
 }
 
-std::pair<std::vector<std::string>, std::vector<float>>
-UDTQueryReformulation::accumulate_scores(
-    std::vector<std::vector<std::string>> phrases,
-    std::vector<std::vector<float>> phrase_scores,
-    std::optional<uint32_t> top_k) {
-  std::vector<std::string> flattenedPhrases;
-  for (const auto& vec : phrases) {
-    flattenedPhrases.insert(flattenedPhrases.end(), vec.begin(), vec.end());
-  }
-
-  std::vector<float> flattenedScores;
-  for (const auto& vec : phrase_scores) {
-    flattenedScores.insert(flattenedScores.end(), vec.begin(), vec.end());
-  }
-  std::vector<std::pair<std::string, float>> phraseScorePairs;
-
-  for (size_t i = 0; i < flattenedPhrases.size(); ++i) {
-    phraseScorePairs.emplace_back(flattenedPhrases[i], flattenedScores[i]);
-  }
-  std::sort(phraseScorePairs.begin(), phraseScorePairs.end(),
-            [](const std::pair<std::string, float>& a,
-               const std::pair<std::string, float>& b) {
-              return a.second > b.second;
-            });
-  std::vector<std::string> topKPhrases;
-  std::vector<float> topKScores;
-
-  for (size_t i = 0; i < top_k.value() && i < phraseScorePairs.size(); ++i) {
-    topKPhrases.push_back(phraseScorePairs[i].first);
-    topKScores.push_back(phraseScorePairs[i].second);
-  }
-  return std::make_pair(topKPhrases, topKScores);
-}
-
 std::tuple<std::vector<std::vector<uint32_t>>,
            std::vector<std::vector<std::string>>,
            std::vector<std::vector<float>>>
-UDTQueryReformulation::get_results(const MapInputBatch& sample,
-                                   std::optional<int> top_k) {
+UDTQueryReformulation::predictBatchUtil(const MapInputBatch& sample,
+                                        std::optional<int> top_k) {
   dataset::MapBatchRef sample_ref(sample);
   auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
 
@@ -352,7 +325,7 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
     freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                        candidates.second.end());
 
-    auto results = get_results(sample_cand, top_k);
+    auto results = predictBatchUtil(sample_cand, top_k);
     auto phrases = std::get<1>(results);
     auto phrase_scores = std::get<2>(results);
     // Prefix sum over freq counts
@@ -369,14 +342,14 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
           phrase_scores.begin() + freq_counts[query_id],
           phrase_scores.begin() + freq_counts[query_id + 1]);
       std::pair<std::vector<std::string>, std::vector<float>> accumulated_res =
-          accumulate_scores(query_phrases, query_scores, top_k);
+          _pretrainer.accumulate_scores(query_phrases, query_scores, top_k);
       all_phrases.push_back(accumulated_res.first);
       all_phrase_scores.push_back(accumulated_res.second);
     }
     return py::make_tuple(py::cast(all_phrases), py::cast(all_phrase_scores));
   }
 
-  auto results = get_results(sample, top_k);
+  auto results = predictBatchUtil(sample, top_k);
   auto phrases = std::get<1>(results);
   auto phrase_scores = std::get<2>(results);
 
