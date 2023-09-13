@@ -40,7 +40,8 @@ void addTextGenerationModels(py::module_& module) {
       module, "GenerativeModel")
 #if THIRDAI_EXPOSE_ALL
       .def(py::init(&GenerativeModel::make), py::arg("model"),
-           py::arg("allowed_repeats"), py::arg("punctuation_tokens"))
+           py::arg("allowed_repeats"), py::arg("punctuation_tokens"),
+           py::arg("punctuation_repeat_threshold") = 0.6)
 #endif
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
            py::arg("n_predictions"), py::arg("beam_width"),

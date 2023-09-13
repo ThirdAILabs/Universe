@@ -108,7 +108,8 @@ void BeamSearchDecoder::reduceProbsForRepeats(
   for (size_t i = start; i < sequence.size(); i++) {
     uint32_t token = sequence[i];
 
-    if ((_generator->isPunct(token) && probs.activations[token] < 0.8) ||
+    if ((_generator->isPunct(token) &&
+         probs.activations[token] < _generator->punctuationRepeatThreshold()) ||
         !_generator->isAllowedRepeat(token)) {
       probs.activations[token] = 0.0;
     }
@@ -131,10 +132,12 @@ void BeamSearchDecoder::reduceProbsForRepeats(
 GenerativeModel::GenerativeModel(
     std::shared_ptr<GenerativeBackend> model,
     std::unordered_set<uint32_t> allowed_repeats,
-    std::unordered_set<uint32_t> punctuation_tokens)
+    std::unordered_set<uint32_t> punctuation_tokens,
+    float punctuation_repeat_threshold)
     : _model(std::move(model)),
       _allowed_repeats(std::move(allowed_repeats)),
-      _punctuation_tokens(std::move(punctuation_tokens)) {}
+      _punctuation_tokens(std::move(punctuation_tokens)),
+      _punctuation_repeat_threshold(punctuation_repeat_threshold) {}
 
 std::vector<uint32_t> GenerativeModel::generate(
     const std::vector<uint32_t>& input_tokens, size_t n_predictions,

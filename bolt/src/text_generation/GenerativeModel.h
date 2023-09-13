@@ -84,15 +84,17 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
  private:
   GenerativeModel(std::shared_ptr<GenerativeBackend> model,
                   std::unordered_set<uint32_t> allowed_repeats,
-                  std::unordered_set<uint32_t> punctuation_tokens);
+                  std::unordered_set<uint32_t> punctuation_tokens,
+                  float punctuation_repeat_threshold);
 
  public:
   static auto make(std::shared_ptr<GenerativeBackend> model,
                    std::unordered_set<uint32_t> allowed_repeats,
-                   std::unordered_set<uint32_t> punctuation_tokens) {
-    return std::shared_ptr<GenerativeModel>(
-        new GenerativeModel(std::move(model), std::move(allowed_repeats),
-                            std::move(punctuation_tokens)));
+                   std::unordered_set<uint32_t> punctuation_tokens,
+                   float punctuation_repeat_threshold) {
+    return std::shared_ptr<GenerativeModel>(new GenerativeModel(
+        std::move(model), std::move(allowed_repeats),
+        std::move(punctuation_tokens), punctuation_repeat_threshold));
   }
 
   std::vector<uint32_t> generate(
@@ -118,11 +120,15 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
     return _allowed_repeats.count(token);
   }
 
-  bolt::ModelPtr getBoltModel() { return _model->getBoltModel(); }
-
   bool isPunct(uint32_t token) const {
     return _punctuation_tokens.count(token);
   }
+
+  float punctuationRepeatThreshold() const {
+    return _punctuation_repeat_threshold;
+  }
+
+  bolt::ModelPtr getBoltModel() { return _model->getBoltModel(); }
 
   void save(const std::string& filename) const;
 
@@ -137,13 +143,15 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
 
   std::unordered_set<uint32_t> _allowed_repeats;
   std::unordered_set<uint32_t> _punctuation_tokens;
+  float _punctuation_repeat_threshold;
 
   GenerativeModel() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_model, _allowed_repeats, _punctuation_tokens);
+    archive(_model, _allowed_repeats, _punctuation_tokens,
+            _punctuation_repeat_threshold);
   }
 };
 
