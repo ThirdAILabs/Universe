@@ -63,7 +63,6 @@ class Bazaar:
                 return cached_model_dir
 
         self._download(identifier)
-        print("hello")
         return self._unpack_and_remove_zip(identifier)
 
     def get_model(self, identifier: str):
