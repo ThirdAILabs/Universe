@@ -212,15 +212,18 @@ py::object UDTQueryReformulation::evaluate(
             id_to_score[phrase_ids[i][j]] += phrase_scores[i][j];
           }
         }
-        std::multimap<float, uint32_t, std::greater<float>> score_to_id;
+        std::vector<std::pair<float, uint32_t>> score_to_id;
 
         for (const auto& pair : id_to_score) {
-            score_to_id.insert(std::make_pair(pair.second, pair.first));
+            score_to_id.push_back(std::make_pair(pair.second, pair.first));
         }
+        std::sort(score_to_id.begin(), score_to_id.end(), [](const std::pair<float, uint32_t>& a, const std::pair<float, uint32_t>& b) {
+          return a.first > b.first; 
+        });
+
         std::vector<uint32_t> top_k_ids;
-        auto it = score_to_id.begin();
-        for (uint32_t i = 0; i < top_k.value() && it != score_to_id.end(); ++i, ++it) {
-            top_k_ids.push_back(it->second);
+        for (uint32_t i = 0; i < top_k.value() && i < score_to_id.size(); i++) {
+            top_k_ids.push_back(score_to_id[i].second);
         }
         phrase_id_accum.push_back(top_k_ids);
       }
