@@ -137,9 +137,7 @@ GenerativeModel::GenerativeModel(
     : _model(std::move(model)),
       _allowed_repeats(std::move(allowed_repeats)),
       _punctuation_tokens(std::move(punctuation_tokens)),
-      _punctuation_repeat_threshold(punctuation_repeat_threshold) {
-  licensing::entitlements().verifyFullAccess();
-}
+      _punctuation_repeat_threshold(punctuation_repeat_threshold) {}
 
 std::vector<uint32_t> GenerativeModel::generate(
     const std::vector<uint32_t>& input_tokens, size_t n_predictions,
@@ -166,6 +164,8 @@ metrics::History GenerativeModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const DistributedCommPtr& comm) {
+  licensing::entitlements().verifyFullAccess();
+
   return _model->train(train_data, learning_rate, epochs, batch_size,
                        train_metrics, val_data, val_metrics, comm);
 }

@@ -146,7 +146,7 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   std::unordered_set<uint32_t> _punctuation_tokens;
   float _punctuation_repeat_threshold;
 
-  GenerativeModel() { licensing::entitlements().verifyFullAccess(); }
+  GenerativeModel() {}
 
   friend class cereal::access;
   template <class Archive>
