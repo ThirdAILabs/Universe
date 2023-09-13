@@ -30,6 +30,8 @@ class DyadicModel final : public GenerativeBackend {
                          const std::vector<std::string>& val_metrics,
                          const DistributedCommPtr& comm) final;
 
+  bolt::ModelPtr getBoltModel() final { return _model; }
+
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
                              size_t batch_size, bool shuffle);

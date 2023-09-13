@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_set.hpp>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -24,6 +25,8 @@ class GenerativeBackend {
                                  const dataset::DataSourcePtr& val_data,
                                  const std::vector<std::string>& val_metrics,
                                  const DistributedCommPtr& comm) = 0;
+
+  virtual ModelPtr getBoltModel() = 0;
 
   virtual ~GenerativeBackend() = default;
 
@@ -114,6 +117,8 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   bool isAllowedRepeat(uint32_t token) const {
     return _allowed_repeats.count(token);
   }
+
+  bolt::ModelPtr getBoltModel() { return _model->getBoltModel(); }
 
   bool isPunct(uint32_t token) const {
     return _punctuation_tokens.count(token);

@@ -57,7 +57,9 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("comm") = nullptr)
       .def("save", &GenerativeModel::save)
-      .def_static("load", &GenerativeModel::load, py::arg("filename"));
+      .def_static("load", &GenerativeModel::load, py::arg("filename"))
+      .def_property_readonly("model", &GenerativeModel::getBoltModel,
+                             py::return_value_policy::reference_internal);
 }
 
 }  // namespace thirdai::bolt::python
