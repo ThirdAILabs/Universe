@@ -14,7 +14,7 @@ from distributed_utils import (
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
-from thirdai import bolt
+from thirdai import bolt, dataset
 
 
 def training_loop_per_worker(config):

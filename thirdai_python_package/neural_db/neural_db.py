@@ -64,14 +64,29 @@ class Sup:
         csv: str = None,
         query_column: str = None,
         id_column: str = None,
+        id_delimiter: str = None,
         queries: Sequence[str] = None,
-        labels: Sequence[int] = None,
+        labels: Sequence[Sequence[int]] = None,
         source_id: str = "",
     ):
         if csv is not None and query_column is not None and id_column is not None:
             df = pd.read_csv(csv)
             self.queries = df[query_column]
             self.labels = df[id_column]
+            for i, label in enumerate(self.labels):
+                if label == None or label == "":
+                    raise ValueError(
+                        f"Got a supervised sample with an empty label, query: '{self.queries[i]}'"
+                    )
+            if id_delimiter:
+                self.labels = self.labels.apply(
+                    lambda label: list(
+                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                    )
+                )
+            else:
+                self.labels = self.labels.apply(lambda label: [int(label)])
+
         elif queries is not None and labels is not None:
             if len(queries) != len(labels):
                 raise ValueError(
@@ -93,11 +108,20 @@ class SupDataSource(PyDataSource):
     supervised datasets simultaneously.
     """
 
-    def __init__(self, doc_manager: DocumentManager, query_col: str, data: List[Sup]):
+    def __init__(
+        self,
+        doc_manager: DocumentManager,
+        query_col: str,
+        data: List[Sup],
+        id_delimiter: Optional[str],
+    ):
         PyDataSource.__init__(self)
         self.doc_manager = doc_manager
         self.query_col = query_col
         self.data = data
+        self.id_delimiter = id_delimiter
+        if not self.id_delimiter:
+            print("WARNING: this model does not fully support multi-label datasets.")
         self.restart()
 
     def _csv_line(self, query: str, label: str):
@@ -120,8 +144,16 @@ class SupDataSource(PyDataSource):
             if len(source_ids) > 1:
                 raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
             _, start_id = self.doc_manager.source_by_id(source_ids[0])
-            for query, label in zip(sup.queries, sup.labels):
-                yield self._csv_line(query, str(label + start_id))
+            for query, labels in zip(sup.queries, sup.labels):
+                if self.id_delimiter:
+                    label_str = self.id_delimiter.join(
+                        [str(start_id + int(label)) for label in labels]
+                    )
+                    yield self._csv_line(query, label_str)
+                else:
+                    for label in labels:
+                        label_str = str(start_id + int(label))
+                        yield self._csv_line(query, label_str)
 
     def resource_name(self) -> str:
         return "Supervised training samples"
@@ -302,7 +334,7 @@ class NeuralDB:
         def training_loop_per_worker(config):
             import thirdai.distributed_bolt as dist
             from ray.air import session
-            from thirdai.dataset import RayDataSource
+            from thirdai.dataset import RayCsvDataSource
 
             if config["licensing_lambda"]:
                 config["licensing_lambda"]()
@@ -322,7 +354,7 @@ class NeuralDB:
             max_in_memory_batches = config["max_in_memory_batches"]
 
             metrics = model.coldstart_distributed_on_data_source(
-                data_source=RayDataSource(stream_split_data_iterator),
+                data_source=RayCsvDataSource(stream_split_data_iterator),
                 strong_column_names=strong_column_names,
                 weak_column_names=weak_column_names,
                 learning_rate=learning_rate,
@@ -552,7 +584,12 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(doc_manager, query_col, data),
+            data_source=SupDataSource(
+                doc_manager=doc_manager,
+                query_col=query_col,
+                data=data,
+                id_delimiter=self._savable_state.model.get_id_delimiter(),
+            ),
             learning_rate=learning_rate,
             epochs=epochs,
         )

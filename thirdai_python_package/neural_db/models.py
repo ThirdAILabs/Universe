@@ -234,7 +234,7 @@ class Mach(Model):
     def __init__(
         self,
         id_col="DOC_ID",
-        id_delimiter=None,
+        id_delimiter=" ",
         query_col="QUERY",
         fhr=50_000,
         embedding_dimension=2048,
@@ -386,14 +386,7 @@ class Mach(Model):
     ) -> Predictions:
         self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        all_predictions = self.model.predict_batch(infer_batch)
-        num_hashes = self.model.get_index().num_hashes()
-        if num_hashes == 0:
-            raise ValueError("Model in invalid state. Num hashes should not be 0.")
-        return [
-            [(int(pred), score / num_hashes) for pred, score in predictions]
-            for predictions in all_predictions
-        ]
+        return self.model.predict_batch(infer_batch)
 
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
