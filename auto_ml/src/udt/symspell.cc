@@ -103,6 +103,44 @@ SymPreTrainer::get_correct_spelling_list(
   return std::make_tuple(tokens, scores);
 }
 
+std::pair<MapInputBatch, std::vector<uint32_t>>
+SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
+  MapInputBatch candidate_samples;
+  std::vector<uint32_t> candidate_count;
+
+  for (auto input_sample : samples) {
+    std::string query_str = input_sample.begin()->second;
+
+    // clean query
+    std::string query_clean;
+    for (char c : query_str) {
+      if (std::isalnum(c) || c == ' ') {
+        query_clean += c;
+      }
+    }
+
+    std::vector<std::string> tokenizedQuery;
+    std::istringstream iss(query_clean);
+    std::string token;
+
+    while (iss >> token) {
+      tokenizedQuery.push_back(token);
+    }
+    std::vector<SpellCheckedSentence> candidates =
+        correct_sentence(tokenizedQuery, PREDICTIONS_PER_TOKEN,
+                         BEAM_SEARCH_WIDTH, STOP_IF_FOUND);
+
+    for (SpellCheckedSentence& candidate : candidates) {
+      MapInput sample;
+      sample[input_sample.begin()->first] = candidate.get_string();
+      candidate_samples.push_back(sample);
+    }
+    candidate_count.push_back(candidates.size());
+  }
+
+  return make_pair(candidate_samples, candidate_count);
+}
+
 std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
     std::vector<std::string> tokens_list, int predictions_per_token,
     int maximum_candidates, bool stop_if_found) {
@@ -180,7 +218,7 @@ std::vector<MapInputBatch> SymPreTrainer::parse_data(
   std::string columnHeader;
   std::vector<std::string> headers;
   // Parse the header to find the "target_queries" column
-  while (std::getline(headerStream, columnHeader, ',')) {
+  while (std::getline(headerStream, columnHeader, CSV_DELIMITER)) {
     headers.push_back(columnHeader);
   }
   int targetQueriesIndex = -1;
@@ -209,8 +247,7 @@ std::vector<MapInputBatch> SymPreTrainer::parse_data(
     }
     if (targetQueriesIndex + 1 > (int)comma_sep_sents.size()) {
       line_str = "";
-    }
-    else{
+    } else {
       line_str = comma_sep_sents[targetQueriesIndex];
     }
     MapInput sample;
@@ -234,9 +271,8 @@ void SymPreTrainer::pretrain_file(const DataSourcePtr& data,
                                   std::string correct_column_name) {
   std::unordered_map<std::string, int> frequency;
 
-  auto parsed_data = parse_data(
-      data, correct_column_name,
-      thirdai::automl::udt::defaults::QUERY_REFORMULATION_BATCH_SIZE);
+  auto parsed_data =
+      parse_data(data, correct_column_name, QUERY_REFORMULATION_BATCH_SIZE);
 
   for (auto batch : parsed_data)
 

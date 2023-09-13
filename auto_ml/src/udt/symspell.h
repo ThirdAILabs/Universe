@@ -6,6 +6,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <fstream>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <regex>
@@ -14,9 +15,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <map>
 
 using namespace thirdai::dataset;
+using namespace thirdai::automl::udt::defaults;
 
 class SpellCheckedSentence {
  private:
@@ -71,6 +72,9 @@ class SymPreTrainer {
              std::vector<std::vector<float>>>
   get_correct_spelling_list(const std::vector<std::string>& word_list,
                             int top_k);
+
+  std::pair<MapInputBatch, std::vector<uint32_t>> generate_candidates(
+      const MapInputBatch& samples);
 
   std::vector<SpellCheckedSentence> correct_sentence(
       std::vector<std::string> tokens_list, int predictions_per_token,

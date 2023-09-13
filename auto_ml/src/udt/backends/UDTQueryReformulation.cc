@@ -167,7 +167,9 @@ py::object UDTQueryReformulation::evaluate(
                defaults::QUERY_REFORMULATION_BATCH_SIZE, verbose);
 
   data->restart();
-  auto input_candidate_batches = _pretrainer.parse_data(data, _incorrect_column_name.value(), defaults::QUERY_REFORMULATION_BATCH_SIZE);
+  auto input_candidate_batches =
+      _pretrainer.parse_data(data, _incorrect_column_name.value(),
+                             defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ verbose,
@@ -180,19 +182,20 @@ py::object UDTQueryReformulation::evaluate(
   bolt::utils::Timer timer;
 
   if (_use_spell_checker && _use_spell_checker.value()) {
-    for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size(); batch_id++){
+    for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size();
+         batch_id++) {
       std::vector<uint32_t> freq_counts = {0};
 
       std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
-          generate_candidates(input_candidate_batches[batch_id]);
+          _pretrainer.generate_candidates(input_candidate_batches[batch_id]);
       MapInputBatch sample_cand = candidates.first;
 
       freq_counts.insert(freq_counts.end(), candidates.second.begin(),
-                        candidates.second.end());
+                         candidates.second.end());
 
       for (uint32_t i = 1; i < freq_counts.size(); i++) {
-          freq_counts[i] += freq_counts[i - 1];
-        }
+        freq_counts[i] += freq_counts[i - 1];
+      }
 
       auto results = get_results(sample_cand, top_k);
       auto phrase_ids = std::get<0>(results);
@@ -201,29 +204,30 @@ py::object UDTQueryReformulation::evaluate(
 
       std::vector<std::vector<uint32_t>> phrase_id_accum;
 
-      for(uint32_t cnt_id = 0; cnt_id < freq_counts.size() - 1; cnt_id++){
-        
+      for (uint32_t cnt_id = 0; cnt_id < freq_counts.size() - 1; cnt_id++) {
         uint32_t start_idx = freq_counts[cnt_id];
-        uint32_t end_idx = freq_counts[cnt_id+1];
+        uint32_t end_idx = freq_counts[cnt_id + 1];
 
         std::unordered_map<uint32_t, float> id_to_score;
-        for(uint32_t i = start_idx; i < end_idx; i++){
-          for(uint32_t j = 0; j < phrase_ids[i].size(); j++){
+        for (uint32_t i = start_idx; i < end_idx; i++) {
+          for (uint32_t j = 0; j < phrase_ids[i].size(); j++) {
             id_to_score[phrase_ids[i][j]] += phrase_scores[i][j];
           }
         }
         std::vector<std::pair<float, uint32_t>> score_to_id;
 
         for (const auto& pair : id_to_score) {
-            score_to_id.push_back(std::make_pair(pair.second, pair.first));
+          score_to_id.push_back(std::make_pair(pair.second, pair.first));
         }
-        std::sort(score_to_id.begin(), score_to_id.end(), [](const std::pair<float, uint32_t>& a, const std::pair<float, uint32_t>& b) {
-          return a.first > b.first; 
-        });
+        std::sort(score_to_id.begin(), score_to_id.end(),
+                  [](const std::pair<float, uint32_t>& a,
+                     const std::pair<float, uint32_t>& b) {
+                    return a.first > b.first;
+                  });
 
         std::vector<uint32_t> top_k_ids;
         for (uint32_t i = 0; i < top_k.value() && i < score_to_id.size(); i++) {
-            top_k_ids.push_back(score_to_id[i].second);
+          top_k_ids.push_back(score_to_id[i].second);
         }
         phrase_id_accum.push_back(top_k_ids);
       }
@@ -232,8 +236,7 @@ py::object UDTQueryReformulation::evaluate(
       correctly_retrieved += recall(phrase_id_accum, labels->at(batch_id));
       total_samples += input_candidate_batches[batch_id].size();
     }
-  }
-  else{
+  } else {
     for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
       auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
           inputs->at(batch_id), /* top_k= */ top_k.value());
@@ -271,44 +274,6 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                       top_k);
 }
 
-std::pair<MapInputBatch, std::vector<uint32_t>>
-UDTQueryReformulation::generate_candidates(const MapInputBatch& samples) {
-  MapInputBatch candidate_samples;
-  std::vector<uint32_t> candidate_count;
-
-  for (auto input_sample : samples) {
-    std::string query_str = input_sample.begin()->second;
-
-    // clean query
-    std::string query_clean;
-    for (char c : query_str) {
-      if (std::isalnum(c) || c == ' ') {
-        query_clean += c;
-      }
-    }
-
-    std::vector<std::string> tokenizedQuery;
-    std::istringstream iss(query_clean);
-    std::string token;
-
-    while (iss >> token) {
-      tokenizedQuery.push_back(token);
-    }
-    std::vector<SpellCheckedSentence> candidates = _pretrainer.correct_sentence(
-        tokenizedQuery, defaults::PREDICTIONS_PER_TOKEN,
-        defaults::BEAM_SEARCH_WIDTH, defaults::STOP_IF_FOUND);
-
-    for (SpellCheckedSentence& candidate : candidates) {
-      MapInput sample;
-      sample[input_sample.begin()->first] = candidate.get_string();
-      candidate_samples.push_back(sample);
-    }
-    candidate_count.push_back(candidates.size());
-  }
-
-  return make_pair(candidate_samples, candidate_count);
-}
-
 std::pair<std::vector<std::string>, std::vector<float>>
 UDTQueryReformulation::accumulate_scores(
     std::vector<std::vector<std::string>> phrases,
@@ -344,8 +309,8 @@ UDTQueryReformulation::accumulate_scores(
 }
 
 std::tuple<std::vector<std::vector<uint32_t>>,
-          std::vector<std::vector<std::string>>,
-          std::vector<std::vector<float>>>
+           std::vector<std::vector<std::string>>,
+           std::vector<std::vector<float>>>
 UDTQueryReformulation::get_results(const MapInputBatch& sample,
                                    std::optional<int> top_k) {
   dataset::MapBatchRef sample_ref(sample);
@@ -382,7 +347,7 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
     std::vector<uint32_t> freq_counts = {0};
 
     std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
-        generate_candidates(sample);
+        _pretrainer.generate_candidates(sample);
     MapInputBatch sample_cand = candidates.first;
     freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                        candidates.second.end());
