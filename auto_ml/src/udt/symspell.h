@@ -1,9 +1,9 @@
 #pragma once
 
 #include <SymspellCPP/include/SymSpell.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <fstream>
 #include <numeric>
@@ -14,6 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
 
 using namespace thirdai::dataset;
 
@@ -79,7 +80,8 @@ class SymPreTrainer {
                    std::vector<int> frequency);
 
   std::vector<MapInputBatch> parse_data(const DataSourcePtr& data,
-                      std::string correct_column_name, uint32_t batch_size);
+                                        std::string correct_column_name,
+                                        uint32_t batch_size);
 
   void pretrain_file(const DataSourcePtr& data,
                      std::string correct_column_name);

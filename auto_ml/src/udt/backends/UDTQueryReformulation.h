@@ -66,6 +66,11 @@ class UDTQueryReformulation final : public UDTBackend {
       std::vector<std::vector<float>> phrase_scores,
       std::optional<uint32_t> top_k);
 
+    std::tuple<std::vector<std::vector<uint32_t>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<float>>>
+  get_results(const MapInputBatch& sample, std::optional<int> top_k);
+
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
                       const dataset::BoltDatasetPtr& labels,
                       std::optional<ProgressBar>& bar,

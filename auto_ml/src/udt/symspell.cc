@@ -41,11 +41,10 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word, int top_k) {
 
   std::vector<SuggestItem> results;
   if (!this->use_word_segmentation) {
-    results = this->pretrainer.Lookup(
-        word, Verbosity::All, this->max_edit_distance);
+    results =
+        this->pretrainer.Lookup(word, Verbosity::All, this->max_edit_distance);
   } else {
-    results = this->pretrainer.LookupCompound(
-        word, this->max_edit_distance);
+    results = this->pretrainer.LookupCompound(word, this->max_edit_distance);
   }
 
   for (SuggestItem& res : results) {
@@ -107,7 +106,6 @@ SymPreTrainer::get_correct_spelling_list(
 std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
     std::vector<std::string> tokens_list, int predictions_per_token,
     int maximum_candidates, bool stop_if_found) {
-
   std::vector<float> scores(tokens_list.size(), 0.0F);
 
   SpellCheckedSentence prev = SpellCheckedSentence(tokens_list, scores);
@@ -117,7 +115,6 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
       this->get_correct_spelling_list(tokens_list, predictions_per_token);
 
   for (int i = 0; i < (int)tokens_list.size(); i++) {
-
     std::vector<std::string> current_candidate_tokens = predictions[i];
     std::vector<float> current_candidate_scores = prediction_scores[i];
 
@@ -125,7 +122,6 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
 
     for (auto candidate : candidates) {
       for (uint32_t j = 0; j < current_candidate_scores.size(); j++) {
-
         std::string token = current_candidate_tokens[j];
         float score = current_candidate_scores[j];
 
@@ -148,7 +144,8 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
       temp_candidates.resize(maximum_candidates);
     }
   }
-  std::vector<float> new_scores(tokens_list.size(), 1.0F / static_cast<float>(tokens_list.size()));
+  std::vector<float> new_scores(tokens_list.size(),
+                                1.0F / static_cast<float>(tokens_list.size()));
   candidates.push_back(SpellCheckedSentence(tokens_list, new_scores));
 
   return candidates;
@@ -171,7 +168,9 @@ void SymPreTrainer::index_words(std::vector<std::string> words_to_index,
   pretrainer.CommitStaged(&staging);
 }
 
-std::vector<MapInputBatch> SymPreTrainer::parse_data(const DataSourcePtr& data, std::string correct_column_name, uint32_t batch_size){
+std::vector<MapInputBatch> SymPreTrainer::parse_data(
+    const DataSourcePtr& data, std::string correct_column_name,
+    uint32_t batch_size) {
   std::optional<std::string> header = data->nextLine();
   if (header == std::nullopt) {
     throw std::runtime_error("File is empty.");
@@ -209,50 +208,51 @@ std::vector<MapInputBatch> SymPreTrainer::parse_data(const DataSourcePtr& data, 
       comma_sep_sents.push_back(token);
     }
     if (targetQueriesIndex + 1 > (int)comma_sep_sents.size()) {
-      line = data->nextLine();
-      continue;
+      line_str = "";
     }
-    line_str = comma_sep_sents[targetQueriesIndex];
+    else{
+      line_str = comma_sep_sents[targetQueriesIndex];
+    }
     MapInput sample;
-    sample["query"] = line_str;
+    sample["phrase"] = line_str;
     current_batch.push_back(sample);
 
-    if (current_batch.size() == batch_size){
+    if (current_batch.size() == batch_size) {
       parsed_data.push_back(current_batch);
       current_batch.clear();
     }
     line = data->nextLine();
   }
-  if (current_batch.size()){
-      parsed_data.push_back(current_batch);
-      current_batch.clear();
-    }
+  if (current_batch.size()) {
+    parsed_data.push_back(current_batch);
+    current_batch.clear();
+  }
   return parsed_data;
 }
 
 void SymPreTrainer::pretrain_file(const DataSourcePtr& data,
                                   std::string correct_column_name) {
-  
   std::unordered_map<std::string, int> frequency;
 
-  auto parsed_data = parse_data(data, correct_column_name, thirdai::automl::udt::defaults::QUERY_REFORMULATION_BATCH_SIZE);
+  auto parsed_data = parse_data(
+      data, correct_column_name,
+      thirdai::automl::udt::defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
-  for (auto batch: parsed_data)
-  
-    for (auto input: batch) {
+  for (auto batch : parsed_data)
 
-    std::string line_str = input.begin()->second;
+    for (auto input : batch) {
+      std::string line_str = input.begin()->second;
 
-    std::regex word_pattern("\\b[\\w'-]+\\b");
+      std::regex word_pattern("\\b[\\w'-]+\\b");
 
-    std::sregex_iterator word_iterator(line_str.begin(), line_str.end(),
-                                       word_pattern);
-    std::sregex_iterator end_iterator;
-    while (word_iterator != end_iterator) {
-      frequency[word_iterator->str()]++;
-      ++word_iterator;
+      std::sregex_iterator word_iterator(line_str.begin(), line_str.end(),
+                                         word_pattern);
+      std::sregex_iterator end_iterator;
+      while (word_iterator != end_iterator) {
+        frequency[word_iterator->str()]++;
+        ++word_iterator;
+      }
     }
-  }
   std::vector<std::string> words_to_index;
   words_to_index.reserve(frequency.size());
 
