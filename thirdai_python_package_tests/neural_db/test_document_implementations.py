@@ -82,3 +82,15 @@ def test_save_load_meta_method(doc):
     doc.save_meta(save_dir)
     doc.load_meta(save_dir)
     shutil.rmtree(save_dir)
+
+
+@pytest.mark.unit
+def test_doc_save_load_method(doc: ndb.Document):
+    doc.save("doc_save_dir")
+    loaded_doc: ndb.Document = doc.load("doc_save_dir")
+
+    assert loaded_doc.name == doc.name
+    assert loaded_doc.hash == doc.hash
+    assert loaded_doc.size == doc.size
+    for i in range(doc.size):
+        assert loaded_doc.reference(i).text == doc.reference(i).text

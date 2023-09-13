@@ -159,6 +159,63 @@ class SupDataSource(PyDataSource):
         return "Supervised training samples"
 
 
+class RefIdSupDataSource(PyDataSource):
+    """Combines supervised samples from multiple Sup objects into a single data
+    source. This allows NeuralDB's underlying model to train on all provided
+    supervised datasets simultaneously.
+    """
+
+    def __init__(
+        self,
+        doc_manager: DocumentManager,
+        query_col: str,
+        data: List[Sup],
+        id_delimiter: Optional[str],
+    ):
+        PyDataSource.__init__(self)
+        self.doc_manager = doc_manager
+        self.query_col = query_col
+        self.data = data
+        self.id_delimiter = id_delimiter
+        if not self.id_delimiter:
+            print("WARNING: this model does not fully support multi-label datasets.")
+        self.restart()
+
+    def _csv_line(self, query: str, label: str):
+        df = pd.DataFrame(
+            {
+                self.query_col: [query],
+                self.doc_manager.id_column: [label],
+            }
+        )
+        return df.to_csv(header=None, index=None).strip("\n")
+
+    def _get_line_iterator(self):
+        # First yield the header
+        yield self._csv_line(self.query_col, self.doc_manager.id_column)
+        # Then yield rows
+        for sup in self.data:
+            source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
+            if len(source_ids) == 0:
+                raise ValueError(f"Cannot find source with id {sup.source_id}")
+            if len(source_ids) > 1:
+                raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
+            _, start_id = self.doc_manager.source_by_id(source_ids[0])
+            for query, labels in zip(sup.queries, sup.labels):
+                if self.id_delimiter:
+                    label_str = self.id_delimiter.join(
+                        [str(start_id + int(label)) for label in labels]
+                    )
+                    yield self._csv_line(query, label_str)
+                else:
+                    for label in labels:
+                        label_str = str(start_id + int(label))
+                        yield self._csv_line(query, label_str)
+
+    def resource_name(self) -> str:
+        return "Supervised training samples"
+
+
 class NeuralDB:
     def __init__(self, user_id: str = "user", **kwargs) -> None:
         """user_id is used for logging purposes only"""
@@ -422,10 +479,11 @@ class NeuralDB:
         """
         return self._savable_state.ready()
 
-    def sources(self) -> Dict[str, str]:
-        """Returns a mapping from source IDs to their names. This is useful
-        when you need to know the source ID of a document you inserted, e.g.
-        for creating a Sup object for supervised_train().
+    def sources(self) -> Dict[str, Document]:
+        """Returns a mapping from source IDs to their corresponding document
+        objects. This is useful when you need to know the source ID of a
+        document you inserted, e.g. for creating a Sup object for
+        supervised_train().
         """
         return self._savable_state.documents.sources()
 
@@ -570,6 +628,31 @@ class NeuralDB:
             return 7
 
     def supervised_train(
+        self,
+        data: List[Sup],
+        learning_rate=0.0001,
+        epochs=3,
+    ):
+        """Train on supervised datasets that correspond to specific sources.
+        Suppose you inserted a "sports" product catalog and a "furniture"
+        product catalog. You also have supervised datasets - pairs of queries
+        and correct products - for both categories. You can use this method to
+        train NeuralDB on these supervised datasets.
+        """
+        doc_manager = self._savable_state.documents
+        query_col = self._savable_state.model.get_query_col()
+        self._savable_state.model.get_model().train_on_data_source(
+            data_source=SupDataSource(
+                doc_manager=doc_manager,
+                query_col=query_col,
+                data=data,
+                id_delimiter=self._savable_state.model.get_id_delimiter(),
+            ),
+            learning_rate=learning_rate,
+            epochs=epochs,
+        )
+
+    def supervised_train_with_ref_ids(
         self,
         data: List[Sup],
         learning_rate=0.0001,
