@@ -8,7 +8,6 @@ from thirdai.dataset import LLMDataSource
 @pytest.mark.unit
 def test_llm_data_source():
     VOCAB_SIZE = 50267
-    DUMMY_FILE = "dummy_text.txt"
 
     featurizer = dataset.TextGenerationFeaturizer(
         lrc_len=3, irc_len=2, src_len=1, vocab_size=VOCAB_SIZE
