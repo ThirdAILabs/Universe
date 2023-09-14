@@ -177,7 +177,9 @@ def test_save_load():
     saved_model = bolt.UniversalDeepTransformer.load(filename=save_file)
 
     eval_res = model.evaluate(TEST_FILE)
+    del eval_res["val_times"]
     saved_eval_res = saved_model.evaluate(TEST_FILE)
+    del saved_eval_res["val_times"]
     assert eval_res == saved_eval_res
 
     model.index(single_update())
