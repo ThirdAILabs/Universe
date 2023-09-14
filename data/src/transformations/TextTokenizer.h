@@ -11,15 +11,23 @@ namespace thirdai::data {
 class TextTokenizer final : public Transformation {
  public:
   TextTokenizer(
-      std::string input_column, std::string output_column,
+      std::string input_column, std::string output_indices,
+      std::optional<std::string> output_values,
       dataset::TextTokenizerPtr tokenizer, dataset::TextEncoderPtr encoder,
       bool lowercase = false,
       size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
  private:
-  std::string _input_column, _output_column;
+  static std::pair<std::vector<uint32_t>, std::vector<float>>
+  deduplicateIndices(std::vector<uint32_t>&& tokens);
+
+  std::string _input_column, _output_indices;
+  std::optional<std::string> _output_values;
 
   dataset::TextTokenizerPtr _tokenizer;
   dataset::TextEncoderPtr _encoder;

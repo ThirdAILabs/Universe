@@ -1,4 +1,5 @@
 #include "ColumnMap.h"
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -28,9 +29,35 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
   _num_rows = num_rows.value_or(0);
 }
 
+ColumnMap ColumnMap::fromMapInput(const automl::MapInput& sample) {
+  std::unordered_map<std::string, ColumnPtr> columns;
+  for (const auto& [name, row] : sample) {
+    columns[name] = ValueColumn<std::string>::make({row});
+  }
+
+  return ColumnMap(std::move(columns));
+}
+
+ColumnMap ColumnMap::fromMapInputBatch(const automl::MapInputBatch& samples) {
+  std::unordered_map<std::string, std::vector<std::string>> columns;
+
+  for (const auto& sample : samples) {
+    for (const auto& [name, row] : sample) {
+      columns[name].push_back(row);
+    }
+  }
+
+  std::unordered_map<std::string, ColumnPtr> column_map;
+  for (auto& [name, samples] : columns) {
+    column_map[name] = ValueColumn<std::string>::make(std::move(samples));
+  }
+
+  return ColumnMap(std::move(column_map));
+}
+
 template <typename T>
 ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ArrayColumnBase<T>>(getColumn(name));
+  auto column = ArrayColumnBase<T>::cast(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ArrayColumn.");
@@ -47,7 +74,7 @@ template ArrayColumnBasePtr<std::string> ColumnMap::getArrayColumn(
 
 template <typename T>
 ValueColumnBasePtr<T> ColumnMap::getValueColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ValueColumnBase<T>>(getColumn(name));
+  auto column = ValueColumnBase<T>::cast(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ValueColumn.");
@@ -102,6 +129,14 @@ void ColumnMap::shuffle(uint32_t seed) {
   for (auto& [_, column] : _columns) {
     column->shuffle(permutation);
   }
+}
+
+ColumnMap ColumnMap::permute(const std::vector<size_t>& permutation) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (auto [name, column] : _columns) {
+    new_columns[name] = column->permute(permutation);
+  }
+  return ColumnMap(std::move(new_columns));
 }
 
 ColumnMap ColumnMap::concat(ColumnMap& other) {

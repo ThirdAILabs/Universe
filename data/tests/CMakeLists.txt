@@ -2,7 +2,19 @@ enable_testing()
 
 include(GoogleTest)
 
-set(DATA_TESTS TensorConversionTests)
+set(DATA_TESTS
+    TensorConversionTests
+    DataLoaderTest
+    PermutationTest
+    EncodePositionTest
+    CountTokensTest
+    RecurrenceTest
+    GraphTests
+    ExplanationTests
+    RegressionBinningTest
+    DeduplicateTokensTest
+    ColumnMapIteratorTests
+    TabularTests)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)

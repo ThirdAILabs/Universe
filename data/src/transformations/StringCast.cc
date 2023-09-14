@@ -7,10 +7,12 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <dataset/src/utils/TimeUtils.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace thirdai::data {
 
@@ -34,6 +36,14 @@ CastToValue<float>::CastToValue(std::string input_column_name,
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)) {}
 
+template <>
+CastToValue<int64_t>::CastToValue(std::string input_column_name,
+                                  std::string output_column_name,
+                                  std::string format)
+    : _input_column_name(std::move(input_column_name)),
+      _output_column_name(std::move(output_column_name)),
+      _format(std::move(format)) {}
+
 template <typename T>
 ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -44,7 +54,8 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       rows[i] = parse(str_column->value(i));
@@ -71,7 +82,15 @@ uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
 
 template <>
 float CastToValue<float>::parse(const std::string& row) const {
+  if (row.empty()) {
+    return 0.0;  // Handles missing values in tabular datasets.
+  }
   return std::stof(row);
+}
+
+template <>
+int64_t CastToValue<int64_t>::parse(const std::string& row) const {
+  return dataset::TimeObject(row, _format).secondsSinceEpoch();
 }
 
 template <>
@@ -80,9 +99,53 @@ ColumnPtr CastToValue<uint32_t>::makeColumn(
   return ValueColumn<uint32_t>::make(std::move(rows), _dim);
 }
 
+template <typename T>
+ColumnPtr CastToValue<T>::makeColumn(std::vector<T>&& rows) const {
+  return ValueColumn<T>::make(std::move(rows));
+}
+
 template <>
-ColumnPtr CastToValue<float>::makeColumn(std::vector<float>&& rows) const {
-  return ValueColumn<float>::make(std::move(rows));
+void CastToValue<uint32_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explanation = "token " + value + " from " +
+                            explanations.explain(_input_column_name, value);
+
+  explanations.store(_output_column_name, parse(value), explanation);
+}
+
+template <>
+void CastToValue<float>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explanation = "decimal " + value + " from " +
+                            explanations.explain(_input_column_name, value);
+
+  explanations.store(_output_column_name,
+                     /* feature_index = */ 0, explanation);
+}
+
+template <>
+void CastToValue<int64_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  const std::string& value =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  std::string explanation = "timestamp " + value + " from " +
+                            explanations.explain(_input_column_name, value);
+
+  explanations.store(_output_column_name,
+                     /* feature_index = */ 0, explanation);
 }
 
 template <typename T>
@@ -90,6 +153,9 @@ template <class Archive>
 void CastToValue<T>::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column_name,
           _output_column_name, _dim);
+  if constexpr (std::is_same_v<T, int64_t>) {
+    archive(_format);
+  }
 }
 
 template void CastToValue<uint32_t>::serialize(cereal::BinaryInputArchive&);
@@ -98,22 +164,17 @@ template void CastToValue<uint32_t>::serialize(cereal::BinaryOutputArchive&);
 template void CastToValue<float>::serialize(cereal::BinaryInputArchive&);
 template void CastToValue<float>::serialize(cereal::BinaryOutputArchive&);
 
+template void CastToValue<int64_t>::serialize(cereal::BinaryInputArchive&);
+template void CastToValue<int64_t>::serialize(cereal::BinaryOutputArchive&);
+
 template class CastToValue<uint32_t>;
 template class CastToValue<float>;
+template class CastToValue<int64_t>;
 
-template <>
-CastToArray<uint32_t>::CastToArray(std::string input_column_name,
-                                   std::string output_column_name,
-                                   char delimiter, std::optional<size_t> dim)
-    : _input_column_name(std::move(input_column_name)),
-      _output_column_name(std::move(output_column_name)),
-      _delimiter(delimiter),
-      _dim(dim) {}
-
-template <>
-CastToArray<float>::CastToArray(std::string input_column_name,
-                                std::string output_column_name, char delimiter,
-                                std::optional<size_t> dim)
+template <typename T>
+CastToArray<T>::CastToArray(std::string input_column_name,
+                            std::string output_column_name, char delimiter,
+                            std::optional<size_t> dim)
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)),
       _delimiter(delimiter),
@@ -129,7 +190,8 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       for (const auto& item : text::split(str_column->value(i), _delimiter)) {
@@ -166,6 +228,41 @@ ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
 }
 
+template <>
+void CastToArray<uint32_t>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explanation =
+        "token " + item + " from " +
+        explanations.explain(_input_column_name, input_str);
+
+    explanations.store(_output_column_name, parse(item), explanation);
+  }
+}
+
+template <>
+void CastToArray<float>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  size_t index = 0;
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explanation =
+        "decimal " + item + " from " +
+        explanations.explain(_input_column_name, input_str);
+
+    explanations.store(_output_column_name, index++, explanation);
+  }
+}
+
 template <typename T>
 template <class Archive>
 void CastToArray<T>::serialize(Archive& archive) {
@@ -188,3 +285,4 @@ CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
+CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)

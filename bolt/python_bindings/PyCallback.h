@@ -3,7 +3,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <pybind11/pybind11.h>
 
-namespace thirdai::bolt::train::python {
+namespace thirdai::bolt::python {
 
 class PyCallback : public callbacks::Callback {
  public:
@@ -59,4 +59,4 @@ class PyCallback : public callbacks::Callback {
   }
 };
 
-}  // namespace thirdai::bolt::train::python
+}  // namespace thirdai::bolt::python

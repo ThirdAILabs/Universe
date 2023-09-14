@@ -1,5 +1,6 @@
 #include "Binning.h"
 #include <data/src/columns/ValueColumns.h>
+#include <string>
 
 namespace thirdai::data {
 
@@ -12,7 +13,7 @@ ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
 
   std::optional<float> invalid_value = std::nullopt;
 #pragma omp parallel for default(none) \
-    shared(column, binned_values, invalid_value)
+    shared(column, binned_values, invalid_value) if (columns.numRows() > 1)
   for (uint64_t i = 0; i < column->numRows(); i++) {
     if (auto bin = getBin(column->value(i))) {
       binned_values[i] = *bin;
@@ -38,10 +39,25 @@ ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
 }
 
 std::optional<uint32_t> BinningTransformation::getBin(float value) const {
-  if (value >= _exclusive_max_value || value < _inclusive_min_value) {
-    return std::nullopt;
+  if (value < _inclusive_min_value) {
+    return 0;
+  }
+  if (value >= _exclusive_max_value) {
+    return _num_bins - 1;
   }
   return (value - _inclusive_min_value) / _binsize;
+}
+
+void BinningTransformation::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  float value = input.getValueColumn<float>(_input_column_name)->value(0);
+  uint32_t bin = getBin(value).value();
+
+  explanations.store(
+      _output_column_name, bin,
+      explanations.explain(_input_column_name, /* feature_index= */ 0));
 }
 
 }  // namespace thirdai::data

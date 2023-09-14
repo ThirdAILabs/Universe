@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize
 from trafilatura import extract
 from trafilatura.settings import use_config
@@ -64,10 +65,6 @@ def recursive_url_scrape(base_url, max_crawl_depth, match_url_prefix=True):
 
 
 def process_url(url, response):
-    # This import fails in python3.7 because langchain only has python3.7 support
-    # up to version 0.0.27 and this was introduced in a later version of langchain.
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=75,
@@ -85,6 +82,9 @@ def process_url(url, response):
         return f"cannot extract text from {url}", False
 
     index = response.text
+    title_start_pos = index.find("<title>") + len("<title>")
+    title_end_pos = index.find("</title>")
+    title = index[title_start_pos:title_end_pos]
     result = extract(
         index,
         include_formatting=False,
@@ -101,7 +101,7 @@ def process_url(url, response):
 
     for text in texts:
         text = str(text).strip().replace("\r\n", " ").replace("\n", " ")
-        row = [text, url]
+        row = [text, url, title]
         elem.append(row)
 
     return elem, True
@@ -110,7 +110,7 @@ def process_url(url, response):
 def create_train_df(elements):
     df = pd.DataFrame(
         index=range(len(elements)),
-        columns=["text", "display", "url"],
+        columns=["text", "display", "url", "title"],
     )
     for i, elem in enumerate(elements):
         sents = sent_tokenize(elem[0])
@@ -120,6 +120,7 @@ def create_train_df(elements):
             text,
             elem[0],
             elem[1],
+            elem[2],
         ]
     for column in ["text", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)

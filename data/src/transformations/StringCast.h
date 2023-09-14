@@ -2,6 +2,8 @@
 
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
+#include <string>
+#include <type_traits>
 
 namespace thirdai::data {
 
@@ -13,7 +15,13 @@ class CastToValue final : public Transformation {
 
   CastToValue(std::string input_column_name, std::string output_column_name);
 
+  CastToValue(std::string input_column_name, std::string output_column_name,
+              std::string format);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
 
  private:
   T parse(const std::string& row) const;
@@ -23,6 +31,9 @@ class CastToValue final : public Transformation {
   std::string _input_column_name;
   std::string _output_column_name;
   std::optional<size_t> _dim;
+
+  struct Empty {};
+  std::conditional_t<std::is_same_v<T, int64_t>, std::string, Empty> _format;
 
   CastToValue() {}
 
@@ -38,6 +49,9 @@ class CastToArray final : public Transformation {
               char delimiter, std::optional<size_t> dim);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
 
  private:
   T parse(const std::string& item) const;
@@ -58,6 +72,7 @@ class CastToArray final : public Transformation {
 
 using StringToToken = CastToValue<uint32_t>;
 using StringToTokenArray = CastToArray<uint32_t>;
+using StringToTimestamp = CastToValue<int64_t>;
 
 using StringToDecimal = CastToValue<float>;
 using StringToDecimalArray = CastToArray<float>;

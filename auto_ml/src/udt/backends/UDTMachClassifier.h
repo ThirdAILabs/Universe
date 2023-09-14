@@ -21,7 +21,7 @@
 
 namespace thirdai::automl::udt {
 
-using bolt::train::metrics::InputMetrics;
+using bolt::metrics::InputMetrics;
 
 using Label = std::variant<uint32_t, std::string>;
 
@@ -44,7 +44,7 @@ class UDTMachClassifier final : public UDTBackend {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::train::DistributedCommPtr& comm) final;
+                   const bolt::DistributedCommPtr& comm) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
@@ -95,9 +95,9 @@ class UDTMachClassifier final : public UDTBackend {
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
                        TrainOptions options,
-                       const bolt::train::DistributedCommPtr& comm) final;
+                       const bolt::DistributedCommPtr& comm) final;
 
-  py::object embedding(const MapInput& sample) final;
+  py::object embedding(const MapInputBatch& sample) final;
 
   /**
    * This method is still experimental, we should test to see when these
@@ -240,7 +240,7 @@ class UDTMachClassifier final : public UDTBackend {
   // computing metrics. In some methods like trainWithHashes, or trainOnBatch we
   // don't have/need the doc/class ids for metrics so we use this method to get
   // an empty placeholder to pass to the model.
-  static bolt::nn::tensor::TensorPtr placeholderDocIds(uint32_t batch_size);
+  static bolt::TensorPtr placeholderDocIds(uint32_t batch_size);
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this

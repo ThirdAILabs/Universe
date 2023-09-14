@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, bolt_v2, dataset
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
@@ -206,7 +206,7 @@ def test_mach_udt_on_scifact_model_porting(
 
     new_model = scifact_model(n_target_classes=n_classes)
 
-    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_bolt_model = bolt.nn.Model.from_params(model._get_model().params())
     new_model._set_model(new_bolt_model)
 
     new_model.set_index(model.get_index())
@@ -241,9 +241,15 @@ def test_mach_udt_entity_embedding(embedding_dim):
 def test_mach_udt_embedding():
     model = train_simple_mach_udt()
 
-    embedding = model.embedding_representation({"text": "some sample query"})
+    embedding = model.embedding_representation([{"text": "some sample query"}])
 
     assert embedding.shape == (256,)
+
+    embedding = model.embedding_representation(
+        [{"text": "some sample query"}, {"text": "some sample query"}]
+    )
+
+    assert embedding.shape == (2, 256)
 
 
 def test_mach_udt_decode_params():
@@ -628,7 +634,7 @@ def test_mach_sparse_inference():
         )
     )
 
-    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+    input_vec = bolt.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
 
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 30])
@@ -822,3 +828,22 @@ def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
     model.introduce_label(
         [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
     )
+
+
+def test_udt_mach_fast_approximation_handles_commas():
+    model = train_simple_mach_udt()
+    model.clear_index()
+
+    with open("temp.csv", "w") as out:
+        out.write("strong,weak,label\n")
+        out.write('"a string, with, commas","another, one",0\n')
+
+    # We only care that it doesn't throw an error
+    model.introduce_documents(
+        "temp.csv",
+        strong_column_names=["strong"],
+        weak_column_names=["weak"],
+        fast_approximation=True,
+    )
+
+    os.remove("temp.csv")

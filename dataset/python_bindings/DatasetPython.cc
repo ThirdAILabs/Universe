@@ -281,9 +281,10 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<TextGenerationFeaturizer, Featurizer,
              std::shared_ptr<TextGenerationFeaturizer>>(
       dataset_submodule, "TextGenerationFeaturizer")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool>(),
            py::arg("lrc_len"), py::arg("irc_len"), py::arg("src_len"),
-           py::arg("vocab_size"))
+           py::arg("vocab_size"), py::arg("include_position") = false,
+           py::arg("featurize_in_chunks") = true)
       .def("featurize_for_inference",
            &TextGenerationFeaturizer::featurizeInferenceSample,
            py::arg("prompt"), py::arg("context"))

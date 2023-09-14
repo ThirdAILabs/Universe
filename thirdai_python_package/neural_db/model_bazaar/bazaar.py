@@ -108,14 +108,10 @@ def login_required(func):
 
 class Bazaar:
     def __init__(
-        self,
-        cache_dir: Path = Path("./bazaar_cache"),
-        base_url="https://staging-modelzoo.azurewebsites.net/",
+        self, cache_dir: str, base_url: str = "https://model-zoo.azurewebsites.net/"
     ):
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
-        self._cache_dir = cache_dir
-        # registry stores all the Modelbazaar objects fetched so far.
+        self._base_url = base_url
+        self._cache_dir = Path(cache_dir)
         self._registry = {}
         self._base_url = base_url
         self._login_instance = None

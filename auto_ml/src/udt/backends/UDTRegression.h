@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bolt/src/graph/Graph.h>
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
@@ -29,7 +28,7 @@ class UDTRegression final : public UDTBackend {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::train::DistributedCommPtr& comm) final;
+                   const bolt::DistributedCommPtr& comm) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,

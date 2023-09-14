@@ -4,13 +4,15 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
+from thirdai import bolt
+from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
 from .parsing_utils import doc_parse, pdf_parse, url_parse
@@ -89,6 +91,7 @@ class Reference:
         self._source = source
         self._metadata = metadata
         self._context_fn = lambda radius: document.context(element_id, radius)
+        self._score = 0
 
     @property
     def id(self):
@@ -109,6 +112,10 @@ class Reference:
     @property
     def metadata(self):
         return self._metadata
+
+    @property
+    def score(self):
+        return self._score
 
     def context(self, radius: int):
         return self._context_fn(radius)
@@ -156,6 +163,7 @@ class DocumentDataSource(PyDataSource):
                 self.weak_column: [weak],
             }
         )
+
         return df.to_csv(header=None, index=None).strip("\n")
 
     def _get_line_iterator(self):
@@ -269,14 +277,40 @@ class DocumentManager:
 class CSV(Document):
     def __init__(
         self,
-        path,
-        id_column,
-        strong_columns,
-        weak_columns,
-        reference_columns,
+        path: str,
+        id_column: Optional[str] = None,
+        strong_columns: Optional[List[str]] = None,
+        weak_columns: Optional[List[str]] = None,
+        reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
     ) -> None:
         self.df = pd.read_csv(path)
+
+        if reference_columns == None:
+            reference_columns = list(self.df.columns)
+
+        if id_column == None:
+            id_column = "thirdai_index"
+            self.df[id_column] = range(self.df.shape[0])
+
+        if strong_columns == None and weak_columns == None:
+            # autotune column types
+            text_col_names = []
+            try:
+                for col_name, udt_col_type in get_udt_col_types(path).items():
+                    if type(udt_col_type) == type(bolt.types.text()):
+                        text_col_names.append(col_name)
+            except:
+                text_col_names = list(self.df.columns)
+                text_col_names.remove(id_column)
+                self.df[text_col_names] = self.df[text_col_names].astype(str)
+            strong_columns = []
+            weak_columns = text_col_names
+        elif strong_columns == None:
+            strong_columns = []
+        elif weak_columns == None:
+            weak_columns = []
+
         self.df = self.df.sort_values(id_column)
         assert len(self.df[id_column].unique()) == len(self.df[id_column])
         assert self.df[id_column].min() == 0
@@ -307,15 +341,15 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.strong_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
-        return " ".join([row[col] for col in self.weak_columns])
+        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def reference(self, element_id: int) -> Reference:
         row = self.df.iloc[element_id]
-        text = " ".join([str(row[col]) for col in self.reference_columns])
+        text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
             element_id=element_id,
@@ -328,8 +362,13 @@ class CSV(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
+
         return " ".join(
-            [row[col] for col in self.reference_columns for _, row in rows.iterrows()]
+            [
+                str(row[col])
+                for col in self.reference_columns
+                for _, row in rows.iterrows()
+            ]
         )
 
     def __getstate__(self):
@@ -369,10 +408,12 @@ class CSV(Document):
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True):
-        self.path = Path(path)
+        path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
         self._save_extra_info = save_extra_info
+
+        self.path = Path(path)
 
     def process_data(
         self,
@@ -393,7 +434,7 @@ class Extracted(Document):
         return self.path.name
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["passage"].iloc[element_id]
+        return ""
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
@@ -417,17 +458,26 @@ class Extracted(Document):
         rows = self.df.iloc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
-        return "\n".join(rows["passage"])
+        return "\n".join(rows["para"])
 
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
-        # Remove filename attribute for reason above, this is a deprecated attribute for Extracted
+        # Remove filename attribute because this is a deprecated attribute for Extracted
         if "filename" in state:
             del state["filename"]
+
+        # In older versions of neural_db, we accidentally stored Path objects in the df.
+        # This changes those objects to a string, because PosixPath can't be loaded in Windows
+        def path_to_str(element):
+            if isinstance(element, Path):
+                return element.name
+            return element
+
+        state["df"] = state["df"].applymap(path_to_str)
+
+        # Remove the path attribute because it is not cross platform compatible
+        del state["path"]
 
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
@@ -510,12 +560,17 @@ class DOCX(Extracted):
 
 class URL(Document):
     def __init__(
-        self, url: str, url_response: Response = None, save_extra_info: bool = True
+        self,
+        url: str,
+        url_response: Response = None,
+        save_extra_info: bool = True,
+        title_is_strong: bool = False,
     ):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)
         self._save_extra_info = save_extra_info
+        self._strong_column = "title" if title_is_strong else "text"
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -541,7 +596,9 @@ class URL(Document):
         return self.url
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["text"].iloc[element_id]
+        return self.df[self._strong_column if self._strong_column else "text"].iloc[
+            element_id
+        ]
 
     def weak_text(self, element_id: int) -> str:
         return self.df["text"].iloc[element_id]
@@ -552,7 +609,9 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={},
+            metadata={"title": self.df["title"].iloc[element_id]}
+            if "title" in self.df.columns
+            else {},
         )
 
     def context(self, element_id, radius) -> str:
@@ -596,8 +655,7 @@ class SentenceLevelExtracted(Extracted):
         self,
         df: pd.DataFrame,
     ) -> pd.DataFrame:
-        df["sentences"] = df["passage"].apply(SentenceLevelExtracted.get_sentences)
-        df.drop("passage", axis=1, inplace=True)
+        df["sentences"] = df["para"].apply(SentenceLevelExtracted.get_sentences)
 
         num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
         df["id_offsets"] = np.zeros(len(df))
@@ -612,7 +670,7 @@ class SentenceLevelExtracted(Extracted):
         df = pd.DataFrame.from_records(
             [
                 {
-                    "passage": sentence,
+                    "sentence": sentence,
                     "para_id": para_id,
                     "sentence_id": i + record["id_offsets"],
                     "sentence_ids_in_para": get_ids(record),
@@ -646,7 +704,7 @@ class SentenceLevelExtracted(Extracted):
         return self.path.name if self.path else None
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["passage"].iloc[element_id]
+        return self.df["sentence"].iloc[element_id]
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]

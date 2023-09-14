@@ -14,15 +14,24 @@ class TransformationList final : public Transformation {
   explicit TransformationList(std::vector<TransformationPtr> transformations)
       : _transformations(std::move(transformations)) {}
 
+  static auto make(std::vector<TransformationPtr> transformations) {
+    return std::make_shared<TransformationList>(std::move(transformations));
+  }
+
   ColumnMap apply(ColumnMap columns, State& state) const final {
     for (const auto& transformation : _transformations) {
       // This is a shallow copy and not expensive since columns are stored as
       // shared pointers.
-      columns = transformation->apply(columns, state);
+      columns = transformation->apply(std::move(columns), state);
     }
 
     return columns;
   }
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
+  const auto& transformations() const { return _transformations; }
 
   void save(const std::string& filename) const;
 
