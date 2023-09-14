@@ -382,7 +382,7 @@ def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter)
 
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
+def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
     db, _ = train_model_for_supervised_training_test(model_id_delimiter)
 
     with open("mock_sup.csv", "w") as out:
@@ -407,10 +407,10 @@ def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
 
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
+def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-    db.supervised_train(
+    db.supervised_train_with_ref_ids(
         queries=["first", "fourth", "second"],
         labels=[[4], [0, 1], [8, 9]],
         learning_rate=0.1,

@@ -169,6 +169,9 @@ class RefIdSupDataSource(PyDataSource):
 
     def __init__(
         self,
+        model_query_column: str,
+        model_id_column: str,
+        model_id_delimiter: str,
         csv: str = None,
         query_column: str = None,
         id_column: str = None,
@@ -207,24 +210,29 @@ class RefIdSupDataSource(PyDataSource):
             raise ValueError(
                 "Sup must be initialized with csv, query_column and id_column, or queries and labels."
             )
+        self.model_query_column = model_query_column
+        self.model_id_column = model_id_column
+        self.model_id_delimiter = model_id_delimiter
         self.restart()
 
     def _csv_line(self, query: str, label: str):
         df = pd.DataFrame(
             {
-                self.query_col: [query],
-                self.doc_manager.id_column: [label],
+                self.model_query_column: [query],
+                self.model_id_column: [label],
             }
         )
         return df.to_csv(header=None, index=None).strip("\n")
 
     def _get_line_iterator(self):
         # First yield the header
-        yield self._csv_line(self.query_col, self.doc_manager.id_column)
+        yield self._csv_line(self.model_query_column, self.model_id_column)
         # Then yield rows
         for query, labels in zip(self.queries, self.labels):
-            if self.id_delimiter:
-                label_str = self.id_delimiter.join([str(label) for label in labels])
+            if self.model_id_delimiter:
+                label_str = self.model_id_delimiter.join(
+                    [str(label) for label in labels]
+                )
                 yield self._csv_line(query, label_str)
             else:
                 for label in labels:
@@ -690,10 +698,14 @@ class NeuralDB:
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets.
         """
-        doc_manager = self._savable_state.documents
-        query_col = self._savable_state.model.get_query_col()
+        model_query_col = self._savable_state.model.get_query_col()
+        model_id_col = self._savable_state.model.get_id_col()
+        model_id_delimiter = self._savable_state.model.get_id_delimiter()
         self._savable_state.model.get_model().train_on_data_source(
             data_source=RefIdSupDataSource(
+                model_query_column=model_query_col,
+                model_id_column=model_id_col,
+                model_id_delimiter=model_id_delimiter,
                 csv=csv,
                 query_column=query_column,
                 id_column=id_column,
