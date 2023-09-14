@@ -150,6 +150,9 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("unfreeze_hash_tables", &Model::unfreezeHashTables)
       .def("save", &Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
+      .def("save_proto", &Model::saveProto, py::arg("filename"),
+           py::arg("with_optimizer") = false)
+      .def_static("load_proto", &Model::loadProto, py::arg("filename"))
       .def("checkpoint", &Model::checkpoint, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def_static("load", &Model::load, py::arg("filename"))
