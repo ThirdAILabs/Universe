@@ -40,12 +40,15 @@ class MockBackend final : public GenerativeBackend {
     (void)comm;
     return {};
   }
+
+  ModelPtr getBoltModel() final { return nullptr; }
 };
 
 TEST(BeamSearchDecoding, GreedySearch) {
   auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
                                      /* allowed_repeats= */ {},
-                                     /* punctuation_tokens= */ {});
+                                     /* punctuation_tokens= */ {},
+                                     /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
                                 /* beam_width= */ 1);
@@ -60,7 +63,8 @@ TEST(BeamSearchDecoding, GreedySearch) {
 TEST(BeamSearchDecoding, AllowRepeats) {
   auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
                                      /* allowed_repeats= */ {1},
-                                     /* punctuation_tokens= */ {});
+                                     /* punctuation_tokens= */ {},
+                                     /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
                                 /* beam_width= */ 1);
@@ -73,7 +77,8 @@ TEST(BeamSearchDecoding, AllowRepeats) {
 TEST(BeamSearchDecoding, FindBestPath) {
   auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
                                      /* allowed_repeats= */ {0, 1, 2, 3},
-                                     /* punctuation_tokens= */ {});
+                                     /* punctuation_tokens= */ {},
+                                     /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
                                 /* beam_width= */ 2);
