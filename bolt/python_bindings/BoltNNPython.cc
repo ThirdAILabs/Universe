@@ -103,6 +103,8 @@ void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
   py::class_<Model, ModelPtr>(nn, "Model")
+  .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
+           py::arg("losses"), py::arg("additional_labels") = ComputationList{})
 #if THIRDAI_EXPOSE_ALL
       /**
        * ==============================================================
@@ -111,8 +113,6 @@ void createBoltNNSubmodule(py::module_& module) {
        * summary, ops, __getitem__, etc. should remain hidden.
        * ==============================================================
        */
-      .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"), py::arg("additional_labels") = ComputationList{})
       .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("update_parameters", &Model::updateParameters,
@@ -193,9 +193,6 @@ void defineTensor(py::module_& nn) {
 }
 
 void defineOps(py::module_& nn) {
-#if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-
   py::class_<Computation, ComputationPtr>(nn, "Computation")
       .def("dim", &Computation::dim)
       .def("tensor", &Computation::tensor)
@@ -204,6 +201,8 @@ void defineOps(py::module_& nn) {
   py::class_<Op, OpPtr>(nn, "Op")
       .def("dim", &Op::dim)
       .def_property("name", &Op::name, &Op::setName);
+#if THIRDAI_EXPOSE_ALL
+#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
 
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn, "SamplingConfig");
