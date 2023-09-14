@@ -1,5 +1,6 @@
 import hashlib
 import os
+import pickle
 import shutil
 import string
 from collections import OrderedDict
@@ -73,6 +74,24 @@ class Document:
 
     def load_meta(self, directory: Path):
         pass
+
+    def save(self, directory: str):
+        dirpath = Path(directory)
+        if os.path.exists(dirpath):
+            shutil.rmtree(dirpath)
+        os.mkdir(dirpath)
+        with open(dirpath / f"doc.pkl", "wb") as pkl:
+            pickle.dump(self, pkl)
+        os.mkdir(dirpath / "meta")
+        self.save_meta(dirpath / "meta")
+
+    @staticmethod
+    def load(directory: str):
+        dirpath = Path(directory)
+        with open(dirpath / f"doc.pkl", "rb") as pkl:
+            obj = pickle.load(pkl)
+        obj.load_meta(dirpath / "meta")
+        return obj
 
 
 class Reference:
@@ -218,7 +237,7 @@ class DocumentManager:
         ]
 
     def sources(self):
-        return {doc_hash: doc.name for doc_hash, (doc, _) in self.registry.items()}
+        return {doc_hash: doc for doc_hash, (doc, _) in self.registry.items()}
 
     def match_source_id_by_prefix(self, prefix: str) -> Document:
         if prefix in self.registry:

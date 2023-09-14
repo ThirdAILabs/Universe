@@ -46,6 +46,14 @@ corresponding to entities in file B.
 
 Instead of leaking the abstraction by making the user manually change the labels
 of their dataset, we created Sup and SupDataSource to handle this.
+
+If the user would rather use the database-assigned IDs instead of IDs from the 
+original document, this can be done by passing uses_db_id = True to Sup(). This
+is useful for cases where the user does not know the IDs of the entities in the
+original documents. For example, if the original document is a PDF, then it is
+NeuralDB that parses it into paragraphs; the user does not know the ID of each
+paragraph beforehand. In this scenario, it is much easier for the user to just
+use the database-assigned IDs.
 """
 
 
@@ -57,6 +65,9 @@ class Sup:
     and ID column names, or with sequences of queries and labels. It also needs
     to know which source object (i.e. which inserted CSV or PDF object) contains
     the relevant entities to the supervised samples.
+
+    If uses_db_id is True, then the labels are assumed to use database-assigned
+    IDs and will not be converted.
     """
 
     def __init__(
@@ -68,6 +79,7 @@ class Sup:
         queries: Sequence[str] = None,
         labels: Sequence[Sequence[int]] = None,
         source_id: str = "",
+        uses_db_id: bool = False,
     ):
         if csv is not None and query_column is not None and id_column is not None:
             df = pd.read_csv(csv)
@@ -100,6 +112,7 @@ class Sup:
                 "Sup must be initialized with csv, query_column and id_column, or queries and labels."
             )
         self.source_id = source_id
+        self.uses_db_id = uses_db_id
 
 
 class SupDataSource(PyDataSource):
@@ -133,26 +146,32 @@ class SupDataSource(PyDataSource):
         )
         return df.to_csv(header=None, index=None).strip("\n")
 
+    def _id_offset(self, sup: Sup):
+        if sup.uses_db_id:
+            return 0
+        source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
+        if len(source_ids) == 0:
+            raise ValueError(f"Cannot find source with id {sup.source_id}")
+        if len(source_ids) > 1:
+            raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
+        _, start_id = self.doc_manager.source_by_id(source_ids[0])
+        return start_id
+
     def _get_line_iterator(self):
         # First yield the header
         yield self._csv_line(self.query_col, self.doc_manager.id_column)
         # Then yield rows
         for sup in self.data:
-            source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
-            if len(source_ids) == 0:
-                raise ValueError(f"Cannot find source with id {sup.source_id}")
-            if len(source_ids) > 1:
-                raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
-            _, start_id = self.doc_manager.source_by_id(source_ids[0])
+            id_offset = self._id_offset(sup)
             for query, labels in zip(sup.queries, sup.labels):
                 if self.id_delimiter:
                     label_str = self.id_delimiter.join(
-                        [str(start_id + int(label)) for label in labels]
+                        [str(id_offset + label) for label in labels]
                     )
                     yield self._csv_line(query, label_str)
                 else:
                     for label in labels:
-                        label_str = str(start_id + int(label))
+                        label_str = str(id_offset + label)
                         yield self._csv_line(query, label_str)
 
     def resource_name(self) -> str:
@@ -422,10 +441,11 @@ class NeuralDB:
         """
         return self._savable_state.ready()
 
-    def sources(self) -> Dict[str, str]:
-        """Returns a mapping from source IDs to their names. This is useful
-        when you need to know the source ID of a document you inserted, e.g.
-        for creating a Sup object for supervised_train().
+    def sources(self) -> Dict[str, Document]:
+        """Returns a mapping from source IDs to their corresponding document
+        objects. This is useful when you need to know the source ID of a
+        document you inserted, e.g. for creating a Sup object for
+        supervised_train().
         """
         return self._savable_state.documents.sources()
 
@@ -499,6 +519,9 @@ class NeuralDB:
             references.append(ref)
 
         return references
+
+    def reference(self, element_id: int):
+        return self._savable_state.documents.reference(element_id)
 
     def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
@@ -588,6 +611,46 @@ class NeuralDB:
                 doc_manager=doc_manager,
                 query_col=query_col,
                 data=data,
+                id_delimiter=self._savable_state.model.get_id_delimiter(),
+            ),
+            learning_rate=learning_rate,
+            epochs=epochs,
+        )
+
+    def supervised_train_with_ref_ids(
+        self,
+        csv: str = None,
+        query_column: str = None,
+        id_column: str = None,
+        id_delimiter: str = None,
+        queries: Sequence[str] = None,
+        labels: Sequence[Sequence[int]] = None,
+        learning_rate=0.0001,
+        epochs=3,
+    ):
+        """Train on supervised datasets that correspond to specific sources.
+        Suppose you inserted a "sports" product catalog and a "furniture"
+        product catalog. You also have supervised datasets - pairs of queries
+        and correct products - for both categories. You can use this method to
+        train NeuralDB on these supervised datasets.
+        """
+        doc_manager = self._savable_state.documents
+        model_query_col = self._savable_state.model.get_query_col()
+        self._savable_state.model.get_model().train_on_data_source(
+            data_source=SupDataSource(
+                doc_manager=doc_manager,
+                query_col=model_query_col,
+                data=[
+                    Sup(
+                        csv=csv,
+                        query_column=query_column,
+                        id_column=id_column,
+                        id_delimiter=id_delimiter,
+                        queries=queries,
+                        labels=labels,
+                        uses_db_id=True,
+                    )
+                ],
                 id_delimiter=self._savable_state.model.get_id_delimiter(),
             ),
             learning_rate=learning_rate,
