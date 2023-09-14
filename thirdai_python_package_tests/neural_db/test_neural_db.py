@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
+from ndb_utils import all_doc_getters, create_simple_dataset, train_simple_neural_db
 from thirdai import bolt
 from thirdai import neural_db as ndb
 
@@ -157,12 +157,14 @@ def test_neural_db_loads_from_model_bazaar():
 
 def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
-    all_methods_work(db, all_docs(), assert_acc=False)
+    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=False)
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
-    all_methods_work(db, all_docs(), assert_acc=True)
+    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=True)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):
