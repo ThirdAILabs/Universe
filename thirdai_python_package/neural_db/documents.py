@@ -579,12 +579,17 @@ class DOCX(Extracted):
 
 class URL(Document):
     def __init__(
-        self, url: str, url_response: Response = None, save_extra_info: bool = True
+        self,
+        url: str,
+        url_response: Response = None,
+        save_extra_info: bool = True,
+        title_is_strong: bool = False,
     ):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)
         self._save_extra_info = save_extra_info
+        self._strong_column = "title" if title_is_strong else "text"
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -610,7 +615,9 @@ class URL(Document):
         return self.url
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["text"].iloc[element_id]
+        return self.df[self._strong_column if self._strong_column else "text"].iloc[
+            element_id
+        ]
 
     def weak_text(self, element_id: int) -> str:
         return self.df["text"].iloc[element_id]
@@ -621,7 +628,9 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={},
+            metadata={"title": self.df["title"].iloc[element_id]}
+            if "title" in self.df.columns
+            else {},
         )
 
     def context(self, element_id, radius) -> str:

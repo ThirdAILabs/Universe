@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
@@ -93,6 +94,10 @@ class TextGenerationFeaturizer final : public Featurizer {
   std::vector<BoltVector> featurizeInferenceSample(
       const std::vector<uint32_t>& prompt,
       const std::vector<uint32_t>& context) const;
+
+  bolt::TensorList featurizeInputBatch(
+      const std::vector<std::vector<uint32_t>>& tokens,
+      const std::vector<uint32_t>& dims) const;
 
   void save(const std::string& filename) const;
 

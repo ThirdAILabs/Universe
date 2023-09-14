@@ -39,23 +39,3 @@ class RayCsvDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return f"ray-dataset-sources"
-
-
-class RayTextDataSource(PyDataSource):
-    def __init__(self, ray_dataset):
-        PyDataSource.__init__(self)
-        self.ray_dataset = ray_dataset
-        self.restart()
-        try:
-            import ray
-        except ImportError:
-            raise ImportError(
-                "ray is not installed. Please install it to use RayTextDataSource."
-            )
-
-    def _get_line_iterator(self):
-        for row in self.ray_dataset.iter_rows():
-            yield row["text"]
-
-    def resource_name(self) -> str:
-        return f"ray-dataset-sources"
