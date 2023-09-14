@@ -130,7 +130,20 @@ void Switch::setSerializeOptimizer(bool should_serialize_optimizer) {
   }
 }
 
-ComputationPtr Switch::apply(ComputationPtr index, ComputationPtr input) {
+proto::bolt::Op* Switch::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toProto is not implemented for Switch.");
+}
+
+ComputationPtr Switch::apply(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::runtime_error("Expected two inputs to Switch op.");
+  }
+
+  return applyBinary(inputs.at(0), inputs.at(1));
+}
+
+ComputationPtr Switch::applyBinary(ComputationPtr index, ComputationPtr input) {
   if (index->dim() != _fc_ops.size()) {
     std::stringstream error;
     error << "Cannot apply Switch op with n_layers = " << _fc_ops.size()

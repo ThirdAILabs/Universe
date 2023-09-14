@@ -18,7 +18,7 @@ ModelPtr buildModel() {
       bolt::Switch::make(N_LAYERS, /* dim= */ 1, /* input_dim= */ 1,
                          /* sparsity= */ 1.0,
                          /* activation= */ "linear");
-  auto output = output_op->apply(index, input);
+  auto output = output_op->applyBinary(index, input);
 
   for (uint32_t layer_id = 0; layer_id < N_LAYERS; layer_id++) {
     float bias = 0;

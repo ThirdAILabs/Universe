@@ -66,11 +66,15 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  ComputationPtr apply(const ComputationList& inputs) final;
+
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.
    */
-  ComputationPtr apply(ComputationPtr index, ComputationPtr input);
+  ComputationPtr applyBinary(ComputationPtr index, ComputationPtr input);
 
   /**
    * Returns the input dim of the switch connected layer.
