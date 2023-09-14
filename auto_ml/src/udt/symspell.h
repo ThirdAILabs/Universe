@@ -92,6 +92,5 @@ class SymPreTrainer {
                                         std::string correct_column_name,
                                         uint32_t batch_size);
 
-  void pretrain_file(const DataSourcePtr& data,
-                     std::string correct_column_name);
+  void pretrain_file(std::vector<MapInputBatch> parsed_data);
 };

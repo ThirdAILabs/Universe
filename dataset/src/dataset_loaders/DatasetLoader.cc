@@ -125,6 +125,34 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   return data;
 }
 
+std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(size_t batch_size, std::string column_name, bool verbose) {
+  if (_header){
+    _featurizer->processHeader(*_header);
+  }
+  
+  bolt::utils::Timer timer;
+  std::vector<MapInputBatch> input_batches_all; 
+
+  auto rows = _data_source->nextBatch(
+          /* target_batch_size = */ batch_size);
+  while(rows){
+    auto batch = _featurizer->featurize_to_MapInputBatch(*rows, column_name, *_header);
+    input_batches_all.push_back(batch);
+
+    rows = _data_source->nextBatch(batch_size);
+  }
+
+  timer.stop();
+  if (verbose) {
+    std::cout << "loaded data | source '" << _data_source->resourceName()
+              << "' | batches "
+              << input_batches_all.size() << " | time " << timer.seconds()
+              << "s | complete\n"
+              << std::endl;
+  }
+  return input_batches_all;
+}
+
 void DatasetLoader::restart() {
   _data_source->restart();
 

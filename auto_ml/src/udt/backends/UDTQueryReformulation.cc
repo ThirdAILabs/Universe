@@ -99,8 +99,17 @@ py::object UDTQueryReformulation::train(
       options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
   // Index words to Spell Checker if use_spell_checker = True
+
   if (_use_spell_checker && _use_spell_checker.value()) {
-    _pretrainer.pretrain_file(data, _correct_column_name);
+      auto featurizer = dataset::TabularFeaturizer::make(
+      {ngramBlockList(_correct_column_name, _n_grams)},
+      /* has_header= */ true,
+      /* delimiter= */ _delimiter);
+      
+    dataset::DatasetLoader dataset_loader(data, featurizer,
+                                        /* shuffle= */ false);
+
+    _pretrainer.pretrain_file(dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name, true));
     data->restart();
   }
 
@@ -115,7 +124,7 @@ py::object UDTQueryReformulation::train(
                                     ? unsupervised_data->numBatches() * 2
                                     : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-      /* verbose = */ options.verbose,
+
       /* description = */ fmt::format("train"),
       /* max_steps = */ progress_bar_steps);
 
@@ -167,9 +176,17 @@ py::object UDTQueryReformulation::evaluate(
                defaults::QUERY_REFORMULATION_BATCH_SIZE, verbose);
 
   data->restart();
-  auto input_candidate_batches =
-      _pretrainer.parse_data(data, _incorrect_column_name.value(),
-                             defaults::QUERY_REFORMULATION_BATCH_SIZE);
+
+  auto featurizer = dataset::TabularFeaturizer::make(
+      {ngramBlockList(_incorrect_column_name.value(), _n_grams)},
+      /* has_header= */ true,
+      /* delimiter= */ _delimiter);
+      
+  dataset::DatasetLoader dataset_loader(data, featurizer,
+                                      /* shuffle= */ false);
+
+  auto input_candidate_batches = dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _incorrect_column_name.value(), true);
+  data->restart();
 
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ verbose,
