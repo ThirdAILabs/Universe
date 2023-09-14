@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::data {
@@ -53,6 +54,16 @@ class Recurrence final : public Transformation {
   inline constexpr size_t totalVocabSize() const {
     // +1 for EOS.
     return _target_vocab_size + 1;
+  }
+
+  std::pair<uint32_t, uint32_t> rangeForStep(uint32_t step) const {
+    uint32_t max_begin_step = std::min<size_t>(step, _max_seq_len - 1);
+    size_t begin = totalVocabSize() * max_begin_step;
+    return {begin, begin + totalVocabSize()};
+  }
+
+  uint32_t toTargetInputToken(uint32_t target_output_token) const {
+    return target_output_token % totalVocabSize();
   }
 
  private:
