@@ -109,7 +109,7 @@ py::object UDTQueryReformulation::train(
     dataset::DatasetLoader dataset_loader(data, featurizer,
                                         /* shuffle= */ false);
 
-    _pretrainer.pretrain_file(dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name, true));
+    _pretrainer.pretrain_file(dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name));
     data->restart();
   }
 
@@ -177,17 +177,6 @@ py::object UDTQueryReformulation::evaluate(
 
   data->restart();
 
-  auto featurizer = dataset::TabularFeaturizer::make(
-      {ngramBlockList(_incorrect_column_name.value(), _n_grams)},
-      /* has_header= */ true,
-      /* delimiter= */ _delimiter);
-      
-  dataset::DatasetLoader dataset_loader(data, featurizer,
-                                      /* shuffle= */ false);
-
-  auto input_candidate_batches = dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _incorrect_column_name.value(), true);
-  data->restart();
-
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ verbose,
       /* description = */ fmt::format("evaluate"),
@@ -199,6 +188,17 @@ py::object UDTQueryReformulation::evaluate(
   bolt::utils::Timer timer;
 
   if (_use_spell_checker && _use_spell_checker.value()) {
+
+      auto featurizer = dataset::TabularFeaturizer::make(
+      {ngramBlockList(_incorrect_column_name.value(), _n_grams)},
+      /* has_header= */ true,
+      /* delimiter= */ _delimiter);
+      
+      dataset::DatasetLoader dataset_loader(data, featurizer,
+                                          /* shuffle= */ false);
+
+      auto input_candidate_batches = dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _incorrect_column_name.value());
+
     for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size();
          batch_id++) {
       std::vector<uint32_t> freq_counts = {0};
@@ -261,12 +261,9 @@ py::object UDTQueryReformulation::evaluate(
       total_samples += input_candidate_batches[batch_id].size();
     }
   } else {
-    for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size(); batch_id++) {
-      dataset::MapBatchRef sample_ref(input_candidate_batches[batch_id]);
-      auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
-
+    for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
       auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
-          BoltBatch(std::move(featurized_samples)), /* top_k= */ top_k.value());
+          inputs->at(batch_id), /* top_k= */ top_k.value());
 
       bar->increment();
 
