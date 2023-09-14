@@ -124,7 +124,7 @@ py::object UDTQueryReformulation::train(
                                     ? unsupervised_data->numBatches() * 2
                                     : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-
+      /* verbose = */ options.verbose,
       /* description = */ fmt::format("train"),
       /* max_steps = */ progress_bar_steps);
 
@@ -261,9 +261,12 @@ py::object UDTQueryReformulation::evaluate(
       total_samples += input_candidate_batches[batch_id].size();
     }
   } else {
-    for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
+    for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size(); batch_id++) {
+      dataset::MapBatchRef sample_ref(input_candidate_batches[batch_id]);
+      auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
+
       auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
-          inputs->at(batch_id), /* top_k= */ top_k.value());
+          BoltBatch(std::move(featurized_samples)), /* top_k= */ top_k.value());
 
       bar->increment();
 

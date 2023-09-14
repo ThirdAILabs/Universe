@@ -129,8 +129,6 @@ std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(size_t batch_size, st
   if (_header){
     _featurizer->processHeader(*_header);
   }
-  
-  bolt::utils::Timer timer;
   std::vector<MapInputBatch> input_batches_all; 
 
   auto rows = _data_source->nextBatch(
@@ -140,15 +138,6 @@ std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(size_t batch_size, st
     input_batches_all.push_back(batch);
 
     rows = _data_source->nextBatch(batch_size);
-  }
-
-  timer.stop();
-  if (verbose) {
-    std::cout << "loaded data | source '" << _data_source->resourceName()
-              << "' | batches "
-              << input_batches_all.size() << " | time " << timer.seconds()
-              << "s | complete\n"
-              << std::endl;
   }
   return input_batches_all;
 }
