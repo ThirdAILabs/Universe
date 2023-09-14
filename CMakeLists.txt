@@ -384,6 +384,7 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
+    dataset/src/featurizers/DyadicFeaturizer.cc
     dataset/src/blocks/GraphBlocks.cc
     dataset/src/blocks/BlockList.cc
     dataset/src/blocks/ColumnIdentifier.cc

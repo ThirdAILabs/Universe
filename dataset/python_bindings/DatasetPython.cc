@@ -18,6 +18,7 @@
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/DyadicFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
@@ -277,6 +278,18 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<std::vector<BlockList>, bool, char, bool>(),
            py::arg("block_lists"), py::arg("has_header") = false,
            py::arg("delimiter") = ',', py::arg("parallel") = true);
+
+  py::class_<DyadicFeaturizer, Featurizer, DyadicFeaturizerPtr>(
+      dataset_submodule, "DyadicFeaturizer")
+      .def(py::init<bool, size_t, size_t, std::string, std::string, char,
+                    char>(),
+           py::arg("expects_header"), py::arg("n_intervals"),
+           py::arg("context_length"), py::arg("text_column"),
+           py::arg("label_column"), py::arg("delimiter"),
+           py::arg("label_delimiter"))
+      .def("process_header", &DyadicFeaturizer::processHeader,
+           py::arg("header"))
+      .def("featurize", &DyadicFeaturizer::featurize, py::arg("rows"));
 
   py::class_<TextGenerationFeaturizer, Featurizer,
              std::shared_ptr<TextGenerationFeaturizer>>(
