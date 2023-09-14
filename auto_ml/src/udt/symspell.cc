@@ -239,67 +239,6 @@ void SymPreTrainer::index_words(std::vector<std::string> words_to_index,
   pretrainer.CommitStaged(&staging);
 }
 
-// std::vector<MapInputBatch> SymPreTrainer::parse_data(
-//     const DataSourcePtr& data, std::string correct_column_name,
-//     uint32_t batch_size) {
-//   std::optional<std::string> header = data->nextLine();
-//   if (header == std::nullopt) {
-//     throw std::runtime_error("File is empty.");
-//   }
-//   // Fine correct column name index
-//   std::stringstream headerStream(header->c_str());
-//   std::string columnHeader;
-//   std::vector<std::string> headers;
-//   // Parse the header to find the "target_queries" column
-//   while (std::getline(headerStream, columnHeader, CSV_DELIMITER)) {
-//     headers.push_back(columnHeader);
-//   }
-//   int targetQueriesIndex = -1;
-//   for (int i = 0; i < (int)headers.size(); i++) {
-//     if (headers[i] == correct_column_name) {
-//       targetQueriesIndex = i;
-//       break;
-//     }
-//   }
-//   if (targetQueriesIndex == -1) {
-//     throw std::runtime_error("correct queries column not found");
-//   }
-//   std::optional<std::string> line = data->nextLine();
-
-//   std::vector<MapInputBatch> parsed_data;
-//   MapInputBatch current_batch;
-
-//   while (line != std::nullopt) {
-//     std::string line_str = line->c_str();
-//     std::vector<std::string> comma_sep_sents;
-//     std::istringstream tokenStream(line_str);
-//     std::string token;
-
-//     while (std::getline(tokenStream, token, ',')) {
-//       comma_sep_sents.push_back(token);
-//     }
-//     if (targetQueriesIndex + 1 > (int)comma_sep_sents.size()) {
-//       line_str = "";
-//     } else {
-//       line_str = comma_sep_sents[targetQueriesIndex];
-//     }
-//     MapInput sample;
-//     sample["phrase"] = line_str;
-//     current_batch.push_back(sample);
-
-//     if (current_batch.size() == batch_size) {
-//       parsed_data.push_back(current_batch);
-//       current_batch.clear();
-//     }
-//     line = data->nextLine();
-//   }
-//   if (current_batch.size()) {
-//     parsed_data.push_back(current_batch);
-//     current_batch.clear();
-//   }
-//   return parsed_data;
-// }
-
 void SymPreTrainer::pretrain_file(std::vector<MapInputBatch> parsed_data) {
   std::unordered_map<std::string, int> frequency;
 

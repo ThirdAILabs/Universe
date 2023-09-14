@@ -88,9 +88,5 @@ class SymPreTrainer {
       std::vector<std::vector<float>> phrase_scores,
       std::optional<uint32_t> top_k);
 
-  std::vector<MapInputBatch> parse_data(const DataSourcePtr& data,
-                                        std::string correct_column_name,
-                                        uint32_t batch_size);
-
   void pretrain_file(std::vector<MapInputBatch> parsed_data);
 };
