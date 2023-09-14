@@ -1,7 +1,10 @@
 #include "DyadicInterval.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/Transformation.h>
 #include <exception>
 #include <string>
 #include <unordered_map>
@@ -124,6 +127,15 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
   }
 
   return columns;
+}
+
+template void DyadicInterval::serialize(cereal::BinaryInputArchive&);
+template void DyadicInterval::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void DyadicInterval::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_interval_prefix, _target_column, _n_intervals);
 }
 
 }  // namespace thirdai::data

@@ -2,9 +2,9 @@ import pandas as pd
 from thirdai.dataset.data_source import PyDataSource
 
 
-class RayDataSource(PyDataSource):
+class RayCsvDataSource(PyDataSource):
     """
-    RayDataSource ingests ray datasets during distributed training.
+    RayCsvDataSource ingests ray datasets during distributed training.
     Using this ideally we should be able to load data from any of
     the sources mentioned here https://docs.ray.io/en/latest/data/loading-data.html
     which includes, parquet, s3, gcs, dask, spark, sql etc. It should work
@@ -21,7 +21,7 @@ class RayDataSource(PyDataSource):
             import ray
         except ImportError:
             raise ImportError(
-                "ray is not installed. Please install it to use RayDataSource."
+                "ray is not installed. Please install it to use RayCsvDataSource."
             )
 
     def _get_line_iterator(self):
