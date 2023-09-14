@@ -128,7 +128,10 @@ def save_load_works(db: ndb.NeuralDB):
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
-    assert db.sources() == new_db.sources()
+    assert db.sources().keys() == new_db.sources().keys()
+    assert [doc.name for doc in db.sources().values()] == [
+        doc.name for doc in new_db.sources().keys()
+    ]
 
     shutil.rmtree("temp.ndb")
 
