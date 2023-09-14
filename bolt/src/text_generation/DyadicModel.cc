@@ -71,11 +71,11 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   auto data_iter = data::JsonIterator::make(data, {"target"});
 
   auto transform = data::TransformationList::make(
-      {std::make_shared<data::StringToTokenArray>("target", "target",
-                                                  _vocab_size, ' '),
+      {std::make_shared<data::StringToTokenArray>("target", "target", ' ',
+                                                  _vocab_size),
        _dyadic_transform});
 
-  return data::Loader(data_iter, _dyadic_transform, nullptr, _bolt_inputs,
+  return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
                       {data::OutputColumns("next_word")},
                       /* batch_size= */ batch_size,
                       /* shuffle= */ shuffle, /* verbose= */ true,

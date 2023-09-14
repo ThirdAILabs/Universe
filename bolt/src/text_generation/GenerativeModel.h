@@ -60,8 +60,10 @@ class BeamSearchDecoder {
 
  private:
   void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
-                             BoltVector& probs, size_t exclude_repeats_range,
-                             std::optional<float> temperature) const;
+                             BoltVector& probs,
+                             size_t exclude_repeats_range) const;
+
+  static void applyTemperature(BoltVector& probs, float temperature);
 
   std::shared_ptr<GenerativeModel> _generator;
 
@@ -107,6 +109,7 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       size_t max_predictions, size_t beam_width,
       std::optional<float> temperature = std::nullopt);
 
+  // TODO(Nicholas): should we add max_in_memory_batches option?
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
                          size_t batch_size,
@@ -136,10 +139,6 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   static std::shared_ptr<GenerativeModel> load(const std::string& filename);
 
  private:
-  void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
-                             BoltVector& probs, size_t exclude_repeats_range,
-                             std::optional<float> temperature) const;
-
   std::shared_ptr<GenerativeBackend> _model;
 
   std::unordered_set<uint32_t> _allowed_repeats;

@@ -74,6 +74,34 @@ TEST(BeamSearchDecoding, AllowRepeats) {
   ASSERT_EQ(output, expected_output);
 }
 
+TEST(BeamSearchDecoding, NoRepeatPunctuationUnderThreshold) {
+  auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
+                                     /* allowed_repeats= */ {},
+                                     /* punctuation_tokens= */ {1},
+                                     /* punctuation_repeat_threshold= */ 0.8);
+
+  auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
+                                /* beam_width= */ 1);
+
+  std::vector<uint32_t> expected_output = {1, 2, 3};
+
+  ASSERT_EQ(output, expected_output);
+}
+
+TEST(BeamSearchDecoding, AllowRepeatPunctuationOverThreshold) {
+  auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
+                                     /* allowed_repeats= */ {},
+                                     /* punctuation_tokens= */ {1},
+                                     /* punctuation_repeat_threshold= */ 0.3);
+
+  auto output = model->generate(/* input_tokens= */ {0}, /* n_predictions= */ 3,
+                                /* beam_width= */ 1);
+
+  std::vector<uint32_t> expected_output = {1, 2, 1};
+
+  ASSERT_EQ(output, expected_output);
+}
+
 TEST(BeamSearchDecoding, FindBestPath) {
   auto model = GenerativeModel::make(std::make_shared<MockBackend>(),
                                      /* allowed_repeats= */ {0, 1, 2, 3},

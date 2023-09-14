@@ -42,6 +42,7 @@ LabeledDataset ContextualModel::loadDataset(const dataset::DataSourcePtr& data,
   auto dataset = loader.loadAll(batch_size);
   auto labels = dataset.back();
   dataset.pop_back();
+  dataset = {dataset.begin() + 1, dataset.end()};  // Remove 'prompt';
 
   return {convertDatasets(dataset, _model->inputDims()),
           convertDataset(labels, _model->labelDims().at(0))};

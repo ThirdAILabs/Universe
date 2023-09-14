@@ -56,7 +56,11 @@ std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
          candidate++) {
       BoltVector& token_probs = next_token_probs->getVector(candidate);
       reduceProbsForRepeats(_candidate_sequences[candidate], token_probs,
-                            _max_predictions, _temperature);
+                            _max_predictions);
+
+      if (_temperature) {
+        applyTemperature(token_probs, *_temperature);
+      }
 
       auto top_tokens = token_probs.findKLargestActivations(_beam_width);
 
@@ -66,7 +70,7 @@ std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
         double score = _sequence_scores[candidate] - std::log(prob);
 
         // If the candidates queue is not full, or if the new sequence has a
-        // bettter score than the worst scoring sequence in the queue, then we
+        // better score than the worst scoring sequence in the queue, then we
         // want to add the new sequence to the queue.
         if (candidates.size() < _beam_width || candidates.top().score > score) {
           std::vector<uint32_t> new_sequence = _candidate_sequences[candidate];
@@ -100,7 +104,7 @@ std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
 
 void BeamSearchDecoder::reduceProbsForRepeats(
     const std::vector<uint32_t>& sequence, BoltVector& probs,
-    size_t exclude_repeats_range, std::optional<float> temperature) const {
+    size_t exclude_repeats_range) const {
   size_t start = sequence.size() < exclude_repeats_range
                      ? 0
                      : sequence.size() - exclude_repeats_range;
@@ -108,24 +112,26 @@ void BeamSearchDecoder::reduceProbsForRepeats(
   for (size_t i = start; i < sequence.size(); i++) {
     uint32_t token = sequence[i];
 
-    if ((_generator->isPunct(token) &&
-         probs.activations[token] < _generator->punctuationRepeatThreshold()) ||
-        !_generator->isAllowedRepeat(token)) {
+    if (_generator->isPunct(token)) {
+      if (probs.activations[token] < _generator->punctuationRepeatThreshold()) {
+        probs.activations[token] = 0.0;
+      }
+    } else if (!_generator->isAllowedRepeat(token)) {
       probs.activations[token] = 0.0;
     }
   }
+}
 
-  if (temperature) {
-    float total = 0.0;
-    for (size_t i = 0; i < probs.len; i++) {
-      float score = std::exp(probs.activations[i] / *temperature);
-      probs.activations[i] = score;
-      total += score;
-    }
+void BeamSearchDecoder::applyTemperature(BoltVector& probs, float temperature) {
+  float total = 0.0;
+  for (size_t i = 0; i < probs.len; i++) {
+    float score = std::exp(std::log(probs.activations[i]) / temperature);
+    probs.activations[i] = score;
+    total += score;
+  }
 
-    for (size_t i = 0; i < probs.len; i++) {
-      probs.activations[i] = probs.activations[i] / total;
-    }
+  for (size_t i = 0; i < probs.len; i++) {
+    probs.activations[i] = probs.activations[i] / total;
   }
 }
 
