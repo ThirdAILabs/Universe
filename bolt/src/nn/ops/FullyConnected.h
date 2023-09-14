@@ -44,6 +44,8 @@ class FullyConnected final
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;
@@ -164,3 +166,20 @@ class FullyConnected final
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
 }  // namespace thirdai::bolt
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ *
+ * This needs to be in the header file because the Switch op needs to know about
+ * it.
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::FullyConnected,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal

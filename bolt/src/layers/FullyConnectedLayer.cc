@@ -49,8 +49,6 @@ FullyConnectedLayer::FullyConnectedLayer(
     buildHashTables();
   }
 
-  initOptimizer();
-
   initActiveNeuronsTrackers();
 }
 

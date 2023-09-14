@@ -105,6 +105,8 @@ std::optional<uint32_t> FullyConnected::nonzeros(const ComputationList& inputs,
   return _kernel->getDim();
 }
 
+void FullyConnected::initOptimizer() { _kernel->initOptimizer(); }
+
 void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
@@ -264,25 +266,9 @@ void FullyConnected::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
-
-  _kernel->initOptimizer();
 }
 
 }  // namespace thirdai::bolt
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::FullyConnected,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::FullyConnected,
                                "thirdai::bolt::nn::ops::FullyConnected")
