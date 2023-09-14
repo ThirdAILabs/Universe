@@ -126,9 +126,6 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
   (void)return_predicted_class;
   (void)top_k;
 
-  const auto& vocab = _featurizer->vocab();
-  size_t vocab_size = _featurizer->vocabSize();
-
   auto mutable_sample = sample;
   mutable_sample[_target_name] = "";
 
@@ -139,13 +136,12 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                       ->forward(_featurizer->featurizeInput(mutable_sample),
                                 sparse_inference)
                       .at(0);
-    auto predicted_id =
-        predictionAtStep(output->getVector(0), step, vocab_size);
+    auto predicted_id = predictionAtStep(output->getVector(0), step);
     if (_featurizer->isEos(predicted_id)) {
       break;
     }
 
-    std::string prediction = elementString(predicted_id, vocab);
+    std::string prediction = _featurizer->targetTokenToString(predicted_id);
     addPredictionToSample(mutable_sample, prediction);
     predictions.push_back(prediction);
   }
@@ -182,13 +178,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   (void)return_predicted_class;
   (void)top_k;
 
-  const auto& vocab = _featurizer->vocab();
-  size_t vocab_size = _featurizer->vocabSize();
-
-  for (uint32_t i = 0; i < vocab->size(); i++) {
-    std::cerr << "VOCAB: " << i << " -> " << vocab->getString(i) << std::endl;
-  }
-
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
   auto mutable_samples = samples;
@@ -209,13 +198,13 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
         auto predicted_id =
-            predictionAtStep(batch_activations->getVector(i), step, vocab_size);
+            predictionAtStep(batch_activations->getVector(i), step);
         if (_featurizer->isEos(predicted_id)) {
           progress.markSampleDone(i);
           continue;
         }
 
-        std::string prediction = elementString(predicted_id, vocab);
+        std::string prediction = _featurizer->targetTokenToString(predicted_id);
         addPredictionToSample(mutable_samples[i], prediction);
         all_predictions[i].push_back(prediction);
       }
@@ -232,11 +221,8 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 }
 
 uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
-                                                  uint32_t step,
-                                                  size_t vocab_size) {
-  auto begin = step * vocab_size;
-  auto end = begin + vocab_size;
-
+                                                  uint32_t step) const {
+  auto [begin, end] = _featurizer->outputRangeForStep(step);
   uint32_t arg_max = 0;
   float max_act = -std::numeric_limits<float>::max();
   for (uint32_t neuron = begin; neuron < end; neuron++) {
@@ -247,12 +233,6 @@ uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
   }
 
   return arg_max - begin;
-}
-
-std::string UDTRecurrentClassifier::elementString(
-    uint32_t element_id, const thirdai::data::ThreadSafeVocabularyPtr& vocab) {
-  uint32_t element_id_without_position = element_id % vocab->maxSize().value();
-  return vocab->getString(element_id_without_position);
 }
 
 void UDTRecurrentClassifier::addPredictionToSample(
