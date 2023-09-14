@@ -130,7 +130,7 @@ def save_load_works(db: ndb.NeuralDB):
     assert search_results == new_search_results
     assert db.sources().keys() == new_db.sources().keys()
     assert [doc.name for doc in db.sources().values()] == [
-        doc.name for doc in new_db.sources().keys()
+        doc.name for doc in new_db.sources().values()
     ]
 
     shutil.rmtree("temp.ndb")
