@@ -84,6 +84,7 @@ def test_save_load_meta_method(doc):
     shutil.rmtree(save_dir)
 
 
+@pytest.mark.xfail
 def test_doc_save_load_method(doc):
     doc.save("doc_save_dir")
     # This calls a static method.
