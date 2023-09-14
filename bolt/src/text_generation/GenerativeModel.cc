@@ -183,6 +183,20 @@ void GenerativeModel::save(const std::string& filename) const {
   oarchive(*this);
 }
 
+void GenerativeModel::save_stream(std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<GenerativeModel> GenerativeModel::load_stream(
+    std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<GenerativeModel> deserialize_into(new GenerativeModel());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
 std::shared_ptr<GenerativeModel> GenerativeModel::load(
     const std::string& filename) {
   auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
