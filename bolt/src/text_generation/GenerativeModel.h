@@ -135,6 +135,11 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
 
   static std::shared_ptr<GenerativeModel> load(const std::string& filename);
 
+  void save_stream(std::ostream& output_stream) const;
+
+  static std::shared_ptr<GenerativeModel> load_stream(
+      std::istream& input_stream);
+
  private:
   void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
                              BoltVector& probs, size_t exclude_repeats_range,
