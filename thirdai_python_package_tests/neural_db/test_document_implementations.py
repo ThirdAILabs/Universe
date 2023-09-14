@@ -12,7 +12,7 @@ from thirdai import neural_db as ndb
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.parametrize("get_doc", all_doc_getters()),
+    pytest.mark.parametrize("get_doc", all_doc_getters),
 ]
 
 
