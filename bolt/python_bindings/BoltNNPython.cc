@@ -154,12 +154,13 @@ void createBoltNNSubmodule(py::module_& module) {
       .def(thirdai::bolt::python::getPickleFunction<Model>());
 
 #if THIRDAI_EXPOSE_ALL
-  defineOps(nn);
-
-  defineLosses(nn);
 #endif
   defineTensor(nn);
+  defineOps(nn);
+  defineLosses(nn);
 }
+
+
 
 void defineTensor(py::module_& nn) {
   py::class_<Tensor, TensorPtr>(nn, "Tensor")
@@ -193,6 +194,7 @@ void defineTensor(py::module_& nn) {
 }
 
 void defineOps(py::module_& nn) {
+
   py::class_<Computation, ComputationPtr>(nn, "Computation")
       .def("dim", &Computation::dim)
       .def("tensor", &Computation::tensor)
@@ -201,6 +203,7 @@ void defineOps(py::module_& nn) {
   py::class_<Op, OpPtr>(nn, "Op")
       .def("dim", &Op::dim)
       .def_property("name", &Op::name, &Op::setName);
+    
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
 
@@ -233,8 +236,7 @@ void defineOps(py::module_& nn) {
                   py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<
            hashtable::SampledHashTable>());
-#endif
-
+  
   py::class_<FullyConnected, FullyConnectedPtr, Op>(nn, "FullyConnected")
       .def(py::init(&FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
@@ -291,6 +293,16 @@ void defineOps(py::module_& nn) {
       .def("duplicate_with_new_reduction", &RobeZ::duplicateWithNewReduction,
            py::arg("reduction"), py::arg("num_tokens_per_input"));
 
+  py::class_<Concatenate, ConcatenatePtr, Op>(nn, "Concatenate")
+      .def(py::init(&Concatenate::make))
+      .def("__call__", &Concatenate::apply);
+
+  py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
+      .def(py::init(&DlrmAttention::make))
+      .def("__call__", &DlrmAttention::apply);
+    
+#endif
+
   py::class_<Embedding, EmbeddingPtr, Op>(nn, "Embedding")
       .def(py::init(&Embedding::make), py::arg("dim"), py::arg("input_dim"),
            py::arg("activation"), py::arg("bias") = true)
@@ -325,14 +337,6 @@ void defineOps(py::module_& nn) {
         op->setBiases(biases.data());
       });
 
-  py::class_<Concatenate, ConcatenatePtr, Op>(nn, "Concatenate")
-      .def(py::init(&Concatenate::make))
-      .def("__call__", &Concatenate::apply);
-
-  py::class_<LayerNorm, LayerNormPtr, Op>(nn, "LayerNorm")
-      .def(py::init(py::overload_cast<>(&LayerNorm::make)))
-      .def("__call__", &LayerNorm::apply);
-
   py::class_<Tanh, TanhPtr, Op>(nn, "Tanh")
       .def(py::init(&Tanh::make))
       .def("__call__", &Tanh::apply);
@@ -345,13 +349,13 @@ void defineOps(py::module_& nn) {
       .def(py::init<>(&DotProduct::make))
       .def("__call__", &DotProduct::apply);
 
+  py::class_<LayerNorm, LayerNormPtr, Op>(nn, "LayerNorm")
+      .def(py::init(py::overload_cast<>(&LayerNorm::make)))
+      .def("__call__", &LayerNorm::apply);
+
   py::class_<CosineSimilarity, CosineSimilarityPtr, Op>(nn, "CosineSimilarity")
       .def(py::init<>(&CosineSimilarity::make))
       .def("__call__", &CosineSimilarity::apply);
-
-  py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
-      .def(py::init(&DlrmAttention::make))
-      .def("__call__", &DlrmAttention::apply);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }
