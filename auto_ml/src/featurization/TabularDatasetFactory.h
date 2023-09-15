@@ -12,6 +12,7 @@
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -128,6 +129,20 @@ class TabularDatasetFactory {
   TabularOptions tabularOptions() { return _options; }
 
   void save_stream(std::ostream& output_stream) const;
+
+  dataset::DatasetLoaderPtr makeDataLoaderCustomFeaturizer(
+      const dataset::DataSourcePtr& data_source, bool shuffle,
+      const dataset::FeaturizerPtr& featurizer,
+      std::optional<dataset::DatasetShuffleConfig> shuffle_config =
+          std::nullopt) const {
+    if (!shuffle_config.has_value()) {
+      shuffle_config = dataset::DatasetShuffleConfig();
+    }
+    auto csv_data_source =
+        dataset::CsvDataSource::make(data_source, delimiter());
+    return std::make_unique<dataset::DatasetLoader>(
+        csv_data_source, featurizer, shuffle, shuffle_config.value());
+  }
 
   static std::shared_ptr<TabularDatasetFactory> load_stream(
       std::istream& input_stream);

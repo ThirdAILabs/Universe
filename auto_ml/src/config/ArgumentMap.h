@@ -44,9 +44,9 @@ class ArgumentMap {
   const auto& arguments() const { return _arguments; }
 
  private:
-  std::unordered_map<
-      std::string,
-      std::variant<bool, uint32_t, float, std::string, std::vector<int32_t>>>
+  std::unordered_map<std::string,
+                     std::variant<char, bool, uint32_t, float, std::string,
+                                  std::vector<int32_t>>>
       _arguments;
 };
 

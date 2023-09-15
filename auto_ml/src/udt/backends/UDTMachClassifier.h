@@ -11,8 +11,10 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/featurizers/DyadicFeaturizer.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <pybind11/pytypes.h>
@@ -270,6 +272,8 @@ class UDTMachClassifier final : public UDTBackend {
   dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
+
+  std::optional<dataset::FeaturizerPtr> _dyadic_featurizer = std::nullopt;
 
   uint32_t _default_top_k_to_return;
   uint32_t _num_buckets_to_eval;

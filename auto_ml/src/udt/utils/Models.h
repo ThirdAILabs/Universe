@@ -18,6 +18,9 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       bool output_bias = true, bool mach = false,
                       bool normalize_embeddings = false);
 
+ModelPtr dyadicModel(uint32_t n_intervals, uint32_t vocab_size,
+                     uint32_t output_dim, bool mach);
+
 float autotuneSparsity(uint32_t dim);
 
 ModelPtr loadModel(const std::vector<uint32_t>& input_dims,

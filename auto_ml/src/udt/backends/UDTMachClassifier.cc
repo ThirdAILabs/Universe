@@ -22,6 +22,7 @@
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/DyadicFeaturizer.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
@@ -153,6 +154,36 @@ UDTMachClassifier::UDTMachClassifier(
     _rlhf_sampler = std::make_optional<RLHFSampler>(
         num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  /**
+   * TODO(Shubh) : Clean this up. Pass dyadic featurizer instead.
+   */
+  if (user_args.get<bool>("use_dyadic_model", "bool", false)) {
+    bool expects_header = true;
+    size_t n_intervals =
+        user_args.get<uint32_t>("n_intervals", "unsigned int", 0);
+    size_t context_length =
+        user_args.get<uint32_t>("context_length", "unsigned int", 0);
+    std::string text_column =
+        user_args.get<std::string>("text_column", "string", "");
+    std::string label_column =
+        user_args.get<std::string>("label_column", "string", "");
+
+    char delimiter = user_args.get<std::string>("delimiter", "string", ",")[0];
+    char label_delimiter =
+        user_args.get<std::string>("label_delimiter", "string", ":")[0];
+
+    if (not n_intervals || not context_length || text_column.empty() ||
+        label_column.empty()) {
+      throw std::logic_error(
+          "If use dyadic is specified, then passing the parameters for "
+          "initializing dyadic are necessary");
+    }
+
+    _dyadic_featurizer = std::make_shared<dataset::DyadicFeaturizer>(
+        expects_header, n_intervals, context_length, text_column, label_column,
+        delimiter, label_delimiter);
+  }
 }
 
 py::object UDTMachClassifier::coldstart(
@@ -182,14 +213,30 @@ py::object UDTMachClassifier::train(
     const bolt::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
-    val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-        val_data, /* shuffle= */ false);
+    if (_dyadic_featurizer != std::nullopt) {
+      val_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+          val_data, false, _dyadic_featurizer.value());
+    } else {
+      val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+          val_data, /* shuffle= */ false);
+    }
   }
 
   addBalancingSamples(data);
 
+  if (_dyadic_featurizer != std::nullopt) {
+    auto train_dataset_loader =
+        _dataset_factory->makeDataLoaderCustomFeaturizer(
+            data, true, _dyadic_featurizer.value(), options.shuffle_config);
+    return _classifier->train(
+        train_dataset_loader, learning_rate, epochs,
+        getMetrics(train_metrics, "train_"), val_dataset_loader,
+        getMetrics(val_metrics, "val_"), callbacks, options, comm);
+  }
+
   auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
+      data, /* shuffle= */ true,
+      /* shuffle_config= */ options.shuffle_config);
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
@@ -237,8 +284,14 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto eval_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
+  dataset::DatasetLoaderPtr eval_dataset_loader = nullptr;
+  if (_dyadic_featurizer != std::nullopt) {
+    eval_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+        data, false, _dyadic_featurizer.value());
+  } else {
+    eval_dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
+  }
 
   return _classifier->evaluate(eval_dataset_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);

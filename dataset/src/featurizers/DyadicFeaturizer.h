@@ -76,6 +76,12 @@ class DyadicFeaturizer final : public Featurizer {
       const std::vector<uint32_t>& tokens) const;
 
  private:
+  DyadicFeaturizer() {}
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
+
   bool _expects_header;
   size_t _n_intervals;
   size_t _context_length;

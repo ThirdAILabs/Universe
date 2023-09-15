@@ -1,4 +1,5 @@
 #include "DyadicFeaturizer.h"
+#include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -61,7 +62,17 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
     }
   }
 
-  return bolt_batch;
+  std::vector<std::vector<BoltVector>> transposed_batch(_n_intervals + 1);
+
+  for (size_t index = 0; index < _n_intervals + 1; index++) {
+    transposed_batch[index] = std::vector<BoltVector>(batch_size);
+  }
+  for (size_t row = 0; row < bolt_batch.size(); row++) {
+    for (size_t column = 0; column < bolt_batch[0].size(); column++) {
+      transposed_batch[row][column] = bolt_batch[column][row].copy();
+    }
+  }
+  return transposed_batch;
 }
 
 std::vector<BoltVector> DyadicFeaturizer::featurizeSingle(
@@ -83,6 +94,16 @@ std::vector<BoltVector> DyadicFeaturizer::featurizeSingle(
         temp_tokens, std::vector<float>(temp_tokens.size(), 1.0)));
   }
   return featurized_sample;
+}
+
+template void DyadicFeaturizer::serialize(cereal::BinaryInputArchive&);
+template void DyadicFeaturizer::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void DyadicFeaturizer::serialize(Archive& archive) {
+  archive(_expects_header, _n_intervals, _context_length, _text_column,
+          _label_column, _output_interval_prefix, _delimiter, _label_delimiter,
+          _num_cols_in_header, _column_number_map);
 }
 
 }  // namespace thirdai::dataset

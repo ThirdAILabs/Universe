@@ -4,6 +4,7 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -23,6 +24,20 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   if (model_config) {
     return utils::loadModel({input_dim}, output_dim, *model_config, mach);
   }
+
+  /*
+   * This if routine builds a dyadic model. We expect that the user will
+   * overwrite this dyadic model with set model as everything is set with
+   * default configuration,
+   */
+  bool dyadic_model = args.get<bool>("use_dyadic_model", "bool", false);
+  if (dyadic_model) {
+    uint32_t n_intervals =
+        args.get<uint32_t>("n_intervals", "unsigned integer");
+    uint32_t vocab_size = args.get<uint32_t>("vocab_size", "unsigned_integer");
+    return utils::dyadicModel(n_intervals, vocab_size, output_dim, mach);
+  }
+
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
   bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
@@ -56,6 +71,43 @@ float autotuneSparsity(uint32_t dim) {
     }
   }
   return sparsity_values.back().second;
+}
+
+ModelPtr dyadicModel(uint32_t n_intervals, uint32_t vocab_size,
+                     uint32_t output_dim, bool mach) {
+  std::vector<bolt::ComputationPtr> inputs;
+  for (uint32_t i = 0; i < n_intervals; i++) {
+    inputs.emplace_back(bolt::Input::make(vocab_size));
+  }
+
+  std::vector<bolt::ComputationPtr> embeddings;
+  for (auto const& input : inputs) {
+    auto embedding =
+        bolt::Embedding::make(200, vocab_size, "relu")->apply(input);
+    embeddings.push_back(embedding);
+  }
+
+  auto concat = bolt::Concatenate::make()->apply(embeddings);
+
+  auto output = bolt::FullyConnected::make(output_dim, concat->dim(), 1,
+                                           "softmax", nullptr)
+                    ->apply(concat);
+  auto labels = bolt::Input::make(output_dim);
+  bolt::LossPtr loss;
+  loss = bolt::CategoricalCrossEntropy::make(output, labels);
+
+  bolt::ComputationList additional_labels;
+
+  if (mach) {
+    // For mach we need the hash based labels for training, but the actual
+    // document/class ids to compute metrics. Hence we add two labels to the
+    // model.
+    additional_labels.push_back(
+        bolt::Input::make(std::numeric_limits<uint32_t>::max()));
+  }
+
+  auto model = bolt::Model::make(inputs, {output}, {loss}, additional_labels);
+  return model;
 }
 
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
@@ -129,6 +181,8 @@ ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
 void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
   auto vec_eq = [](const auto& a, const auto& b) -> bool {
     if (a.size() != b.size()) {
+      std::cout << "Size mismatch: size of A ->" << a.size() << " size of B ->"
+                << b.size() << std::endl;
       return false;
     }
     for (uint32_t i = 0; i < a.size(); i++) {
