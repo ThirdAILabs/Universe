@@ -15,8 +15,6 @@ concurrency:
 on: 
   push: 
     branches: [main]
-
-  push:
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
