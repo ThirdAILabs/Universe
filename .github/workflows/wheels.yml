@@ -16,9 +16,8 @@ on:
   push: 
     branches: [main]
 
-  release:
-    types:
-      - published
+  push:
+    tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
 
