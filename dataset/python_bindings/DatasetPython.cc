@@ -22,6 +22,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
+#include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
@@ -281,12 +282,12 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<DyadicFeaturizer, Featurizer, DyadicFeaturizerPtr>(
       dataset_submodule, "DyadicFeaturizer")
-      .def(py::init<bool, size_t, size_t, std::string, std::string, char,
-                    char>(),
+      .def(py::init<bool, size_t, size_t, std::string, std::string, char, char,
+                    std::optional<mach::MachBlockPtr>>(),
            py::arg("expects_header"), py::arg("n_intervals"),
            py::arg("context_length"), py::arg("text_column"),
            py::arg("label_column"), py::arg("delimiter"),
-           py::arg("label_delimiter"))
+           py::arg("label_delimiter"), py::arg("mach_block"))
       .def("process_header", &DyadicFeaturizer::processHeader,
            py::arg("header"))
       .def("featurize", &DyadicFeaturizer::featurize, py::arg("rows"));

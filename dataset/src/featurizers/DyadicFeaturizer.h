@@ -1,12 +1,15 @@
 #pragma once
 #include <bolt_vector/src/BoltVector.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/featurizers/SvmFeaturizer.h>
+#include <dataset/src/mach/MachBlock.h>
 #include <iterator>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -16,10 +19,11 @@ namespace thirdai::dataset {
 
 class DyadicFeaturizer final : public Featurizer {
  public:
-  explicit DyadicFeaturizer(bool expects_header, size_t n_intervals,
-                            size_t context_length, std::string text_column,
-                            std::string label_column, char delimiter,
-                            char label_delimiter)
+  explicit DyadicFeaturizer(
+      bool expects_header, size_t n_intervals, size_t context_length,
+      std::string text_column, std::string label_column, char delimiter,
+      char label_delimiter,
+      std::optional<mach::MachBlockPtr> mach_label_block = std::nullopt)
       : _expects_header(expects_header),
         _n_intervals(n_intervals),
         _context_length(context_length),
@@ -27,7 +31,8 @@ class DyadicFeaturizer final : public Featurizer {
         _label_column(std::move(label_column)),
         _output_interval_prefix("dyadic_" + _text_column),
         _delimiter(delimiter),
-        _label_delimiter(label_delimiter) {}
+        _label_delimiter(label_delimiter),
+        _mach_label_block(std::move(mach_label_block)) {}
 
   bool expectsHeader() const final { return true; }
 
@@ -38,12 +43,22 @@ class DyadicFeaturizer final : public Featurizer {
                                   " in the dataset but found none.");
     }
     _num_cols_in_header = _column_number_map->size();
+    auto num_to_name_map = _column_number_map->getColumnNumToColNameMap();
+    // for (size_t i = 0; i < num_to_name_map.size(); i++) {
+    //   std::cout << "ID: " << i << " Name: " << num_to_name_map[i] <<
+    //   std::endl;
+    // }
   }
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final;
 
-  size_t getNumDatasets() final { return _n_intervals; }
+  size_t getNumDatasets() final {
+    if (_mach_label_block == std::nullopt) {
+      return _n_intervals + 1;
+    }
+    return _n_intervals + 2;
+  }
 
   static std::vector<uint32_t> convertStringToUInt32FeatureArray(
       const std::string& str) {
@@ -91,6 +106,8 @@ class DyadicFeaturizer final : public Featurizer {
   std::string _output_interval_prefix;
   char _delimiter;
   char _label_delimiter;
+
+  std::optional<mach::MachBlockPtr> _mach_label_block;
 
   std::optional<uint32_t> _num_cols_in_header = std::nullopt;
 

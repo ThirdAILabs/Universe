@@ -68,6 +68,14 @@ struct BoltVector {
   static BoltVector makeDenseVectorWithGradients(
       const std::vector<float>& values);
 
+  void printVector() const {
+    std::cout << "Index, Activation: ";
+    for (uint32_t i = 0; i < len; i++) {
+      std::cout << active_neurons[i] << " " << activations[i] << " ";
+    }
+    std::cout << std::endl;
+  }
+
   BoltVector copy() const;
 
   BoltVector(const BoltVector& other);

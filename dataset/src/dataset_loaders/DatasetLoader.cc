@@ -146,6 +146,18 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
     }
 
     auto batch = _featurizer->featurize(*rows);
+    // auto printSize = [](const std::vector<std::vector<BoltVector>>& v) {
+    //   size_t rows = v.size();
+    //   size_t columns = (rows > 0) ? v[0].size() : 0;
+    //   std::cout << "rows: " << rows << " and columns: " << columns <<
+    //   std::endl;
+    // };
+    // printSize(batch);
+    // for (size_t row = 0; row < batch.size(); row++) {
+    //   for (size_t column = 0; column < batch[0].size(); column++) {
+    //     batch[row][column].printVector();
+    //   }
+    // }
     for (size_t i = 0; i < batch.at(0).size(); i++) {
       std::vector<BoltVector> temp_vector;
       temp_vector.reserve(batch.size());

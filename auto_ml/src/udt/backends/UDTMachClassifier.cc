@@ -182,7 +182,7 @@ UDTMachClassifier::UDTMachClassifier(
 
     _dyadic_featurizer = std::make_shared<dataset::DyadicFeaturizer>(
         expects_header, n_intervals, context_length, text_column, label_column,
-        delimiter, label_delimiter);
+        delimiter, label_delimiter, _mach_label_block);
   }
 }
 

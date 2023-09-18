@@ -7,6 +7,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -26,7 +27,7 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
    */
   std::exception_ptr exception_pointer = nullptr;
   std::atomic<bool> exception_thrown(false);
-
+  // std::cout << "Start loading the data" << std::endl;
 #pragma omp parallel for default(none)                                 \
     shared(bolt_batch, batch_size, input_batch_ref, exception_pointer, \
            exception_thrown)
@@ -44,9 +45,23 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
 
       std::vector<uint32_t> labels =
           convertStringToUInt32LabelArray(label_string);
+      std::vector<uint32_t> mach_labels;
+
+      if (_mach_label_block != std::nullopt) {
+        for (const auto x : labels) {
+          std::vector<uint32_t> mach_label =
+              _mach_label_block.value()->index()->getHashes(x);
+          mach_labels.insert(mach_labels.end(), mach_label.begin(),
+                             mach_label.end());
+        }
+        auto mach_vector = thirdai::BoltVector::makeSparseVector(
+            mach_labels, std::vector<float>(mach_labels.size(), 1));
+        featurized_vector.push_back(mach_vector);
+      }
       auto label_vector = thirdai::BoltVector::makeSparseVector(
           labels, std::vector<float>(labels.size(), 1));
       featurized_vector.push_back(label_vector);
+
       bolt_batch[index] = featurized_vector;
     } catch (...) {
       exception_pointer = std::current_exception();
@@ -62,16 +77,30 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
     }
   }
 
-  std::vector<std::vector<BoltVector>> transposed_batch(_n_intervals + 1);
+  // std::cout << "Loading the data is complete" << std::endl;
 
-  for (size_t index = 0; index < _n_intervals + 1; index++) {
+  std::vector<std::vector<BoltVector>> transposed_batch(getNumDatasets());
+
+  // auto printSize = [](const std::vector<std::vector<BoltVector>>& v) {
+  //   size_t rows = v.size();
+  //   size_t columns = (rows > 0) ? v[0].size() : 0;
+  //   std::cout << "rows: " << rows << " and columns: " << columns <<
+  //   std::endl;
+  // };
+  // printSize(bolt_batch);
+
+  // printSize(transposed_batch);
+
+  for (size_t index = 0; index < getNumDatasets(); index++) {
     transposed_batch[index] = std::vector<BoltVector>(batch_size);
   }
   for (size_t row = 0; row < bolt_batch.size(); row++) {
     for (size_t column = 0; column < bolt_batch[0].size(); column++) {
-      transposed_batch[row][column] = bolt_batch[column][row].copy();
+      transposed_batch[column][row] = bolt_batch[row][column].copy();
     }
   }
+
+  // std::cout << "Finished transposing the batch" << std::endl;
   return transposed_batch;
 }
 
