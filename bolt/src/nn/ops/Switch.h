@@ -16,7 +16,8 @@ namespace thirdai::bolt {
  * An wrapper around n_layer FullyConnected ops that allows the model to
  * choose which FullyConnected op to use based on the input.
  */
-class Switch final : public Op, public std::enable_shared_from_this<Switch> {
+class Switch final : public FCKernelOp,
+                     public std::enable_shared_from_this<Switch> {
  public:
   // TODO(Nicholas / Geordie): rebuild_hash_tables & reconstruct_hash_functions
   // should be moved to the sampling config once bolt v1 is depreciated and
@@ -89,14 +90,23 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   void setBiases(uint32_t layer_id, const float* biases_to_set);
 
+  void setSparsity(float sparsity, bool rebuild_hash_tables,
+                   bool experimental_autotune) final;
+
+  void unfreezeHashTables() final;
+
   /**
    * Autotunes how often the hash tables and hash functions are rebuilt using
    * the number of batches in the dataset and the batch size.
    */
-  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) final;
 
   static auto cast(const OpPtr& op) {
     return std::dynamic_pointer_cast<Switch>(op);
+  }
+
+  ActivationFunction getActivationFunction() const final {
+    return _fc_ops.front()->getActivationFunction();
   }
 
  private:

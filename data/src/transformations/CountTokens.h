@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <data/src/transformations/Transformation.h>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -21,10 +23,22 @@ class CountTokens final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  static auto make(std::string input_column, std::string output_column,
+                   std::optional<uint32_t> max_tokens) {
+    return std::make_shared<CountTokens>(std::move(input_column),
+                                         std::move(output_column), max_tokens);
+  }
+
  private:
   std::string _input_column;
   std::string _output_column;
   std::optional<uint32_t> _max_tokens;
+
+  CountTokens() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

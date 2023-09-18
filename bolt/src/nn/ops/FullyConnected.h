@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -12,8 +13,30 @@
 
 namespace thirdai::bolt {
 
+class FCKernelOp : public Op {
+ public:
+  explicit FCKernelOp(std::string name) : Op(std::move(name)) {}
+
+  static auto cast(const OpPtr& op) {
+    return std::dynamic_pointer_cast<FCKernelOp>(op);
+  }
+
+  virtual void setSparsity(float sparsity, bool rebuild_hash_tables,
+                           bool experimental_autotune) = 0;
+
+  virtual void unfreezeHashTables() = 0;
+
+  virtual void autotuneRehashRebuild(uint32_t num_batches,
+                                     uint32_t batch_size) = 0;
+
+  virtual ActivationFunction getActivationFunction() const = 0;
+
+ protected:
+  FCKernelOp() {}
+};
+
 class FullyConnected final
-    : public Op,
+    : public FCKernelOp,
       public std::enable_shared_from_this<FullyConnected> {
  public:
   // TODO(Nicholas): rebuild_hash_tables & reconstruct_hash_functions should be
@@ -95,7 +118,7 @@ class FullyConnected final
   /**
    * Unfreezes all hash tables in the model.
    */
-  void unfreezeHashTables();
+  void unfreezeHashTables() final;
 
   void setWeights(const float* new_weights);
 
@@ -113,7 +136,7 @@ class FullyConnected final
    * Autotunes how often the hash tables and hash functions are rebuilt using
    * the number of batches in the dataset and the batch size.
    */
-  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size);
+  void autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) final;
 
   static auto cast(const OpPtr& op) {
     return std::dynamic_pointer_cast<FullyConnected>(op);
@@ -122,12 +145,16 @@ class FullyConnected final
   float getSparsity() { return _kernel->getSparsity(); }
 
   void setSparsity(float sparsity, bool rebuild_hash_tables,
-                   bool experimental_autotune);
+                   bool experimental_autotune) final;
 
   uint32_t getRebuildHashTables() const { return _rebuild_hash_tables; }
 
   uint32_t getReconstructHashFunctions() const {
     return _reconstruct_hash_functions;
+  }
+
+  ActivationFunction getActivationFunction() const final {
+    return kernel()->getActivationFunction();
   }
 
  private:

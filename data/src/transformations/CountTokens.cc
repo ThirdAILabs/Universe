@@ -1,4 +1,7 @@
 #include "CountTokens.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ValueColumns.h>
 
 namespace thirdai::data {
@@ -28,4 +31,15 @@ thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
   return columns;
 }
 
+template void CountTokens::serialize(cereal::BinaryInputArchive&);
+template void CountTokens::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void CountTokens::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _max_tokens);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::CountTokens)

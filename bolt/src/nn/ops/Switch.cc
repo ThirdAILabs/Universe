@@ -25,7 +25,7 @@ Switch::Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim,
                const SamplingConfigPtr& sampling, bool use_bias,
                uint32_t rebuild_hash_tables,
                uint32_t reconstruct_hash_functions)
-    : Op(nextSwitchOpName()) {
+    : FCKernelOp(nextSwitchOpName()) {
   for (uint32_t layer_id = 0; layer_id < n_layers; layer_id++) {
     _fc_ops.emplace_back(FullyConnected::make(
         dim, input_dim, sparsity, activation, sampling, use_bias,
@@ -163,6 +163,19 @@ void Switch::setWeights(uint32_t layer_id, const float* weights_to_set) {
 
 void Switch::setBiases(uint32_t layer_id, const float* biases_to_set) {
   getFcOpById(layer_id)->setBiases(biases_to_set);
+}
+
+void Switch::setSparsity(float sparsity, bool rebuild_hash_tables,
+                         bool experimental_autotune) {
+  for (auto& op : _fc_ops) {
+    op->setSparsity(sparsity, rebuild_hash_tables, experimental_autotune);
+  }
+}
+
+void Switch::unfreezeHashTables() {
+  for (auto& op : _fc_ops) {
+    op->unfreezeHashTables();
+  }
 }
 
 void Switch::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {

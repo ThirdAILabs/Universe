@@ -90,8 +90,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
         // The next token to be predicted; row_pos-th token or EOS.
         uint32_t target_token =
             row_pos < source_row.size() ? target_row[row_pos] : EOS();
-        unrolled_target_data[offset + row_pos] =
-            positionEncodedToken(target_token, row_pos);
+        unrolled_target_data[offset + row_pos] = target_token;
       }
     } catch (std::exception& e) {
 #pragma omp critical
@@ -106,7 +105,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   auto unrolled_source_column = ArrayColumn<uint32_t>::make(
       std::move(unrolled_source_data), source_column->dim());
   auto unrolled_target_column = ValueColumn<uint32_t>::make(
-      std::move(unrolled_target_data), totalVocabSize() * _max_seq_len);
+      std::move(unrolled_target_data), totalVocabSize());
 
   auto permutation_indices = permutation(row_offsets);
   columns = columns.permute(permutation_indices);
@@ -115,9 +114,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-bool Recurrence::isEOS(uint32_t token) const {
-  return token % totalVocabSize() == EOS();
-}
+bool Recurrence::isEOS(uint32_t token) const { return token == EOS(); }
 
 size_t Recurrence::effectiveSize(const RowView<uint32_t>& row) const {
   return std::min(row.size() + 1, _max_seq_len);
@@ -146,11 +143,6 @@ void Recurrence::assertCorrectTargetInputDim(
                                 " but received target column with dimension " +
                                 std::to_string(*target_column.dim()));
   }
-}
-
-uint32_t Recurrence::positionEncodedToken(uint32_t token,
-                                          size_t position) const {
-  return std::min(position, _max_seq_len - 1) * totalVocabSize() + token;
 }
 
 template void Recurrence::serialize(cereal::BinaryInputArchive&);

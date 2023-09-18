@@ -418,7 +418,7 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
 
 void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   for (const auto& op : _model->ops()) {
-    if (auto fc = FullyConnected::cast(op)) {
+    if (auto fc = FCKernelOp::cast(op)) {
       fc->autotuneRehashRebuild(/* num_batches= */ num_batches,
                                 /* batch_size= */ batch_size);
     }

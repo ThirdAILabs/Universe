@@ -4,6 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/TensorConversion.h>
+#include <data/src/transformations/CountTokens.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Recurrence.h>
@@ -42,6 +45,7 @@ RecurrentFeaturizer::RecurrentFeaturizer(
                          tabular_options, /* augmentation= */ nullptr);
 
   _bolt_input_columns = {
+      thirdai::data::OutputColumns(RECURRENT_POSITION),
       thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
   _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
 }
@@ -70,6 +74,14 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
     input_transforms.push_back(augmentation);
   }
 
+  // Count number of tokens predicted so far to get position of output token.
+  // Since we are counting number of tokens predicted so far, and not the number
+  // of tokens in the final sequence, max_tokens is max token length - 1.
+  auto target_position = thirdai::data::CountTokens::make(
+      RECURRENT_SEQUENCE, RECURRENT_POSITION,
+      /* max_tokens= */ target->max_length.value() - 1);
+  input_transforms.push_back(target_position);
+
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
       outputs, FEATURIZED_INDICES, FEATURIZED_VALUES,
       tabular_options.feature_hash_range);
@@ -85,7 +97,8 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
 
   csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   return thirdai::data::Loader::make(
       data_iter, _augmenting_transform, _state, _bolt_input_columns,

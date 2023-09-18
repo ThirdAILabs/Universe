@@ -6,6 +6,7 @@
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt/src/train/callbacks/Callback.h>
@@ -127,8 +128,7 @@ void UDTClassifier::setOutputSparsity(float sparsity,
         "connected layer output.");
   }
 
-  auto fc_computation =
-      bolt::FullyConnected::cast(output_computations[0]->op());
+  auto fc_computation = bolt::FCKernelOp::cast(output_computations[0]->op());
   if (fc_computation) {
     fc_computation->setSparsity(sparsity, rebuild_hash_tables,
                                 /*experimental_autotune=*/false);

@@ -1,5 +1,10 @@
 #include "UDTRecurrentClassifier.h"
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
+#include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -19,6 +24,37 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::fromMetricNames;
 
+ModelPtr multiOutputModel(uint32_t input_dim, uint32_t hidden_dim,
+                          uint32_t output_dim, uint32_t max_sequence_length,
+                          bool use_tanh) {
+  auto index = bolt::Input::make(max_sequence_length);
+  auto input = bolt::Input::make(input_dim);
+
+  const auto* hidden_activation = use_tanh ? "tanh" : "relu";
+
+  auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
+                                      /* bias= */ true)
+                    ->apply(input);
+
+  auto sparsity = utils::autotuneSparsity(output_dim);
+  auto output =
+      bolt::Switch::make(max_sequence_length, output_dim, hidden->dim(),
+                         sparsity, "softmax", /* sampling= */ nullptr,
+                         /* use_bias= */ true)
+          ->apply(/* index= */ index, /* input= */ hidden);
+
+  auto labels = bolt::Input::make(output_dim);
+
+  bolt::LossPtr loss = bolt::CategoricalCrossEntropy::make(output, labels);
+
+  bolt::ComputationList additional_labels;
+
+  auto model =
+      bolt::Model::make({index, input}, {output}, {loss}, additional_labels);
+
+  return model;
+}
+
 UDTRecurrentClassifier::UDTRecurrentClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
@@ -37,18 +73,17 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   _featurizer = std::make_shared<RecurrentFeaturizer>(
       input_data_types, target_name, target, n_target_classes, tabular_options);
 
-  uint32_t output_dim = _featurizer->vocabSize() * target->max_length.value();
+  uint32_t output_dim = _featurizer->outputDim();
   if (model_config) {
-    _model = utils::loadModel({tabular_options.feature_hash_range}, output_dim,
-                              *model_config);
-  } else {
-    uint32_t hidden_dim = user_args.get<uint32_t>(
-        "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
-    _model =
-        utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                            output_dim, /* use_sigmoid_bce= */ false, use_tanh);
+    throw std::invalid_argument(
+        "UDTRecurrentClassifier currently does not support model config.");
   }
+
+  uint32_t hidden_dim = user_args.get<uint32_t>(
+      "embedding_dimension", "integer", defaults::HIDDEN_DIM);
+  bool use_tanh = user_args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
+  _model = multiOutputModel(tabular_options.feature_hash_range, hidden_dim,
+                            output_dim, target->max_length.value(), use_tanh);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);

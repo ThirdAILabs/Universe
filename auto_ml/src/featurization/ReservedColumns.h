@@ -44,4 +44,6 @@ const std::string GRAPH_NBR_IDS = "__graph_nbr_ids__";
 
 const std::string RECURRENT_SEQUENCE = "__sequential_target__";
 
+const std::string RECURRENT_POSITION = "__sequential_pos__";
+
 }  // namespace thirdai::automl

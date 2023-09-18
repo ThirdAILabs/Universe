@@ -56,14 +56,15 @@ class Recurrence final : public Transformation {
     return _target_vocab_size + 1;
   }
 
+  inline constexpr size_t outputDim() const { return totalVocabSize(); }
+
   std::pair<uint32_t, uint32_t> rangeForStep(uint32_t step) const {
-    uint32_t max_begin_step = std::min<size_t>(step, _max_seq_len - 1);
-    size_t begin = totalVocabSize() * max_begin_step;
-    return {begin, begin + totalVocabSize()};
+    (void)step;
+    return {0, totalVocabSize()};
   }
 
-  uint32_t toTargetInputToken(uint32_t target_output_token) const {
-    return target_output_token % totalVocabSize();
+  static uint32_t toTargetInputToken(uint32_t target_output_token) {
+    return target_output_token;
   }
 
  private:
@@ -73,8 +74,6 @@ class Recurrence final : public Transformation {
 
   void assertCorrectTargetInputDim(
       const ArrayColumnBase<uint32_t>& target_column) const;
-
-  uint32_t positionEncodedToken(uint32_t token, size_t position) const;
 
   inline constexpr uint32_t EOS() const { return _target_vocab_size; }
 

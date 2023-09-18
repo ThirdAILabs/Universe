@@ -4,6 +4,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -53,7 +54,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
   thirdai::data::ColumnMap columns =
-      thirdai::data::ColumnMapIterator::all(csv_data_source, _delimiter);
+      thirdai::data::CsvIterator::all(csv_data_source, _delimiter);
 
   auto transform = thirdai::data::TransformationList::make({
       coldStartTransform(strong_column_names, weak_column_names,
@@ -105,7 +106,7 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
   thirdai::data::ColumnMap columns =
-      thirdai::data::ColumnMapIterator::all(csv_data_source, _delimiter);
+      thirdai::data::CsvIterator::all(csv_data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names)
@@ -164,7 +165,7 @@ MachFeaturizer::getBalancingSamples(
     size_t n_balancing_samples, size_t rows_to_read) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  thirdai::data::ColumnMapIterator data_iter(
+  thirdai::data::CsvIterator data_iter(
       csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
 
   auto columns = data_iter.next().value();

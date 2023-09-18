@@ -25,7 +25,7 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                SamplingConfigPtr sampling, bool use_bias,
                                uint32_t rebuild_hash_tables,
                                uint32_t reconstruct_hash_functions)
-    : Op(nextFullyConnectedOpName()),
+    : FCKernelOp(nextFullyConnectedOpName()),
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
