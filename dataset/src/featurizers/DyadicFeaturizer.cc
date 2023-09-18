@@ -16,24 +16,20 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
     const std::vector<std::string>& rows) {
   uint32_t expected_num_cols_in_batch = _num_cols_in_header.value_or(2);
   CsvBatchRef input_batch_ref(rows, _delimiter, expected_num_cols_in_batch);
+  return featurize(input_batch_ref);
+}
 
-  size_t batch_size = input_batch_ref.size();
+std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
+    ColumnarInputBatch& inputs_ref) {
+  size_t batch_size = inputs_ref.size();
   std::vector<std::vector<BoltVector>> bolt_batch(batch_size);
 
-  /**
-   * For each ColumnarInputSample, convert the tokens to an array and generate
-   * dyadic intervals for the array. Convert the intervals to a sparse bolt
-   * vector and return [feature's bolt vector] + [label_vector]
-   */
   std::exception_ptr exception_pointer = nullptr;
   std::atomic<bool> exception_thrown(false);
-  // std::cout << "Start loading the data" << std::endl;
-#pragma omp parallel for default(none)                                 \
-    shared(bolt_batch, batch_size, input_batch_ref, exception_pointer, \
-           exception_thrown)
+
   for (size_t index = 0; index < batch_size; index++) {
     try {
-      dataset::ColumnarInputSample& column_sample = input_batch_ref.at(index);
+      dataset::ColumnarInputSample& column_sample = inputs_ref.at(index);
       std::string feature_string =
           column_sample.column(_column_number_map->at(_text_column));
       std::string label_string =
@@ -69,16 +65,6 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
     }
   }
 
-  if (exception_thrown.load()) {
-    try {
-      std::rethrow_exception(exception_pointer);
-    } catch (const std::exception& e) {
-      std::cerr << "Caught exception: " << e.what() << std::endl;
-    }
-  }
-
-  // std::cout << "Loading the data is complete" << std::endl;
-
   std::vector<std::vector<BoltVector>> transposed_batch(getNumDatasets());
 
   // auto printSize = [](const std::vector<std::vector<BoltVector>>& v) {
@@ -99,9 +85,13 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
       transposed_batch[column][row] = bolt_batch[row][column].copy();
     }
   }
-
-  // std::cout << "Finished transposing the batch" << std::endl;
   return transposed_batch;
+}
+
+std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
+    MapInputBatch& map_input_batch) {
+  dataset::MapBatchRef inputs_ref(map_input_batch);
+  return featurize(inputs_ref);
 }
 
 std::vector<BoltVector> DyadicFeaturizer::featurizeSingle(

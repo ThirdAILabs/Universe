@@ -1,11 +1,13 @@
 #pragma once
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/featurizers/SvmFeaturizer.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <iterator>
@@ -50,15 +52,18 @@ class DyadicFeaturizer final : public Featurizer {
     // }
   }
 
-  std::vector<std::vector<BoltVector>> featurize(
-      const std::vector<std::string>& rows) final;
-
   size_t getNumDatasets() final {
     if (_mach_label_block == std::nullopt) {
       return _n_intervals + 1;
     }
     return _n_intervals + 2;
   }
+
+  std::vector<std::vector<BoltVector>> featurize(
+      const std::vector<std::string>& rows) override;
+
+  std::vector<std::vector<BoltVector>> featurize(
+      MapInputBatch& map_input_batch);
 
   static std::vector<uint32_t> convertStringToUInt32FeatureArray(
       const std::string& str) {
@@ -92,6 +97,9 @@ class DyadicFeaturizer final : public Featurizer {
 
  private:
   DyadicFeaturizer() {}
+  std::vector<std::vector<BoltVector>> featurize(
+      ColumnarInputBatch& inputs_ref);
+
   friend cereal::access;
 
   template <class Archive>

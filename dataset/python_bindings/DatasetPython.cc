@@ -290,7 +290,11 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("label_delimiter"), py::arg("mach_block"))
       .def("process_header", &DyadicFeaturizer::processHeader,
            py::arg("header"))
-      .def("featurize", &DyadicFeaturizer::featurize, py::arg("rows"));
+      .def("featurize",
+           static_cast<std::vector<std::vector<BoltVector>> (
+               DyadicFeaturizer::*)(const std::vector<std::string>&)>(
+               &DyadicFeaturizer::featurize),
+           py::arg("rows"));
 
   py::class_<TextGenerationFeaturizer, Featurizer,
              std::shared_ptr<TextGenerationFeaturizer>>(
