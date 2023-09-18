@@ -172,6 +172,9 @@ metrics::History GenerativeModel::train(
     const DistributedCommPtr& comm) {
   licensing::entitlements().verifyFullAccess();
 
+  train_data->restart();
+  val_data->restart();
+
   return _model->train(train_data, learning_rate, epochs, batch_size,
                        train_metrics, val_data, val_metrics, comm);
 }
