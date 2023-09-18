@@ -119,10 +119,10 @@ def test_generation(backend):
     )
 
     gen_1 = model.generate(
-        input_tokens=list(range(20)), beam_width=5, n_predictions=20, temperature=0.4
+        input_tokens=list(range(20)), beam_width=5, max_predictions=20, temperature=0.4
     )
 
-    stream = model.streaming_generation(
+    stream = model.streaming_generate(
         input_tokens=list(range(20)),
         beam_width=5,
         max_predictions=20,
