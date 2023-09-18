@@ -45,9 +45,9 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("punctuation_repeat_threshold") = 0.8)
 #endif
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
-           py::arg("n_predictions"), py::arg("beam_width"),
+           py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
-      .def("streaming_generation", &GenerativeModel::streamingGeneration,
+      .def("streaming_generation", &GenerativeModel::streamingGenerate,
            py::arg("input_tokens"), py::arg("prediction_chunk_size"),
            py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)

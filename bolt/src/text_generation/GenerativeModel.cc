@@ -146,15 +146,15 @@ GenerativeModel::GenerativeModel(
       _punctuation_repeat_threshold(punctuation_repeat_threshold) {}
 
 std::vector<uint32_t> GenerativeModel::generate(
-    const std::vector<uint32_t>& input_tokens, size_t n_predictions,
+    const std::vector<uint32_t>& input_tokens, size_t max_predictions,
     size_t beam_width, std::optional<float> temperature) {
-  BeamSearchDecoder decoder(shared_from_this(), input_tokens, n_predictions,
-                            n_predictions, beam_width, temperature);
+  BeamSearchDecoder decoder(shared_from_this(), input_tokens, max_predictions,
+                            max_predictions, beam_width, temperature);
 
   return decoder.next().value_or(std::vector<uint32_t>{});
 }
 
-BeamSearchDecoder GenerativeModel::streamingGeneration(
+BeamSearchDecoder GenerativeModel::streamingGenerate(
     const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
     size_t max_predictions, size_t beam_width,
     std::optional<float> temperature) {
