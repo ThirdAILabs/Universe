@@ -52,9 +52,9 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
       .def("train", &GenerativeModel::train, py::arg("train_data"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("batch_size") = 5000,
-           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,
+           py::arg("batch_size") = 10000,
+           py::arg("train_metrics") = std::vector<std::string>{"loss"},
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("comm") = nullptr)
