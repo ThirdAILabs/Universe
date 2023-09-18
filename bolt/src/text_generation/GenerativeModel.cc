@@ -173,7 +173,9 @@ metrics::History GenerativeModel::train(
   licensing::entitlements().verifyFullAccess();
 
   train_data->restart();
-  val_data->restart();
+  if (val_data) {
+    val_data->restart();
+  }
 
   return _model->train(train_data, learning_rate, epochs, batch_size,
                        train_metrics, val_data, val_metrics, comm);
