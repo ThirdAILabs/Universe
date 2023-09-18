@@ -248,4 +248,59 @@ TEST(RecurrenceTest, CorrectUnrollingWithSequencesLongerThanMaxSequenceLength) {
   ASSERT_EQ(target_unrolled->dim(), (TOKEN_VOCAB_SIZE + 1) * MAX_SEQ_LEN);
 }
 
+TEST(RecurrenceTest, RangeForStepMethod) {
+  uint32_t TOKEN_VOCAB_SIZE = 99;
+  uint32_t MAX_SEQ_LEN = 5;
+
+  auto tokens = ArrayColumn<uint32_t>::make(/* data= */ {{0, 1, 2, 3, 4}},
+                                            /* dim= */ TOKEN_VOCAB_SIZE);
+
+  ColumnMap columns(/* columns= */ {{"tokens", tokens}});
+
+  Recurrence recurrence(
+      /* source_input_column= */ "tokens",
+      /* target_input_column= */ "tokens",
+      /* source_output_column= */ "source_unrolled",
+      /* target_output_column= */ "target_unrolled",
+      /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
+      /* max_sequence_length= */ MAX_SEQ_LEN);
+
+  columns = recurrence.applyStateless(columns);
+
+  auto target_unrolled = columns.getArrayColumn<uint32_t>("target_unrolled");
+
+  for (uint32_t step = 0; step < MAX_SEQ_LEN; step++) {
+    auto [begin, end] = recurrence.rangeForStep(step);
+    ASSERT_GE(target_unrolled->row(step)[0], begin);
+    ASSERT_LT(target_unrolled->row(step)[0], end);
+  }
+}
+
+TEST(RecurrenceTest, ToTargetInputTokenMethod) {
+  uint32_t TOKEN_VOCAB_SIZE = 99;
+  uint32_t MAX_SEQ_LEN = 5;
+
+  auto tokens = ArrayColumn<uint32_t>::make(/* data= */ {{0, 1, 2, 3, 4}},
+                                            /* dim= */ TOKEN_VOCAB_SIZE);
+
+  ColumnMap columns(/* columns= */ {{"tokens", tokens}});
+
+  Recurrence recurrence(
+      /* source_input_column= */ "tokens",
+      /* target_input_column= */ "tokens",
+      /* source_output_column= */ "source_unrolled",
+      /* target_output_column= */ "target_unrolled",
+      /* target_vocab_size= */ TOKEN_VOCAB_SIZE,
+      /* max_sequence_length= */ MAX_SEQ_LEN);
+
+  columns = recurrence.applyStateless(columns);
+
+  auto target_unrolled = columns.getArrayColumn<uint32_t>("target_unrolled");
+
+  for (uint32_t step = 0; step < MAX_SEQ_LEN; step++) {
+    uint32_t target_output_token = target_unrolled->row(step)[0];
+    ASSERT_EQ(recurrence.toTargetInputToken(target_output_token), step);
+  }
+}
+
 }  // namespace thirdai::data::tests
