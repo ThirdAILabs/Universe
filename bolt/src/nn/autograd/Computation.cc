@@ -62,7 +62,8 @@ void Computation::setTensor(TensorPtr tensor) {
   if (tensor->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +
-        " to computation with output dim " + std::to_string(dim()) + ".");
+        " to computation with output dim " + std::to_string(dim()) +
+        ". Op: " + _op->name() + " Computation: " + name());
   }
   _output = std::move(tensor);
 }

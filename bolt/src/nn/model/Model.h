@@ -187,10 +187,10 @@ class Model : public std::enable_shared_from_this<Model> {
 
   std::vector<std::vector<float>*> parameters() const;
 
-  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+  std::pair<const float*, uint64_t> getFlattenedGradients();
 
   void setFlattenedGradients(const float* concatenated_values,
-                             uint64_t flattened_dim) const;
+                             uint64_t flattened_dim);
 
   std::pair<const float*, uint64_t> getFlattenedParameters() const;
 
@@ -262,6 +262,11 @@ class Model : public std::enable_shared_from_this<Model> {
   void backpropagateVector(uint32_t index_in_batch, uint32_t batch_size);
 
   /**
+   * Ensures that the optimizer is initialized for the ops in the model.
+   */
+  void requireOptimizer();
+
+  /**
    * Sets the given batch as the inputs to the model.
    */
   uint32_t setInput(const TensorList& input_batches);
@@ -316,6 +321,8 @@ class Model : public std::enable_shared_from_this<Model> {
   ComputationList _computation_order;
 
   AllocationManager _allocation_manager;
+
+  bool _optimizer_initialized = false;
 
   uint32_t _train_steps;
 

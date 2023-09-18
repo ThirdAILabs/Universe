@@ -46,6 +46,8 @@ class TextContextFeaturizer {
 
   size_t contextSize() const { return _lrc_len; }
 
+  uint32_t vocabSize() const { return _vocab_size; }
+
  private:
   uint32_t _lrc_len;
   uint32_t _irc_len;

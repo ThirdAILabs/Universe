@@ -1,5 +1,6 @@
 #include "TextGenerationFeaturizer.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -127,6 +128,28 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
   return {promptContext(prompt), _context_featurizer.lrcContext(context),
           _context_featurizer.ircContext(context),
           _context_featurizer.srcContext(context)};
+}
+
+bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
+    const std::vector<std::vector<uint32_t>>& tokens,
+    const std::vector<uint32_t>& dims) const {
+  std::vector<BoltVector> lrc;
+  lrc.reserve(tokens.size());
+  std::vector<BoltVector> irc;
+  irc.reserve(tokens.size());
+  std::vector<BoltVector> src;
+  src.reserve(tokens.size());
+
+  for (const auto& sample : tokens) {
+    lrc.emplace_back(_context_featurizer.lrcContext(sample));
+    irc.emplace_back(_context_featurizer.ircContext(sample));
+    src.emplace_back(_context_featurizer.srcContext(sample));
+  }
+
+  return bolt::convertBatch(
+      {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
+       BoltBatch(std::move(src))},
+      dims);
 }
 
 std::pair<std::vector<uint32_t>, size_t> TextGenerationFeaturizer::getAllTokens(
