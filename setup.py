@@ -220,7 +220,7 @@ setup(
             "scikit-learn",
             "beir",
             "pyOpenSSL>22.1.0",
-            "ray",
+            "ray<2.7.0",
         ]
         + neural_db_deps,
         "benchmark": [
