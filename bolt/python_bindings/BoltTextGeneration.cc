@@ -47,7 +47,7 @@ void addTextGenerationModels(py::module_& module) {
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
            py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
-      .def("streaming_generation", &GenerativeModel::streamingGenerate,
+      .def("streaming_generate", &GenerativeModel::streamingGenerate,
            py::arg("input_tokens"), py::arg("prediction_chunk_size"),
            py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
