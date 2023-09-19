@@ -75,6 +75,12 @@ proto::bolt::Op* Input::toProto(bool with_optimizer) const {
   throw std::runtime_error("toProto should not be called on Input.");
 }
 
+SerializableParameters Input::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toProto should not be called on Input.");
+}
+
 template void Input::serialize(cereal::BinaryInputArchive&);
 template void Input::serialize(cereal::BinaryOutputArchive&);
 

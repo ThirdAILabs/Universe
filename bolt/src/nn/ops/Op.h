@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <proto/ops.pb.h>
 #include <memory>
@@ -146,7 +147,11 @@ class Op {
 
   virtual proto::bolt::Op* toProto(bool with_optimizer) const = 0;
 
-  static std::shared_ptr<Op> fromProto(const proto::bolt::Op& op_proto);
+  virtual SerializableParameters serializableParameters(
+      bool with_optimizer) const = 0;
+
+  static std::shared_ptr<Op> fromProto(const proto::bolt::Op& op_proto,
+                                       DeserializedParameters& parameters);
 
   /**
    * Returns the name of the op. All of the ops in a model must have a

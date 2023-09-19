@@ -43,6 +43,9 @@ class DotProduct final : public Op,
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<DotProduct> fromProto(
       const std::string& name, const proto::bolt::DotProduct& dot_prod_proto);
 

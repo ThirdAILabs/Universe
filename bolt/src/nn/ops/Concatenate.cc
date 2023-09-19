@@ -166,6 +166,12 @@ proto::bolt::Op* Concatenate::toProto(bool with_optimizer) const {
   return op;
 }
 
+SerializableParameters Concatenate::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
 std::shared_ptr<Concatenate> Concatenate::fromProto(
     const std::string& name, const proto::bolt::Concatenate& concat_proto) {
   return std::shared_ptr<Concatenate>(new Concatenate(name, concat_proto));

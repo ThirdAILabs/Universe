@@ -139,6 +139,12 @@ proto::bolt::Op* CosineSimilarity::toProto(bool with_optimizer) const {
   return op;
 }
 
+SerializableParameters CosineSimilarity::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
 std::shared_ptr<CosineSimilarity> CosineSimilarity::fromProto(
     const std::string& name,
     const proto::bolt::CosineSimilarity& cos_sim_proto) {

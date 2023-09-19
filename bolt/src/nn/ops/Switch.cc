@@ -135,6 +135,12 @@ proto::bolt::Op* Switch::toProto(bool with_optimizer) const {
   throw std::runtime_error("toProto is not implemented for Switch.");
 }
 
+SerializableParameters Switch::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toProto is not implemented for Switch.");
+}
+
 ComputationPtr Switch::apply(const ComputationList& inputs) {
   if (inputs.size() != 2) {
     throw std::runtime_error("Expected two inputs to Switch op.");

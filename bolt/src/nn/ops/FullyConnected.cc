@@ -222,6 +222,26 @@ proto::bolt::Op* FullyConnected::toProto(bool with_optimizer) const {
   return op;
 }
 
+SerializableParameters FullyConnected::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {
+      {name() + "_weights", &_kernel->weights()},
+      {name() + "_biases", &_kernel->biases()}};
+  if (with_optimizer && _kernel->_weight_optimizer &&
+      _kernel->_bias_optimizer) {
+    parameters.emplace_back(name() + "_weights_momentum",
+                            &_kernel->_weight_optimizer->momentum);
+    parameters.emplace_back(name() + "_weights_velocity",
+                            &_kernel->_weight_optimizer->velocity);
+    parameters.emplace_back(name() + "_bias_momentum",
+                            &_kernel->_bias_optimizer->momentum);
+    parameters.emplace_back(name() + "_bias_velocity",
+                            &_kernel->_bias_optimizer->velocity);
+  }
+
+  return parameters;
+}
+
 std::shared_ptr<FullyConnected> FullyConnected::fromProto(
     const std::string& name, const proto::bolt::FullyConnected& fc_proto) {
   return std::shared_ptr<FullyConnected>(new FullyConnected(name, fc_proto));

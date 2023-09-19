@@ -47,6 +47,9 @@ class LayerNorm final : public Op,
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<LayerNorm> fromProto(
       const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto);
 

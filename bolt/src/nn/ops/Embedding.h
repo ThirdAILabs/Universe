@@ -14,7 +14,8 @@ class Embedding final : public Op,
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
             bool bias);
 
-  Embedding(const std::string& name, const proto::bolt::Embedding& emb_proto);
+  Embedding(const std::string& name, const proto::bolt::Embedding& emb_proto,
+            DeserializedParameters& parameters);
 
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
@@ -71,9 +72,14 @@ class Embedding final : public Op,
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static auto fromProto(const std::string& name,
-                        const proto::bolt::Embedding& emb_proto) {
-    return std::shared_ptr<Embedding>(new Embedding(name, emb_proto));
+                        const proto::bolt::Embedding& emb_proto,
+                        DeserializedParameters& parameters) {
+    return std::shared_ptr<Embedding>(
+        new Embedding(name, emb_proto, parameters));
   }
 
   uint32_t inputDim() const { return _input_dim; }

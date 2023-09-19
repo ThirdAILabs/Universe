@@ -43,6 +43,9 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
  private:
   Input(uint32_t dim, std::optional<uint32_t> nonzeros);
 

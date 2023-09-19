@@ -147,6 +147,13 @@ proto::bolt::Op* Activation<Impl>::toProto(bool with_optimizer) const {
 }
 
 template <typename Impl>
+SerializableParameters Activation<Impl>::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
+template <typename Impl>
 std::shared_ptr<Activation<Impl>> Activation<Impl>::fromProto(
     const std::string& name, const proto::bolt::Activation& act_proto) {
   return std::shared_ptr<Activation<Impl>>(

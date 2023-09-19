@@ -132,6 +132,21 @@ proto::bolt::Op* RobeZ::toProto(bool with_optimizer) const {
   return op;
 }
 
+SerializableParameters RobeZ::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {
+      {name() + "_embedding_block", _kernel->_embedding_block.get()}};
+
+  if (with_optimizer && _kernel->_optimizer) {
+    parameters.emplace_back(name() + "_embedding_block_momentum",
+                            &_kernel->_optimizer->momentum);
+    parameters.emplace_back(name() + "_embedding_block_velocity",
+                            &_kernel->_optimizer->velocity);
+  }
+
+  return parameters;
+}
+
 std::shared_ptr<RobeZ> RobeZ::fromProto(const std::string& name,
                                         const proto::bolt::RobeZ& robez_proto) {
   return std::shared_ptr<RobeZ>(new RobeZ(name, robez_proto));

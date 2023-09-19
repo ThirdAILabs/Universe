@@ -50,6 +50,9 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<RobeZ> fromProto(
       const std::string& name, const proto::bolt::RobeZ& robez_proto);
 

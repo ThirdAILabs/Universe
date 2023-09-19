@@ -68,6 +68,9 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   ComputationPtr apply(const ComputationList& inputs) final;
 
   /**

@@ -246,6 +246,24 @@ proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
   return op;
 }
 
+SerializableParameters LayerNorm::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {{name() + "_gamma", &_gamma},
+                                       {name() + "_beta", &_beta}};
+  if (with_optimizer) {
+    parameters.emplace_back(name() + "_gamma_momentum",
+                            &_gamma_optimizer.momentum);
+    parameters.emplace_back(name() + "_gamma_velocity",
+                            &_gamma_optimizer.velocity);
+    parameters.emplace_back(name() + "_beta_momentum",
+                            &_beta_optimizer.momentum);
+    parameters.emplace_back(name() + "_beta_velocity",
+                            &_beta_optimizer.velocity);
+  }
+
+  return parameters;
+}
+
 std::shared_ptr<LayerNorm> LayerNorm::fromProto(
     const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto) {
   return std::shared_ptr<LayerNorm>(new LayerNorm(name, layer_norm_proto));

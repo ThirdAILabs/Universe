@@ -69,6 +69,9 @@ class Activation final : public Op,
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<Activation<Impl>> fromProto(
       const std::string& name, const proto::bolt::Activation& act_proto);
 

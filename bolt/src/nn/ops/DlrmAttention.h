@@ -65,6 +65,9 @@ class DlrmAttention final : public Op,
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
  private:
   DlrmAttention() {}
 

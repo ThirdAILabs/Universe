@@ -46,6 +46,9 @@ class CosineSimilarity final
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<CosineSimilarity> fromProto(
       const std::string& name,
       const proto::bolt::CosineSimilarity& cos_sim_proto);

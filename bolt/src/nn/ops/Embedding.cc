@@ -43,14 +43,15 @@ Embedding::Embedding(size_t dim, size_t input_dim,
 }
 
 Embedding::Embedding(const std::string& name,
-                     const proto::bolt::Embedding& emb_proto)
+                     const proto::bolt::Embedding& emb_proto,
+                     DeserializedParameters& parameters)
     : Op(name),
       _dim(emb_proto.dim()),
       _input_dim(emb_proto.input_dim()),
       _bias(emb_proto.use_bias()),
       _act_func(activationFromProto(emb_proto.activation())),
-      _embeddings(parametersFromProto(emb_proto.embeddings())),
-      _biases(parametersFromProto(emb_proto.bias())),
+      _embeddings(std::move(parameters[name + "_embeddings"])),
+      _biases(parameters[name + "_biases"]),
       _disable_sparse_parameter_updates(
           emb_proto.disable_sparse_parameter_updates()),
       _should_serialize_optimizer(false),
@@ -319,6 +320,24 @@ proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
   emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
 
   return op;
+}
+
+SerializableParameters Embedding::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {{name() + "_embeddings", &_embeddings},
+                                       {name() + "_biases", &_biases}};
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    parameters.emplace_back(name() + "_embedding_momentum",
+                            &_embedding_optimizer->momentum);
+    parameters.emplace_back(name() + "_embedding_velocity",
+                            &_embedding_optimizer->velocity);
+    parameters.emplace_back(name() + "_bias_momentum",
+                            &_bias_optimizer->momentum);
+    parameters.emplace_back(name() + "_bias_velocity",
+                            &_bias_optimizer->velocity);
+  }
+
+  return parameters;
 }
 
 template void Embedding::save(cereal::BinaryOutputArchive&) const;

@@ -21,8 +21,11 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
+class FullyConnected;
+
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
+  friend class FullyConnected;
 
  public:
   FullyConnectedLayer() {}

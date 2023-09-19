@@ -72,6 +72,9 @@ class FullyConnected final
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<FullyConnected> fromProto(
       const std::string& name, const proto::bolt::FullyConnected& fc_proto);
 
