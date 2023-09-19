@@ -4,6 +4,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/CosineContrastive.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
@@ -378,6 +379,12 @@ void defineLosses(py::module_& nn) {
   py::class_<EuclideanContrastive, EuclideanContrastivePtr, Loss>(
       loss, "EuclideanContrastive")
       .def(py::init(&EuclideanContrastive::make), py::arg("output_1"),
+           py::arg("output_2"), py::arg("labels"),
+           py::arg("dissimilar_cutoff_distance"));
+
+  py::class_<CosineContrastive, CosineContrastivePtr, Loss>(loss,
+                                                            "CosineContrastive")
+      .def(py::init(&CosineContrastive::make), py::arg("output_1"),
            py::arg("output_2"), py::arg("labels"),
            py::arg("dissimilar_cutoff_distance"));
 }

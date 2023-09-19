@@ -35,7 +35,7 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
 
     if (auto token_arrays = ArrayColumnBase<uint32_t>::cast(column)) {
 #pragma omp parallel for default(none) shared( \
-    token_arrays, indices, values, column_salt) if (columns.numRows() > 1)
+        token_arrays, indices, values, column_salt) if (columns.numRows() > 1)
       for (size_t i = 0; i < token_arrays->numRows(); i++) {
         for (uint32_t token : token_arrays->row(i)) {
           indices[i].push_back(hash(token, column_salt));
@@ -43,8 +43,9 @@ ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
         }
       }
     } else if (auto decimal_arrays = ArrayColumnBase<float>::cast(column)) {
-#pragma omp parallel for default(none) shared( \
-    decimal_arrays, indices, values, column_salt) if (columns.numRows() > 1)
+#pragma omp parallel for default(none)      \
+    shared(decimal_arrays, indices, values, \
+               column_salt) if (columns.numRows() > 1)
       for (size_t i = 0; i < decimal_arrays->numRows(); i++) {
         size_t j = 0;
         for (float decimal : decimal_arrays->row(i)) {

@@ -102,7 +102,7 @@ float EuclideanContrastive::loss(uint32_t index_in_batch) const {
   float cutoff_distance_squared = cutoff_distance * cutoff_distance;
 
   return label * 0.5 * euclidean_distance_squared +
-         (1 - label) * cutoff_distance_squared;
+         (1 - label) * 0.5 * cutoff_distance_squared;
 }
 
 ComputationList EuclideanContrastive::outputsUsed() const {

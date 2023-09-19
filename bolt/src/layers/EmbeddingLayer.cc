@@ -166,8 +166,9 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
   // Preform outer dereferencing once here to avoid repeating it later.
   auto& embedding_block = *_embedding_block;
 
-#pragma omp parallel for default(none) shared( \
-    embedding_block, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
+#pragma omp parallel for default(none)                                         \
+    shared(embedding_block, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, \
+               lr)
   for (uint64_t chunk_id = 0; chunk_id < _embedding_chunks_used.size();
        chunk_id++) {
     if (!_embedding_chunks_used[chunk_id]) {
