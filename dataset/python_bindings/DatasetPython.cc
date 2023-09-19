@@ -322,7 +322,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def("load_some", &dataset::DatasetLoader::loadSome,
            py::arg("batch_size"), py::arg("num_batches"),
            py::arg("verbose") = true)
-      .def("restart", &dataset::DatasetLoader::restart);
+      .def("restart", &dataset::DatasetLoader::restart)
+      .def_property_readonly("current_data_source_batch",
+                             &dataset::DatasetLoader::currentDataSourceBatch);
 
   py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
                                                       "DataSource")

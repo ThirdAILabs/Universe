@@ -6,6 +6,7 @@
 #include <utils/Logging.h>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 
 namespace thirdai::dataset {
@@ -13,9 +14,11 @@ namespace thirdai::dataset {
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              dataset::FeaturizerPtr featurizer, bool shuffle,
                              DatasetShuffleConfig shuffle_config,
-                             size_t internal_featurization_batch_size)
+                             size_t internal_featurization_batch_size,
+                             size_t data_source_batch_to_skip)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
+      _current_data_source_batch(data_source_batch_to_skip),
       _shuffle(shuffle),
       _buffer_size(shuffle_config.min_buffer_size),
       _buffer(/* should_shuffle = */ _shuffle,
@@ -30,6 +33,16 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
     _header = _data_source->nextLine();
     if (!_header) {
       throw std::invalid_argument("Cannot read empty file.");
+    }
+  }
+
+  // Moves the data source pointer to the data_source_batch_to_skip batches
+  for (size_t batch_id = 0; batch_id < _current_data_source_batch; batch_id++) {
+    auto rows = _data_source->nextBatch(
+        /* target_batch_size = */ _featurization_batch_size);
+    if (!rows) {
+      std::invalid_argument(
+          "Skipped lines exceed total number of lines in the dataset.");
     }
   }
 }
@@ -154,6 +167,7 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
       }
       _buffer.insert(std::move(temp_vector));
     }
+    _current_data_source_batch++;
   }
 }
 

@@ -28,13 +28,16 @@ class DatasetLoader final {
                 dataset::FeaturizerPtr featurizer, bool shuffle,
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
                 size_t internal_featurization_batch_size =
-                    DEFAULT_FEATURIZATION_BATCH_SIZE);
+                    DEFAULT_FEATURIZATION_BATCH_SIZE,
+                size_t data_source_batch_to_skip = 0);
 
   std::vector<BoltDatasetPtr> loadAll(size_t batch_size, bool verbose = true);
 
   std::optional<std::vector<BoltDatasetPtr>> loadSome(size_t batch_size,
                                                       size_t num_batches,
                                                       bool verbose = true);
+
+  size_t currentDataSourceBatch() const { return _current_data_source_batch; }
 
   void restart();
 
@@ -62,6 +65,7 @@ class DatasetLoader final {
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
   std::optional<std::string> _header = std::nullopt;
+  size_t _current_data_source_batch;
 
   bool _shuffle;
   // We try to ensure at least this many batches are in the buffer and shuffled
