@@ -165,10 +165,10 @@ MachFeaturizer::getBalancingSamples(
     size_t n_balancing_samples, size_t rows_to_read) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  thirdai::data::CsvIterator data_iter(
+  auto data_iter = thirdai::data::CsvIterator::make(
       csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
 
-  auto columns = data_iter.next().value();
+  auto columns = data_iter->next().value();
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names)

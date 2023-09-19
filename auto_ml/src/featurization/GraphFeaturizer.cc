@@ -82,9 +82,9 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 }
 
 void GraphFeaturizer::index(const dataset::DataSourcePtr& data_source) {
-  thirdai::data::CsvIterator data_iter(data_source, _delimiter);
+  auto data_iter = thirdai::data::CsvIterator::make(data_source, _delimiter);
 
-  while (auto chunk = data_iter.next()) {
+  while (auto chunk = data_iter->next()) {
     _graph_builder->apply(*chunk, *_state);
   }
 }
