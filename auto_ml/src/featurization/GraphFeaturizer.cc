@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/StringCast.h>
@@ -66,7 +67,8 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 
   csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   auto transformation_list = thirdai::data::TransformationList::make(
       {_input_transform, _label_transform});
@@ -80,9 +82,9 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 }
 
 void GraphFeaturizer::index(const dataset::DataSourcePtr& data_source) {
-  thirdai::data::ColumnMapIterator data_iter(data_source, _delimiter);
+  auto data_iter = thirdai::data::CsvIterator::make(data_source, _delimiter);
 
-  while (auto chunk = data_iter.next()) {
+  while (auto chunk = data_iter->next()) {
     _graph_builder->apply(*chunk, *_state);
   }
 }

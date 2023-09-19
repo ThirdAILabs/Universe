@@ -85,7 +85,8 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
 
   csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   return thirdai::data::Loader::make(
       data_iter, _augmenting_transform, _state, _bolt_input_columns,

@@ -86,6 +86,8 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
   return 1;
 }
 
+void CosineSimilarity::initOptimizer() {}
+
 void CosineSimilarity::summary(std::ostream& summary,
                                const ComputationList& inputs,
                                const Computation* output) const {
