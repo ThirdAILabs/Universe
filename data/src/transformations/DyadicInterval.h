@@ -8,7 +8,8 @@ namespace thirdai::data {
 class DyadicInterval final : public Transformation {
  public:
   DyadicInterval(std::string input_column, std::string output_interval_prefix,
-                 std::string target_column, size_t n_intervals);
+                 std::string target_column, size_t n_intervals,
+                 bool is_bidirectional = false);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -21,6 +22,8 @@ class DyadicInterval final : public Transformation {
   std::string _input_column;
   std::string _output_interval_prefix;
   std::string _target_column;
+
+  bool _is_bidirectional;
 
   size_t _n_intervals;
 

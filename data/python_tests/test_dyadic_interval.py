@@ -85,3 +85,92 @@ def test_dyadic_interval_inference():
 
     interval_4 = [[1, 2, 3, 4], [5, 6, 7], [8]]
     assert columns["interval_4"].data() == interval_4
+
+
+@pytest.mark.unit
+def test_dyadic_interval_augmentation_bidirectional():
+    columns = data.ColumnMap(
+        {
+            "text": data.columns.TokenArrayColumn(
+                [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [20, 21, 22, 23, 24, 25]],
+                dim=100,
+            )
+        }
+    )
+
+    transform = data.transformations.DyadicInterval(
+        "text",
+        "interval_",
+        "target",
+        n_intervals=3,
+        is_bidirectional=True,
+    )
+
+    columns = transform(columns)
+
+    interval_1 = [[0], [0], [0], [0], [5], [5], [5], [5], [10], [20], [20], [20], [20]]
+    assert columns["rev_interval_1"].data() == interval_1
+
+    interval_2 = [
+        [0],
+        [0, 1],
+        [0, 1],
+        [0, 1],
+        [5],
+        [5, 6],
+        [5, 6],
+        [5, 6],
+        [10],
+        [20],
+        [20, 21],
+        [20, 21],
+        [20, 21],
+    ]
+    assert columns["rev_interval_2"].data() == interval_2
+
+    interval_4 = [
+        [0],
+        [0, 1],
+        [0, 1, 2],
+        [0, 1, 2, 3],
+        [5],
+        [5, 6],
+        [5, 6, 7],
+        [5, 6, 7, 8],
+        [10],
+        [20],
+        [20, 21],
+        [20, 21, 22],
+        [20, 21, 22, 23],
+    ]
+    assert columns["rev_interval_4"].data() == interval_4
+
+    target = [1, 2, 3, 4, 6, 7, 8, 9, 11, 21, 22, 23, 24]
+    assert columns["target"].data() == target
+
+
+@pytest.mark.unit
+def test_dyadic_interval_inference_bidirectional():
+    columns = data.ColumnMap(
+        {
+            "text": data.columns.TokenArrayColumn(
+                [[0, 1, 2, 3, 4], [5, 6, 7], [8]],
+                dim=100,
+            )
+        }
+    )
+
+    transform = data.transformations.DyadicInterval(
+        "text", "interval_", "target", n_intervals=3, is_bidirectional=True
+    )
+
+    columns = transform.inference_featurization(columns)
+
+    interval_1 = [[0], [5], [8]]
+    assert columns["rev_interval_1"].data() == interval_1
+
+    interval_2 = [[0, 1], [5, 6], [8]]
+    assert columns["rev_interval_2"].data() == interval_2
+
+    interval_4 = [[0, 1, 2, 3], [5, 6, 7], [8]]
+    assert columns["rev_interval_4"].data() == interval_4
