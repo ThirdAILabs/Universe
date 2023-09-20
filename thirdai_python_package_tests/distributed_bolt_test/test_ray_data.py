@@ -24,7 +24,9 @@ def test_ray_file_data_source():
         )
         data_source = RayTextDataSource(stream_split_data_iterator)
         dataset_loader = dataset.DatasetLoader(
-            data_source=data_source, featurizer=featurizer, shuffle=True
+            data_source=data_source,
+            featurizer=featurizer,
+            shuffle=True,
         )
 
         data = dataset_loader.load_all(1)
@@ -35,6 +37,23 @@ def test_ray_file_data_source():
             bolt.train.convert_dataset(data[-1], dim=VOCAB_SIZE),
         )
         assert len(training_inputs) == 8 and len(training_labels) == 8
+
+        data_source = RayTextDataSource(stream_split_data_iterator)
+        dataset_loader = dataset.DatasetLoader(
+            data_source=data_source,
+            featurizer=featurizer,
+            shuffle=True,
+            data_source_batch_to_skip=1,
+            internal_featurization_batch_size=1,
+        )
+        data = dataset_loader.load_all(1)
+        training_inputs, training_labels = (
+            bolt.train.convert_datasets(
+                data[:-1], dims=[VOCAB_SIZE, VOCAB_SIZE, (2**32) - 1, VOCAB_SIZE]
+            ),
+            bolt.train.convert_dataset(data[-1], dim=VOCAB_SIZE),
+        )
+        assert len(training_inputs) == 4 and len(training_labels) == 4
 
     data = [
         {"target": "1 2 3 4 5 6"},

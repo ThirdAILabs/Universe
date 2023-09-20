@@ -27,9 +27,9 @@ class DatasetLoader final {
   DatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
                 dataset::FeaturizerPtr featurizer, bool shuffle,
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
+                size_t data_source_batch_to_skip = 0,
                 size_t internal_featurization_batch_size =
-                    DEFAULT_FEATURIZATION_BATCH_SIZE,
-                size_t data_source_batch_to_skip = 0);
+                    DEFAULT_FEATURIZATION_BATCH_SIZE);
 
   std::vector<BoltDatasetPtr> loadAll(size_t batch_size, bool verbose = true);
 

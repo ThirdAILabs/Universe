@@ -14,8 +14,8 @@ namespace thirdai::dataset {
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              dataset::FeaturizerPtr featurizer, bool shuffle,
                              DatasetShuffleConfig shuffle_config,
-                             size_t internal_featurization_batch_size,
-                             size_t data_source_batch_to_skip)
+                             size_t data_source_batch_to_skip,
+                             size_t internal_featurization_batch_size)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
       _current_data_source_batch(data_source_batch_to_skip),
@@ -42,7 +42,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
         /* target_batch_size = */ _featurization_batch_size);
     if (!rows) {
       std::invalid_argument(
-          "Skipped lines exceed total number of lines in the dataset.");
+          "Skipped line batches exceed total number of line batches in the dataset.");
     }
   }
 }

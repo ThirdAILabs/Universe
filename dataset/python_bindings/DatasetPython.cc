@@ -312,9 +312,11 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")
       .def(py::init<std::shared_ptr<dataset::DataSource>,
-                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
+                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig, size_t, size_t>(),
            py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
-           py::arg("shuffle_config") = DatasetShuffleConfig())
+           py::arg("shuffle_config") = DatasetShuffleConfig(),
+           py::arg("data_source_batch_to_skip") = 0,
+           py::arg("internal_featurization_batch_size") = 2048)
       .def("get_input_dim", &DatasetLoader::getInputDim)
       .def("get_label_dim", &DatasetLoader::getLabelDim)
       .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
