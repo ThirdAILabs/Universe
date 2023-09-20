@@ -125,16 +125,18 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   return data;
 }
 
-std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(size_t batch_size, std::string column_name) {
-  if (_header){
+std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(
+    size_t batch_size, std::string column_name) {
+  if (_header) {
     _featurizer->processHeader(*_header);
   }
-  std::vector<MapInputBatch> input_batches_all; 
+  std::vector<MapInputBatch> input_batches_all;
 
   auto rows = _data_source->nextBatch(
-          /* target_batch_size = */ batch_size);
-  while(rows){
-    auto batch = _featurizer->convertToMapInputBatch(*rows, column_name, *_header);
+      /* target_batch_size = */ batch_size);
+  while (rows) {
+    auto batch =
+        _featurizer->convertToMapInputBatch(*rows, column_name, *_header);
     input_batches_all.push_back(batch);
 
     rows = _data_source->nextBatch(batch_size);

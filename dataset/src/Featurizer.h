@@ -2,12 +2,12 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
-#include <exceptions/src/Exceptions.h>
 #include <dataset/src/blocks/InputTypes.h>
+#include <exceptions/src/Exceptions.h>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
-#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -26,13 +26,13 @@ class Featurizer {
       const std::vector<std::string>& rows) = 0;
 
   virtual MapInputBatch convertToMapInputBatch(
-    const LineInputBatch& input_batch, std::string column_name, std::string header){
-      (void)input_batch;
-      (void)column_name;
-      (void)header;
-      throw exceptions::NotImplemented(
-        "Cannot convert to MapInputBatch");
-    }
+      const LineInputBatch& input_batch, std::string column_name,
+      std::string header) {
+    (void)input_batch;
+    (void)column_name;
+    (void)header;
+    throw exceptions::NotImplemented("Cannot convert to MapInputBatch");
+  }
 
   virtual bool expectsHeader() const = 0;
 

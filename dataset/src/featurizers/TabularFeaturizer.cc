@@ -79,9 +79,9 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 }
 
 MapInputBatch TabularFeaturizer::convertToMapInputBatch(
-    const LineInputBatch& input_batch, std::string column_name, std::string header) {
-
-    dataset::ColumnNumberMap column_number_map(header, _delimiter);
+    const LineInputBatch& input_batch, std::string column_name,
+    std::string header) {
+  dataset::ColumnNumberMap column_number_map(header, _delimiter);
   if (input_batch.empty()) {
     throw std::invalid_argument("Cannot featurize empty batch.");
   }
@@ -92,7 +92,7 @@ MapInputBatch TabularFeaturizer::convertToMapInputBatch(
                               expected_num_cols_in_batch);
   MapInputBatch input_batches;
 
-  for(size_t i = 0; i < input_batch_ref.size(); i++){
+  for (size_t i = 0; i < input_batch_ref.size(); i++) {
     MapInput input;
     ColumnIdentifier col_(column_number_map.at(column_name));
 

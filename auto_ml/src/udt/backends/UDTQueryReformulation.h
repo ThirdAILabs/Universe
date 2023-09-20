@@ -22,8 +22,8 @@ class UDTQueryReformulation final : public UDTBackend {
  public:
   UDTQueryReformulation(std::optional<std::string> incorrect_column_name,
                         std::string correct_column_name,
-                        const std::string& dataset_size,
-                        bool use_spell_checker, char delimiter,
+                        const std::string& dataset_size, bool use_spell_checker,
+                        char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 
@@ -57,8 +57,7 @@ class UDTQueryReformulation final : public UDTBackend {
       const dataset::DataSourcePtr& data, const std::string& col_to_hash,
       bool include_labels, uint32_t batch_size, bool verbose);
 
-    std::pair<std::vector<std::vector<uint32_t>>,
-           std::vector<std::vector<float>>>
+  std::pair<std::vector<std::vector<uint32_t>>, std::vector<std::vector<float>>>
   QueryBatchResults(const MapInputBatch& sample, std::optional<uint32_t> top_k);
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
@@ -108,7 +107,7 @@ class UDTQueryReformulation final : public UDTBackend {
   std::string _correct_column_name;
   bool _use_spell_checker;
 
-    SymSpellPtr _symspell_backend;
+  SymSpellPtr _symspell_backend;
   std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
   char _delimiter;

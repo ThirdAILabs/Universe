@@ -6,6 +6,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <fstream>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <sstream>
@@ -13,7 +14,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 using namespace thirdai::dataset;
 using namespace thirdai::automl::udt::defaults;
@@ -26,14 +26,13 @@ class SpellCheckedSentence {
   std::vector<float> _scores;
 
  public:
-
   SpellCheckedSentence(const std::vector<std::string>& tokens,
                        const std::vector<float>& scores);
 
   SpellCheckedSentence(const SpellCheckedSentence& other);
 
   SpellCheckedSentence updateTokenAndScore(const std::string& token,
-                                              float score, size_t index);
+                                           float score, size_t index);
 
   float get_score() const {
     float total_score = 0.0F;
@@ -47,20 +46,20 @@ class SpellCheckedSentence {
     std::string result = std::accumulate(
         _tokens.begin(), _tokens.end(), std::string(),
         [](const std::string& a, const std::string& b) { return a + b + " "; });
-    result.pop_back(); // remove last space
+    result.pop_back();  // remove last space
     return result;
   }
 };
 
 class SymPreTrainer {
-  
  public:
+  // WordSegmentation divides a string into words by inserting missing spaces at
+  // the appropriate positions misspelled words are corrected and do not affect
+  // segmentation existing spaces are allowed and considered for optimum
+  // segmentation
 
-  //WordSegmentation divides a string into words by inserting missing spaces at the appropriate positions
-	//misspelled words are corrected and do not affect segmentation
-	//existing spaces are allowed and considered for optimum segmentation
-
-  /// <summary>Length of prefix, from which internal dictionary of symspell are generated.</summary>
+  /// <summary>Length of prefix, from which internal dictionary of symspell are
+  /// generated.</summary>
 
   // To know more about the variables, refer SymSpell.h in SymSpellCPP repo
 
@@ -71,7 +70,7 @@ class SymPreTrainer {
   get_correct_spelling_single(const std::string& word, uint32_t top_k);
 
   std::pair<std::vector<std::vector<std::string>>,
-             std::vector<std::vector<float>>>
+            std::vector<std::vector<float>>>
   get_correct_spelling_list(const std::vector<std::string>& word_list,
                             uint32_t top_k);
 
@@ -99,9 +98,9 @@ class SymPreTrainer {
   uint32_t _prefix_length;
   bool _use_word_segmentation;
 
-  SymPreTrainer() {};
+  SymPreTrainer(){};
 };
 
-  using SymSpellPtr = std::shared_ptr<SymPreTrainer>;
+using SymSpellPtr = std::shared_ptr<SymPreTrainer>;
 
-}
+}  // namespace thirdai::symspell
