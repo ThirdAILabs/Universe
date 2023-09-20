@@ -119,6 +119,10 @@ class Embedding final : public Op,
 
   void sparseEmbeddingUpdate(float learning_rate, uint32_t train_steps);
 
+  std::string embeddingsName() const { return name() + "_embeddings"; }
+
+  std::string biasesName() const { return name() + "_biases"; }
+
   size_t _dim, _input_dim;
   bool _bias;
   ActivationFunction _act_func;

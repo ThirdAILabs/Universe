@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -29,8 +30,10 @@ RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
   _kernel = std::make_unique<EmbeddingLayer>(config, seed);
 }
 
-RobeZ::RobeZ(const std::string& name, const proto::bolt::RobeZ& robez_proto)
-    : Op(name), _kernel(std::make_unique<EmbeddingLayer>(robez_proto)) {}
+RobeZ::RobeZ(const std::string& name, const proto::bolt::RobeZ& robez_proto,
+             DeserializedParameters& parameters)
+    : Op(name),
+      _kernel(std::make_unique<EmbeddingLayer>(robez_proto, parameters)) {}
 
 std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
                                    uint64_t lookup_size,
@@ -127,7 +130,7 @@ proto::bolt::Op* RobeZ::toProto(bool with_optimizer) const {
   // TODO(Nicholas) move everything into this class so we don't have to deal
   // with the kernel. This will be easier to do once protobufs are added so it
   // doesn't break compatability.
-  op->set_allocated_robez(_kernel->toProto(with_optimizer));
+  op->set_allocated_robez(_kernel->toProto(name(), with_optimizer));
 
   return op;
 }
@@ -135,21 +138,20 @@ proto::bolt::Op* RobeZ::toProto(bool with_optimizer) const {
 SerializableParameters RobeZ::serializableParameters(
     bool with_optimizer) const {
   SerializableParameters parameters = {
-      {name() + "_embedding_block", _kernel->_embedding_block.get()}};
+      {embeddingBlockName(), _kernel->_embedding_block.get()}};
 
   if (with_optimizer && _kernel->_optimizer) {
-    parameters.emplace_back(name() + "_embedding_block_momentum",
-                            &_kernel->_optimizer->momentum);
-    parameters.emplace_back(name() + "_embedding_block_velocity",
-                            &_kernel->_optimizer->velocity);
+    addOptimizerParameters(*_kernel->_optimizer, embeddingBlockName(),
+                           parameters);
   }
 
   return parameters;
 }
 
 std::shared_ptr<RobeZ> RobeZ::fromProto(const std::string& name,
-                                        const proto::bolt::RobeZ& robez_proto) {
-  return std::shared_ptr<RobeZ>(new RobeZ(name, robez_proto));
+                                        const proto::bolt::RobeZ& robez_proto,
+                                        DeserializedParameters& parameter) {
+  return std::shared_ptr<RobeZ>(new RobeZ(name, robez_proto, parameter));
 }
 
 template void RobeZ::save(cereal::BinaryOutputArchive&) const;

@@ -43,9 +43,10 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
 }
 
 FullyConnected::FullyConnected(const std::string& name,
-                               const proto::bolt::FullyConnected& fc_proto)
+                               const proto::bolt::FullyConnected& fc_proto,
+                               DeserializedParameters& parameters)
     : Op(name),
-      _kernel(std::make_unique<FullyConnectedLayer>(fc_proto)),
+      _kernel(std::make_unique<FullyConnectedLayer>(fc_proto, parameters)),
       _rebuild_hash_tables(fc_proto.rebuild_hash_tables()),
       _reconstruct_hash_functions(fc_proto.reconstruct_hash_functions()),
       _updates_since_rebuild_hash_tables(0),
@@ -212,7 +213,7 @@ proto::bolt::Op* FullyConnected::toProto(bool with_optimizer) const {
   // TODO(Nicholas) move everything into this class so we don't have to deal
   // with the kernel stuff. This will be easier to do once protobufs are added
   // so it doesn't break compatability.
-  auto* fc = _kernel->toProto(with_optimizer);
+  auto* fc = _kernel->toProto(name(), with_optimizer);
 
   fc->set_rebuild_hash_tables(_rebuild_hash_tables);
   fc->set_reconstruct_hash_functions(_reconstruct_hash_functions);
@@ -229,22 +230,20 @@ SerializableParameters FullyConnected::serializableParameters(
       {name() + "_biases", &_kernel->biases()}};
   if (with_optimizer && _kernel->_weight_optimizer &&
       _kernel->_bias_optimizer) {
-    parameters.emplace_back(name() + "_weights_momentum",
-                            &_kernel->_weight_optimizer->momentum);
-    parameters.emplace_back(name() + "_weights_velocity",
-                            &_kernel->_weight_optimizer->velocity);
-    parameters.emplace_back(name() + "_bias_momentum",
-                            &_kernel->_bias_optimizer->momentum);
-    parameters.emplace_back(name() + "_bias_velocity",
-                            &_kernel->_bias_optimizer->velocity);
+    addOptimizerParameters(*_kernel->_weight_optimizer, weightsName(),
+                           parameters);
+
+    addOptimizerParameters(*_kernel->_bias_optimizer, biasesName(), parameters);
   }
 
   return parameters;
 }
 
 std::shared_ptr<FullyConnected> FullyConnected::fromProto(
-    const std::string& name, const proto::bolt::FullyConnected& fc_proto) {
-  return std::shared_ptr<FullyConnected>(new FullyConnected(name, fc_proto));
+    const std::string& name, const proto::bolt::FullyConnected& fc_proto,
+    DeserializedParameters& parameters) {
+  return std::shared_ptr<FullyConnected>(
+      new FullyConnected(name, fc_proto, parameters));
 }
 
 uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }

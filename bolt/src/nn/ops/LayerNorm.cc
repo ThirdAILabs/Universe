@@ -28,10 +28,11 @@ LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
       _beta_optimizer(dim) {}
 
 LayerNorm::LayerNorm(const std::string& name,
-                     const proto::bolt::LayerNorm& layer_norm_proto)
+                     const proto::bolt::LayerNorm& layer_norm_proto,
+                     DeserializedParameters& parameters)
     : Op(name),
-      _gamma(parametersFromProto(layer_norm_proto.gamma())),
-      _beta(parametersFromProto(layer_norm_proto.beta())) {
+      _gamma(parametersFromProto(layer_norm_proto.gamma(), parameters)),
+      _beta(parametersFromProto(layer_norm_proto.beta(), parameters)) {
   if (_gamma.size() != _beta.size()) {
     throw std::runtime_error(
         "Gamma and beta do not have expect size in fromProt.");
@@ -39,13 +40,15 @@ LayerNorm::LayerNorm(const std::string& name,
 
   if (layer_norm_proto.has_gamma_optimizer() &&
       layer_norm_proto.has_beta_optimizer()) {
-    _gamma_optimizer = optimizerFromProto(layer_norm_proto.gamma_optimizer());
+    _gamma_optimizer =
+        optimizerFromProto(layer_norm_proto.gamma_optimizer(), parameters);
     if (_gamma_optimizer.momentum.size() != _gamma.size()) {
       throw std::runtime_error(
           "Gamma optimizer does not have expected size in fromProto.");
     }
 
-    _beta_optimizer = optimizerFromProto(layer_norm_proto.beta_optimizer());
+    _beta_optimizer =
+        optimizerFromProto(layer_norm_proto.beta_optimizer(), parameters);
     if (_beta_optimizer.momentum.size() != _beta.size()) {
       throw std::runtime_error(
           "Beta optimizer does not have expected size in fromProto.");
@@ -232,15 +235,15 @@ proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
 
   auto* layer_norm = op->mutable_layer_norm();
 
-  layer_norm->set_allocated_gamma(parametersToProto(_gamma));
-  layer_norm->set_allocated_beta(parametersToProto(_beta));
+  layer_norm->set_allocated_gamma(parametersToProto(gammaName()));
+  layer_norm->set_allocated_beta(parametersToProto(betaName()));
 
   if (with_optimizer) {
     layer_norm->set_allocated_gamma_optimizer(
-        optimizerToProto(_gamma_optimizer, /* rows= */ 1, dim()));
+        optimizerToProto(gammaName(), /* rows= */ 1, dim()));
 
     layer_norm->set_allocated_beta_optimizer(
-        optimizerToProto(_beta_optimizer, /* rows= */ 1, dim()));
+        optimizerToProto(betaName(), /* rows= */ 1, dim()));
   }
 
   return op;
@@ -248,25 +251,21 @@ proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
 
 SerializableParameters LayerNorm::serializableParameters(
     bool with_optimizer) const {
-  SerializableParameters parameters = {{name() + "_gamma", &_gamma},
-                                       {name() + "_beta", &_beta}};
+  SerializableParameters parameters = {{gammaName(), &_gamma},
+                                       {betaName(), &_beta}};
   if (with_optimizer) {
-    parameters.emplace_back(name() + "_gamma_momentum",
-                            &_gamma_optimizer.momentum);
-    parameters.emplace_back(name() + "_gamma_velocity",
-                            &_gamma_optimizer.velocity);
-    parameters.emplace_back(name() + "_beta_momentum",
-                            &_beta_optimizer.momentum);
-    parameters.emplace_back(name() + "_beta_velocity",
-                            &_beta_optimizer.velocity);
+    addOptimizerParameters(_gamma_optimizer, gammaName(), parameters);
+    addOptimizerParameters(_beta_optimizer, betaName(), parameters);
   }
 
   return parameters;
 }
 
 std::shared_ptr<LayerNorm> LayerNorm::fromProto(
-    const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto) {
-  return std::shared_ptr<LayerNorm>(new LayerNorm(name, layer_norm_proto));
+    const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto,
+    DeserializedParameters& parameters) {
+  return std::shared_ptr<LayerNorm>(
+      new LayerNorm(name, layer_norm_proto, parameters));
 }
 
 template void LayerNorm::serialize(cereal::BinaryInputArchive&);

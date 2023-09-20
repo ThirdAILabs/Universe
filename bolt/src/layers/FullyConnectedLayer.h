@@ -6,6 +6,7 @@
 #include "LayerUtils.h"
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/neuron_index/NeuronIndex.h>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
@@ -40,7 +41,8 @@ class FullyConnectedLayer final {
                       bool disable_sparse_parameter_updates = false,
                       bool use_bias = true);
 
-  explicit FullyConnectedLayer(const proto::bolt::FullyConnected& fc_proto);
+  explicit FullyConnectedLayer(const proto::bolt::FullyConnected& fc_proto,
+                               DeserializedParameters& parameters);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -142,7 +144,8 @@ class FullyConnectedLayer final {
   void setHashTable(hashing::HashFunctionPtr hash_fn,
                     hashtable::SampledHashTablePtr hash_table);
 
-  proto::bolt::FullyConnected* toProto(bool with_optimizer) const;
+  proto::bolt::FullyConnected* toProto(const std::string& name,
+                                       bool with_optimizer) const;
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 

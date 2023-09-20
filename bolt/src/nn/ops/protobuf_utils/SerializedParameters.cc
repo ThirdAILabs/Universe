@@ -2,6 +2,7 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <proto/parameter.pb.h>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -11,11 +12,20 @@ namespace thirdai::bolt {
 
 constexpr size_t SHARD_SIZE = static_cast<size_t>(1) << 30;
 
-void serialize(const SerializableParameters& to_serialize,
-               utils::ProtobufWriter& object_writer) {
+inline size_t nShards(const std::vector<float>* parameters) {
+  return (parameters->size() + SHARD_SIZE - 1) / SHARD_SIZE;
+}
+
+void serializeParameters(const SerializableParameters& to_serialize,
+                         utils::ProtobufWriter& object_writer) {
   std::unordered_set<std::string> parameter_names;
 
-  object_writer.writeUint64(to_serialize.size());
+  size_t total_shards = 0;
+  for (const auto& [_, parameters] : to_serialize) {
+    total_shards += nShards(parameters);
+  }
+
+  object_writer.writeUint64(total_shards);
 
   for (const auto& [name, parameters] : to_serialize) {
     if (parameter_names.count(name)) {
@@ -25,7 +35,7 @@ void serialize(const SerializableParameters& to_serialize,
           name + "'.");
     }
 
-    size_t n_shards = (parameters->size() + SHARD_SIZE - 1) / SHARD_SIZE;
+    size_t n_shards = nShards(parameters);
 
     for (size_t shard_id = 0; shard_id < n_shards; shard_id++) {
       size_t start = shard_id * SHARD_SIZE;
@@ -55,7 +65,8 @@ struct InProgressParameter {
   std::vector<bool> shards_seen;
 };
 
-DeserializedParameters deserialize(utils::ProtobufReader& object_reader) {
+DeserializedParameters deserializeParameters(
+    utils::ProtobufReader& object_reader) {
   uint64_t n_params = object_reader.readUint64();
 
   std::unordered_map<std::string, InProgressParameter> parameters;
@@ -97,6 +108,11 @@ DeserializedParameters deserialize(utils::ProtobufReader& object_reader) {
 
   DeserializedParameters deserialized;
   for (auto& [name, params] : parameters) {
+    if (!std::all_of(params.shards_seen.begin(), params.shards_seen.end(),
+                     [](bool x) { return x; })) {
+      throw std::invalid_argument(
+          "Error loading model: missing shards for some parameters.");
+    }
     deserialized[name] = std::move(params.data);
   }
 

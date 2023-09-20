@@ -50,8 +50,8 @@ Embedding::Embedding(const std::string& name,
       _input_dim(emb_proto.input_dim()),
       _bias(emb_proto.use_bias()),
       _act_func(activationFromProto(emb_proto.activation())),
-      _embeddings(std::move(parameters[name + "_embeddings"])),
-      _biases(parameters[name + "_biases"]),
+      _embeddings(parametersFromProto(emb_proto.embeddings(), parameters)),
+      _biases(parametersFromProto(emb_proto.bias(), parameters)),
       _disable_sparse_parameter_updates(
           emb_proto.disable_sparse_parameter_updates()),
       _should_serialize_optimizer(false),
@@ -65,13 +65,15 @@ Embedding::Embedding(const std::string& name,
   }
 
   if (emb_proto.has_embeddings_optimizer() && emb_proto.has_bias_optimizer()) {
-    _embedding_optimizer = optimizerFromProto(emb_proto.embeddings_optimizer());
+    _embedding_optimizer =
+        optimizerFromProto(emb_proto.embeddings_optimizer(), parameters);
     if (_embedding_optimizer->momentum.size() != _embeddings.size()) {
       throw std::runtime_error(
           "Embeddings optimizer does not have expected size in fromProto.");
     }
 
-    _bias_optimizer = optimizerFromProto(emb_proto.bias_optimizer());
+    _bias_optimizer =
+        optimizerFromProto(emb_proto.bias_optimizer(), parameters);
     if (_bias_optimizer->momentum.size() != _biases.size()) {
       throw std::runtime_error(
           "Bias optimizer does not expected size in fromProto.");
@@ -306,15 +308,15 @@ proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
 
   emb->set_use_bias(_bias);
 
-  emb->set_allocated_embeddings(parametersToProto(_embeddings));
-  emb->set_allocated_bias(parametersToProto(_biases));
+  emb->set_allocated_embeddings(parametersToProto(embeddingsName()));
+  emb->set_allocated_bias(parametersToProto(biasesName()));
 
   if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
     emb->set_allocated_embeddings_optimizer(
-        optimizerToProto(*_embedding_optimizer, _input_dim, _dim));
+        optimizerToProto(embeddingsName(), _input_dim, _dim));
 
     emb->set_allocated_bias_optimizer(
-        optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+        optimizerToProto(biasesName(), /* rows= */ 1, _dim));
   }
 
   emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
@@ -324,17 +326,12 @@ proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
 
 SerializableParameters Embedding::serializableParameters(
     bool with_optimizer) const {
-  SerializableParameters parameters = {{name() + "_embeddings", &_embeddings},
-                                       {name() + "_biases", &_biases}};
+  SerializableParameters parameters = {{embeddingsName(), &_embeddings},
+                                       {biasesName(), &_biases}};
+
   if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
-    parameters.emplace_back(name() + "_embedding_momentum",
-                            &_embedding_optimizer->momentum);
-    parameters.emplace_back(name() + "_embedding_velocity",
-                            &_embedding_optimizer->velocity);
-    parameters.emplace_back(name() + "_bias_momentum",
-                            &_bias_optimizer->momentum);
-    parameters.emplace_back(name() + "_bias_velocity",
-                            &_bias_optimizer->velocity);
+    addOptimizerParameters(*_embedding_optimizer, embeddingsName(), parameters);
+    addOptimizerParameters(*_bias_optimizer, biasesName(), parameters);
   }
 
   return parameters;

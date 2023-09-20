@@ -9,6 +9,7 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <proto/model.pb.h>
 #include <utils/UUID.h>
+#include <istream>
 #include <memory>
 #include <vector>
 
@@ -233,8 +234,12 @@ class Model : public std::enable_shared_from_this<Model> {
 
   proto::bolt::Model toProto(bool with_optimizer) const;
 
-  static std::shared_ptr<Model> fromProto(
-      const proto::bolt::Model& model_proto);
+  static std::shared_ptr<Model> fromProto(const proto::bolt::Model& model_proto,
+                                          DeserializedParameters& parameters);
+
+  void serializeStream(std::ostream& output, bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeStream(std::istream& input);
 
   void saveProto(const std::string& filename, bool with_optimizer) const;
 

@@ -8,9 +8,11 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/Switch.h>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/model.pb.h>
 #include <utils/UUID.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -21,6 +23,7 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -416,12 +419,13 @@ proto::bolt::Model Model::toProto(bool with_optimizer) const {
   return model;
 }
 
-std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
+std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto,
+                                        DeserializedParameters& parameters) {
   std::unordered_map<std::string, OpPtr> ops;
 
   // Build a map from the name of each op to the reconstructed op object.
   for (const auto& op_proto : model_proto.ops()) {
-    ops[op_proto.name()] = Op::fromProto(op_proto);
+    ops[op_proto.name()] = Op::fromProto(op_proto, parameters);
   }
 
   ComputationList inputs;
@@ -478,37 +482,53 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto) {
   return model;
 }
 
-void Model::saveProto(const std::string& filename, bool with_optimizer) const {
-  auto proto = toProto(with_optimizer);
+void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
+  utils::ProtobufWriter writer(
+      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
 
+  writer.serialize(toProto(with_optimizer));
+
+  SerializableParameters parameters;
+  for (const auto& op : _ops) {
+    auto op_params = op->serializableParameters(with_optimizer);
+
+    parameters.insert(parameters.end(), op_params.begin(), op_params.end());
+  }
+
+  serializeParameters(parameters, writer);
+}
+
+std::shared_ptr<Model> Model::deserializeStream(std::istream& input) {
+  utils::ProtobufReader reader(
+      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
+
+  proto::bolt::Model model_proto;
+  reader.deserialize(model_proto);
+
+  auto parameters = deserializeParameters(reader);
+
+  return fromProto(model_proto, parameters);
+}
+
+void Model::saveProto(const std::string& filename, bool with_optimizer) const {
   std::ofstream output = dataset::SafeFileIO::ofstream(filename);
-  proto.SerializeToOstream(&output);
+  Model::serializeStream(output, with_optimizer);
 }
 
 std::shared_ptr<Model> Model::loadProto(const std::string& filename) {
-  proto::bolt::Model proto;
-
   std::ifstream input = dataset::SafeFileIO::ifstream(filename);
-  if (!proto.ParseFromIstream(&input)) {
-    throw std::invalid_argument("Error parsing protobuf archive.");
-  }
-
-  return Model::fromProto(proto);
+  return Model::deserializeStream(input);
 }
 
 std::string Model::serializeProto(bool with_optimizer) const {
-  auto proto = toProto(with_optimizer);
-  return proto.SerializeAsString();
+  std::stringstream output;
+  serializeStream(output, with_optimizer);
+  return output.str();
 }
 
 std::shared_ptr<Model> Model::deserializeProto(const std::string& binary) {
-  proto::bolt::Model proto;
-
-  if (!proto.ParseFromString(binary)) {
-    throw std::invalid_argument("Error parsing protobuf archive.");
-  }
-
-  return Model::fromProto(proto);
+  std::stringstream input(binary);
+  return deserializeStream(input);
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {

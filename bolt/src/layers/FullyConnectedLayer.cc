@@ -55,14 +55,15 @@ FullyConnectedLayer::FullyConnectedLayer(
 }
 
 FullyConnectedLayer::FullyConnectedLayer(
-    const proto::bolt::FullyConnected& fc_proto)
+    const proto::bolt::FullyConnected& fc_proto,
+    DeserializedParameters& parameters)
     : _dim(fc_proto.dim()),
       _prev_dim(fc_proto.input_dim()),
       _sparse_dim(fc_proto.dim() * fc_proto.sparsity()),
       _sparsity(fc_proto.sparsity()),
       _act_func(activationFromProto(fc_proto.activation())),
-      _weights(parametersFromProto(fc_proto.weights())),
-      _biases(parametersFromProto(fc_proto.bias())),
+      _weights(parametersFromProto(fc_proto.weights(), parameters)),
+      _biases(parametersFromProto(fc_proto.bias(), parameters)),
       _index_frozen(fc_proto.index_frozen()),
       _disable_sparse_parameter_updates(
           fc_proto.disable_sparse_parameter_updates()),
@@ -96,13 +97,14 @@ FullyConnectedLayer::FullyConnectedLayer(
   }
 
   if (fc_proto.has_weight_optimizer() && fc_proto.has_bias_optimizer()) {
-    _weight_optimizer = optimizerFromProto(fc_proto.weight_optimizer());
+    _weight_optimizer =
+        optimizerFromProto(fc_proto.weight_optimizer(), parameters);
     if (_weight_optimizer->momentum.size() != _weights.size()) {
       throw std::runtime_error(
           "Weights optimizer does not have expected size in fromProto.");
     }
 
-    _bias_optimizer = optimizerFromProto(fc_proto.bias_optimizer());
+    _bias_optimizer = optimizerFromProto(fc_proto.bias_optimizer(), parameters);
     if (_bias_optimizer->momentum.size() != _biases.size()) {
       throw std::runtime_error(
           "Bias optimizer does not expected size in fromProto.");
@@ -751,7 +753,7 @@ void FullyConnectedLayer::setHashTable(
 }
 
 proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
-    bool with_optimizer) const {
+    const std::string& name, bool with_optimizer) const {
   proto::bolt::FullyConnected* fc = new proto::bolt::FullyConnected();
 
   fc->set_dim(_dim);
@@ -761,8 +763,8 @@ proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
 
   fc->set_use_bias(_use_bias);
 
-  fc->set_allocated_weights(parametersToProto(_weights));
-  fc->set_allocated_bias(parametersToProto(_biases));
+  fc->set_allocated_weights(parametersToProto(name + "_weights"));
+  fc->set_allocated_bias(parametersToProto(name + "_biases"));
 
   if (_neuron_index) {
     /**
@@ -780,10 +782,10 @@ proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
 
   if (with_optimizer && _weight_optimizer && _bias_optimizer) {
     fc->set_allocated_weight_optimizer(
-        optimizerToProto(*_weight_optimizer, _dim, _prev_dim));
+        optimizerToProto(name + "_weights", _dim, _prev_dim));
 
     fc->set_allocated_bias_optimizer(
-        optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+        optimizerToProto(name + "_weights", /* rows= */ 1, _dim));
   }
 
   fc->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);

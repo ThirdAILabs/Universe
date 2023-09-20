@@ -76,7 +76,8 @@ class FullyConnected final
       bool with_optimizer) const final;
 
   static std::shared_ptr<FullyConnected> fromProto(
-      const std::string& name, const proto::bolt::FullyConnected& fc_proto);
+      const std::string& name, const proto::bolt::FullyConnected& fc_proto,
+      DeserializedParameters& parameter);
 
   /**
    * Returns the input dim of the fully connected layer.
@@ -151,7 +152,12 @@ class FullyConnected final
           std::numeric_limits<uint32_t>::max());
 
   FullyConnected(const std::string& name,
-                 const proto::bolt::FullyConnected& fc_proto);
+                 const proto::bolt::FullyConnected& fc_proto,
+                 DeserializedParameters& parameters);
+
+  std::string weightsName() const { return name() + "_weights"; }
+
+  std::string biasesName() const { return name() + "_biases"; }
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 

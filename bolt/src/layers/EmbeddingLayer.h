@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <proto/ops.pb.h>
@@ -32,7 +33,8 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = global_random::nextSeed());
 
-  explicit EmbeddingLayer(const proto::bolt::RobeZ& robez_proto);
+  explicit EmbeddingLayer(const proto::bolt::RobeZ& robez_proto,
+                          DeserializedParameters& parameter);
 
   void forward(const BoltVector& tokens, BoltVector& output);
 
@@ -102,7 +104,8 @@ class EmbeddingLayer {
 
   uint32_t hashSeed() const { return _hash_fn.seed(); }
 
-  proto::bolt::RobeZ* toProto(bool with_optimizer) const;
+  proto::bolt::RobeZ* toProto(const std::string& name,
+                              bool with_optimizer) const;
 
   ~EmbeddingLayer() = default;
 

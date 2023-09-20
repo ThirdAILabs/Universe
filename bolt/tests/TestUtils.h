@@ -74,6 +74,12 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     return nullptr;
   }
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final {
+    (void)with_optimizer;
+    return {};
+  }
+
   void updateNumNonzeros(uint32_t new_num_nonzeros) {
     _num_nonzeros = new_num_nonzeros;
   }

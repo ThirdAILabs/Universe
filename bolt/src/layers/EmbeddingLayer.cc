@@ -62,7 +62,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
-EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
+EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto,
+                               DeserializedParameters& parameters)
     : _num_lookups_per_token(robez_proto.num_lookups_per_token()),
       _lookup_size(robez_proto.lookup_size()),
       _total_embedding_dim(robez_proto.lookup_size() *
@@ -92,7 +93,7 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
   _embedding_block_size = emb_block_size;
 
   _embedding_block = std::make_shared<std::vector<float>>(
-      parametersFromProto(robez_proto.embedding_block()));
+      parametersFromProto(robez_proto.embedding_block(), parameters));
 
   if (_embedding_block->size() != _embedding_block_size) {
     throw std::runtime_error(
@@ -102,7 +103,8 @@ EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto)
   _embedding_chunks_used.assign(n_emb_chunks, false);
 
   if (robez_proto.has_embedding_block_optimizer()) {
-    _optimizer = optimizerFromProto(robez_proto.embedding_block_optimizer());
+    _optimizer =
+        optimizerFromProto(robez_proto.embedding_block_optimizer(), parameters);
     if (_optimizer->momentum.size() != _embedding_block_size) {
       throw std::runtime_error(
           "Embedding block optimizer does not have expected size in "
@@ -262,7 +264,8 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
   }
 }
 
-proto::bolt::RobeZ* EmbeddingLayer::toProto(bool with_optimizer) const {
+proto::bolt::RobeZ* EmbeddingLayer::toProto(const std::string& name,
+                                            bool with_optimizer) const {
   proto::bolt::RobeZ* robez = new proto::bolt::RobeZ();
 
   robez->set_num_lookups_per_token(_num_lookups_per_token);
@@ -277,11 +280,13 @@ proto::bolt::RobeZ* EmbeddingLayer::toProto(bool with_optimizer) const {
   robez->set_update_chunk_size(_update_chunk_size);
   robez->set_hash_seed(_hash_fn.seed());
 
-  robez->set_allocated_embedding_block(parametersToProto(*_embedding_block));
+  robez->set_allocated_embedding_block(
+      parametersToProto(name + "_embedding_block"));
 
   if (with_optimizer && _optimizer) {
-    robez->set_allocated_embedding_block_optimizer(optimizerToProto(
-        *_optimizer, _embedding_chunks_used.size(), _update_chunk_size));
+    robez->set_allocated_embedding_block_optimizer(
+        optimizerToProto(name + "_embedding_block",
+                         _embedding_chunks_used.size(), _update_chunk_size));
   }
 
   robez->set_disable_sparse_parameter_updates(
