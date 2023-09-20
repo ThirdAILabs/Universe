@@ -57,13 +57,13 @@ std::shared_ptr<udt::UDT> makeUDT(
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
-    const std::string& dataset_size, std::optional<bool> use_spell_checker,
+    const std::string& dataset_size, bool use_spell_checker,
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
     std::string target_column, const std::string& dataset_size,
-    std::optional<bool> use_spell_checker, char delimiter,
+    bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeSvmClassifier(
@@ -110,12 +110,12 @@ void defineAutomlInModule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
            py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("use_spell_checker") = std::nullopt,
+           py::arg("use_spell_checker") = false,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def(py::init(&makeQueryReformulationTargetOnly),
            py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("use_spell_checker") = std::nullopt,
+           py::arg("use_spell_checker") = false,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def(py::init(&makeSvmClassifier), py::arg("file_format"),
@@ -442,7 +442,7 @@ std::shared_ptr<udt::UDT> makeUDT(
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
-    const std::string& dataset_size, std::optional<bool> use_spell_checker,
+    const std::string& dataset_size, bool use_spell_checker,
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
   return std::make_shared<udt::UDT>(
@@ -456,7 +456,7 @@ std::shared_ptr<udt::UDT> makeQueryReformulation(
 
 std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
     std::string target_column, const std::string& dataset_size,
-    std::optional<bool> use_spell_checker, char delimiter,
+    bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* incorrect_column_name = */ std::nullopt,

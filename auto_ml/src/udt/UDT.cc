@@ -104,7 +104,7 @@ UDT::UDT(data::ColumnDataTypes data_types,
 
 UDT::UDT(std::optional<std::string> incorrect_column_name,
          std::string correct_column_name, const std::string& dataset_size,
-         std::optional<bool> use_spell_checker, char delimiter,
+         bool use_spell_checker, char delimiter,
          const std::optional<std::string>& model_config,
          const config::ArgumentMap& user_args) {
   _backend = std::make_unique<UDTQueryReformulation>(

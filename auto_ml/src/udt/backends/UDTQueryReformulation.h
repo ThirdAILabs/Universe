@@ -3,7 +3,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/symspell.h>
+#include <auto_ml/src/udt/utils/symspell.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -14,6 +14,8 @@
 #include <optional>
 #include <unordered_map>
 
+using namespace thirdai::symspell;
+
 namespace thirdai::automl::udt {
 
 class UDTQueryReformulation final : public UDTBackend {
@@ -21,7 +23,7 @@ class UDTQueryReformulation final : public UDTBackend {
   UDTQueryReformulation(std::optional<std::string> incorrect_column_name,
                         std::string correct_column_name,
                         const std::string& dataset_size,
-                        std::optional<bool> use_spell_checker, char delimiter,
+                        bool use_spell_checker, char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 
@@ -47,9 +49,6 @@ class UDTQueryReformulation final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  //   py::object predictSymSpell(const MapInput& sample, bool sparse_inference,
-  //                      bool return_predicted_class,
-  //                      std::optional<uint32_t> top_k) final;
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,
                       const std::string& column_name) const;
@@ -58,10 +57,9 @@ class UDTQueryReformulation final : public UDTBackend {
       const dataset::DataSourcePtr& data, const std::string& col_to_hash,
       bool include_labels, uint32_t batch_size, bool verbose);
 
-  std::tuple<std::vector<std::vector<uint32_t>>,
-             std::vector<std::vector<std::string>>,
-             std::vector<std::vector<float>>>
-  predictBatchUtil(const MapInputBatch& sample, std::optional<int> top_k);
+    std::pair<std::vector<std::vector<uint32_t>>,
+           std::vector<std::vector<float>>>
+  QueryBatchResults(const MapInputBatch& sample, std::optional<uint32_t> top_k);
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
                       const dataset::BoltDatasetPtr& labels,
@@ -108,8 +106,9 @@ class UDTQueryReformulation final : public UDTBackend {
 
   std::optional<std::string> _incorrect_column_name;
   std::string _correct_column_name;
-  std::optional<bool> _use_spell_checker;
-  SymPreTrainer _pretrainer;
+  bool _use_spell_checker;
+
+    SymSpellPtr _symspell_backend;
   std::vector<uint32_t> _n_grams = defaults::N_GRAMS_FOR_GENERATOR;
 
   char _delimiter;

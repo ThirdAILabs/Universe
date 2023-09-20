@@ -29,12 +29,14 @@
 #include <memory>
 #include <stdexcept>
 
+
+
 namespace thirdai::automl::udt {
 
 UDTQueryReformulation::UDTQueryReformulation(
     std::optional<std::string> incorrect_column_name,
     std::string correct_column_name, const std::string& dataset_size,
-    std::optional<bool> use_spell_checker, char delimiter,
+    bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _incorrect_column_name(std::move(incorrect_column_name)),
@@ -47,10 +49,11 @@ UDTQueryReformulation::UDTQueryReformulation(
     _flash_index = defaultFlashIndex(dataset_size);
   }
 
-  if (_use_spell_checker && _use_spell_checker.value()) {
-    _pretrainer =
-        SymPreTrainer(defaults::MAX_EDIT_DISTANCE, true,
-                      defaults::PREFIX_LENGTH, defaults::USE_WORD_SEGMENTATION);
+  if (_use_spell_checker) {
+    _symspell_backend =
+    std::make_shared<SymPreTrainer>
+        (SymPreTrainer(defaults::MAX_EDIT_DISTANCE, true,
+                      defaults::PREFIX_LENGTH, defaults::USE_WORD_SEGMENTATION));
   }
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
@@ -100,7 +103,7 @@ py::object UDTQueryReformulation::train(
 
   // Index words to Spell Checker if use_spell_checker = True
 
-  if (_use_spell_checker && _use_spell_checker.value()) {
+  if (_use_spell_checker) {
       auto featurizer = dataset::TabularFeaturizer::make(
       {ngramBlockList(_correct_column_name, _n_grams)},
       /* has_header= */ true,
@@ -109,7 +112,7 @@ py::object UDTQueryReformulation::train(
     dataset::DatasetLoader dataset_loader(data, featurizer,
                                         /* shuffle= */ false);
 
-    _pretrainer.pretrain_file(dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name));
+    _symspell_backend->pretrain_file(dataset_loader.loadAllMapInputs(defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name));
     data->restart();
   }
 
@@ -117,7 +120,7 @@ py::object UDTQueryReformulation::train(
       loadData(data, /* col_to_hash= */ _correct_column_name,
                /* include_labels= */ true, batch_size, options.verbose);
 
-  // If we are using supervised training then we have twice as much data to
+  // If we are using supervised training then we have twice as much data 
   // insert because index each sample once using itself as the input, and once
   // using the incorrect query as the input.
   uint32_t progress_bar_steps = is_supervised
@@ -187,7 +190,7 @@ py::object UDTQueryReformulation::evaluate(
 
   bolt::utils::Timer timer;
 
-  if (_use_spell_checker && _use_spell_checker.value()) {
+  if (_use_spell_checker) {
 
       auto featurizer = dataset::TabularFeaturizer::make(
       {ngramBlockList(_incorrect_column_name.value(), _n_grams)},
@@ -201,63 +204,10 @@ py::object UDTQueryReformulation::evaluate(
 
     for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size();
          batch_id++) {
-      std::vector<uint32_t> freq_counts = {0};
-
-      std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
-          _pretrainer.generate_candidates(input_candidate_batches[batch_id]);
-      MapInputBatch sample_cand = candidates.first;
-
-      // Stores the number of candidates generated for each query
-      freq_counts.insert(freq_counts.end(), candidates.second.begin(),
-                         candidates.second.end());
-
-      // Prefix sum so that freq_counts(i,i+1) holds the start and end idx for
-      // query i
-      for (uint32_t i = 1; i < freq_counts.size(); i++) {
-        freq_counts[i] += freq_counts[i - 1];
-      }
-
-      auto results = predictBatchUtil(sample_cand, top_k);
-      auto phrase_ids = std::get<0>(results);
-      auto phrases = std::get<1>(results);
-      auto phrase_scores = std::get<2>(results);
-
-      std::vector<std::vector<uint32_t>> phrase_id_accum;
-
-      for (uint32_t cnt_id = 0; cnt_id < freq_counts.size() - 1; cnt_id++) {
-        uint32_t start_idx = freq_counts[cnt_id];
-        uint32_t end_idx = freq_counts[cnt_id + 1];
-
-        std::unordered_map<uint32_t, float> id_to_score;
-
-        // candidates for current query lies in [start_idx: end_idx]
-        for (uint32_t i = start_idx; i < end_idx; i++) {
-          for (uint32_t j = 0; j < phrase_ids[i].size(); j++) {
-            id_to_score[phrase_ids[i][j]] += phrase_scores[i][j];
-          }
-        }
-
-        // Get the top k reformulated phrase ids
-        std::vector<std::pair<float, uint32_t>> score_to_id;
-
-        for (const auto& pair : id_to_score) {
-          score_to_id.push_back(std::make_pair(pair.second, pair.first));
-        }
-        std::sort(score_to_id.begin(), score_to_id.end(),
-                  [](const std::pair<float, uint32_t>& a,
-                     const std::pair<float, uint32_t>& b) {
-                    return a.first > b.first;
-                  });
-
-        std::vector<uint32_t> top_k_ids;
-        for (uint32_t i = 0; i < top_k.value() && i < score_to_id.size(); i++) {
-          top_k_ids.push_back(score_to_id[i].second);
-        }
-        phrase_id_accum.push_back(top_k_ids);
-      }
+      auto [phrase_ids, phrase_scores] = QueryBatchResults(input_candidate_batches[batch_id], top_k);
       bar->increment();
 
-      correctly_retrieved += recall(phrase_id_accum, labels->at(batch_id));
+      correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
       total_samples += input_candidate_batches[batch_id].size();
     }
   } else {
@@ -298,30 +248,60 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                       top_k);
 }
 
-std::tuple<std::vector<std::vector<uint32_t>>,
-           std::vector<std::vector<std::string>>,
+std::pair<std::vector<std::vector<uint32_t>>,
            std::vector<std::vector<float>>>
-UDTQueryReformulation::predictBatchUtil(const MapInputBatch& sample,
-                                        std::optional<int> top_k) {
+UDTQueryReformulation::QueryBatchResults(const MapInputBatch& sample,
+                                        std::optional<uint32_t> top_k) {
+
+  if (_use_spell_checker){
+    std::vector<uint32_t> freq_counts = {0};
+
+    std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
+        _symspell_backend->generate_candidates(sample);
+    MapInputBatch sample_cand = candidates.first;
+    freq_counts.insert(freq_counts.end(), candidates.second.begin(),
+                       candidates.second.end());
+      for (uint32_t i = 1; i < freq_counts.size(); i++) {
+      freq_counts[i] += freq_counts[i - 1];
+    }
+      dataset::MapBatchRef sample_ref(sample_cand);
+      auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
+
+    auto results =  _flash_index->queryBatch(
+      /* batch = */ BoltBatch(std::move(featurized_samples)),
+      /* top_k = */ top_k.value());
+
+    auto phrase_ids = std::move(results.first);
+  auto phrase_scores = std::move(results.second);
+
+    
+    std::vector<std::vector<uint32_t>> all_phrase_ids;
+    std::vector<std::vector<float>> all_phrase_scores;
+    for (uint32_t query_id = 0; query_id < sample.size(); query_id++) {
+        std::vector<std::vector<uint32_t>> query_phrase_ids(
+            phrase_ids.begin() + freq_counts[query_id],
+            phrase_ids.begin() + freq_counts[query_id + 1]);
+        std::vector<std::vector<float>> query_scores(
+            phrase_scores.begin() + freq_counts[query_id],
+            phrase_scores.begin() + freq_counts[query_id + 1]);
+        std::pair<std::vector<uint32_t>, std::vector<float>> accumulated_res =
+            _symspell_backend->accumulate_scores(query_phrase_ids, query_scores, top_k);
+        all_phrase_ids.push_back(accumulated_res.first);
+        all_phrase_scores.push_back(accumulated_res.second);
+    }
+    return std::make_pair(all_phrase_ids, all_phrase_scores);
+  }
   dataset::MapBatchRef sample_ref(sample);
   auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
 
   auto results = _flash_index->queryBatch(
       /* batch = */ BoltBatch(std::move(featurized_samples)),
       /* top_k = */ top_k.value());
-  // We do this instead of directly asigning the elements of the tuple to
-  // avoid a omp error.
+
   auto phrase_ids = std::move(results.first);
   auto phrase_scores = std::move(results.second);
 
-  std::vector<std::vector<std::string>> phrases(phrase_ids.size());
-
-#pragma omp parallel for default(none) shared(phrase_ids, phrases)
-  for (uint32_t sample_idx = 0; sample_idx < phrase_ids.size(); sample_idx++) {
-    phrases[sample_idx] = idsToPhrase(phrase_ids[sample_idx]);
-  }
-
-  return std::make_tuple(phrase_ids, phrases, phrase_scores);
+  return std::pair(phrase_ids, phrase_scores);
 }
 
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
@@ -333,43 +313,15 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   requireTopK(top_k);
 
-  if (_use_spell_checker && _use_spell_checker.value()) {
-    std::vector<uint32_t> freq_counts = {0};
+  auto [phrase_ids, phrase_scores] = QueryBatchResults(sample, top_k);
 
-    std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
-        _pretrainer.generate_candidates(sample);
-    MapInputBatch sample_cand = candidates.first;
-    freq_counts.insert(freq_counts.end(), candidates.second.begin(),
-                       candidates.second.end());
+  std::vector<std::vector<std::string>> phrases(phrase_ids.size());
 
-    auto results = predictBatchUtil(sample_cand, top_k);
-    auto phrases = std::get<1>(results);
-    auto phrase_scores = std::get<2>(results);
-    // Prefix sum over freq counts
-    for (uint32_t i = 1; i < freq_counts.size(); i++) {
-      freq_counts[i] += freq_counts[i - 1];
+  #pragma omp parallel for default(none) shared(phrase_ids, phrases)
+    for (uint32_t sample_idx = 0; sample_idx < phrase_ids.size(); sample_idx++) {
+      phrases[sample_idx] = idsToPhrase(phrase_ids[sample_idx]);
     }
-    std::vector<std::vector<std::string>> all_phrases;
-    std::vector<std::vector<float>> all_phrase_scores;
-    for (uint32_t query_id = 0; query_id < sample.size(); query_id++) {
-      std::vector<std::vector<std::string>> query_phrases(
-          phrases.begin() + freq_counts[query_id],
-          phrases.begin() + freq_counts[query_id + 1]);
-      std::vector<std::vector<float>> query_scores(
-          phrase_scores.begin() + freq_counts[query_id],
-          phrase_scores.begin() + freq_counts[query_id + 1]);
-      std::pair<std::vector<std::string>, std::vector<float>> accumulated_res =
-          _pretrainer.accumulate_scores(query_phrases, query_scores, top_k);
-      all_phrases.push_back(accumulated_res.first);
-      all_phrase_scores.push_back(accumulated_res.second);
-    }
-    return py::make_tuple(py::cast(all_phrases), py::cast(all_phrase_scores));
-  }
-
-  auto results = predictBatchUtil(sample, top_k);
-  auto phrases = std::get<1>(results);
-  auto phrase_scores = std::get<2>(results);
-
+  
   return py::make_tuple(py::cast(phrases), py::cast(phrase_scores));
 }
 

@@ -134,7 +134,7 @@ std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(size_t batch_size, st
   auto rows = _data_source->nextBatch(
           /* target_batch_size = */ batch_size);
   while(rows){
-    auto batch = _featurizer->featurize_to_MapInputBatch(*rows, column_name, *_header);
+    auto batch = _featurizer->convertToMapInputBatch(*rows, column_name, *_header);
     input_batches_all.push_back(batch);
 
     rows = _data_source->nextBatch(batch_size);
