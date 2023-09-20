@@ -25,9 +25,9 @@ CosineContrastive::CosineContrastive(ComputationPtr output_1,
         "The cutoff margin for the distance between dissimilar points must be "
         "greater than 0.");
   }
-  if (_labels->dim() != 1) {
+  if (_labels->dim() != 2) {
     throw std::invalid_argument(
-        "The dimension of the labels for contrastive loss must equal 1, but "
+        "The dimension of the labels for contrastive loss must equal 2, but "
         "found labels with dimension " +
         std::to_string(_labels->dim()));
   }
@@ -52,7 +52,7 @@ void CosineContrastive::gradients(uint32_t index_in_batch,
   // See bolt/src/nn/derivations/CosineContrastive.md for this derivation.
 
   (void)batch_size;
-  float label = _labels->tensor()->getVector(index_in_batch).activations[0];
+  float label = _labels->tensor()->getVector(index_in_batch).active_neurons[0];
   auto& vec_1 = _output_1->tensor()->getVector(index_in_batch);
   auto& vec_2 = _output_2->tensor()->getVector(index_in_batch);
 
@@ -94,7 +94,7 @@ void CosineContrastive::gradients(uint32_t index_in_batch,
 }
 
 float CosineContrastive::loss(uint32_t index_in_batch) const {
-  float label = _labels->tensor()->getVector(index_in_batch).activations[0];
+  float label = _labels->tensor()->getVector(index_in_batch).active_neurons[0];
 
   float cosine_distance = 1 - cosineSim(index_in_batch);
 
