@@ -785,7 +785,7 @@ proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
         optimizerToProto(name + "_weights", _dim, _prev_dim));
 
     fc->set_allocated_bias_optimizer(
-        optimizerToProto(name + "_weights", /* rows= */ 1, _dim));
+        optimizerToProto(name + "_biases", /* rows= */ 1, _dim));
   }
 
   fc->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
