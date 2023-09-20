@@ -42,7 +42,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
         /* target_batch_size = */ _featurization_batch_size);
     if (!rows) {
       std::invalid_argument(
-          "Skipped line batches exceed total number of line batches in the dataset.");
+          "Skipped line batches exceed total number of line batches in the "
+          "dataset.");
     }
   }
 }
