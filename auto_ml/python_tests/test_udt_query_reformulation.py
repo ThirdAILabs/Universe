@@ -92,19 +92,20 @@ INCORRECT_ONLY = ["incorrect_query"]
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "train_test_data, supervised",
+    "train_test_data, supervised, use_spell_checker",
     [
-        ((ALL_COLUMNS, ALL_COLUMNS), True),
-        ((ALL_COLUMNS, INCORRECT_ONLY), True),
-        ((ALL_COLUMNS, CORRECT_ONLY), True),
-        ((CORRECT_ONLY, ALL_COLUMNS), True),
-        ((CORRECT_ONLY, INCORRECT_ONLY), True),
-        ((CORRECT_ONLY, CORRECT_ONLY), True),
-        ((CORRECT_ONLY, CORRECT_ONLY), False),
+        ((ALL_COLUMNS, ALL_COLUMNS), True, False),
+        ((ALL_COLUMNS, ALL_COLUMNS), True, True),
+        ((ALL_COLUMNS, INCORRECT_ONLY), True, False),
+        ((ALL_COLUMNS, CORRECT_ONLY), True, False),
+        ((CORRECT_ONLY, ALL_COLUMNS), True, False),
+        ((CORRECT_ONLY, INCORRECT_ONLY), True, False),
+        ((CORRECT_ONLY, CORRECT_ONLY), True, False),
+        ((CORRECT_ONLY, CORRECT_ONLY), False, False),
     ],
     indirect=["train_test_data"],
 )
-def test_query_reformulation(train_test_data, supervised):
+def test_query_reformulation(train_test_data, supervised, use_spell_checker):
     train_file, test_file, (inference_samples, inference_labels) = train_test_data
 
     if supervised:
@@ -112,6 +113,7 @@ def test_query_reformulation(train_test_data, supervised):
             source_column="incorrect_query",
             target_column="correct_query",
             dataset_size="small",
+            use_spell_checker=use_spell_checker,
         )
     else:
         model = bolt.UniversalDeepTransformer(
@@ -134,7 +136,15 @@ def test_query_reformulation(train_test_data, supervised):
 
 
 @pytest.mark.unit
-def test_query_reformulation_save_load(query_reformulation_dataset):
+@pytest.mark.parametrize(
+    "query_reformulation_dataset, use_spell_checker",
+    [
+        ((), True),
+        ((), False),
+    ],
+    indirect=["query_reformulation_dataset"],
+)
+def test_query_reformulation_save_load(query_reformulation_dataset, use_spell_checker):
     filename = "./query_reformluation.csv"
     query_reformulation_dataset[0].to_csv(filename, columns=ALL_COLUMNS, index=False)
 
@@ -142,6 +152,7 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
         source_column="incorrect_query",
         target_column="correct_query",
         dataset_size="small",
+        use_spell_checker=use_spell_checker,
         options={
             "n_grams": [2, 3, 4]
         },  # using n_grams option to make sure that archive function is correct
@@ -168,9 +179,16 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
     os.remove(filename)
     os.remove(model_path)
 
-
 @pytest.mark.unit
-def test_query_reformulation_n_grams(query_reformulation_dataset):
+@pytest.mark.parametrize(
+    "query_reformulation_dataset, use_spell_checker",
+    [
+        ((), True),
+        ((), False),
+    ],
+    indirect=["query_reformulation_dataset"],
+)
+def test_query_reformulation_n_grams(query_reformulation_dataset, use_spell_checker):
     filename = "./query_reformluation.csv"
     query_reformulation_dataset[0].to_csv(filename, columns=ALL_COLUMNS, index=False)
 
@@ -178,6 +196,7 @@ def test_query_reformulation_n_grams(query_reformulation_dataset):
         source_column="incorrect_query",
         target_column="correct_query",
         dataset_size="small",
+        use_spell_checker=use_spell_checker,
         options={"n_grams": [2, 3]},
     )
     model.train(filename)
@@ -189,7 +208,14 @@ def test_query_reformulation_n_grams(query_reformulation_dataset):
 
 
 @pytest.mark.unit
-def test_query_reformulation_throws_error_wrong_argument():
+@pytest.mark.parametrize(
+    "use_spell_checker",
+    [
+        (True),
+        (False),
+    ],
+)
+def test_query_reformulation_throws_error_wrong_argument(use_spell_checker):
     with pytest.raises(
         ValueError,
         match=re.escape(f"n_grams argument must contain only positive integers"),
@@ -198,6 +224,7 @@ def test_query_reformulation_throws_error_wrong_argument():
             source_column="incorrect_query",
             target_column="correct_query",
             dataset_size="small",
+            use_spell_checker=use_spell_checker,
             options={"n_grams": [-1, 3]},
         )
 
@@ -209,5 +236,6 @@ def test_query_reformulation_throws_error_wrong_argument():
             source_column="incorrect_query",
             target_column="correct_query",
             dataset_size="small",
+            use_spell_checker=use_spell_checker,
             options={"n_grams": 1},
         )
