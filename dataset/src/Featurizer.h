@@ -26,11 +26,10 @@ class Featurizer {
       const std::vector<std::string>& rows) = 0;
 
   virtual MapInputBatch convertToMapInputBatch(
-      const LineInputBatch& input_batch, std::string key, std::string column_name,
-      std::string header) {
+      const LineInputBatch& input_batch, std::string key,
+      std::string column_name, std::string header) {
     (void)input_batch;
-    (void)key,
-    (void)column_name;
+    (void)key, (void)column_name;
     (void)header;
     throw exceptions::NotImplemented("Cannot convert to MapInputBatch");
   }

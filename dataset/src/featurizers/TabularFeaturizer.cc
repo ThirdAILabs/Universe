@@ -79,7 +79,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 }
 
 MapInputBatch TabularFeaturizer::convertToMapInputBatch(
-    const LineInputBatch& input_batch, std::string key, std::string column_name, 
+    const LineInputBatch& input_batch, std::string key, std::string column_name,
     std::string header) {
   dataset::ColumnNumberMap column_number_map(header, _delimiter);
   if (input_batch.empty()) {

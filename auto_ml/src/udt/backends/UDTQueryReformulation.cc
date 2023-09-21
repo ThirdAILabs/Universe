@@ -110,7 +110,8 @@ py::object UDTQueryReformulation::train(
                                           /* shuffle= */ false);
 
     auto parsed_data = dataset_loader.loadAllMapInputs(
-        defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",_correct_column_name);
+        defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",
+        _correct_column_name);
     _symspell_backend->pretrain(parsed_data);
     data->restart();
   }
