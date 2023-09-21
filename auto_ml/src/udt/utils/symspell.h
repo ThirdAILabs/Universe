@@ -1,16 +1,13 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <SymspellCPP/src/SymSpell.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <utils/src/SymSpellCpp/SymSpell.h>
 #include <fstream>
 #include <memory>
 #include <numeric>
@@ -33,12 +30,19 @@ class SpellCheckedSentence {
 
  public:
   SpellCheckedSentence(std::vector<std::string> tokens,
-                       std::vector<float> scores);
+                       std::vector<float> scores)
+      : _tokens(std::move(tokens)), _scores(std::move(scores)) {}
 
-  SpellCheckedSentence(const SpellCheckedSentence& other);
+  SpellCheckedSentence(const SpellCheckedSentence& other)
+      : _tokens(other._tokens), _scores(other._scores) {}
 
   SpellCheckedSentence updateTokenAndScore(const std::string& token,
-                                           float score, size_t index);
+                                           float score, size_t index) {
+    SpellCheckedSentence temp(*this);
+    temp._tokens[index] = token;
+    temp._scores[index] = score;
+    return temp;
+  }
 
   float get_score() const {
     float total_score = 0.0F;
@@ -48,7 +52,7 @@ class SpellCheckedSentence {
     return total_score;
   }
 
-  std::string get_string() {
+  std::string getString() {
     std::string result = std::accumulate(
         _tokens.begin(), _tokens.end(), std::string(),
         [](const std::string& a, const std::string& b) { return a + b + " "; });
@@ -73,29 +77,29 @@ class SymPreTrainer {
                 uint32_t prefix_length, bool use_word_segmentation);
 
   std::pair<std::vector<std::string>, std::vector<float>>
-  get_correct_spelling_single(const std::string& word, uint32_t top_k);
+  getCorrectSpellingSingle(const std::string& word, uint32_t top_k);
 
   std::pair<std::vector<std::vector<std::string>>,
             std::vector<std::vector<float>>>
-  get_correct_spelling_list(const std::vector<std::string>& word_list,
-                            uint32_t top_k);
+  getCorrectSpellingList(const std::vector<std::string>& word_list,
+                         uint32_t top_k);
 
-  std::pair<MapInputBatch, std::vector<uint32_t>> generate_candidates(
+  std::pair<MapInputBatch, std::vector<uint32_t>> generateCandidates(
       const MapInputBatch& samples);
 
-  std::vector<SpellCheckedSentence> correct_sentence(
+  std::vector<SpellCheckedSentence> correctSentence(
       const std::vector<std::string>& tokens_list,
       uint32_t predictions_per_token, uint32_t maximum_candidates,
       bool stop_if_found);
 
-  void index_words(std::vector<std::string>& words_to_index,
-                   std::vector<uint32_t>& frequency);
+  void indexWords(std::vector<std::string>& words_to_index,
+                  std::vector<uint32_t>& frequency);
 
-  static std::pair<std::vector<uint32_t>, std::vector<float>> accumulate_scores(
+  static std::pair<std::vector<uint32_t>, std::vector<float>> accumulateScores(
       std::vector<std::vector<uint32_t>>& phrase_ids,
       std::vector<std::vector<float>>& phrase_scores, uint32_t top_k);
 
-  void pretrain_file(std::vector<MapInputBatch>& parsed_data);
+  void pretrain(std::vector<MapInputBatch>& parsed_data);
 
  private:
   SymSpell _backend;

@@ -112,6 +112,9 @@ constexpr uint32_t MAX_EDIT_DISTANCE = 3;
 // Prefix length to be used in SpellChecker
 constexpr uint32_t PREFIX_LENGTH = 7;
 
+// initial capacity of symspell dictionary
+constexpr uint32_t SYMSPELL_DICT_INITIAL_CAPACITY = 50000;
+
 // Use Word Segmentation in SymSpell
 constexpr bool USE_WORD_SEGMENTATION = false;
 

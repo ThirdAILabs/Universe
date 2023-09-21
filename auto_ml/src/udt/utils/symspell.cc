@@ -4,21 +4,6 @@
 #include <utils/StringManipulation.h>
 namespace thirdai::automl::udt {
 
-SpellCheckedSentence::SpellCheckedSentence(std::vector<std::string> tokens,
-                                           std::vector<float> scores)
-    : _tokens(std::move(tokens)), _scores(std::move(scores)) {}
-
-SpellCheckedSentence::SpellCheckedSentence(const SpellCheckedSentence& other)
-    : _tokens(other._tokens), _scores(other._scores) {}
-
-SpellCheckedSentence SpellCheckedSentence::updateTokenAndScore(
-    const std::string& token, float score, size_t index) {
-  SpellCheckedSentence temp(*this);
-  temp._tokens[index] = token;
-  temp._scores[index] = score;
-  return temp;
-}
-
 SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance,
                              bool experimental_scores, uint32_t prefix_length,
                              bool use_word_segmentation)
@@ -29,16 +14,15 @@ SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance,
       _experimental_scores(experimental_scores),
       _prefix_length(prefix_length),
       _use_word_segmentation(use_word_segmentation) {
-  std::cout
-      << "Initialized a Spell Checker from scratch. Index words uint32_to "
-         "the spell checker for corrections."
-      << std::endl;
+  std::cout << "Initialized a Spell Checker from scratch. Index words into "
+               "the spell checker for corrections."
+            << std::endl;
   this->_backend = _backend;
 }
 
 std::pair<std::vector<std::string>, std::vector<float>>
-SymPreTrainer::get_correct_spelling_single(const std::string& word,
-                                           uint32_t top_k) {
+SymPreTrainer::getCorrectSpellingSingle(const std::string& word,
+                                        uint32_t top_k) {
   std::vector<std::string> tokens;
   std::vector<float> scores;
 
@@ -68,20 +52,16 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word,
 
   if (!found) {
     tokens.push_back(word);
-    if (_experimental_scores) {
-      if (!scores.empty()) {
-        std::vector<float> scores_copy;
-        scores_copy.assign(scores.begin(), scores.end());
-        std::sort(scores_copy.begin(), scores_copy.end());
-        const float median = (scores_copy.size() % 2 == 0)
-                                 ? (scores_copy[scores_copy.size() / 2 - 1] +
-                                    scores_copy[scores_copy.size() / 2]) /
-                                       2.0F
-                                 : scores_copy[scores_copy.size() / 2.0F];
-        scores.push_back(median);
-      } else {
-        scores.push_back(2.0F);
-      }
+    if (_experimental_scores && !scores.empty()) {
+      std::vector<float> scores_copy;
+      scores_copy.assign(scores.begin(), scores.end());
+      std::sort(scores_copy.begin(), scores_copy.end());
+      const float median = (scores_copy.size() % 2 == 0)
+                               ? (scores_copy[scores_copy.size() / 2 - 1] +
+                                  scores_copy[scores_copy.size() / 2]) /
+                                     2.0F
+                               : scores_copy[scores_copy.size() / 2.0F];
+      scores.push_back(median);
     } else {
       scores.push_back(2.0F);
     }
@@ -92,13 +72,13 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word,
 
 std::pair<std::vector<std::vector<std::string>>,
           std::vector<std::vector<float>>>
-SymPreTrainer::get_correct_spelling_list(
-    const std::vector<std::string>& word_list, uint32_t top_k) {
+SymPreTrainer::getCorrectSpellingList(const std::vector<std::string>& word_list,
+                                      uint32_t top_k) {
   std::vector<std::vector<std::string>> tokens;
   std::vector<std::vector<float>> scores;
 
   for (const std::string& word : word_list) {
-    auto [temp_tokens, temp_scores] = get_correct_spelling_single(word, top_k);
+    auto [temp_tokens, temp_scores] = getCorrectSpellingSingle(word, top_k);
     tokens.push_back(temp_tokens);
     scores.push_back(temp_scores);
   }
@@ -107,7 +87,7 @@ SymPreTrainer::get_correct_spelling_list(
 }
 
 std::pair<MapInputBatch, std::vector<uint32_t>>
-SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
+SymPreTrainer::generateCandidates(const MapInputBatch& samples) {
   MapInputBatch candidate_samples;
   std::vector<uint32_t> candidate_count;
 
@@ -118,12 +98,12 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
         thirdai::text::tokenizeSentence(query_str);
 
     std::vector<SpellCheckedSentence> candidates =
-        correct_sentence(tokenizedQuery, defaults::PREDICTIONS_PER_TOKEN,
-                         defaults::BEAM_SEARCH_WIDTH, defaults::STOP_IF_FOUND);
+        correctSentence(tokenizedQuery, defaults::PREDICTIONS_PER_TOKEN,
+                        defaults::BEAM_SEARCH_WIDTH, defaults::STOP_IF_FOUND);
 
     for (SpellCheckedSentence& candidate : candidates) {
       MapInput sample;
-      sample[input_sample.begin()->first] = candidate.get_string();
+      sample[input_sample.begin()->first] = candidate.getString();
       candidate_samples.push_back(sample);
     }
     candidate_count.push_back(candidates.size());
@@ -132,7 +112,7 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
   return make_pair(candidate_samples, candidate_count);
 }
 
-std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
+std::vector<SpellCheckedSentence> SymPreTrainer::correctSentence(
     const std::vector<std::string>& tokens_list, uint32_t predictions_per_token,
     uint32_t maximum_candidates, bool stop_if_found) {
   const std::vector<float> scores(tokens_list.size(), 0.0F);
@@ -141,7 +121,7 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
   std::vector<SpellCheckedSentence> candidates = {prev};
 
   auto [predictions, prediction_scores] =
-      this->get_correct_spelling_list(tokens_list, predictions_per_token);
+      getCorrectSpellingList(tokens_list, predictions_per_token);
 
   for (size_t i = 0; i < tokens_list.size(); i++) {
     std::vector<std::string> current_candidate_tokens = predictions[i];
@@ -173,17 +153,17 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
                             temp_candidates.end());
     }
   }
-  const std::vector<float> new_scores(
+  const std::vector<float> normalized_scores(
       tokens_list.size(), 1.0F / static_cast<float>(tokens_list.size()));
-  candidates.push_back(SpellCheckedSentence(tokens_list, new_scores));
+  candidates.push_back(SpellCheckedSentence(tokens_list, normalized_scores));
 
   return candidates;
 }
 
 std::pair<std::vector<uint32_t>, std::vector<float>>
-SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
-                                 std::vector<std::vector<float>>& phrase_scores,
-                                 uint32_t top_k) {
+SymPreTrainer::accumulateScores(std::vector<std::vector<uint32_t>>& phrase_ids,
+                                std::vector<std::vector<float>>& phrase_scores,
+                                uint32_t top_k) {
   std::vector<uint32_t> flattenedPhraseIds;
   for (const auto& vec : phrase_ids) {
     flattenedPhraseIds.insert(flattenedPhraseIds.end(), vec.begin(), vec.end());
@@ -212,17 +192,18 @@ SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
   return std::make_pair(topKPhraseIds, topKScores);
 }
 
-void SymPreTrainer::index_words(std::vector<std::string>& words_to_index,
-                                std::vector<uint32_t>& frequency) {
+void SymPreTrainer::indexWords(std::vector<std::string>& words_to_index,
+                               std::vector<uint32_t>& frequency) {
   // Optional staging object to speed up adding many entries by staging them to
   // a temporary structure.
 
-  // initialCapacity = 16384, The expected number of words that will be
-  // added.</param>
-  //<remarks>Specifying ann accurate initialCapacity is not essential,
+  // initialCapacity = SYMSPELL_DICT_INITIAL_CAPACITY, The expected number of
+  // words that will be added.</param>
+  //<remarks>Specifying an accurate initialCapacity is not neccesary,
   // but it can help speed up processing by alleviating the need for
   // data restructuring as the size grows.</remarks>
-  SuggestionStage staging = SuggestionStage(16384);
+  SuggestionStage staging =
+      SuggestionStage(defaults::SYMSPELL_DICT_INITIAL_CAPACITY);
 
   // Initialize an empty dictionary for _backend if pretraining first time
   std::ifstream corpusStream;
@@ -237,7 +218,7 @@ void SymPreTrainer::index_words(std::vector<std::string>& words_to_index,
   _backend.CommitStaged(&staging);
 }
 
-void SymPreTrainer::pretrain_file(std::vector<MapInputBatch>& parsed_data) {
+void SymPreTrainer::pretrain(std::vector<MapInputBatch>& parsed_data) {
   std::unordered_map<std::string, uint32_t> frequency;
 
   for (const auto& batch : parsed_data) {
@@ -263,7 +244,7 @@ void SymPreTrainer::pretrain_file(std::vector<MapInputBatch>& parsed_data) {
     words_frequency.push_back(kv.second);
   }
 
-  index_words(words_to_index, words_frequency);
+  indexWords(words_to_index, words_frequency);
 }
 
 }  // namespace thirdai::automl::udt

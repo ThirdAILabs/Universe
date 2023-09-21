@@ -424,7 +424,6 @@ set(THIRDAI_SOURCES
     data/src/rca/ExplanationMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    SymspellCPP/src/SymSpell.cc
     auto_ml/src/udt/utils/symspell.cc
     auto_ml/src/featurization/DataTypes.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
@@ -438,6 +437,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
+    utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc

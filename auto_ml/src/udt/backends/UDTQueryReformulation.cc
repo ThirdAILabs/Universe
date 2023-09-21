@@ -111,7 +111,7 @@ py::object UDTQueryReformulation::train(
 
     auto parsed_data = dataset_loader.loadAllMapInputs(
         defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name);
-    _symspell_backend->pretrain_file(parsed_data);
+    _symspell_backend->pretrain(parsed_data);
     data->restart();
   }
 
@@ -253,14 +253,13 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                       top_k);
 }
 
-std::pair<std::vector<std::vector<uint32_t>>, std::vector<std::vector<float>>>
-UDTQueryReformulation::QueryBatchResults(const MapInputBatch& sample,
-                                         std::optional<uint32_t> top_k) {
+IdScorePairs UDTQueryReformulation::QueryBatchResults(
+    const MapInputBatch& sample, std::optional<uint32_t> top_k) {
   if (_use_spell_checker) {
     std::vector<uint32_t> freq_counts = {0};
 
     std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
-        _symspell_backend->generate_candidates(sample);
+        _symspell_backend->generateCandidates(sample);
     const MapInputBatch sample_cand = candidates.first;
     freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                        candidates.second.end());
@@ -288,7 +287,7 @@ UDTQueryReformulation::QueryBatchResults(const MapInputBatch& sample,
           phrase_scores.begin() + freq_counts[query_id],
           phrase_scores.begin() + freq_counts[query_id + 1]);
       const std::pair<std::vector<uint32_t>, std::vector<float>>
-          accumulated_res = _symspell_backend->accumulate_scores(
+          accumulated_res = _symspell_backend->accumulateScores(
               query_phrase_ids, query_scores, top_k.value());
       all_phrase_ids.push_back(accumulated_res.first);
       all_phrase_scores.push_back(accumulated_res.second);

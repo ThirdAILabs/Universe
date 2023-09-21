@@ -14,6 +14,8 @@
 #include <optional>
 #include <unordered_map>
 
+using IdScorePairs = std::pair<std::vector<std::vector<uint32_t>>,
+                               std::vector<std::vector<float>>>;
 namespace thirdai::automl::udt {
 
 class UDTQueryReformulation final : public UDTBackend {
@@ -55,8 +57,13 @@ class UDTQueryReformulation final : public UDTBackend {
       const dataset::DataSourcePtr& data, const std::string& col_to_hash,
       bool include_labels, uint32_t batch_size, bool verbose);
 
-  std::pair<std::vector<std::vector<uint32_t>>, std::vector<std::vector<float>>>
-  QueryBatchResults(const MapInputBatch& sample, std::optional<uint32_t> top_k);
+  // Retrieves the top_k accumulated results for generated candidates per query
+  // batch. If use_spell_checker is set to true, it utilizes symspell generated
+  // candidates and accumulates it's results otherwise, it returns the top_k
+  // results for the query batch.
+
+  IdScorePairs QueryBatchResults(const MapInputBatch& sample,
+                                 std::optional<uint32_t> top_k);
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
                       const dataset::BoltDatasetPtr& labels,
