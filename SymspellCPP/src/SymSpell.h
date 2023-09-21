@@ -125,8 +125,8 @@ class SymSpell {
   uint32_t maxDictionaryEditDistance;
   uint32_t prefixLength;  // prefix length  5..7
   long countThreshold;  // a threshold might be specified, when a term occurs so
-                        // frequently in the corpus that it is considered a valid
-                        // word for spelling correction
+                        // frequently in the corpus that it is considered a
+                        // valid word for spelling correction
   uint32_t compactMask;
   DistanceAlgorithm distanceAlgorithm = DistanceAlgorithm::DamerauOSADistance;
   uint32_t maxDictionaryWordLength;  // maximum dictionary term length
@@ -331,8 +331,8 @@ class SymSpell {
   vector<xstring> ParseWords(xstring text);
 
   // inexpensive and language independent: only deletes, no transposes +
-  // replaces + inserts replaces and inserts are expensive and language dependent
-  // (Chinese has 70,000 Unicode Han characters)
+  // replaces + inserts replaces and inserts are expensive and language
+  // dependent (Chinese has 70,000 Unicode Han characters)
   HashSet<xstring>* Edits(xstring word, uint32_t editDistance,
                           HashSet<xstring>* deleteWords);
 
