@@ -205,8 +205,6 @@ SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
   std::vector<uint32_t> topKPhraseIds;
   std::vector<float> topKScores;
 
-  assert(top_k != std::null_opt);
-
   for (size_t i = 0; i < top_k && i < phraseIdScorePairs.size(); ++i) {
     topKPhraseIds.push_back(phraseIdScorePairs[i].first);
     topKScores.push_back(phraseIdScorePairs[i].second);
