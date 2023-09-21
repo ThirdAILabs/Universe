@@ -1,11 +1,12 @@
 #include "symspell.h"
+#include <auto_ml/src/udt/Defaults.h>
 #include <utils/StringManipulation.h>
-
-namespace thirdai::symspell {
+#include <auto_ml/src/Aliases.h>
+namespace thirdai::automl::udt {
 
 SpellCheckedSentence::SpellCheckedSentence(
-    const std::vector<std::string>& tokens, const std::vector<float>& scores)
-    : _tokens(tokens), _scores(scores) {}
+    const std::vector<std::string> tokens, const std::vector<float> scores)
+    : _tokens(std::move(tokens)), _scores(std::move(scores)) {}
 
 SpellCheckedSentence::SpellCheckedSentence(const SpellCheckedSentence& other)
     : _tokens(other._tokens), _scores(other._scores) {}
@@ -109,15 +110,15 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
   MapInputBatch candidate_samples;
   std::vector<uint32_t> candidate_count;
 
-  for (auto input_sample : samples) {
+  for (const auto &input_sample : samples) {
     std::string query_str = input_sample.begin()->second;
 
     std::vector<std::string> tokenizedQuery =
         thirdai::text::tokenizeSentence(query_str);
 
     std::vector<SpellCheckedSentence> candidates =
-        correct_sentence(tokenizedQuery, PREDICTIONS_PER_TOKEN,
-                         BEAM_SEARCH_WIDTH, STOP_IF_FOUND);
+        correct_sentence(tokenizedQuery, defaults::PREDICTIONS_PER_TOKEN,
+                         defaults::BEAM_SEARCH_WIDTH, defaults::STOP_IF_FOUND);
 
     for (SpellCheckedSentence& candidate : candidates) {
       MapInput sample;
@@ -131,7 +132,7 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
 }
 
 std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
-    std::vector<std::string> tokens_list, uint32_t predictions_per_token,
+    std::vector<std::string>& tokens_list, uint32_t predictions_per_token,
     uint32_t maximum_candidates, bool stop_if_found) {
   std::vector<float> scores(tokens_list.size(), 0.0F);
 
@@ -179,8 +180,8 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
 }
 
 std::pair<std::vector<uint32_t>, std::vector<float>>
-SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>> phrase_ids,
-                                 std::vector<std::vector<float>> phrase_scores,
+SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
+                                 std::vector<std::vector<float>>& phrase_scores,
                                  std::optional<uint32_t> top_k) {
   std::vector<uint32_t> flattenedPhraseIds;
   for (const auto& vec : phrase_ids) {
@@ -210,8 +211,8 @@ SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>> phrase_ids,
   return std::make_pair(topKPhraseIds, topKScores);
 }
 
-void SymPreTrainer::index_words(std::vector<std::string> words_to_index,
-                                std::vector<uint32_t> frequency) {
+void SymPreTrainer::index_words(std::vector<std::string>& words_to_index,
+                                std::vector<uint32_t> &frequency) {
   // Optional staging object to speed up adding many entries by staging them to
   // a temporary structure.
 
@@ -235,35 +236,34 @@ void SymPreTrainer::index_words(std::vector<std::string> words_to_index,
   _backend.CommitStaged(&staging);
 }
 
-void SymPreTrainer::pretrain_file(std::vector<MapInputBatch> parsed_data) {
+void SymPreTrainer::pretrain_file(std::vector<MapInputBatch>& parsed_data) {
   std::unordered_map<std::string, uint32_t> frequency;
 
-  for (auto batch : parsed_data)
-
+  for (const auto& batch : parsed_data)
+  {
     for (auto input : batch) {
       std::string line_str = input.begin()->second;
 
       std::vector<std::string> tokenizedQuery =
           thirdai::text::tokenizeSentence(line_str);
 
-      for (std::string token : tokenizedQuery) {
+      for (const std::string& token : tokenizedQuery) {
         frequency[token]++;
       }
     }
-
+  }
   std::vector<std::string> words_to_index;
   words_to_index.reserve(frequency.size());
 
   std::vector<uint32_t> words_frequency;
   words_frequency.reserve(frequency.size());
 
-  for (auto kv : frequency) {
+  for (const auto& kv : frequency) {
     words_to_index.push_back(kv.first);
     words_frequency.push_back(kv.second);
   }
 
   index_words(words_to_index, words_frequency);
-  return;
 }
 
 }  // namespace thirdai::symspell

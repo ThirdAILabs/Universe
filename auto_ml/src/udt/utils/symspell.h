@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <fstream>
 #include <memory>
@@ -20,10 +21,10 @@
 #include <unordered_map>
 #include <vector>
 
-using namespace thirdai::dataset;
-using namespace thirdai::automl::udt::defaults;
+using MapInputBatch = thirdai::dataset::MapInputBatch;
+using MapInput = thirdai::dataset::MapInput;
 
-namespace thirdai::symspell {
+namespace thirdai::automl::udt {
 
 class SpellCheckedSentence {
  private:
@@ -31,8 +32,8 @@ class SpellCheckedSentence {
   std::vector<float> _scores;
 
  public:
-  SpellCheckedSentence(const std::vector<std::string>& tokens,
-                       const std::vector<float>& scores);
+  SpellCheckedSentence(const std::vector<std::string> tokens,
+                       const std::vector<float> scores);
 
   SpellCheckedSentence(const SpellCheckedSentence& other);
 
@@ -83,18 +84,18 @@ class SymPreTrainer {
       const MapInputBatch& samples);
 
   std::vector<SpellCheckedSentence> correct_sentence(
-      std::vector<std::string> tokens_list, uint32_t predictions_per_token,
+      std::vector<std::string>& tokens_list, uint32_t predictions_per_token,
       uint32_t maximum_candidates, bool stop_if_found);
 
-  void index_words(std::vector<std::string> words_to_index,
-                   std::vector<uint32_t> frequency);
+  void index_words(std::vector<std::string>& words_to_index,
+                   std::vector<uint32_t>& frequency);
 
   std::pair<std::vector<uint32_t>, std::vector<float>> accumulate_scores(
-      std::vector<std::vector<uint32_t>> phrase_ids,
-      std::vector<std::vector<float>> phrase_scores,
+      std::vector<std::vector<uint32_t>>& phrase_ids,
+      std::vector<std::vector<float>>& phrase_scores,
       std::optional<uint32_t> top_k);
 
-  void pretrain_file(std::vector<MapInputBatch> parsed_data);
+  void pretrain_file(std::vector<MapInputBatch>& parsed_data);
 
  private:
   SymSpell _backend;

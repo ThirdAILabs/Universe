@@ -14,8 +14,6 @@
 #include <optional>
 #include <unordered_map>
 
-using namespace thirdai::symspell;
-
 namespace thirdai::automl::udt {
 
 class UDTQueryReformulation final : public UDTBackend {

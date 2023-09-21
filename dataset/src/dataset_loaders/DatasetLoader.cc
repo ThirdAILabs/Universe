@@ -126,7 +126,7 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 }
 
 std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(
-    size_t batch_size, std::string column_name) {
+    size_t batch_size, const std::string& column_name) {
   if (_header) {
     _featurizer->processHeader(*_header);
   }
