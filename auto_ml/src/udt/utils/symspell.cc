@@ -1,7 +1,7 @@
 #include "symspell.h"
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <utils/StringManipulation.h>
-#include <auto_ml/src/Aliases.h>
 namespace thirdai::automl::udt {
 
 SpellCheckedSentence::SpellCheckedSentence(
@@ -110,7 +110,7 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
   MapInputBatch candidate_samples;
   std::vector<uint32_t> candidate_count;
 
-  for (const auto &input_sample : samples) {
+  for (const auto& input_sample : samples) {
     std::string query_str = input_sample.begin()->second;
 
     std::vector<std::string> tokenizedQuery =
@@ -212,7 +212,7 @@ SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
 }
 
 void SymPreTrainer::index_words(std::vector<std::string>& words_to_index,
-                                std::vector<uint32_t> &frequency) {
+                                std::vector<uint32_t>& frequency) {
   // Optional staging object to speed up adding many entries by staging them to
   // a temporary structure.
 
@@ -239,8 +239,7 @@ void SymPreTrainer::index_words(std::vector<std::string>& words_to_index,
 void SymPreTrainer::pretrain_file(std::vector<MapInputBatch>& parsed_data) {
   std::unordered_map<std::string, uint32_t> frequency;
 
-  for (const auto& batch : parsed_data)
-  {
+  for (const auto& batch : parsed_data) {
     for (auto input : batch) {
       std::string line_str = input.begin()->second;
 
@@ -266,6 +265,6 @@ void SymPreTrainer::pretrain_file(std::vector<MapInputBatch>& parsed_data) {
   index_words(words_to_index, words_frequency);
 }
 
-}  // namespace thirdai::symspell
+}  // namespace thirdai::automl::udt
 
 // CEREAL_REGISTER_TYPE(thirdai::symspell::SymPreTrainer)

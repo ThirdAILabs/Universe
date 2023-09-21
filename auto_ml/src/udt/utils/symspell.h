@@ -6,10 +6,10 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <SymspellCPP/src/SymSpell.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <auto_ml/src/Aliases.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <fstream>
 #include <memory>
@@ -117,4 +117,4 @@ class SymPreTrainer {
 
 using SymSpellPtr = std::shared_ptr<SymPreTrainer>;
 
-}  // namespace thirdai::symspell
+}  // namespace thirdai::automl::udt
