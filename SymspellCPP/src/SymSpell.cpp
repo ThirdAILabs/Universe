@@ -65,11 +65,11 @@ SymSpell::SymSpell(int initialCapacity, int maxDictionaryEditDistance
 	this->words = Dictionary<xstring, int64_t>(initialCapacity);
 }
 
-SymSpell::~SymSpell() {
-	if (this->deletes != nullptr) {
-		delete this->deletes;
-	}
-}
+// SymSpell::~SymSpell() {
+// 	if (this->deletes != nullptr) {
+// 		delete this->deletes;
+// 	}
+// }
 
 /// <summary>Create/Update an entry in the dictionary.</summary>
 /// <remarks>For every word there are deletes with an edit distance of 1..maxEditDistance created and added to the
@@ -315,8 +315,10 @@ bool SymSpell::LoadDictionary(xifstream& corpusStream, uint32_t termIndex, uint3
 		}
 		
 	}
-	if (this->deletes == NULL)
-		this->deletes = new Dictionary<int, vector<xstring>>(staging.DeleteCount());
+	if (this->deletes == nullptr){
+		this->deletes = std::make_shared<Dictionary<int, std::vector<xstring>>>();
+		(this->deletes)->reserve(staging.DeleteCount());
+	}
 	CommitStaged(&staging);
 	if (this->EntryCount() == 0)
 		return false;
@@ -324,11 +326,6 @@ bool SymSpell::LoadDictionary(xifstream& corpusStream, uint32_t termIndex, uint3
 }
 
   
-template <class Archive>
-void SymSpell::serialize(Archive& archive) const {
-archive(initialCapacity, maxDictionaryEditDistance, prefixLength, countThreshold, compactMask, distanceAlgorithm,
-		maxDictionaryWordLength, deletes, words, belowThresholdWords);
-}
 
 /// <summary>Load multiple dictionary words from a file containing plain text.</summary>
 /// <remarks>Merges with any dictionary data already loaded.</remarks>
@@ -363,7 +360,10 @@ bool SymSpell::CreateDictionary(xifstream& corpusStream)
 		}
 		
 	}
-	if (this->deletes == NULL) this->deletes = new Dictionary<int, vector<xstring>>(staging.DeleteCount());
+	if (this->deletes == nullptr) {
+		this->deletes = std::make_shared<Dictionary<int, std::vector<xstring>>>();
+		(this->deletes)->reserve(staging.DeleteCount());
+	}
 	CommitStaged(&staging);
 	if (this->EntryCount() == 0)
 		return false;

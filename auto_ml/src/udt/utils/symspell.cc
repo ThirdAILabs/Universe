@@ -266,12 +266,6 @@ void SymPreTrainer::pretrain_file(std::vector<MapInputBatch> parsed_data) {
   return;
 }
 
-template <class Archive>
-void SymPreTrainer::serialize(Archive& archive) {
-  archive(_backend, _max_edit_distance, _experimental_scores, _prefix_length, _use_word_segmentation);
-}
-
-
 }  // namespace thirdai::symspell
 
 // CEREAL_REGISTER_TYPE(thirdai::symspell::SymPreTrainer)
