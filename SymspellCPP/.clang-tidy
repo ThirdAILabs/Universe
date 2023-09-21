@@ -1,3 +1,5 @@
 # Disable all checks in this folder.
 
-Checks: '-*'
+Checks: '-*,misc-definitions-in-headers'
+CheckOptions:
+  - { key: HeaderFileExtensions,          value: "x" }

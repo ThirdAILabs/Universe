@@ -4,8 +4,8 @@
 #include <utils/StringManipulation.h>
 namespace thirdai::automl::udt {
 
-SpellCheckedSentence::SpellCheckedSentence(
-    const std::vector<std::string> tokens, const std::vector<float> scores)
+SpellCheckedSentence::SpellCheckedSentence(std::vector<std::string> tokens,
+                                           std::vector<float> scores)
     : _tokens(std::move(tokens)), _scores(std::move(scores)) {}
 
 SpellCheckedSentence::SpellCheckedSentence(const SpellCheckedSentence& other)
@@ -49,7 +49,7 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word,
     results = this->_backend.LookupCompound(word, _max_edit_distance);
   }
 
-  for (SuggestItem& res : results) {
+  for (const SuggestItem& res : results) {
     tokens.push_back(res.term.c_str());
     if (_experimental_scores) {
       scores.push_back(res.count * (_max_edit_distance - res.distance));
@@ -63,7 +63,8 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word,
     scores.resize(top_k);
   }
 
-  bool found = std::find(tokens.begin(), tokens.end(), word) != tokens.end();
+  const bool found =
+      std::find(tokens.begin(), tokens.end(), word) != tokens.end();
 
   if (!found) {
     tokens.push_back(word);
@@ -72,11 +73,11 @@ SymPreTrainer::get_correct_spelling_single(const std::string& word,
         std::vector<float> scores_copy;
         scores_copy.assign(scores.begin(), scores.end());
         std::sort(scores_copy.begin(), scores_copy.end());
-        float median = (scores_copy.size() % 2 == 0)
-                           ? (scores_copy[scores_copy.size() / 2 - 1] +
-                              scores_copy[scores_copy.size() / 2]) /
-                                 2.0F
-                           : scores_copy[scores_copy.size() / 2.0F];
+        const float median = (scores_copy.size() % 2 == 0)
+                                 ? (scores_copy[scores_copy.size() / 2 - 1] +
+                                    scores_copy[scores_copy.size() / 2]) /
+                                       2.0F
+                                 : scores_copy[scores_copy.size() / 2.0F];
         scores.push_back(median);
       } else {
         scores.push_back(2.0F);
@@ -111,9 +112,9 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
   std::vector<uint32_t> candidate_count;
 
   for (const auto& input_sample : samples) {
-    std::string query_str = input_sample.begin()->second;
+    const std::string query_str = input_sample.begin()->second;
 
-    std::vector<std::string> tokenizedQuery =
+    const std::vector<std::string> tokenizedQuery =
         thirdai::text::tokenizeSentence(query_str);
 
     std::vector<SpellCheckedSentence> candidates =
@@ -132,11 +133,11 @@ SymPreTrainer::generate_candidates(const MapInputBatch& samples) {
 }
 
 std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
-    std::vector<std::string>& tokens_list, uint32_t predictions_per_token,
+    const std::vector<std::string>& tokens_list, uint32_t predictions_per_token,
     uint32_t maximum_candidates, bool stop_if_found) {
-  std::vector<float> scores(tokens_list.size(), 0.0F);
+  const std::vector<float> scores(tokens_list.size(), 0.0F);
 
-  SpellCheckedSentence prev = SpellCheckedSentence(tokens_list, scores);
+  const SpellCheckedSentence prev = SpellCheckedSentence(tokens_list, scores);
   std::vector<SpellCheckedSentence> candidates = {prev};
 
   auto [predictions, prediction_scores] =
@@ -150,10 +151,10 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
 
     for (auto candidate : candidates) {
       for (size_t j = 0; j < current_candidate_scores.size(); j++) {
-        std::string token = current_candidate_tokens[j];
-        float score = current_candidate_scores[j];
+        const std::string token = current_candidate_tokens[j];
+        const float score = current_candidate_scores[j];
 
-        SpellCheckedSentence new_candid =
+        const SpellCheckedSentence new_candid =
             candidate.updateTokenAndScore(token, score, i);
         temp_candidates.push_back(new_candid);
         if (stop_if_found) {
@@ -172,8 +173,8 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
                             temp_candidates.end());
     }
   }
-  std::vector<float> new_scores(tokens_list.size(),
-                                1.0F / static_cast<float>(tokens_list.size()));
+  const std::vector<float> new_scores(
+      tokens_list.size(), 1.0F / static_cast<float>(tokens_list.size()));
   candidates.push_back(SpellCheckedSentence(tokens_list, new_scores));
 
   return candidates;
@@ -182,7 +183,7 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correct_sentence(
 std::pair<std::vector<uint32_t>, std::vector<float>>
 SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
                                  std::vector<std::vector<float>>& phrase_scores,
-                                 std::optional<uint32_t> top_k) {
+                                 uint32_t top_k) {
   std::vector<uint32_t> flattenedPhraseIds;
   for (const auto& vec : phrase_ids) {
     flattenedPhraseIds.insert(flattenedPhraseIds.end(), vec.begin(), vec.end());
@@ -204,7 +205,9 @@ SymPreTrainer::accumulate_scores(std::vector<std::vector<uint32_t>>& phrase_ids,
   std::vector<uint32_t> topKPhraseIds;
   std::vector<float> topKScores;
 
-  for (size_t i = 0; i < top_k.value() && i < phraseIdScorePairs.size(); ++i) {
+  assert(top_k != std::null_opt);
+
+  for (size_t i = 0; i < top_k && i < phraseIdScorePairs.size(); ++i) {
     topKPhraseIds.push_back(phraseIdScorePairs[i].first);
     topKScores.push_back(phraseIdScorePairs[i].second);
   }
@@ -229,7 +232,7 @@ void SymPreTrainer::index_words(std::vector<std::string>& words_to_index,
 
   for (size_t i = 0; i < words_to_index.size(); i++) {
     const std::string& word = words_to_index[i];
-    uint32_t count = frequency[i];
+    const uint32_t count = frequency[i];
     // Check if the word doesn't exist in the dictionary
     _backend.CreateDictionaryEntry(word, count, &staging);
   }
@@ -241,9 +244,9 @@ void SymPreTrainer::pretrain_file(std::vector<MapInputBatch>& parsed_data) {
 
   for (const auto& batch : parsed_data) {
     for (auto input : batch) {
-      std::string line_str = input.begin()->second;
+      const std::string line_str = input.begin()->second;
 
-      std::vector<std::string> tokenizedQuery =
+      const std::vector<std::string> tokenizedQuery =
           thirdai::text::tokenizeSentence(line_str);
 
       for (const std::string& token : tokenizedQuery) {

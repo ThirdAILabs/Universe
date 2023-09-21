@@ -88,14 +88,14 @@ py::object UDTQueryReformulation::train(
   (void)options;
   (void)comm;
 
-  licensing::TrainPermissionsToken token(data);
+  const licensing::TrainPermissionsToken token(data);
 
   // If the incorrect query column was specified by the user and is present in
   // the dataset, then we use both supervised and unsupervised training.
-  bool is_supervised =
+  const bool is_supervised =
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
 
-  uint32_t batch_size =
+  const uint32_t batch_size =
       options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
 
   // Index words to Spell Checker if use_spell_checker = True
@@ -122,9 +122,9 @@ py::object UDTQueryReformulation::train(
   // If we are using supervised training then we have twice as much data
   // insert because index each sample once using itself as the input, and once
   // using the incorrect query as the input.
-  uint32_t progress_bar_steps = is_supervised
-                                    ? unsupervised_data->numBatches() * 2
-                                    : unsupervised_data->numBatches();
+  const uint32_t progress_bar_steps = is_supervised
+                                          ? unsupervised_data->numBatches() * 2
+                                          : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ options.verbose,
       /* description = */ fmt::format("train"),
@@ -206,7 +206,9 @@ py::object UDTQueryReformulation::evaluate(
          batch_id++) {
       auto [phrase_ids, phrase_scores] =
           QueryBatchResults(input_candidate_batches[batch_id], top_k);
-      bar->increment();
+      if (bar.has_value()) {
+        bar->increment();
+      }
 
       correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
       total_samples += input_candidate_batches[batch_id].size();
@@ -216,7 +218,9 @@ py::object UDTQueryReformulation::evaluate(
       auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
           inputs->at(batch_id), /* top_k= */ top_k.value());
 
-      bar->increment();
+      if (bar.has_value()) {
+        bar->increment();
+      }
 
       correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
       total_samples += phrase_ids.size();
@@ -225,7 +229,7 @@ py::object UDTQueryReformulation::evaluate(
 
   timer.stop();
 
-  float recall = static_cast<float>(correctly_retrieved) / total_samples;
+  const float recall = static_cast<float>(correctly_retrieved) / total_samples;
 
   if (bar) {
     bar->close(fmt::format("evaluate | recall={} | time {}s | complete", recall,
@@ -257,7 +261,7 @@ UDTQueryReformulation::QueryBatchResults(const MapInputBatch& sample,
 
     std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
         _symspell_backend->generate_candidates(sample);
-    MapInputBatch sample_cand = candidates.first;
+    const MapInputBatch sample_cand = candidates.first;
     freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                        candidates.second.end());
     for (uint32_t i = 1; i < freq_counts.size(); i++) {
@@ -283,9 +287,9 @@ UDTQueryReformulation::QueryBatchResults(const MapInputBatch& sample,
       std::vector<std::vector<float>> query_scores(
           phrase_scores.begin() + freq_counts[query_id],
           phrase_scores.begin() + freq_counts[query_id + 1]);
-      std::pair<std::vector<uint32_t>, std::vector<float>> accumulated_res =
-          _symspell_backend->accumulate_scores(query_phrase_ids, query_scores,
-                                               top_k);
+      const std::pair<std::vector<uint32_t>, std::vector<float>>
+          accumulated_res = _symspell_backend->accumulate_scores(
+              query_phrase_ids, query_scores, top_k.value());
       all_phrase_ids.push_back(accumulated_res.first);
       all_phrase_scores.push_back(accumulated_res.second);
     }
@@ -313,7 +317,9 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   requireTopK(top_k);
 
-  auto [phrase_ids, phrase_scores] = QueryBatchResults(sample, top_k);
+  auto results = QueryBatchResults(sample, top_k);
+  auto phrase_ids = results.first;
+  auto phrase_scores = results.second;
 
   std::vector<std::vector<std::string>> phrases(phrase_ids.size());
 
@@ -394,7 +400,7 @@ std::vector<std::string> UDTQueryReformulation::idsToPhrase(
   std::vector<std::string> phrases;
   phrases.reserve(ids.size());
 
-  for (uint32_t id : ids) {
+  for (const uint32_t id : ids) {
     phrases.push_back(_phrase_id_map->getString(id));
   }
 

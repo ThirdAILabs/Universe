@@ -32,8 +32,8 @@ class SpellCheckedSentence {
   std::vector<float> _scores;
 
  public:
-  SpellCheckedSentence(const std::vector<std::string> tokens,
-                       const std::vector<float> scores);
+  SpellCheckedSentence(std::vector<std::string> tokens,
+                       std::vector<float> scores);
 
   SpellCheckedSentence(const SpellCheckedSentence& other);
 
@@ -42,7 +42,7 @@ class SpellCheckedSentence {
 
   float get_score() const {
     float total_score = 0.0F;
-    for (float score : _scores) {
+    for (const float score : _scores) {
       total_score += score;
     }
     return total_score;
@@ -84,16 +84,16 @@ class SymPreTrainer {
       const MapInputBatch& samples);
 
   std::vector<SpellCheckedSentence> correct_sentence(
-      std::vector<std::string>& tokens_list, uint32_t predictions_per_token,
-      uint32_t maximum_candidates, bool stop_if_found);
+      const std::vector<std::string>& tokens_list,
+      uint32_t predictions_per_token, uint32_t maximum_candidates,
+      bool stop_if_found);
 
   void index_words(std::vector<std::string>& words_to_index,
                    std::vector<uint32_t>& frequency);
 
-  std::pair<std::vector<uint32_t>, std::vector<float>> accumulate_scores(
+  static std::pair<std::vector<uint32_t>, std::vector<float>> accumulate_scores(
       std::vector<std::vector<uint32_t>>& phrase_ids,
-      std::vector<std::vector<float>>& phrase_scores,
-      std::optional<uint32_t> top_k);
+      std::vector<std::vector<float>>& phrase_scores, uint32_t top_k);
 
   void pretrain_file(std::vector<MapInputBatch>& parsed_data);
 
