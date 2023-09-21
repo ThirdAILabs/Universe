@@ -120,6 +120,7 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
       output_sample.append(" ");
     }
     text::replacePunctuationWithSpaces(output_sample);
+    text::replaceNewlinesWithSpaces(output_sample);
     samples.push_back(std::move(output_sample));
   }
 
