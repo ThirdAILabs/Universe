@@ -117,8 +117,7 @@ def test_query_reformulation(train_test_data, supervised, use_spell_checker):
         )
     else:
         model = bolt.UniversalDeepTransformer(
-            target_column="correct_query",
-            dataset_size="small",
+            target_column="correct_query", dataset_size="small"
         )
 
     model.train(train_file)
@@ -138,10 +137,7 @@ def test_query_reformulation(train_test_data, supervised, use_spell_checker):
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "query_reformulation_dataset, use_spell_checker",
-    [
-        ((), True),
-        ((), False),
-    ],
+    [((), True), ((), False)],
     indirect=["query_reformulation_dataset"],
 )
 def test_query_reformulation_save_load(query_reformulation_dataset, use_spell_checker):
@@ -179,13 +175,11 @@ def test_query_reformulation_save_load(query_reformulation_dataset, use_spell_ch
     os.remove(filename)
     os.remove(model_path)
 
+
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "query_reformulation_dataset, use_spell_checker",
-    [
-        ((), True),
-        ((), False),
-    ],
+    [((), True), ((), False)],
     indirect=["query_reformulation_dataset"],
 )
 def test_query_reformulation_n_grams(query_reformulation_dataset, use_spell_checker):
@@ -208,13 +202,7 @@ def test_query_reformulation_n_grams(query_reformulation_dataset, use_spell_chec
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "use_spell_checker",
-    [
-        (True),
-        (False),
-    ],
-)
+@pytest.mark.parametrize("use_spell_checker", [(True), (False)])
 def test_query_reformulation_throws_error_wrong_argument(use_spell_checker):
     with pytest.raises(
         ValueError,
