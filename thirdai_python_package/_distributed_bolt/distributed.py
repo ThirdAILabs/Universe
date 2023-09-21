@@ -110,3 +110,15 @@ def adds_distributed_to_bolt():
     bolt.UniversalDeepTransformer.coldstart_distributed_on_data_source = (
         udt_coldstart_distributed_on_data_source
     )
+
+    def generative_model_train_distributed(self, *args, **kwargs):
+        self.model.disable_sparse_parameter_updates()
+
+        kwargs["comm"] = Communication()
+        metrics = self.train(*args, **kwargs)
+
+        self.model.enable_sparse_parameter_updates()
+
+        return metrics
+
+    bolt.GenerativeModel.train_distributed = generative_model_train_distributed

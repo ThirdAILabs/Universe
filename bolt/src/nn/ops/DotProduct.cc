@@ -90,6 +90,8 @@ std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
   return 1;
 }
 
+void DotProduct::initOptimizer() {}
+
 void DotProduct::summary(std::ostream& summary, const ComputationList& inputs,
                          const Computation* output) const {
   summary << "DotProduct(" << name() << "): " << inputs.at(0)->name() << ", "

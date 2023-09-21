@@ -13,6 +13,7 @@ set(DATA_TESTS
     ExplanationTests
     RegressionBinningTest
     DeduplicateTokensTest
+    ColumnMapIteratorTests
     TabularTests)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
