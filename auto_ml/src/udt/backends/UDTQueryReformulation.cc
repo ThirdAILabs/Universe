@@ -110,7 +110,7 @@ py::object UDTQueryReformulation::train(
                                           /* shuffle= */ false);
 
     auto parsed_data = dataset_loader.loadAllMapInputs(
-        defaults::QUERY_REFORMULATION_BATCH_SIZE, _correct_column_name);
+        defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",_correct_column_name);
     _symspell_backend->pretrain(parsed_data);
     data->restart();
   }
@@ -199,7 +199,7 @@ py::object UDTQueryReformulation::evaluate(
                                           /* shuffle= */ false);
 
     auto input_candidate_batches = dataset_loader.loadAllMapInputs(
-        defaults::QUERY_REFORMULATION_BATCH_SIZE,
+        defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",
         _incorrect_column_name.value());
 
     for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size();

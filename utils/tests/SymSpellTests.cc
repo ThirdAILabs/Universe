@@ -67,7 +67,7 @@ TEST_F(SymSpellTest, SymSpellPredictSingle) {
 
   train(train_data);
   for (const std::string& query : train_data) {
-    const std::string perturbed_query(query);
+    const std::string perturbed_query(perturbQuery(query, 42));
     std::string result = predict(perturbed_query);
     ASSERT_EQ(query, result);
   }

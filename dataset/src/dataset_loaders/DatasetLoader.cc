@@ -126,7 +126,7 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 }
 
 std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(
-    size_t batch_size, const std::string& column_name) {
+    size_t batch_size, const std::string& key, const std::string& column_name) {
   if (_header) {
     _featurizer->processHeader(*_header);
   }
@@ -136,7 +136,7 @@ std::vector<MapInputBatch> DatasetLoader::loadAllMapInputs(
       /* target_batch_size = */ batch_size);
   while (rows) {
     auto batch =
-        _featurizer->convertToMapInputBatch(*rows, column_name, *_header);
+        _featurizer->convertToMapInputBatch(*rows, key, column_name, *_header);
     input_batches_all.push_back(batch);
 
     rows = _data_source->nextBatch(batch_size);
