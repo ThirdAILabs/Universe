@@ -471,7 +471,11 @@ template <class Archive>
 void UDTQueryReformulation::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _flash_index,
           _inference_featurizer, _phrase_id_map, _incorrect_column_name,
-          _correct_column_name, _delimiter, _n_grams);
+          _correct_column_name, _delimiter, _n_grams, _use_spell_checker);
+
+  if (_use_spell_checker){
+    archive(_symspell_backend);
+  }
 }
 
 }  // namespace thirdai::automl::udt

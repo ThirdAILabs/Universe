@@ -267,7 +267,6 @@ add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
-add_subdirectory(deps/SymspellCPP EXCLUDE_FROM_ALL)
 
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
@@ -313,6 +312,7 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
+add_subdirectory(SymspellCPP)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
@@ -426,6 +426,7 @@ set(THIRDAI_SOURCES
     data/src/rca/ExplanationMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
+    SymspellCPP/src/SymSpell.cpp
     auto_ml/src/udt/utils/symspell.cc
     auto_ml/src/featurization/DataTypes.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
@@ -466,7 +467,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc symspell)
+                 prometheus-cpp::pull utf8proc)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto

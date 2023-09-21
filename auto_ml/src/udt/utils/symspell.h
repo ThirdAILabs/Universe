@@ -1,10 +1,15 @@
 #pragma once
 
-#include <SymspellCPP/include/SymSpell.h>
+#include <SymspellCPP/src/SymSpell.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <fstream>
 #include <memory>
 #include <numeric>
@@ -99,6 +104,11 @@ class SymPreTrainer {
   bool _use_word_segmentation;
 
   SymPreTrainer(){};
+
+  friend class cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using SymSpellPtr = std::shared_ptr<SymPreTrainer>;
