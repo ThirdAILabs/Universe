@@ -385,7 +385,7 @@ class NeuralDB:
 
             session.report(
                 metrics=metrics,
-                checkpoint=dist.UDTCheckPoint.from_model(model),
+                checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=False),
             )
 
         csv_paths = [str(document.path.resolve()) for document in documents]
@@ -396,7 +396,7 @@ class NeuralDB:
 
         # we cannot pass the model by default to config given config results in OOM very frequently with bigger model.
         checkpoint = dist.UDTCheckPoint.from_model(
-            self._savable_state.model.get_model()
+            self._savable_state.model.get_model(), with_optimizers=False
         )
         checkpoint_path = checkpoint.to_directory()
 
