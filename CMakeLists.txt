@@ -311,7 +311,6 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
-add_subdirectory(SymspellCPP)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
