@@ -16,7 +16,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .parsing_utils import doc_parse, pdf_parse, url_parse
+from .parsing_utils import doc_parse, pdf_parse, url_parse, mbox_parse
 from .utils import hash_file, hash_string
 
 
@@ -548,6 +548,15 @@ def process_docx(path: str) -> pd.DataFrame:
 
     return elements_df
 
+def process_mbox(path: str) -> pd.DataFrame:
+    elements, success = mbox_parse.get_elements(path)
+
+    if not success:
+        raise ValueError(f"Could not read MBOX file: {path}")
+
+    elements_df = mbox_parse.create_train_df(elements)
+
+    return elements_df
 
 class PDF(Extracted):
     def __init__(
@@ -576,6 +585,18 @@ class DOCX(Extracted):
     ) -> pd.DataFrame:
         return process_docx(path)
 
+class MBOX(Extracted):
+    def __init__(
+        self,
+        path: str,
+    ):
+        super().__init__(path=path)
+
+    def process_data(
+        self,
+        path: str,
+    ) -> pd.DataFrame:
+        return process_mbox(path)
 
 class URL(Document):
     def __init__(

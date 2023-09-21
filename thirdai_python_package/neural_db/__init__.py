@@ -5,6 +5,7 @@ try:
         DOCX,
         PDF,
         URL,
+        MBOX,
         Document,
         Reference,
         SentenceLevelDOCX,
