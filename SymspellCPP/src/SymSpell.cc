@@ -393,8 +393,8 @@ vector<SuggestItem> SymSpell::Lookup(xstring input, Verbosity verbosity,
   // suggestions of smallest edit distance found verbosity=Closest: all
   // suggestions of smallest edit distance found, the suggestions are ordered by
   // term frequency verbosity=All: all suggestions <= maxEditDistance, the
-  // suggestions are ordered by edit distance, then by term frequency (slower, no
-  // early termination)
+  // suggestions are ordered by edit distance, then by term frequency (slower,
+  // no early termination)
 
   // maxEditDistance used in Lookup can't be bigger than the
   // maxDictionaryEditDistance used to construct the underlying dictionary
@@ -487,17 +487,17 @@ vector<SuggestItem> SymSpell::Lookup(xstring input, Verbosity verbosity,
             continue;
 
           // True Damerau-Levenshtein Edit Distance: adjust distance, if both
-          // distances>0 We allow simultaneous edits (deletes) of maxEditDistance
-          // on on both the dictionary and the input term. For replaces and
-          // adjacent transposes the resulting edit distance stays <=
-          // maxEditDistance. For inserts and deletes the resulting edit distance
-          // might exceed maxEditDistance. To prevent suggestions of a higher
-          // edit distance, we need to calculate the resulting edit distance, if
-          // there are simultaneous edits on both sides. Example: (bank==bnak and
-          // bank==bink, but bank!=kanb and bank!=xban and bank!=baxn for
-          // maxEditDistance=1) Two deletes on each side of a pair makes them all
-          // equal, but the first two pairs have edit distance=1, the others edit
-          // distance=2.
+          // distances>0 We allow simultaneous edits (deletes) of
+          // maxEditDistance on on both the dictionary and the input term. For
+          // replaces and adjacent transposes the resulting edit distance stays
+          // <= maxEditDistance. For inserts and deletes the resulting edit
+          // distance might exceed maxEditDistance. To prevent suggestions of a
+          // higher edit distance, we need to calculate the resulting edit
+          // distance, if there are simultaneous edits on both sides. Example:
+          // (bank==bnak and bank==bink, but bank!=kanb and bank!=xban and
+          // bank!=baxn for maxEditDistance=1) Two deletes on each side of a
+          // pair makes them all equal, but the first two pairs have edit
+          // distance=1, the others edit distance=2.
           int distance = 0;
           int min_len = 0;
           if (candidateLen == 0) {
@@ -518,7 +518,7 @@ vector<SuggestItem> SymSpell::Lookup(xstring input, Verbosity verbosity,
           } else
               // number of edits in prefix ==maxediddistance  AND no identic
               // suffix , then editdistance>maxEditDistance and no need for
-              //Levenshtein calculation
+              // Levenshtein calculation
               //      (inputLen >= prefixLength) && (suggestionLen >=
               //      prefixLength)
               if (((prefixLength == (uint32_t)candidateLen + maxEditDistance) &&
@@ -848,9 +848,9 @@ vector<SuggestItem> SymSpell::LookupCompound(xstring input,
 
               } else {
                 // The Naive Bayes probability of the word combination is the
-                // product of the two word probabilities: P(AB) = P(A) * P(B) use
-                // it to estimate the frequency count of the combination, which
-                // then is used to rank/select the best splitting variant
+                // product of the two word probabilities: P(AB) = P(A) * P(B)
+                // use it to estimate the frequency count of the combination,
+                // which then is used to rank/select the best splitting variant
                 suggestionSplit.count =
                     min(bigramCountMin,
                         (int64_t)((double)suggestions1[0].count / (double)N *
@@ -976,8 +976,8 @@ Info SymSpell::WordSegmentation(xstring input, uint32_t maxEditDistance,
       part = regex_replace(part, r, XL(""));
       // part = part.Replace(" ", "");
       // //=System.Text.RegularExpressions.Regex.Replace(part1, @"\s+", "");
-      // 							  //add number of
-      // removed spaces to ed
+      // 							  //add number
+      // of removed spaces to ed
       topEd -= part.size();
 
       vector<SuggestItem> results = this->Lookup(part, Top, maxEditDistance);
@@ -990,9 +990,9 @@ Info SymSpell::WordSegmentation(xstring input, uint32_t maxEditDistance,
         // product of the two word probabilities
 
         // instead of computing the product of probabilities we are computing
-        // the sum of the logarithm of probabilities because the probabilities of
-        // words are about 10^-10, the product of many such small numbers could
-        // exceed (underflow) the floating number range and become zero
+        // the sum of the logarithm of probabilities because the probabilities
+        // of words are about 10^-10, the product of many such small numbers
+        // could exceed (underflow) the floating number range and become zero
         // log(ab)=log(a)+log(b)
         topProbabilityLog = log10((double)results[0].count / (double)N);
       } else {
