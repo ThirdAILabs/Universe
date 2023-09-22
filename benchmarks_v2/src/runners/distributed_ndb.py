@@ -1,7 +1,7 @@
 import os
 import shutil
-import mlflow
 
+import mlflow
 import ray
 import thirdai.distributed_bolt as dist
 import thirdai.neural_db as ndb
