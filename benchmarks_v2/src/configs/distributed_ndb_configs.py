@@ -7,13 +7,13 @@ class DistributedNDBConfig(ABC):
     ray_checkpoint_storage = "ray_checkpoint/"
 
 
-class Amazon_200K_Config(DistributedNDBConfig):
+class Amazon200kConfig(DistributedNDBConfig):
     config_name = "amazon_200K_ndb"
     dataset_name = "amazon_200K"
 
     learning_rate = 0.005
     epochs = 20
-    metrics = ["precision@1", "loss", "hash_precision@1"]
+    metrics = ["loss", "hash_precision@1"]
     batch_size = 50000
 
     doc_path = "dist_ndb/amazon_200K_title_id.csv"

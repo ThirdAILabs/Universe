@@ -233,7 +233,7 @@ setup(
             "s3fs",
             "gcsfs",
             "nltk",
-            "ray==2.6.3",
+            "ray[default]==2.6.3",
             "torch",
         ]
         + neural_db_deps,
