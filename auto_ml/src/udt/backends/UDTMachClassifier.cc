@@ -314,10 +314,26 @@ std::vector<std::vector<std::pair<uint32_t, double>>>
 UDTMachClassifier::predictImpl(const MapInputBatch& samples,
                                bool sparse_inference,
                                std::optional<uint32_t> top_k) {
-  auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               sparse_inference)
-                     .at(0);
+  bolt::TensorList outputs;
+
+  if (_dyadic_featurizer != std::nullopt) {
+    auto inference_featurizer =
+        _dyadic_featurizer.value()->makeInferenceFeaturizer();
+    auto vector_output = inference_featurizer.featurize(samples);
+    std::vector<BoltBatch> result;
+    for (auto& batch_id : vector_output) {
+      result.emplace_back(std::move(batch_id));
+    }
+    auto tensor_lists = bolt::convertBatch(
+        std::move(result), inference_featurizer.getDimensions());
+  }
+
+  else {
+    outputs = _classifier->model()
+                  ->forward(_dataset_factory->featurizeInputBatch(samples),
+                            sparse_inference)
+                  .at(0);
+  }
 
   uint32_t num_classes = _mach_label_block->index()->numEntities();
 

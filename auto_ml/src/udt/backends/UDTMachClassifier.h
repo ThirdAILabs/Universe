@@ -273,7 +273,7 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _dataset_factory;
   data::TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
 
-  std::optional<dataset::FeaturizerPtr> _dyadic_featurizer = std::nullopt;
+  std::optional<dataset::DyadicFeaturizerPtr> _dyadic_featurizer = std::nullopt;
 
   uint32_t _default_top_k_to_return;
   uint32_t _num_buckets_to_eval;

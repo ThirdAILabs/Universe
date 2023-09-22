@@ -23,16 +23,17 @@ class DyadicFeaturizer final : public Featurizer {
  public:
   explicit DyadicFeaturizer(
       bool expects_header, size_t n_intervals, size_t context_length,
-      std::string text_column, std::string label_column, char delimiter,
-      char label_delimiter,
+      std::string text_column, char delimiter,
+      std::optional<std::string> label_column = std::nullopt,
+      std::optional<char> label_delimiter = std::nullopt,
       std::optional<mach::MachBlockPtr> mach_label_block = std::nullopt)
       : _expects_header(expects_header),
         _n_intervals(n_intervals),
         _context_length(context_length),
         _text_column(std::move(text_column)),
-        _label_column(std::move(label_column)),
         _output_interval_prefix("dyadic_" + _text_column),
         _delimiter(delimiter),
+        _label_column(std::move(label_column)),
         _label_delimiter(label_delimiter),
         _mach_label_block(std::move(mach_label_block)) {}
 
@@ -53,9 +54,15 @@ class DyadicFeaturizer final : public Featurizer {
   }
 
   size_t getNumDatasets() final {
+    // no labels present
+    if (_label_column == std::nullopt) {
+      return _n_intervals;
+    }
+    // only doc labels present
     if (_mach_label_block == std::nullopt) {
       return _n_intervals + 1;
     }
+    // both mach and doc labels are present
     return _n_intervals + 2;
   }
 
@@ -63,7 +70,7 @@ class DyadicFeaturizer final : public Featurizer {
       const std::vector<std::string>& rows) override;
 
   std::vector<std::vector<BoltVector>> featurize(
-      MapInputBatch& map_input_batch);
+      const MapInputBatch& map_input_batch);
 
   static std::vector<uint32_t> convertStringToUInt32FeatureArray(
       const std::string& str) {
@@ -79,7 +86,7 @@ class DyadicFeaturizer final : public Featurizer {
     std::vector<uint32_t> result;
     std::string token;
 
-    while (std::getline(iss, token, _label_delimiter)) {
+    while (std::getline(iss, token, _label_delimiter.value())) {
       try {
         uint32_t value = std::stoul(token);  // Convert string to uint32_t
         result.push_back(value);
@@ -94,6 +101,37 @@ class DyadicFeaturizer final : public Featurizer {
 
   std::vector<BoltVector> featurizeSingle(
       const std::vector<uint32_t>& tokens) const;
+
+  size_t n_intervals() const { return _n_intervals; }
+
+  size_t context_length() const { return _context_length; }
+
+  std::string text_column() const { return _text_column; }
+
+  char delimiter() const { return _delimiter; }
+
+  std::optional<std::string> label_column() const { return _label_column; }
+
+  std::optional<char> label_delimiter() const { return _label_delimiter; }
+
+  std::optional<mach::MachBlockPtr> mach_label_block() const {
+    return _mach_label_block;
+  }
+
+  DyadicFeaturizer makeInferenceFeaturizer() {
+    return DyadicFeaturizer(false, _n_intervals, _context_length, _text_column,
+                            _delimiter);
+  }
+
+  std::vector<uint32_t> getDimensions() final {
+    if (_label_column == std::nullopt) {
+      return std::vector<uint32_t>(_n_intervals, _context_length);
+    }
+    if (_mach_label_block == std::nullopt) {
+      return std::vector<uint32_t>(_n_intervals + 1, _context_length);
+    }
+    return std::vector<uint32_t>(_n_intervals + 2, _context_length);
+  }
 
  private:
   DyadicFeaturizer() {}
@@ -110,10 +148,10 @@ class DyadicFeaturizer final : public Featurizer {
   size_t _context_length;
 
   std::string _text_column;
-  std::string _label_column;
   std::string _output_interval_prefix;
   char _delimiter;
-  char _label_delimiter;
+  std::optional<std::string> _label_column;
+  std::optional<char> _label_delimiter;
 
   std::optional<mach::MachBlockPtr> _mach_label_block;
 

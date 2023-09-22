@@ -32,31 +32,34 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
       dataset::ColumnarInputSample& column_sample = inputs_ref.at(index);
       std::string feature_string =
           column_sample.column(_column_number_map->at(_text_column));
-      std::string label_string =
-          column_sample.column(_column_number_map->at(_label_column));
 
       std::vector<uint32_t> features =
           convertStringToUInt32FeatureArray(feature_string);
       auto featurized_vector = featurizeSingle(features);
 
-      std::vector<uint32_t> labels =
-          convertStringToUInt32LabelArray(label_string);
-      std::vector<uint32_t> mach_labels;
+      if (_label_column != std::nullopt) {
+        std::string label_string =
+            column_sample.column(_column_number_map->at(_label_column.value()));
+        std::vector<uint32_t> labels =
+            convertStringToUInt32LabelArray(label_string);
+        std::vector<uint32_t> mach_labels;
 
-      if (_mach_label_block != std::nullopt) {
-        for (const auto x : labels) {
-          std::vector<uint32_t> mach_label =
-              _mach_label_block.value()->index()->getHashes(x);
-          mach_labels.insert(mach_labels.end(), mach_label.begin(),
-                             mach_label.end());
+        if (_mach_label_block != std::nullopt) {
+          for (const auto x : labels) {
+            std::vector<uint32_t> mach_label =
+                _mach_label_block.value()->index()->getHashes(x);
+            mach_labels.insert(mach_labels.end(), mach_label.begin(),
+                               mach_label.end());
+          }
+          auto mach_vector = thirdai::BoltVector::makeSparseVector(
+              mach_labels, std::vector<float>(mach_labels.size(), 1));
+          featurized_vector.push_back(mach_vector);
         }
-        auto mach_vector = thirdai::BoltVector::makeSparseVector(
-            mach_labels, std::vector<float>(mach_labels.size(), 1));
-        featurized_vector.push_back(mach_vector);
+
+        auto label_vector = thirdai::BoltVector::makeSparseVector(
+            labels, std::vector<float>(labels.size(), 1));
+        featurized_vector.push_back(label_vector);
       }
-      auto label_vector = thirdai::BoltVector::makeSparseVector(
-          labels, std::vector<float>(labels.size(), 1));
-      featurized_vector.push_back(label_vector);
 
       bolt_batch[index] = featurized_vector;
     } catch (...) {
@@ -89,7 +92,7 @@ std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
 }
 
 std::vector<std::vector<BoltVector>> DyadicFeaturizer::featurize(
-    MapInputBatch& map_input_batch) {
+    const MapInputBatch& map_input_batch) {
   dataset::MapBatchRef inputs_ref(map_input_batch);
   return featurize(inputs_ref);
 }
