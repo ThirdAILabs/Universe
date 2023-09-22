@@ -1,16 +1,39 @@
 import functools
 import re
 from pathlib import Path
+from dataclasses import dataclass
+from enum import IntEnum
 
 import fitz
 import pandas as pd
 from nltk.tokenize import sent_tokenize
+from typing import List, Dict, Union
 
 from .utils import ATTACH_N_WORD_THRESHOLD, chunk_text, ensure_valid_encoding
 
 # TODO: Remove senttokenize
 # TODO: Limit paragraph length
 
+class BlockType(IntEnum):
+    Text = 0
+    Image = 1
+    
+@dataclass
+class Block():
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+    lines: str
+    block_no: int
+    block_type: BlockType
+
+@dataclass
+class PDFparagraph():
+    text: str
+    page_no: int
+    filename: str
+    block_nos: Union[str, Dict[int, List[int]]]     # [Page no. -> Block No(s) Dictionary] in Dict or string format
 
 def para_is_complete(para):
     endings = [".", "?", "!", '."', ".'"]
@@ -29,13 +52,14 @@ def process_pdf_file(filename):
         doc = fitz.open(filename)
         paras = []
         for page_no, page in enumerate(doc):
-            temp_page = page.get_text("blocks")
-            for i, t in enumerate(temp_page):
-                if t[-1] == 0:
-                    temp = {}
-                    temp[page_no] = [i]
+            blocks = page.get_text("blocks")
+            for t in blocks:
+                block = Block(x0 = t[0], y0=t[1], x1=t[2], y1=t[3], lines=t[4], block_no = t[5], block_type=t[6])
+                if block.block_type == BlockType.Text:
+                    current_blocks = {}
+                    current_blocks[page_no] = [block.block_no]
                     current = sent_tokenize(
-                        t[4].strip().replace("\r\n", " ").replace("\n", " ")
+                        block.lines.strip().replace("\r\n", " ").replace("\n", " ")
                     )
                     current = " ".join(current)
 
@@ -43,7 +67,7 @@ def process_pdf_file(filename):
                         len(paras) > 0
                         and prev != ""
                         and (
-                            not para_is_complete(paras[-1][0])
+                            not para_is_complete(paras[-1].text)
                             or prev_n_words < ATTACH_N_WORD_THRESHOLD
                         )
                     ):
@@ -52,20 +76,22 @@ def process_pdf_file(filename):
                         attach = False
 
                     if attach and len(paras) > 0:
-                        temp_prev = paras[-1][3]
-                        if page_no in temp_prev.keys():
-                            temp_prev[page_no].extend(temp[page_no])
+                        prev_blocks = paras[-1].block_nos
+                        if page_no in prev_blocks.keys():
+                            prev_blocks[page_no].extend(current_blocks[page_no])
                         else:
-                            temp_prev[page_no] = temp[page_no]
-                        paras[-1] = (
-                            paras[-1][0] + " " + current,  # text
-                            paras[-1][1],  # page number
-                            Path(filename).name,  # pdf filename
-                            temp_prev,  # page to block dictionary
-                        )
+                            prev_blocks[page_no] = current_blocks[page_no]
+                            
+                        prev_para = paras[-1]
+                        prev_para.text += f" {current}"
+                        prev_para.block_nos = prev_blocks
+
                     else:
                         prev = current
-                        paras.append((current, page_no, Path(filename).name, temp))
+                        paras.append(PDFparagraph(text=current,
+                                               page_no=page_no,
+                                               filename=Path(filename).name,
+                                               block_nos=current_blocks))
 
                     # Occurrences of space is proxy for number of words.
                     # If there are 10 words or less, this paragraph is
@@ -73,24 +99,23 @@ def process_pdf_file(filename):
                     prev_n_words = len(current.split(" "))
 
         paras = [
-            (chunk, page_no, docname, temp)
-            for passage, page_no, docname, temp in paras
-            for chunk in chunk_text(passage)
+            PDFparagraph(text = chunk, page_no=paragraph.page_no, filename = paragraph.filename, block_nos = paragraph.block_nos)
+            for paragraph in paras
+            for chunk in chunk_text(paragraph.text)
         ]
         for para in paras:
-            if len(para) > 0:
+            if len(para.text) > 0:
                 sent = re.sub(
                     " +",
                     " ",
-                    str(para[0])
+                    str(para.text)
                     .replace("\t", " ")
                     .replace(",", " ")
                     .replace("\n", " ")
                     .strip(),
                 )
                 if len(sent) > 0:
-                    rows.append((sent.lower(), sent, para[1], para[2], str(para[3])))
-
+                    rows.append(PDFparagraph(text = sent, page_no=para.page_no, filename=para.filename, block_nos=str(para.block_nos)))
         return rows, True
     except Exception as e:
         print(e.__str__())
@@ -102,12 +127,12 @@ def create_train_df(elements):
         index=range(len(elements)),
         columns=["para", "filename", "page", "display", "highlight"],
     )
-    for i, elem in enumerate(elements):
-        sents = sent_tokenize(elem[1])
+    for i, paragraph in enumerate(elements):
+        sents = sent_tokenize(paragraph.text)
         sents = list(map(lambda x: x.lower(), sents))
         para = " ".join(sents)
         # elem[-1] is id
-        df.iloc[i] = [para, elem[3], elem[2], elem[1], elem[4]]
+        df.iloc[i] = [para, paragraph.filename, paragraph.page_no, para, paragraph.block_nos]
     for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
