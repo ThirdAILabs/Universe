@@ -40,15 +40,6 @@ class RecurrentFeaturizer {
 
   size_t outputDim() const { return _recurrence_augmentation->outputDim(); }
 
-  std::pair<uint32_t, uint32_t> outputRangeForStep(uint32_t step) const {
-    return _recurrence_augmentation->rangeForStep(step);
-  }
-
-  std::string targetTokenToString(uint32_t token) const {
-    uint32_t vocab_id = _recurrence_augmentation->toTargetInputToken(token);
-    return vocab()->getString(vocab_id);
-  }
-
  private:
   thirdai::data::TransformationPtr makeTransformation(
       const data::ColumnDataTypes& data_types, const std::string& target_name,

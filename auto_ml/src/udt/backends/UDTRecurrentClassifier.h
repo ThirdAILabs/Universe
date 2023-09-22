@@ -70,8 +70,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
     }
   }
 
-  uint32_t predictionAtStep(const BoltVector& output, uint32_t step) const;
-
   void addPredictionToSample(MapInput& sample,
                              const std::string& prediction) const;
 

@@ -30,7 +30,7 @@ ModelPtr multiOutputModel(uint32_t input_dim, uint32_t hidden_dim,
   auto index = bolt::Input::make(max_sequence_length);
   auto input = bolt::Input::make(input_dim);
 
-  const auto* hidden_activation = use_tanh ? "tanh" : "relu";
+  std::string hidden_activation = use_tanh ? "tanh" : "relu";
 
   auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
                                       /* bias= */ true)
@@ -47,10 +47,7 @@ ModelPtr multiOutputModel(uint32_t input_dim, uint32_t hidden_dim,
 
   bolt::LossPtr loss = bolt::CategoricalCrossEntropy::make(output, labels);
 
-  bolt::ComputationList additional_labels;
-
-  auto model =
-      bolt::Model::make({index, input}, {output}, {loss}, additional_labels);
+  auto model = bolt::Model::make({index, input}, {output}, {loss});
 
   return model;
 }
@@ -171,12 +168,12 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                       ->forward(_featurizer->featurizeInput(mutable_sample),
                                 sparse_inference)
                       .at(0);
-    auto predicted_id = predictionAtStep(output->getVector(0), step);
+    auto predicted_id = output->getVector(0).getHighestActivationId();
     if (_featurizer->isEos(predicted_id)) {
       break;
     }
 
-    std::string prediction = _featurizer->targetTokenToString(predicted_id);
+    std::string prediction = _featurizer->vocab()->getString(predicted_id);
     addPredictionToSample(mutable_sample, prediction);
     predictions.push_back(prediction);
   }
@@ -233,13 +230,13 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
         auto predicted_id =
-            predictionAtStep(batch_activations->getVector(i), step);
+            batch_activations->getVector(i).getHighestActivationId();
         if (_featurizer->isEos(predicted_id)) {
           progress.markSampleDone(i);
           continue;
         }
 
-        std::string prediction = _featurizer->targetTokenToString(predicted_id);
+        std::string prediction = _featurizer->vocab()->getString(predicted_id);
         addPredictionToSample(mutable_samples[i], prediction);
         all_predictions[i].push_back(prediction);
       }
@@ -253,21 +250,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return std::move(output);
-}
-
-uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
-                                                  uint32_t step) const {
-  auto [begin, end] = _featurizer->outputRangeForStep(step);
-  uint32_t arg_max = 0;
-  float max_act = -std::numeric_limits<float>::max();
-  for (uint32_t neuron = begin; neuron < end; neuron++) {
-    if (output.activations[neuron] > max_act) {
-      arg_max = neuron;
-      max_act = output.activations[neuron];
-    }
-  }
-
-  return arg_max - begin;
 }
 
 void UDTRecurrentClassifier::addPredictionToSample(

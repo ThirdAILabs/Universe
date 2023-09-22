@@ -70,7 +70,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
     try {
       const size_t offset = row_offsets[i];
-      for (uint32_t row_pos = 0; row_pos < effectiveSize(source_row);
+      for (uint32_t row_pos = 0; row_pos < effectiveSeqLen(source_row);
            row_pos++) {
         /*
           Simulate next token prediction by giving the model an array of tokens
@@ -116,7 +116,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
 bool Recurrence::isEOS(uint32_t token) const { return token == EOS(); }
 
-size_t Recurrence::effectiveSize(const RowView<uint32_t>& row) const {
+size_t Recurrence::effectiveSeqLen(const RowView<uint32_t>& row) const {
   return std::min(row.size() + 1, _max_seq_len);
 }
 
@@ -126,7 +126,7 @@ std::vector<size_t> Recurrence::offsets(
   offsets[0] = 0;
   for (uint32_t i = 0; i < column.numRows(); i++) {
     // +1 for EOS token.
-    offsets[i + 1] = offsets[i] + effectiveSize(column.row(i));
+    offsets[i + 1] = offsets[i] + effectiveSeqLen(column.row(i));
   }
   return offsets;
 }

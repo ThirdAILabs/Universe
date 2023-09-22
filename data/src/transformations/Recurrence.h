@@ -58,17 +58,8 @@ class Recurrence final : public Transformation {
 
   inline constexpr size_t outputDim() const { return totalVocabSize(); }
 
-  std::pair<uint32_t, uint32_t> rangeForStep(uint32_t step) const {
-    (void)step;
-    return {0, totalVocabSize()};
-  }
-
-  static uint32_t toTargetInputToken(uint32_t target_output_token) {
-    return target_output_token;
-  }
-
  private:
-  size_t effectiveSize(const RowView<uint32_t>& row) const;
+  size_t effectiveSeqLen(const RowView<uint32_t>& row) const;
 
   std::vector<size_t> offsets(const ArrayColumnBase<uint32_t>& column) const;
 
