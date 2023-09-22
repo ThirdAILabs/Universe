@@ -185,10 +185,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();
 
-  for (uint32_t i = 0; i < vocab->size(); i++) {
-    std::cerr << "VOCAB: " << i << " -> " << vocab->getString(i) << std::endl;
-  }
-
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
   auto mutable_samples = samples;
@@ -234,8 +230,8 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
                                                   uint32_t step,
                                                   size_t vocab_size) {
-  auto begin = step * vocab_size;
-  auto end = begin + vocab_size;
+  size_t begin = step * vocab_size;
+  size_t end = begin + vocab_size;
 
   uint32_t arg_max = 0;
   float max_act = -std::numeric_limits<float>::max();

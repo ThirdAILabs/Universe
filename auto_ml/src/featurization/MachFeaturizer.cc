@@ -76,7 +76,13 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   for (const auto& tensor : input_tensors) {
     std::vector<uint32_t> batch_doc_ids(tensor.at(0)->batchSize());
     for (uint32_t& batch_doc_id : batch_doc_ids) {
-      batch_doc_id = doc_ids->row(row_idx++)[0];
+      auto row = doc_ids->row(row_idx++);
+      // Each document in introduce documents should only have a single ID.
+      if (row.size() != 1) {
+        throw std::invalid_argument(
+            "Expected only 1 document ID per row in introduceDocuments.");
+      }
+      batch_doc_id = row[0];
     }
     batches.emplace_back(tensor, std::move(batch_doc_ids));
   }

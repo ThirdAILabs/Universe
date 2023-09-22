@@ -107,21 +107,39 @@ bolt::TensorList GraphFeaturizer::featurizeInputBatch(
 }
 
 std::string neighborsColumn(const data::ColumnDataTypes& data_types) {
+  std::optional<std::string> neighbors_col = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNeighbors(data_type)) {
-      return col_name;
+      if (neighbors_col) {
+        throw std::invalid_argument(
+            "Only a single neighbors column is allowed in GNN.");
+      }
+      neighbors_col = col_name;
     }
   }
-  throw std::invalid_argument("Neighbors column is required for GNN.");
+
+  if (!neighbors_col) {
+    throw std::invalid_argument("Neighbors column is required for GNN.");
+  }
+  return *neighbors_col;
 }
 
 std::string nodeIdColumn(const data::ColumnDataTypes& data_types) {
+  std::optional<std::string> node_id_column = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNodeID(data_type)) {
-      return col_name;
+      if (node_id_column) {
+        throw std::invalid_argument(
+            "Only a single node ID column is allowed in GNN.");
+      }
+      node_id_column = col_name;
     }
   }
-  throw std::invalid_argument("NodeID column is required for GNN.");
+
+  if (!node_id_column) {
+    throw std::invalid_argument("NodeID column is required for GNN.");
+  }
+  return *node_id_column;
 }
 
 std::pair<thirdai::data::TransformationPtr, std::string>
