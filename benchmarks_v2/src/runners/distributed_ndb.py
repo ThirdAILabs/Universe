@@ -1,5 +1,6 @@
 import os
 import shutil
+import mlflow
 
 import ray
 import thirdai.distributed_bolt as dist
@@ -41,19 +42,22 @@ class DistributedNDBRunner(Runner):
         ndb_model.pretrain_distributed(
             documents=[doc],
             scaling_config=scaling_config,
-            epochs=config.batch_size,
+            epochs=config.epochs,
+            batch_size=config.batch_size,
             learning_rate=config.learning_rate,
             run_config=run_config,
             metrics=config.metrics,
-            max_in_memory_batches=config.max_in_memory_batches,
         )
 
         _, doc = list(ndb_model.sources().items())[0]
         sampled_df = doc.df.sample(1000)
 
-        score = test_ndb(ndb_model, sampled_df)
-        for key, val in score.items():
+        scores = test_ndb(ndb_model, sampled_df)
+        for key, val in scores.items():
             print(f"{key} \t: \t{val}")
+
+        if mlflow_logger:
+            mlflow.log_metrics(scores)
 
         # clear ray checkpoints stored
         shutil.rmtree(ckpt_path, ignore_errors=True)

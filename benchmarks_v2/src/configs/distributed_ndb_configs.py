@@ -12,10 +12,9 @@ class Amazon_200K_Config(DistributedNDBConfig):
     dataset_name = "amazon_200K"
 
     learning_rate = 0.005
-    epochs = 5
+    epochs = 20
     metrics = ["precision@1", "loss", "hash_precision@1"]
-    batch_size = 20000
-    max_in_memory_batches = 10
+    batch_size = 50000
 
     doc_path = "dist_ndb/amazon_200K_title_id.csv"
     doc_id_column = "id"

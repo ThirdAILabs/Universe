@@ -72,7 +72,7 @@ def create_udt_model(n_target_classes, output_dim, num_hashes, embedding_dimensi
 
 
 def test_ndb(db, df):
-    scores = {"top1": 0, "top3": 0, "top5": 0, "top10": 0, "top20": 0}
+    scores = {"top_1": 0, "top_3": 0, "top_5": 0, "top_10": 0}
     total_count = len(df)
 
     for _, row in tqdm.tqdm(df.iterrows(), desc="Progress", total=total_count):
@@ -81,14 +81,14 @@ def test_ndb(db, df):
 
         search_results = db.search(
             query=query,
-            top_k=20,
+            top_k=10,
             on_error=lambda error_msg: print(f"Error! {error_msg}"),
         )
         all_retrieved_ids = [int(result.id) for result in search_results]
 
-        for k in [1, 3, 5, 10, 20]:
+        for k in [1, 3, 5, 10]:
             if actual_id in all_retrieved_ids[:k]:
-                scores[f"top{k}"] += 1
+                scores[f"top_{k}"] += 1
 
-    score = {f"top{k}": scores[f"top{k}"] / total_count for k in [1, 3, 5, 10, 20]}
+    score = {f"top_{k}": scores[f"top_{k}"] / total_count for k in [1, 3, 5, 10]}
     return score
