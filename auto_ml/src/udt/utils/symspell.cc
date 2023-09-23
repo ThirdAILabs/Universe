@@ -35,11 +35,10 @@ SymPreTrainer::getCorrectSpellingSingle(const std::string& word,
 
   for (const SuggestItem& res : results) {
     tokens.push_back(res.term.c_str());
-    if (_experimental_scores) {
-      scores.push_back(res.count * (_max_edit_distance - res.distance));
-    } else {
-      scores.push_back(_max_edit_distance - res.distance);
-    }
+    float score = _experimental_scores ? 
+      res.count * (_max_edit_distance - res.distance) : 
+      _max_edit_distance - res.distance;
+    scores.push_back(score);
   }
 
   if (top_k < static_cast<uint32_t>(tokens.size())) {
