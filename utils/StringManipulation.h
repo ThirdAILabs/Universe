@@ -98,4 +98,9 @@ std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
  */
 void replacePunctuationWithSpaces(std::string& string);
 
+/**
+ * Replaces \n and \r characters in string with whitespace.
+ */
+void replaceNewlinesWithSpaces(std::string& string);
+
 }  // namespace thirdai::text
