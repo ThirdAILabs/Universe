@@ -271,12 +271,9 @@ IdScorePairs UDTQueryReformulation::QueryBatchResults(
     auto featurized_samples =
         _inference_featurizer->featurize(sample_ref).at(0);
 
-    auto results = _flash_index->queryBatch(
+    auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
         /* batch = */ BoltBatch(std::move(featurized_samples)),
         /* top_k = */ top_k.value());
-
-    auto phrase_ids = std::move(results.first);
-    auto phrase_scores = std::move(results.second);
 
     std::vector<std::vector<uint32_t>> all_phrase_ids;
     std::vector<std::vector<float>> all_phrase_scores;
