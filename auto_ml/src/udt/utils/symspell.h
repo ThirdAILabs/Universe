@@ -16,12 +16,36 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using MapInputBatch = thirdai::dataset::MapInputBatch;
 using MapInput = thirdai::dataset::MapInput;
 
 namespace thirdai::automl::udt {
+struct QueryCandidates {
+ private:
+  std::vector<uint32_t> offsets;
+  MapInputBatch candidate_batches;
+
+ public:
+  explicit QueryCandidates(MapInputBatch candidates,
+                           const std::vector<uint32_t>& candidate_count)
+      : offsets(candidate_count), candidate_batches(std::move(candidates)) {
+    for (size_t i = 1; i < offsets.size(); i++) {
+      offsets[i] += offsets[i - 1];
+    }
+  }
+
+  // Get range of candidates for query_id
+  std::pair<uint32_t, uint32_t> getRange(uint32_t query_id) const {
+    uint32_t begin_offset = (query_id == 0) ? 0 : offsets[query_id - 1];
+    uint32_t end_offset = offsets[query_id];
+    return std::make_pair(begin_offset, end_offset);
+  }
+
+  MapInputBatch getSample() { return candidate_batches; }
+};
 
 class SpellCheckedSentence {
  private:
@@ -76,8 +100,7 @@ class SymPreTrainer {
   SymPreTrainer(uint32_t max_edit_distance, bool experimental_scores,
                 uint32_t prefix_length, bool use_word_segmentation);
 
-  std::pair<MapInputBatch, std::vector<uint32_t>> generateCandidates(
-      const MapInputBatch& samples);
+  QueryCandidates generateCandidates(const MapInputBatch& samples);
 
   static std::pair<std::vector<uint32_t>, std::vector<float>> topKIdScorePairs(
       std::vector<std::vector<uint32_t>>& phrase_ids,

@@ -257,16 +257,9 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
 IdScorePairs UDTQueryReformulation::queryBatchResults(
     const MapInputBatch& sample, std::optional<uint32_t> top_k) {
   if (_use_spell_checker) {
-    std::vector<uint32_t> freq_counts = {0};
+    QueryCandidates candidates = _symspell_backend->generateCandidates(sample);
 
-    std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
-        _symspell_backend->generateCandidates(sample);
-    freq_counts.insert(freq_counts.end(), candidates.second.begin(),
-                       candidates.second.end());
-    for (uint32_t i = 1; i < freq_counts.size(); i++) {
-      freq_counts[i] += freq_counts[i - 1];
-    }
-    const MapInputBatch sample_cand = candidates.first;
+    const MapInputBatch sample_cand = candidates.getSample();
     dataset::MapBatchRef sample_ref(sample_cand);
     auto featurized_samples =
         _inference_featurizer->featurize(sample_ref).at(0);
@@ -278,12 +271,11 @@ IdScorePairs UDTQueryReformulation::queryBatchResults(
     std::vector<std::vector<uint32_t>> all_phrase_ids;
     std::vector<std::vector<float>> all_phrase_scores;
     for (uint32_t query_id = 0; query_id < sample.size(); query_id++) {
+      auto [start_idx, end_idx] = candidates.getRange(query_id);
       std::vector<std::vector<uint32_t>> query_phrase_ids(
-          phrase_ids.begin() + freq_counts[query_id],
-          phrase_ids.begin() + freq_counts[query_id + 1]);
+          phrase_ids.begin() + start_idx, phrase_ids.begin() + end_idx);
       std::vector<std::vector<float>> query_scores(
-          phrase_scores.begin() + freq_counts[query_id],
-          phrase_scores.begin() + freq_counts[query_id + 1]);
+          phrase_scores.begin() + start_idx, phrase_scores.begin() + end_idx);
       const std::pair<std::vector<uint32_t>, std::vector<float>>
           accumulated_res = _symspell_backend->topKIdScorePairs(
               query_phrase_ids, query_scores, top_k.value());

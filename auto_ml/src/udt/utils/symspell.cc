@@ -84,8 +84,8 @@ SymPreTrainer::getCorrectSpellingList(const std::vector<std::string>& word_list,
   return std::pair(tokens, scores);
 }
 
-std::pair<MapInputBatch, std::vector<uint32_t>>
-SymPreTrainer::generateCandidates(const MapInputBatch& samples) {
+QueryCandidates SymPreTrainer::generateCandidates(
+    const MapInputBatch& samples) {
   MapInputBatch candidate_samples;
   std::vector<uint32_t> candidate_count;
 
@@ -107,7 +107,7 @@ SymPreTrainer::generateCandidates(const MapInputBatch& samples) {
     candidate_count.push_back(candidates.size());
   }
 
-  return make_pair(candidate_samples, candidate_count);
+  return QueryCandidates(candidate_samples, candidate_count);
 }
 
 std::vector<SpellCheckedSentence> SymPreTrainer::correctSentence(
