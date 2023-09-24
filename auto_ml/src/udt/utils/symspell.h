@@ -83,6 +83,9 @@ class SymPreTrainer {
       std::vector<std::vector<uint32_t>>& phrase_ids,
       std::vector<std::vector<float>>& phrase_scores, uint32_t top_k);
 
+  std::pair<std::vector<std::string>, std::vector<float>>
+  getCorrectSpellingSingle(const std::string& word, uint32_t top_k);
+
   void pretrain(std::vector<MapInputBatch>& parsed_data);
 
  private:
@@ -95,9 +98,6 @@ class SymPreTrainer {
   SymPreTrainer(){};
 
   void indexWords(std::unordered_map<std::string, uint32_t>& frequency_map);
-
-  std::pair<std::vector<std::string>, std::vector<float>>
-  getCorrectSpellingSingle(const std::string& word, uint32_t top_k);
 
   std::pair<std::vector<std::vector<std::string>>,
             std::vector<std::vector<float>>>
