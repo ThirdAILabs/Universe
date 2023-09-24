@@ -36,8 +36,8 @@ class SpellCheckedSentence {
   SpellCheckedSentence(const SpellCheckedSentence& other)
       : _tokens(other._tokens), _scores(other._scores) {}
 
-  SpellCheckedSentence updateTokenAndScore(const std::string& token,
-                                           float score, size_t index) {
+  SpellCheckedSentence copyWithTokenAndScore(const std::string& token,
+                                             float score, uint32_t index) {
     SpellCheckedSentence temp(*this);
     temp._tokens[index] = token;
     temp._scores[index] = score;
@@ -68,34 +68,18 @@ class SymPreTrainer {
   // segmentation existing spaces are allowed and considered for optimum
   // segmentation
 
-  /// <summary>Length of prefix, from which internal dictionary of symspell are
-  /// generated.</summary>
+  /// >Length of prefix, from which internal dictionary of symspell are
+  /// generated.
 
   // To know more about the variables, refer SymSpell.h in SymSpellCPP repo
 
   SymPreTrainer(uint32_t max_edit_distance, bool experimental_scores,
                 uint32_t prefix_length, bool use_word_segmentation);
 
-  std::pair<std::vector<std::string>, std::vector<float>>
-  getCorrectSpellingSingle(const std::string& word, uint32_t top_k);
-
-  std::pair<std::vector<std::vector<std::string>>,
-            std::vector<std::vector<float>>>
-  getCorrectSpellingList(const std::vector<std::string>& word_list,
-                         uint32_t top_k);
-
   std::pair<MapInputBatch, std::vector<uint32_t>> generateCandidates(
       const MapInputBatch& samples);
 
-  std::vector<SpellCheckedSentence> correctSentence(
-      const std::vector<std::string>& tokens_list,
-      uint32_t predictions_per_token, uint32_t maximum_candidates,
-      bool stop_if_found);
-
-  void indexWords(std::vector<std::string>& words_to_index,
-                  std::vector<uint32_t>& frequency);
-
-  static std::pair<std::vector<uint32_t>, std::vector<float>> accumulateScores(
+  static std::pair<std::vector<uint32_t>, std::vector<float>> topKIdScorePairs(
       std::vector<std::vector<uint32_t>>& phrase_ids,
       std::vector<std::vector<float>>& phrase_scores, uint32_t top_k);
 
@@ -109,6 +93,21 @@ class SymPreTrainer {
   bool _use_word_segmentation;
 
   SymPreTrainer(){};
+
+  void indexWords(std::unordered_map<std::string, uint32_t>& frequency_map);
+
+  std::pair<std::vector<std::string>, std::vector<float>>
+  getCorrectSpellingSingle(const std::string& word, uint32_t top_k);
+
+  std::pair<std::vector<std::vector<std::string>>,
+            std::vector<std::vector<float>>>
+  getCorrectSpellingList(const std::vector<std::string>& word_list,
+                         uint32_t top_k);
+
+  std::vector<SpellCheckedSentence> correctSentence(
+      const std::vector<std::string>& tokens_list,
+      uint32_t predictions_per_token, uint32_t maximum_candidates,
+      bool stop_if_found);
 
   friend class cereal::access;
 

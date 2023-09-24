@@ -206,7 +206,7 @@ py::object UDTQueryReformulation::evaluate(
     for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size();
          batch_id++) {
       auto [phrase_ids, phrase_scores] =
-          QueryBatchResults(input_candidate_batches[batch_id], top_k);
+          queryBatchResults(input_candidate_batches[batch_id], top_k);
       if (bar.has_value()) {
         bar->increment();
       }
@@ -254,19 +254,19 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                       top_k);
 }
 
-IdScorePairs UDTQueryReformulation::QueryBatchResults(
+IdScorePairs UDTQueryReformulation::queryBatchResults(
     const MapInputBatch& sample, std::optional<uint32_t> top_k) {
   if (_use_spell_checker) {
     std::vector<uint32_t> freq_counts = {0};
 
     std::pair<MapInputBatch, std::vector<uint32_t>> candidates =
         _symspell_backend->generateCandidates(sample);
-    const MapInputBatch sample_cand = candidates.first;
     freq_counts.insert(freq_counts.end(), candidates.second.begin(),
                        candidates.second.end());
     for (uint32_t i = 1; i < freq_counts.size(); i++) {
       freq_counts[i] += freq_counts[i - 1];
     }
+    const MapInputBatch sample_cand = candidates.first;
     dataset::MapBatchRef sample_ref(sample_cand);
     auto featurized_samples =
         _inference_featurizer->featurize(sample_ref).at(0);
@@ -285,7 +285,7 @@ IdScorePairs UDTQueryReformulation::QueryBatchResults(
           phrase_scores.begin() + freq_counts[query_id],
           phrase_scores.begin() + freq_counts[query_id + 1]);
       const std::pair<std::vector<uint32_t>, std::vector<float>>
-          accumulated_res = _symspell_backend->accumulateScores(
+          accumulated_res = _symspell_backend->topKIdScorePairs(
               query_phrase_ids, query_scores, top_k.value());
       all_phrase_ids.push_back(accumulated_res.first);
       all_phrase_scores.push_back(accumulated_res.second);
@@ -314,7 +314,7 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   requireTopK(top_k);
 
-  auto results = QueryBatchResults(sample, top_k);
+  auto results = queryBatchResults(sample, top_k);
   auto phrase_ids = results.first;
   auto phrase_scores = results.second;
 

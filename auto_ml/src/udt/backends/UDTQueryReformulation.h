@@ -62,7 +62,7 @@ class UDTQueryReformulation final : public UDTBackend {
   // candidates and accumulates it's results otherwise, it returns the top_k
   // results for the query batch.
 
-  IdScorePairs QueryBatchResults(const MapInputBatch& sample,
+  IdScorePairs queryBatchResults(const MapInputBatch& sample,
                                  std::optional<uint32_t> top_k);
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,

@@ -40,6 +40,7 @@ class SymSpellTest : public testing::Test {
     auto result = _symspell_backend->getCorrectSpellingSingle(query, 1);
     return result.first[0];
   }
+
   static std::string perturbQuery(const std::string& query, int seed) {
     std::string result = query;
     std::mt19937 mt(seed);

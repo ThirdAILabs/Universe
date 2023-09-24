@@ -94,9 +94,9 @@ MapInputBatch TabularFeaturizer::convertToMapInputBatch(
 
   for (size_t i = 0; i < input_batch_ref.size(); i++) {
     MapInput input;
-    ColumnIdentifier col_(column_number_map.at(column_name));
+    ColumnIdentifier col_id(column_number_map.at(column_name));
 
-    input[key] = input_batch_ref.at(i).column(col_);
+    input[key] = input_batch_ref.at(i).column(col_id);
     input_batches.push_back(input);
   }
 
