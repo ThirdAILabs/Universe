@@ -1,5 +1,6 @@
 #pragma once
 
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/GraphDatasetManager.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
@@ -11,7 +12,9 @@ class UDTGraphClassifier final : public UDTBackend {
  public:
   UDTGraphClassifier(const data::ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
-                     bool integer_target, const data::TabularOptions& options);
+                     bool integer_target, const data::TabularOptions& options,
+                     const std::optional<std::string>& model_config,
+                     const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -59,7 +62,9 @@ class UDTGraphClassifier final : public UDTBackend {
   UDTGraphClassifier() {}
 
   static ModelPtr createGNN(std::vector<uint32_t> input_dims,
-                            uint32_t output_dim);
+                            uint32_t output_dim,
+                            const std::optional<std::string>& model_config,
+                            const config::ArgumentMap& user_args);
 
   friend cereal::access;
 
