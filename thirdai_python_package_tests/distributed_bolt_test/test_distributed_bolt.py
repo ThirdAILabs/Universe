@@ -134,17 +134,17 @@ def test_distributed_fault_tolerance():
         is_worker_killed = False
 
         if train.get_checkpoint():
-            checkpoint_dict = train.get_checkpoint().to_dict()
+            recovered_checkpoint = train.get_checkpoint()
+            recovered_metadata = recovered_checkpoint.get_metadata()
 
             # Load in model
-            checkpoint_model = checkpoint_dict["model"]
-            model = dist.BoltCheckPoint.get_model(checkpoint_model)
+            model = dist.BoltCheckPoint.get_model(recovered_checkpoint)
 
             # The current epoch resumes from loaded model's epoch
-            starting_epoch = checkpoint_dict["epoch"]
+            starting_epoch = recovered_metadata["epoch"]
 
             # flag whether worker-0 has been killed once
-            is_worker_killed = checkpoint_dict["is_worker_killed"]
+            is_worker_killed = recovered_metadata["is_worker_killed"]
 
         trainer = bolt.train.Trainer(model)
         train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
@@ -156,18 +156,17 @@ def test_distributed_fault_tolerance():
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
+            # Use `with_optimizers=False` to save model without optimizer states
+            checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=True)
+            checkpoint.set_metadata(
+                metadata={
+                    "epoch": epoch + 1,
+                    "is_worker_killed": True,
+                }
+            )
             train.report(
                 {"model_location": train.get_context().get_trial_dir()},
-                checkpoint=dist.BoltCheckPoint.from_dict(
-                    {
-                        "epoch": epoch + 1,
-                        # Use `with_optimizers=False` to save model without optimizer states
-                        "model": dist.BoltCheckPoint.from_model(
-                            model, with_optimizers=True
-                        ),
-                        "is_worker_killed": True,
-                    }
-                ),
+                checkpoint=checkpoint,
             )
 
             # Kill one of the workers if never killed.

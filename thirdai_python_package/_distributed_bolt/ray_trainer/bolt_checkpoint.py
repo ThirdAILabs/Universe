@@ -9,7 +9,7 @@ from ..utils import timed
 
 
 class UDTCheckPoint(Checkpoint):
-    """A :py:class:`~ray.train.checkpoint.Checkpoint` with UDT-specific
+    """A :py:class:`~ray.train.Checkpoint` with UDT-specific
     functionality.
 
     Use ``UDTCheckPoint.from_model`` to create this type of checkpoint.
@@ -22,7 +22,7 @@ class UDTCheckPoint(Checkpoint):
         model,
         with_optimizers=True,
     ):
-        """Create a :py:class:`~ray.train.checkpoint.Checkpoint` that stores a Bolt
+        """Create a :py:class:`~ray.train.Checkpoint` that stores a Bolt
         model with/without optimizer states.
 
         Args:
@@ -42,9 +42,8 @@ class UDTCheckPoint(Checkpoint):
             model.checkpoint(save_path) if with_optimizers else model.save(save_path)
 
             checkpoint = cls.from_directory(tmpdirname)
-            ckpt_dict = checkpoint.to_dict()
 
-        return cls.from_dict(ckpt_dict)
+        return checkpoint
 
     @timed
     def get_model(self):
@@ -56,7 +55,7 @@ class UDTCheckPoint(Checkpoint):
 
 
 class BoltCheckPoint(Checkpoint):
-    """A :py:class:`~ray.train.checkpoint.Checkpoint` with Bolt-specific
+    """A :py:class:`~ray.train.Checkpoint` with Bolt-specific
     functionality.
 
     Use ``BoltCheckpoint.from_model`` to create this type of checkpoint.
@@ -69,7 +68,7 @@ class BoltCheckPoint(Checkpoint):
         model,
         with_optimizers=True,
     ):
-        """Create a :py:class:`~ray.train.checkpoint.Checkpoint` that stores a Bolt
+        """Create a :py:class:`~ray.train.Checkpoint` that stores a Bolt
         model with/without optimizer states.
 
         Args:
@@ -89,9 +88,8 @@ class BoltCheckPoint(Checkpoint):
             model.checkpoint(save_path) if with_optimizers else model.save(save_path)
 
             checkpoint = cls.from_directory(tmpdirname)
-            ckpt_dict = checkpoint.to_dict()
 
-        return cls.from_dict(ckpt_dict)
+        return checkpoint
 
     @timed
     def get_model(self):
