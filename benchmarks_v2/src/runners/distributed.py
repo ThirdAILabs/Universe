@@ -77,10 +77,7 @@ class DistributedRunner(Runner):
         scaling_config = setup_ray()
 
         # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-        run_config = train.RunConfig(
-            name="Distributed_v2 benchmark runner",
-            storage_path="/share/ray_results",
-        )
+        run_config = train.RunConfig(storage_path="/share/ray_results")
 
         trainer = dist.BoltTrainer(
             train_loop_per_worker=cls.training_loop_per_worker,

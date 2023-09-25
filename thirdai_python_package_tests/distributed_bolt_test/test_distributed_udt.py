@@ -155,10 +155,7 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_coldstart_loop_per_worker,
@@ -214,10 +211,7 @@ def test_udt_train_distributed():
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
@@ -302,10 +296,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_mach_loop_per_worker,
@@ -366,10 +357,7 @@ def test_udt_licensed_training():
     )
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
@@ -415,10 +403,7 @@ def test_udt_licensed_fail():
     )
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,

@@ -54,10 +54,7 @@ def test_bolt_distributed():
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
@@ -179,7 +176,6 @@ def test_distributed_fault_tolerance():
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
     run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
         storage_path="/share/ray_results",
         failure_config=FailureConfig(max_failures=3),
     )
@@ -229,10 +225,7 @@ def test_distributed_resume_training():
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
@@ -250,10 +243,7 @@ def test_distributed_resume_training():
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(
-        name="Distributed_v2 benchmark runner",
-        storage_path="/share/ray_results",
-    )
+    run_config = train.RunConfig(storage_path="/share/ray_results")
 
     trainer2 = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
