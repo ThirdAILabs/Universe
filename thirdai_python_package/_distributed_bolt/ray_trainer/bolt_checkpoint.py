@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from ray.air.checkpoint import Checkpoint
+from ray.train import Checkpoint
 from ray.air.constants import MODEL_KEY
 from thirdai._thirdai import bolt
 
@@ -9,7 +9,7 @@ from ..utils import timed
 
 
 class UDTCheckPoint(Checkpoint):
-    """A :py:class:`~ray.air.checkpoint.Checkpoint` with UDT-specific
+    """A :py:class:`~ray.train.checkpoint.Checkpoint` with UDT-specific
     functionality.
 
     Use ``UDTCheckPoint.from_model`` to create this type of checkpoint.
@@ -22,7 +22,7 @@ class UDTCheckPoint(Checkpoint):
         model,
         with_optimizers=True,
     ):
-        """Create a :py:class:`~ray.air.checkpoint.Checkpoint` that stores a Bolt
+        """Create a :py:class:`~ray.train.checkpoint.Checkpoint` that stores a Bolt
         model with/without optimizer states.
 
         Args:
@@ -56,7 +56,7 @@ class UDTCheckPoint(Checkpoint):
 
 
 class BoltCheckPoint(Checkpoint):
-    """A :py:class:`~ray.air.checkpoint.Checkpoint` with Bolt-specific
+    """A :py:class:`~ray.train.checkpoint.Checkpoint` with Bolt-specific
     functionality.
 
     Use ``BoltCheckpoint.from_model`` to create this type of checkpoint.
@@ -69,7 +69,7 @@ class BoltCheckPoint(Checkpoint):
         model,
         with_optimizers=True,
     ):
-        """Create a :py:class:`~ray.air.checkpoint.Checkpoint` that stores a Bolt
+        """Create a :py:class:`~ray.train.checkpoint.Checkpoint` that stores a Bolt
         model with/without optimizer states.
 
         Args:

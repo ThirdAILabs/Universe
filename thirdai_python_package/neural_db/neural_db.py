@@ -293,13 +293,13 @@ class NeuralDB:
         self,
         documents,
         scaling_config,
+        run_config,
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
         metrics: List[str] = [],
         max_in_memory_batches: Optional[int] = None,
         communication_backend="gloo",
-        run_config=None,
     ):
         """
         Pretrains a model in a distributed manner using the provided documents.
@@ -307,7 +307,7 @@ class NeuralDB:
         Args:
             documents: List of documents for pretraining.
             scaling_config: Configuration related to the scaling aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.ScalingConfig.html
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html
             learning_rate (float, optional): Learning rate for the optimizer. Default is 0.001.
             epochs (int, optional): Number of epochs to train. Default is 5.
             batch_size (int, optional): Size of each batch for training. If not provided, will be determined automatically.
@@ -317,7 +317,7 @@ class NeuralDB:
             communication_backend (str, optional): Bolt Distributed Training uses Torch Communication Backend. This
                 refers to backend for inter-worker communication. Default is "gloo".
             run_config: Configuration related to the runtime aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.RunConfig.html
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html
 
         Notes:
             - Make sure to pass id_column to neural_db.CSV() making sure the ids are in ascending order starting from 0.
@@ -352,7 +352,7 @@ class NeuralDB:
 
         def training_loop_per_worker(config):
             import thirdai.distributed_bolt as dist
-            from ray.air import session
+            from ray import train
             from thirdai.dataset import RayCsvDataSource
 
             if config["licensing_lambda"]:
@@ -360,9 +360,9 @@ class NeuralDB:
 
             # ray data will automatically split the data if the dataset is passed with key "train"
             # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
-            stream_split_data_iterator = session.get_dataset_shard("train")
+            stream_split_data_iterator = train.get_dataset_shard("train")
 
-            model = dist.UDTCheckPoint.get_model(session.get_checkpoint())
+            model = dist.UDTCheckPoint.get_model(train.get_checkpoint())
 
             strong_column_names = config["strong_column_names"]
             weak_column_names = config["weak_column_names"]
@@ -383,7 +383,7 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
             )
 
-            session.report(
+            train.report(
                 metrics=metrics,
                 checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=False),
             )

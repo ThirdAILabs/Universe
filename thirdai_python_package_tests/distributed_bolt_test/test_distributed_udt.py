@@ -10,7 +10,8 @@ from distributed_utils import (
     setup_ray,
     split_into_2,
 )
-from ray.air import ScalingConfig, session
+from ray import train
+from ray.train import ScalingConfig
 from ray.train.torch import TorchConfig
 from thirdai import bolt
 from thirdai.demos import (
@@ -127,16 +128,16 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
         copy_file_or_folder(
             os.path.join(
                 config.get("cur_dir"),
-                f"amazon_product_catalog/part{session.get_world_rank()+1}",
+                f"amazon_product_catalog/part{train.get_context().get_world_rank()+1}",
             ),
             os.path.join(
-                session.get_trial_dir(),
-                f"rank_{session.get_world_rank()}/part{session.get_world_rank()+1}",
+                train.get_context().get_trial_dir(),
+                f"rank_{train.get_context().get_world_rank()}/part{train.get_context().get_world_rank()+1}",
             ),
         )
 
         metrics = udt_model.coldstart_distributed(
-            filename=f"part{session.get_world_rank()+1}",
+            filename=f"part{train.get_context().get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
             batch_size=1024,
@@ -145,13 +146,19 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
             metrics=["categorical_accuracy"],
         )
 
-        session.report(
+        train.report(
             metrics,
             # Use `with_optimizers=False` to save model without optimizer states
             checkpoint=dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True),
         )
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_coldstart_loop_per_worker,
@@ -161,6 +168,7 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
         },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
 
     result = trainer.fit()
@@ -181,28 +189,35 @@ def test_udt_train_distributed():
         udt_model = dist.prepare_model(udt_model)
         copy_file_or_folder(
             os.path.join(
-                config.get("cur_dir"), f"clinc_train_{session.get_world_rank()}.csv"
+                config.get("cur_dir"),
+                f"clinc_train_{train.get_context().get_world_rank()}.csv",
             ),
             os.path.join(
-                session.get_trial_dir(),
-                f"rank_{session.get_world_rank()}/clinc_train_{session.get_world_rank()}.csv",
+                train.get_context().get_trial_dir(),
+                f"rank_{train.get_context().get_world_rank()}/clinc_train_{train.get_context().get_world_rank()}.csv",
             ),
         )
         udt_model.train_distributed(
-            f"clinc_train_{session.get_world_rank()}.csv",
+            f"clinc_train_{train.get_context().get_world_rank()}.csv",
             epochs=1,
             learning_rate=0.02,
             batch_size=128,
         )
 
-        # session report should always have a metrics stored, hence added a demo_metric
-        session.report(
+        # train report should always have a metrics stored, hence added a demo_metric
+        train.report(
             {"demo_metric": 1},
             # Use `with_optimizers=False` to save model without optimizer states
             checkpoint=dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True),
         )
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
@@ -211,6 +226,7 @@ def test_udt_train_distributed():
         },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
 
     result = trainer.fit()
@@ -243,12 +259,12 @@ def test_udt_mach_distributed(download_scifact_dataset):
                 "scifact",
             ),
             os.path.join(
-                session.get_trial_dir(),
-                f"rank_{session.get_world_rank()}/scifact",
+                train.get_context().get_trial_dir(),
+                f"rank_{train.get_context().get_world_rank()}/scifact",
             ),
         )
         model.coldstart_distributed(
-            filename=f"scifact/unsupervised_part{session.get_world_rank()+1}",
+            filename=f"scifact/unsupervised_part{train.get_context().get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["TEXT"],
             learning_rate=0.001,
@@ -266,7 +282,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
         )
 
         metrics = model.train_distributed(
-            filename=f"scifact/supervised_trn_part{session.get_world_rank()+1}",
+            filename=f"scifact/supervised_trn_part{train.get_context().get_world_rank()+1}",
             learning_rate=0.001,
             epochs=10,
             batch_size=1024,
@@ -277,13 +293,19 @@ def test_udt_mach_distributed(download_scifact_dataset):
             validation=validation,
         )
 
-        session.report(
+        train.report(
             metrics,
             # Use `with_optimizers=False` to save model without optimizer states
             checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=True),
         )
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_mach_loop_per_worker,
@@ -294,6 +316,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
         },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
 
     result = trainer.fit()
@@ -318,7 +341,7 @@ def test_udt_licensed_training():
         udt_model = get_clinc_udt_model(integer_target=True)
         udt_model = dist.prepare_model(udt_model)
 
-        session.report(
+        train.report(
             {"demo_metric": 1},
         )
 
@@ -342,6 +365,12 @@ def test_udt_licensed_training():
         resources_per_worker={"CPU": 1},
     )
 
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
         train_loop_config={
@@ -349,6 +378,7 @@ def test_udt_licensed_training():
         },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
     trainer.fit()
 
@@ -366,7 +396,7 @@ def test_udt_licensed_fail():
         ):
             udt_model = get_clinc_udt_model(integer_target=True)
 
-        session.report(
+        train.report(
             {"demo_metric": 1},
         )
 
@@ -384,11 +414,18 @@ def test_udt_licensed_fail():
         resources_per_worker={"CPU": 1},
     )
 
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_training_loop_per_worker,
         train_loop_config={},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
 
     trainer.fit()

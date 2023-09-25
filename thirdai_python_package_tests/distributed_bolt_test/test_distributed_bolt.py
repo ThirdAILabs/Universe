@@ -12,7 +12,8 @@ from distributed_utils import (
     setup_ray,
     write_metrics_to_file,
 )
-from ray.air import FailureConfig, RunConfig, session
+from ray import train
+from ray.train import FailureConfig, RunConfig
 from ray.train.torch import TorchConfig
 from thirdai import bolt, dataset
 
@@ -40,8 +41,8 @@ def training_loop_per_worker(config):
     history.pop("epoch_times")
     write_metrics_to_file(filename="metrics.json", metrics=history)
 
-    session.report(
-        {"model_location": session.get_trial_dir()},
+    train.report(
+        {"model_location": train.get_context().get_trial_dir()},
         # Use `with_optimizers=False` to save model without optimizer states
         checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False),
     )
@@ -51,11 +52,19 @@ def training_loop_per_worker(config):
 @pytest.mark.distributed
 def test_bolt_distributed():
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 5},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
 
     result_checkpoint_and_history = trainer.fit()
@@ -124,8 +133,8 @@ def test_distributed_fault_tolerance():
         num_epochs = config.get("num_epochs", 1)
         is_worker_killed = False
 
-        if session.get_checkpoint():
-            checkpoint_dict = session.get_checkpoint().to_dict()
+        if train.get_checkpoint():
+            checkpoint_dict = train.get_checkpoint().to_dict()
 
             # Load in model
             checkpoint_model = checkpoint_dict["model"]
@@ -147,8 +156,8 @@ def test_distributed_fault_tolerance():
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-            session.report(
-                {"model_location": session.get_trial_dir()},
+            train.report(
+                {"model_location": train.get_context().get_trial_dir()},
                 checkpoint=dist.BoltCheckPoint.from_dict(
                     {
                         "epoch": epoch + 1,
@@ -162,18 +171,26 @@ def test_distributed_fault_tolerance():
             )
 
             # Kill one of the workers if never killed.
-            if not is_worker_killed and session.get_world_rank() == 0:
+            if not is_worker_killed and train.get_context().get_world_rank() == 0:
                 if epoch == num_epochs // 2:
                     is_worker_killed = True
                     sys.exit(1)
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+        failure_config=FailureConfig(max_failures=3),
+    )
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
-        run_config=RunConfig(failure_config=FailureConfig(max_failures=3)),
+        run_config=run_config,
     )
 
     trainer.fit()
@@ -184,7 +201,7 @@ def test_distributed_fault_tolerance():
 @pytest.mark.distributed
 def test_distributed_resume_training():
     def training_loop_per_worker(config):
-        ckpt = session.get_checkpoint()
+        ckpt = train.get_checkpoint()
         if ckpt:
             model = dist.BoltCheckPoint.get_model(ckpt)
             print("\nResumed training from last checkpoint...\n")
@@ -206,17 +223,24 @@ def test_distributed_resume_training():
             )
 
         # Use `with_optimizers=True` to save model with optimizer states
-        session.report(
+        train.report(
             {}, checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False)
         )
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
     result = trainer.fit()
     checkpoint_path = result.checkpoint.to_directory()
@@ -226,12 +250,19 @@ def test_distributed_resume_training():
     # Now we start a new training using previously saved checkpoint
     scaling_config = setup_ray()
 
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        name="Distributed_v2 benchmark runner",
+        storage_path="/share/ray_results",
+    )
+
     trainer2 = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
         resume_from_checkpoint=dist.BoltCheckPoint.from_directory(checkpoint_path),
+        run_config=run_config,
     )
     trainer2.fit()
 

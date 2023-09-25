@@ -5,7 +5,6 @@ import pytest
 import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-from ray.air import session
 from ray.train.torch import TorchConfig
 from thirdai import neural_db
 
