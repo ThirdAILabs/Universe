@@ -97,8 +97,8 @@ class SymPreTrainer {
 
   // To know more about the variables, refer SymSpell.h in SymSpellCPP repo
 
-  SymPreTrainer(uint32_t max_edit_distance,
-                uint32_t prefix_length, bool use_word_segmentation);
+  SymPreTrainer(uint32_t max_edit_distance, uint32_t prefix_length,
+                bool use_word_segmentation);
 
   QueryCandidates generateCandidates(const MapInputBatch& samples);
 

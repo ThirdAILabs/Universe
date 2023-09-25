@@ -4,8 +4,7 @@
 #include <utils/StringManipulation.h>
 namespace thirdai::automl::udt {
 
-SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance,
-                             uint32_t prefix_length,
+SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance, uint32_t prefix_length,
                              bool use_word_segmentation)
     : _backend(SymSpell(DEFAULT_INITIAL_CAPACITY, max_edit_distance,
                         prefix_length, DEFAULT_COUNT_THRESHOLD,
