@@ -132,7 +132,7 @@ def create_train_df(elements):
         sents = list(map(lambda x: x.lower(), sents))
         para = " ".join(sents)
         # elem[-1] is id
-        df.iloc[i] = [para, paragraph.filename, paragraph.page_no, para, paragraph.block_nos]
+        df.iloc[i] = [para, paragraph.filename, paragraph.page_no, paragraph.text, paragraph.block_nos]
     for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
