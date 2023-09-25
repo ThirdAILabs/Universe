@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 
@@ -47,6 +49,14 @@ class PatchSum final : public Op,
 
  private:
   size_t _n_patches, _patch_dim;
+
+  PatchSum() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Op>(this), _n_patches, _patch_dim);
+  }
 };
 
 using PatchSumPtr = std::shared_ptr<PatchSum>;

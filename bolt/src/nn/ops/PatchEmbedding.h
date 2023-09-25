@@ -80,6 +80,17 @@ class PatchEmbedding final
   size_t _reconstruct_hash_functions;
   size_t _updates_since_rebuild_hash_tables;
   size_t _updates_since_reconstruct_hash_functions;
+
+  PatchEmbedding() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Op>(this), _kernel, _n_patches,
+            _rebuild_hash_tables, _reconstruct_hash_functions,
+            _updates_since_rebuild_hash_tables,
+            _updates_since_reconstruct_hash_functions);
+  }
 };
 
 using PatchEmbeddingPtr = std::shared_ptr<PatchEmbedding>;
