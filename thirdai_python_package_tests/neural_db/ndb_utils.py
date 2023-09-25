@@ -11,7 +11,7 @@ def create_simple_dataset():
     with open(filename, "w") as file:
         file.writelines(
             [
-                "text,id\n",
+                "text,label\n",
                 "apples are green,0\n",
                 "spinach is green,1\n",
                 "bananas are yellow,2\n",
@@ -32,7 +32,7 @@ def train_simple_neural_db(create_simple_dataset):
 
     doc = ndb.CSV(
         filename,
-        id_column="id",
+        id_column="label",
         strong_columns=["text"],
         weak_columns=["text"],
         reference_columns=["id", "text"],
