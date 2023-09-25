@@ -49,7 +49,7 @@ UDTQueryReformulation::UDTQueryReformulation(
 
   if (_use_spell_checker) {
     _symspell_backend = std::make_shared<SymPreTrainer>(SymPreTrainer(
-        defaults::MAX_EDIT_DISTANCE, true, defaults::PREFIX_LENGTH,
+        defaults::MAX_EDIT_DISTANCE, defaults::PREFIX_LENGTH,
         defaults::USE_WORD_SEGMENTATION));
   }
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();

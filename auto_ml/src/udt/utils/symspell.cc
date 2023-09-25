@@ -5,13 +5,12 @@
 namespace thirdai::automl::udt {
 
 SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance,
-                             bool experimental_scores, uint32_t prefix_length,
+                             uint32_t prefix_length,
                              bool use_word_segmentation)
     : _backend(SymSpell(DEFAULT_INITIAL_CAPACITY, max_edit_distance,
                         prefix_length, DEFAULT_COUNT_THRESHOLD,
                         DEFAULT_COMPACT_LEVEL)),
       _max_edit_distance(max_edit_distance),
-      _experimental_scores(experimental_scores),
       _prefix_length(prefix_length),
       _use_word_segmentation(use_word_segmentation) {
   std::cout << "Initialized a Spell Checker from scratch. Index words into "
@@ -34,9 +33,7 @@ SymPreTrainer::getCorrectSpellingSingle(const std::string& word,
 
   for (const SuggestItem& res : results) {
     tokens.push_back(res.term);
-    float score = _experimental_scores
-                      ? res.count * (_max_edit_distance - res.distance)
-                      : _max_edit_distance - res.distance;
+    float score = _max_edit_distance - res.distance;
     scores.push_back(score);
   }
 
@@ -50,7 +47,8 @@ SymPreTrainer::getCorrectSpellingSingle(const std::string& word,
 
   if (!found_original_word) {
     tokens.push_back(word);
-    if (_experimental_scores && !scores.empty()) {
+
+    if (!scores.empty()) {
       std::vector<float> scores_copy;
       scores_copy.assign(scores.begin(), scores.end());
       std::sort(scores_copy.begin(), scores_copy.end());
@@ -61,7 +59,7 @@ SymPreTrainer::getCorrectSpellingSingle(const std::string& word,
                                : scores_copy[scores_copy.size() / 2.0F];
       scores.push_back(median);
     } else {
-      scores.push_back(2.0F);
+      scores.push_back(1.0F);
     }
   }
 
