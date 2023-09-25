@@ -300,6 +300,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         communication_backend="gloo",
         run_config=None,
+        log_folder=None,
     ):
         """
         Pretrains a model in a distributed manner using the provided documents.
@@ -351,6 +352,8 @@ class NeuralDB:
             )
 
         def training_loop_per_worker(config):
+            import os
+
             import thirdai.distributed_bolt as dist
             from ray.air import session
             from thirdai.dataset import RayCsvDataSource
@@ -373,6 +376,13 @@ class NeuralDB:
             max_in_memory_batches = config["max_in_memory_batches"]
             model_target_column = config["model_target_col"]
             document_target_col = config["document_target_col"]
+            log_folder = train_loop_config["log_folder"]
+
+            thirdai.logging.setup(
+                log_to_stderr=False,
+                path=os.path.join(log_folder, f"worker-{session.get_world_rank()}.log"),
+                level="info",
+            )
 
             metrics = model.coldstart_distributed_on_data_source(
                 data_source=RayCsvDataSource(
@@ -425,6 +435,7 @@ class NeuralDB:
         # Note(pratik): We are having an assumption here, that each of the document must have the
         # same target column
         train_loop_config["document_target_col"] = documents[0].id_column
+        train_loop_config["log_folder"] = log_folder
 
         trainer = dist.BoltTrainer(
             train_loop_per_worker=training_loop_per_worker,
