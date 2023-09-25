@@ -15,6 +15,12 @@ std::vector<bolt::TensorList> toTensorBatches(
   for (const auto& column_info : columns_to_convert) {
     auto indices = columns.getArrayColumn<uint32_t>(column_info.indices());
 
+    if (!indices->dim()) {
+      throw std::invalid_argument(
+          "No dimension found for column '" + column_info.indices() +
+          "'. Indices must have dimension to convert to tensor.");
+    }
+
     ArrayColumnBasePtr<float> values = nullptr;
     ValueFillType value_fill_type = ValueFillType::Ones;
     if (column_info.values()) {

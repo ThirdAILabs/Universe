@@ -1,4 +1,6 @@
 #include "RegressionBinning.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <algorithm>
 #include <numeric>
@@ -57,4 +59,16 @@ uint32_t RegressionBinning::bin(float x) const {
   return bin;
 }
 
+template void RegressionBinning::serialize(cereal::BinaryInputArchive&);
+template void RegressionBinning::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void RegressionBinning::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column,
+          _output_column, _min, _max, _binsize, _num_bins,
+          _correct_label_radius);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::RegressionBinning)

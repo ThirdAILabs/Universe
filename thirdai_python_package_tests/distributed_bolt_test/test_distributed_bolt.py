@@ -14,7 +14,7 @@ from distributed_utils import (
 )
 from ray.air import FailureConfig, RunConfig, session
 from ray.train.torch import TorchConfig
-from thirdai import bolt
+from thirdai import bolt, dataset
 
 
 def training_loop_per_worker(config):
@@ -42,7 +42,8 @@ def training_loop_per_worker(config):
 
     session.report(
         {"model_location": session.get_trial_dir()},
-        checkpoint=dist.BoltCheckPoint.from_model(model),
+        # Use `with_optimizers=False` to save model without optimizer states
+        checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False),
     )
     trainer.model.save("trained.model")
 
@@ -151,7 +152,10 @@ def test_distributed_fault_tolerance():
                 checkpoint=dist.BoltCheckPoint.from_dict(
                     {
                         "epoch": epoch + 1,
-                        "model": dist.BoltCheckPoint.from_model(model),
+                        # Use `with_optimizers=False` to save model without optimizer states
+                        "model": dist.BoltCheckPoint.from_model(
+                            model, with_optimizers=True
+                        ),
                         "is_worker_killed": True,
                     }
                 ),
@@ -186,9 +190,9 @@ def test_distributed_resume_training():
             print("\nResumed training from last checkpoint...\n")
         else:
             model = get_bolt_model()
-            model = dist.prepare_model(model)
             print("\nLoading model from scratch...\n")
 
+        model = dist.prepare_model(model)
         num_epochs = config.get("num_epochs", 1)
 
         trainer = bolt.train.Trainer(model)
@@ -201,7 +205,10 @@ def test_distributed_resume_training():
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-        session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
+        # Use `with_optimizers=True` to save model with optimizer states
+        session.report(
+            {}, checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False)
+        )
 
     scaling_config = setup_ray()
 

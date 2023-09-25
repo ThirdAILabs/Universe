@@ -9,7 +9,8 @@ thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
   auto tokens_column = columns.getArrayColumn<uint32_t>(_input_column);
   std::vector<uint32_t> num_tokens(tokens_column->numRows());
 
-#pragma omp parallel for default(none) shared(tokens_column, num_tokens)
+#pragma omp parallel for default(none) \
+    shared(tokens_column, num_tokens) if (columns.numRows() > 1)
   for (uint32_t i = 0; i < tokens_column->numRows(); i++) {
     num_tokens[i] = tokens_column->row(i).size();
     if (_max_tokens && num_tokens[i] > _max_tokens) {

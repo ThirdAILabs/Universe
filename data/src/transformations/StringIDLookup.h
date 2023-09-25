@@ -22,6 +22,12 @@ class StringIDLookup final : public Transformation {
 
   std::optional<size_t> _max_vocab_size;
   std::optional<char> _delimiter;
+
+  StringIDLookup() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

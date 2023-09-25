@@ -15,7 +15,8 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::string> output(columns.numRows());
 
-#pragma omp parallel for default(none) shared(output, columns, input_columns)
+#pragma omp parallel for default(none) \
+    shared(output, columns, input_columns) if (columns.numRows() > 1)
   for (size_t i = 0; i < columns.numRows(); i++) {
     std::string concat;
     for (size_t col_idx = 0; col_idx < input_columns.size(); col_idx++) {

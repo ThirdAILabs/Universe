@@ -406,8 +406,8 @@ py::object UDTMachClassifier::coldstart(
                val_metrics, callbacks, options, comm);
 }
 
-py::object UDTMachClassifier::embedding(const MapInput& sample) {
-  return _classifier->embedding(_dataset_factory->featurizeInput(sample));
+py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
+  return _classifier->embedding(_dataset_factory->featurizeInputBatch(sample));
 }
 
 uint32_t expectInteger(const Label& label) {
@@ -751,6 +751,11 @@ void UDTMachClassifier::addBalancingSamples(
     const dataset::DataSourcePtr& data) {
   if (_rlhf_sampler) {
     data->restart();
+    // TODO(Geordie / Nick) Right now, we only load MAX_BALANCING_SAMPLES
+    // samples to avoid the overhead of loading the entire dataset. It's
+    // possible this won't load enough samples to cover all classes.
+    // We may try to keep streaming data until all classes are covered or load
+    // the entire dataset and see if it makes a difference.
     auto samples =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
             ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,

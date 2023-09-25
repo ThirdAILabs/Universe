@@ -12,6 +12,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace thirdai::data {
 
@@ -53,7 +54,8 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       rows[i] = parse(str_column->value(i));
@@ -80,6 +82,9 @@ uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
 
 template <>
 float CastToValue<float>::parse(const std::string& row) const {
+  if (row.empty()) {
+    return 0.0;  // Handles missing values in tabular datasets.
+  }
   return std::stof(row);
 }
 
@@ -148,6 +153,9 @@ template <class Archive>
 void CastToValue<T>::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column_name,
           _output_column_name, _dim);
+  if constexpr (std::is_same_v<T, int64_t>) {
+    archive(_format);
+  }
 }
 
 template void CastToValue<uint32_t>::serialize(cereal::BinaryInputArchive&);
@@ -182,7 +190,8 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(str_column, rows, error)
+#pragma omp parallel for default(none) \
+    shared(str_column, rows, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < str_column->numRows(); i++) {
     try {
       for (const auto& item : text::split(str_column->value(i), _delimiter)) {

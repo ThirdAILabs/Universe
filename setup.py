@@ -220,7 +220,7 @@ setup(
             "scikit-learn",
             "beir",
             "pyOpenSSL>22.1.0",
-            "ray",
+            "ray<2.7.0",
         ]
         + neural_db_deps,
         "benchmark": [
@@ -233,9 +233,10 @@ setup(
             "s3fs",
             "gcsfs",
             "nltk",
-            "ray",
+            "ray[default]==2.6.3",
             "torch",
-        ],
+        ]
+        + neural_db_deps,
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },

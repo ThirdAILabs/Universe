@@ -21,7 +21,7 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   std::exception_ptr error;
 
 #pragma omp parallel for default(none) \
-    shared(entities_column, hashes, index, error)
+    shared(entities_column, hashes, index, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < entities_column->numRows(); i++) {
     for (uint32_t entity : entities_column->row(i)) {
       try {

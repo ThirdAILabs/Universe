@@ -1,14 +1,13 @@
 #include "TabularTransformations.h"
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
-#include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
+#include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -37,9 +36,10 @@ TransformSeries text(const std::string& column_name,
   std::string output = textOutputColumn(column_name);
 
   auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-      /* input_column= */ column_name, /* output_column= */ output,
-      /* tokenizer= */ text->tokenizer, /* encoder= */ text->encoder,
-      /* lowercase= */ text->lowercase, /* dim= */ dim);
+      /* input_column= */ column_name, /* output_indices= */ output,
+      /* output_values= */ std::nullopt, /* tokenizer= */ text->tokenizer,
+      /* encoder= */ text->encoder, /* lowercase= */ text->lowercase,
+      /* dim= */ dim);
 
   return {{transformation}, output};
 }
@@ -53,8 +53,9 @@ TransformSeries categorical(const std::string& column_name,
     auto enc = dataset::NGramEncoder::make(/* n = */ 1);
 
     auto transformation = std::make_shared<thirdai::data::TextTokenizer>(
-        /* input_column= */ column_name, /* output_column= */ output,
-        /* tokenizer= */ tok, /* encoder= */ enc, /* lowercase= */ false,
+        /* input_column= */ column_name, /* output_indices= */ output,
+        /* output_values= */ std::nullopt, /* tokenizer= */ tok,
+        /* encoder= */ enc, /* lowercase= */ false,
         /* dim= */ std::numeric_limits<uint32_t>::max());
 
     return {{transformation}, output};
@@ -64,23 +65,6 @@ TransformSeries categorical(const std::string& column_name,
       /* input_column_name= */ column_name, /* output_column_name= */ output);
 
   return {{transformation}, output};
-}
-
-TransformSeries binning(const std::string& column_name,
-                        const data::NumericalDataTypePtr& numerical) {
-  std::string output = binningOutputColumn(column_name);
-
-  auto cast = std::make_shared<thirdai::data::StringToDecimal>(column_name,
-                                                               column_name);
-
-  auto transformation = std::make_shared<thirdai::data::BinningTransformation>(
-      /* input_column_name= */ column_name,
-      /* output_column_name= */ output,
-      /* inclusive_min_value= */ numerical->range.first,
-      /* exlusive_max_value= */ numerical->range.second,
-      /* num_bins= */ numerical->numBins());
-
-  return {{cast, transformation}, output};
 }
 
 TransformSeries sequence(const std::string& column_name,
@@ -107,16 +91,6 @@ TransformSeries date(const std::string& column_name,
       /* input_column_name= */ column_name, /* output_column_name= */ output);
 
   return {{transformation}, output};
-}
-
-TransformSeries crossColumnPaigrams(
-    const std::vector<std::string>& tabular_columns) {
-  auto transformation = std::make_shared<thirdai::data::CrossColumnPairgrams>(
-      /* input_column_names= */ tabular_columns,
-      /* output_column_name= */ CROSS_COLUMN_PAIRGRAMS_OUTPUT,
-      /* hash_range= */ std::numeric_limits<uint32_t>::max());
-
-  return {{transformation}, CROSS_COLUMN_PAIRGRAMS_OUTPUT};
 }
 
 TransformSeries timestamp(const data::ColumnDataTypes& data_types) {
@@ -147,7 +121,9 @@ MergedTransformSeries nonTemporalTransformations(
     const data::TabularOptions& options) {
   std::vector<thirdai::data::TransformationPtr> pipeline;
   std::vector<std::string> output_columns;
-  std::vector<std::string> tabular_columns;
+
+  std::vector<thirdai::data::NumericalColumn> numerical_cols;
+  std::vector<thirdai::data::CategoricalColumn> categorical_cols;
 
   for (const auto& [name, data_type] : data_types) {
     if (auto text_type = data::asText(data_type)) {
@@ -157,19 +133,19 @@ MergedTransformSeries nonTemporalTransformations(
     }
 
     if (auto cat_type = data::asCategorical(data_type)) {
-      auto [transforms, output] = categorical(name, cat_type);
-      pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
       if (!cat_type->delimiter) {
-        tabular_columns.push_back(output);
+        categorical_cols.push_back(thirdai::data::CategoricalColumn(name));
       } else {
+        auto [transforms, output] = categorical(name, cat_type);
+        pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
         output_columns.push_back(output);
       }
     }
 
     if (auto numerical = data::asNumerical(data_type)) {
-      auto [transforms, output] = binning(name, numerical);
-      pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
-      tabular_columns.push_back(output);
+      numerical_cols.push_back(thirdai::data::NumericalColumn(
+          name, numerical->range.first, numerical->range.second,
+          numerical->numBins()));
     }
 
     if (auto sequence_type = data::asSequence(data_type)) {
@@ -185,15 +161,13 @@ MergedTransformSeries nonTemporalTransformations(
     }
   }
 
-  if (!tabular_columns.empty()) {
-    if (options.contextual_columns) {
-      auto [transforms, output] = crossColumnPaigrams(tabular_columns);
-      pipeline.insert(pipeline.end(), transforms.begin(), transforms.end());
-      output_columns.push_back(output);
-    } else {
-      output_columns.insert(output_columns.end(), tabular_columns.begin(),
-                            tabular_columns.end());
-    }
+  if (!numerical_cols.empty() || !categorical_cols.empty()) {
+    auto transform = std::make_shared<thirdai::data::Tabular>(
+        numerical_cols, categorical_cols, TABULAR_COLUMNS_OUTPUT,
+        options.contextual_columns);
+
+    pipeline.push_back(transform);
+    output_columns.push_back(TABULAR_COLUMNS_OUTPUT);
   }
 
   return {pipeline, output_columns};
@@ -342,10 +316,13 @@ inputTransformations(const data::ColumnDataTypes& data_types,
     auto [name, type] = *non_temporal_input_data_types.begin();
 
     if (auto text_type = data::asText(type)) {
-      auto [transforms, output_name] =
-          text(name, text_type, /* dim= */ options.feature_hash_range);
+      auto transform = std::make_shared<thirdai::data::TextTokenizer>(
+          name, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
+          text_type->encoder, text_type->lowercase, options.feature_hash_range);
 
-      return {transforms.at(0), {thirdai::data::OutputColumns(output_name)}};
+      return {transform,
+              {thirdai::data::OutputColumns(FEATURIZED_INDICES,
+                                            FEATURIZED_VALUES)}};
     }
   }
 
@@ -365,8 +342,8 @@ inputTransformations(const data::ColumnDataTypes& data_types,
 
   auto feature_hash = std::make_shared<thirdai::data::FeatureHash>(
       /* input_columns= */ output_columns,
-      /* output_indices_column= */ FEATURE_HASH_INDICES,
-      /* output_values_column= */ FEATURE_HASH_VALUES,
+      /* output_indices_column= */ FEATURIZED_INDICES,
+      /* output_values_column= */ FEATURIZED_VALUES,
       /* hash_range= */ options.feature_hash_range);
 
   transformations.push_back(feature_hash);
@@ -374,9 +351,9 @@ inputTransformations(const data::ColumnDataTypes& data_types,
   auto t_list =
       std::make_shared<thirdai::data::TransformationList>(transformations);
 
-  return {t_list,
-          {thirdai::data::OutputColumns(FEATURE_HASH_INDICES,
-                                        FEATURE_HASH_VALUES)}};
+  return {
+      t_list,
+      {thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
 }
 
 }  // namespace thirdai::automl

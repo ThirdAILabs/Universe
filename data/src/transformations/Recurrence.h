@@ -50,6 +50,11 @@ class Recurrence final : public Transformation {
 
   bool isEOS(uint32_t token) const;
 
+  inline constexpr size_t totalVocabSize() const {
+    // +1 for EOS.
+    return _target_vocab_size + 1;
+  }
+
  private:
   size_t effectiveSize(const RowView<uint32_t>& row) const;
 
@@ -62,17 +67,18 @@ class Recurrence final : public Transformation {
 
   inline constexpr uint32_t EOS() const { return _target_vocab_size; }
 
-  inline constexpr size_t totalVocabSize() const {
-    // +1 for EOS.
-    return _target_vocab_size + 1;
-  }
-
   std::string _source_input_column;
   std::string _target_input_column;
   std::string _source_output_column;
   std::string _target_output_column;
   size_t _target_vocab_size;
   size_t _max_seq_len;
+
+  Recurrence() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

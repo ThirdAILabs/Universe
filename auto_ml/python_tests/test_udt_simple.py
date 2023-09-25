@@ -177,7 +177,9 @@ def test_save_load():
     saved_model = bolt.UniversalDeepTransformer.load(filename=save_file)
 
     eval_res = model.evaluate(TEST_FILE)
+    del eval_res["val_times"]
     saved_eval_res = saved_model.evaluate(TEST_FILE)
+    del saved_eval_res["val_times"]
     assert eval_res == saved_eval_res
 
     model.index(single_update())
@@ -225,7 +227,7 @@ def test_index_changes_predict_result():
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
-        embedding = model.embedding_representation(single_sample())
+        embedding = model.embedding_representation([single_sample()])
         assert embedding.shape == (embedding_dim,)
         assert (embedding != 0).any()
 

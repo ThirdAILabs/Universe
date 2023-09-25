@@ -1,8 +1,14 @@
 #include "CategoricalTemporal.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/transformations/Transformation.h>
 #include <limits>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::data {
 
@@ -23,7 +29,7 @@ CategoricalTemporal::CategoricalTemporal(
 
 ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto user_col = columns.getValueColumn<std::string>(_user_column);
-  auto item_col = columns.getArrayColumn<uint32_t>(_item_column);
+  auto item_col = getItemColumn(columns);
   auto timestamp_col = columns.getValueColumn<int64_t>(_timestamp_column);
 
   auto& item_history_tracker = state.getItemHistoryTracker(_tracker_key);
@@ -33,12 +39,6 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   for (size_t i = 0; i < user_col->numRows(); i++) {
     const std::string& user_id = user_col->value(i);
     int64_t timestamp = timestamp_col->value(i);
-
-    if (timestamp < item_history_tracker.last_timestamp) {
-      throw std::invalid_argument("Expected increasing timestamps in column '" +
-                                  _timestamp_column + "'.");
-    }
-    item_history_tracker.last_timestamp = timestamp;
 
     std::vector<uint32_t> user_last_n_items;
 
@@ -56,7 +56,18 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
       }
     }
 
-    auto& user_item_history = item_history_tracker.trackers[user_id];
+    auto& user_item_history = item_history_tracker[user_id];
+
+    if (!user_item_history.empty() &&
+        timestamp < user_item_history.back().timestamp) {
+      std::stringstream error;
+      error << "Expected increasing timestamps for each tracking key. Found "
+               "timestamp "
+            << timestamp << " after seeing timestamp "
+            << user_item_history.back().timestamp << " for tracking key '"
+            << user_id << "'.";
+      throw std::invalid_argument(error.str());
+    }
 
     size_t seen = 0;
     for (auto it = user_item_history.rbegin();
@@ -83,10 +94,34 @@ ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   }
 
   auto output =
-      ArrayColumn<uint32_t>::make(std::move(last_n_items), item_col->dim());
+      ArrayColumn<uint32_t>::make(std::move(last_n_items), std::nullopt);
   columns.setColumn(_output_column, output);
 
   return columns;
 }
 
+void CategoricalTemporal::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  auto output = apply(input, state).getArrayColumn<uint32_t>(_output_column);
+
+  for (uint32_t token : output->row(0)) {
+    std::string explanation =
+        "User interaction with item: " + std::to_string(token);
+
+    explanations.store(_output_column, token, explanation);
+  }
+}
+
+template void CategoricalTemporal::serialize(cereal::BinaryInputArchive&);
+template void CategoricalTemporal::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void CategoricalTemporal::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _user_column, _item_column,
+          _timestamp_column, _output_column, _tracker_key, _track_last_n,
+          _include_current_row, _should_update_history, _time_lag);
+}
+
 }  // namespace thirdai::data
+
+CEREAL_REGISTER_TYPE(thirdai::data::CategoricalTemporal)

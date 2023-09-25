@@ -241,9 +241,15 @@ def test_mach_udt_entity_embedding(embedding_dim):
 def test_mach_udt_embedding():
     model = train_simple_mach_udt()
 
-    embedding = model.embedding_representation({"text": "some sample query"})
+    embedding = model.embedding_representation([{"text": "some sample query"}])
 
     assert embedding.shape == (256,)
+
+    embedding = model.embedding_representation(
+        [{"text": "some sample query"}, {"text": "some sample query"}]
+    )
+
+    assert embedding.shape == (2, 256)
 
 
 def test_mach_udt_decode_params():
