@@ -1,25 +1,27 @@
 import functools
 import re
-from pathlib import Path
 from dataclasses import dataclass
 from enum import IntEnum
+from pathlib import Path
+from typing import Dict, List, Union
 
 import fitz
 import pandas as pd
 from nltk.tokenize import sent_tokenize
-from typing import List, Dict, Union
 
 from .utils import ATTACH_N_WORD_THRESHOLD, chunk_text, ensure_valid_encoding
 
 # TODO: Remove senttokenize
 # TODO: Limit paragraph length
 
+
 class BlockType(IntEnum):
     Text = 0
     Image = 1
-    
+
+
 @dataclass
-class Block():
+class Block:
     x0: float
     y0: float
     x1: float
@@ -28,12 +30,16 @@ class Block():
     block_no: int
     block_type: BlockType
 
+
 @dataclass
-class PDFparagraph():
+class PDFparagraph:
     text: str
     page_no: int
     filename: str
-    block_nos: Union[str, Dict[int, List[int]]]     # [Page no. -> Block No(s) Dictionary] in Dict or string format
+    block_nos: Union[
+        str, Dict[int, List[int]]
+    ]  # [Page no. -> Block No(s) Dictionary] in Dict or string format
+
 
 def para_is_complete(para):
     endings = [".", "?", "!", '."', ".'"]
@@ -54,7 +60,15 @@ def process_pdf_file(filename):
         for page_no, page in enumerate(doc):
             blocks = page.get_text("blocks")
             for t in blocks:
-                block = Block(x0 = t[0], y0=t[1], x1=t[2], y1=t[3], lines=t[4], block_no = t[5], block_type=t[6])
+                block = Block(
+                    x0=t[0],
+                    y0=t[1],
+                    x1=t[2],
+                    y1=t[3],
+                    lines=t[4],
+                    block_no=t[5],
+                    block_type=t[6],
+                )
                 if block.block_type == BlockType.Text:
                     current_blocks = {}
                     current_blocks[page_no] = [block.block_no]
@@ -81,17 +95,21 @@ def process_pdf_file(filename):
                             prev_blocks[page_no].extend(current_blocks[page_no])
                         else:
                             prev_blocks[page_no] = current_blocks[page_no]
-                            
+
                         prev_para = paras[-1]
                         prev_para.text += f" {current}"
                         prev_para.block_nos = prev_blocks
 
                     else:
                         prev = current
-                        paras.append(PDFparagraph(text=current,
-                                               page_no=page_no,
-                                               filename=Path(filename).name,
-                                               block_nos=current_blocks))
+                        paras.append(
+                            PDFparagraph(
+                                text=current,
+                                page_no=page_no,
+                                filename=Path(filename).name,
+                                block_nos=current_blocks,
+                            )
+                        )
 
                     # Occurrences of space is proxy for number of words.
                     # If there are 10 words or less, this paragraph is
@@ -99,7 +117,12 @@ def process_pdf_file(filename):
                     prev_n_words = len(current.split(" "))
 
         paras = [
-            PDFparagraph(text = chunk, page_no=paragraph.page_no, filename = paragraph.filename, block_nos = paragraph.block_nos)
+            PDFparagraph(
+                text=chunk,
+                page_no=paragraph.page_no,
+                filename=paragraph.filename,
+                block_nos=paragraph.block_nos,
+            )
             for paragraph in paras
             for chunk in chunk_text(paragraph.text)
         ]
@@ -115,7 +138,14 @@ def process_pdf_file(filename):
                     .strip(),
                 )
                 if len(sent) > 0:
-                    rows.append(PDFparagraph(text = sent, page_no=para.page_no, filename=para.filename, block_nos=str(para.block_nos)))
+                    rows.append(
+                        PDFparagraph(
+                            text=sent,
+                            page_no=para.page_no,
+                            filename=para.filename,
+                            block_nos=str(para.block_nos),
+                        )
+                    )
         return rows, True
     except Exception as e:
         print(e.__str__())
@@ -132,7 +162,13 @@ def create_train_df(elements):
         sents = list(map(lambda x: x.lower(), sents))
         para = " ".join(sents)
         # elem[-1] is id
-        df.iloc[i] = [para, paragraph.filename, paragraph.page_no, paragraph.text, paragraph.block_nos]
+        df.iloc[i] = [
+            para,
+            paragraph.filename,
+            paragraph.page_no,
+            paragraph.text,
+            paragraph.block_nos,
+        ]
     for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
