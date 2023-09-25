@@ -24,6 +24,10 @@ class Reference:
     pass
 
 
+def _raise_unknown_doc_error(element_id: int):
+    raise ValueError(f"Unable to find document that has id {element_id}.")
+
+
 class Document:
     @property
     def size(self) -> int:
@@ -55,9 +59,6 @@ class Document:
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
-
-    def _raise_unknown_doc_error(self, element_id: int):
-        raise ValueError(f"Unable to find document that has id {element_id}.")
 
     def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text
@@ -259,7 +260,7 @@ class DocumentManager:
             if start_id <= element_id:
                 return doc, start_id
 
-        raise ValueError(f"Unable to find document that has id {element_id}.")
+        _raise_unknown_doc_error(element_id)
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
@@ -371,7 +372,7 @@ class CSV(Document):
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
-            self._raise_unknown_doc_error(element_id)
+            _raise_unknown_doc_error(element_id)
         row = self.df.iloc[element_id]
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
@@ -468,7 +469,7 @@ class Extracted(Document):
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
-            self._raise_unknown_doc_error(element_id)
+            _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
@@ -631,7 +632,7 @@ class URL(Document):
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
-            self._raise_unknown_doc_error(element_id)
+            _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
@@ -742,7 +743,7 @@ class SentenceLevelExtracted(Extracted):
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
-            self._raise_unknown_doc_error(element_id)
+            _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
