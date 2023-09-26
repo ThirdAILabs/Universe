@@ -30,8 +30,8 @@ struct QueryCandidates {
 
  public:
   explicit QueryCandidates(MapInputBatch& candidates,
-                           const std::vector<uint32_t>& candidate_count)
-      : offsets(candidate_count), candidate_batches(candidates) {
+                           std::vector<uint32_t> candidate_count)
+      : offsets(std::move(candidate_count)), candidate_batches(candidates) {
     for (size_t i = 1; i < offsets.size(); i++) {
       offsets[i] += offsets[i - 1];
     }
