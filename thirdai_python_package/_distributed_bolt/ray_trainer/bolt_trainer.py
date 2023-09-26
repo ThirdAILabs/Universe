@@ -31,7 +31,7 @@ class BoltTrainer(DataParallelTrainer):
                 use_sparsity=False,
             )
 
-            train.report(
+            dist.report(
                 history,
                 checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
             )

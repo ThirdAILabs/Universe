@@ -54,10 +54,12 @@ class DistributedRunner(Runner):
                 validation=validation,
             )
 
-        train.report(
-            metrics,
-            checkpoint=dist.UDTCheckPoint.from_model(model),
-        )
+        rank = train.get_context().get_world_rank()
+        checkpoint = None
+        if rank == 0:
+            checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
+
+        dist.report(metrics, checkpoint=checkpoint)
 
     @classmethod
     def run_benchmark(

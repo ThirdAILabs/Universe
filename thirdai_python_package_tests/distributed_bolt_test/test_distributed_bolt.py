@@ -156,20 +156,24 @@ def test_distributed_fault_tolerance():
         train_x = bolt.train.convert_dataset(train_x, dim=10)
         train_y = bolt.train.convert_dataset(train_y, dim=10)
 
+        rank = train.get_context().get_world_rank()
         for epoch in range(starting_epoch, num_epochs):
             trainer.train_distributed(
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-            # Use `with_optimizers=False` to save model without optimizer states
-            checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=True)
-            checkpoint.set_metadata(
-                metadata={
-                    "epoch": epoch + 1,
-                    "is_worker_killed": True,
-                }
-            )
-            train.report(
+            checkpoint = None
+            if rank == 0:
+                # Use `with_optimizers=False` to save model without optimizer states
+                checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=True)
+                checkpoint.set_metadata(
+                    metadata={
+                        "epoch": epoch + 1,
+                        "is_worker_killed": True,
+                    }
+                )
+
+            dist.report(
                 {"model_location": train.get_context().get_trial_dir()},
                 checkpoint=checkpoint,
             )
@@ -220,15 +224,18 @@ def test_distributed_resume_training():
         train_x = bolt.train.convert_dataset(train_x, dim=10)
         train_y = bolt.train.convert_dataset(train_y, dim=10)
 
+        rank = train.get_context().get_world_rank()
         for epoch in range(num_epochs):
             trainer.train_distributed(
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-        # Use `with_optimizers=True` to save model with optimizer states
-        train.report(
-            {}, checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False)
-        )
+        checkpoint = None
+        if rank == 0:
+            # Use `with_optimizers=True` to save model with optimizer states
+            checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=False)
+
+        dist.report({}, checkpoint=checkpoint)
 
     scaling_config = setup_ray()
 

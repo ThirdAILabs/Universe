@@ -34,7 +34,7 @@ class UDTCheckPoint(train.Checkpoint):
             >>> checkpoint = UDTCheckPoint.from_model(udt_model, with_optimizers=True): saving with optimizer states
             >>> checkpoint = UDTCheckPoint.from_model(udt_model, with_optimizers=False): saving without optimizer states
 
-            >>> model = checkpoint.get_model()
+            >>> model = dist.UDTCheckPoint.get_model(checkpoint)
         """
 
         save_dir = os.path.join(train.get_context().get_trial_dir(), "tmp_checkpoint")
@@ -84,7 +84,7 @@ class BoltCheckPoint(train.Checkpoint):
             >>> checkpoint = BoltCheckPoint.from_model(bolt_model, with_optimizers=True): saving with optimizer states
             >>> checkpoint = BoltCheckPoint.from_model(bolt_model, with_optimizers=False): saving without optimizer states
 
-            >>> model = checkpoint.get_model()
+            >>> model = dist.BoltCheckPoint.get_model(checkpoint)
         """
         save_dir = os.path.join(train.get_context().get_trial_dir(), "tmp_checkpoint")
         os.makedirs(save_dir, exist_ok=True)

@@ -146,11 +146,13 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
             metrics=["categorical_accuracy"],
         )
 
-        train.report(
-            metrics,
+        rank = train.get_context().get_world_rank()
+        checkpoint = None
+        if rank == 0:
             # Use `with_optimizers=False` to save model without optimizer states
-            checkpoint=dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True),
-        )
+            checkpoint = dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True)
+
+        dist.report(metrics, checkpoint=checkpoint)
 
     scaling_config = setup_ray()
 
@@ -201,12 +203,14 @@ def test_udt_train_distributed():
             batch_size=128,
         )
 
-        # train report should always have a metrics stored, hence added a demo_metric
-        train.report(
-            {"demo_metric": 1},
+        rank = train.get_context().get_world_rank()
+        checkpoint = None
+        if rank == 0:
             # Use `with_optimizers=False` to save model without optimizer states
-            checkpoint=dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True),
-        )
+            checkpoint = dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True)
+
+        # train report should always have a metrics stored, hence added a demo_metric
+        dist.report({"demo_metric": 1}, checkpoint=checkpoint)
 
     scaling_config = setup_ray()
 
@@ -224,7 +228,7 @@ def test_udt_train_distributed():
     )
 
     result = trainer.fit()
-    trained_udt_model = result.checkpoint.get_model()
+    trained_udt_model = dist.UDTCheckPoint.get_model(result.checkpoint)
     metrics = trained_udt_model.evaluate(
         f"{os.getcwd()}/clinc_test.csv", metrics=["categorical_accuracy"]
     )
@@ -287,11 +291,13 @@ def test_udt_mach_distributed(download_scifact_dataset):
             validation=validation,
         )
 
-        train.report(
-            metrics,
+        rank = train.get_context().get_world_rank()
+        checkpoint = None
+        if rank == 0:
             # Use `with_optimizers=False` to save model without optimizer states
-            checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=True),
-        )
+            checkpoint = dist.UDTCheckPoint.from_model(udt_model, with_optimizers=True)
+
+        dist.report(metrics, checkpoint=checkpoint)
 
     scaling_config = setup_ray()
 
@@ -332,7 +338,7 @@ def test_udt_licensed_training():
         udt_model = get_clinc_udt_model(integer_target=True)
         udt_model = dist.prepare_model(udt_model)
 
-        train.report(
+        dist.report(
             {"demo_metric": 1},
         )
 
@@ -384,7 +390,7 @@ def test_udt_licensed_fail():
         ):
             udt_model = get_clinc_udt_model(integer_target=True)
 
-        train.report(
+        dist.report(
             {"demo_metric": 1},
         )
 

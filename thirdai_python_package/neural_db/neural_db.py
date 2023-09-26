@@ -397,10 +397,13 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
             )
 
-            train.report(
-                metrics=metrics,
-                checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=False),
-            )
+            rank = train.get_context().get_world_rank()
+            checkpoint = None
+            if rank == 0:
+                # Use `with_optimizers=False` to save model without optimizer states
+                checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
+
+            dist.report(metrics=metrics, checkpoint=checkpoint)
 
         csv_paths = [str(document.path.resolve()) for document in documents]
 
@@ -450,7 +453,9 @@ class NeuralDB:
         result_and_checkpoint = trainer.fit()
 
         # TODO(pratik/mritunjay): This will stop working with ray==2.7 if runconfig doesnt specify s3 storage path.
-        model = result_and_checkpoint.checkpoint.get_model()
+        # Update: https://github.com/ThirdAILabs/Universe/pull/1784
+        # `run_config` is made required argument in `pretrained_distributed` function
+        model = dist.UDTCheckPoint.get_model(result_and_checkpoint.checkpoint)
 
         self._savable_state.model.set_model(model)
 
