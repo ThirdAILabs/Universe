@@ -35,7 +35,7 @@ def train_simple_neural_db(create_simple_dataset):
         id_column="label",
         strong_columns=["text"],
         weak_columns=["text"],
-        reference_columns=["id", "text"],
+        reference_columns=["label", "text"],
     )
 
     db.insert(sources=[doc], train=True)
