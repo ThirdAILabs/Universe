@@ -17,6 +17,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/transformations/State.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -51,7 +52,8 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
               user_args.get<bool>("sigmoid_bce", "boolean",
                                   defaults::USE_SIGMOID_BCE)),
           user_args.get<bool>("freeze_hash_tables", "boolean",
-                              defaults::FREEZE_HASH_TABLES))) {
+                              defaults::FREEZE_HASH_TABLES))),
+      _state(thirdai::data::State::make()) {
   auto label_transform = labelTransformation(target_name, target,
                                              n_target_classes, integer_target);
 
@@ -80,14 +82,14 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
                                 const bolt::DistributedCommPtr& comm) {
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, _state, options.batchSize(), /* shuffle= */ true, options.verbose,
+      options.shuffle_config);
 
   thirdai::data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
+        _featurizer->getDataLoader(val_data, _state, defaults::BATCH_SIZE,
                                    /* shuffle= */ false, options.verbose);
   }
 
@@ -101,7 +103,7 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
                                      const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
-  auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
+  auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch, *_state);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -145,7 +147,7 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+  auto dataset = _featurizer->getDataLoader(data, _state, defaults::BATCH_SIZE,
                                             /* shuffle= */ false, verbose);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
@@ -154,7 +156,7 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) {
-  return _classifier->predict(_featurizer->featurizeInput(sample),
+  return _classifier->predict(_featurizer->featurizeInput(sample, *_state),
                               sparse_inference, return_predicted_class,
                               /* single= */ true, top_k);
 }
@@ -163,15 +165,16 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k) {
-  return _classifier->predict(_featurizer->featurizeInputBatch(samples),
-                              sparse_inference, return_predicted_class,
-                              /* single= */ false, top_k);
+  return _classifier->predict(
+      _featurizer->featurizeInputBatch(samples, *_state), sparse_inference,
+      return_predicted_class,
+      /* single= */ false, top_k);
 }
 
 std::vector<std::pair<std::string, float>> UDTClassifier::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
-  auto input_vec = _featurizer->featurizeInput(sample);
+  auto input_vec = _featurizer->featurizeInput(sample, *_state);
 
   bolt::rca::RCAGradients gradients;
   if (target_class) {
@@ -196,7 +199,7 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
   }
 
   auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
-  auto explanation_map = _featurizer->explain(columns);
+  auto explanation_map = _featurizer->explain(columns, *_state);
 
   std::vector<std::pair<std::string, float>> explanations;
   explanations.reserve(sorted_gradients.size());
@@ -220,14 +223,14 @@ py::object UDTClassifier::coldstart(
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   auto train_data_loader = _featurizer->getColdStartDataLoader(
-      data, strong_column_names, weak_column_names,
+      data, _state, strong_column_names, weak_column_names,
       /* fast_approximation= */ false, options.batchSize(),
       /* shuffle= */ true, options.verbose, options.shuffle_config);
 
   thirdai::data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
+        _featurizer->getDataLoader(val_data, _state, defaults::BATCH_SIZE,
                                    /* shuffle= */ false, options.verbose);
   }
 
@@ -237,7 +240,8 @@ py::object UDTClassifier::coldstart(
 }
 
 py::object UDTClassifier::embedding(const MapInputBatch& sample) {
-  return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
+  return _classifier->embedding(
+      _featurizer->featurizeInputBatch(sample, *_state));
 }
 
 py::object UDTClassifier::entityEmbedding(
@@ -271,7 +275,7 @@ std::string UDTClassifier::className(uint32_t class_id) const {
   if (integerTarget()) {
     return std::to_string(class_id);
   }
-  auto& vocab = _featurizer->state()->getVocab(LABEL_VOCAB);
+  auto& vocab = _state->getVocab(LABEL_VOCAB);
   return vocab->getString(class_id);
 }
 
@@ -306,7 +310,7 @@ uint32_t UDTClassifier::labelToNeuronId(
   }
   if (std::holds_alternative<std::string>(label)) {
     if (!integerTarget()) {
-      auto& vocab = _featurizer->state()->getVocab(LABEL_VOCAB);
+      auto& vocab = _state->getVocab(LABEL_VOCAB);
       return vocab->getUid(std::get<std::string>(label));
     }
     throw std::invalid_argument(
@@ -318,7 +322,7 @@ uint32_t UDTClassifier::labelToNeuronId(
 }
 
 bool UDTClassifier::integerTarget() const {
-  return !_featurizer->state()->containsVocab(LABEL_VOCAB);
+  return !_state->containsVocab(LABEL_VOCAB);
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
@@ -336,7 +340,8 @@ void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_CLASSIFIER_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
+          _state);
 }
 
 }  // namespace thirdai::automl::udt

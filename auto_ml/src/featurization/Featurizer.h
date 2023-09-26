@@ -51,40 +51,43 @@ class Featurizer {
              const data::TabularOptions& options);
 
   thirdai::data::LoaderPtr getDataLoader(
-      const dataset::DataSourcePtr& data_source, size_t batch_size,
-      bool shuffle, bool verbose,
+      const dataset::DataSourcePtr& data_source, thirdai::data::StatePtr& state,
+      size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
   thirdai::data::LoaderPtr getColdStartDataLoader(
-      const dataset::DataSourcePtr& data_source,
+      const dataset::DataSourcePtr& data_source, thirdai::data::StatePtr& state,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
-  bolt::TensorList featurizeInput(const MapInput& sample);
+  bolt::TensorList featurizeInput(const MapInput& sample,
+                                  thirdai::data::State& state);
 
-  bolt::TensorList featurizeInputBatch(const MapInputBatch& samples);
+  bolt::TensorList featurizeInputBatch(const MapInputBatch& samples,
+                                       thirdai::data::State& state);
 
   bolt::TensorList featurizeInputColdStart(
-      MapInput sample, const std::vector<std::string>& strong_column_names,
+      MapInput sample, thirdai::data::State& state,
+      const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
   std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
-      const MapInputBatch& samples);
+      const MapInputBatch& samples, thirdai::data::State& state);
 
-  thirdai::data::ExplanationMap explain(
-      const thirdai::data::ColumnMap& columns) {
-    return _input_transform_non_updating->explain(columns, *_state);
+  thirdai::data::ExplanationMap explain(const thirdai::data::ColumnMap& columns,
+                                        thirdai::data::State& state) {
+    return _input_transform_non_updating->explain(columns, state);
   }
 
-  const auto& state() const { return _state; }
+  void updateTemporalTrackers(const MapInput& sample,
+                              thirdai::data::State& state);
 
-  void updateTemporalTrackers(const MapInput& sample);
-
-  void updateTemporalTrackersBatch(const MapInputBatch& samples);
+  void updateTemporalTrackersBatch(const MapInputBatch& samples,
+                                   thirdai::data::State& state);
 
   bool hasTemporalTransformations() const;
 
@@ -97,12 +100,13 @@ class Featurizer {
     return *_text_dataset;
   }
 
-  void resetTemporalTrackers();
+  static void resetTemporalTrackers(thirdai::data::State& state);
 
  protected:
   thirdai::data::LoaderPtr getDataLoaderHelper(
-      const dataset::DataSourcePtr& data_source, size_t batch_size,
-      bool shuffle, bool verbose, dataset::DatasetShuffleConfig shuffle_config,
+      const dataset::DataSourcePtr& data_source, thirdai::data::StatePtr& state,
+      size_t batch_size, bool shuffle, bool verbose,
+      dataset::DatasetShuffleConfig shuffle_config,
       const thirdai::data::TransformationPtr& cold_start_transform = nullptr);
 
   thirdai::data::TransformationPtr coldStartTransform(
@@ -118,9 +122,6 @@ class Featurizer {
   thirdai::data::OutputColumnsList _bolt_label_columns;
 
   char _delimiter;
-
-  thirdai::data::StatePtr _state;
-
   std::optional<TextDatasetConfig> _text_dataset;
 
   Featurizer() {}  // For cereal

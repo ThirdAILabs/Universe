@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -81,6 +82,22 @@ class UDTClassifier final : public UDTBackend {
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
 
+  void updateTemporalTrackers(const MapInput& sample) final {
+    _featurizer->updateTemporalTrackers(sample, *_state);
+  }
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
+    _featurizer->updateTemporalTrackersBatch(samples, *_state);
+  }
+
+  void resetTemporalTrackers() final {
+    _featurizer->resetTemporalTrackers(*_state);
+  }
+
+  const TextDatasetConfig& textDatasetConfig() const final {
+    return _featurizer->textDatasetConfig();
+  }
+
   std::string className(uint32_t class_id) const final;
 
   ModelPtr model() const final { return _classifier->model(); }
@@ -92,8 +109,6 @@ class UDTClassifier final : public UDTBackend {
 
     curr_model = model;
   }
-
-  FeaturizerPtr featurizer() const final { return _featurizer; }
 
   void verifyCanDistribute() const final {
     if (!integerTarget()) {
@@ -132,6 +147,8 @@ class UDTClassifier final : public UDTBackend {
   utils::ClassifierPtr _classifier;
 
   FeaturizerPtr _featurizer;
+
+  thirdai::data::StatePtr _state;
 
   const std::string LABEL_VOCAB = "__label_vocab__";
 };

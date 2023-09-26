@@ -104,7 +104,10 @@ class UDTBackend {
     throw notSupported("modifying underlying model");
   }
 
-  virtual FeaturizerPtr featurizer() const { return nullptr; }
+  virtual const TextDatasetConfig& textDatasetConfig() const {
+    throw std::invalid_argument(
+        "This method is only supported on Text Models.");
+  }
 
   virtual void verifyCanDistribute() const {
     throw notSupported("train_distributed");
@@ -160,6 +163,14 @@ class UDTBackend {
   virtual data::ColumnDataTypes dataTypes() const {
     throw notSupported("data_types");
   }
+
+  virtual void updateTemporalTrackers(const MapInput& sample) { (void)sample; }
+
+  virtual void updateTemporalTrackersBatch(const MapInputBatch& samples) {
+    (void)samples;
+  }
+
+  virtual void resetTemporalTrackers() {}
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {
     (void)source;

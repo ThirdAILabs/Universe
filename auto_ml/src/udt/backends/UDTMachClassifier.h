@@ -9,7 +9,9 @@
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/backends/MachLogic.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <data/src/transformations/State.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -78,11 +80,23 @@ class UDTMachClassifier final : public UDTBackend {
                                bool sparse_inference,
                                std::optional<uint32_t> num_hashes) final;
 
-  ModelPtr model() const final { return _classifier->model(); }
+  ModelPtr model() const final { return _logic.model(); }
 
   void setModel(const ModelPtr& model) final;
 
-  FeaturizerPtr featurizer() const final { return _featurizer; }
+  void updateTemporalTrackers(const MapInput& sample) final {
+    _logic.updateTemporalTrackers(sample, *_state);
+  }
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
+    _logic.updateTemporalTrackersBatch(samples, *_state);
+  }
+
+  void resetTemporalTrackers() final { _logic.resetTemporalTrackers(*_state); }
+
+  const TextDatasetConfig& textDatasetConfig() const final {
+    return _logic.textDatasetConfig();
+  }
 
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
@@ -124,15 +138,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final {
-    getIndex()->clear();
-
-    updateSamplingStrategy();
-
-    if (_rlhf_sampler) {
-      _rlhf_sampler->clear();
-    }
-  }
+  void clearIndex() final { _logic.clearIndex(*_state); }
 
   void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
@@ -162,72 +168,22 @@ class UDTMachClassifier final : public UDTBackend {
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final;
 
-  void verifyCanDistribute() const final {
-    if (_featurizer->hasTemporalTransformations()) {
-      throw std::invalid_argument(
-          "UDT with temporal relationships cannot be trained in a distributed "
-          "setting.");
-    }
-  }
+  void verifyCanDistribute() const final { _logic.verifyCanDistribute(); }
 
   dataset::mach::MachIndexPtr getIndex() const final {
-    return _featurizer->machIndex();
+    return _state->machIndex();
   }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
   void setMachSamplingThreshold(float threshold) final;
 
- private:
-  std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
-      const MapInputBatch& samples, bool sparse_inference,
-      std::optional<uint32_t> top_k);
-
-  std::vector<std::vector<uint32_t>> predictHashesImpl(
-      const MapInputBatch& samples, bool sparse_inference,
-      bool force_non_empty = true,
-      std::optional<uint32_t> num_hashes = std::nullopt);
-
-  void introduceLabelHelper(const bolt::TensorList& samples,
-                            const Label& new_label,
-                            std::optional<uint32_t> num_buckets_to_sample_opt,
-                            uint32_t num_random_hashes);
-
-  void teach(const std::vector<RlhfSample>& rlhf_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
-
-  std::vector<RlhfSample> getAssociateSamples(
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      size_t n_buckets, size_t n_association_samples);
-
-  void updateSamplingStrategy();
-
-  void addBalancingSamples(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names = {},
-      const std::vector<std::string>& weak_column_names = {});
-
-  void requireRLHFSampler();
-
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) final {
-    if (_rlhf_sampler.has_value()) {
-      std::cout << "rlhf already enabled." << std::endl;
-      return;
-    }
-
-    _rlhf_sampler = std::make_optional<RLHFSampler>(
-        num_balancing_docs, num_balancing_samples_per_doc);
+    _logic.enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
 
-  std::vector<uint32_t> topHashesForDoc(
-      std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
-
-  InputMetrics getMetrics(const std::vector<std::string>& metric_names,
-                          const std::string& prefix);
-
+ private:
   static void warnOnNonHashBasedMetrics(
       const std::vector<std::string>& metrics);
 
@@ -261,15 +217,9 @@ class UDTMachClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  std::shared_ptr<utils::Classifier> _classifier;
+  MachLogic _logic;
 
-  MachFeaturizerPtr _featurizer;
-
-  uint32_t _default_top_k_to_return;
-  uint32_t _num_buckets_to_eval;
-  float _mach_sampling_threshold;
-
-  std::optional<RLHFSampler> _rlhf_sampler;
+  thirdai::data::StatePtr _state;
 };
 
 }  // namespace thirdai::automl::udt

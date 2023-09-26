@@ -8,6 +8,7 @@
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -64,6 +65,16 @@ class State {
 
   State() {}
 
+  static auto make(MachIndexPtr mach_index) {
+    return std::make_shared<State>(std::move(mach_index));
+  }
+
+  static auto make(automl::data::GraphInfoPtr graph) {
+    return std::make_shared<State>(std::move(graph));
+  }
+
+  static auto make() { return std::make_shared<State>(); }
+
   const auto& machIndex() const {
     if (!_mach_index) {
       throw std::invalid_argument(
@@ -72,7 +83,7 @@ class State {
     return _mach_index;
   }
 
-  void setMachIndex(MachIndexPtr new_index) {
+  MachIndexPtr setMachIndex(MachIndexPtr new_index) {
     if (_mach_index->numBuckets() != new_index->numBuckets()) {
       throw std::invalid_argument(
           "Output range mismatch in new index. Index output range should be " +
@@ -81,7 +92,11 @@ class State {
           std::to_string(new_index->numBuckets()) + ".");
     }
 
+    auto old_index = std::move(_mach_index);
+
     _mach_index = std::move(new_index);
+
+    return old_index;
   }
 
   bool containsVocab(const std::string& key) const {

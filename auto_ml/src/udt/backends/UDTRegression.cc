@@ -75,14 +75,15 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
                                 const bolt::DistributedCommPtr& comm) {
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, _state, options.batchSize(), /* shuffle= */ true, options.verbose,
+      options.shuffle_config);
 
   thirdai::data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+    val_data_loader =
+        _featurizer->getDataLoader(val_data, _state, defaults::BATCH_SIZE,
+                                   /* shuffle= */ false, options.verbose);
   }
 
   bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
@@ -114,8 +115,9 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 
   bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
 
-  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                                /* shuffle= */ false, verbose);
+  auto data_loader =
+      _featurizer->getDataLoader(data, _state, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose);
 
   auto history = trainer.validate_with_data_loader(
       data_loader, fromMetricNames(_model, metrics, /* prefix= */ "val_"),
@@ -130,8 +132,8 @@ py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
   (void)return_predicted_class;  // No classes to return in regression;
   (void)top_k;
 
-  auto output =
-      _model->forward(_featurizer->featurizeInput(sample), sparse_inference);
+  auto output = _model->forward(_featurizer->featurizeInput(sample, *_state),
+                                sparse_inference);
 
   return py::cast(unbinActivations(output.at(0)->getVector(0)));
 }
@@ -143,8 +145,8 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
   (void)return_predicted_class;  // No classes to return in regression;
   (void)top_k;
 
-  auto outputs = _model->forward(_featurizer->featurizeInputBatch(samples),
-                                 sparse_inference);
+  auto outputs = _model->forward(
+      _featurizer->featurizeInputBatch(samples, *_state), sparse_inference);
 
   NumpyArray<float> predictions(outputs.at(0)->batchSize());
   for (uint32_t i = 0; i < outputs.at(0)->batchSize(); i++) {
@@ -176,7 +178,8 @@ void UDTRegression::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_REGRESSION_VERSION after serialization
   // changes
-  archive(cereal::base_class<UDTBackend>(this), _model, _featurizer, _binning);
+  archive(cereal::base_class<UDTBackend>(this), _model, _featurizer, _binning,
+          _state);
 }
 
 }  // namespace thirdai::automl::udt

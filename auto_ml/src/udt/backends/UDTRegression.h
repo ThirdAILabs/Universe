@@ -5,6 +5,7 @@
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/transformations/RegressionBinning.h>
+#include <data/src/transformations/State.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -43,6 +44,22 @@ class UDTRegression final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  void updateTemporalTrackers(const MapInput& sample) final {
+    _featurizer->updateTemporalTrackers(sample, *_state);
+  }
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
+    _featurizer->updateTemporalTrackersBatch(samples, *_state);
+  }
+
+  void resetTemporalTrackers() final {
+    _featurizer->resetTemporalTrackers(*_state);
+  }
+
+  const TextDatasetConfig& textDatasetConfig() const final {
+    return _featurizer->textDatasetConfig();
+  }
+
   ModelPtr model() const final { return _model; }
 
  private:
@@ -58,6 +75,8 @@ class UDTRegression final : public UDTBackend {
   ModelPtr _model;
 
   FeaturizerPtr _featurizer;
+
+  thirdai::data::StatePtr _state;
 
   std::shared_ptr<thirdai::data::RegressionBinning> _binning;
 };

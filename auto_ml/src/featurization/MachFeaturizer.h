@@ -15,38 +15,35 @@ class MachFeaturizer final : public Featurizer {
  public:
   MachFeaturizer(data::ColumnDataTypes data_types,
                  const data::TemporalRelationships& temporal_relationship,
-                 const std::string& label_column,
-                 const dataset::mach::MachIndexPtr& mach_index,
+                 const std::string& label_column, uint32_t num_buckets,
                  const data::TabularOptions& options);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
-      const dataset::DataSourcePtr& data_source,
+      const dataset::DataSourcePtr& data_source, thirdai::data::State& state,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bool fast_approximation, size_t batch_size);
 
   std::pair<bolt::TensorList, bolt::TensorList> featurizeHashesTrainingBatch(
-      const MapInputBatch& samples);
+      const MapInputBatch& samples, thirdai::data::State& state);
 
   thirdai::data::ColumnMap featurizeDataset(
-      const dataset::DataSourcePtr& data_source,
+      const dataset::DataSourcePtr& data_source, thirdai::data::State& state,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
   thirdai::data::ColumnMap featurizeRlhfSamples(
-      const std::vector<RlhfSample>& samples);
+      const std::vector<RlhfSample>& samples, thirdai::data::State& state);
 
   bolt::LabeledDataset columnsToTensors(const thirdai::data::ColumnMap& columns,
                                         size_t batch_size) const;
 
   std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
-      const dataset::DataSourcePtr& data_source,
+      const dataset::DataSourcePtr& data_source, thirdai::data::State& state,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       size_t n_balancing_samples, size_t rows_to_read);
-
-  const auto& machIndex() const { return _state->machIndex(); }
 
  private:
   thirdai::data::ColumnMap removeIntermediateColumns(
