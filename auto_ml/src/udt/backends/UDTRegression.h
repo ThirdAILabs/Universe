@@ -4,6 +4,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
 #include <data/src/transformations/RegressionBinning.h>
 #include <data/src/transformations/State.h>
 #include <stdexcept>
@@ -60,7 +61,12 @@ class UDTRegression final : public UDTBackend {
     return _featurizer->textDatasetConfig();
   }
 
-  ModelPtr model() const final { return _model; }
+  ModelPtr model() final { return _model; }
+
+  std::vector<uint32_t> modelDims() const final {
+    return utils::Classifier(_model, /* freeze_hash_tables= */ false)
+        .modelDims();
+  }
 
  private:
   float unbinActivations(const BoltVector& output) const;

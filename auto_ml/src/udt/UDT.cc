@@ -242,15 +242,6 @@ py::object UDT::coldstart(const dataset::DataSourcePtr& data,
                              val_metrics, callbacks, options, comm);
 }
 
-std::vector<uint32_t> UDT::modelDims() const {
-  std::vector<uint32_t> dims;
-  for (const auto& comp : model()->computationOrder()) {
-    dims.push_back(comp->dim());
-  }
-
-  return dims;
-}
-
 void UDT::saveImpl(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);

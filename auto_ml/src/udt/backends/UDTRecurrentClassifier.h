@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/RecurrentFeaturizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -47,12 +48,17 @@ class UDTRecurrentClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  ModelPtr model() const final { return _model; }
+  ModelPtr model() final { return _model; }
 
   void verifyCanDistribute() const final {
     throw std::invalid_argument(
         "UDT with a sequence target currently does not support distributed "
         "training.");
+  }
+
+  std::vector<uint32_t> modelDims() const final {
+    return utils::Classifier(_model, /* freeze_hash_tables= */ false)
+        .modelDims();
   }
 
  private:

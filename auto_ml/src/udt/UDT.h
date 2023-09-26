@@ -176,7 +176,7 @@ class UDT {
   /**
    * Returns the underlying BOLT model used.
    */
-  ModelPtr model() const { return _backend->model(); }
+  ModelPtr model() { return _backend->model(); }
 
   /**
    * Sets a new model. This is used during distributed training to update the
@@ -184,7 +184,7 @@ class UDT {
    */
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
-  std::vector<uint32_t> modelDims() const;
+  std::vector<uint32_t> modelDims() const { return _backend->modelDims(); }
 
   const TextDatasetConfig& textDatasetConfig() const {
     return _backend->textDatasetConfig();

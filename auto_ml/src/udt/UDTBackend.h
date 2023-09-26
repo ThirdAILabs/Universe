@@ -95,9 +95,7 @@ class UDTBackend {
     throw notSupported("output correctness");
   }
 
-  virtual ModelPtr model() const {
-    throw notSupported("accessing underlying model");
-  }
+  virtual ModelPtr model() { throw notSupported("accessing underlying model"); }
 
   virtual void setModel(const ModelPtr& model) {
     (void)model;
@@ -162,6 +160,10 @@ class UDTBackend {
 
   virtual data::ColumnDataTypes dataTypes() const {
     throw notSupported("data_types");
+  }
+
+  virtual std::vector<uint32_t> modelDims() const {
+    throw notSupported("model_dims");
   }
 
   virtual void updateTemporalTrackers(const MapInput& sample) { (void)sample; }

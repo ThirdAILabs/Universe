@@ -80,9 +80,11 @@ class UDTMachClassifier final : public UDTBackend {
                                bool sparse_inference,
                                std::optional<uint32_t> num_hashes) final;
 
-  ModelPtr model() const final { return _logic.model(); }
+  ModelPtr model() final { return _logic.model(*_state); }
 
   void setModel(const ModelPtr& model) final;
+
+  std::vector<uint32_t> modelDims() const final { return _logic.modelDims(); }
 
   void updateTemporalTrackers(const MapInput& sample) final {
     _logic.updateTemporalTrackers(sample, *_state);

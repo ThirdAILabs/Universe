@@ -49,7 +49,11 @@ class UDTGraphClassifier final : public UDTBackend {
 
   void clearGraph() final { _featurizer->clearGraph(); }
 
-  ModelPtr model() const final { return _classifier->model(); }
+  ModelPtr model() final { return _classifier->model(); }
+
+  std::vector<uint32_t> modelDims() const final {
+    return _classifier->modelDims();
+  }
 
  private:
   UDTGraphClassifier() {}

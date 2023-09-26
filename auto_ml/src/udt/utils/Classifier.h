@@ -82,6 +82,8 @@ class Classifier {
 
   const auto& model() const { return _model; }
 
+  std::vector<uint32_t> modelDims() const;
+
  private:
   uint32_t predictedClass(const BoltVector& output);
 

@@ -82,6 +82,10 @@ class UDTClassifier final : public UDTBackend {
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
 
+  std::vector<uint32_t> modelDims() const final {
+    return _classifier->modelDims();
+  }
+
   void updateTemporalTrackers(const MapInput& sample) final {
     _featurizer->updateTemporalTrackers(sample, *_state);
   }
@@ -100,7 +104,7 @@ class UDTClassifier final : public UDTBackend {
 
   std::string className(uint32_t class_id) const final;
 
-  ModelPtr model() const final { return _classifier->model(); }
+  ModelPtr model() final { return _classifier->model(); }
 
   void setModel(const ModelPtr& model) final {
     ModelPtr& curr_model = _classifier->model();

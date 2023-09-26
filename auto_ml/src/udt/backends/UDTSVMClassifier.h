@@ -37,12 +37,16 @@ class UDTSVMClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  ModelPtr model() const final { return _classifier->model(); }
+  ModelPtr model() final { return _classifier->model(); }
 
   void setModel(const ModelPtr& model) final {
     ModelPtr& curr_model = _classifier->model();
     utils::verifyCanSetModel(curr_model, model);
     curr_model = model;
+  }
+
+  std::vector<uint32_t> modelDims() const final {
+    return _classifier->modelDims();
   }
 
  private:

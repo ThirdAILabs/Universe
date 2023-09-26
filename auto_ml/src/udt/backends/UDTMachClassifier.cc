@@ -22,6 +22,7 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/State.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -98,6 +99,8 @@ UDTMachClassifier::UDTMachClassifier(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
       /* num_elements = */ n_target_classes);
 
+  _state = thirdai::data::State::make(mach_index);
+
   float mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
@@ -107,12 +110,11 @@ UDTMachClassifier::UDTMachClassifier(
   size_t num_balancing_samples_per_doc =
       user_args.get<uint32_t>("rlhf_balancing_samples_per_doc", "int",
                               defaults::MAX_BALANCING_SAMPLES_PER_DOC);
-
-  _logic = MachLogic(input_data_types, temporal_tracking_relationships,
-                     target_name, n_target_classes, integer_target, model,
-                     freeze_hash_tables, num_buckets, num_hashes,
-                     mach_sampling_threshold, rlhf, num_balancing_docs,
-                     num_balancing_samples_per_doc, tabular_options);
+  _logic =
+      MachLogic(input_data_types, temporal_tracking_relationships, target_name,
+                integer_target, model, freeze_hash_tables, num_buckets,
+                mach_sampling_threshold, rlhf, num_balancing_docs,
+                num_balancing_samples_per_doc, tabular_options);
 }
 
 py::object UDTMachClassifier::train(
@@ -197,7 +199,7 @@ py::object UDTMachClassifier::outputCorrectness(
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
-  _logic.setModel(model);
+  _logic.setModel(model, *_state);
 }
 
 py::object UDTMachClassifier::coldstart(
@@ -216,13 +218,6 @@ py::object UDTMachClassifier::coldstart(
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
   return _logic.embedding(sample, *_state);
-}
-
-uint32_t expectInteger(const Label& label) {
-  if (!std::holds_alternative<uint32_t>(label)) {
-    throw std::invalid_argument("Must use integer label.");
-  }
-  return std::get<uint32_t>(label);
 }
 
 py::object UDTMachClassifier::entityEmbedding(const Label& label) {

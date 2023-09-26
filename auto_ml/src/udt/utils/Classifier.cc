@@ -236,6 +236,15 @@ py::object Classifier::embedding(const bolt::TensorList& inputs) {
   return bolt::python::tensorToNumpy(_emb->tensor());
 }
 
+std::vector<uint32_t> Classifier::modelDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& comp : model()->computationOrder()) {
+    dims.push_back(comp->dim());
+  }
+
+  return dims;
+}
+
 uint32_t Classifier::predictedClass(const BoltVector& output) {
   if (_binary_prediction_threshold) {
     return output.activations[1] >= *_binary_prediction_threshold;

@@ -63,6 +63,9 @@ void ClassifierForMach::updateSamplingStrategy(thirdai::data::State& state) {
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
 
   float index_sparsity = mach_index->sparsity();
+
+  std::cout << "sampling threshold " << _mach_sampling_threshold << std::endl;
+
   if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
@@ -91,10 +94,9 @@ void ClassifierForMach::updateSamplingStrategy(thirdai::data::State& state) {
 MachLogic::MachLogic(const data::ColumnDataTypes& input_data_types,
                      const data::UserProvidedTemporalRelationships&
                          temporal_tracking_relationships,
-                     const std::string& target_name, uint32_t n_target_classes,
-                     bool integer_target, const bolt::ModelPtr& model,
-                     bool freeze_hash_tables, uint32_t num_buckets,
-                     uint32_t num_hashes, uint32_t mach_sampling_threshold,
+                     const std::string& target_name, bool integer_target,
+                     const bolt::ModelPtr& model, bool freeze_hash_tables,
+                     uint32_t num_buckets, float mach_sampling_threshold,
                      bool rlhf, uint32_t num_balancing_docs,
                      uint32_t num_balancing_samples_per_doc,
                      const data::TabularOptions& tabular_options)
@@ -111,16 +113,12 @@ MachLogic::MachLogic(const data::ColumnDataTypes& input_data_types,
         "classification options.");
   }
 
-  dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
-      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-      /* num_elements = */ n_target_classes);
-
   auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
   _featurizer = std::make_shared<MachFeaturizer>(
-      input_data_types, temporal_relationships, target_name, mach_index,
+      input_data_types, temporal_relationships, target_name, num_buckets,
       tabular_options);
 
   if (rlhf) {
@@ -151,7 +149,7 @@ py::object MachLogic::train(const dataset::DataSourcePtr& data,
                                    /* shuffle= */ false, options.verbose);
   }
 
-  return _classifier.classifier()->train(
+  return _classifier.classifier(*state)->train(
       train_data_loader, learning_rate, epochs,
       getMetrics(train_metrics, "train_", *state), val_data_loader,
       getMetrics(val_metrics, "val_", *state), callbacks, options, comm);
@@ -160,7 +158,7 @@ py::object MachLogic::train(const dataset::DataSourcePtr& data,
 py::object MachLogic::trainBatch(const MapInputBatch& batch,
                                  thirdai::data::State& state,
                                  float learning_rate) {
-  auto& model = _classifier.classifier()->model();
+  auto& model = _classifier.classifier(state)->model();
 
   auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch, state);
 
@@ -173,7 +171,7 @@ py::object MachLogic::trainBatch(const MapInputBatch& batch,
 py::object MachLogic::trainWithHashes(const MapInputBatch& batch,
                                       thirdai::data::State& state,
                                       float learning_rate) {
-  auto& model = _classifier.classifier()->model();
+  auto& model = _classifier.classifier(state)->model();
 
   auto [inputs, labels] =
       _featurizer->featurizeHashesTrainingBatch(batch, state);
@@ -192,9 +190,9 @@ py::object MachLogic::evaluate(const dataset::DataSourcePtr& data,
       _featurizer->getDataLoader(data, state, defaults::BATCH_SIZE,
                                  /* shuffle= */ false, verbose);
 
-  return _classifier.classifier()->evaluate(data_loader,
-                                            getMetrics(metrics, "val_", *state),
-                                            sparse_inference, verbose);
+  return _classifier.classifier(*state)->evaluate(
+      data_loader, getMetrics(metrics, "val_", *state), sparse_inference,
+      verbose);
 }
 
 py::object MachLogic::predict(const MapInput& sample,
@@ -207,7 +205,7 @@ py::object MachLogic::predict(const MapInput& sample,
 std::vector<std::vector<std::pair<uint32_t, double>>> MachLogic::predictImpl(
     const MapInputBatch& samples, thirdai::data::State& state,
     bool sparse_inference, std::optional<uint32_t> top_k) {
-  auto outputs = _classifier.classifier()
+  auto outputs = _classifier.classifier(state)
                      ->model()
                      ->forward(_featurizer->featurizeInputBatch(samples, state),
                                sparse_inference)
@@ -272,7 +270,7 @@ std::vector<std::vector<uint32_t>> MachLogic::predictHashesImpl(
     const MapInputBatch& samples, thirdai::data::State& state,
     bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
-  auto outputs = _classifier.classifier()
+  auto outputs = _classifier.classifier(state)
                      ->model()
                      ->forward(_featurizer->featurizeInputBatch(samples, state),
                                sparse_inference)
@@ -346,8 +344,8 @@ py::object MachLogic::outputCorrectness(const MapInputBatch& samples,
   return py::cast(matching_buckets);
 }
 
-void MachLogic::setModel(const ModelPtr& model) {
-  bolt::ModelPtr& curr_model = _classifier.classifier()->model();
+void MachLogic::setModel(const ModelPtr& model, thirdai::data::State& state) {
+  bolt::ModelPtr& curr_model = _classifier.classifier(state)->model();
 
   utils::verifyCanSetModel(curr_model, model);
 
@@ -377,7 +375,7 @@ py::object MachLogic::coldstart(
                                    /* shuffle= */ false, options.verbose);
   }
 
-  return _classifier.classifier()->train(
+  return _classifier.classifier(*state)->train(
       train_data_loader, learning_rate, epochs,
       getMetrics(train_metrics, "train_", *state), val_data_loader,
       getMetrics(val_metrics, "val_", *state), callbacks, options, comm);
@@ -385,7 +383,7 @@ py::object MachLogic::coldstart(
 
 py::object MachLogic::embedding(const MapInputBatch& sample,
                                 thirdai::data::State& state) {
-  return _classifier.classifier()->embedding(
+  return _classifier.classifier(state)->embedding(
       _featurizer->featurizeInputBatch(sample, state));
 }
 
@@ -401,7 +399,7 @@ py::object MachLogic::entityEmbedding(const Label& label,
   std::vector<uint32_t> hashed_neurons =
       state.machIndex()->getHashes(expectInteger(label));
 
-  auto outputs = _classifier.classifier()->model()->outputs();
+  auto outputs = _classifier.classifier(state)->model()->outputs();
 
   if (outputs.size() != 1) {
     throw std::invalid_argument(
@@ -465,7 +463,7 @@ void MachLogic::introduceDocuments(
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
-    auto scores = _classifier.classifier()->model()->forward(input).at(0);
+    auto scores = _classifier.classifier(state)->model()->forward(input).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
@@ -620,7 +618,7 @@ void MachLogic::introduceLabelHelper(
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
   // entities.
-  auto output = _classifier.classifier()
+  auto output = _classifier.classifier(state)
                     ->model()
                     ->forward(samples, /* use_sparsity = */ false)
                     .at(0);
@@ -742,8 +740,9 @@ void MachLogic::teach(const std::vector<RlhfSample>& rlhf_samples,
 
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
-      _classifier.classifier()->model()->trainOnBatch(data.at(i), labels.at(i));
-      _classifier.classifier()->model()->updateParameters(learning_rate);
+      _classifier.classifier(state)->model()->trainOnBatch(data.at(i),
+                                                           labels.at(i));
+      _classifier.classifier(state)->model()->updateParameters(learning_rate);
     }
   }
 }
@@ -817,7 +816,7 @@ py::object MachLogic::associateColdStart(
 
   auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
 
-  bolt::Trainer trainer(_classifier.classifier()->model());
+  bolt::Trainer trainer(_classifier.classifier(state)->model());
 
   auto output_metrics =
       trainer.train(/* train_data= */ dataset,
@@ -870,7 +869,7 @@ InputMetrics MachLogic::getMetrics(const std::vector<std::string>& metric_names,
 
                                    const std::string& prefix,
                                    thirdai::data::State& state) {
-  const auto& model = _classifier.classifier()->model();
+  const auto& model = _classifier.classifier(state)->model();
   if (model->outputs().size() != 1 || model->labels().size() != 2 ||
       model->losses().size() != 1) {
     throw std::invalid_argument(
@@ -925,14 +924,8 @@ template void MachLogic::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachLogic::serialize(Archive& archive) {
-  // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
-          _default_top_k_to_return, _num_buckets_to_eval, _rlhf_sampler);
+  archive(_classifier, _featurizer, _default_top_k_to_return,
+          _num_buckets_to_eval, _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::MachLogic)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::MachLogic,
-                     thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)

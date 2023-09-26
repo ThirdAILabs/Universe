@@ -30,23 +30,28 @@ using Label = std::variant<uint32_t, std::string>;
 class ClassifierForMach {
  public:
   explicit ClassifierForMach(std::shared_ptr<utils::Classifier> classifier,
-                             uint32_t mach_sampling_threshold)
+                             float mach_sampling_threshold)
       : _classifier(std::move(classifier)),
         _mach_sampling_threshold(mach_sampling_threshold) {}
 
   ClassifierForMach() {}
 
-  auto classifier() const { return _classifier; }
-
-  void updateSamplingStrategy(thirdai::data::State& state);
+  auto classifier(thirdai::data::State& state) {
+    updateSamplingStrategy(state);
+    return _classifier;
+  }
 
   void setMachSamplingThreshold(uint32_t threshold) {
     _mach_sampling_threshold = threshold;
   }
 
+  std::vector<uint32_t> modelDims() const { return _classifier->modelDims(); }
+
  private:
+  void updateSamplingStrategy(thirdai::data::State& state);
+
   std::shared_ptr<utils::Classifier> _classifier;
-  uint32_t _mach_sampling_threshold;
+  float _mach_sampling_threshold;
 
   friend cereal::access;
 
@@ -61,10 +66,9 @@ class MachLogic {
   MachLogic(const data::ColumnDataTypes& input_data_types,
             const data::UserProvidedTemporalRelationships&
                 temporal_tracking_relationships,
-            const std::string& target_name, uint32_t n_target_classes,
-            bool integer_target, const bolt::ModelPtr& model,
-            bool freeze_hash_tables, uint32_t num_buckets, uint32_t num_hashes,
-            uint32_t mach_sampling_threshold, bool rlhf,
+            const std::string& target_name, bool integer_target,
+            const bolt::ModelPtr& model, bool freeze_hash_tables,
+            uint32_t num_buckets, float mach_sampling_threshold, bool rlhf,
             uint32_t num_balancing_docs, uint32_t num_balancing_samples_per_doc,
             const data::TabularOptions& tabular_options);
 
@@ -110,9 +114,13 @@ class MachLogic {
                                bool sparse_inference,
                                std::optional<uint32_t> num_hashes);
 
-  ModelPtr model() const { return _classifier.classifier()->model(); }
+  ModelPtr model(thirdai::data::State& state) {
+    return _classifier.classifier(state)->model();
+  }
 
-  void setModel(const ModelPtr& model);
+  void setModel(const ModelPtr& model, thirdai::data::State& state);
+
+  std::vector<uint32_t> modelDims() const { return _classifier.modelDims(); }
 
   void updateTemporalTrackers(const MapInput& sample,
                               thirdai::data::State& state) {
