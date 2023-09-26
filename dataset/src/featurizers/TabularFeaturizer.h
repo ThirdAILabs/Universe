@@ -55,8 +55,9 @@ class TabularFeaturizer : public Featurizer {
       const LineInputBatch& input_batch) final;
 
   MapInputBatch convertToMapInputBatch(const LineInputBatch& input_batch,
-                                       std::string key, std::string column_name,
-                                       std::string header) final;
+                                       const std::string& output_column_name,
+                                       const std::string& input_column_name,
+                                       const std::string& header) final;
 
   bool expectsHeader() const final { return _expects_header; }
 

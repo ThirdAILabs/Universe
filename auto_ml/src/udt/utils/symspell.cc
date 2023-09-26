@@ -141,7 +141,7 @@ std::vector<SpellCheckedSentence> SymPreTrainer::correctSentence(
     }
     std::sort(temp_candidates.begin(), temp_candidates.end(),
               [](const SpellCheckedSentence& a, const SpellCheckedSentence& b) {
-                return a.get_score() > b.get_score();
+                return a.getScore() > b.getScore();
               });
     if (temp_candidates.size() > maximum_candidates) {
       temp_candidates.erase(temp_candidates.begin() + maximum_candidates,

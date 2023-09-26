@@ -268,6 +268,9 @@ IdScorePairs UDTQueryReformulation::queryBatchResults(
         /* batch = */ BoltBatch(std::move(featurized_samples)),
         /* top_k = */ top_k.value());
 
+    // This aggregates the phrase_ids for generated candidates per query.
+    // iterate over range of generated candidates for a query and accumulate
+    // the topK scores
     std::vector<std::vector<uint32_t>> all_phrase_ids;
     std::vector<std::vector<float>> all_phrase_scores;
     for (uint32_t query_id = 0; query_id < sample.size(); query_id++) {

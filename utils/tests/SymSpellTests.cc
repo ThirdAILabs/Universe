@@ -18,7 +18,7 @@ class SymSpellTest : public testing::Test {
  public:
   SymSpellTest() {
     _symspell_backend = std::make_shared<SymPreTrainer>(
-        SymPreTrainer(automl::udt::defaults::MAX_EDIT_DISTANCE, true,
+        SymPreTrainer(automl::udt::defaults::MAX_EDIT_DISTANCE,
                       automl::udt::defaults::PREFIX_LENGTH,
                       automl::udt::defaults::USE_WORD_SEGMENTATION));
   }

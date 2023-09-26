@@ -68,7 +68,7 @@ class SpellCheckedSentence {
     return temp;
   }
 
-  float get_score() const {
+  float getScore() const {
     float total_score = 0.0F;
     for (const float score : _scores) {
       total_score += score;
