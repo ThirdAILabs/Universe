@@ -42,13 +42,14 @@ def create_dyadic_backend():
     return bolt.DyadicModel(model)
 
 
-def create_contextual_backend():
+def create_contextual_backend(with_prompt=False):
     LRC_LEN = 20
     IRC_LEN = 6
     SRC_LEN = 4
     lrc_input = bolt.nn.Input(dim=VOCAB_SIZE)
     irc_input = bolt.nn.Input(dim=(2**32) - 1)
     src_input = bolt.nn.Input(dim=VOCAB_SIZE)
+    prompt_input = bolt.nn.Input(dim=VOCAB_SIZE)
 
     small_emb = bolt.nn.RobeZ(
         num_embedding_lookups=4,
@@ -68,15 +69,18 @@ def create_contextual_backend():
         reduction="avg",
     )
 
-    concat = bolt.nn.Concatenate()(
-        [
-            small_emb(lrc_input),
-            large_emb(lrc_input),
-            small_emb(irc_input),
-            large_emb(irc_input),
-            small_ebm_src(src_input),
-        ]
-    )
+    computations = [
+        small_emb(lrc_input),
+        large_emb(lrc_input),
+        small_emb(irc_input),
+        large_emb(irc_input),
+        small_ebm_src(src_input),
+    ]
+
+    if with_prompt:
+        computations += [small_emb(prompt_input)]
+
+    concat = bolt.nn.Concatenate()(computations)
 
     hidden = bolt.nn.FullyConnected(
         dim=20,
@@ -96,9 +100,12 @@ def create_contextual_backend():
     labels = bolt.nn.Input(dim=VOCAB_SIZE)
     loss = bolt.nn.losses.CategoricalCrossEntropy(activations=output, labels=labels)
 
-    model = bolt.nn.Model(
-        inputs=[lrc_input, irc_input, src_input], outputs=[output], losses=[loss]
-    )
+    inputs = [lrc_input, irc_input, src_input]
+
+    if with_prompt:
+        inputs += [prompt_input]
+
+    model = bolt.nn.Model(inputs=inputs, outputs=[output], losses=[loss])
 
     featurizer = dataset.TextGenerationFeaturizer(
         lrc_len=LRC_LEN,

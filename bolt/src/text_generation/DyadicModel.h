@@ -20,7 +20,8 @@ class DyadicModel final : public GenerativeBackend {
   explicit DyadicModel(bolt::ModelPtr model);
 
   bolt::TensorPtr nextTokenProbs(
-      std::vector<std::vector<uint32_t>> tokens) final;
+    const std::vector<uint32_t>& prompt,
+    std::vector<std::vector<uint32_t>> &tokens) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,

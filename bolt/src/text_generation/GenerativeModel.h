@@ -11,13 +11,15 @@
 #include <memory>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace thirdai::bolt {
 
 class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
-      std::vector<std::vector<uint32_t>> tokens) = 0;
+    const std::vector<uint32_t>& prompt,
+    std::vector<std::vector<uint32_t>>& tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
@@ -44,6 +46,7 @@ class GenerativeModel;
 class BeamSearchDecoder {
  public:
   BeamSearchDecoder(std::shared_ptr<GenerativeModel> generator,
+                    std::optional<std::vector<uint32_t>> prompt,
                     const std::vector<uint32_t>& input_tokens,
                     size_t prediction_chunk_size, size_t max_predictions,
                     size_t beam_width, std::optional<float> temperature)
@@ -54,6 +57,7 @@ class BeamSearchDecoder {
         _beam_width(beam_width),
         _temperature(temperature),
         _candidate_sequences({input_tokens}),
+        _prompt(std::move(prompt)),
         _sequence_scores({0.0}) {}
 
   std::optional<std::vector<uint32_t>> next();
@@ -78,6 +82,7 @@ class BeamSearchDecoder {
   // nextTokenProbs directly, instead of having to split apart the sequences and
   // scores.
   std::vector<std::vector<uint32_t>> _candidate_sequences;
+  std::optional<std::vector<uint32_t>> _prompt;
   std::vector<double> _sequence_scores;
 };
 
@@ -101,11 +106,11 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   }
 
   std::vector<uint32_t> generate(
-      const std::vector<uint32_t>& input_tokens, size_t max_predictions,
+      std::optional<std::vector<uint32_t>> prompt, const std::vector<uint32_t>& input_tokens, size_t max_predictions,
       size_t beam_width, std::optional<float> temperature = std::nullopt);
 
   BeamSearchDecoder streamingGenerate(
-      const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
+      std::optional<std::vector<uint32_t>> prompt, const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
       size_t max_predictions, size_t beam_width,
       std::optional<float> temperature = std::nullopt);
 

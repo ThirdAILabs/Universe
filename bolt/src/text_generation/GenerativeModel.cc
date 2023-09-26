@@ -44,8 +44,9 @@ std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
   }
 
   for (size_t pred_idx = 0; pred_idx < n_predictions; pred_idx++) {
-    auto next_token_probs =
-        _generator->model()->nextTokenProbs(_candidate_sequences);
+auto next_token_probs = _prompt.has_value()
+                        ? _generator->model()->nextTokenProbs( _prompt.value(), _candidate_sequences)
+                        : _generator->model()->nextTokenProbs({}, _candidate_sequences);
 
     // This will be ordered such that the worst scoring sequence is on the top
     // of the queue so we can easily check if a given sequence is better than at
@@ -146,19 +147,19 @@ GenerativeModel::GenerativeModel(
       _punctuation_repeat_threshold(punctuation_repeat_threshold) {}
 
 std::vector<uint32_t> GenerativeModel::generate(
-    const std::vector<uint32_t>& input_tokens, size_t max_predictions,
+  std::optional<std::vector<uint32_t>> prompt, const std::vector<uint32_t>& input_tokens, size_t max_predictions,
     size_t beam_width, std::optional<float> temperature) {
-  BeamSearchDecoder decoder(shared_from_this(), input_tokens, max_predictions,
+  BeamSearchDecoder decoder(shared_from_this(), std::move(prompt), input_tokens, max_predictions,
                             max_predictions, beam_width, temperature);
 
   return decoder.next().value_or(std::vector<uint32_t>{});
 }
 
 BeamSearchDecoder GenerativeModel::streamingGenerate(
-    const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
+    std::optional<std::vector<uint32_t>> prompt, const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
     size_t max_predictions, size_t beam_width,
     std::optional<float> temperature) {
-  return BeamSearchDecoder(shared_from_this(), input_tokens,
+  return BeamSearchDecoder(shared_from_this(), std::move(prompt), input_tokens,
                            prediction_chunk_size, max_predictions, beam_width,
                            temperature);
 }
