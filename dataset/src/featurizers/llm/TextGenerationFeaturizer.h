@@ -96,7 +96,7 @@ class TextGenerationFeaturizer final : public Featurizer {
       const std::vector<uint32_t>& context) const;
 
   bolt::TensorList featurizeInputBatch(
-      const std::vector<uint32_t> &prompt,
+      const std::vector<uint32_t>& prompt,
       const std::vector<std::vector<uint32_t>>& tokens,
       const std::vector<uint32_t>& dims) const;
 

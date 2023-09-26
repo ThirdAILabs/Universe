@@ -35,7 +35,7 @@ DyadicModel::DyadicModel(bolt::ModelPtr model) : _model(std::move(model)) {
 bolt::TensorPtr DyadicModel::nextTokenProbs(
     const std::vector<uint32_t>& prompt,
     std::vector<std::vector<uint32_t>>& tokens) {
-    (void)prompt;
+  (void)prompt;
   data::ColumnMap data({{"target", data::ArrayColumn<uint32_t>::make(
                                        std::move(tokens), _vocab_size)}});
 

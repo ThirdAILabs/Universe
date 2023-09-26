@@ -10,8 +10,10 @@ ContextualModel::ContextualModel(
     : _model(std::move(model)), _featurizer(std::move(featurizer)) {}
 
 bolt::TensorPtr ContextualModel::nextTokenProbs(
-    const std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>>& tokens) {
-  auto tensors = _featurizer->featurizeInputBatch(prompt, tokens, _model->inputDims());
+    const std::vector<uint32_t>& prompt,
+    std::vector<std::vector<uint32_t>>& tokens) {
+  auto tensors =
+      _featurizer->featurizeInputBatch(prompt, tokens, _model->inputDims());
   return _model->forward(tensors).at(0);
 }
 

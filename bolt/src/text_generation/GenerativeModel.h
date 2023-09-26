@@ -18,8 +18,8 @@ namespace thirdai::bolt {
 class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
-    const std::vector<uint32_t>& prompt,
-    std::vector<std::vector<uint32_t>>& tokens) = 0;
+      const std::vector<uint32_t>& prompt,
+      std::vector<std::vector<uint32_t>>& tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
@@ -106,13 +106,15 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   }
 
   std::vector<uint32_t> generate(
-      std::optional<std::vector<uint32_t>> prompt, const std::vector<uint32_t>& input_tokens, size_t max_predictions,
-      size_t beam_width, std::optional<float> temperature = std::nullopt);
+      const std::vector<uint32_t>& input_tokens, size_t max_predictions,
+      size_t beam_width, std::optional<float> temperature = std::nullopt,
+      std::optional<std::vector<uint32_t>> prompt = std::nullopt);
 
   BeamSearchDecoder streamingGenerate(
-      std::optional<std::vector<uint32_t>> prompt, const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
+      const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
       size_t max_predictions, size_t beam_width,
-      std::optional<float> temperature = std::nullopt);
+      std::optional<float> temperature = std::nullopt,
+      std::optional<std::vector<uint32_t>> prompt = std::nullopt);
 
   // TODO(Nicholas): should we add max_in_memory_batches option?
   metrics::History train(const dataset::DataSourcePtr& train_data,
