@@ -42,6 +42,9 @@ class RayCsvDataSource(PyDataSource):
             batch_size=self.DEFAULT_CHUNK_SIZE, batch_format="pandas"
         ):
             for i in range(len(chunk)):
+                # TODO(pratik): Ray dataset lacks built-in column renaming support.
+                # Reference: https://docs.ray.io/en/latest/data/api/dataset.html#basic-transformations
+                # Only add/drop column options available, but they could be memory-intensive.
                 yield (
                     chunk.iloc[i : i + 1]
                     .rename(
@@ -52,4 +55,4 @@ class RayCsvDataSource(PyDataSource):
                 )
 
     def resource_name(self) -> str:
-        return f"ray-dataset-sources"
+        return str(self.ray_dataset.input_files())
