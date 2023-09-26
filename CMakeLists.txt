@@ -504,6 +504,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/MachLogic.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
