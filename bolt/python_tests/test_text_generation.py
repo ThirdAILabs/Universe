@@ -46,10 +46,10 @@ def create_contextual_backend(with_prompt=False):
     LRC_LEN = 20
     IRC_LEN = 6
     SRC_LEN = 4
+    prompt_input = bolt.nn.Input(dim=VOCAB_SIZE)
     lrc_input = bolt.nn.Input(dim=VOCAB_SIZE)
     irc_input = bolt.nn.Input(dim=(2**32) - 1)
     src_input = bolt.nn.Input(dim=VOCAB_SIZE)
-    prompt_input = bolt.nn.Input(dim=VOCAB_SIZE)
 
     small_emb = bolt.nn.RobeZ(
         num_embedding_lookups=4,
@@ -78,7 +78,7 @@ def create_contextual_backend(with_prompt=False):
     ]
 
     if with_prompt:
-        computations += [small_emb(prompt_input)]
+        computations = [small_emb(prompt_input)] + computations
 
     concat = bolt.nn.Concatenate()(computations)
 
@@ -103,7 +103,7 @@ def create_contextual_backend(with_prompt=False):
     inputs = [lrc_input, irc_input, src_input]
 
     if with_prompt:
-        inputs += [prompt_input]
+        inputs = [prompt_input] + inputs
 
     model = bolt.nn.Model(inputs=inputs, outputs=[output], losses=[loss])
 
@@ -141,6 +141,21 @@ def test_generation(backend):
         gen_2 = res
 
     assert gen_1 == gen_2
+
+
+@pytest.mark.unit
+def test_text_generation_with_prompt():
+    model = bolt.GenerativeModel(
+        create_contextual_backend(True), allowed_repeats=set(), punctuation_tokens=set()
+    )
+
+    gen_1 = model.generate(
+        input_tokens=list(range(20)),
+        beam_width=5,
+        max_predictions=20,
+        temperature=0.4,
+        prompt=list(range(5)),
+    )
 
 
 @pytest.fixture()
