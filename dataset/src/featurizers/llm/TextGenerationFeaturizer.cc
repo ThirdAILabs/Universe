@@ -140,25 +140,20 @@ bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
   irc.reserve(tokens.size());
   std::vector<BoltVector> src;
   src.reserve(tokens.size());
+  std::vector<BoltVector> prompts;
+  prompts.reserve(tokens.size());
 
   for (const auto& sample : tokens) {
     lrc.emplace_back(_context_featurizer.lrcContext(sample));
     irc.emplace_back(_context_featurizer.ircContext(sample));
     src.emplace_back(_context_featurizer.srcContext(sample));
-  }
-
-  if (prompt.empty()) {
-    return bolt::convertBatch(
-        {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
-         BoltBatch(std::move(src))},
-        dims);
-  }
-  // We are having an assumption here, that prompt will be the same for all the
-  // samples
-  std::vector<BoltVector> prompts;
-  prompts.reserve(tokens.size());
-  for (size_t i = 0; i < tokens.size(); i++) {
     prompts.emplace_back(promptContext(prompt));
+  }
+  if(dims.size()==3){
+    return bolt::convertBatch(
+      {BoltBatch(std::move(lrc)),
+       BoltBatch(std::move(irc)), BoltBatch(std::move(src))},
+      dims);
   }
   return bolt::convertBatch(
       {BoltBatch(std::move(prompts)), BoltBatch(std::move(lrc)),
