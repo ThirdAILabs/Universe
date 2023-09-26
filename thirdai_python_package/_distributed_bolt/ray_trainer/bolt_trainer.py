@@ -1,7 +1,7 @@
 import os
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
-from ray.train import Checkpoint, RunConfig, ScalingConfig, DataConfig
+from ray.train import Checkpoint, DataConfig, RunConfig, ScalingConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
 from ray.train.trainer import GenDataset
 

@@ -1,8 +1,8 @@
 import os
 import tempfile
 
-from ray.train import Checkpoint
 from ray.air.constants import MODEL_KEY
+from ray.train import Checkpoint
 from thirdai._thirdai import bolt
 
 from ..utils import timed

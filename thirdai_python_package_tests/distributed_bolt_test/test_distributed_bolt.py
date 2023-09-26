@@ -41,11 +41,11 @@ def training_loop_per_worker(config):
     history.pop("epoch_times")
     write_metrics_to_file(filename="metrics.json", metrics=history)
 
-    train.report(
-        {"model_location": train.get_context().get_trial_dir()},
-        # Use `with_optimizers=False` to save model without optimizer states
-        checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False),
-    )
+    # train.report(
+    #     {"model_location": train.get_context().get_trial_dir()},
+    #     # Use `with_optimizers=False` to save model without optimizer states
+    #     checkpoint=dist.BoltCheckPoint.from_model(model, with_optimizers=False),
+    # )
     trainer.model.save("trained.model")
 
 
