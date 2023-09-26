@@ -1,3 +1,8 @@
+import shutil
+from typing import Dict, Optional
+
+from ray import train
+
 from ..utils import check_torch_installed, timed
 
 
@@ -21,3 +26,11 @@ def prepare_model(model):
     device = torch.device("cpu")
     dist.broadcast_object_list(model_to_broadcast, src=0, device=device)
     return model_to_broadcast[0]
+
+
+@timed
+def report(metrics: Dict, *, checkpoint: Optional[train.Checkpoint] = None) -> None:
+    train.report(metrics, checkpoint=checkpoint)
+    if checkpoint:
+        tmp_save_dir = checkpoint.get_metadata().get("save_dir")
+        shutil.rmtree(tmp_save_dir, ignore_errors=True)
