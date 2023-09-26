@@ -149,11 +149,11 @@ bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
     src.emplace_back(_context_featurizer.srcContext(sample));
     prompts.emplace_back(promptContext(prompt));
   }
-  if(dims.size()==3){
+  if (dims.size() == 3) {
     return bolt::convertBatch(
-      {BoltBatch(std::move(lrc)),
-       BoltBatch(std::move(irc)), BoltBatch(std::move(src))},
-      dims);
+        {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
+         BoltBatch(std::move(src))},
+        dims);
   }
   return bolt::convertBatch(
       {BoltBatch(std::move(prompts)), BoltBatch(std::move(lrc)),
