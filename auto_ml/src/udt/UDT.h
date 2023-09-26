@@ -430,11 +430,7 @@ class UDT {
   /**
    * Gets the internal index for UDTMachClassifier.
    */
-  dataset::mach::MachIndexPtr getIndex() {
-    licensing::entitlements().verifyFullAccess();
-
-    return _backend->getIndex();
-  }
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   /**
    * Sets the internal index for UDTMachClassifier.
