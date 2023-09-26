@@ -55,4 +55,4 @@ class RayCsvDataSource(PyDataSource):
                 )
 
     def resource_name(self) -> str:
-        return str(self.ray_dataset.input_files())
+        return f"ray-dataset-sources"
