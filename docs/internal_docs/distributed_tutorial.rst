@@ -128,7 +128,7 @@ Here's an example usage of the Bolt distributed module:
     result_checkpoint_and_history = trainer.fit()
 
     # Perform validation
-    model = result_checkpoint_and_history.checkpoint.get_model()
+    model = dist.BoltCheckPoint.get_model(result_checkpoint_and_history.checkpoint)
     trainer = bolt.train.Trainer(model)
     history = trainer.validate(...)
 
@@ -136,7 +136,7 @@ Here's an example usage of the Bolt distributed module:
     checkpoint = dist.BoltCheckPoint.from_model(model)
     checkpoint.save("checkpoint.pth")
     loaded_checkpoint = dist.BoltCheckPoint.load("checkpoint.pth")
-    loaded_model = loaded_checkpoint.get_model()
+    loaded_model = dist.BoltCheckPoint.get_model(loaded_checkpoint)
 
 
 Documentation Reference

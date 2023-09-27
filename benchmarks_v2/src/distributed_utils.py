@@ -42,7 +42,7 @@ def setup_ray(num_workers=2):
         },
         ignore_reinit_error=True,
     )
-    scaling_config = ray.air.ScalingConfig(
+    scaling_config = ray.train.ScalingConfig(
         num_workers=num_workers,
         use_gpu=False,
         resources_per_worker={"CPU": num_cpu_per_node},

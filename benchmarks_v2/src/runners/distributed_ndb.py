@@ -5,7 +5,7 @@ import mlflow
 import ray
 import thirdai.distributed_bolt as dist
 import thirdai.neural_db as ndb
-from ray.air import RunConfig
+from ray.train import RunConfig
 
 from ..configs.distributed_ndb_configs import DistributedNDBConfig
 from ..distributed_utils import setup_ray, test_ndb
