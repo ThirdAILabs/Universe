@@ -23,8 +23,10 @@ UDTSVMClassifier::UDTSVMClassifier(
           user_args.get<bool>("freeze_hash_tables", "boolean",
                               defaults::FREEZE_HASH_TABLES))) {}
 
-UDTSVMClassifier::UDTSVMClassifier(const proto::udt::UDTSvmClassifier& svm)
-    : _classifier(utils::Classifier::fromProto(svm.classifier())) {}
+UDTSVMClassifier::UDTSVMClassifier(const proto::udt::UDTSvmClassifier& svm,
+                                   bolt::ModelPtr model)
+    : _classifier(
+          utils::Classifier::fromProto(svm.classifier(), std::move(model))) {}
 
 py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
@@ -80,12 +82,12 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                               /* single= */ false, top_k);
 }
 
-proto::udt::UDT* UDTSVMClassifier::toProto(bool with_optimizer) const {
-  auto* udt = new proto::udt::UDT();
+proto::udt::UDT UDTSVMClassifier::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* svm = udt->mutable_svm();
+  auto* svm = udt.mutable_svm();
 
-  svm->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  svm->set_allocated_classifier(_classifier->toProto());
 
   return udt;
 }

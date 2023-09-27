@@ -67,8 +67,8 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
 }
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(
-    const proto::udt::UDTRecurrentClassifier& recurrent)
-    : _model(bolt::Model::fromProto(recurrent.model())),
+    const proto::udt::UDTRecurrentClassifier& recurrent, bolt::ModelPtr model)
+    : _model(std::move(model)),
       _featurizer(
           std::make_shared<RecurrentFeaturizer>(recurrent.featurizer())),
       _target_name(recurrent.target_column()),
@@ -248,12 +248,11 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   return std::move(output);
 }
 
-proto::udt::UDT* UDTRecurrentClassifier::toProto(bool with_optimizer) const {
-  auto* udt = new proto::udt::UDT();
+proto::udt::UDT UDTRecurrentClassifier::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* recurrent = udt->mutable_recurrent();
+  auto* recurrent = udt.mutable_recurrent();
 
-  recurrent->set_allocated_model(_model->toProto(with_optimizer));
   recurrent->set_allocated_featurizer(_featurizer->toProto());
   recurrent->set_freeze_hash_tables(_freeze_hash_tables);
   recurrent->set_target_column(_target_name);

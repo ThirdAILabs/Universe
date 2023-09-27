@@ -14,7 +14,8 @@ class UDTGraphClassifier final : public UDTBackend {
                      const std::string& target_col, uint32_t n_target_classes,
                      bool integer_target, const data::TabularOptions& options);
 
-  explicit UDTGraphClassifier(const proto::udt::UDTGraphClassifier& graph);
+  explicit UDTGraphClassifier(const proto::udt::UDTGraphClassifier& graph,
+                              bolt::ModelPtr model);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -46,7 +47,7 @@ class UDTGraphClassifier final : public UDTBackend {
                                 /* single= */ false, top_k);
   }
 
-  proto::udt::UDT* toProto(bool with_optimizer) const final;
+  proto::udt::UDT toProto() const final;
 
   void indexNodes(const dataset::DataSourcePtr& source) final {
     _featurizer->index(source);

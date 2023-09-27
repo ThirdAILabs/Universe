@@ -36,8 +36,9 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
 }
 
 UDTGraphClassifier::UDTGraphClassifier(
-    const proto::udt::UDTGraphClassifier& graph)
-    : _classifier(utils::Classifier::fromProto(graph.classifier())),
+    const proto::udt::UDTGraphClassifier& graph, bolt::ModelPtr model)
+    : _classifier(
+          utils::Classifier::fromProto(graph.classifier(), std::move(model))),
       _featurizer(std::make_shared<GraphFeaturizer>(graph.featurizer())) {}
 
 py::object UDTGraphClassifier::train(
@@ -75,12 +76,12 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                verbose);
 }
 
-proto::udt::UDT* UDTGraphClassifier::toProto(bool with_optimizer) const {
-  auto* udt = new proto::udt::UDT();
+proto::udt::UDT UDTGraphClassifier::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* graph = udt->mutable_graph();
+  auto* graph = udt.mutable_graph();
 
-  graph->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  graph->set_allocated_classifier(_classifier->toProto());
   graph->set_allocated_featurizer(_featurizer->toProto());
 
   return udt;

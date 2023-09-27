@@ -49,7 +49,9 @@ class UDTQueryReformulation final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  proto::udt::UDT* toProto(bool with_optimizer) const final;
+  proto::udt::UDT toProto() const final;
+
+  ModelPtr model() const final { return nullptr; }
 
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,

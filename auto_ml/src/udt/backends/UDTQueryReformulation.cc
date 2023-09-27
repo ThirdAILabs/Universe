@@ -245,12 +245,10 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
   return py::make_tuple(py::cast(phrases), py::cast(phrase_scores));
 }
 
-proto::udt::UDT* UDTQueryReformulation::toProto(bool with_optimizer) const {
-  (void)with_optimizer;
+proto::udt::UDT UDTQueryReformulation::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* udt = new proto::udt::UDT();
-
-  auto* query_reformulation = udt->mutable_query_reformulation();
+  auto* query_reformulation = udt.mutable_query_reformulation();
 
   query_reformulation->unsafe_arena_set_allocated_index(
       _flash_index->toProto());

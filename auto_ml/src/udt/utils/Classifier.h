@@ -22,7 +22,8 @@ class Classifier {
  public:
   Classifier(bolt::ModelPtr model, bool freeze_hash_tables);
 
-  explicit Classifier(const proto::udt::Classifier& classifier);
+  explicit Classifier(const proto::udt::Classifier& classifier,
+                      bolt::ModelPtr model);
 
   static std::shared_ptr<Classifier> make(const bolt::ModelPtr& model,
                                           bool freeze_hash_tables) {
@@ -85,10 +86,11 @@ class Classifier {
 
   const auto& model() const { return _model; }
 
-  proto::udt::Classifier* toProto(bool with_optimizer) const;
+  proto::udt::Classifier* toProto() const;
 
-  static auto fromProto(const proto::udt::Classifier& classifier) {
-    return std::make_shared<Classifier>(classifier);
+  static auto fromProto(const proto::udt::Classifier& classifier,
+                        bolt::ModelPtr model) {
+    return std::make_shared<Classifier>(classifier, std::move(model));
   }
 
  private:

@@ -492,10 +492,8 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto,
   return model;
 }
 
-void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
-  utils::ProtobufWriter writer(
-      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
-
+void Model::serializeProtoWriter(utils::ProtobufWriter& writer,
+                                 bool with_optimizer) const {
   /**
    * The model is serialized in the following order:
    *  1. Computation graph and model metadata.
@@ -514,16 +512,28 @@ void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
   serializeParameters(parameters, writer);
 }
 
-std::shared_ptr<Model> Model::deserializeStream(std::istream& input) {
-  utils::ProtobufReader reader(
-      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
-
+std::shared_ptr<Model> Model::deserializeProtoReader(
+    utils::ProtobufReader& reader) {
   proto::bolt::Model model_proto;
   reader.deserialize(model_proto);
 
   auto parameters = deserializeParameters(reader);
 
   return fromProto(model_proto, parameters);
+}
+
+void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
+  utils::ProtobufWriter writer(
+      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
+
+  serializeProtoWriter(writer, with_optimizer);
+}
+
+std::shared_ptr<Model> Model::deserializeStream(std::istream& input) {
+  utils::ProtobufReader reader(
+      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
+
+  return deserializeProtoReader(reader);
 }
 
 void Model::saveProto(const std::string& filename, bool with_optimizer) const {

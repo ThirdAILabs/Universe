@@ -64,7 +64,7 @@ class VectorHashTable final : public HashTable<uint32_t> {
    */
   inline void insertIntoTable(uint32_t label, uint32_t hash, uint32_t table);
 
-  constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
+  uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
     return table * tableRange() + hash;
   }
 

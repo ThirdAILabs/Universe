@@ -7,8 +7,7 @@ import "model.proto";
 import "transformations.proto";
 
 message UDTRegression {
-  required bolt.Model model = 1;
-  required Featurizer featurizer = 2;
+  required Featurizer featurizer = 1;
 
-  required data.Transformation binning = 3;
+  required data.Transformation binning = 2;
 }

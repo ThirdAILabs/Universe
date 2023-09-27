@@ -133,8 +133,10 @@ UDTMachClassifier::UDTMachClassifier(
   }
 }
 
-UDTMachClassifier::UDTMachClassifier(const proto::udt::UDTMachClassifier& mach)
-    : _classifier(utils::Classifier::fromProto(mach.classifier())),
+UDTMachClassifier::UDTMachClassifier(const proto::udt::UDTMachClassifier& mach,
+                                     bolt::ModelPtr model)
+    : _classifier(
+          utils::Classifier::fromProto(mach.classifier(), std::move(model))),
       _featurizer(std::make_shared<MachFeaturizer>(mach.featurizer())),
       _default_top_k_to_return(mach.top_k_to_return()),
       _num_buckets_to_eval(mach.num_buckets_to_eval()),
@@ -279,12 +281,12 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predictImpl(samples, sparse_inference, top_k));
 }
 
-proto::udt::UDT* UDTMachClassifier::toProto(bool with_optimizer) const {
-  auto* udt = new proto::udt::UDT();
+proto::udt::UDT UDTMachClassifier::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* mach = udt->mutable_mach();
+  auto* mach = udt.mutable_mach();
 
-  mach->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  mach->set_allocated_classifier(_classifier->toProto());
   mach->set_allocated_featurizer(_featurizer->toProto());
   mach->set_top_k_to_return(_default_top_k_to_return);
   mach->set_num_buckets_to_eval(_num_buckets_to_eval);

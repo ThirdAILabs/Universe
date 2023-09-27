@@ -29,7 +29,8 @@ class UDTClassifier final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
-  explicit UDTClassifier(const proto::udt::UDTClassifier& classifier);
+  explicit UDTClassifier(const proto::udt::UDTClassifier& classifier,
+                         bolt::ModelPtr model);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -63,7 +64,7 @@ class UDTClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  proto::udt::UDT* toProto(bool with_optimizer) const final;
+  proto::udt::UDT toProto() const final;
 
   std::vector<std::pair<std::string, float>> explain(
       const MapInput& sample,

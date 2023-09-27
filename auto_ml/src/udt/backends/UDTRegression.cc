@@ -66,8 +66,9 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
       bolt_labels, tabular_options);
 }
 
-UDTRegression::UDTRegression(const proto::udt::UDTRegression& regression)
-    : _model(bolt::Model::fromProto(regression.model())),
+UDTRegression::UDTRegression(const proto::udt::UDTRegression& regression,
+                             bolt::ModelPtr model)
+    : _model(std::move(model)),
       _featurizer(std::make_shared<Featurizer>(regression.featurizer())) {
   auto binning = thirdai::data::Transformation::fromProto(regression.binning());
 
@@ -169,12 +170,11 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
   return py::object(std::move(predictions));
 }
 
-proto::udt::UDT* UDTRegression::toProto(bool with_optimizer) const {
-  auto* udt = new proto::udt::UDT();
+proto::udt::UDT UDTRegression::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* regression = udt->mutable_regression();
+  auto* regression = udt.mutable_regression();
 
-  regression->set_allocated_model(_model->toProto(with_optimizer));
   regression->set_allocated_featurizer(_featurizer->toProto());
   regression->set_allocated_binning(_binning->toProto());
 

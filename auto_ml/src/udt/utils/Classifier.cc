@@ -32,8 +32,9 @@ Classifier::Classifier(bolt::ModelPtr model, bool freeze_hash_tables)
   _emb = computations.at(computations.size() - 2);
 }
 
-Classifier::Classifier(const proto::udt::Classifier& classifier)
-    : _model(bolt::Model::fromProto(classifier.model())),
+Classifier::Classifier(const proto::udt::Classifier& classifier,
+                       bolt::ModelPtr model)
+    : _model(std::move(model)),
       _freeze_hash_tables(classifier.freeze_hash_tables()) {
   _emb = _model->getComputation(classifier.embedding_name());
 
@@ -369,10 +370,9 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   return best_threshold;
 }
 
-proto::udt::Classifier* Classifier::toProto(bool with_optimizer) const {
+proto::udt::Classifier* Classifier::toProto() const {
   auto* classifier = new proto::udt::Classifier();
 
-  classifier->set_allocated_model(_model->toProto(with_optimizer));
   classifier->set_embedding_name(_emb->name());
   classifier->set_freeze_hash_tables(_freeze_hash_tables);
   if (_binary_prediction_threshold) {

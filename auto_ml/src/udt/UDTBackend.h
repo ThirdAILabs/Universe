@@ -85,7 +85,7 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
-  virtual proto::udt::UDT* toProto(bool with_optimizer) const = 0;
+  virtual proto::udt::UDT toProto() const = 0;
 
   virtual py::object outputCorrectness(const MapInputBatch& sample,
                                        const std::vector<uint32_t>& labels,
@@ -98,9 +98,7 @@ class UDTBackend {
     throw notSupported("output correctness");
   }
 
-  virtual ModelPtr model() const {
-    throw notSupported("accessing underlying model");
-  }
+  virtual ModelPtr model() const = 0;
 
   virtual void setModel(const ModelPtr& model) {
     (void)model;

@@ -13,6 +13,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <proto/udt.pb.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <utils/ProtobufIO.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <cstddef>
@@ -254,20 +255,26 @@ void UDT::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-  save_stream(filestream);
+  save_stream(filestream, /* with_optimizer= */ false);
 }
 
 void UDT::checkpoint(const std::string& filename) const {
-  auto* backend_proto = _backend->toProto(/* with_optimizer= */ true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  backend_proto->SerializeToOstream(&filestream);
+
+  save_stream(filestream, /* with_optimizer= */ true);
 }
 
-void UDT::save_stream(std::ostream& output_stream) const {
-  auto* backend_proto = _backend->toProto(/* with_optimizer= */ false);
-  backend_proto->SerializeToOstream(&output_stream);
-  delete backend_proto;
+void UDT::save_stream(std::ostream& output_stream, bool with_optimizer) const {
+  thirdai::utils::ProtobufWriter writer(
+      std::make_shared<google::protobuf::io::OstreamOutputStream>(
+          &output_stream));
+
+  writer.serialize(_backend->toProto());
+
+  if (auto model = _backend->model()) {
+    model->serializeProtoWriter(writer, with_optimizer);
+  }
 }
 
 std::shared_ptr<UDT> UDT::load(const std::string& filename) {
@@ -277,34 +284,48 @@ std::shared_ptr<UDT> UDT::load(const std::string& filename) {
 }
 
 std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
+  thirdai::utils::ProtobufReader reader(
+      std::make_shared<google::protobuf::io::IstreamInputStream>(
+          &input_stream));
+
   proto::udt::UDT udt_proto;
-  udt_proto.ParseFromIstream(&input_stream);
+  reader.deserialize(udt_proto);
+
+  bolt::ModelPtr model;
+  if (udt_proto.backend_case() != proto::udt::UDT::kQueryReformulation) {
+    model = bolt::Model::deserializeProtoReader(reader);
+  }
 
   std::shared_ptr<UDT> udt(new UDT());
 
   switch (udt_proto.backend_case()) {
     case proto::udt::UDT::kClassifier:
-      udt->_backend = std::make_unique<UDTClassifier>(udt_proto.classifier());
+      udt->_backend =
+          std::make_unique<UDTClassifier>(udt_proto.classifier(), model);
       break;
     case proto::udt::UDT::kGraph:
-      udt->_backend = std::make_unique<UDTGraphClassifier>(udt_proto.graph());
+      udt->_backend =
+          std::make_unique<UDTGraphClassifier>(udt_proto.graph(), model);
       break;
     case proto::udt::UDT::kMach:
-      udt->_backend = std::make_unique<UDTMachClassifier>(udt_proto.mach());
+      udt->_backend =
+          std::make_unique<UDTMachClassifier>(udt_proto.mach(), model);
       break;
     case proto::udt::UDT::kQueryReformulation:
       udt->_backend = std::make_unique<UDTQueryReformulation>(
           udt_proto.query_reformulation());
       break;
     case proto::udt::UDT::kRecurrent:
-      udt->_backend =
-          std::make_unique<UDTRecurrentClassifier>(udt_proto.recurrent());
+      udt->_backend = std::make_unique<UDTRecurrentClassifier>(
+          udt_proto.recurrent(), model);
       break;
     case proto::udt::UDT::kRegression:
-      udt->_backend = std::make_unique<UDTRegression>(udt_proto.regression());
+      udt->_backend =
+          std::make_unique<UDTRegression>(udt_proto.regression(), model);
       break;
     case proto::udt::UDT::kSvm:
-      udt->_backend = std::make_unique<UDTSVMClassifier>(udt_proto.svm());
+      udt->_backend =
+          std::make_unique<UDTSVMClassifier>(udt_proto.svm(), model);
       break;
     default:
       throw std::invalid_argument("Invalid UDT Backend in from proto.");

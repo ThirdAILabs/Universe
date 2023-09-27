@@ -70,8 +70,10 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       bolt_labels, tabular_options);
 }
 
-UDTClassifier::UDTClassifier(const proto::udt::UDTClassifier& classifier)
-    : _classifier(utils::Classifier::fromProto(classifier.classifier())),
+UDTClassifier::UDTClassifier(const proto::udt::UDTClassifier& classifier,
+                             bolt::ModelPtr model)
+    : _classifier(utils::Classifier::fromProto(classifier.classifier(),
+                                               std::move(model))),
       _featurizer(std::make_shared<Featurizer>(classifier.featurizer())) {}
 
 py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
@@ -170,12 +172,12 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                               /* single= */ false, top_k);
 }
 
-proto::udt::UDT* UDTClassifier::toProto(bool with_optimizer) const {
-  auto* udt = new proto::udt::UDT();
+proto::udt::UDT UDTClassifier::toProto() const {
+  proto::udt::UDT udt;
 
-  auto* classifier = udt->mutable_classifier();
+  auto* classifier = udt.mutable_classifier();
 
-  classifier->set_allocated_classifier(_classifier->toProto(with_optimizer));
+  classifier->set_allocated_classifier(_classifier->toProto());
   classifier->set_allocated_featurizer(_featurizer->toProto());
 
   return udt;

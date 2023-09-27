@@ -5,8 +5,7 @@ package proto.udt;
 import "model.proto";
 
 message Classifier {
-  required bolt.Model model = 1;
-  required string embedding_name = 2;
-  required bool freeze_hash_tables = 3;
-  optional float binary_prediction_threshold = 4;
+  required string embedding_name = 1;
+  required bool freeze_hash_tables = 2;
+  optional float binary_prediction_threshold = 3;
 }

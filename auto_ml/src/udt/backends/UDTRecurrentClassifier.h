@@ -26,7 +26,8 @@ class UDTRecurrentClassifier final : public UDTBackend {
                          const config::ArgumentMap& user_args);
 
   explicit UDTRecurrentClassifier(
-      const proto::udt::UDTRecurrentClassifier& recurrent);
+      const proto::udt::UDTRecurrentClassifier& recurrent,
+      bolt::ModelPtr model);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -50,7 +51,7 @@ class UDTRecurrentClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  proto::udt::UDT* toProto(bool with_optimizer) const final;
+  proto::udt::UDT toProto() const final;
 
   ModelPtr model() const final { return _model; }
 

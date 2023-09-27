@@ -6,12 +6,11 @@ import "featurizers.proto";
 import "model.proto";
 
 message UDTRecurrentClassifier {
-  required bolt.Model model = 1;
-  required RecurrentFeaturizer featurizer = 2;
+  required RecurrentFeaturizer featurizer = 1;
 
-  required bool freeze_hash_tables = 3;
+  required bool freeze_hash_tables = 2;
 
-  required string target_column = 4;
-  required uint64 max_seq_len = 5;
-  required uint32 target_delimiter = 6;
+  required string target_column = 3;
+  required uint64 max_seq_len = 4;
+  required uint32 target_delimiter = 5;
 }

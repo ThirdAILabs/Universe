@@ -233,6 +233,12 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
+  void serializeProtoWriter(utils::ProtobufWriter& writer,
+                            bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeProtoReader(
+      utils::ProtobufReader& reader);
+
   /**
    * Serializes the model to a stream using protobuf.
    */

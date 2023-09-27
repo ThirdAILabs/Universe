@@ -440,7 +440,8 @@ class UDT {
 
   void checkpoint(const std::string& filename) const;
 
-  void save_stream(std::ostream& output_stream) const;
+  void save_stream(std::ostream& output_stream,
+                   bool with_optimizer = false) const;
 
   static std::shared_ptr<UDT> load(const std::string& filename);
 
