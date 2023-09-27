@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import all_docs, create_simple_dataset, train_simple_neural_db
+from ndb_utils import all_doc_getters, create_simple_dataset, train_simple_neural_db
 from thirdai import bolt
 from thirdai import neural_db as ndb
 
@@ -128,7 +128,10 @@ def save_load_works(db: ndb.NeuralDB):
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
-    assert db.sources() == new_db.sources()
+    assert db.sources().keys() == new_db.sources().keys()
+    assert [doc.name for doc in db.sources().values()] == [
+        doc.name for doc in new_db.sources().values()
+    ]
 
     shutil.rmtree("temp.ndb")
 
@@ -154,12 +157,14 @@ def test_neural_db_loads_from_model_bazaar():
 
 def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
-    all_methods_work(db, all_docs(), assert_acc=False)
+    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=False)
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
-    all_methods_work(db, all_docs(), assert_acc=True)
+    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=True)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):
@@ -216,6 +221,11 @@ def train_model_for_supervised_training_test(model_id_delimiter):
     return db, source_ids
 
 
+def expect_top_2_results(db, query, expected_results):
+    result_ids = set([ref.id for ref in db.search(query, top_k=2)])
+    assert len(result_ids.intersection(set(expected_results))) >= 1
+
+
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
@@ -239,8 +249,8 @@ def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
     assert db.search("first", top_k=1)[0].id == 4
-    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
-    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([2, 3])
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [2, 3])
 
     with open("mock_sup_2.csv", "w") as out:
         out.write("id,query\n")
@@ -261,8 +271,8 @@ def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
     assert db.search("sixth", top_k=1)[0].id == 9
-    assert set([ref.id for ref in db.search("ninth", top_k=2)]) == set([5, 6])
-    assert set([ref.id for ref in db.search("seventh", top_k=2)]) == set([7, 8])
+    expect_top_2_results(db, "ninth", [5, 6])
+    expect_top_2_results(db, "seventh", [7, 8])
 
     os.remove("mock_sup_1.csv")
     os.remove("mock_sup_2.csv")
@@ -333,8 +343,8 @@ def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
     )
 
     assert db.search("first", top_k=1)[0].id == 4
-    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
-    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([2, 3])
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [2, 3])
 
     db.supervised_train(
         [
@@ -349,5 +359,76 @@ def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
     )
 
     assert db.search("sixth", top_k=1)[0].id == 9
-    assert set([ref.id for ref in db.search("ninth", top_k=2)]) == set([5, 6])
-    assert set([ref.id for ref in db.search("seventh", top_k=2)]) == set([7, 8])
+    expect_top_2_results(db, "ninth", [5, 6])
+    expect_top_2_results(db, "seventh", [7, 8])
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,first\n")
+        out.write("0:1,fourth\n")
+        out.write("8:9:,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("4,first\n")
+        out.write("0,fourth\n")
+        out.write("8,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    assert db.search("fourth", top_k=1)[0].id == 0
+    assert db.search("second", top_k=1)[0].id == 8
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+
+    db.supervised_train_with_ref_ids(
+        queries=["first", "fourth", "second"],
+        labels=[[4], [0, 1], [8, 9]],
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
+    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])

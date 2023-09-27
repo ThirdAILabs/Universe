@@ -58,7 +58,6 @@ Model::Model(ComputationList inputs, ComputationList outputs,
   std::unordered_set<std::string> op_names;
   std::unordered_set<OpPtr> ops;
   for (const auto& comp : _computation_order) {
-    ops.insert(comp->op());
     std::string name = comp->op()->name();
 
     // Check if we have found a new op with the same name.
@@ -66,8 +65,9 @@ Model::Model(ComputationList inputs, ComputationList outputs,
       throw std::invalid_argument(
           "Found multiple Ops in model with the name '" + name +
           "'. All ops in a model must have unique names. The name of the op "
-          "can be updated with `op.name = 'op_name'`.");
+          "can be updated with `op.name = 'new_name'`.");
     }
+    ops.insert(comp->op());
     op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());

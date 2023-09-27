@@ -116,9 +116,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::dataset::python::createDatasetSubmodule(m);
 
   // Licensing Submodule
-#if THIRDAI_CHECK_LICENSE
+  // Licensing methods will be noops if THIRDAI_CHECK_LICENSE is false.
   thirdai::licensing::python::createLicensingSubmodule(m);
-#endif
 
   // Telemetry submodule
   thirdai::telemetry::python::createTelemetrySubmodule(m);

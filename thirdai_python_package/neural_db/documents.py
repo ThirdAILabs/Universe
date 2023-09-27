@@ -1,5 +1,6 @@
 import hashlib
 import os
+import pickle
 import shutil
 import string
 from collections import OrderedDict
@@ -21,6 +22,10 @@ from .utils import hash_file, hash_string
 
 class Reference:
     pass
+
+
+def _raise_unknown_doc_error(element_id: int):
+    raise ValueError(f"Unable to find document that has id {element_id}.")
 
 
 class Document:
@@ -73,6 +78,24 @@ class Document:
 
     def load_meta(self, directory: Path):
         pass
+
+    def save(self, directory: str):
+        dirpath = Path(directory)
+        if os.path.exists(dirpath):
+            shutil.rmtree(dirpath)
+        os.mkdir(dirpath)
+        with open(dirpath / f"doc.pkl", "wb") as pkl:
+            pickle.dump(self, pkl)
+        os.mkdir(dirpath / "meta")
+        self.save_meta(dirpath / "meta")
+
+    @staticmethod
+    def load(directory: str):
+        dirpath = Path(directory)
+        with open(dirpath / f"doc.pkl", "rb") as pkl:
+            obj = pickle.load(pkl)
+        obj.load_meta(dirpath / "meta")
+        return obj
 
 
 class Reference:
@@ -218,7 +241,7 @@ class DocumentManager:
         ]
 
     def sources(self):
-        return {doc_hash: doc.name for doc_hash, (doc, _) in self.registry.items()}
+        return {doc_hash: doc for doc_hash, (doc, _) in self.registry.items()}
 
     def match_source_id_by_prefix(self, prefix: str) -> Document:
         if prefix in self.registry:
@@ -237,7 +260,7 @@ class DocumentManager:
             if start_id <= element_id:
                 return doc, start_id
 
-        raise ValueError(f"Unable to find document that has id {element_id}.")
+        _raise_unknown_doc_error(element_id)
 
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
@@ -348,6 +371,8 @@ class CSV(Document):
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def reference(self, element_id: int) -> Reference:
+        if element_id >= len(self.df):
+            _raise_unknown_doc_error(element_id)
         row = self.df.iloc[element_id]
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
@@ -443,6 +468,8 @@ class Extracted(Document):
         return text
 
     def reference(self, element_id: int) -> Reference:
+        if element_id >= len(self.df):
+            _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
@@ -604,6 +631,8 @@ class URL(Document):
         return self.df["text"].iloc[element_id]
 
     def reference(self, element_id: int) -> Reference:
+        if element_id >= len(self.df):
+            _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
@@ -713,6 +742,8 @@ class SentenceLevelExtracted(Extracted):
         return text
 
     def reference(self, element_id: int) -> Reference:
+        if element_id >= len(self.df):
+            _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
