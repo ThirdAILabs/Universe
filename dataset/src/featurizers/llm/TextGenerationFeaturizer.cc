@@ -130,6 +130,8 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
+bool hasPrompt(const std::vector<uint32_t>& dims) { return dims.size() <= 3; }
+
 bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
     const std::vector<uint32_t>& prompt,
     const std::vector<std::vector<uint32_t>>& tokens,
@@ -149,7 +151,7 @@ bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
     src.emplace_back(_context_featurizer.srcContext(sample));
     prompts.emplace_back(promptContext(prompt));
   }
-  if (dims.size() == 3) {
+  if (hasPrompt(dims)) {
     return bolt::convertBatch(
         {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
          BoltBatch(std::move(src))},
