@@ -380,13 +380,18 @@ class NeuralDB:
             document_target_col = config["document_target_col"]
             log_folder = train_loop_config["log_folder"]
 
-            thirdai.logging.setup(
-                log_to_stderr=False,
-                path=os.path.join(
-                    log_folder, f"worker-{train.get_context().get_world_rank()}.log"
-                ),
-                level="info",
-            )
+            if log_folder:
+                if not os.path.exists(log_folder):
+                    print(f"Folder '{log_folder}' does not exist. Creating it...")
+                    os.makedirs(log_folder)
+                    print(f"Folder '{log_folder}' created successfully!")
+                thirdai.logging.setup(
+                    log_to_stderr=False,
+                    path=os.path.join(
+                        log_folder, f"worker-{train.get_context().get_world_rank()}.log"
+                    ),
+                    level="info",
+                )
 
             metrics = model.coldstart_distributed_on_data_source(
                 data_source=RayCsvDataSource(
