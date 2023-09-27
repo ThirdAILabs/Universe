@@ -2,7 +2,7 @@ import os
 
 import ray
 import thirdai.distributed_bolt as dist
-from ray.air import session
+from ray import train
 from ray.train.torch import TorchConfig
 from thirdai import bolt
 
@@ -31,7 +31,7 @@ class DistributedRunner(Runner):
 
         metrics = model.coldstart_distributed_v2(
             filename=config["data_splits"][
-                f"unsupervised_{session.get_world_rank()+1}"
+                f"unsupervised_{train.get_context().get_world_rank()+1}"
             ],
             strong_column_names=["TITLE"],
             weak_column_names=["TEXT"],
@@ -45,7 +45,7 @@ class DistributedRunner(Runner):
         if config["data_splits"]["supervised_v1"]:
             metrics = model.train_distributed_v2(
                 filename=config["data_splits"][
-                    f"supervised_{session.get_world_rank()+1}"
+                    f"supervised_{train.get_context().get_world_rank()+1}"
                 ],
                 learning_rate=config["learning_rate"],
                 epochs=config["num_epochs"],
@@ -54,10 +54,12 @@ class DistributedRunner(Runner):
                 validation=validation,
             )
 
-        session.report(
-            metrics,
-            checkpoint=dist.UDTCheckPoint.from_model(model),
-        )
+        rank = train.get_context().get_world_rank()
+        checkpoint = None
+        if rank == 0:
+            checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
+
+        train.report(metrics, checkpoint=checkpoint)
 
     @classmethod
     def run_benchmark(
@@ -76,6 +78,9 @@ class DistributedRunner(Runner):
         # Initialise 2 node ray cluster
         scaling_config = setup_ray()
 
+        # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+        run_config = train.RunConfig(storage_path="/share/ray_results")
+
         trainer = dist.BoltTrainer(
             train_loop_per_worker=cls.training_loop_per_worker,
             train_loop_config={
@@ -91,6 +96,7 @@ class DistributedRunner(Runner):
             },
             scaling_config=scaling_config,
             backend_config=TorchConfig(backend="gloo"),
+            run_config=run_config,
         )
 
         trainer.fit()

@@ -5,7 +5,7 @@ import pytest
 import ray
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-from ray.air import session
+from ray.train import RunConfig
 from ray.train.torch import TorchConfig
 from thirdai import neural_db
 
@@ -33,7 +33,10 @@ def test_neural_db_training(create_simple_dataset):
     # we are running just one worker since we get OOM issues with multiple workers
     scaling_config = setup_ray(num_workers=1)
     ndb.pretrain_distributed(
-        documents=[doc], scaling_config=scaling_config, log_folder=LOG_PATH
+        documents=[doc],
+        scaling_config=scaling_config,
+        log_folder=LOG_PATH,
+        run_config=RunConfig(storage_path="~/ray_results"),
     )
 
     shutil.rmtree(LOG_PATH)

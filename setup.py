@@ -220,7 +220,7 @@ setup(
             "scikit-learn",
             "beir",
             "pyOpenSSL>22.1.0",
-            "ray<2.7.0",
+            "ray",
         ]
         + neural_db_deps,
         "benchmark": [
@@ -233,7 +233,7 @@ setup(
             "s3fs",
             "gcsfs",
             "nltk",
-            "ray[default]==2.6.3",
+            "ray[default]",
             "torch",
         ]
         + neural_db_deps,
