@@ -9,6 +9,7 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <proto/model.pb.h>
 #include <utils/UUID.h>
+#include <istream>
 #include <memory>
 #include <vector>
 
@@ -231,17 +232,34 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
-  proto::bolt::Model toProto(bool with_optimizer) const;
+  /**
+   * Serializes the model to a stream using protobuf.
+   */
+  void serializeStream(std::ostream& output, bool with_optimizer) const;
 
-  static std::shared_ptr<Model> fromProto(
-      const proto::bolt::Model& model_proto);
+  /**
+   * Deserializes the model from a stream using protobuf.
+   */
+  static std::shared_ptr<Model> deserializeStream(std::istream& input);
 
+  /**
+   * Saves the model to a file using protobuf.
+   */
   void saveProto(const std::string& filename, bool with_optimizer) const;
 
+  /**
+   * Loads the model from a file using protobuf.
+   */
   static std::shared_ptr<Model> loadProto(const std::string& filename);
 
+  /**
+   * Serializes the model to a string using protobuf.
+   */
   std::string serializeProto(bool with_optimizer) const;
 
+  /**
+   * Deserializes the model from a string using protobuf.
+   */
   static std::shared_ptr<Model> deserializeProto(const std::string& binary);
 
   /**
@@ -310,6 +328,18 @@ class Model : public std::enable_shared_from_this<Model> {
    * Registers the model with the ops that it uses.
    */
   void registerWithOps();
+
+  /**
+   * Converts the computation graph to a protobuf object.
+   */
+  proto::bolt::Model computationGraphToProto(bool with_optimizer) const;
+
+  /**
+   * Loads the model from the computation graph protobuf object, and the
+   * parameter objects.
+   */
+  static std::shared_ptr<Model> fromProto(const proto::bolt::Model& model_proto,
+                                          DeserializedParameters& parameters);
 
   /**
    * Names the computations in the model based on the order they are executed.

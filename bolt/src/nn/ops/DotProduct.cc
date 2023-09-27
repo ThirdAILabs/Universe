@@ -140,6 +140,12 @@ proto::bolt::Op* DotProduct::toProto(bool with_optimizer) const {
   return op;
 }
 
+SerializableParameters DotProduct::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
 std::shared_ptr<DotProduct> DotProduct::fromProto(
     const std::string& name, const proto::bolt::DotProduct& dot_prod_proto) {
   return std::shared_ptr<DotProduct>(new DotProduct(name, dot_prod_proto));

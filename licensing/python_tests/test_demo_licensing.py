@@ -133,16 +133,12 @@ def test_introduce_documents_works_on_clinc(download_clinc_dataset):
     )
 
 
-def test_get_set_index_fails_on_demo_license():
+def test_set_index_fails_on_demo_license():
     thirdai.licensing.activate(SMALL_CENSUS_KEY)
 
     model = simple_mach_model()
 
-    with pytest.raises(
-        RuntimeError,
-        match="The license was found to be invalid: You must have a full license to perform this operation.",
-    ):
-        model.get_index()
+    model.get_index()  # This should work since it's used in neural_db
 
     with pytest.raises(
         RuntimeError,

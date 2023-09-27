@@ -72,8 +72,12 @@ class FullyConnected final
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
 
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
   static std::shared_ptr<FullyConnected> fromProto(
-      const std::string& name, const proto::bolt::FullyConnected& fc_proto);
+      const std::string& name, const proto::bolt::FullyConnected& fc_proto,
+      DeserializedParameters& parameter);
 
   /**
    * Returns the input dim of the fully connected layer.
@@ -148,7 +152,12 @@ class FullyConnected final
           std::numeric_limits<uint32_t>::max());
 
   FullyConnected(const std::string& name,
-                 const proto::bolt::FullyConnected& fc_proto);
+                 const proto::bolt::FullyConnected& fc_proto,
+                 DeserializedParameters& parameters);
+
+  std::string weightsName() const { return name() + "_weights"; }
+
+  std::string biasesName() const { return name() + "_biases"; }
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 
@@ -177,3 +186,20 @@ class FullyConnected final
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
 }  // namespace thirdai::bolt
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ *
+ * This needs to be in the header file because the Switch op needs to know about
+ * it.
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::FullyConnected,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal

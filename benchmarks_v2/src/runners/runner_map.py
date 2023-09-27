@@ -1,5 +1,6 @@
 from .bolt_fc import BoltFullyConnectedRunner
 from .distributed import DistributedRunner
+from .distributed_ndb import DistributedNDBRunner
 from .dlrm import DLRMRunner
 from .mini_benchmark_runners.query_reformulation import (
     MiniBenchmarkQueryReformulationRunner,
@@ -22,4 +23,5 @@ runner_map = {
     "mini_benchmark_temporal": MiniBenchmarkTemporalRunner,
     "distributed": DistributedRunner,
     "rlhf": RlhfRunner,
+    "distributed_ndb": DistributedNDBRunner,
 }

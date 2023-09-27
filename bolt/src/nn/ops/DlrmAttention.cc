@@ -208,4 +208,10 @@ proto::bolt::Op* DlrmAttention::toProto(bool with_optimizer) const {
   throw std::invalid_argument("toProto is not implemented for DlrmAttention.");
 }
 
+SerializableParameters DlrmAttention::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
 }  // namespace thirdai::bolt
