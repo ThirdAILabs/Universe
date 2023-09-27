@@ -34,23 +34,27 @@ RecurrentFeaturizer::RecurrentFeaturizer(
       /* target_output_column= */ FEATURIZED_LABELS, n_target_classes,
       target->max_length.value());
 
-  _augmenting_transform =
+  std::tie(_augmenting_transform, _recurrence_augmentation) =
       makeTransformation(data_types, target_name, target, n_target_classes,
-                         tabular_options, _recurrence_augmentation);
+                         tabular_options, /*add_recurrence_augmentation=*/true);
+
   _non_augmenting_transform =
       makeTransformation(data_types, target_name, target, n_target_classes,
-                         tabular_options, /* augmentation= */ nullptr);
+                         tabular_options, /*add_recurrence_augmentation=*/false)
+          .first;
 
   _bolt_input_columns = {
-      thirdai::data::OutputColumns(FEATURE_HASH_INDICES, FEATURE_HASH_VALUES)};
+      thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
   _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
 }
 
-thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
+std::pair<thirdai::data::TransformationPtr,
+          std::shared_ptr<thirdai::data::Recurrence>>
+RecurrentFeaturizer::makeTransformation(
     const data::ColumnDataTypes& data_types, const std::string& target_name,
     const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
     const data::TabularOptions& tabular_options,
-    const thirdai::data::TransformationPtr& augmentation) const {
+    bool add_recurrence_augmentation) const {
   auto [input_transforms, outputs] =
       nonTemporalTransformations(data_types, target_name, tabular_options);
 
@@ -66,16 +70,24 @@ thirdai::data::TransformationPtr RecurrentFeaturizer::makeTransformation(
   input_transforms.push_back(target_encoding);
   outputs.push_back(RECURRENT_SEQUENCE);
 
-  if (augmentation) {
-    input_transforms.push_back(augmentation);
+  std::shared_ptr<thirdai::data::Recurrence> recurrence = nullptr;
+  if (add_recurrence_augmentation) {
+    recurrence = std::make_shared<thirdai::data::Recurrence>(
+        /* source_input_column= */ RECURRENT_SEQUENCE,
+        /* target_input_column= */ target_name,
+        /* source_output_column= */ RECURRENT_SEQUENCE,
+        /* target_output_column= */ FEATURIZED_LABELS, n_target_classes,
+        target->max_length.value());
+    input_transforms.push_back(recurrence);
   }
 
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
-      outputs, FEATURE_HASH_INDICES, FEATURE_HASH_VALUES,
+      outputs, FEATURIZED_INDICES, FEATURIZED_VALUES,
       tabular_options.feature_hash_range);
   input_transforms.push_back(fh);
 
-  return thirdai::data::TransformationList::make(input_transforms);
+  return {thirdai::data::TransformationList::make(input_transforms),
+          recurrence};
 }
 
 RecurrentFeaturizer::RecurrentFeaturizer(
@@ -112,7 +124,8 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
 
   csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   return thirdai::data::Loader::make(
       data_iter, _augmenting_transform, _state, _bolt_input_columns,

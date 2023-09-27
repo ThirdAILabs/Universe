@@ -89,7 +89,8 @@ thirdai::data::LoaderPtr Featurizer::getDataLoaderHelper(
     const thirdai::data::TransformationPtr& cold_start_transform) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   std::vector<thirdai::data::TransformationPtr> transformations;
   if (cold_start_transform) {

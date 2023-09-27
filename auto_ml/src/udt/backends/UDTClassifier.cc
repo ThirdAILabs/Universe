@@ -216,7 +216,7 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
 
   for (const auto& [weight, feature] : sorted_gradients) {
     explanations.emplace_back(
-        explanation_map.explain(FEATURE_HASH_INDICES, feature),
+        explanation_map.explain(FEATURIZED_INDICES, feature),
         weight / total_grad);
   }
 
@@ -292,12 +292,12 @@ thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
     const std::string& target_name, data::CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target) const {
   if (integer_target) {
-    if (target_config->delimiter) {
+    if (!target_config->delimiter) {
       return std::make_shared<thirdai::data::StringToToken>(
           target_name, FEATURIZED_LABELS, n_target_classes);
     }
     return std::make_shared<thirdai::data::StringToTokenArray>(
-        target_name, FEATURIZED_LABELS, *target_config->delimiter,
+        target_name, FEATURIZED_LABELS, target_config->delimiter.value(),
         n_target_classes);
   }
 

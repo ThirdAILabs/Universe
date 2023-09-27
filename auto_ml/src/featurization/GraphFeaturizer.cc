@@ -3,6 +3,7 @@
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/StringCast.h>
@@ -35,14 +36,14 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   output_cols.push_back(nbr_features_output);
 
   auto fh = std::make_shared<thirdai::data::FeatureHash>(
-      output_cols, FEATURE_HASH_INDICES, FEATURE_HASH_VALUES,
+      output_cols, FEATURIZED_INDICES, FEATURIZED_VALUES,
       udt::defaults::FEATURE_HASH_RANGE);
   input_transforms.push_back(fh);
 
   _input_transform = thirdai::data::TransformationList::make(input_transforms);
 
   _bolt_input_columns = {
-      thirdai::data::OutputColumns(FEATURE_HASH_INDICES, FEATURE_HASH_VALUES),
+      thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES),
       thirdai::data::OutputColumns(nbr_ids_output)};
 
   _label_transform = std::make_shared<thirdai::data::StringToToken>(
@@ -77,7 +78,8 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 
   csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   auto transformation_list = thirdai::data::TransformationList::make(
       {_input_transform, _label_transform});
@@ -91,9 +93,9 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 }
 
 void GraphFeaturizer::index(const dataset::DataSourcePtr& data_source) {
-  thirdai::data::ColumnMapIterator data_iter(data_source, _delimiter);
+  auto data_iter = thirdai::data::CsvIterator::make(data_source, _delimiter);
 
-  while (auto chunk = data_iter.next()) {
+  while (auto chunk = data_iter->next()) {
     _graph_builder->apply(*chunk, *_state);
   }
 }
@@ -116,21 +118,39 @@ bolt::TensorList GraphFeaturizer::featurizeInputBatch(
 }
 
 std::string neighborsColumn(const data::ColumnDataTypes& data_types) {
+  std::optional<std::string> neighbors_col = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNeighbors(data_type)) {
-      return col_name;
+      if (neighbors_col) {
+        throw std::invalid_argument(
+            "Only a single neighbors column is allowed in GNN.");
+      }
+      neighbors_col = col_name;
     }
   }
-  throw std::invalid_argument("Neighbors column is required for GNN.");
+
+  if (!neighbors_col) {
+    throw std::invalid_argument("Neighbors column is required for GNN.");
+  }
+  return *neighbors_col;
 }
 
 std::string nodeIdColumn(const data::ColumnDataTypes& data_types) {
+  std::optional<std::string> node_id_column = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNodeID(data_type)) {
-      return col_name;
+      if (node_id_column) {
+        throw std::invalid_argument(
+            "Only a single node ID column is allowed in GNN.");
+      }
+      node_id_column = col_name;
     }
   }
-  throw std::invalid_argument("NodeID column is required for GNN.");
+
+  if (!node_id_column) {
+    throw std::invalid_argument("NodeID column is required for GNN.");
+  }
+  return *node_id_column;
 }
 
 std::pair<thirdai::data::TransformationPtr, std::string>

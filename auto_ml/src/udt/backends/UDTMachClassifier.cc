@@ -738,7 +738,9 @@ void UDTMachClassifier::addBalancingSamples(
     // samples to avoid the overhead of loading the entire dataset. It's
     // possible this won't load enough samples to cover all classes.
     // We may try to keep streaming data until all classes are covered or load
-    // the entire dataset and see if it makes a difference.
+    // the entire dataset and see if it makes a difference. For now we just
+    // sample from 5x more rows than we need samples, to hopefully get a wider
+    // range of samples.
     auto samples = _featurizer->getBalancingSamples(
         data, strong_column_names, weak_column_names,
         defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);

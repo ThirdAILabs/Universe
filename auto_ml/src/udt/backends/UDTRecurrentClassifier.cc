@@ -266,8 +266,8 @@ proto::udt::UDT* UDTRecurrentClassifier::toProto(bool with_optimizer) const {
 uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
                                                   uint32_t step,
                                                   size_t vocab_size) {
-  auto begin = step * vocab_size;
-  auto end = begin + vocab_size;
+  size_t begin = step * vocab_size;
+  size_t end = begin + vocab_size;
 
   uint32_t arg_max = 0;
   float max_act = -std::numeric_limits<float>::max();

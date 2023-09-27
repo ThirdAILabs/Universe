@@ -44,11 +44,14 @@ class RecurrentFeaturizer {
   proto::udt::RecurrentFeaturizer* toProto() const;
 
  private:
-  thirdai::data::TransformationPtr makeTransformation(
-      const data::ColumnDataTypes& data_types, const std::string& target_name,
-      const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
-      const data::TabularOptions& tabular_options,
-      const thirdai::data::TransformationPtr& augmentation) const;
+  std::pair<thirdai::data::TransformationPtr,
+            std::shared_ptr<thirdai::data::Recurrence>>
+  makeTransformation(const data::ColumnDataTypes& data_types,
+                     const std::string& target_name,
+                     const data::SequenceDataTypePtr& target,
+                     uint32_t n_target_classes,
+                     const data::TabularOptions& tabular_options,
+                     bool add_recurrence_augmentation) const;
 
   thirdai::data::TransformationPtr _augmenting_transform;
   thirdai::data::TransformationPtr _non_augmenting_transform;

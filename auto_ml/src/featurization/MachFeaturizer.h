@@ -63,6 +63,11 @@ class MachFeaturizer final : public Featurizer {
       const std::string& label_column_name,
       const data::CategoricalDataTypePtr& label_column_info);
 
+  // The Mach model takes in two labels, one for the buckets, and one containing
+  // the doc ids which is used by the mach metrics. For some inputs, for
+  // instance in trainWithHashes, we don't have the doc ids that the model is
+  // expecting, this adds a dummy input for the doc ids so that we have the
+  // number of labels the model is expecting.
   static void addDummyDocIds(thirdai::data::ColumnMap& columns);
 
   thirdai::data::TransformationPtr _doc_id_transform;
