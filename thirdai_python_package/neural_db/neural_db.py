@@ -309,6 +309,10 @@ class NeuralDB:
             documents: List of documents for pretraining. All the documents must have the same id column.
             scaling_config: Configuration related to the scaling aspects for Ray trainer. Read
                 https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html
+            run_config: Configuration related to the runtime aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html
+                ** Note: We need to specify `storage_path` in `RunConfig` which must be a networked **
+                ** file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards) **
             learning_rate (float, optional): Learning rate for the optimizer. Default is 0.001.
             epochs (int, optional): Number of epochs to train. Default is 5.
             batch_size (int, optional): Size of each batch for training. If not provided, will be determined automatically.
@@ -317,8 +321,6 @@ class NeuralDB:
                 streaming support when dataset is too large to fit in memory. If None, all batches will be loaded.
             communication_backend (str, optional): Bolt Distributed Training uses Torch Communication Backend. This
                 refers to backend for inter-worker communication. Default is "gloo".
-            run_config: Configuration related to the runtime aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html
 
         Notes:
             - Make sure to pass id_column to neural_db.CSV() making sure the ids are in ascending order starting from 0.
