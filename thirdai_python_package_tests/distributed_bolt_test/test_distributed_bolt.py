@@ -13,7 +13,7 @@ from distributed_utils import (
     write_metrics_to_file,
 )
 from ray import train
-from ray.train import FailureConfig, RunConfig, SyncConfig
+from ray.train import FailureConfig, RunConfig
 from ray.train.torch import TorchConfig
 from thirdai import bolt, dataset
 
@@ -49,7 +49,7 @@ def training_loop_per_worker(config):
         # Use `with_optimizers=False` to save model without optimizer states
         checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=False)
 
-    dist.report(
+    train.report(
         {"model_location": train.get_context().get_trial_dir()},
         checkpoint=checkpoint,
     )
@@ -62,7 +62,7 @@ def test_bolt_distributed():
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = RunConfig(storage_path="/share/ray_results")
+    run_config = RunConfig(storage_path="~/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
@@ -173,7 +173,7 @@ def test_distributed_fault_tolerance():
                     }
                 )
 
-            dist.report(
+            train.report(
                 {"model_location": train.get_context().get_trial_dir()},
                 checkpoint=checkpoint,
             )
@@ -188,7 +188,7 @@ def test_distributed_fault_tolerance():
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
     run_config = train.RunConfig(
-        storage_path="/share/ray_results",
+        storage_path="~/ray_results",
         failure_config=FailureConfig(max_failures=3),
     )
 
@@ -235,12 +235,12 @@ def test_distributed_resume_training():
             # Use `with_optimizers=True` to save model with optimizer states
             checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=False)
 
-        dist.report({}, checkpoint=checkpoint)
+        train.report({}, checkpoint=checkpoint)
 
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(storage_path="/share/ray_results")
+    run_config = train.RunConfig(storage_path="~/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,

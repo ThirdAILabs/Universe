@@ -59,7 +59,7 @@ class DistributedRunner(Runner):
         if rank == 0:
             checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
 
-        dist.report(metrics, checkpoint=checkpoint)
+        train.report(metrics, checkpoint=checkpoint)
 
     @classmethod
     def run_benchmark(

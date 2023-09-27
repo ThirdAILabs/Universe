@@ -1,13 +1,16 @@
 import os
+import tempfile
 
 from ray import train
+from ray.train import Checkpoint
 from ray.air.constants import MODEL_KEY
 from thirdai._thirdai import bolt
 
 from ..utils import timed
+from ray.train._internal.framework_checkpoint import FrameworkCheckpoint
 
 
-class UDTCheckPoint(train.Checkpoint):
+class UDTCheckPoint(Checkpoint):
     """A :py:class:`~ray.train.Checkpoint` with UDT-specific
     functionality.
 
@@ -34,22 +37,20 @@ class UDTCheckPoint(train.Checkpoint):
             >>> checkpoint = UDTCheckPoint.from_model(udt_model, with_optimizers=True): saving with optimizer states
             >>> checkpoint = UDTCheckPoint.from_model(udt_model, with_optimizers=False): saving without optimizer states
 
-            >>> model = dist.UDTCheckPoint.get_model(checkpoint)
+            >>> model = checkpoint.get_model()
         """
 
-        save_dir = os.path.join(train.get_context().get_trial_dir(), "tmp_checkpoint")
-        os.makedirs(save_dir, exist_ok=True)
-        save_path = os.path.join(save_dir, MODEL_KEY)
+        temp_dir = tempfile.mkdtemp()
+        save_path = os.path.join(temp_dir, MODEL_KEY)
         model.checkpoint(save_path) if with_optimizers else model.save(save_path)
 
-        checkpoint = cls.from_directory(save_dir)
-        checkpoint.set_metadata({"save_dir": save_dir})
+        checkpoint = cls.from_directory(temp_dir)
 
         return checkpoint
 
     @classmethod
     @timed
-    def get_model(cls, checkpoint: train.Checkpoint):
+    def get_model(cls, checkpoint: Checkpoint):
         """Retrieve the UDT model stored in this checkpoint."""
         with checkpoint.as_directory() as checkpoint_path:
             return bolt.UniversalDeepTransformer.load(
@@ -57,7 +58,7 @@ class UDTCheckPoint(train.Checkpoint):
             )
 
 
-class BoltCheckPoint(train.Checkpoint):
+class BoltCheckPoint(Checkpoint):
     """A :py:class:`~ray.train.Checkpoint` with Bolt-specific
     functionality.
 
@@ -84,21 +85,19 @@ class BoltCheckPoint(train.Checkpoint):
             >>> checkpoint = BoltCheckPoint.from_model(bolt_model, with_optimizers=True): saving with optimizer states
             >>> checkpoint = BoltCheckPoint.from_model(bolt_model, with_optimizers=False): saving without optimizer states
 
-            >>> model = dist.BoltCheckPoint.get_model(checkpoint)
+            >>> model = checkpoint.get_model()
         """
-        save_dir = os.path.join(train.get_context().get_trial_dir(), "tmp_checkpoint")
-        os.makedirs(save_dir, exist_ok=True)
-        save_path = os.path.join(save_dir, MODEL_KEY)
+        temp_dir = tempfile.mkdtemp()
+        save_path = os.path.join(temp_dir, MODEL_KEY)
         model.checkpoint(save_path) if with_optimizers else model.save(save_path)
 
-        checkpoint = cls.from_directory(save_dir)
-        checkpoint.set_metadata({"save_dir": save_dir})
+        checkpoint = cls.from_directory(temp_dir)
 
         return checkpoint
 
     @classmethod
     @timed
-    def get_model(cls, checkpoint: train.Checkpoint):
+    def get_model(self, checkpoint: Checkpoint):
         """Retrieve the Bolt model stored in this checkpoint."""
         with checkpoint.as_directory() as checkpoint_path:
             return bolt.nn.Model.load(os.path.join(checkpoint_path, MODEL_KEY))

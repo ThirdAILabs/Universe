@@ -403,7 +403,7 @@ class NeuralDB:
                 # Use `with_optimizers=False` to save model without optimizer states
                 checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
 
-            dist.report(metrics=metrics, checkpoint=checkpoint)
+            train.report(metrics=metrics, checkpoint=checkpoint)
 
         csv_paths = [str(document.path.resolve()) for document in documents]
 
