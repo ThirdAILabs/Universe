@@ -275,12 +275,12 @@ def test_udt_mach_distributed(download_scifact_dataset):
         )
 
         validation = bolt.Validation(
-            filename="scifact/tst_supervised.csv",
+            filename=f"rank_{train.get_context().get_world_rank()}-scifact/tst_supervised.csv",
             metrics=["precision@1"],
         )
 
         metrics = model.train_distributed(
-            filename=f"scifact/supervised_trn_part{train.get_context().get_world_rank()+1}",
+            filename=f"rank_{train.get_context().get_world_rank()}-scifact/supervised_trn_part{train.get_context().get_world_rank()+1}",
             learning_rate=0.001,
             epochs=10,
             batch_size=1024,
