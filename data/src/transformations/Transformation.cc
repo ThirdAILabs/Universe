@@ -6,6 +6,7 @@
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/DeduplicateTokens.h>
+#include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
@@ -16,6 +17,7 @@
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
+#include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -56,6 +58,9 @@ TransformationPtr Transformation::fromProto(
     case proto::data::Transformation::kDeduplicateTokens:
       return std::make_shared<DeduplicateTokens>(
           transformation.deduplicate_tokens());
+
+    case proto::data::Transformation::kDyadicInterval:
+      return std::make_shared<DyadicInterval>(transformation.dyadic_interval());
 
     case proto::data::Transformation::kFeatureHash:
       return std::make_shared<FeatureHash>(transformation.feature_hash());
@@ -101,6 +106,9 @@ TransformationPtr Transformation::fromProto(
     case proto::data::Transformation::kStringIdLookup:
       return std::make_shared<StringIDLookup>(
           transformation.string_id_lookup());
+
+    case proto::data::Transformation::kTabular:
+      return std::make_shared<Tabular>(transformation.tabular());
 
     case proto::data::Transformation::kTextTokenizer:
       return std::make_shared<TextTokenizer>(transformation.text_tokenizer());

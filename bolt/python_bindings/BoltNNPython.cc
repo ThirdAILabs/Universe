@@ -122,6 +122,7 @@ void createBoltNNSubmodule(py::module_& module) {
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
       .def("__getitem__", &Model::getOp, py::arg("name"))
+      .def("computation", &Model::getComputation, py::arg("name"))
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
@@ -149,6 +150,9 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("unfreeze_hash_tables", &Model::unfreezeHashTables)
       .def("save", &Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
+      .def("save_proto", &Model::saveProto, py::arg("filename"),
+           py::arg("with_optimizer") = false)
+      .def_static("load_proto", &Model::loadProto, py::arg("filename"))
       .def("checkpoint", &Model::checkpoint, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def_static("load", &Model::load, py::arg("filename"))
@@ -205,6 +209,7 @@ void defineOps(py::module_& nn) {
 
   py::class_<Op, OpPtr>(nn, "Op")
       .def("dim", &Op::dim)
+      .def_property("trainable", &Op::isTrainable, &Op::setTrainable)
       .def_property("name", &Op::name, &Op::setName);
 
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT

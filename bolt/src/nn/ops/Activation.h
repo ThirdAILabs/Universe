@@ -50,6 +50,8 @@ class Activation final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;
@@ -66,6 +68,9 @@ class Activation final : public Op,
   ComputationPtr applyUnary(ComputationPtr input);
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
 
   static std::shared_ptr<Activation<Impl>> fromProto(
       const std::string& name, const proto::bolt::Activation& act_proto);

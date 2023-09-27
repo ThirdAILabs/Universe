@@ -1,6 +1,7 @@
 // Code to create thirdai modules
 #include <bolt/python_bindings/BoltCompression.h>
 #include <bolt/python_bindings/BoltNNPython.h>
+#include <bolt/python_bindings/BoltTextGeneration.h>
 #include <bolt/python_bindings/BoltTrainPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
@@ -115,9 +116,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::dataset::python::createDatasetSubmodule(m);
 
   // Licensing Submodule
-#if THIRDAI_CHECK_LICENSE
+  // Licensing methods will be noops if THIRDAI_CHECK_LICENSE is false.
   thirdai::licensing::python::createLicensingSubmodule(m);
-#endif
 
   // Telemetry submodule
   thirdai::telemetry::python::createTelemetrySubmodule(m);
@@ -135,6 +135,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::createBoltTrainSubmodule(bolt_submodule);
   thirdai::bolt::compression::python::createCompressionSubmodule(
       bolt_submodule);
+  thirdai::bolt::python::addTextGenerationModels(bolt_submodule);
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);

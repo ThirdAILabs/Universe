@@ -4,14 +4,13 @@
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
-#include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
+#include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -36,9 +35,10 @@ TEST(TabularTransformationTests, TextOnlyTransformation) {
 
   ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
-  ASSERT_EQ(outputs.at(0).indices(), "__text_tokenized__");
+  ASSERT_EQ(outputs.at(0).indices(), "__featurized_input_indices__");
   // There should not be a specified values column, just indices.
-  ASSERT_FALSE(outputs.at(0).values().has_value());
+  ASSERT_TRUE(outputs.at(0).values().has_value());
+  ASSERT_EQ(outputs.at(0).values(), "__featurized_input_values__");
 }
 
 data::ColumnDataTypes getTabularDataTypes() {
@@ -94,20 +94,25 @@ TEST(TabularTransformationTests, TabularTransformations) {
                     transformation)
                     ->transformations();
 
-  ASSERT_EQ(t_list.size(), 9);
+  ASSERT_EQ(t_list.size(), 7);
 
   ASSERT_TRANSFORM_TYPE(t_list[0], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::StringToDecimal);
-  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::BinningTransformation);
-  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::HashPositionTransform);
-  ASSERT_TRANSFORM_TYPE(t_list[7], thirdai::data::Date);
-  ASSERT_TRANSFORM_TYPE(t_list[8], thirdai::data::FeatureHash);
+  ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::TextTokenizer);
+  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::StringHash);
+  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::HashPositionTransform);
+  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::Date);
+  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::Tabular);
+  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::FeatureHash);
+
+  auto tabular = std::dynamic_pointer_cast<thirdai::data::Tabular>(t_list[5]);
+
+  ASSERT_EQ(tabular->numericalColumns().size(), 1);
+  ASSERT_EQ(tabular->numericalColumns().at(0).name, "d");
+  ASSERT_EQ(tabular->categoricalColumns().size(), 1);
+  ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[8])
+      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[6])
           ->inputColumns();
 
   // The transformations on columns b and d are at the end because after
@@ -115,67 +120,8 @@ TEST(TabularTransformationTests, TabularTransformations) {
   // then decide if these columns are feature hashed or passed through cross
   // column pairgrams.
   std::vector<std::string> expected_fh_cols = {
-      "__a_tokenized__", "__c_categorical__", "__e_sequence__",
-      "__f_date__",      "__b_categorical__", "__d_binned__",
-  };
-  ASSERT_EQ(fh_cols, expected_fh_cols);
-
-  // Check that transformations can process data without errors.
-  thirdai::data::State state;
-  thirdai::data::TransformationList pipeline(t_list);
-  pipeline.apply(getInput(), state);
-}
-
-TEST(TabularTransformationTests, TabularTransformationsCrossColumnPairgrams) {
-  data::TabularOptions options;
-  options.contextual_columns = true;
-  auto [transformation, outputs] = inputTransformations(
-      /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
-      /* temporal_relationships= */ {}, /* options= */ options,
-      /* should_update_history= */ false);
-
-  checkOutputs(outputs);
-
-  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TransformationList);
-
-  auto t_list = std::dynamic_pointer_cast<thirdai::data::TransformationList>(
-                    transformation)
-                    ->transformations();
-
-  ASSERT_EQ(t_list.size(), 10);
-
-  ASSERT_TRANSFORM_TYPE(t_list[0], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::StringToDecimal);
-  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::BinningTransformation);
-  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::HashPositionTransform);
-  ASSERT_TRANSFORM_TYPE(t_list[7], thirdai::data::Date);
-  ASSERT_TRANSFORM_TYPE(t_list[8], thirdai::data::CrossColumnPairgrams);
-  ASSERT_TRANSFORM_TYPE(t_list[9], thirdai::data::FeatureHash);
-
-  auto ccp_cols =
-      std::dynamic_pointer_cast<thirdai::data::CrossColumnPairgrams>(t_list[8])
-          ->inputColumns();
-
-  std::vector<std::string> expected_ccp_cols = {
-      "__b_categorical__",
-      "__d_binned__",
-  };
-  ASSERT_EQ(ccp_cols, expected_ccp_cols);
-
-  auto fh_cols =
-      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[9])
-          ->inputColumns();
-
-  // The transformations on columns b and d are at the end because after
-  // processing all data types we check if cross column pairgrams is enabled and
-  // then decide if these columns are feature hashed or passed through cross
-  // column pairgrams.
-  std::vector<std::string> expected_fh_cols = {
-      "__a_tokenized__", "__c_categorical__",      "__e_sequence__",
-      "__f_date__",      "__contextual_columns__",
+      "__a_tokenized__", "__c_categorical__",   "__e_sequence__",
+      "__f_date__",      "__tabular_columns__",
   };
   ASSERT_EQ(fh_cols, expected_fh_cols);
 
@@ -207,34 +153,29 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
                     transformation)
                     ->transformations();
 
-  ASSERT_EQ(t_list.size(), 13);
+  ASSERT_EQ(t_list.size(), 11);
 
   ASSERT_TRANSFORM_TYPE(t_list[0], thirdai::data::TextTokenizer);
   ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::StringToDecimal);
-  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::BinningTransformation);
-  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::HashPositionTransform);
-  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::Date);
-  ASSERT_TRANSFORM_TYPE(t_list[7], thirdai::data::CrossColumnPairgrams);
-  ASSERT_TRANSFORM_TYPE(t_list[8], thirdai::data::StringToTimestamp);
-  ASSERT_TRANSFORM_TYPE(t_list[9], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[10], thirdai::data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[11], thirdai::data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[12], thirdai::data::FeatureHash);
+  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::HashPositionTransform);
+  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::Date);
+  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::Tabular);
+  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::StringToTimestamp);
+  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::StringHash);
+  ASSERT_TRANSFORM_TYPE(t_list[7], thirdai::data::CategoricalTemporal);
+  ASSERT_TRANSFORM_TYPE(t_list[8], thirdai::data::StringHash);
+  ASSERT_TRANSFORM_TYPE(t_list[9], thirdai::data::CategoricalTemporal);
+  ASSERT_TRANSFORM_TYPE(t_list[10], thirdai::data::FeatureHash);
 
-  auto ccp_cols =
-      std::dynamic_pointer_cast<thirdai::data::CrossColumnPairgrams>(t_list[7])
-          ->inputColumns();
+  auto tabular = std::dynamic_pointer_cast<thirdai::data::Tabular>(t_list[4]);
 
-  std::vector<std::string> expected_ccp_cols = {
-      "__b_categorical__",
-      "__d_binned__",
-  };
-  ASSERT_EQ(ccp_cols, expected_ccp_cols);
+  ASSERT_EQ(tabular->numericalColumns().size(), 1);
+  ASSERT_EQ(tabular->numericalColumns().at(0).name, "d");
+  ASSERT_EQ(tabular->categoricalColumns().size(), 1);
+  ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[12])
+      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[10])
           ->inputColumns();
 
   // The transformations on columns b and d are at the end because after
@@ -245,7 +186,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
       "__a_tokenized__",
       "__e_sequence__",
       "__f_date__",
-      "__contextual_columns__",
+      "__tabular_columns__",
       "__categorical_temporal_0__",
       "__categorical_temporal_1__",
   };

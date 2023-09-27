@@ -11,7 +11,7 @@ def test_neural_db_associate(create_simple_dataset):
 
     doc = neural_db.CSV(
         filename,
-        id_column="id",
+        id_column="label",
         strong_columns=["text"],
         weak_columns=["text"],
         reference_columns=[],

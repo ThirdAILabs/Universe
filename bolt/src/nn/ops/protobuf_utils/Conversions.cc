@@ -1,6 +1,7 @@
 #include "Conversions.h"
 #include <google/protobuf/repeated_field.h>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -68,16 +69,29 @@ EmbeddingReductionType reductionFromProto(
   }
 }
 
-proto::bolt::Parameter* parametersToProto(
-    const std::vector<float>& parameters) {
+proto::bolt::Parameter* parametersToProto(const std::string& name) {
   proto::bolt::Parameter* proto = new proto::bolt::Parameter();
-  *proto->mutable_data() = {parameters.begin(), parameters.end()};
+  proto->set_name(name);
 
   return proto;
 }
 
-std::vector<float> parametersFromProto(const proto::bolt::Parameter& proto) {
-  return {proto.data().begin(), proto.data().end()};
+std::vector<float> parametersFromProto(const proto::bolt::Parameter& parameter,
+                                       DeserializedParameters& parameters) {
+  if (!parameters.count(parameter.name())) {
+#if THIRDAI_EXPOSE_ALL
+    throw std::invalid_argument("Unable to locate parameter '" +
+                                parameter.name() + "' when loading model.");
+#else
+    throw std::invalid_argument(
+        "Encountered missing parameter when loading model.");
+#endif
+  }
+
+  std::vector<float> data = std::move(parameters.at(parameter.name()));
+  parameters.erase(parameter.name());
+
+  return data;
 }
 
 // This is a temporary method. It will be replaced when the optimizer PR merges.
@@ -86,17 +100,14 @@ std::vector<float> parametersFromProto(const proto::bolt::Parameter& proto) {
 // become optimizer parameters instead of global constants, so they are
 // serialized here. Rows/cols will be used by the optimizers, but are currently
 // not required because the optimizer is hard coded into the ops/layers.
-proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
+proto::bolt::Optimizer* optimizerToProto(const std::string& param_name,
                                          size_t rows, size_t cols) {
-  if (optimizer.momentum.size() != (rows * cols)) {
-    throw std::runtime_error("Rows and columns do not match optimizer size.");
-  }
   proto::bolt::Optimizer* proto_opt = new proto::bolt::Optimizer();
 
   auto* adam = proto_opt->mutable_adam();
 
-  adam->set_allocated_momentum(parametersToProto(optimizer.momentum));
-  adam->set_allocated_velocity(parametersToProto(optimizer.velocity));
+  adam->set_allocated_momentum(parametersToProto(param_name + "_momentum"));
+  adam->set_allocated_velocity(parametersToProto(param_name + "_velocity"));
 
   adam->set_rows(rows);
   adam->set_cols(cols);
@@ -108,15 +119,23 @@ proto::bolt::Optimizer* optimizerToProto(const AdamOptimizer& optimizer,
   return proto_opt;
 }
 
-AdamOptimizer optimizerFromProto(const proto::bolt::Optimizer& opt_proto) {
+void addOptimizerParameters(const AdamOptimizer& optimizer,
+                            const std::string& param_name,
+                            SerializableParameters& parameters) {
+  parameters.emplace_back(param_name + "_momentum", &optimizer.momentum);
+  parameters.emplace_back(param_name + "_velocity", &optimizer.velocity);
+}
+
+AdamOptimizer optimizerFromProto(const proto::bolt::Optimizer& opt_proto,
+                                 DeserializedParameters& parameters) {
   if (!opt_proto.has_adam()) {
     throw std::invalid_argument("Expected adam optimizer.");
   }
 
   AdamOptimizer opt(0);
 
-  opt.momentum = parametersFromProto(opt_proto.adam().momentum());
-  opt.velocity = parametersFromProto(opt_proto.adam().velocity());
+  opt.momentum = parametersFromProto(opt_proto.adam().momentum(), parameters);
+  opt.velocity = parametersFromProto(opt_proto.adam().velocity(), parameters);
 
   if (opt.momentum.size() != opt.velocity.size()) {
     throw std::runtime_error(

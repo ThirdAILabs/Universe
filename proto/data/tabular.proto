@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package proto.data;
+
+message CategoricalColumn {
+  required string name = 1;
+  required uint32 salt = 2;
+}
+
+message NumericalColumn {
+  required string name = 1;
+  required float min = 2;
+  required float max = 3;
+  required float binsize = 4;
+  required uint64 num_bins = 5;
+  required uint32 salt = 6;
+}
+
+message Tabular {
+  repeated CategoricalColumn categorical_columns = 1;
+  repeated NumericalColumn numerical_columns = 2;
+
+  required string output_column = 3;
+  required bool cross_column_pairgrams = 4;
+}

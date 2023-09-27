@@ -24,6 +24,8 @@ class DotProduct final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -40,6 +42,9 @@ class DotProduct final : public Op,
   ComputationPtr applyBinary(ComputationPtr lhs, ComputationPtr rhs);
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
 
   static std::shared_ptr<DotProduct> fromProto(
       const std::string& name, const proto::bolt::DotProduct& dot_prod_proto);

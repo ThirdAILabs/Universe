@@ -46,6 +46,14 @@ corresponding to entities in file B.
 
 Instead of leaking the abstraction by making the user manually change the labels
 of their dataset, we created Sup and SupDataSource to handle this.
+
+If the user would rather use the database-assigned IDs instead of IDs from the 
+original document, this can be done by passing uses_db_id = True to Sup(). This
+is useful for cases where the user does not know the IDs of the entities in the
+original documents. For example, if the original document is a PDF, then it is
+NeuralDB that parses it into paragraphs; the user does not know the ID of each
+paragraph beforehand. In this scenario, it is much easier for the user to just
+use the database-assigned IDs.
 """
 
 
@@ -57,6 +65,9 @@ class Sup:
     and ID column names, or with sequences of queries and labels. It also needs
     to know which source object (i.e. which inserted CSV or PDF object) contains
     the relevant entities to the supervised samples.
+
+    If uses_db_id is True, then the labels are assumed to use database-assigned
+    IDs and will not be converted.
     """
 
     def __init__(
@@ -64,14 +75,30 @@ class Sup:
         csv: str = None,
         query_column: str = None,
         id_column: str = None,
+        id_delimiter: str = None,
         queries: Sequence[str] = None,
-        labels: Sequence[int] = None,
+        labels: Sequence[Sequence[int]] = None,
         source_id: str = "",
+        uses_db_id: bool = False,
     ):
         if csv is not None and query_column is not None and id_column is not None:
             df = pd.read_csv(csv)
             self.queries = df[query_column]
             self.labels = df[id_column]
+            for i, label in enumerate(self.labels):
+                if label == None or label == "":
+                    raise ValueError(
+                        f"Got a supervised sample with an empty label, query: '{self.queries[i]}'"
+                    )
+            if id_delimiter:
+                self.labels = self.labels.apply(
+                    lambda label: list(
+                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                    )
+                )
+            else:
+                self.labels = self.labels.apply(lambda label: [int(label)])
+
         elif queries is not None and labels is not None:
             if len(queries) != len(labels):
                 raise ValueError(
@@ -85,6 +112,7 @@ class Sup:
                 "Sup must be initialized with csv, query_column and id_column, or queries and labels."
             )
         self.source_id = source_id
+        self.uses_db_id = uses_db_id
 
 
 class SupDataSource(PyDataSource):
@@ -93,11 +121,20 @@ class SupDataSource(PyDataSource):
     supervised datasets simultaneously.
     """
 
-    def __init__(self, doc_manager: DocumentManager, query_col: str, data: List[Sup]):
+    def __init__(
+        self,
+        doc_manager: DocumentManager,
+        query_col: str,
+        data: List[Sup],
+        id_delimiter: Optional[str],
+    ):
         PyDataSource.__init__(self)
         self.doc_manager = doc_manager
         self.query_col = query_col
         self.data = data
+        self.id_delimiter = id_delimiter
+        if not self.id_delimiter:
+            print("WARNING: this model does not fully support multi-label datasets.")
         self.restart()
 
     def _csv_line(self, query: str, label: str):
@@ -109,19 +146,33 @@ class SupDataSource(PyDataSource):
         )
         return df.to_csv(header=None, index=None).strip("\n")
 
+    def _id_offset(self, sup: Sup):
+        if sup.uses_db_id:
+            return 0
+        source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
+        if len(source_ids) == 0:
+            raise ValueError(f"Cannot find source with id {sup.source_id}")
+        if len(source_ids) > 1:
+            raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
+        _, start_id = self.doc_manager.source_by_id(source_ids[0])
+        return start_id
+
     def _get_line_iterator(self):
         # First yield the header
         yield self._csv_line(self.query_col, self.doc_manager.id_column)
         # Then yield rows
         for sup in self.data:
-            source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
-            if len(source_ids) == 0:
-                raise ValueError(f"Cannot find source with id {sup.source_id}")
-            if len(source_ids) > 1:
-                raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
-            _, start_id = self.doc_manager.source_by_id(source_ids[0])
-            for query, label in zip(sup.queries, sup.labels):
-                yield self._csv_line(query, str(label + start_id))
+            id_offset = self._id_offset(sup)
+            for query, labels in zip(sup.queries, sup.labels):
+                if self.id_delimiter:
+                    label_str = self.id_delimiter.join(
+                        [str(id_offset + label) for label in labels]
+                    )
+                    yield self._csv_line(query, label_str)
+                else:
+                    for label in labels:
+                        label_str = str(id_offset + label)
+                        yield self._csv_line(query, label_str)
 
     def resource_name(self) -> str:
         return "Supervised training samples"
@@ -225,21 +276,26 @@ class NeuralDB:
         self,
         documents,
         scaling_config,
+        run_config,
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
         metrics: List[str] = [],
         max_in_memory_batches: Optional[int] = None,
         communication_backend="gloo",
-        run_config=None,
+        log_folder=None,
     ):
         """
         Pretrains a model in a distributed manner using the provided documents.
 
         Args:
-            documents: List of documents for pretraining.
+            documents: List of documents for pretraining. All the documents must have the same id column.
             scaling_config: Configuration related to the scaling aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.ScalingConfig.html
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html
+            run_config: Configuration related to the runtime aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html
+                ** Note: We need to specify `storage_path` in `RunConfig` which must be a networked **
+                ** file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards) **
             learning_rate (float, optional): Learning rate for the optimizer. Default is 0.001.
             epochs (int, optional): Number of epochs to train. Default is 5.
             batch_size (int, optional): Size of each batch for training. If not provided, will be determined automatically.
@@ -248,8 +304,6 @@ class NeuralDB:
                 streaming support when dataset is too large to fit in memory. If None, all batches will be loaded.
             communication_backend (str, optional): Bolt Distributed Training uses Torch Communication Backend. This
                 refers to backend for inter-worker communication. Default is "gloo".
-            run_config: Configuration related to the runtime aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.RunConfig.html
 
         Notes:
             - Make sure to pass id_column to neural_db.CSV() making sure the ids are in ascending order starting from 0.
@@ -283,18 +337,20 @@ class NeuralDB:
             )
 
         def training_loop_per_worker(config):
+            import os
+
             import thirdai.distributed_bolt as dist
-            from ray.air import session
-            from thirdai.dataset import RayDataSource
+            from ray import train
+            from thirdai.dataset import RayCsvDataSource
 
             if config["licensing_lambda"]:
                 config["licensing_lambda"]()
 
             # ray data will automatically split the data if the dataset is passed with key "train"
             # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
-            stream_split_data_iterator = session.get_dataset_shard("train")
+            stream_split_data_iterator = train.get_dataset_shard("train")
 
-            model = dist.UDTCheckPoint.get_model(session.get_checkpoint())
+            model = dist.UDTCheckPoint.get_model(train.get_checkpoint())
 
             strong_column_names = config["strong_column_names"]
             weak_column_names = config["weak_column_names"]
@@ -303,9 +359,27 @@ class NeuralDB:
             batch_size = config["batch_size"]
             metrics = config["metrics"]
             max_in_memory_batches = config["max_in_memory_batches"]
+            model_target_column = config["model_target_col"]
+            document_target_col = config["document_target_col"]
+            log_folder = train_loop_config["log_folder"]
+
+            if log_folder:
+                if not os.path.exists(log_folder):
+                    print(f"Folder '{log_folder}' does not exist. Creating it...")
+                    os.makedirs(log_folder)
+                    print(f"Folder '{log_folder}' created successfully!")
+                thirdai.logging.setup(
+                    log_to_stderr=False,
+                    path=os.path.join(
+                        log_folder, f"worker-{train.get_context().get_world_rank()}.log"
+                    ),
+                    level="info",
+                )
 
             metrics = model.coldstart_distributed_on_data_source(
-                data_source=RayDataSource(stream_split_data_iterator),
+                data_source=RayCsvDataSource(
+                    stream_split_data_iterator, model_target_column, document_target_col
+                ),
                 strong_column_names=strong_column_names,
                 weak_column_names=weak_column_names,
                 learning_rate=learning_rate,
@@ -315,10 +389,13 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
             )
 
-            session.report(
-                metrics=metrics,
-                checkpoint=dist.UDTCheckPoint.from_model(model),
-            )
+            rank = train.get_context().get_world_rank()
+            checkpoint = None
+            if rank == 0:
+                # Use `with_optimizers=False` to save model without optimizer states
+                checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
+
+            train.report(metrics=metrics, checkpoint=checkpoint)
 
         csv_paths = [str(document.path.resolve()) for document in documents]
 
@@ -328,7 +405,7 @@ class NeuralDB:
 
         # we cannot pass the model by default to config given config results in OOM very frequently with bigger model.
         checkpoint = dist.UDTCheckPoint.from_model(
-            self._savable_state.model.get_model()
+            self._savable_state.model.get_model(), with_optimizers=False
         )
         checkpoint_path = checkpoint.to_directory()
 
@@ -349,6 +426,11 @@ class NeuralDB:
         train_loop_config["batch_size"] = batch_size
         train_loop_config["metrics"] = metrics
         train_loop_config["max_in_memory_batches"] = max_in_memory_batches
+        train_loop_config["model_target_col"] = self._savable_state.model.get_id_col()
+        # Note(pratik): We are having an assumption here, that each of the document must have the
+        # same target column
+        train_loop_config["document_target_col"] = documents[0].id_column
+        train_loop_config["log_folder"] = log_folder
 
         trainer = dist.BoltTrainer(
             train_loop_per_worker=training_loop_per_worker,
@@ -363,7 +445,9 @@ class NeuralDB:
         result_and_checkpoint = trainer.fit()
 
         # TODO(pratik/mritunjay): This will stop working with ray==2.7 if runconfig doesnt specify s3 storage path.
-        model = result_and_checkpoint.checkpoint.get_model()
+        # Update: https://github.com/ThirdAILabs/Universe/pull/1784
+        # `run_config` is made required argument in `pretrained_distributed` function
+        model = dist.UDTCheckPoint.get_model(result_and_checkpoint.checkpoint)
 
         self._savable_state.model.set_model(model)
 
@@ -373,10 +457,11 @@ class NeuralDB:
         """
         return self._savable_state.ready()
 
-    def sources(self) -> Dict[str, str]:
-        """Returns a mapping from source IDs to their names. This is useful
-        when you need to know the source ID of a document you inserted, e.g.
-        for creating a Sup object for supervised_train().
+    def sources(self) -> Dict[str, Document]:
+        """Returns a mapping from source IDs to their corresponding document
+        objects. This is useful when you need to know the source ID of a
+        document you inserted, e.g. for creating a Sup object for
+        supervised_train().
         """
         return self._savable_state.documents.sources()
 
@@ -450,6 +535,9 @@ class NeuralDB:
             references.append(ref)
 
         return references
+
+    def reference(self, element_id: int):
+        return self._savable_state.documents.reference(element_id)
 
     def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
@@ -535,7 +623,52 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(doc_manager, query_col, data),
+            data_source=SupDataSource(
+                doc_manager=doc_manager,
+                query_col=query_col,
+                data=data,
+                id_delimiter=self._savable_state.model.get_id_delimiter(),
+            ),
+            learning_rate=learning_rate,
+            epochs=epochs,
+        )
+
+    def supervised_train_with_ref_ids(
+        self,
+        csv: str = None,
+        query_column: str = None,
+        id_column: str = None,
+        id_delimiter: str = None,
+        queries: Sequence[str] = None,
+        labels: Sequence[Sequence[int]] = None,
+        learning_rate=0.0001,
+        epochs=3,
+    ):
+        """Train on supervised datasets that correspond to specific sources.
+        Suppose you inserted a "sports" product catalog and a "furniture"
+        product catalog. You also have supervised datasets - pairs of queries
+        and correct products - for both categories. You can use this method to
+        train NeuralDB on these supervised datasets.
+        """
+        doc_manager = self._savable_state.documents
+        model_query_col = self._savable_state.model.get_query_col()
+        self._savable_state.model.get_model().train_on_data_source(
+            data_source=SupDataSource(
+                doc_manager=doc_manager,
+                query_col=model_query_col,
+                data=[
+                    Sup(
+                        csv=csv,
+                        query_column=query_column,
+                        id_column=id_column,
+                        id_delimiter=id_delimiter,
+                        queries=queries,
+                        labels=labels,
+                        uses_db_id=True,
+                    )
+                ],
+                id_delimiter=self._savable_state.model.get_id_delimiter(),
+            ),
             learning_rate=learning_rate,
             epochs=epochs,
         )

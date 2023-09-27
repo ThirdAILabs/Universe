@@ -40,20 +40,18 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   if (_bias) {
     std::generate(_biases.begin(), _biases.end(), gen);
   }
-
-  _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-  _bias_optimizer = AdamOptimizer(_dim);
 }
 
 Embedding::Embedding(const std::string& name,
-                     const proto::bolt::Embedding& emb_proto)
+                     const proto::bolt::Embedding& emb_proto,
+                     DeserializedParameters& parameters)
     : Op(name),
       _dim(emb_proto.dim()),
       _input_dim(emb_proto.input_dim()),
       _bias(emb_proto.use_bias()),
       _act_func(activationFromProto(emb_proto.activation())),
-      _embeddings(parametersFromProto(emb_proto.embeddings())),
-      _biases(parametersFromProto(emb_proto.bias())),
+      _embeddings(parametersFromProto(emb_proto.embeddings(), parameters)),
+      _biases(parametersFromProto(emb_proto.bias(), parameters)),
       _disable_sparse_parameter_updates(
           emb_proto.disable_sparse_parameter_updates()),
       _should_serialize_optimizer(false),
@@ -67,21 +65,19 @@ Embedding::Embedding(const std::string& name,
   }
 
   if (emb_proto.has_embeddings_optimizer() && emb_proto.has_bias_optimizer()) {
-    _embedding_optimizer = optimizerFromProto(emb_proto.embeddings_optimizer());
+    _embedding_optimizer =
+        optimizerFromProto(emb_proto.embeddings_optimizer(), parameters);
     if (_embedding_optimizer->momentum.size() != _embeddings.size()) {
       throw std::runtime_error(
           "Embeddings optimizer does not have expected size in fromProto.");
     }
 
-    _bias_optimizer = optimizerFromProto(emb_proto.bias_optimizer());
+    _bias_optimizer =
+        optimizerFromProto(emb_proto.bias_optimizer(), parameters);
     if (_bias_optimizer->momentum.size() != _biases.size()) {
       throw std::runtime_error(
           "Bias optimizer does not expected size in fromProto.");
     }
-
-  } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
   }
 }
 
@@ -231,6 +227,13 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   }
 }
 
+void Embedding::initOptimizer() {
+  if (!_embedding_optimizer || !_bias_optimizer) {
+    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+  }
+}
+
 void Embedding::sparseEmbeddingUpdate(float learning_rate,
                                       uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
@@ -305,20 +308,33 @@ proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
 
   emb->set_use_bias(_bias);
 
-  emb->set_allocated_embeddings(parametersToProto(_embeddings));
-  emb->set_allocated_bias(parametersToProto(_biases));
+  emb->set_allocated_embeddings(parametersToProto(embeddingsName()));
+  emb->set_allocated_bias(parametersToProto(biasesName()));
 
   if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
     emb->set_allocated_embeddings_optimizer(
-        optimizerToProto(*_embedding_optimizer, _input_dim, _dim));
+        optimizerToProto(embeddingsName(), _input_dim, _dim));
 
     emb->set_allocated_bias_optimizer(
-        optimizerToProto(*_bias_optimizer, /* rows= */ 1, _dim));
+        optimizerToProto(biasesName(), /* rows= */ 1, _dim));
   }
 
   emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
 
   return op;
+}
+
+SerializableParameters Embedding::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {{embeddingsName(), &_embeddings},
+                                       {biasesName(), &_biases}};
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    addOptimizerParameters(*_embedding_optimizer, embeddingsName(), parameters);
+    addOptimizerParameters(*_bias_optimizer, biasesName(), parameters);
+  }
+
+  return parameters;
 }
 
 template void Embedding::save(cereal::BinaryOutputArchive&) const;
@@ -345,8 +361,6 @@ void Embedding::load(Archive& archive) {
   if (_should_serialize_optimizer) {
     archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
   } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
     _embeddings_used.assign(_input_dim, false);
   }
 }

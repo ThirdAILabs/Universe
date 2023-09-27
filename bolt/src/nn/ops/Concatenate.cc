@@ -111,6 +111,8 @@ std::optional<uint32_t> Concatenate::nonzeros(const ComputationList& inputs,
   return total_num_nonzeros;
 }
 
+void Concatenate::initOptimizer() {}
+
 void Concatenate::summary(std::ostream& summary, const ComputationList& inputs,
                           const Computation* output) const {
   summary << "Concatenate(" << name() << "): (";
@@ -162,6 +164,12 @@ proto::bolt::Op* Concatenate::toProto(bool with_optimizer) const {
   op->mutable_concatenate();
 
   return op;
+}
+
+SerializableParameters Concatenate::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
 }
 
 std::shared_ptr<Concatenate> Concatenate::fromProto(

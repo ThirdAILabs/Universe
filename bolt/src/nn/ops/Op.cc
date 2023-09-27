@@ -11,25 +11,27 @@
 
 namespace thirdai::bolt {
 
-std::shared_ptr<Op> Op::fromProto(const proto::bolt::Op& op_proto) {
+std::shared_ptr<Op> Op::fromProto(const proto::bolt::Op& op_proto,
+                                  DeserializedParameters& parameters) {
   const std::string& name = op_proto.name();
 
   OpPtr op;
   switch (op_proto.type_case()) {
     case proto::bolt::Op::kFullyConnected:
-      return FullyConnected::fromProto(name, op_proto.fully_connected());
+      return FullyConnected::fromProto(name, op_proto.fully_connected(),
+                                       parameters);
 
     case proto::bolt::Op::kEmbedding:
-      return Embedding::fromProto(name, op_proto.embedding());
+      return Embedding::fromProto(name, op_proto.embedding(), parameters);
 
     case proto::bolt::Op::kRobez:
-      return RobeZ::fromProto(name, op_proto.robez());
+      return RobeZ::fromProto(name, op_proto.robez(), parameters);
 
     case proto::bolt::Op::kConcatenate:
       return Concatenate::fromProto(name, op_proto.concatenate());
 
     case proto::bolt::Op::kLayerNorm:
-      return LayerNorm::fromProto(name, op_proto.layer_norm());
+      return LayerNorm::fromProto(name, op_proto.layer_norm(), parameters);
 
     case proto::bolt::Op::kDotProduct:
       return DotProduct::fromProto(name, op_proto.dot_product());

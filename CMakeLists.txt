@@ -347,6 +347,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
+    bolt/src/nn/ops/Switch.cc
     bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/ops/DotProduct.cc
@@ -358,6 +359,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/nn/ops/protobuf_utils/Conversions.cc
+    bolt/src/nn/ops/protobuf_utils/SerializedParameters.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
@@ -376,6 +378,9 @@ set(THIRDAI_SOURCES
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
+    bolt/src/text_generation/ContextualModel.cc
+    bolt/src/text_generation/DyadicModel.cc
+    bolt/src/text_generation/GenerativeModel.cc
     bolt/src/root_cause_analysis/RCA.cc
     bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
@@ -427,6 +432,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/Transformation.cc
     data/src/transformations/State.cc
@@ -437,6 +443,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
+    data/src/transformations/DyadicInterval.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -457,6 +464,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/rlhf/RLHFSampler.cc
+    utils/ProtobufIO.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
@@ -512,6 +520,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltTrainPython.cc
   bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
+  bolt/python_bindings/BoltTextGeneration.cc
   bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc

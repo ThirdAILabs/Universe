@@ -44,7 +44,9 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                              /* binsize=*/8,
                                              /* reservoir_size= */ 10,
                                              /* permutations=*/8)},
-               INPUT_DIM) {}
+               INPUT_DIM) {
+    _layer.initOptimizer();
+  }
 
   void SetUp() override {
     // Initialize the weights and biases to random values. Use decimal powers of

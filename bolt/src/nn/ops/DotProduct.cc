@@ -103,6 +103,8 @@ std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
   return 1;
 }
 
+void DotProduct::initOptimizer() {}
+
 void DotProduct::summary(std::ostream& summary, const ComputationList& inputs,
                          const Computation* output) const {
   summary << "DotProduct(" << name() << "): " << inputs.at(0)->name() << ", "
@@ -136,6 +138,12 @@ proto::bolt::Op* DotProduct::toProto(bool with_optimizer) const {
   op->mutable_dot_product();
 
   return op;
+}
+
+SerializableParameters DotProduct::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
 }
 
 std::shared_ptr<DotProduct> DotProduct::fromProto(

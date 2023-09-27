@@ -52,6 +52,8 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     return _dim;
   }
 
+  void initOptimizer() final {}
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -70,6 +72,12 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
   proto::bolt::Op* toProto(bool with_optimizer) const final {
     (void)with_optimizer;
     return nullptr;
+  }
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final {
+    (void)with_optimizer;
+    return {};
   }
 
   void updateNumNonzeros(uint32_t new_num_nonzeros) {

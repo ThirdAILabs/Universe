@@ -8,6 +8,7 @@ import "cold_start.proto";
 import "cross_column_pairgrams.proto";
 import "date.proto";
 import "deduplicate_tokens.proto";
+import "dyadic_interval.proto";
 import "feature_hash.proto";
 import "graph.proto";
 import "mach_label.proto";
@@ -17,6 +18,7 @@ import "string_cast.proto";
 import "string_concat.proto";
 import "string_hash.proto";
 import "string_id_lookup.proto";
+import "tabular.proto";
 import "text_tokenizer.proto";
 
 message Transformation {
@@ -35,20 +37,22 @@ message Transformation {
     CrossColumnPairgrams cross_column_pairgrams = 5;
     Date date = 6;
     DeduplicateTokens deduplicate_tokens = 7;
-    FeatureHash feature_hash = 8;
-    GraphBuilder graph_builder = 9;
-    HashedPositionEncoding hashed_position_encoding = 10;
-    MachLabel mach_label = 11;
-    NeighborFeatures neighbor_features = 12;
-    NeighborIds neighbor_ids = 13;
-    OffsetPositionEncoding offset_position_encoding = 14;
-    RecurrenceAugmentation recurrence_augmentation = 15;
-    RegressionBinning regression_binning = 16;
-    StringCast string_cast = 17;
-    StringConcat string_concat = 18;
-    StringHash string_hash = 19;
-    StringIDLookup string_id_lookup = 20;
-    TextTokenizer text_tokenizer = 21;
-    List list = 22;
+    DyadicInterval dyadic_interval = 8;
+    FeatureHash feature_hash = 9;
+    GraphBuilder graph_builder = 10;
+    HashedPositionEncoding hashed_position_encoding = 11;
+    MachLabel mach_label = 12;
+    NeighborFeatures neighbor_features = 13;
+    NeighborIds neighbor_ids = 14;
+    OffsetPositionEncoding offset_position_encoding = 15;
+    RecurrenceAugmentation recurrence_augmentation = 16;
+    RegressionBinning regression_binning = 17;
+    StringCast string_cast = 18;
+    StringConcat string_concat = 19;
+    StringHash string_hash = 20;
+    StringIDLookup string_id_lookup = 21;
+    Tabular tabular = 22;
+    TextTokenizer text_tokenizer = 23;
+    List list = 24;
   }
 }

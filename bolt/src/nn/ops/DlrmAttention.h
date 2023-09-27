@@ -46,6 +46,8 @@ class DlrmAttention final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -62,6 +64,9 @@ class DlrmAttention final : public Op,
   ComputationPtr applyBinary(ComputationPtr fc_input, ComputationPtr emb_input);
 
   proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
 
  private:
   DlrmAttention() {}

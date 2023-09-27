@@ -85,6 +85,9 @@ std::optional<uint32_t> Activation<Impl>::nonzeros(
 }
 
 template <typename Impl>
+void Activation<Impl>::initOptimizer() {}
+
+template <typename Impl>
 void Activation<Impl>::disableSparseParameterUpdates() {}
 
 template <typename Impl>
@@ -141,6 +144,13 @@ proto::bolt::Op* Activation<Impl>::toProto(bool with_optimizer) const {
   activation->set_activation(Impl::toProto());
 
   return op;
+}
+
+template <typename Impl>
+SerializableParameters Activation<Impl>::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
 }
 
 template <typename Impl>

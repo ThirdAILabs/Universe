@@ -9,6 +9,7 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <proto/model.pb.h>
 #include <utils/UUID.h>
+#include <istream>
 #include <memory>
 #include <vector>
 
@@ -189,10 +190,10 @@ class Model : public std::enable_shared_from_this<Model> {
 
   std::vector<std::vector<float>*> parameters() const;
 
-  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+  std::pair<const float*, uint64_t> getFlattenedGradients();
 
   void setFlattenedGradients(const float* concatenated_values,
-                             uint64_t flattened_dim) const;
+                             uint64_t flattened_dim);
 
   std::pair<const float*, uint64_t> getFlattenedParameters() const;
 
@@ -232,17 +233,34 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
-  proto::bolt::Model* toProto(bool with_optimizer) const;
+  /**
+   * Serializes the model to a stream using protobuf.
+   */
+  void serializeStream(std::ostream& output, bool with_optimizer) const;
 
-  static std::shared_ptr<Model> fromProto(
-      const proto::bolt::Model& model_proto);
+  /**
+   * Deserializes the model from a stream using protobuf.
+   */
+  static std::shared_ptr<Model> deserializeStream(std::istream& input);
 
+  /**
+   * Saves the model to a file using protobuf.
+   */
   void saveProto(const std::string& filename, bool with_optimizer) const;
 
+  /**
+   * Loads the model from a file using protobuf.
+   */
   static std::shared_ptr<Model> loadProto(const std::string& filename);
 
+  /**
+   * Serializes the model to a string using protobuf.
+   */
   std::string serializeProto(bool with_optimizer) const;
 
+  /**
+   * Deserializes the model from a string using protobuf.
+   */
   static std::shared_ptr<Model> deserializeProto(const std::string& binary);
 
   /**
@@ -277,6 +295,11 @@ class Model : public std::enable_shared_from_this<Model> {
   void backpropagateVector(uint32_t index_in_batch, uint32_t batch_size);
 
   /**
+   * Ensures that the optimizer is initialized for the ops in the model.
+   */
+  void requireOptimizer();
+
+  /**
    * Sets the given batch as the inputs to the model.
    */
   uint32_t setInput(const TensorList& input_batches);
@@ -308,6 +331,18 @@ class Model : public std::enable_shared_from_this<Model> {
   void registerWithOps();
 
   /**
+   * Converts the computation graph to a protobuf object.
+   */
+  proto::bolt::Model computationGraphToProto(bool with_optimizer) const;
+
+  /**
+   * Loads the model from the computation graph protobuf object, and the
+   * parameter objects.
+   */
+  static std::shared_ptr<Model> fromProto(const proto::bolt::Model& model_proto,
+                                          DeserializedParameters& parameters);
+
+  /**
    * Names the computations in the model based on the order they are executed.
    */
   static void nameComputations(ComputationList& inputs, ComputationList& comps,
@@ -331,6 +366,8 @@ class Model : public std::enable_shared_from_this<Model> {
   ComputationList _computation_order;
 
   AllocationManager _allocation_manager;
+
+  bool _optimizer_initialized = false;
 
   uint32_t _train_steps;
 

@@ -12,9 +12,10 @@ from distributed_utils import (
     setup_ray,
     write_metrics_to_file,
 )
-from ray.air import FailureConfig, RunConfig, session
+from ray import train
+from ray.train import FailureConfig, RunConfig
 from ray.train.torch import TorchConfig
-from thirdai import bolt
+from thirdai import bolt, dataset
 
 
 def training_loop_per_worker(config):
@@ -38,23 +39,37 @@ def training_loop_per_worker(config):
 
     # logs train_metrics from worker nodes which can be compared later
     history.pop("epoch_times")
-    write_metrics_to_file(filename="metrics.json", metrics=history)
-
-    session.report(
-        {"model_location": session.get_trial_dir()},
-        checkpoint=dist.BoltCheckPoint.from_model(model),
+    rank = train.get_context().get_world_rank()
+    write_metrics_to_file(
+        filename=f"artifact-rank={rank}-metrics.json", metrics=history
     )
-    trainer.model.save("trained.model")
+
+    checkpoint = None
+    if rank == 0:
+        # Use `with_optimizers=False` to save model without optimizer states
+        checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=False)
+
+    train.report(
+        {"model_location": train.get_context().get_trial_dir()},
+        checkpoint=checkpoint,
+    )
+
+    trainer.model.save(f"artifact-rank={rank}-trained.model")
 
 
 @pytest.mark.distributed
 def test_bolt_distributed():
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = RunConfig(storage_path="~/ray_results")
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 5},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
 
     result_checkpoint_and_history = trainer.fit()
@@ -64,7 +79,7 @@ def test_bolt_distributed():
     test_y = bolt.train.convert_dataset(test_y, dim=10)
 
     # checks whether the checkpoint is working or not
-    model = result_checkpoint_and_history.checkpoint.get_model()
+    model = dist.BoltCheckPoint.get_model(result_checkpoint_and_history.checkpoint)
     trainer = bolt.train.Trainer(model)
 
     history = trainer.validate(
@@ -78,13 +93,13 @@ def test_bolt_distributed():
     model_1 = bolt.nn.Model.load(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_0/trained.model",
+            "artifact-rank=0-trained.model",
         )
     )
     model_2 = bolt.nn.Model.load(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_1/trained.model",
+            "artifact-rank=1-trained.model",
         )
     )
 
@@ -93,14 +108,14 @@ def test_bolt_distributed():
     model_1_metrics = extract_metrics_from_file(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_0/metrics.json",
+            "artifact-rank=0-metrics.json",
         )
     )
 
     model_2_metrics = extract_metrics_from_file(
         os.path.join(
             result_checkpoint_and_history.metrics["model_location"],
-            "rank_1/metrics.json",
+            "artifact-rank=1-metrics.json",
         )
     )
 
@@ -123,53 +138,66 @@ def test_distributed_fault_tolerance():
         num_epochs = config.get("num_epochs", 1)
         is_worker_killed = False
 
-        if session.get_checkpoint():
-            checkpoint_dict = session.get_checkpoint().to_dict()
+        if train.get_checkpoint():
+            recovered_checkpoint = train.get_checkpoint()
+            recovered_metadata = recovered_checkpoint.get_metadata()
 
             # Load in model
-            checkpoint_model = checkpoint_dict["model"]
-            model = dist.BoltCheckPoint.get_model(checkpoint_model)
+            model = dist.BoltCheckPoint.get_model(recovered_checkpoint)
 
             # The current epoch resumes from loaded model's epoch
-            starting_epoch = checkpoint_dict["epoch"]
+            starting_epoch = recovered_metadata["epoch"]
 
             # flag whether worker-0 has been killed once
-            is_worker_killed = checkpoint_dict["is_worker_killed"]
+            is_worker_killed = recovered_metadata["is_worker_killed"]
 
         trainer = bolt.train.Trainer(model)
         train_x, train_y = gen_numpy_training_data(n_samples=2000, n_classes=10)
         train_x = bolt.train.convert_dataset(train_x, dim=10)
         train_y = bolt.train.convert_dataset(train_y, dim=10)
 
+        rank = train.get_context().get_world_rank()
         for epoch in range(starting_epoch, num_epochs):
             trainer.train_distributed(
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-            session.report(
-                {"model_location": session.get_trial_dir()},
-                checkpoint=dist.BoltCheckPoint.from_dict(
-                    {
+            checkpoint = None
+            if rank == 0:
+                # Use `with_optimizers=False` to save model without optimizer states
+                checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=True)
+                checkpoint.set_metadata(
+                    metadata={
                         "epoch": epoch + 1,
-                        "model": dist.BoltCheckPoint.from_model(model),
                         "is_worker_killed": True,
                     }
-                ),
+                )
+
+            train.report(
+                {"model_location": train.get_context().get_trial_dir()},
+                checkpoint=checkpoint,
             )
 
             # Kill one of the workers if never killed.
-            if not is_worker_killed and session.get_world_rank() == 0:
+            if not is_worker_killed and train.get_context().get_world_rank() == 0:
                 if epoch == num_epochs // 2:
                     is_worker_killed = True
                     sys.exit(1)
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(
+        storage_path="~/ray_results",
+        failure_config=FailureConfig(max_failures=3),
+    )
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
-        run_config=RunConfig(failure_config=FailureConfig(max_failures=3)),
+        run_config=run_config,
     )
 
     trainer.fit()
@@ -180,15 +208,15 @@ def test_distributed_fault_tolerance():
 @pytest.mark.distributed
 def test_distributed_resume_training():
     def training_loop_per_worker(config):
-        ckpt = session.get_checkpoint()
+        ckpt = train.get_checkpoint()
         if ckpt:
             model = dist.BoltCheckPoint.get_model(ckpt)
             print("\nResumed training from last checkpoint...\n")
         else:
             model = get_bolt_model()
-            model = dist.prepare_model(model)
             print("\nLoading model from scratch...\n")
 
+        model = dist.prepare_model(model)
         num_epochs = config.get("num_epochs", 1)
 
         trainer = bolt.train.Trainer(model)
@@ -196,20 +224,30 @@ def test_distributed_resume_training():
         train_x = bolt.train.convert_dataset(train_x, dim=10)
         train_y = bolt.train.convert_dataset(train_y, dim=10)
 
+        rank = train.get_context().get_world_rank()
         for epoch in range(num_epochs):
             trainer.train_distributed(
                 train_data=(train_x, train_y), learning_rate=0.005, epochs=1
             )
 
-        session.report({}, checkpoint=dist.BoltCheckPoint.from_model(model))
+        checkpoint = None
+        if rank == 0:
+            # Use `with_optimizers=True` to save model with optimizer states
+            checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=False)
+
+        train.report({}, checkpoint=checkpoint)
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(storage_path="~/ray_results")
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
     )
     result = trainer.fit()
     checkpoint_path = result.checkpoint.to_directory()
@@ -219,12 +257,16 @@ def test_distributed_resume_training():
     # Now we start a new training using previously saved checkpoint
     scaling_config = setup_ray()
 
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(storage_path="~/ray_results")
+
     trainer2 = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         train_loop_config={"num_epochs": 3},
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
         resume_from_checkpoint=dist.BoltCheckPoint.from_directory(checkpoint_path),
+        run_config=run_config,
     )
     trainer2.fit()
 

@@ -99,6 +99,8 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
   return 1;
 }
 
+void CosineSimilarity::initOptimizer() {}
+
 void CosineSimilarity::summary(std::ostream& summary,
                                const ComputationList& inputs,
                                const Computation* output) const {
@@ -135,6 +137,12 @@ proto::bolt::Op* CosineSimilarity::toProto(bool with_optimizer) const {
   op->mutable_cosine_similarity();
 
   return op;
+}
+
+SerializableParameters CosineSimilarity::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
 }
 
 std::shared_ptr<CosineSimilarity> CosineSimilarity::fromProto(
