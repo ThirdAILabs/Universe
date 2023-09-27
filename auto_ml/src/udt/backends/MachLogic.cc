@@ -64,8 +64,6 @@ void ClassifierForMach::updateSamplingStrategy(thirdai::data::State& state) {
 
   float index_sparsity = mach_index->sparsity();
 
-  std::cout << "sampling threshold " << _mach_sampling_threshold << std::endl;
-
   if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
