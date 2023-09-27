@@ -342,13 +342,7 @@ py::object MachLogic::outputCorrectness(const MapInputBatch& samples,
   return py::cast(matching_buckets);
 }
 
-void MachLogic::setModel(const ModelPtr& model, thirdai::data::State& state) {
-  bolt::ModelPtr& curr_model = _classifier.classifier(state)->model();
-
-  utils::verifyCanSetModel(curr_model, model);
-
-  curr_model = model;
-}
+void MachLogic::setModel(const ModelPtr& model) { _classifier.setModel(model); }
 
 py::object MachLogic::coldstart(
     const dataset::DataSourcePtr& data, thirdai::data::StatePtr& state,

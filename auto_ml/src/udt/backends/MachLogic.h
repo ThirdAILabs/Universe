@@ -11,6 +11,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/transformations/State.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -39,6 +40,11 @@ class ClassifierForMach {
   auto classifier(thirdai::data::State& state) {
     updateSamplingStrategy(state);
     return _classifier;
+  }
+
+  auto setModel(const bolt::ModelPtr& model) {
+    utils::verifyCanSetModel(_classifier->model(), model);
+    _classifier->model() = model;
   }
 
   void setMachSamplingThreshold(uint32_t threshold) {
@@ -118,7 +124,7 @@ class MachLogic {
     return _classifier.classifier(state)->model();
   }
 
-  void setModel(const ModelPtr& model, thirdai::data::State& state);
+  void setModel(const ModelPtr& model);
 
   std::vector<uint32_t> modelDims() const { return _classifier.modelDims(); }
 

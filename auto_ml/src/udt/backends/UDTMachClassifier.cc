@@ -199,7 +199,7 @@ py::object UDTMachClassifier::outputCorrectness(
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
-  _logic.setModel(model, *_state);
+  _logic.setModel(model);
 }
 
 py::object UDTMachClassifier::coldstart(
