@@ -80,9 +80,14 @@ SymPreTrainer::getCorrectSpellingList(const std::vector<std::string>& word_list,
 QueryCandidates SymPreTrainer::generateCandidates(
     const MapInputBatch& samples) {
   MapInputBatch candidate_samples;
-  std::vector<uint32_t> candidate_count;
+  std::vector<uint32_t> candidate_count(samples.size());
 
-  for (const auto& input_sample : samples) {
+  std::vector<MapInputBatch> samples_buffer(samples.size());
+
+#pragma omp parallel for default(none) \
+    shared(candidate_samples, candidate_count, samples, samples_buffer)
+  for (size_t i = 0; i < samples.size(); i++) {
+    const auto& input_sample = samples[i];
     const std::string query_str = input_sample.begin()->second;
 
     const std::vector<std::string> tokenizedQuery =
@@ -92,14 +97,22 @@ QueryCandidates SymPreTrainer::generateCandidates(
         correctSentence(tokenizedQuery, defaults::PREDICTIONS_PER_TOKEN,
                         defaults::BEAM_SEARCH_WIDTH, defaults::STOP_IF_FOUND);
 
+    MapInputBatch local_candidate_samples;
+
     for (SpellCheckedSentence& candidate : candidates) {
       MapInput sample;
       sample[input_sample.begin()->first] = candidate.getString();
-      candidate_samples.push_back(sample);
+      local_candidate_samples.push_back(sample);
     }
-    candidate_count.push_back(candidates.size());
+
+    samples_buffer[i] = local_candidate_samples;
+    candidate_count[i] = candidates.size();
   }
 
+  for (auto& sample : samples_buffer) {
+    candidate_samples.insert(candidate_samples.end(), sample.begin(),
+                             sample.end());
+  }
   return QueryCandidates(candidate_samples, candidate_count);
 }
 

@@ -100,7 +100,12 @@ py::object UDTQueryReformulation::train(
 
   // Index words to Spell Checker if use_spell_checker = True
 
+  auto [unsupervised_data, labels] =
+      loadData(data, /* col_to_hash= */ _correct_column_name,
+               /* include_labels= */ true, batch_size, options.verbose);
+
   if (_use_spell_checker) {
+    data->restart();
     auto featurizer = dataset::TabularFeaturizer::make(
         {ngramBlockList(_correct_column_name, _n_grams)},
         /* has_header= */ true,
@@ -113,12 +118,7 @@ py::object UDTQueryReformulation::train(
         defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",
         _correct_column_name);
     _symspell_backend->pretrain(parsed_data);
-    data->restart();
   }
-
-  auto [unsupervised_data, labels] =
-      loadData(data, /* col_to_hash= */ _correct_column_name,
-               /* include_labels= */ true, batch_size, options.verbose);
 
   // If we are using supervised training then we have twice as much data
   // insert because index each sample once using itself as the input, and once
