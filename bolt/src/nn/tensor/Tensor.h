@@ -63,6 +63,11 @@ class Tensor {
   BoltVector& getVector(uint32_t index);
 
   /**
+   * Returns the ith vector in the tensor.
+   */
+  const BoltVector& getVector(uint32_t index) const;
+
+  /**
    * Returns if the tensor is sparse.
    */
   bool isSparse() const { return !_vectors.front().isDense(); }

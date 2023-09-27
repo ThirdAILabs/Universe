@@ -121,7 +121,7 @@ class FullyConnectedLayer final {
 
   float* getWeightsGradient();
 
-  std::vector<float> getWeightsByNeuron(uint32_t neuron_id);
+  std::vector<float> getWeightsByNeuron(uint32_t neuron_id) const;
 
   float getSparsity() const { return _sparsity; }
 

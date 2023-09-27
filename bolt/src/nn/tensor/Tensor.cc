@@ -190,6 +190,11 @@ BoltVector& Tensor::getVector(uint32_t index) {
   return _vectors[index];
 }
 
+const BoltVector& Tensor::getVector(uint32_t index) const {
+  assert(index < _vectors.size());
+  return _vectors[index];
+}
+
 uint32_t Tensor::batchSize() const { return _vectors.size(); }
 
 const uint32_t* Tensor::activeNeuronsPtr() const {

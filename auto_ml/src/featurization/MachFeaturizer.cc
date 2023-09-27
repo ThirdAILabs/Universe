@@ -174,6 +174,8 @@ MachFeaturizer::getBalancingSamples(
 
   auto columns = data_iter->next().value();
 
+  // TODO(MACHREFACTOR): This can be a transformation. START
+
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names)
                   ->apply(columns, state);
@@ -198,6 +200,7 @@ MachFeaturizer::getBalancingSamples(
 
     samples.emplace_back(doc_id_col->row(i)[0], std::move(sample));
   }
+  // TODO(MACHREFACTOR): This can be a transformation. CONT IN CALLER
 
   return samples;
 }

@@ -16,6 +16,7 @@
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/backends/MachLogicStripped.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/TensorConversion.h>
@@ -209,34 +210,9 @@ std::vector<std::vector<std::pair<uint32_t, double>>> MachLogic::predictImpl(
                                sparse_inference)
                      .at(0);
 
-  uint32_t num_classes = state.machIndex()->numEntities();
-
-  if (top_k && *top_k > num_classes) {
-    throw std::invalid_argument(
-        "Cannot return more results than the model is trained to "
-        "predict. "
-        "Model currently can predict one of " +
-        std::to_string(num_classes) + " classes.");
-  }
-
-  uint32_t k = top_k.value_or(_default_top_k_to_return);
-
-  uint32_t batch_size = outputs->batchSize();
-
-  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
-      batch_size);
-#pragma omp parallel for default(none) shared( \
-    outputs, predicted_entities, k, batch_size, state) if (batch_size > 1)
-  for (uint32_t i = 0; i < batch_size; i++) {
-    const BoltVector& vector = outputs->getVector(i);
-    auto predictions = state.machIndex()->decode(
-        /* output = */ vector,
-        /* top_k = */ k,
-        /* num_buckets_to_eval = */ _num_buckets_to_eval);
-    predicted_entities[i] = predictions;
-  }
-
-  return predicted_entities;
+  return thirdai::automl::mach::rankedEntitiesFromOutputs(
+      *outputs, *state.machIndex(), top_k.value_or(_default_top_k_to_return),
+      _num_buckets_to_eval);
 }
 
 py::object MachLogic::predictBatch(const MapInputBatch& samples,
@@ -274,34 +250,8 @@ std::vector<std::vector<uint32_t>> MachLogic::predictHashesImpl(
                                sparse_inference)
                      .at(0);
 
-  uint32_t k = num_hashes.value_or(state.machIndex()->numHashes());
-
-  std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
-#pragma omp parallel for default(none) \
-    shared(outputs, all_hashes, k, force_non_empty, state)
-  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
-    const BoltVector& output = outputs->getVector(i);
-
-    TopKActivationsQueue heap;
-    if (force_non_empty) {
-      heap = state.machIndex()->topKNonEmptyBuckets(output, k);
-    } else {
-      heap = output.findKLargestActivations(k);
-    }
-
-    std::vector<uint32_t> hashes;
-    while (!heap.empty()) {
-      auto [_, active_neuron] = heap.top();
-      hashes.push_back(active_neuron);
-      heap.pop();
-    }
-
-    std::reverse(hashes.begin(), hashes.end());
-
-    all_hashes[i] = hashes;
-  }
-
-  return all_hashes;
+  return mach::rankedBucketsFromOutputs(*outputs, *state.machIndex(),
+                                        force_non_empty, num_hashes);
 }
 
 py::object MachLogic::outputCorrectness(const MapInputBatch& samples,
@@ -355,6 +305,8 @@ py::object MachLogic::coldstart(
     const bolt::DistributedCommPtr& comm) {
   addBalancingSamples(data, *state, strong_column_names, weak_column_names);
 
+  // TODO(MACHREFACTOR): This is almost exactly the same as training. Can we
+  // figure out how to abstract out succinct and coherent computational units?
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, state, strong_column_names, weak_column_names,
       /* fast_approximation= */ false, options.batchSize(),
@@ -388,9 +340,6 @@ uint32_t expectInteger(const Label& label) {
 
 py::object MachLogic::entityEmbedding(const Label& label,
                                       thirdai::data::State& state) {
-  std::vector<uint32_t> hashed_neurons =
-      state.machIndex()->getHashes(expectInteger(label));
-
   auto outputs = _classifier.classifier(state)->model()->outputs();
 
   if (outputs.size() != 1) {
@@ -407,21 +356,8 @@ py::object MachLogic::entityEmbedding(const Label& label,
 
   auto fc_layer = fc->kernel();
 
-  std::vector<float> averaged_embedding(fc_layer->getInputDim());
-  for (uint32_t neuron_id : hashed_neurons) {
-    auto weights = fc_layer->getWeightsByNeuron(neuron_id);
-    if (weights.size() != averaged_embedding.size()) {
-      throw std::invalid_argument("Output dim mismatch.");
-    }
-    for (uint32_t i = 0; i < weights.size(); i++) {
-      averaged_embedding[i] += weights[i];
-    }
-  }
-
-  // TODO(david) try averaging and summing
-  for (float& weight : averaged_embedding) {
-    weight /= averaged_embedding.size();
-  }
+  auto averaged_embedding = mach::averageBucketEmbeddings(
+      expectInteger(label), *state.machIndex(), *fc_layer);
 
   NumpyArray<float> np_weights(averaged_embedding.size());
 
@@ -504,6 +440,7 @@ struct CompareBuckets {
   }
 };
 
+// TODO(MACHREFACTOR): why is this soooo long T-T What's going on here?
 std::vector<uint32_t> MachLogic::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
     thirdai::data::State& state, uint32_t num_buckets_to_sample,
@@ -618,16 +555,8 @@ void MachLogic::introduceLabelHelper(
   uint32_t num_buckets_to_sample =
       num_buckets_to_sample_opt.value_or(state.machIndex()->numHashes());
 
-  std::vector<TopKActivationsQueue> top_ks;
-  for (uint32_t i = 0; i < output->batchSize(); i++) {
-    top_ks.push_back(
-        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
-  }
-
-  auto hashes = topHashesForDoc(std::move(top_ks), state, num_buckets_to_sample,
-                                num_random_hashes);
-
-  state.machIndex()->insert(expectInteger(new_label), hashes);
+  mach::addEntityToIndex(num_buckets_to_sample, num_random_hashes, *output,
+                         *state.machIndex(), expectInteger(new_label));
 }
 
 void MachLogic::forget(const Label& label, thirdai::data::State& state) {
@@ -641,6 +570,7 @@ void MachLogic::forget(const Label& label, thirdai::data::State& state) {
   }
 }
 
+// TODO(MACHREFACTOR): Take in iterator instead of data source
 void MachLogic::addBalancingSamples(
     const dataset::DataSourcePtr& data, thirdai::data::State& state,
     const std::vector<std::string>& strong_column_names,
@@ -658,10 +588,12 @@ void MachLogic::addBalancingSamples(
     auto samples = _featurizer->getBalancingSamples(
         data, state, strong_column_names, weak_column_names,
         defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
-
+    // TODO(MACHREFACTOR): This can be a transformation. CONT
+    // May need to put rlhf sampler in state.
     for (const auto& [doc_id, rlhf_sample] : samples) {
       _rlhf_sampler->addSample(doc_id, rlhf_sample);
     }
+    // TODO(MACHREFACTOR): This can be a transformation. END
     data->restart();
   }
 }
@@ -675,16 +607,7 @@ void MachLogic::requireRLHFSampler() {
   }
 }
 
-BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
-                               uint32_t n_buckets, std::mt19937& rng) {
-  std::vector<uint32_t> indices;
-  std::sample(hashes.begin(), hashes.end(), std::back_inserter(indices),
-              n_buckets, rng);
-
-  return BoltVector::makeSparseVector(indices,
-                                      std::vector<float>(indices.size(), 1.0));
-}
-
+// TODO(MACHREFACTOR): Take in columns / column map
 void MachLogic::associate(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
     thirdai::data::State& state, uint32_t n_buckets,
@@ -697,6 +620,7 @@ void MachLogic::associate(
         learning_rate, epochs);
 }
 
+// TODO(MACHREFACTOR): Take in columns / column map, then apply transformation
 void MachLogic::upvote(
     const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
     thirdai::data::State& state, uint32_t n_upvote_samples,
@@ -754,6 +678,9 @@ std::vector<RlhfSample> MachLogic::getAssociateSamples(
                         /* force_non_empty = */ true);
 
   std::mt19937 rng(global_random::nextSeed());
+
+  // TODO(MACHREFACTOR): Make column map? What if we allowed mach model as
+  // state? :0 And what if State was more of an ephemeral wrapper?
 
   std::vector<RlhfSample> associate_samples;
   associate_samples.reserve(rlhf_samples.size() * n_association_samples);
