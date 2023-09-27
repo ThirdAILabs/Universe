@@ -2,12 +2,12 @@ import os
 import tempfile
 
 from ray import train
-from ray.train import Checkpoint
 from ray.air.constants import MODEL_KEY
+from ray.train import Checkpoint
+from ray.train._internal.framework_checkpoint import FrameworkCheckpoint
 from thirdai._thirdai import bolt
 
 from ..utils import timed
-from ray.train._internal.framework_checkpoint import FrameworkCheckpoint
 
 
 class UDTCheckPoint(Checkpoint):
