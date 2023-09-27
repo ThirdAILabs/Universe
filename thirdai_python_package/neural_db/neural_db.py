@@ -380,7 +380,9 @@ class NeuralDB:
 
             thirdai.logging.setup(
                 log_to_stderr=False,
-                path=os.path.join(log_folder, f"worker-{session.get_world_rank()}.log"),
+                path=os.path.join(
+                    log_folder, f"worker-{train.get_context().get_world_rank()}.log"
+                ),
                 level="info",
             )
 

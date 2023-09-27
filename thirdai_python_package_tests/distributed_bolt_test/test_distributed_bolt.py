@@ -258,7 +258,7 @@ def test_distributed_resume_training():
     scaling_config = setup_ray()
 
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
-    run_config = train.RunConfig(storage_path="/share/ray_results")
+    run_config = train.RunConfig(storage_path="~/ray_results")
 
     trainer2 = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,

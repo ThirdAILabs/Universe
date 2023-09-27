@@ -132,12 +132,12 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
             ),
             os.path.join(
                 train.get_context().get_trial_dir(),
-                f"rank_{train.get_context().get_world_rank()}/part{train.get_context().get_world_rank()+1}",
+                f"rank_{train.get_context().get_world_rank()}-part{train.get_context().get_world_rank()+1}",
             ),
         )
 
         metrics = udt_model.coldstart_distributed(
-            filename=f"part{train.get_context().get_world_rank()+1}",
+            filename=f"rank_{train.get_context().get_world_rank()}-part{train.get_context().get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
             batch_size=1024,
@@ -193,11 +193,11 @@ def test_udt_train_distributed():
             ),
             os.path.join(
                 train.get_context().get_trial_dir(),
-                f"rank_{train.get_context().get_world_rank()}/clinc_train_{train.get_context().get_world_rank()}.csv",
+                f"rank_{train.get_context().get_world_rank()}-clinc_train_{train.get_context().get_world_rank()}.csv",
             ),
         )
         udt_model.train_distributed(
-            f"clinc_train_{train.get_context().get_world_rank()}.csv",
+            f"rank_{train.get_context().get_world_rank()}-clinc_train_{train.get_context().get_world_rank()}.csv",
             epochs=1,
             learning_rate=0.02,
             batch_size=128,
@@ -258,11 +258,11 @@ def test_udt_mach_distributed(download_scifact_dataset):
             ),
             os.path.join(
                 train.get_context().get_trial_dir(),
-                f"rank_{train.get_context().get_world_rank()}/scifact",
+                f"rank_{train.get_context().get_world_rank()}-scifact",
             ),
         )
         model.coldstart_distributed(
-            filename=f"scifact/unsupervised_part{train.get_context().get_world_rank()+1}",
+            filename=f"rank_{train.get_context().get_world_rank()}-scifact/unsupervised_part{train.get_context().get_world_rank()+1}",
             strong_column_names=["TITLE"],
             weak_column_names=["TEXT"],
             learning_rate=0.001,
@@ -376,6 +376,8 @@ def test_udt_licensed_training():
     )
     trainer.fit()
 
+    ray.shutdown()
+
 
 # We added this separately, as we don't need to add training for checking whether license
 # works as just initializing the model should work. Also, `udt_training_loop_per_worker`
@@ -420,3 +422,5 @@ def test_udt_licensed_fail():
     )
 
     trainer.fit()
+
+    ray.shutdown()
