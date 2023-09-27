@@ -19,7 +19,7 @@ class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
       std::vector<uint32_t>& prompt,
-      std::vector<std::vector<uint32_t>>& tokens) = 0;
+      std::vector<std::vector<uint32_t>> tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
