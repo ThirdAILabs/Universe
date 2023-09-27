@@ -11,11 +11,7 @@ SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance, uint32_t prefix_length,
                         DEFAULT_COMPACT_LEVEL)),
       _max_edit_distance(max_edit_distance),
       _prefix_length(prefix_length),
-      _use_word_segmentation(use_word_segmentation) {
-  std::cout << "Initialized a Spell Checker from scratch. Index words into "
-               "the spell checker for corrections."
-            << std::endl;
-}
+      _use_word_segmentation(use_word_segmentation) {}
 
 std::pair<std::vector<std::string>, std::vector<float>>
 SymPreTrainer::getCorrectSpellingSingle(const std::string& word,
