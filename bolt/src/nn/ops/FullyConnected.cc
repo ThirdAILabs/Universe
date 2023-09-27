@@ -225,9 +225,8 @@ proto::bolt::Op* FullyConnected::toProto(bool with_optimizer) const {
 
 SerializableParameters FullyConnected::serializableParameters(
     bool with_optimizer) const {
-  SerializableParameters parameters = {
-      {name() + "_weights", &_kernel->weights()},
-      {name() + "_biases", &_kernel->biases()}};
+  SerializableParameters parameters = {{weightsName(), &_kernel->weights()},
+                                       {biasesName(), &_kernel->biases()}};
   if (with_optimizer && _kernel->_weight_optimizer &&
       _kernel->_bias_optimizer) {
     addOptimizerParameters(*_kernel->_weight_optimizer, weightsName(),

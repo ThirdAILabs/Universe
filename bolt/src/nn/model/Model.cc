@@ -368,7 +368,7 @@ void Model::enableSparseParameterUpdates() {
   }
 }
 
-proto::bolt::Model Model::toProto(bool with_optimizer) const {
+proto::bolt::Model Model::computationGraphToProto(bool with_optimizer) const {
   proto::bolt::Model model;
 
   // Record all of the model ops.
@@ -486,7 +486,13 @@ void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
   utils::ProtobufWriter writer(
       std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
 
-  writer.serialize(toProto(with_optimizer));
+  /**
+   * The model is serialized in the following order:
+   *  1. Computation graph and model metadata.
+   *  2. Number of parameter shards.
+   *  3. Parameter shards.
+   */
+  writer.serialize(computationGraphToProto(with_optimizer));
 
   SerializableParameters parameters;
   for (const auto& op : _ops) {

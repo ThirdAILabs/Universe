@@ -10,6 +10,8 @@
 
 namespace thirdai::bolt {
 
+// This is 1Gb. The maximum size of a protobuf object is 2Gb. This ensures we
+// stay under it.
 constexpr size_t SHARD_SIZE = static_cast<size_t>(1) << 30;
 
 inline size_t nShards(const std::vector<float>* parameters) {
@@ -34,6 +36,7 @@ void serializeParameters(const SerializableParameters& to_serialize,
           "multiple parameters named '" +
           name + "'.");
     }
+    parameter_names.insert(name);
 
     size_t n_shards = nShards(parameters);
 
@@ -67,12 +70,11 @@ struct InProgressParameter {
 
 DeserializedParameters deserializeParameters(
     utils::ProtobufReader& object_reader) {
-  uint64_t n_params = object_reader.readUint64();
+  uint64_t n_shards = object_reader.readUint64();
 
   std::unordered_map<std::string, InProgressParameter> parameters;
-  parameters.reserve(n_params);
 
-  for (size_t i = 0; i < n_params; i++) {
+  for (size_t i = 0; i < n_shards; i++) {
     proto::bolt::ParameterShard shard;
     object_reader.deserialize(shard);
 
