@@ -381,6 +381,10 @@ class NeuralDB:
             log_folder = train_loop_config["log_folder"]
 
             if log_folder:
+                if not os.path.exists(log_folder):
+                    print(f"Folder '{log_folder}' does not exist. Creating it...")
+                    os.makedirs(log_folder)
+                    print(f"Folder '{log_folder}' created successfully!")
                 thirdai.logging.setup(
                     log_to_stderr=False,
                     path=os.path.join(
