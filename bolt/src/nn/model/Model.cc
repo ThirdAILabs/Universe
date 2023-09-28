@@ -489,10 +489,8 @@ std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto,
   return model;
 }
 
-void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
-  utils::ProtobufWriter writer(
-      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
-
+void Model::serializeToProtoWriter(utils::ProtobufWriter& writer,
+                                   bool with_optimizer) const {
   SerializableParameters parameters;
   for (const auto& op : _ops) {
     auto op_params = op->serializableParameters(with_optimizer);
@@ -514,10 +512,8 @@ void Model::serializeStream(std::ostream& output, bool with_optimizer) const {
   ParameterToShards::serializeParameters(parameters, writer);
 }
 
-std::shared_ptr<Model> Model::deserializeStream(std::istream& input) {
-  utils::ProtobufReader reader(
-      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
-
+std::shared_ptr<Model> Model::deserializeFromProtoReader(
+    utils::ProtobufReader& reader) {
   proto::bolt::Model model_proto;
   reader.deserialize(model_proto);
 
@@ -527,25 +523,40 @@ std::shared_ptr<Model> Model::deserializeStream(std::istream& input) {
   return fromProto(model_proto, parameters);
 }
 
-void Model::saveProto(const std::string& filename, bool with_optimizer) const {
+void Model::serializeToStream(std::ostream& output, bool with_optimizer) const {
+  utils::ProtobufWriter writer(
+      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
+
+  serializeToProtoWriter(writer, with_optimizer);
+}
+
+std::shared_ptr<Model> Model::deserializeFromStream(std::istream& input) {
+  utils::ProtobufReader reader(
+      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
+
+  return deserializeFromProtoReader(reader);
+}
+
+void Model::serializeToFile(const std::string& filename,
+                            bool with_optimizer) const {
   std::ofstream output = dataset::SafeFileIO::ofstream(filename);
-  Model::serializeStream(output, with_optimizer);
+  serializeToStream(output, with_optimizer);
 }
 
-std::shared_ptr<Model> Model::loadProto(const std::string& filename) {
+std::shared_ptr<Model> Model::deserializeFromFile(const std::string& filename) {
   std::ifstream input = dataset::SafeFileIO::ifstream(filename);
-  return Model::deserializeStream(input);
+  return deserializeFromStream(input);
 }
 
-std::string Model::serializeProto(bool with_optimizer) const {
+std::string Model::serializeToString(bool with_optimizer) const {
   std::stringstream output;
-  serializeStream(output, with_optimizer);
+  serializeToStream(output, with_optimizer);
   return output.str();
 }
 
-std::shared_ptr<Model> Model::deserializeProto(const std::string& binary) {
+std::shared_ptr<Model> Model::deserializeFromString(const std::string& binary) {
   std::stringstream input(binary);
-  return deserializeStream(input);
+  return deserializeFromStream(input);
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
