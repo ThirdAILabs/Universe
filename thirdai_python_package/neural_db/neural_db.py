@@ -293,21 +293,26 @@ class NeuralDB:
         self,
         documents,
         scaling_config,
+        run_config,
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
         metrics: List[str] = [],
         max_in_memory_batches: Optional[int] = None,
         communication_backend="gloo",
-        run_config=None,
+        log_folder=None,
     ):
         """
         Pretrains a model in a distributed manner using the provided documents.
 
         Args:
-            documents: List of documents for pretraining.
+            documents: List of documents for pretraining. All the documents must have the same id column.
             scaling_config: Configuration related to the scaling aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.ScalingConfig.html
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html
+            run_config: Configuration related to the runtime aspects for Ray trainer. Read
+                https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html
+                ** Note: We need to specify `storage_path` in `RunConfig` which must be a networked **
+                ** file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards) **
             learning_rate (float, optional): Learning rate for the optimizer. Default is 0.001.
             epochs (int, optional): Number of epochs to train. Default is 5.
             batch_size (int, optional): Size of each batch for training. If not provided, will be determined automatically.
@@ -316,8 +321,6 @@ class NeuralDB:
                 streaming support when dataset is too large to fit in memory. If None, all batches will be loaded.
             communication_backend (str, optional): Bolt Distributed Training uses Torch Communication Backend. This
                 refers to backend for inter-worker communication. Default is "gloo".
-            run_config: Configuration related to the runtime aspects for Ray trainer. Read
-                https://docs.ray.io/en/latest/ray-air/api/doc/ray.air.RunConfig.html
 
         Notes:
             - Make sure to pass id_column to neural_db.CSV() making sure the ids are in ascending order starting from 0.
@@ -351,8 +354,10 @@ class NeuralDB:
             )
 
         def training_loop_per_worker(config):
+            import os
+
             import thirdai.distributed_bolt as dist
-            from ray.air import session
+            from ray import train
             from thirdai.dataset import RayCsvDataSource
 
             if config["licensing_lambda"]:
@@ -360,9 +365,9 @@ class NeuralDB:
 
             # ray data will automatically split the data if the dataset is passed with key "train"
             # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
-            stream_split_data_iterator = session.get_dataset_shard("train")
+            stream_split_data_iterator = train.get_dataset_shard("train")
 
-            model = dist.UDTCheckPoint.get_model(session.get_checkpoint())
+            model = dist.UDTCheckPoint.get_model(train.get_checkpoint())
 
             strong_column_names = config["strong_column_names"]
             weak_column_names = config["weak_column_names"]
@@ -371,9 +376,27 @@ class NeuralDB:
             batch_size = config["batch_size"]
             metrics = config["metrics"]
             max_in_memory_batches = config["max_in_memory_batches"]
+            model_target_column = config["model_target_col"]
+            document_target_col = config["document_target_col"]
+            log_folder = train_loop_config["log_folder"]
+
+            if log_folder:
+                if not os.path.exists(log_folder):
+                    print(f"Folder '{log_folder}' does not exist. Creating it...")
+                    os.makedirs(log_folder)
+                    print(f"Folder '{log_folder}' created successfully!")
+                thirdai.logging.setup(
+                    log_to_stderr=False,
+                    path=os.path.join(
+                        log_folder, f"worker-{train.get_context().get_world_rank()}.log"
+                    ),
+                    level="info",
+                )
 
             metrics = model.coldstart_distributed_on_data_source(
-                data_source=RayCsvDataSource(stream_split_data_iterator),
+                data_source=RayCsvDataSource(
+                    stream_split_data_iterator, model_target_column, document_target_col
+                ),
                 strong_column_names=strong_column_names,
                 weak_column_names=weak_column_names,
                 learning_rate=learning_rate,
@@ -383,10 +406,13 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
             )
 
-            session.report(
-                metrics=metrics,
-                checkpoint=dist.UDTCheckPoint.from_model(model, with_optimizers=False),
-            )
+            rank = train.get_context().get_world_rank()
+            checkpoint = None
+            if rank == 0:
+                # Use `with_optimizers=False` to save model without optimizer states
+                checkpoint = dist.UDTCheckPoint.from_model(model, with_optimizers=False)
+
+            train.report(metrics=metrics, checkpoint=checkpoint)
 
         csv_paths = [str(document.path.resolve()) for document in documents]
 
@@ -417,6 +443,11 @@ class NeuralDB:
         train_loop_config["batch_size"] = batch_size
         train_loop_config["metrics"] = metrics
         train_loop_config["max_in_memory_batches"] = max_in_memory_batches
+        train_loop_config["model_target_col"] = self._savable_state.model.get_id_col()
+        # Note(pratik): We are having an assumption here, that each of the document must have the
+        # same target column
+        train_loop_config["document_target_col"] = documents[0].id_column
+        train_loop_config["log_folder"] = log_folder
 
         trainer = dist.BoltTrainer(
             train_loop_per_worker=training_loop_per_worker,
@@ -431,7 +462,9 @@ class NeuralDB:
         result_and_checkpoint = trainer.fit()
 
         # TODO(pratik/mritunjay): This will stop working with ray==2.7 if runconfig doesnt specify s3 storage path.
-        model = result_and_checkpoint.checkpoint.get_model()
+        # Update: https://github.com/ThirdAILabs/Universe/pull/1784
+        # `run_config` is made required argument in `pretrained_distributed` function
+        model = dist.UDTCheckPoint.get_model(result_and_checkpoint.checkpoint)
 
         self._savable_state.model.set_model(model)
 

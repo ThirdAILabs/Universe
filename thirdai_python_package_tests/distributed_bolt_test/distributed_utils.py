@@ -124,7 +124,7 @@ def copy_file_or_folder(source_path, destination_path):
 def setup_ray(num_workers=2):
     import ray
     import thirdai.distributed_bolt as dist
-    from ray.air import ScalingConfig
+    from ray.train import ScalingConfig
 
     # reserve one CPU for Ray Trainer
     num_cpu_per_node = (dist.get_num_cpus() - 1) // 2
