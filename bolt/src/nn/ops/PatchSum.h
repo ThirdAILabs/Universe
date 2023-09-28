@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 
@@ -62,3 +63,5 @@ class PatchSum final : public Op,
 using PatchSumPtr = std::shared_ptr<PatchSum>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::PatchSum)

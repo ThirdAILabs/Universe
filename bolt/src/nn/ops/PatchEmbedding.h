@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -96,3 +97,5 @@ class PatchEmbedding final
 using PatchEmbeddingPtr = std::shared_ptr<PatchEmbedding>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::PatchEmbedding)
