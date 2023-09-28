@@ -489,10 +489,15 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, on_error: Callable = None
+        self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
+        id_range = None
+        if constraints:
+            id_range = self._savable_state.documents.entity_ids_by_constraints(
+                constraints
+            )
         result_ids = self._savable_state.model.infer_labels(
-            samples=[query], n_results=top_k
+            samples=[query], n_results=top_k, id_range=id_range
         )[0]
 
         references = []

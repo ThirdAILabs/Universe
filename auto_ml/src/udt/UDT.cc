@@ -18,9 +18,11 @@
 #include <versioning/src/Versions.h>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace thirdai::automl::udt {
 
@@ -196,13 +198,14 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
   return result;
 }
 
-py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                             bool return_predicted_class,
-                             std::optional<uint32_t> top_k) {
+py::object UDT::predictBatch(
+    const MapInputBatch& sample, bool sparse_inference,
+    bool return_predicted_class, std::optional<uint32_t> top_k,
+    const std::optional<std::vector<uint32_t>>& id_range) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predictBatch(sample, sparse_inference,
-                                       return_predicted_class, top_k);
+                                       return_predicted_class, top_k, id_range);
 
   timer.stop();
   telemetry::client.trackBatchPredictions(

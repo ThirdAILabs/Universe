@@ -20,6 +20,7 @@
 #include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 namespace thirdai::automl::udt {
 
@@ -66,6 +67,11 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  py::object predictBatch(
+      const MapInputBatch& samples, bool sparse_inference,
+      bool return_predicted_class, std::optional<uint32_t> top_k,
+      const std::optional<std::vector<uint32_t>>& id_range) final;
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,

@@ -177,6 +177,28 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return _logic.predictBatch(samples, *_state, sparse_inference, top_k);
 }
 
+py::object UDTMachClassifier::predictBatch(
+    const MapInputBatch& samples, bool sparse_inference,
+    bool return_predicted_class, std::optional<uint32_t> top_k,
+    const std::optional<std::vector<uint32_t>>& id_range) {
+  if (return_predicted_class) {
+    throw std::invalid_argument(
+        "UDT Extreme Classification does not support the "
+        "return_predicted_class flag.");
+  }
+
+  if (!id_range) {
+    return _logic.predictBatch(samples, *_state, sparse_inference, top_k);
+  }
+
+  auto mach_index_subset = _state->machIndex()->subset(id_range.value());
+  auto old_mach_index = _state->setMachIndex(mach_index_subset);
+  auto results = _logic.predictBatch(samples, *_state, sparse_inference, top_k);
+  _state->setMachIndex(old_mach_index);
+
+  return results;
+}
+
 py::object UDTMachClassifier::predictHashes(
     const MapInput& sample, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {

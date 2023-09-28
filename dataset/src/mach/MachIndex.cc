@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::dataset::mach {
 
@@ -36,15 +37,22 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
 }
 
 MachIndex::MachIndex(
-    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
+    std::unordered_map<uint32_t, std::vector<uint32_t>>&& entity_to_hashes,
     uint32_t num_buckets, uint32_t num_hashes)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
-  for (auto [entity, hashes] : entity_to_hashes) {
-    insert(entity, hashes);
+  for (auto& [entity, hashes] : entity_to_hashes) {
+    insert(entity, std::move(hashes));
   }
 }
 
-void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
+MachIndex::MachIndex(
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
+    uint32_t num_buckets, uint32_t num_hashes)
+    : MachIndex(
+          std::unordered_map<uint32_t, std::vector<uint32_t>>(entity_to_hashes),
+          num_buckets, num_hashes) {}
+
+void MachIndex::insert(uint32_t entity, std::vector<uint32_t>&& hashes) {
   if (hashes.size() != _num_hashes) {
     std::stringstream error;
     error << "Wrong number of hashes for entity " << entity << " expected "
@@ -65,7 +73,12 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
     _nonempty_buckets.insert(hash);
   }
 
-  _entity_to_hashes[entity] = hashes;
+  _entity_to_hashes[entity] = std::move(hashes);
+}
+
+void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
+  std::vector<uint32_t> hashes_copy = hashes;
+  insert(entity, std::move(hashes_copy));
 }
 
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(

@@ -14,6 +14,7 @@
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 namespace py = pybind11;
 
@@ -78,6 +79,17 @@ class UDTBackend {
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
                              bool return_predicted_class,
                              std::optional<uint32_t> top_k) = 0;
+
+  virtual py::object predictBatch(
+      const MapInputBatch& sample, bool sparse_inference,
+      bool return_predicted_class, std::optional<uint32_t> top_k,
+      const std::optional<std::vector<uint32_t>>& id_range) {
+    if (id_range.has_value()) {
+      throw notSupported("prediction with id range");
+    }
+    return predictBatch(sample, sparse_inference, return_predicted_class,
+                        top_k);
+  }
 
   virtual py::object predictBatch(const MapInputBatch& sample,
                                   bool sparse_inference,
