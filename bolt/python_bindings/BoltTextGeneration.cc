@@ -20,7 +20,8 @@ void addTextGenerationModels(py::module_& module) {
 
   py::class_<DyadicModel, GenerativeBackend, std::shared_ptr<DyadicModel>>(
       module, "DyadicModel")
-      .def(py::init<bolt::ModelPtr>(), py::arg("model"));
+      .def(py::init<bolt::ModelPtr, bool>(), py::arg("model"),
+           py::arg("is_bidirectional") = false);
 
   py::class_<ContextualModel, GenerativeBackend,
              std::shared_ptr<ContextualModel>>(module, "ContextualModel")

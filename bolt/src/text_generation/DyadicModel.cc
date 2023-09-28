@@ -14,8 +14,13 @@
 
 namespace thirdai::bolt {
 
-DyadicModel::DyadicModel(bolt::ModelPtr model) : _model(std::move(model)) {
-  size_t n_intervals = _model->inputs().size();
+DyadicModel::DyadicModel(bolt::ModelPtr model, bool is_bidirectional)
+    : _model(std::move(model)) {
+  size_t model_inputs = _model->inputs().size();
+
+  assert(!is_bidirectional || (model_inputs % 2 == 0));
+
+  size_t n_intervals = is_bidirectional ? model_inputs / 2 : model_inputs;
 
   _dyadic_transform = std::make_shared<data::DyadicInterval>(
       "target", "interval_", "next_word", n_intervals);
@@ -29,6 +34,12 @@ DyadicModel::DyadicModel(bolt::ModelPtr model) : _model(std::move(model)) {
   for (size_t i = 0; i < n_intervals; i++) {
     _bolt_inputs.push_back(
         data::OutputColumns("interval_" + std::to_string(1 << i)));
+  }
+  if (is_bidirectional) {
+    for (size_t i = 0; i < n_intervals; i++) {
+      _bolt_inputs.push_back(
+          data::OutputColumns("rev_interval_" + std::to_string(1 << i)));
+    }
   }
 }
 
