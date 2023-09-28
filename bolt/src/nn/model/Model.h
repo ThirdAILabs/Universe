@@ -332,7 +332,10 @@ class Model : public std::enable_shared_from_this<Model> {
   /**
    * Converts the computation graph to a protobuf object.
    */
-  proto::bolt::Model computationGraphToProto(bool with_optimizer) const;
+  proto::bolt::ComputationGraph* computationGraphToProto(
+      bool with_optimizer) const;
+
+  proto::bolt::ModelMetadata* metadataToProto() const;
 
   /**
    * Loads the model from the computation graph protobuf object, and the
