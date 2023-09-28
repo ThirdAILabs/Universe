@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -40,6 +40,10 @@ class Document:
         for i in range(self.size):
             sha1.update(bytes(self.reference(i).text, "utf-8"))
         return sha1.hexdigest()
+
+    @property
+    def constraints(self) -> Dict[str, Optional[List]]:
+        return {}
 
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
@@ -302,6 +306,7 @@ class CSV(Document):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
+        metadata={},
     ) -> None:
         self.df = pd.read_csv(path)
 
@@ -345,6 +350,7 @@ class CSV(Document):
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
+        self.file_metadata = metadata
 
     @property
     def hash(self) -> str:
@@ -357,6 +363,13 @@ class CSV(Document):
     @property
     def name(self) -> str:
         return self.path.name
+
+    @property
+    def constraints(self) -> Dict[str, Optional[List]]:
+        row_constraints = {col: None for col in self.df.columns}
+        if self.file_metadata:
+            return {**row_constraints, **self.file_metadata}
+        return row_constraints
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -426,13 +439,14 @@ class CSV(Document):
 
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
-    def __init__(self, path: str, save_extra_info=True):
+    def __init__(self, path: str, save_extra_info=True, metadata={}):
         path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path)
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
+        self.file_metadata = metadata
 
     def process_data(
         self,
@@ -451,6 +465,13 @@ class Extracted(Document):
     @property
     def name(self) -> str:
         return self.path.name
+
+    @property
+    def constraints(self) -> Dict[str, Optional[List]]:
+        row_constraints = {col: None for col in self.df.columns}
+        if self.file_metadata:
+            return {**row_constraints, **self.file_metadata}
+        return row_constraints
 
     def strong_text(self, element_id: int) -> str:
         return ""
@@ -550,11 +571,8 @@ def process_docx(path: str) -> pd.DataFrame:
 
 
 class PDF(Extracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
@@ -564,11 +582,8 @@ class PDF(Extracted):
 
 
 class DOCX(Extracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
@@ -584,12 +599,14 @@ class URL(Document):
         url_response: Response = None,
         save_extra_info: bool = True,
         title_is_strong: bool = False,
+        metadata={},
     ):
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url)
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
+        self.file_metadata = metadata
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -613,6 +630,13 @@ class URL(Document):
     @property
     def name(self) -> str:
         return self.url
+
+    @property
+    def constraints(self) -> Dict[str, Optional[List]]:
+        row_constraints = {col: None for col in self.df.columns}
+        if self.file_metadata:
+            return {**row_constraints, **self.file_metadata}
+        return row_constraints
 
     def strong_text(self, element_id: int) -> str:
         return self.df[self._strong_column if self._strong_column else "text"].iloc[
@@ -650,12 +674,13 @@ class SentenceLevelExtracted(Extracted):
     sentence to increase recall.
     """
 
-    def __init__(self, path: str, save_extra_info: bool = True):
+    def __init__(self, path: str, save_extra_info: bool = True, metadata={}):
         self.path = Path(path)
         self.df = self.parse_sentences(self.process_data(path))
         self.hash_val = hash_file(path)
         self.para_df = self.df["para"].unique()
         self._save_extra_info = save_extra_info
+        self.file_metadata = metadata
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -722,6 +747,13 @@ class SentenceLevelExtracted(Extracted):
     def name(self) -> str:
         return self.path.name if self.path else None
 
+    @property
+    def constraints(self) -> Dict[str, Optional[List]]:
+        row_constraints = {col: None for col in self.df.columns}
+        if self.file_metadata:
+            return {**row_constraints, **self.file_metadata}
+        return row_constraints
+
     def strong_text(self, element_id: int) -> str:
         return self.df["sentence"].iloc[element_id]
 
@@ -768,11 +800,8 @@ class SentenceLevelExtracted(Extracted):
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
@@ -782,11 +811,8 @@ class SentenceLevelPDF(SentenceLevelExtracted):
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
