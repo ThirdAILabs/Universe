@@ -52,7 +52,8 @@ TEST(BeamSearchDecoding, GreedySearch) {
                                      /* punctuation_tokens= */ {},
                                      /* punctuation_repeat_threshold= */ 0.8);
 
-  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */{}, /* n_predictions= */ 3,
+  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
+                                /* n_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   // 1 -> 2 -> 1 is the "greedy" best path, but it won't predict 0,1,2 again, so
@@ -68,7 +69,8 @@ TEST(BeamSearchDecoding, AllowRepeats) {
                                      /* punctuation_tokens= */ {},
                                      /* punctuation_repeat_threshold= */ 0.8);
 
-  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {}, /* n_predictions= */ 3,
+  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
+                                /* n_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 1};
@@ -82,7 +84,8 @@ TEST(BeamSearchDecoding, NoRepeatPunctuationUnderThreshold) {
                                      /* punctuation_tokens= */ {1},
                                      /* punctuation_repeat_threshold= */ 0.8);
 
-  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */{},/* n_predictions= */ 3,
+  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
+                                /* n_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 3};
@@ -96,7 +99,8 @@ TEST(BeamSearchDecoding, AllowRepeatPunctuationOverThreshold) {
                                      /* punctuation_tokens= */ {1},
                                      /* punctuation_repeat_threshold= */ 0.3);
 
-  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */{},/* n_predictions= */ 3,
+  auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
+                                /* n_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 1};
@@ -110,7 +114,8 @@ TEST(BeamSearchDecoding, FindBestPath) {
                                      /* punctuation_tokens= */ {},
                                      /* punctuation_repeat_threshold= */ 0.8);
 
-  auto output = model->generate(/* input_tokens= */ {0}, /* prompt */ {},/* n_predictions= */ 3,
+  auto output = model->generate(/* input_tokens= */ {0}, /* prompt */ {},
+                                /* n_predictions= */ 3,
                                 /* beam_width= */ 2);
 
   // The greedy path would be 1 -> 2 -> 1, however the score for 1 -> 3 -> 2 is
