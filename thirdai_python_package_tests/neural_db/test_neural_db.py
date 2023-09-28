@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import all_doc_getters, create_simple_dataset, train_simple_neural_db
+from ndb_utils import all_doc_getters, docs_with_meta, metadata_constraints
 from thirdai import bolt
 from thirdai import neural_db as ndb
 
@@ -434,3 +434,18 @@ def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter)
     expect_top_2_results(db, "second", [8, 9])
     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+
+def test_neural_db_search_with_single_constraint():
+    db = ndb.NeuralDB()
+    db.insert(docs_with_meta(), train=False)
+    for constraint in metadata_constraints:
+        print(constraint)
+        references = db.search("hello", top_k=10, constraints={"meta": constraint})
+        assert len(references) > 0
+        assert all([constraint in ref.metadata["meta"] for ref in references])
+
+
+# Test individual rows constraint on csv
+# Test multiple constraints
+# Test multiple options for each constraint

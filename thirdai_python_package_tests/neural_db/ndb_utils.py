@@ -49,6 +49,19 @@ BASE_DIR = os.path.join(
 CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
+
+CSV_EXPLICIT_META = "csv-explicit"
+PDF_META = "pdf"
+DOCX_META = "docx"
+URL_NO_RESPONSE_META = "url-no-response"
+SENTENCE_PDF_META = "sentence-pdf"
+SENTENCE_DOCX_META = "sentence-docx"
+
+
+def meta(file_meta):
+    return {"meta": file_meta}
+
+
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
 all_doc_getters = [
@@ -69,4 +82,35 @@ all_doc_getters = [
     ),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
+]
+
+
+def docs_with_meta():
+    return [
+        ndb.CSV(
+            CSV_FILE,
+            id_column="category",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            metadata=meta(CSV_EXPLICIT_META),
+        ),
+        ndb.PDF(PDF_FILE, metadata=meta(PDF_META)),
+        ndb.DOCX(DOCX_FILE, metadata=meta(DOCX_META)),
+        ndb.URL(
+            "https://en.wikipedia.org/wiki/Rice_University",
+            metadata=meta(URL_NO_RESPONSE_META),
+        ),
+        ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
+        ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
+    ]
+
+
+metadata_constraints = [
+    CSV_EXPLICIT_META,
+    PDF_META,
+    DOCX_META,
+    URL_NO_RESPONSE_META,
+    SENTENCE_PDF_META,
+    SENTENCE_DOCX_META,
 ]

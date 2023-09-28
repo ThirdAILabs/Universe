@@ -386,7 +386,7 @@ class Mach(Model):
     ) -> Predictions:
         self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        return self.model.predict_batch(infer_batch, id_range)
+        return self.model.predict_batch(infer_batch, id_range=id_range)
 
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
