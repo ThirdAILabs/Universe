@@ -3,11 +3,15 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <sys/types.h>
+#include <utils/Containers.h>
 #include <utils/Random.h>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::dataset::mach {
 
@@ -71,6 +75,13 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t top_k,
     uint32_t num_buckets_to_eval) const {
+  auto entities = shortlistEntities(output, num_buckets_to_eval);
+  return scoreEntities(output, entities, top_k);
+}
+
+std::vector<std::pair<uint32_t, double>> MachIndex::scoreEntities(
+    const BoltVector& output, const std::unordered_set<uint32_t>& entities,
+    std::optional<uint32_t> top_k) const {
   std::unordered_map<uint32_t, double> entity_to_scores;
 
   /**
@@ -80,30 +91,12 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
    * score of a give neuron/bucket like you can in dense decoding.
    */
   if (output.isDense()) {
-    entity_to_scores = entityScoresDense(output, num_buckets_to_eval);
+    entity_to_scores = entityScoresDense(output, entities);
   } else {
-    entity_to_scores = entityScoresSparse(output, num_buckets_to_eval);
+    entity_to_scores = entityScoresSparse(output, entities);
   }
 
-  std::vector<std::pair<uint32_t, double>> entity_scores(
-      entity_to_scores.begin(), entity_to_scores.end());
-
-  std::sort(entity_scores.begin(), entity_scores.end(),
-            [](auto& left, auto& right) { return left.second > right.second; });
-
-  // TODO(david) if entity_scores.size() < min_num_eval_results rerun the decode
-  // until we can return min_num_eval_results entities.
-  uint32_t num_to_return = std::min<uint32_t>(top_k, entity_scores.size());
-
-  while (entity_scores.size() > num_to_return) {
-    entity_scores.pop_back();
-  }
-
-  for (auto& item : entity_scores) {
-    item.second /= _num_hashes;
-  }
-
-  return entity_scores;
+  return containers::rankedIdScorePairsFromMap(entity_to_scores, top_k);
 }
 
 void MachIndex::erase(uint32_t entity) {
@@ -159,54 +152,54 @@ TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
   return top_k;
 }
 
-std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
+std::unordered_set<uint32_t> MachIndex::shortlistEntities(
     const BoltVector& output, uint32_t num_buckets_to_eval) const {
   auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
+  std::unordered_set<uint32_t> entities;
+  while (!top_k.empty()) {
+    for (uint32_t entity : _buckets.at(top_k.top().second)) {
+      entities.insert(entity);
+    }
+    top_k.pop();
+  }
+  return entities;
+}
 
+std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
+    const BoltVector& output,
+    const std::unordered_set<uint32_t>& entities) const {
   std::unordered_map<uint32_t, float> activations;
   for (uint32_t i = 0; i < output.len; i++) {
     activations[output.active_neurons[i]] = output.activations[i];
   }
 
   std::unordered_map<uint32_t, double> entity_to_scores;
-  while (!top_k.empty()) {
-    auto [activation, active_neuron] = top_k.top();
-    const std::vector<uint32_t>& entities = _buckets.at(active_neuron);
-    for (const auto& entity : entities) {
-      if (!entity_to_scores.count(entity)) {
-        auto hashes = getHashes(entity);
-        float score = 0;
-        for (const auto& hash : hashes) {
-          score += activations.count(hash) ? activations.at(hash) : 0.0;
-        }
-        entity_to_scores[entity] = score;
-      }
+  for (uint32_t entity : entities) {
+    for (uint32_t hash : getHashes(entity)) {
+      float score = activations.count(hash) ? activations.at(hash) : 0.0;
+      entity_to_scores[entity] += score;
     }
-    top_k.pop();
+  }
+
+  for (auto& [_, score] : entity_to_scores) {
+    score /= _num_hashes;
   }
 
   return entity_to_scores;
 }
 
 std::unordered_map<uint32_t, double> MachIndex::entityScoresDense(
-    const BoltVector& output, uint32_t num_buckets_to_eval) const {
-  auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
-
+    const BoltVector& output,
+    const std::unordered_set<uint32_t>& entities) const {
   std::unordered_map<uint32_t, double> entity_to_scores;
-  while (!top_k.empty()) {
-    auto [activation, active_neuron] = top_k.top();
-    const std::vector<uint32_t>& entities = _buckets.at(active_neuron);
-    for (const auto& entity : entities) {
-      if (!entity_to_scores.count(entity)) {
-        auto hashes = getHashes(entity);
-        float score = 0;
-        for (const auto& hash : hashes) {
-          score += output.activations[hash];
-        }
-        entity_to_scores[entity] = score;
-      }
+  for (uint32_t entity : entities) {
+    for (uint32_t hash : getHashes(entity)) {
+      entity_to_scores[entity] += output.activations[hash];
     }
-    top_k.pop();
+  }
+
+  for (auto& [_, score] : entity_to_scores) {
+    score /= _num_hashes;
   }
 
   return entity_to_scores;

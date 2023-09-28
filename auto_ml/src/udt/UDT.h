@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::automl::udt {
 
@@ -89,6 +90,14 @@ class UDT {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
+
+  /**
+   * Performs inference on a batch of samples in parallel and returns the scores
+   * for each of the provided output classes.
+   */
+  py::object scoreBatch(const MapInputBatch& samples,
+                        const std::vector<Label>& classes,
+                        bool sparse_inference, std::optional<uint32_t> top_k);
 
   py::object outputCorrectness(const MapInputBatch& sample,
                                const std::vector<uint32_t>& labels,

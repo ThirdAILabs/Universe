@@ -23,8 +23,6 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::InputMetrics;
 
-using Label = std::variant<uint32_t, std::string>;
-
 class UDTMachClassifier final : public UDTBackend {
  public:
   UDTMachClassifier(const data::ColumnDataTypes& input_data_types,
@@ -72,6 +70,11 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictHashesBatch(const MapInputBatch& samples,
                                 bool sparse_inference, bool force_non_empty,
                                 std::optional<uint32_t> num_hashes) final;
+
+  py::object scoreBatch(const MapInputBatch& samples,
+                        const std::vector<Label>& classes,
+                        bool sparse_inference,
+                        std::optional<uint32_t> top_k) final;
 
   py::object outputCorrectness(const MapInputBatch& samples,
                                const std::vector<uint32_t>& labels,

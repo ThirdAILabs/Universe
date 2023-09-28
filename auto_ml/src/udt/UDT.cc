@@ -211,6 +211,21 @@ py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
   return result;
 }
 
+py::object UDT::scoreBatch(const MapInputBatch& samples,
+                           const std::vector<Label>& classes,
+                           bool sparse_inference,
+                           std::optional<uint32_t> top_k) {
+  bolt::utils::Timer timer;
+
+  auto result = _backend->scoreBatch(samples, classes, sparse_inference, top_k);
+
+  timer.stop();
+  telemetry::client.trackBatchPredictions(
+      /* inference_time_seconds= */ timer.seconds(), samples.size());
+
+  return result;
+}
+
 std::vector<dataset::Explanation> UDT::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {

@@ -51,6 +51,13 @@ using bolt::metrics::MachRecall;
 using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
+uint32_t expectInteger(const Label& label) {
+  if (!std::holds_alternative<uint32_t>(label)) {
+    throw std::invalid_argument("Must use integer label.");
+  }
+  return std::get<uint32_t>(label);
+}
+
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
@@ -291,6 +298,36 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predictImpl(samples, sparse_inference, top_k));
 }
 
+py::object UDTMachClassifier::scoreBatch(const MapInputBatch& samples,
+                                         const std::vector<Label>& classes,
+                                         bool sparse_inference,
+                                         std::optional<uint32_t> top_k) {
+  std::unordered_set<uint32_t> entities(classes.size());
+  std::transform(classes.begin(), classes.end(), entities.begin(),
+                 [](const Label& label) { return expectInteger(label); });
+
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               sparse_inference)
+                     .at(0);
+
+  size_t batch_size = samples.size();
+  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
+      samples.size());
+
+#pragma omp parallel for default(none)                   \
+    shared(entities, outputs, predicted_entities, top_k, \
+           batch_size) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    auto predictions =
+        _mach_label_block->index()->scoreEntities(vector, entities, top_k);
+    predicted_entities[i] = predictions;
+  }
+
+  return py::cast(predicted_entities);
+}
+
 py::object UDTMachClassifier::predictHashes(
     const MapInput& sample, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
@@ -408,13 +445,6 @@ py::object UDTMachClassifier::coldstart(
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
   return _classifier->embedding(_dataset_factory->featurizeInputBatch(sample));
-}
-
-uint32_t expectInteger(const Label& label) {
-  if (!std::holds_alternative<uint32_t>(label)) {
-    throw std::invalid_argument("Must use integer label.");
-  }
-  return std::get<uint32_t>(label);
 }
 
 py::object UDTMachClassifier::entityEmbedding(const Label& label) {
