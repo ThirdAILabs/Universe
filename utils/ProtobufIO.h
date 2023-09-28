@@ -15,8 +15,6 @@ class ProtobufWriter {
 
   void serialize(const google::protobuf::MessageLite& object);
 
-  void writeUint64(uint64_t value);
-
  private:
   std::shared_ptr<ZeroCopyOutputStream> _output;
 };
@@ -26,8 +24,6 @@ class ProtobufReader {
   explicit ProtobufReader(std::shared_ptr<ZeroCopyInputStream> input);
 
   void deserialize(google::protobuf::MessageLite& object);
-
-  uint64_t readUint64();
 
  private:
   std::shared_ptr<ZeroCopyInputStream> _input;

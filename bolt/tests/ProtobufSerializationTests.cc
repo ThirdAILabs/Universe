@@ -115,8 +115,8 @@ metrics::InputMetrics makeMetrics(const ModelPtr& model) {
 TEST(ProtobufSerializationTests, ModelSummariesMatch) {
   auto model1 = buildModel();
 
-  auto binary = model1->serializeProto(true);
-  auto model2 = Model::deserializeProto(binary);
+  auto binary = model1->serializeToString(true);
+  auto model2 = Model::deserializeFromString(binary);
 
   auto summary1 = model1->summary(false);
   auto summary2 = model2->summary(false);
@@ -126,7 +126,8 @@ TEST(ProtobufSerializationTests, ModelSummariesMatch) {
 
 void checkOutputsAndGradientsMatchAfterSerialization(
     const ModelPtr& model, const LabeledDataset& data) {
-  auto model_copy = Model::deserializeProto(model->serializeProto(true));
+  auto model_copy =
+      Model::deserializeFromString(model->serializeToString(true));
 
   for (size_t batch_idx = 0; batch_idx < data.first.size(); batch_idx++) {
     model->trainOnBatch(data.first[batch_idx], data.second[batch_idx]);
@@ -178,7 +179,7 @@ TEST(ProtobufSerializationTests, ModelOutputsMatch) {
 
   checkOutputsAndGradientsMatchAfterSerialization(model1, data);
 
-  auto model2 = Model::deserializeProto(model1->serializeProto(true));
+  auto model2 = Model::deserializeFromString(model1->serializeToString(true));
 
   Trainer trainer2(model2);
 

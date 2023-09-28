@@ -233,34 +233,36 @@ class Model : public std::enable_shared_from_this<Model> {
   void enableSparseParameterUpdates();
 
   /**
-   * Serializes the model to a stream using protobuf.
+   * Serialization to/from a protobuf object Writer/Reader.
    */
-  void serializeStream(std::ostream& output, bool with_optimizer) const;
+  void serializeToProtoWriter(utils::ProtobufWriter& writer,
+                              bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromProtoReader(
+      utils::ProtobufReader& reader);
 
   /**
-   * Deserializes the model from a stream using protobuf.
+   * Serialization to/from a std::ostream/std::istream using protobuf.
    */
-  static std::shared_ptr<Model> deserializeStream(std::istream& input);
+  void serializeToStream(std::ostream& output, bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromStream(std::istream& input);
 
   /**
-   * Saves the model to a file using protobuf.
+   * Serialization to/from a file using protobuf.
    */
-  void saveProto(const std::string& filename, bool with_optimizer) const;
+  void serializeToFile(const std::string& filename, bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromFile(
+      const std::string& filename);
 
   /**
-   * Loads the model from a file using protobuf.
+   * Serialization to/from a string using protobuf.
    */
-  static std::shared_ptr<Model> loadProto(const std::string& filename);
+  std::string serializeToString(bool with_optimizer) const;
 
-  /**
-   * Serializes the model to a string using protobuf.
-   */
-  std::string serializeProto(bool with_optimizer) const;
-
-  /**
-   * Deserializes the model from a string using protobuf.
-   */
-  static std::shared_ptr<Model> deserializeProto(const std::string& binary);
+  static std::shared_ptr<Model> deserializeFromString(
+      const std::string& binary);
 
   /**
    * Helper function to save the model to a stream.
@@ -332,7 +334,10 @@ class Model : public std::enable_shared_from_this<Model> {
   /**
    * Converts the computation graph to a protobuf object.
    */
-  proto::bolt::Model computationGraphToProto(bool with_optimizer) const;
+  proto::bolt::ComputationGraph* computationGraphToProto(
+      bool with_optimizer) const;
+
+  proto::bolt::ModelMetadata* metadataToProto() const;
 
   /**
    * Loads the model from the computation graph protobuf object, and the
