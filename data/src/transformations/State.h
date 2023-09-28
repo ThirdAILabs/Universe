@@ -30,6 +30,20 @@ struct ItemRecord {
 
 using ItemHistoryTracker =
     std::unordered_map<std::string, std::deque<ItemRecord>>;
+
+template <typename K, typename V>
+using MapPtr = std::shared_ptr<std::unordered_map<K, V>>;
+
+static auto makeVocabs() {
+  return std::make_shared<
+      std::unordered_map<std::string, ThreadSafeVocabularyPtr>>();
+}
+
+static auto makeTrackers() {
+  return std::make_shared<
+      std::unordered_map<std::string, ItemHistoryTracker>>();
+}
+
 /**
  * The purpose of this state object is to have a central location where stateful
  * information is stored in the data pipeline. Having a unique owner for all the
@@ -83,7 +97,16 @@ class State {
     return _mach_index;
   }
 
-  MachIndexPtr setMachIndex(MachIndexPtr new_index) {
+  auto copyWithMachIndex(MachIndexPtr new_index) {
+    auto state = make();
+    state->_mach_index = std::move(new_index);
+    state->_vocabs = _vocabs;
+    state->_item_history_trackers = _item_history_trackers;
+    state->_graph = _graph;
+    return state;
+  }
+
+  void setMachIndex(MachIndexPtr new_index) {
     if (_mach_index->numBuckets() != new_index->numBuckets()) {
       throw std::invalid_argument(
           "Output range mismatch in new index. Index output range should be " +
@@ -91,34 +114,29 @@ class State {
           " but provided an index with range = " +
           std::to_string(new_index->numBuckets()) + ".");
     }
-
-    auto old_index = std::move(_mach_index);
-
     _mach_index = std::move(new_index);
-
-    return old_index;
   }
 
   bool containsVocab(const std::string& key) const {
-    return _vocabs.count(key);
+    return _vocabs->count(key);
   }
 
   void addVocab(const std::string& key, ThreadSafeVocabularyPtr&& vocab) {
-    _vocabs.emplace(key, std::move(vocab));
+    _vocabs->emplace(key, std::move(vocab));
   }
 
   ThreadSafeVocabularyPtr& getVocab(const std::string& key) {
-    if (!_vocabs.count(key)) {
+    if (!_vocabs->count(key)) {
       throw std::invalid_argument("Cannot find vocab for key '" + key + "'.");
     }
-    return _vocabs.at(key);
+    return _vocabs->at(key);
   }
 
   ItemHistoryTracker& getItemHistoryTracker(const std::string& tracker_key) {
-    return _item_history_trackers[tracker_key];
+    return (*_item_history_trackers)[tracker_key];
   }
 
-  void clearHistoryTrackers() { _item_history_trackers.clear(); }
+  void clearHistoryTrackers() { _item_history_trackers->clear(); }
 
   const auto& graph() const {
     if (!_graph) {
@@ -131,9 +149,10 @@ class State {
  private:
   MachIndexPtr _mach_index = nullptr;
 
-  std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
+  MapPtr<std::string, ThreadSafeVocabularyPtr> _vocabs = makeVocabs();
 
-  std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
+  MapPtr<std::string, ItemHistoryTracker> _item_history_trackers =
+      makeTrackers();
 
   automl::data::GraphInfoPtr _graph;
 

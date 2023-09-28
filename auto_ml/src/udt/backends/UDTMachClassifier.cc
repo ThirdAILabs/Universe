@@ -192,11 +192,8 @@ py::object UDTMachClassifier::predictBatch(
   }
 
   auto mach_index_subset = _state->machIndex()->subset(id_range.value());
-  auto old_mach_index = _state->setMachIndex(mach_index_subset);
-  auto results = _logic.predictBatch(samples, *_state, sparse_inference, top_k);
-  _state->setMachIndex(old_mach_index);
-
-  return results;
+  auto state_copy = _state->copyWithMachIndex(mach_index_subset);
+  return _logic.predictBatch(samples, *state_copy, sparse_inference, top_k);
 }
 
 py::object UDTMachClassifier::predictHashes(

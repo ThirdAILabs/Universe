@@ -153,14 +153,14 @@ TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
   uint32_t pos = 0;
   for (; top_k.size() < k && pos < output.len; pos++) {
     uint32_t idx = output.isDense() ? pos : output.active_neurons[pos];
-    if (!_buckets.at(idx).empty()) {
+    if (_nonempty_buckets.count(idx)) {
       top_k.push({output.activations[pos], idx});
     }
   }
 
   for (; pos < output.len; pos++) {
     uint32_t idx = output.isDense() ? pos : output.active_neurons[pos];
-    if (!_buckets.at(idx).empty()) {
+    if (_nonempty_buckets.count(idx)) {
       ValueIndexPair val_idx_pair = {output.activations[pos], idx};
       // top_k.top() is minimum element.
       if (val_idx_pair > top_k.top()) {
