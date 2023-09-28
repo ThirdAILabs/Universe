@@ -302,9 +302,11 @@ py::object UDTMachClassifier::scoreBatch(const MapInputBatch& samples,
                                          const std::vector<Label>& classes,
                                          bool sparse_inference,
                                          std::optional<uint32_t> top_k) {
-  std::unordered_set<uint32_t> entities(classes.size());
-  std::transform(classes.begin(), classes.end(), entities.begin(),
-                 [](const Label& label) { return expectInteger(label); });
+  std::unordered_set<uint32_t> entities;
+  entities.reserve(classes.size());
+  for (const Label& entity : classes) {
+    entities.insert(expectInteger(entity));
+  }
 
   auto outputs = _classifier->model()
                      ->forward(_dataset_factory->featurizeInputBatch(samples),
