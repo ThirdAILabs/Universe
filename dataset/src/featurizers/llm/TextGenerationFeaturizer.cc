@@ -56,7 +56,7 @@ TextGenerationFeaturizer::featurizeTextChunks(const std::string& line) const {
     throw std::invalid_argument("Expected line to be a json object.");
   }
 
-  auto [tokens, _] = getAllTokens(line_content, /* with_context= */ false);
+  auto [tokens, _] = getAllTokens(line_content, /* with_context= */ true);
 
   BoltVector prompt = promptContext(getPrompt(line_content));
 
