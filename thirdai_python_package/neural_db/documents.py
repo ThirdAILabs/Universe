@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict, defaultdict
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
