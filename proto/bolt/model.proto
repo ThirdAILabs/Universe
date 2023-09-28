@@ -16,6 +16,23 @@ message Computation {
   repeated string inputs = 3;
 }
 
+message ComputationGraph {
+  repeated Op ops = 1;
+
+  repeated Placeholder inputs = 2;
+  repeated Placeholder labels = 3;
+
+  repeated Computation computations = 4;
+
+  repeated Loss losses = 5;
+
+  repeated string outputs = 6;
+}
+
+message ParameterShardInfo {
+  required uint64 n_shards = 1;
+}
+
 message ModelMetadata {
   required uint64 train_steps = 1;
   required uint64 total_training_samples = 2;
@@ -23,12 +40,9 @@ message ModelMetadata {
 }
 
 message Model {
-  repeated Op ops = 1;
-  repeated Placeholder inputs = 2;
-  repeated Placeholder labels = 3;
-  repeated Computation computation_graph = 4;
-  repeated Loss losses = 5;
-  repeated string outputs = 6;
+  required ComputationGraph computation_graph = 1;
 
-  required ModelMetadata metadata = 7;
+  required ParameterShardInfo parameter_shard_info = 2;
+
+  required ModelMetadata metadata = 3;
 }

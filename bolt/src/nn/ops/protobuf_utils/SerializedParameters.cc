@@ -10,24 +10,23 @@
 
 namespace thirdai::bolt {
 
-// This is 1Gb. The maximum size of a protobuf object is 2Gb. This ensures we
-// stay under it.
-constexpr size_t SHARD_SIZE = static_cast<size_t>(1) << 30;
-
-inline size_t nShards(const std::vector<float>* parameters) {
-  return (parameters->size() + SHARD_SIZE - 1) / SHARD_SIZE;
+inline size_t nShards(const std::vector<float>* parameters, size_t shard_size) {
+  return (parameters->size() + shard_size - 1) / shard_size;
 }
 
-void serializeParameters(const SerializableParameters& to_serialize,
-                         utils::ProtobufWriter& object_writer) {
-  std::unordered_set<std::string> parameter_names;
-
+size_t ParameterToShards::computeTotalShards(
+    const SerializableParameters& to_serialize) {
   size_t total_shards = 0;
   for (const auto& [_, parameters] : to_serialize) {
-    total_shards += nShards(parameters);
+    total_shards += nShards(parameters, SHARD_SIZE);
   }
+  return total_shards;
+}
 
-  object_writer.writeUint64(total_shards);
+void ParameterToShards::serializeParameters(
+    const SerializableParameters& to_serialize,
+    utils::ProtobufWriter& object_writer) {
+  std::unordered_set<std::string> parameter_names;
 
   for (const auto& [name, parameters] : to_serialize) {
     if (parameter_names.count(name)) {
@@ -38,7 +37,7 @@ void serializeParameters(const SerializableParameters& to_serialize,
     }
     parameter_names.insert(name);
 
-    size_t n_shards = nShards(parameters);
+    size_t n_shards = nShards(parameters, SHARD_SIZE);
 
     for (size_t shard_id = 0; shard_id < n_shards; shard_id++) {
       size_t start = shard_id * SHARD_SIZE;
@@ -68,10 +67,8 @@ struct InProgressParameter {
   std::vector<bool> shards_seen;
 };
 
-DeserializedParameters deserializeParameters(
-    utils::ProtobufReader& object_reader) {
-  uint64_t n_shards = object_reader.readUint64();
-
+DeserializedParameters parametersFromShards(
+    utils::ProtobufReader& object_reader, size_t n_shards) {
   std::unordered_map<std::string, InProgressParameter> parameters;
 
   for (size_t i = 0; i < n_shards; i++) {

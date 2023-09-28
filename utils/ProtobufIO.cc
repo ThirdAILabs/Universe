@@ -35,11 +35,6 @@ void ProtobufWriter::serialize(const google::protobuf::MessageLite& object) {
   }
 }
 
-void ProtobufWriter::writeUint64(uint64_t value) {
-  CodedOutputStream output(_output.get());
-  output.WriteVarint64(value);
-}
-
 ProtobufReader::ProtobufReader(std::shared_ptr<ZeroCopyInputStream> input)
     : _input(std::move(input)) {}
 
@@ -63,17 +58,6 @@ void ProtobufReader::deserialize(google::protobuf::MessageLite& object) {
 
   // Release the limit.
   input.PopLimit(limit);
-}
-
-uint64_t ProtobufReader::readUint64() {
-  CodedInputStream input(_input.get());
-  uint64_t value;
-
-  if (!input.ReadVarint64(&value)) {
-    throw std::invalid_argument("Error deserializing model.");
-  }
-
-  return value;
 }
 
 }  // namespace thirdai::utils
