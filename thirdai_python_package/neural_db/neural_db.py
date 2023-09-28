@@ -363,12 +363,6 @@ class NeuralDB:
             if config["licensing_lambda"]:
                 config["licensing_lambda"]()
 
-            # ray data will automatically split the data if the dataset is passed with key "train"
-            # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
-            stream_split_data_iterator = train.get_dataset_shard("train")
-
-            model = dist.UDTCheckPoint.get_model(train.get_checkpoint())
-
             strong_column_names = config["strong_column_names"]
             weak_column_names = config["weak_column_names"]
             learning_rate = config["learning_rate"]
@@ -376,9 +370,16 @@ class NeuralDB:
             batch_size = config["batch_size"]
             metrics = config["metrics"]
             max_in_memory_batches = config["max_in_memory_batches"]
+            model_ref = config["model_ref"]
             model_target_column = config["model_target_col"]
             document_target_col = config["document_target_col"]
             log_folder = train_loop_config["log_folder"]
+
+            # ray data will automatically split the data if the dataset is passed with key "train"
+            # to training loop. Read https://docs.ray.io/en/latest/ray-air/check-ingest.html#splitting-data-across-workers
+            stream_split_data_iterator = train.get_dataset_shard("train")
+
+            model = ray.get(model_ref)
 
             if log_folder:
                 if not os.path.exists(log_folder):
@@ -420,11 +421,8 @@ class NeuralDB:
 
         train_loop_config = {}
 
-        # we cannot pass the model by default to config given config results in OOM very frequently with bigger model.
-        checkpoint = dist.UDTCheckPoint.from_model(
-            self._savable_state.model.get_model(), with_optimizers=False
-        )
-        checkpoint_path = checkpoint.to_directory()
+        # we cannot pass the model directly to config given config results in OOM very frequently with bigger model.
+        model_ref = ray.put(self._savable_state.model.get_model())
 
         # If this is a file based license, it will assume the license to available at the same location on each of the
         # machine
@@ -443,6 +441,7 @@ class NeuralDB:
         train_loop_config["batch_size"] = batch_size
         train_loop_config["metrics"] = metrics
         train_loop_config["max_in_memory_batches"] = max_in_memory_batches
+        train_loop_config["model_ref"] = model_ref
         train_loop_config["model_target_col"] = self._savable_state.model.get_id_col()
         # Note(pratik): We are having an assumption here, that each of the document must have the
         # same target column
@@ -456,7 +455,6 @@ class NeuralDB:
             backend_config=TorchConfig(backend=communication_backend),
             datasets={"train": train_ray_ds},
             run_config=run_config,
-            resume_from_checkpoint=dist.UDTCheckPoint.from_directory(checkpoint_path),
         )
 
         result_and_checkpoint = trainer.fit()
