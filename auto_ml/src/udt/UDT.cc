@@ -273,7 +273,7 @@ void UDT::save_stream(std::ostream& output_stream, bool with_optimizer) const {
   writer.serialize(_backend->toProto());
 
   if (auto model = _backend->model()) {
-    model->serializeProtoWriter(writer, with_optimizer);
+    model->serializeToProtoWriter(writer, with_optimizer);
   }
 }
 
@@ -293,7 +293,7 @@ std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
 
   bolt::ModelPtr model;
   if (udt_proto.backend_case() != proto::udt::UDT::kQueryReformulation) {
-    model = bolt::Model::deserializeProtoReader(reader);
+    model = bolt::Model::deserializeFromProtoReader(reader);
   }
 
   std::shared_ptr<UDT> udt(new UDT());
