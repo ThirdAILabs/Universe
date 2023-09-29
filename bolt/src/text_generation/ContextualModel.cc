@@ -1,6 +1,7 @@
 #include "ContextualModel.h"
 #include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -9,8 +10,9 @@ ContextualModel::ContextualModel(
     : _model(std::move(model)), _featurizer(std::move(featurizer)) {}
 
 bolt::TensorPtr ContextualModel::nextTokenProbs(
-    std::vector<std::vector<uint32_t>> tokens) {
-  auto tensors = _featurizer->featurizeInputBatch(tokens, _model->inputDims());
+    std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>> tokens) {
+  auto tensors =
+      _featurizer->featurizeInputBatch(prompt, tokens, _model->inputDims());
   return _model->forward(tensors).at(0);
 }
 
@@ -42,7 +44,15 @@ LabeledDataset ContextualModel::loadDataset(const dataset::DataSourcePtr& data,
   auto dataset = loader.loadAll(batch_size);
   auto labels = dataset.back();
   dataset.pop_back();
-  dataset = {dataset.begin() + 1, dataset.end()};  // Remove 'prompt';
+  size_t input_size = _model->inputs().size();
+
+  if (input_size == 3) {
+    dataset = {dataset.begin() + 1, dataset.end()};  // Remove 'prompt';
+  } else if (input_size < 3 || input_size > 4) {
+    throw std::invalid_argument(
+        "Unsupported model input size (" + std::to_string(input_size) +
+        "). Featurization logic doesnot fits for this model's inputs.");
+  }
 
   return {convertDatasets(dataset, _model->inputDims()),
           convertDataset(labels, _model->labelDims().at(0))};
