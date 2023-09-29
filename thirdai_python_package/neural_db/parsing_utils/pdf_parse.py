@@ -27,7 +27,7 @@ class Block:
     x1: float
     y1: float
     lines: str
-    block_num: int
+    block_no: int
     block_type: BlockType
 
     def __init__(self, block: tuple):
@@ -36,7 +36,7 @@ class Block:
         self.x1 = block[2]
         self.y1 = block[3]
         self.lines = block[4]
-        self.block_num = block[5]
+        self.block_no = block[5]
         self.block_type = BlockType.Image if block[6] else BlockType.Text
 
 
@@ -71,7 +71,7 @@ def process_pdf_file(filename):
             for block in blocks:
                 if block.block_type == BlockType.Text:
                     current_block_nums = {}
-                    current_block_nums[page_no] = [block.block_num]
+                    current_block_nums[page_no] = [block.block_no]
                     current = sent_tokenize(
                         block.lines.strip().replace("\r\n", " ").replace("\n", " ")
                     )
