@@ -66,9 +66,9 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  // NOLINTNEXTLINE
   py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
-                                                      "ColumnMapIterator");
+                                                      "ColumnMapIterator")
+      .def("next", &ColumnMapIterator::next);
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
