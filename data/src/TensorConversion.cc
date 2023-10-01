@@ -112,6 +112,14 @@ bolt::LabeledDataset toLabeledDataset(const ColumnMap& table,
   return std::make_pair(std::move(inputs), std::move(labels));
 }
 
+OutputColumnsList allColumns(const OutputColumnsList& input_columns,
+                             const OutputColumnsList& label_columns) {
+  auto all_columns = input_columns;
+  all_columns.insert(all_columns.end(), label_columns.begin(),
+                     label_columns.end());
+  return all_columns;
+}
+
 ColumnMap keepColumns(ColumnMap&& table, const OutputColumnsList& columns) {
   std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
   for (const auto& column : columns) {

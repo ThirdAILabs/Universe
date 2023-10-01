@@ -60,6 +60,9 @@ bolt::LabeledDataset toLabeledDataset(const ColumnMap& table,
                                       const OutputColumnsList& label_columns,
                                       size_t batch_size);
 
+OutputColumnsList allColumns(const OutputColumnsList& input_columns,
+                             const OutputColumnsList& label_columns);
+
 ColumnMap keepColumns(ColumnMap&& table, const OutputColumnsList& columns);
 
 }  // namespace thirdai::data
