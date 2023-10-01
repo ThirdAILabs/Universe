@@ -6,7 +6,6 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/LiteFeat.h>
-#include <auto_ml/src/featurization/MachFeaturizer.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
