@@ -84,6 +84,14 @@ class State {
     return _mach_index;
   }
 
+  auto& machIndex() {
+    if (!_mach_index) {
+      throw std::invalid_argument(
+          "Transformation state does not contain MachIndex.");
+    }
+    return _mach_index;
+  }
+
   void setMachIndex(MachIndexPtr new_index) {
     if (_mach_index && _mach_index->numBuckets() != new_index->numBuckets()) {
       throw std::invalid_argument(
