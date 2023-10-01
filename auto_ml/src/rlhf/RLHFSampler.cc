@@ -32,7 +32,7 @@ std::vector<RlhfSample> RLHFSampler::balancingSamples(
     }
   }
 
-  std::vector<std::string> docs_to_sample;
+  std::vector<uint32_t> docs_to_sample;
   std::sample(_doc_ids.begin(), _doc_ids.end(),
               std::back_inserter(docs_to_sample), num_samples, _rng);
   for (const auto& doc_id : docs_to_sample) {
@@ -44,8 +44,7 @@ std::vector<RlhfSample> RLHFSampler::balancingSamples(
   return samples;
 }
 
-void RLHFSampler::addSample(const std::string& doc_id,
-                            const RlhfSample& sample) {
+void RLHFSampler::addSample(uint32_t doc_id, const RlhfSample& sample) {
   if (_samples_per_doc.size() >= _max_docs) {
     return;
   }
