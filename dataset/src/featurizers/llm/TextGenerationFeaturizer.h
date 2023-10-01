@@ -117,7 +117,8 @@ class TextGenerationFeaturizer final : public Featurizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _context_featurizer);
+    archive(cereal::base_class<Featurizer>(this), _context_featurizer,
+            _featurize_in_chunks);
   }
 
   /**
