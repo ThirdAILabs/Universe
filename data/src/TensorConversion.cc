@@ -6,50 +6,6 @@
 
 namespace thirdai::data {
 
-TransformedTable::TransformedTable(thirdai::data::ColumnMap table,
-                                   const TransformConfig& transform_config,
-                                   thirdai::data::State& state)
-    : table(transform_config.transform->apply(std::move(table), state)),
-      inputs(transform_config.input_columns),
-      labels(transform_config.label_columns) {}
-
-void TransformedTable::removeIntermediateColumns() {
-  std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
-  for (const auto& column : inputs) {
-    new_columns[column.indices()] = table.getColumn(column.indices());
-    if (column.values()) {
-      new_columns[*column.values()] = table.getColumn(*column.values());
-    }
-  }
-  if (labels) {
-    for (const auto& column : *labels) {
-      new_columns[column.indices()] = table.getColumn(column.indices());
-      if (column.values()) {
-        new_columns[*column.values()] = table.getColumn(*column.values());
-      }
-    }
-  }
-
-  table = thirdai::data::ColumnMap(std::move(new_columns));
-}
-
-TransformedIterator::TransformedIterator(
-    thirdai::data::ColumnMapIteratorPtr iter,
-    const TransformConfig& transform_config, thirdai::data::StatePtr state)
-    : iter(thirdai::data::TransformIterator::make(
-          /* iter= */ std::move(iter),
-          /* transform= */ transform_config.transform,
-          /* state= */ std::move(state))),
-      inputs(transform_config.input_columns),
-      labels(transform_config.label_columns) {}
-
-TransformedTensors::TransformedTensors(const TransformedTable& table) {
-  inputs = thirdai::data::toTensors(table.table, table.inputs);
-  if (table.labels) {
-    labels = thirdai::data::toTensors(table.table, *table.labels);
-  }
-}
-
 std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const OutputColumnsList& columns_to_convert,
     size_t batch_size) {
@@ -145,18 +101,26 @@ bolt::TensorList toTensors(const ColumnMap& columns,
       .at(0);
 }
 
-bolt::LabeledDataset toLabeledDataset(const TransformedTable& table,
+bolt::LabeledDataset toLabeledDataset(const ColumnMap& table,
+                                      const OutputColumnsList& input_columns,
+                                      const OutputColumnsList& label_columns,
                                       size_t batch_size) {
-  auto data = thirdai::data::toTensorBatches(
-      /* columns= */ table.table,
-      /* columns_to_convert= */ table.inputs,
-      /* batch_size= */ batch_size);
-  auto labels = thirdai::data::toTensorBatches(
-      /* columns= */ table.table,
-      /* columns_to_convert= */ table.labels.value(),
-      /* batch_size= */ batch_size);
+  auto inputs =
+      thirdai::data::toTensorBatches(table, input_columns, batch_size);
+  auto labels =
+      thirdai::data::toTensorBatches(table, label_columns, batch_size);
+  return std::make_pair(std::move(inputs), std::move(labels));
+}
 
-  return std::make_pair(std::move(data), std::move(labels));
+ColumnMap keepColumns(ColumnMap&& table, const OutputColumnsList& columns) {
+  std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
+  for (const auto& column : columns) {
+    new_columns[column.indices()] = table.getColumn(column.indices());
+    if (column.values()) {
+      new_columns[*column.values()] = table.getColumn(*column.values());
+    }
+  }
+  return thirdai::data::ColumnMap(std::move(new_columns));
 }
 
 }  // namespace thirdai::data
