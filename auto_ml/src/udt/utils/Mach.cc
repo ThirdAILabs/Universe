@@ -10,6 +10,14 @@
 
 namespace thirdai::automl::udt::utils {
 
+std::tuple<feat::MachLabelPtr, feat::OutputColumnsList> Mach::machTransform(
+    const std::string& doc_id_column) {
+  auto transform = feat::MachLabel::make(doc_id_column, MACH_LABELS);
+  feat::OutputColumnsList output_columns{feat::OutputColumns(MACH_LABELS),
+                                         feat::OutputColumns(doc_id_column)};
+  return std::make_tuple(std::move(transform), std::move(output_columns));
+}
+
 void Mach::introduceEntities(const feat::ColumnMap& table,
                              const feat::OutputColumnsList& input_columns,
                              const std::string& doc_id_column,
@@ -397,4 +405,5 @@ void Mach::updateSamplingStrategy() {
     }
   }
 }
+
 }  // namespace thirdai::automl::udt::utils

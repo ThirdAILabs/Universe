@@ -177,12 +177,8 @@ class Mach {
   }
 
  private:
-  static auto machTransform(const std::string& doc_id_column) {
-    auto transform = feat::MachLabel::make(doc_id_column, MACH_LABELS);
-    feat::OutputColumnsList output_columns{feat::OutputColumns(MACH_LABELS),
-                                           feat::OutputColumns(doc_id_column)};
-    return std::make_tuple(std::move(transform), std::move(output_columns));
-  }
+  static std::tuple<feat::MachLabelPtr, feat::OutputColumnsList> machTransform(
+      const std::string& doc_id_column);
 
   void updateSamplingStrategy();
 
