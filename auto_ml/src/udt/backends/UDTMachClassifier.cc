@@ -67,6 +67,8 @@ using bolt::metrics::MachRecall;
 using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
+namespace feat = thirdai::data;
+
 config::ArgumentMap setNeuraldbDefaultArgs(config::ArgumentMap&& user_args) {
   user_args.insert<uint32_t>("embedding_dimension", 2048);
   user_args.insert<uint32_t>("extreme_output_dim", 50000);
@@ -139,13 +141,13 @@ UDTMachClassifier::UDTMachClassifier(
 
   _mach->randomlyAssignBuckets(n_target_classes);
 
-  _state = thirdai::data::State::make();
+  _state = feat::State::make();
 
   _featurizer = LiteFeat::make(
       /* data_types= */ input_data_types,
       /* user_temporal_relationships= */ temporal_tracking_relationships,
       /* label_column= */ target_name,
-      /* label_value_fill= */ thirdai::data::ValueFillType::Ones,
+      /* label_value_fill= */ feat::ValueFillType::Ones,
       /* options= */ tabular_options);
 }
 
@@ -156,49 +158,39 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  thirdai::data::ColumnMapIteratorPtr data_iterator =
-      thirdai::data::CsvIterator::make(data, _delimiter);
+  auto train_csv_iter = feat::CsvIterator::make(data, _delimiter);
+  auto train_iter = feat::Chain::make(std::move(train_csv_iter), _state)
+                        ->then(_featurizer->trainInputTransform())
+                        ->then(_featurizer->labelTransform());
 
   if (_state->rlhfSampler()) {
-    data_iterator = thirdai::data::TransformIterator::make(
-        /* iter= */ std::move(data_iterator),
-        /* transform= */ _featurizer->storeBalancers(),
-        /* state= */ _state);
+    train_iter = train_iter->then(_featurizer->storeBalancers());
   }
 
-  utils::TransformedIterator train_iter(
-      /* iter= */ std::move(data_iterator),
-      /* config= */ _featurizer->trainTransform(),
-      /* state= */ _state);
-
-  std::optional<thirdai::data::TransformedIterator> valid_iter;
+  std::shared_ptr<feat::Chain> valid_iter;
   if (val_data) {
-    valid_iter = thirdai::data::TransformedIterator(
-        /* iter= */ thirdai::data::CsvIterator::make(val_data, _delimiter),
-        /* config= */ _featurizer->trainTransform(),
-        /* state= */ _state);
+    auto valid_csv_iter = feat::CsvIterator::make(data, _delimiter);
+    valid_iter = feat::Chain::make(std::move(valid_csv_iter), _state)
+                     ->then(_featurizer->trainInputTransform())
+                     ->then(_featurizer->labelTransform());
   }
 
-  return py::cast(_mach->train(
-      /* train_data= */ std::move(train_iter),
-      /* valid_data= */ std::move(valid_iter),
-      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
-      /* train_metrics= */ getMetrics(train_metrics, "train_"),
-      /* val_metrics= */ getMetrics(val_metrics, "val_"),
-      /* callbacks= */ callbacks, /* options= */ options,
-      /* comm= */ comm));
+  return py::cast(
+      _mach->train(std::move(train_iter), std::move(valid_iter), inputColumns(),
+                   docIdColumn(), learning_rate, epochs,
+                   /* train_metrics= */ getMetrics(train_metrics, "train_"),
+                   /* val_metrics= */ getMetrics(val_metrics, "val_"),
+                   /* callbacks= */ callbacks, /* options= */ options,
+                   /* comm= */ comm));
 }
 
 py::object UDTMachClassifier::trainBatch(
     const MapInputBatch& batch, float learning_rate,
     const std::vector<std::string>& metrics) {
-  thirdai::data::TransformedTable table(
-      /* table= */ thirdai::data::ColumnMap::fromMapInputBatch(batch),
-      /* config= */ _featurizer->trainTransform(),
-      /* state= */ *_state);
-
-  _mach->trainBatch(/* batch= */ std::move(table),
-                    /* learning_rate= */ learning_rate);
+  auto table = feat::ColumnMap::fromMapInputBatch(batch);
+  table = _featurizer->trainInputTransform()->apply(std::move(table), *_state);
+  _mach->trainBatch(std::move(table), inputColumns(), docIdColumn(),
+                    learning_rate);
   (void)metrics;
   return py::none();
 }
@@ -208,16 +200,16 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        bool sparse_inference, bool verbose,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
-  thirdai::data::TransformedIterator eval_iter(
-      /* iter= */ thirdai::data::CsvIterator::make(data, _delimiter),
-      /* config= */ _featurizer->trainTransform(),
-      /* state= */ _state);
+  auto eval_csv_iter = feat::CsvIterator::make(data, _delimiter);
+  auto eval_iter = feat::Chain::make(std::move(eval_csv_iter), _state)
+                       ->then(_featurizer->trainInputTransform())
+                       ->then(_featurizer->labelTransform());
 
-  return py::cast(_mach->evaluate(
-      /* eval_data= */ std::move(eval_iter),
-      /* metrics= */ getMetrics(metrics, "val_"),
-      /* sparse_inference= */ sparse_inference,
-      /* verbose= */ verbose));
+  return py::cast(_mach->evaluate(std::move(eval_iter), inputColumns(),
+                                  docIdColumn(),
+                                  /* metrics= */ getMetrics(metrics, "val_"),
+                                  /* sparse_inference= */ sparse_inference,
+                                  /* verbose= */ verbose));
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
@@ -230,15 +222,13 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
         "return_predicted_class flag.");
   }
 
-  thirdai::data::TransformedTable table(
-      /* table= */ thirdai::data::ColumnMap::fromMapInput(sample),
-      /* config= */ _featurizer->inferTransform(),
-      /* state= */ *_state);
+  auto table = feat::ColumnMap::fromMapInput(sample);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
 
-  return py::cast(_mach->predict(
-      /* batch= */ table, /* sparse_inference= */ sparse_inference,
-      /* top_k= */ top_k.value_or(_default_top_k_to_return),
-      /* num_scanned_buckets= */ _num_buckets_to_eval));
+  return py::cast(
+      _mach->predict(table, inputColumns(), sparse_inference,
+                     /* top_k= */ top_k.value_or(_default_top_k_to_return),
+                     /* num_scanned_buckets= */ _num_buckets_to_eval));
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
@@ -251,28 +241,23 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
         "return_predicted_class flag.");
   }
 
-  thirdai::data::TransformedTable table(
-      /* table= */ thirdai::data::ColumnMap::fromMapInputBatch(samples),
-      /* config= */ _featurizer->inferTransform(),
-      /* state= */ *_state);
+  auto table = feat::ColumnMap::fromMapInputBatch(samples);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
 
-  return py::cast(_mach->predict(
-      /* batch= */ table, /* sparse_inference= */ sparse_inference,
-      /* top_k= */ top_k.value_or(_default_top_k_to_return),
-      /* num_scanned_buckets= */ _num_buckets_to_eval));
+  return py::cast(
+      _mach->predict(table, inputColumns(), sparse_inference,
+                     /* top_k= */ top_k.value_or(_default_top_k_to_return),
+                     /* num_scanned_buckets= */ _num_buckets_to_eval));
 }
 
 py::object UDTMachClassifier::outputCorrectness(
     const MapInputBatch& samples, const std::vector<uint32_t>& labels,
     bool sparse_inference, std::optional<uint32_t> num_hashes) {
-  auto table = thirdai::data::ColumnMap::fromMapInputBatch(samples);
+  auto table = feat::ColumnMap::fromMapInputBatch(samples);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
 
-  thirdai::data::TransformedTable input(
-      /* table= */ table, /* transform_config= */ _featurizer->inferTransform(),
-      /* state= */ *_state);
-
-  return py::cast(
-      _mach->outputCorrectness(input, labels, num_hashes, sparse_inference));
+  return py::cast(_mach->outputCorrectness(table, inputColumns(), labels,
+                                           num_hashes, sparse_inference));
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
@@ -292,50 +277,42 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  auto coldstart_augmentation = _featurizer->unsupAugmenter(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* fast_approximation= */ false);
+  auto train_csv_iter = feat::CsvIterator::make(data, _delimiter);
+  auto train_iter = feat::Chain::make(train_csv_iter, _state)
+                        ->then(_featurizer->unsupAugmenter(
+                            /* strong_column_names= */ strong_column_names,
+                            /* weak_column_names= */ weak_column_names,
+                            /* fast_approximation= */ false))
+                        ->then(_featurizer->trainInputTransform())
+                        ->then(_featurizer->labelTransform());
 
-  auto augmented_train_iter = thirdai::data::TransformIterator::make(
-      /* iter= */ thirdai::data::CsvIterator::make(data, _delimiter),
-      /* transform= */
-      _state->rlhfSampler()
-          ? thirdai::data::TransformationList::make(
-                {coldstart_augmentation, _featurizer->storeBalancers()})
-          : coldstart_augmentation,
-      /* state= */ _state);
-
-  thirdai::data::TransformedIterator train_iter(
-      /* iter= */ std::move(augmented_train_iter),
-      /* config= */ _featurizer->trainTransform(),
-      /* state= */ _state);
-
-  std::optional<thirdai::data::TransformedIterator> valid_iter;
-  if (val_data) {
-    valid_iter = thirdai::data::TransformedIterator(
-        /* iter= */ thirdai::data::CsvIterator::make(val_data, _delimiter),
-        /* config= */ _featurizer->trainTransform(),
-        /* state= */ _state);
+  if (_state->rlhfSampler()) {
+    train_iter = train_iter->then(_featurizer->storeBalancers());
   }
 
-  return py::cast(_mach->train(
-      /* train_data= */ std::move(train_iter),
-      /* valid_data= */ std::move(valid_iter),
-      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
-      /* train_metrics= */ getMetrics(train_metrics, "train_"),
-      /* val_metrics= */ getMetrics(val_metrics, "val_"),
-      /* callbacks= */ callbacks, /* options= */ options,
-      /* comm= */ comm));
+  std::shared_ptr<feat::Chain> valid_iter;
+  if (val_data) {
+    auto valid_csv_iter = feat::CsvIterator::make(data, _delimiter);
+    valid_iter = feat::Chain::make(std::move(valid_csv_iter), _state)
+                     ->then(_featurizer->trainInputTransform())
+                     ->then(_featurizer->labelTransform());
+  }
+
+  return py::cast(
+      _mach->train(std::move(train_iter), std::move(valid_iter),
+                   /* input_columns= */ inputColumns(),
+                   /* doc_id_column= */ docIdColumn(),
+                   /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+                   /* train_metrics= */ getMetrics(train_metrics, "train_"),
+                   /* val_metrics= */ getMetrics(val_metrics, "val_"),
+                   /* callbacks= */ callbacks, /* options= */ options,
+                   /* comm= */ comm));
 }
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
-  auto batch = thirdai::data::ColumnMap::fromMapInputBatch(sample);
-  thirdai::data::TransformedTable table(
-      /* table= */ std::move(batch),
-      /* config= */ _featurizer->inferTransform(),
-      /* state= */ *_state);
-  return bolt::python::tensorToNumpy(_mach->embedding(table));
+  auto table = feat::ColumnMap::fromMapInputBatch(sample);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
+  return bolt::python::tensorToNumpy(_mach->embedding(table, inputColumns()));
 }
 
 uint32_t expectInteger(const Label& label) {
@@ -361,83 +338,62 @@ void UDTMachClassifier::introduceDocuments(
   (void)verbose;
   // TODO(Nicholas): add progress bar here.
 
-  auto columns = thirdai::data::CsvIterator::all(data, _delimiter);
-  columns = _featurizer
-                ->unsupAugmenter(strong_column_names, weak_column_names,
-                                 fast_approximation)
-                ->apply(std::move(columns), *_state);
-  columns = _featurizer->storeBalancers()->apply(std::move(columns), *_state);
-
-  thirdai::data::TransformedTable table(
-      /* table= */ std::move(columns),
-      /* config= */ _featurizer->introTransform(),
-      /* state= */ *_state);
+  auto table = feat::CsvIterator::all(data, _delimiter);
+  table = _featurizer
+              ->unsupAugmenter(strong_column_names, weak_column_names,
+                               fast_approximation)
+              ->apply(std::move(table), *_state);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
+  table = _featurizer->labelTransform()->apply(std::move(table), *_state);
+  table = _featurizer->storeBalancers()->apply(std::move(table), *_state);
 
   _mach->introduceEntities(
-      /* table= */ table,
+      table, inputColumns(), docIdColumn(),
       /* num_buckets_to_sample_opt= */ num_buckets_to_sample_opt,
       /* num_random_hashes= */ num_random_hashes);
 }
 
-thirdai::data::ColumnMap addLabelColumn(thirdai::data::ColumnMap&& data,
-                                        const std::string& label_column,
-                                        const std::string& label) {
-  std::vector<std::string> labels(data.numRows());
+feat::ColumnMap addLabelColumn(feat::ColumnMap&& table,
+                               const std::string& doc_id_column,
+                               uint32_t label) {
+  std::vector<uint32_t> labels(table.numRows());
   std::fill(labels.begin(), labels.end(), label);
-  data.setColumn(
-      /* name= */ label_column,
-      /* column= */ thirdai::data::ValueColumn<std::string>::make(
-          std::move(labels)));
-  return data;
+  table.setColumn(
+      /* name= */ doc_id_column,
+      /* column= */ feat::ValueColumn<uint32_t>::make(std::move(labels)));
+  return table;
 }
 
 void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, const Label& new_label,
+    const std::vector<std::string>& weak_column_names, const Label& label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes) {
-  auto data = thirdai::data::ColumnMap::fromMapInput(document);
-
-  data = addLabelColumn(
-      /* data= */ std::move(data),
-      /* label_column= */ _featurizer->textDatasetConfig().labelColumn(),
-      /* label= */ std::to_string(expectInteger(new_label)));
-
-  data = _featurizer
-             ->unsupAugmenter(strong_column_names, weak_column_names,
-                              /* fast_approximation= */ false)
-             ->apply(std::move(data), *_state);
-
-  thirdai::data::TransformedTable table(
-      /* table= */ data,
-      /* config= */ _featurizer->introTransform(),
-      /* state= */ *_state);
+  auto table = feat::ColumnMap::fromMapInput(document);
+  table = addLabelColumn(std::move(table), docIdColumn(), expectInteger(label));
+  table = _featurizer
+              ->unsupAugmenter(strong_column_names, weak_column_names,
+                               /* fast_approximation= */ false)
+              ->apply(std::move(table), *_state);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
 
   _mach->introduceEntities(
-      /* table= */ table,
+      /* table= */ table, inputColumns(), docIdColumn(),
       /* num_buckets_to_sample_opt= */ num_buckets_to_sample_opt,
       /* num_random_hashes= */ num_random_hashes);
 }
 
 void UDTMachClassifier::introduceLabel(
-    const MapInputBatch& samples, const Label& new_label,
+    const MapInputBatch& samples, const Label& label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes) {
-  auto data = thirdai::data::ColumnMap::fromMapInputBatch(samples);
-
-  data = addLabelColumn(
-      /* data= */ std::move(data),
-      /* label_column= */ _featurizer->textDatasetConfig().labelColumn(),
-      /* label= */ std::to_string(expectInteger(new_label)));
-
-  thirdai::data::TransformedTable table(
-      /* table= */ data,
-      /* config= */ _featurizer->introTransform(),
-      /* state= */ *_state);
+  auto table = feat::ColumnMap::fromMapInputBatch(samples);
+  table = addLabelColumn(std::move(table), docIdColumn(), expectInteger(label));
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
 
   _mach->introduceEntities(
-      /* table= */ table,
+      /* table= */ table, inputColumns(), docIdColumn(),
       /* num_buckets_to_sample_opt= */ num_buckets_to_sample_opt,
       /* num_random_hashes= */ num_random_hashes);
 }
@@ -465,23 +421,23 @@ BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
                                       std::vector<float>(indices.size(), 1.0));
 }
 
-auto rlhfBalancers(const RLHFSampler& sampler,
-                   const TextDatasetConfig& text_dataset,
-                   uint32_t num_samples) {
+auto rlhfBalancerTable(const RLHFSampler& sampler,
+                       const std::string& text_column_name,
+                       const std::string& id_column_name,
+                       feat::Transformation& input_transform,
+                       feat::State& state, uint32_t num_samples) {
   auto samples = sampler.balancingSamples(num_samples);
   std::vector<std::string> text_data(samples.size());
-  std::vector<std::string> doc_id_data(samples.size());
+  std::vector<uint32_t> id_data(samples.size());
   for (uint32_t i = 0; i < samples.size(); i++) {
     text_data[i] = std::move(samples[i].first);
-    doc_id_data[i] = std::move(samples[i].second);
+    id_data[i] = samples[i].second;
   }
-  auto text_column =
-      thirdai::data::ValueColumn<std::string>::make(std::move(text_data));
-  auto doc_id_column =
-      thirdai::data::ValueColumn<std::string>::make(std::move(doc_id_data));
-  return thirdai::data::ColumnMap(
-      {{text_dataset.textColumn(), std::move(text_column)},
-       {text_dataset.labelColumn(), std::move(doc_id_column)}});
+  auto text_column = feat::ValueColumn<std::string>::make(std::move(text_data));
+  auto id_column = feat::ValueColumn<uint32_t>::make(std::move(id_data));
+  auto table = feat::ColumnMap({{text_column_name, std::move(text_column)},
+                                {id_column_name, std::move(id_column)}});
+  return input_transform.apply(std::move(table), state);
 }
 
 auto columnMapFromUpvoteSamples(
@@ -500,38 +456,32 @@ void UDTMachClassifier::upvote(
     uint32_t n_upvote_samples, uint32_t n_balancing_samples,
     float learning_rate, uint32_t epochs) {
   auto text_column_name = _featurizer->textDatasetConfig().textColumn();
-  auto doc_id_column_name =
-      _featurizer->trainTransform().label_columns->front().indices();
 
   std::vector<std::string> text_data(rlhf_samples.size());
-  std::vector<std::string> doc_id_data(rlhf_samples.size());
+  std::vector<uint32_t> id_data(rlhf_samples.size());
   for (uint32_t i = 0; i < rlhf_samples.size(); i++) {
     text_data[i] = rlhf_samples[i].first;
-    doc_id_data[i] = std::to_string(rlhf_samples[i].second);
+    id_data[i] = rlhf_samples[i].second;
   }
-  auto text_column =
-      thirdai::data::ValueColumn<std::string>::make(std::move(text_data));
-  auto doc_id_column =
-      thirdai::data::ValueColumn<std::string>::make(std::move(doc_id_data));
+  auto text_column = feat::ValueColumn<std::string>::make(std::move(text_data));
+  auto doc_id_column = feat::ValueColumn<uint32_t>::make(std::move(id_data));
 
-  thirdai::data::TransformedTable upvotes(
-      /* table= */ thirdai::data::ColumnMap(
-          {{text_column_name, text_column},
-           {doc_id_column_name, doc_id_column}}),
-      /* transform_config */ _featurizer->trainTransform(),
-      /* state= */ *_state);
+  auto upvotes = feat::ColumnMap(
+      {{text_column_name, text_column}, {docIdColumn(), doc_id_column}});
+  upvotes =
+      _featurizer->inferInputTransform()->apply(std::move(upvotes), *_state);
+  upvotes = _featurizer->labelTransform()->apply(std::move(upvotes), *_state);
 
-  auto balancing_table = rlhfBalancers(
+  auto balancers = rlhfBalancerTable(
       /* sampler= */ *_state->rlhfSampler(),
-      /* text_dataset= */ _featurizer->textDatasetConfig(),
+      /* text_column_name= */ _featurizer->textDatasetConfig().textColumn(),
+      /* id_column_name= */ docIdColumn(),
+      /* input_transform= */ *_featurizer->inferInputTransform(),
+      /* state= */ *_state,
       /* num_samples= */ rlhf_samples.size() * n_balancing_samples);
 
-  thirdai::data::TransformedTable balancers(
-      /* table= */ std::move(balancing_table),
-      /* transform_config= */ _featurizer->trainTransform(),
-      /* state= */ *_state);
-
-  _mach->upvote(std::move(upvotes), std::move(balancers), learning_rate,
+  _mach->upvote(std::move(upvotes), std::move(balancers), inputColumns(),
+                docIdColumn(), learning_rate,
                 /* repeats= */ n_upvote_samples, /* epochs= */ epochs,
                 /* batch_size= */ defaults::ASSOCIATE_BATCH_SIZE);
 }
@@ -545,48 +495,35 @@ auto columnMapsFromAssociateSamples(
     from_data[i] = rlhf_samples[i].first;
     to_data[i] = rlhf_samples[i].second;
   }
-  auto from_column =
-      thirdai::data::ValueColumn<std::string>::make(std::move(from_data));
-  auto to_column =
-      thirdai::data::ValueColumn<std::string>::make(std::move(to_data));
+  auto from_column = feat::ValueColumn<std::string>::make(std::move(from_data));
+  auto to_column = feat::ValueColumn<std::string>::make(std::move(to_data));
   const auto& text_column_name = text_dataset.textColumn();
 
   return std::make_pair(
-      thirdai::data::ColumnMap({{text_column_name, std::move(from_column)}}),
-      thirdai::data::ColumnMap({{text_column_name, std::move(to_column)}}));
+      feat::ColumnMap({{text_column_name, std::move(from_column)}}),
+      feat::ColumnMap({{text_column_name, std::move(to_column)}}));
 }
 
 py::object UDTMachClassifier::associateTrain(
-    thirdai::data::ColumnMap balancing_table,
+    feat::ColumnMap featurized_balancing_table,
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
   warnOnNonHashBasedMetrics(metrics);
 
-  auto [from_samples, to_samples] = columnMapsFromAssociateSamples(
+  auto [from_table, to_table] = columnMapsFromAssociateSamples(
       rlhf_samples, _featurizer->textDatasetConfig());
 
-  thirdai::data::TransformedTable from_table(
-      /* table= */ std::move(from_samples),
-      /* transform_config= */ _featurizer->inferTransform(),
-      /* state= */ *_state);
-
-  thirdai::data::TransformedTable to_table(
-      /* table= */ std::move(to_samples),
-      /* transform_config= */ _featurizer->inferTransform(),
-      /* state= */ *_state);
-
-  thirdai::data::TransformedTable balancers(
-      /* table= */ std::move(balancing_table),
-      /* transform_config= */ _featurizer->trainTransform(),
-      /* state= */ *_state);
+  from_table =
+      _featurizer->inferInputTransform()->apply(std::move(from_table), *_state);
+  to_table =
+      _featurizer->inferInputTransform()->apply(std::move(to_table), *_state);
 
   return py::cast(_mach->associate(
-      /* from_table= */ std::move(from_table),
-      /* to_table= */ to_table,
-      /* balancers= */ std::move(balancers),
-      /* learning_rate= */ learning_rate, /* repeats= */ n_association_samples,
+      std::move(from_table), to_table, std::move(featurized_balancing_table),
+      inputColumns(), docIdColumn(), learning_rate,
+      /* repeats= */ n_association_samples,
       /* num_buckets= */ n_buckets, /* epochs= */ epochs,
       /* batch_size= */ options.batchSize(),
       /* metrics= */ getMetrics(metrics, "train_"),
@@ -598,9 +535,12 @@ void UDTMachClassifier::associate(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  auto balancing_table = rlhfBalancers(
+  auto balancing_table = rlhfBalancerTable(
       /* sampler= */ *_state->rlhfSampler(),
-      /* text_dataset= */ _featurizer->textDatasetConfig(),
+      /* text_column_name= */ _featurizer->textDatasetConfig().textColumn(),
+      /* id_column_name= */ docIdColumn(),
+      /* input_transform= */ *_featurizer->inferInputTransform(),
+      /* state= */ *_state,
       /* num_samples= */ rlhf_samples.size() * n_balancing_samples);
 
   TrainOptions options;
@@ -616,9 +556,10 @@ py::object UDTMachClassifier::associateTrain(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
-  auto balancing_table =
-      thirdai::data::CsvIterator::all(balancing_data, _delimiter);
-  return associateTrain(balancing_table, rlhf_samples, n_buckets,
+  auto table = feat::CsvIterator::all(balancing_data, _delimiter);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
+  table = _featurizer->labelTransform()->apply(std::move(table), *_state);
+  return associateTrain(std::move(table), rlhf_samples, n_buckets,
                         n_association_samples, learning_rate, epochs, metrics,
                         options);
 }
@@ -631,13 +572,14 @@ py::object UDTMachClassifier::associateColdStart(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
-  auto balancing_table =
-      thirdai::data::CsvIterator::all(balancing_data, _delimiter);
-  balancing_table = _featurizer
-                        ->unsupAugmenter(strong_column_names, weak_column_names,
-                                         /* fast_approximation= */ false)
-                        ->apply(std::move(balancing_table), *_state);
-  return associateTrain(balancing_table, rlhf_samples, n_buckets,
+  auto table = feat::CsvIterator::all(balancing_data, _delimiter);
+  table = _featurizer
+              ->unsupAugmenter(strong_column_names, weak_column_names,
+                               /* fast_approximation= */ false)
+              ->apply(std::move(table), *_state);
+  table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
+  table = _featurizer->labelTransform()->apply(std::move(table), *_state);
+  return associateTrain(std::move(table), rlhf_samples, n_buckets,
                         n_association_samples, learning_rate, epochs, metrics,
                         options);
 }

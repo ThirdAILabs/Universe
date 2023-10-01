@@ -68,12 +68,12 @@ class UDTMachClassifier final : public UDTBackend {
 
   void updateTemporalTrackers(const MapInput& sample) final {
     auto table = thirdai::data::ColumnMap::fromMapInput(sample);
-    _featurizer->trainTransform().transform->apply(std::move(table), *_state);
+    _featurizer->trainInputTransform()->apply(std::move(table), *_state);
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
     auto table = thirdai::data::ColumnMap::fromMapInputBatch(samples);
-    _featurizer->trainTransform().transform->apply(std::move(table), *_state);
+    _featurizer->trainInputTransform()->apply(std::move(table), *_state);
   }
 
   void resetTemporalTrackers() final { _state->clearHistoryTrackers(); }
@@ -184,6 +184,12 @@ class UDTMachClassifier final : public UDTBackend {
   void setMachSamplingThreshold(float threshold) final;
 
  private:
+  const auto& inputColumns() const { return _featurizer->inputColumns(); }
+
+  const std::string& docIdColumn() const {
+    return _featurizer->labelColumns().front().indices();
+  }
+
   py::object associateTrain(
       thirdai::data::ColumnMap balancing_table,
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,

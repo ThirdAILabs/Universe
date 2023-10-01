@@ -20,7 +20,7 @@
 
 namespace thirdai::automl {
 
-using TransformConfig = thirdai::data::TransformConfig;
+namespace feat = thirdai::data;
 
 /**
  * We currently assume integer targets for simplicity.
@@ -45,11 +45,25 @@ class LiteFeat {
                                       label_value_fill, options);
   }
 
-  const TransformConfig& trainTransform() const { return _train_transform; }
+  const thirdai::data::TransformationPtr& trainInputTransform() const {
+    return _train_input_transform;
+  }
 
-  const TransformConfig& inferTransform() const { return _infer_transform; }
+  const thirdai::data::TransformationPtr& inferInputTransform() const {
+    return _infer_input_transform;
+  }
 
-  const TransformConfig& introTransform() const { return _intro_transform; }
+  const thirdai::data::TransformationPtr& labelTransform() const {
+    return _label_transform;
+  }
+
+  const thirdai::data::OutputColumnsList& inputColumns() const {
+    return _input_columns;
+  }
+
+  const thirdai::data::OutputColumnsList& labelColumns() const {
+    return _label_columns;
+  }
 
   thirdai::data::TransformationPtr unsupAugmenter(
       const std::vector<std::string>& strong_column_names,
@@ -73,9 +87,11 @@ class LiteFeat {
   bool hasTemporalTransform() const { return _has_temporal_transform; }
 
  protected:
-  TransformConfig _train_transform;
-  TransformConfig _infer_transform;
-  TransformConfig _intro_transform;
+  feat::TransformationPtr _train_input_transform;
+  feat::TransformationPtr _infer_input_transform;
+  feat::TransformationPtr _label_transform;
+  feat::OutputColumnsList _input_columns;
+  feat::OutputColumnsList _label_columns;
 
   std::optional<TextDatasetConfig> _text_dataset;
   bool _has_temporal_transform;
