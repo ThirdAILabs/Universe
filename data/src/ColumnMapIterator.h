@@ -81,26 +81,30 @@ class JsonIterator final : public ColumnMapIterator {
   std::vector<std::string> _column_names;
 };
 
-class TransformIterator final : public ColumnMapIterator {
+class Chain final : public ColumnMapIterator {
  public:
-  TransformIterator(ColumnMapIteratorPtr iter, TransformationPtr transform,
-                    StatePtr state)
-      : _iter(std::move(iter)),
-        _transform(std::move(transform)),
-        _state(std::move(state)) {}
+  Chain(ColumnMapIteratorPtr iter, StatePtr state)
+      : _iter(std::move(iter)), _state(std::move(state)) {}
 
-  static auto make(ColumnMapIteratorPtr iter, TransformationPtr transform,
-                   StatePtr state) {
-    return std::make_shared<TransformIterator>(
-        std::move(iter), std::move(transform), std::move(state));
+  static auto make(ColumnMapIteratorPtr iter, StatePtr state) {
+    return std::make_shared<Chain>(std::move(iter), std::move(state));
+  }
+
+  auto then(TransformationPtr transform) {
+    auto new_chain = make(_iter, _state);
+    new_chain->_transforms = _transforms;
+    new_chain->_transforms.push_back(std::move(transform));
+    return new_chain;
   }
 
   std::optional<ColumnMap> next() final {
-    auto next_column_map = _iter->next();
-    if (next_column_map) {
-      next_column_map = _transform->apply(std::move(*next_column_map), *_state);
+    auto next_columns = _iter->next();
+    if (next_columns) {
+      for (const auto& transform : _transforms) {
+        next_columns = transform->apply(std::move(*next_columns), *_state);
+      }
     }
-    return next_column_map;
+    return next_columns;
   }
 
   void restart() final { _iter->restart(); }
@@ -109,7 +113,7 @@ class TransformIterator final : public ColumnMapIterator {
 
  private:
   ColumnMapIteratorPtr _iter;
-  TransformationPtr _transform;
+  std::vector<TransformationPtr> _transforms;
   StatePtr _state;
 };
 
