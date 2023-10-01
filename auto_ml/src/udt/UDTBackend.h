@@ -84,6 +84,32 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual void updateTemporalTrackers(const MapInput& sample) {
+    if (auto feat = featurizer()) {
+      feat->updateTemporalTrackers(sample);
+    }
+  }
+
+  virtual void updateTemporalTrackersBatch(const MapInputBatch& samples) {
+    if (auto feat = featurizer()) {
+      feat->updateTemporalTrackersBatch(samples);
+    }
+  }
+
+  virtual void resetTemporalTrackers() {
+    if (auto feat = featurizer()) {
+      feat->resetTemporalTrackers();
+    }
+  }
+
+  virtual const TextDatasetConfig& textDatasetConfig() const {
+    if (auto feat = featurizer()) {
+      return feat->textDatasetConfig();
+    }
+    throw std::invalid_argument(
+        "This method is only supported on Text Models.");
+  }
+
   virtual py::object outputCorrectness(const MapInputBatch& sample,
                                        const std::vector<uint32_t>& labels,
                                        bool sparse_inference,

@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -12,14 +13,25 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/featurization/LiteFeat.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Mach.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/State.h>
+#include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -41,8 +53,10 @@
 #include <random>
 #include <regex>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace thirdai::automl::udt {
@@ -52,6 +66,16 @@ using bolt::metrics::MachPrecision;
 using bolt::metrics::MachRecall;
 using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
+
+config::ArgumentMap setNeuraldbDefaultArgs(config::ArgumentMap&& user_args) {
+  user_args.insert<uint32_t>("embedding_dimension", 2048);
+  user_args.insert<uint32_t>("extreme_output_dim", 50000);
+  user_args.insert<uint32_t>("extreme_num_hashes", 8);
+  user_args.insert<bool>("use_bias", false);
+  user_args.insert<bool>("use_tanh", true);
+  user_args.insert<bool>("rlhf", true);
+  return user_args;
+}
 
 UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
@@ -63,38 +87,10 @@ UDTMachClassifier::UDTMachClassifier(
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
-    : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
+    : _delimiter(tabular_options.delimiter),
+      _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
       _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
   (void)target_config;
-
-  uint32_t input_dim = tabular_options.feature_hash_range;
-
-  if (user_args.get<bool>("neural_db", "boolean", /* default_val= */ false)) {
-    input_dim = 50000;
-    user_args.insert<uint32_t>("embedding_dimension", 2048);
-    user_args.insert<uint32_t>("extreme_output_dim", 50000);
-    user_args.insert<uint32_t>("extreme_num_hashes", 8);
-    user_args.insert<bool>("use_bias", false);
-    user_args.insert<bool>("use_tanh", true);
-    user_args.insert<bool>("rlhf", true);
-  }
-
-  uint32_t num_buckets = user_args.get<uint32_t>(
-      "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
-  uint32_t num_hashes = user_args.get<uint32_t>(
-      "extreme_num_hashes", "integer",
-      autotuneMachNumHashes(n_target_classes, num_buckets));
-
-  _classifier = utils::Classifier::make(
-      utils::buildModel(
-          /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
-          /* args= */ user_args, /* model_config= */ model_config,
-          /* use_sigmoid_bce = */ true, /* mach= */ true),
-      user_args.get<bool>("freeze_hash_tables", "boolean",
-                          defaults::FREEZE_HASH_TABLES));
-
-  // TODO(david) should we freeze hash tables for mach? how does this work
-  // with coldstart?
 
   if (!integer_target) {
     throw std::invalid_argument(
@@ -102,24 +98,26 @@ UDTMachClassifier::UDTMachClassifier(
         "classification options.");
   }
 
-  dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
-      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-      /* num_elements = */ n_target_classes);
+  uint32_t input_dim = tabular_options.feature_hash_range;
 
-  auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
-      input_data_types, temporal_tracking_relationships,
-      tabular_options.lookahead);
+  if (user_args.get<bool>("neural_db", "boolean", /* default_val= */ false)) {
+    input_dim = 50000;
+    user_args = setNeuraldbDefaultArgs(std::move(user_args));
+  }
 
-  _featurizer = std::make_shared<MachFeaturizer>(
-      input_data_types, temporal_relationships, target_name, mach_index,
-      tabular_options);
-
-  _mach_sampling_threshold = user_args.get<float>(
+  uint32_t num_buckets = user_args.get<uint32_t>(
+      "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
+  uint32_t num_hashes = user_args.get<uint32_t>(
+      "extreme_num_hashes", "integer",
+      autotuneMachNumHashes(n_target_classes, num_buckets));
+  bool freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
+                                                defaults::FREEZE_HASH_TABLES);
+  // TODO(david) should we freeze hash tables for mach? how does this work
+  // with coldstart?
+  float mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
-  // TODO(David): Should we call this in constructor as well?
-  updateSamplingStrategy();
-
+  std::optional<RLHFSampler> rlhf_sampler;
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
         "rlhf_balancing_docs", "int", defaults::MAX_BALANCING_DOCS);
@@ -127,9 +125,28 @@ UDTMachClassifier::UDTMachClassifier(
         user_args.get<uint32_t>("rlhf_balancing_samples_per_doc", "int",
                                 defaults::MAX_BALANCING_SAMPLES_PER_DOC);
 
-    _rlhf_sampler = std::make_optional<RLHFSampler>(
-        num_balancing_docs, num_balancing_samples_per_doc);
+    enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  _mach = utils::Mach::make(
+      /* input_dim= */ input_dim,
+      /* num_buckets= */ num_buckets,
+      /* num_hashes= */ num_hashes,
+      /* mach_sampling_threshold= */ mach_sampling_threshold,
+      /* freeze_hash_tables= */ freeze_hash_tables,
+      /* args= */ user_args,
+      /* model_config= */ model_config);
+
+  _mach->randomlyAssignBuckets(n_target_classes);
+
+  _state = thirdai::data::State::make();
+
+  _featurizer = LiteFeat::make(
+      /* data_types= */ input_data_types,
+      /* user_temporal_relationships= */ temporal_tracking_relationships,
+      /* label_column= */ target_name,
+      /* label_value_fill= */ thirdai::data::ValueFillType::Ones,
+      /* options= */ tabular_options);
 }
 
 py::object UDTMachClassifier::train(
@@ -139,53 +156,50 @@ py::object UDTMachClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  addBalancingSamples(data);
+  thirdai::data::ColumnMapIteratorPtr data_iterator =
+      thirdai::data::CsvIterator::make(data, _delimiter);
 
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
-
-  thirdai::data::LoaderPtr val_data_loader;
-  if (val_data) {
-    val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+  if (_state->rlhfSampler()) {
+    data_iterator = thirdai::data::TransformIterator::make(
+        /* iter= */ std::move(data_iterator),
+        /* transform= */ _featurizer->storeBalancers(),
+        /* state= */ _state);
   }
 
-  return _classifier->train(train_data_loader, learning_rate, epochs,
-                            getMetrics(train_metrics, "train_"),
-                            val_data_loader, getMetrics(val_metrics, "val_"),
-                            callbacks, options, comm);
+  utils::TransformedIterator train_iter(
+      /* iter= */ std::move(data_iterator),
+      /* config= */ _featurizer->trainTransform(),
+      /* state= */ _state);
+
+  std::optional<thirdai::data::TransformedIterator> valid_iter;
+  if (val_data) {
+    valid_iter = thirdai::data::TransformedIterator(
+        /* iter= */ thirdai::data::CsvIterator::make(val_data, _delimiter),
+        /* config= */ _featurizer->trainTransform(),
+        /* state= */ _state);
+  }
+
+  return py::cast(_mach->train(
+      /* train_data= */ std::move(train_iter),
+      /* valid_data= */ std::move(valid_iter),
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* train_metrics= */ getMetrics(train_metrics, "train_"),
+      /* val_metrics= */ getMetrics(val_metrics, "val_"),
+      /* callbacks= */ callbacks, /* options= */ options,
+      /* comm= */ comm));
 }
 
 py::object UDTMachClassifier::trainBatch(
     const MapInputBatch& batch, float learning_rate,
     const std::vector<std::string>& metrics) {
-  auto& model = _classifier->model();
+  thirdai::data::TransformedTable table(
+      /* table= */ thirdai::data::ColumnMap::fromMapInputBatch(batch),
+      /* config= */ _featurizer->trainTransform(),
+      /* state= */ *_state);
 
-  auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
+  _mach->trainBatch(/* batch= */ std::move(table),
+                    /* learning_rate= */ learning_rate);
   (void)metrics;
-
-  return py::none();
-}
-
-py::object UDTMachClassifier::trainWithHashes(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] = _featurizer->featurizeHashesTrainingBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
   return py::none();
 }
 
@@ -194,12 +208,16 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        bool sparse_inference, bool verbose,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
+  thirdai::data::TransformedIterator eval_iter(
+      /* iter= */ thirdai::data::CsvIterator::make(data, _delimiter),
+      /* config= */ _featurizer->trainTransform(),
+      /* state= */ _state);
 
-  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                                /* shuffle= */ false, verbose);
-
-  return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
-                               sparse_inference, verbose);
+  return py::cast(_mach->evaluate(
+      /* eval_data= */ std::move(eval_iter),
+      /* metrics= */ getMetrics(metrics, "val_"),
+      /* sparse_inference= */ sparse_inference,
+      /* verbose= */ verbose));
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
@@ -212,46 +230,15 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
         "return_predicted_class flag.");
   }
 
-  return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
-}
+  thirdai::data::TransformedTable table(
+      /* table= */ thirdai::data::ColumnMap::fromMapInput(sample),
+      /* config= */ _featurizer->inferTransform(),
+      /* state= */ *_state);
 
-std::vector<std::vector<std::pair<uint32_t, double>>>
-UDTMachClassifier::predictImpl(const MapInputBatch& samples,
-                               bool sparse_inference,
-                               std::optional<uint32_t> top_k) {
-  auto outputs =
-      _classifier->model()
-          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
-          .at(0);
-
-  uint32_t num_classes = getIndex()->numEntities();
-
-  if (top_k && *top_k > num_classes) {
-    throw std::invalid_argument(
-        "Cannot return more results than the model is trained to "
-        "predict. "
-        "Model currently can predict one of " +
-        std::to_string(num_classes) + " classes.");
-  }
-
-  uint32_t k = top_k.value_or(_default_top_k_to_return);
-
-  uint32_t batch_size = outputs->batchSize();
-
-  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
-      batch_size);
-#pragma omp parallel for default(none) \
-    shared(outputs, predicted_entities, k, batch_size) if (batch_size > 1)
-  for (uint32_t i = 0; i < batch_size; i++) {
-    const BoltVector& vector = outputs->getVector(i);
-    auto predictions = getIndex()->decode(
-        /* output = */ vector,
-        /* top_k = */ k,
-        /* num_buckets_to_eval = */ _num_buckets_to_eval);
-    predicted_entities[i] = predictions;
-  }
-
-  return predicted_entities;
+  return py::cast(_mach->predict(
+      /* batch= */ table, /* sparse_inference= */ sparse_inference,
+      /* top_k= */ top_k.value_or(_default_top_k_to_return),
+      /* num_scanned_buckets= */ _num_buckets_to_eval));
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
@@ -264,99 +251,32 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
         "return_predicted_class flag.");
   }
 
-  return py::cast(predictImpl(samples, sparse_inference, top_k));
-}
+  thirdai::data::TransformedTable table(
+      /* table= */ thirdai::data::ColumnMap::fromMapInputBatch(samples),
+      /* config= */ _featurizer->inferTransform(),
+      /* state= */ *_state);
 
-py::object UDTMachClassifier::predictHashes(
-    const MapInput& sample, bool sparse_inference, bool force_non_empty,
-    std::optional<uint32_t> num_hashes) {
-  return py::cast(
-      predictHashesImpl({sample}, sparse_inference, force_non_empty, num_hashes)
-          .at(0));
-}
-
-py::object UDTMachClassifier::predictHashesBatch(
-    const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
-    std::optional<uint32_t> num_hashes) {
-  return py::cast(predictHashesImpl(samples, sparse_inference, force_non_empty,
-                                    num_hashes));
-}
-
-std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
-    const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
-    std::optional<uint32_t> num_hashes) {
-  auto outputs =
-      _classifier->model()
-          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
-          .at(0);
-
-  uint32_t k = num_hashes.value_or(getIndex()->numHashes());
-
-  std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
-#pragma omp parallel for default(none) \
-    shared(outputs, all_hashes, k, force_non_empty)
-  for (uint32_t i = 0; i < outputs->batchSize(); i++) {
-    const BoltVector& output = outputs->getVector(i);
-
-    TopKActivationsQueue heap;
-    if (force_non_empty) {
-      heap = getIndex()->topKNonEmptyBuckets(output, k);
-    } else {
-      heap = output.findKLargestActivations(k);
-    }
-
-    std::vector<uint32_t> hashes;
-    while (!heap.empty()) {
-      auto [_, active_neuron] = heap.top();
-      hashes.push_back(active_neuron);
-      heap.pop();
-    }
-
-    std::reverse(hashes.begin(), hashes.end());
-
-    all_hashes[i] = hashes;
-  }
-
-  return all_hashes;
+  return py::cast(_mach->predict(
+      /* batch= */ table, /* sparse_inference= */ sparse_inference,
+      /* top_k= */ top_k.value_or(_default_top_k_to_return),
+      /* num_scanned_buckets= */ _num_buckets_to_eval));
 }
 
 py::object UDTMachClassifier::outputCorrectness(
     const MapInputBatch& samples, const std::vector<uint32_t>& labels,
     bool sparse_inference, std::optional<uint32_t> num_hashes) {
-  std::vector<std::vector<uint32_t>> top_buckets = predictHashesImpl(
-      samples, sparse_inference, /* force_non_empty = */ true, num_hashes);
+  auto table = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
-  std::vector<uint32_t> matching_buckets(labels.size());
-  std::exception_ptr hashes_err;
+  thirdai::data::TransformedTable input(
+      /* table= */ table, /* transform_config= */ _featurizer->inferTransform(),
+      /* state= */ *_state);
 
-#pragma omp parallel for default(none) \
-    shared(labels, top_buckets, matching_buckets, hashes_err)
-  for (uint32_t i = 0; i < labels.size(); i++) {
-    try {
-      std::vector<uint32_t> hashes = getIndex()->getHashes(labels[i]);
-      uint32_t count = 0;
-      for (auto hash : hashes) {
-        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
-            0) {
-          count++;
-        }
-      }
-      matching_buckets[i] = count;
-    } catch (const std::exception& e) {
-#pragma omp critical
-      hashes_err = std::current_exception();
-    }
-  }
-
-  if (hashes_err) {
-    std::rethrow_exception(hashes_err);
-  }
-
-  return py::cast(matching_buckets);
+  return py::cast(
+      _mach->outputCorrectness(input, labels, num_hashes, sparse_inference));
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
-  bolt::ModelPtr& curr_model = _classifier->model();
+  bolt::ModelPtr& curr_model = _mach->model();
 
   utils::verifyCanSetModel(curr_model, model);
 
@@ -372,28 +292,50 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  addBalancingSamples(data, strong_column_names, weak_column_names);
+  auto coldstart_augmentation = _featurizer->unsupAugmenter(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* fast_approximation= */ false);
 
-  auto train_data_loader = _featurizer->getColdStartDataLoader(
-      data, strong_column_names, weak_column_names,
-      /* fast_approximation= */ false, options.batchSize(),
-      /* shuffle= */ true, options.verbose, options.shuffle_config);
+  auto augmented_train_iter = thirdai::data::TransformIterator::make(
+      /* iter= */ thirdai::data::CsvIterator::make(data, _delimiter),
+      /* transform= */
+      _state->rlhfSampler()
+          ? thirdai::data::TransformationList::make(
+                {coldstart_augmentation, _featurizer->storeBalancers()})
+          : coldstart_augmentation,
+      /* state= */ _state);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  thirdai::data::TransformedIterator train_iter(
+      /* iter= */ std::move(augmented_train_iter),
+      /* config= */ _featurizer->trainTransform(),
+      /* state= */ _state);
+
+  std::optional<thirdai::data::TransformedIterator> valid_iter;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    valid_iter = thirdai::data::TransformedIterator(
+        /* iter= */ thirdai::data::CsvIterator::make(val_data, _delimiter),
+        /* config= */ _featurizer->trainTransform(),
+        /* state= */ _state);
   }
 
-  return _classifier->train(train_data_loader, learning_rate, epochs,
-                            getMetrics(train_metrics, "train_"),
-                            val_data_loader, getMetrics(val_metrics, "val_"),
-                            callbacks, options, comm);
+  return py::cast(_mach->train(
+      /* train_data= */ std::move(train_iter),
+      /* valid_data= */ std::move(valid_iter),
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* train_metrics= */ getMetrics(train_metrics, "train_"),
+      /* val_metrics= */ getMetrics(val_metrics, "val_"),
+      /* callbacks= */ callbacks, /* options= */ options,
+      /* comm= */ comm));
 }
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
-  return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
+  auto batch = thirdai::data::ColumnMap::fromMapInputBatch(sample);
+  thirdai::data::TransformedTable table(
+      /* table= */ std::move(batch),
+      /* config= */ _featurizer->inferTransform(),
+      /* state= */ *_state);
+  return bolt::python::tensorToNumpy(_mach->embedding(table));
 }
 
 uint32_t expectInteger(const Label& label) {
@@ -404,81 +346,10 @@ uint32_t expectInteger(const Label& label) {
 }
 
 py::object UDTMachClassifier::entityEmbedding(const Label& label) {
-  std::vector<uint32_t> hashed_neurons =
-      getIndex()->getHashes(expectInteger(label));
-
-  auto outputs = _classifier->model()->outputs();
-
-  if (outputs.size() != 1) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
-  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
-  if (!fc) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
-
-  auto fc_layer = fc->kernel();
-
-  std::vector<float> averaged_embedding(fc_layer->getInputDim());
-  for (uint32_t neuron_id : hashed_neurons) {
-    auto weights = fc_layer->getWeightsByNeuron(neuron_id);
-    if (weights.size() != averaged_embedding.size()) {
-      throw std::invalid_argument("Output dim mismatch.");
-    }
-    for (uint32_t i = 0; i < weights.size(); i++) {
-      averaged_embedding[i] += weights[i];
-    }
-  }
-
-  // TODO(david) try averaging and summing
-  for (float& weight : averaged_embedding) {
-    weight /= averaged_embedding.size();
-  }
-
-  NumpyArray<float> np_weights(averaged_embedding.size());
-
-  std::copy(averaged_embedding.begin(), averaged_embedding.end(),
-            np_weights.mutable_data());
-
+  auto embedding = _mach->entityEmbedding(expectInteger(label));
+  NumpyArray<float> np_weights(embedding.size());
+  std::copy(embedding.begin(), embedding.end(), np_weights.mutable_data());
   return std::move(np_weights);
-}
-
-void UDTMachClassifier::updateSamplingStrategy() {
-  auto mach_index = getIndex();
-
-  auto output_layer = bolt::FullyConnected::cast(
-      _classifier->model()->opExecutionOrder().back());
-
-  const auto& neuron_index = output_layer->kernel()->neuronIndex();
-
-  float index_sparsity = mach_index->sparsity();
-  if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
-    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
-    output_layer->setSparsity(index_sparsity, false, false);
-    auto new_index = bolt::MachNeuronIndex::make(mach_index);
-    output_layer->kernel()->setNeuronIndex(new_index);
-
-  } else {
-    if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index)) {
-      float sparsity = utils::autotuneSparsity(mach_index->numBuckets());
-
-      auto sampling_config = bolt::DWTASamplingConfig::autotune(
-          mach_index->numBuckets(), sparsity,
-          /* experimental_autotune= */ false);
-
-      output_layer->setSparsity(sparsity, false, false);
-
-      if (sampling_config) {
-        auto new_index = sampling_config->getNeuronIndex(
-            output_layer->dim(), output_layer->inputDim());
-        output_layer->kernel()->setNeuronIndex(new_index);
-      }
-    }
-  }
 }
 
 void UDTMachClassifier::introduceDocuments(
@@ -490,240 +361,93 @@ void UDTMachClassifier::introduceDocuments(
   (void)verbose;
   // TODO(Nicholas): add progress bar here.
 
-  const auto& mach_index = getIndex();
+  auto columns = thirdai::data::CsvIterator::all(data, _delimiter);
+  columns = _featurizer
+                ->unsupAugmenter(strong_column_names, weak_column_names,
+                                 fast_approximation)
+                ->apply(std::move(columns), *_state);
+  columns = _featurizer->storeBalancers()->apply(std::move(columns), *_state);
 
-  auto data_and_doc_ids = _featurizer->featurizeForIntroduceDocuments(
-      data, strong_column_names, weak_column_names, fast_approximation,
-      defaults::BATCH_SIZE);
+  thirdai::data::TransformedTable table(
+      /* table= */ std::move(columns),
+      /* config= */ _featurizer->introTransform(),
+      /* state= */ *_state);
 
-  uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(mach_index->numHashes());
+  _mach->introduceEntities(
+      /* table= */ table,
+      /* num_buckets_to_sample_opt= */ num_buckets_to_sample_opt,
+      /* num_random_hashes= */ num_random_hashes);
+}
 
-  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
-
-  bolt::python::CtrlCCheck ctrl_c_check;
-
-  for (const auto& [input, doc_ids] : data_and_doc_ids) {
-    // Note: using sparse inference here could cause issues because the
-    // mach index sampler will only return nonempty buckets, which could
-    // cause new docs to only be mapped to buckets already containing
-    // entities.
-    auto scores = _classifier->model()->forward(input).at(0);
-
-    for (uint32_t i = 0; i < scores->batchSize(); i++) {
-      uint32_t label = doc_ids[i];
-      top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
-    }
-
-    ctrl_c_check();
-  }
-
-  for (auto& [doc, top_ks] : top_k_per_doc) {
-    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes);
-    mach_index->insert(doc, hashes);
-
-    ctrl_c_check();
-  }
-
-  addBalancingSamples(data, strong_column_names, weak_column_names);
-
-  updateSamplingStrategy();
+thirdai::data::ColumnMap addLabelColumn(thirdai::data::ColumnMap&& data,
+                                        const std::string& label_column,
+                                        const std::string& label) {
+  std::vector<std::string> labels(data.numRows());
+  std::fill(labels.begin(), labels.end(), label);
+  data.setColumn(
+      /* name= */ label_column,
+      /* column= */ thirdai::data::ValueColumn<std::string>::make(
+          std::move(labels)));
+  return data;
 }
 
 void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
-  auto samples = _featurizer->featurizeInputColdStart(
-      document, strong_column_names, weak_column_names);
+    std::optional<uint32_t> num_buckets_to_sample_opt,
+    uint32_t num_random_hashes) {
+  auto data = thirdai::data::ColumnMap::fromMapInput(document);
 
-  introduceLabelHelper(samples, new_label, num_buckets_to_sample,
-                       num_random_hashes);
-}
+  data = addLabelColumn(
+      /* data= */ std::move(data),
+      /* label_column= */ _featurizer->textDatasetConfig().labelColumn(),
+      /* label= */ std::to_string(expectInteger(new_label)));
 
-struct BucketScore {
-  uint32_t frequency = 0;
-  float score = 0.0;
-};
+  data = _featurizer
+             ->unsupAugmenter(strong_column_names, weak_column_names,
+                              /* fast_approximation= */ false)
+             ->apply(std::move(data), *_state);
 
-struct CompareBuckets {
-  bool operator()(const std::pair<uint32_t, BucketScore>& lhs,
-                  const std::pair<uint32_t, BucketScore>& rhs) {
-    if (lhs.second.frequency == rhs.second.frequency) {
-      return lhs.second.score > rhs.second.score;
-    }
-    return lhs.second.frequency > rhs.second.frequency;
-  }
-};
+  thirdai::data::TransformedTable table(
+      /* table= */ data,
+      /* config= */ _featurizer->introTransform(),
+      /* state= */ *_state);
 
-std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
-    std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) const {
-  const auto& mach_index = getIndex();
-
-  uint32_t num_hashes = mach_index->numHashes();
-
-  if (num_buckets_to_sample < mach_index->numHashes()) {
-    throw std::invalid_argument(
-        "Sampling from fewer buckets than num_hashes is not supported. If "
-        "you'd like to introduce using fewer hashes, please reset the number "
-        "of hashes for the index.");
-  }
-
-  if (num_buckets_to_sample > mach_index->numBuckets()) {
-    throw std::invalid_argument(
-        "Cannot sample more buckets than there are in the index.");
-  }
-
-  std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
-  for (auto& top_k : top_k_per_sample) {
-    while (!top_k.empty()) {
-      auto [activation, active_neuron] = top_k.top();
-      if (!hash_freq_and_scores.count(active_neuron)) {
-        hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
-      } else {
-        hash_freq_and_scores[active_neuron].frequency += 1;
-        hash_freq_and_scores[active_neuron].score += activation;
-      }
-      top_k.pop();
-    }
-  }
-
-  // We sort the hashes first by number of occurances and tiebreak with
-  // the higher aggregated score if necessary. We don't only use the
-  // activations since those typically aren't as useful as the
-  // frequencies.
-  std::vector<std::pair<uint32_t, BucketScore>> sorted_hashes(
-      hash_freq_and_scores.begin(), hash_freq_and_scores.end());
-
-  CompareBuckets cmp;
-  std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
-
-  if (num_buckets_to_sample > num_hashes) {
-    // If we are sampling more buckets then we end up using we rerank the
-    // buckets based on size to load balance the index.
-    std::sort(sorted_hashes.begin(),
-              sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
-                size_t lhs_size = mach_index->bucketSize(lhs.first);
-                size_t rhs_size = mach_index->bucketSize(rhs.first);
-
-                // Give preference to emptier buckets. If buckets are
-                // equally empty, use one with the best score.
-                if (lhs_size == rhs_size) {
-                  return cmp(lhs, rhs);
-                }
-
-                return lhs_size < rhs_size;
-              });
-  }
-
-  std::vector<uint32_t> new_hashes;
-
-  // We can optionally specify the number of hashes we'd like to be
-  // random for a new document. This is to encourage an even distribution
-  // among buckets.
-  if (num_random_hashes > num_hashes) {
-    throw std::invalid_argument(
-        "num_random_hashes cannot be greater than num hashes.");
-  }
-
-  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
-  for (uint32_t i = 0; i < num_informed_hashes; i++) {
-    auto [hash, freq_score_pair] = sorted_hashes[i];
-    new_hashes.push_back(hash);
-  }
-
-  uint32_t num_buckets = mach_index->numBuckets();
-  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
-  std::mt19937 rand(global_random::nextSeed());
-
-  for (uint32_t i = 0; i < num_random_hashes; i++) {
-    new_hashes.push_back(int_dist(rand));
-  }
-
-  return new_hashes;
+  _mach->introduceEntities(
+      /* table= */ table,
+      /* num_buckets_to_sample_opt= */ num_buckets_to_sample_opt,
+      /* num_random_hashes= */ num_random_hashes);
 }
 
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes) {
-  introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
-                       num_buckets_to_sample_opt, num_random_hashes);
-}
+  auto data = thirdai::data::ColumnMap::fromMapInputBatch(samples);
 
-void UDTMachClassifier::introduceLabelHelper(
-    const bolt::TensorList& samples, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes) {
-  // Note: using sparse inference here could cause issues because the
-  // mach index sampler will only return nonempty buckets, which could
-  // cause new docs to only be mapped to buckets already containing
-  // entities.
-  auto output =
-      _classifier->model()->forward(samples, /* use_sparsity = */ false).at(0);
+  data = addLabelColumn(
+      /* data= */ std::move(data),
+      /* label_column= */ _featurizer->textDatasetConfig().labelColumn(),
+      /* label= */ std::to_string(expectInteger(new_label)));
 
-  uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
+  thirdai::data::TransformedTable table(
+      /* table= */ data,
+      /* config= */ _featurizer->introTransform(),
+      /* state= */ *_state);
 
-  std::vector<TopKActivationsQueue> top_ks;
-  for (uint32_t i = 0; i < output->batchSize(); i++) {
-    top_ks.push_back(
-        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
-  }
-
-  auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                num_random_hashes);
-
-  getIndex()->insert(expectInteger(new_label), hashes);
-
-  updateSamplingStrategy();
+  _mach->introduceEntities(
+      /* table= */ table,
+      /* num_buckets_to_sample_opt= */ num_buckets_to_sample_opt,
+      /* num_random_hashes= */ num_random_hashes);
 }
 
 void UDTMachClassifier::forget(const Label& label) {
-  getIndex()->erase(expectInteger(label));
-
-  if (getIndex()->numEntities() == 0) {
-    std::cout << "Warning. Every learned class has been forgotten. The model "
-                 "will currently return nothing on calls to evaluate, "
-                 "predict, or predictBatch."
-              << std::endl;
-  }
-
-  updateSamplingStrategy();
-}
-
-void UDTMachClassifier::addBalancingSamples(
-    const dataset::DataSourcePtr& data,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
-  if (_rlhf_sampler) {
-    data->restart();
-
-    // TODO(Geordie / Nick) Right now, we only load MAX_BALANCING_SAMPLES
-    // samples to avoid the overhead of loading the entire dataset. It's
-    // possible this won't load enough samples to cover all classes.
-    // We may try to keep streaming data until all classes are covered or load
-    // the entire dataset and see if it makes a difference. For now we just
-    // sample from 5x more rows than we need samples, to hopefully get a wider
-    // range of samples.
-    auto samples = _featurizer->getBalancingSamples(
-        data, strong_column_names, weak_column_names,
-        defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
-
-    for (const auto& [doc_id, rlhf_sample] : samples) {
-      _rlhf_sampler->addSample(doc_id, rlhf_sample);
-    }
-    data->restart();
-  }
+  _mach->eraseEntity(expectInteger(label));
 }
 
 void UDTMachClassifier::requireRLHFSampler() {
-  if (!_rlhf_sampler) {
+  if (!_state->rlhfSampler()) {
     throw std::runtime_error(
         "This model was not configured to support rlhf. Please pass "
         "{'rlhf': "
@@ -741,90 +465,149 @@ BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
                                       std::vector<float>(indices.size(), 1.0));
 }
 
-void UDTMachClassifier::associate(
-    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  auto teaching_samples =
-      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
+auto rlhfBalancers(const RLHFSampler& sampler,
+                   const TextDatasetConfig& text_dataset,
+                   uint32_t num_samples) {
+  auto samples = sampler.balancingSamples(num_samples);
+  std::vector<std::string> text_data(samples.size());
+  std::vector<std::string> doc_id_data(samples.size());
+  for (uint32_t i = 0; i < samples.size(); i++) {
+    text_data[i] = std::move(samples[i].first);
+    doc_id_data[i] = std::move(samples[i].second);
+  }
+  auto text_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(text_data));
+  auto doc_id_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(doc_id_data));
+  return thirdai::data::ColumnMap(
+      {{text_dataset.textColumn(), std::move(text_column)},
+       {text_dataset.labelColumn(), std::move(doc_id_column)}});
+}
 
-  teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+auto columnMapFromUpvoteSamples(
+    const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples) {
+  std::vector<std::string> text_data(rlhf_samples.size());
+  std::vector<uint32_t> doc_id_data(rlhf_samples.size());
+
+  for (uint32_t i = 0; i < rlhf_samples.size(); i++) {
+    text_data[i] = rlhf_samples[i].first;
+    doc_id_data[i] = rlhf_samples[i].second;
+  }
 }
 
 void UDTMachClassifier::upvote(
     const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
     uint32_t n_upvote_samples, uint32_t n_balancing_samples,
     float learning_rate, uint32_t epochs) {
-  std::vector<RlhfSample> teaching_samples;
+  auto text_column_name = _featurizer->textDatasetConfig().textColumn();
+  auto doc_id_column_name =
+      _featurizer->trainTransform().label_columns->front().indices();
 
-  const auto& mach_index = getIndex();
-
-  teaching_samples.reserve(rlhf_samples.size() * n_upvote_samples);
-  for (const auto& [source, target] : rlhf_samples) {
-    RlhfSample sample = {source, mach_index->getHashes(target)};
-
-    for (size_t i = 0; i < n_upvote_samples; i++) {
-      teaching_samples.push_back(sample);
-    }
+  std::vector<std::string> text_data(rlhf_samples.size());
+  std::vector<std::string> doc_id_data(rlhf_samples.size());
+  for (uint32_t i = 0; i < rlhf_samples.size(); i++) {
+    text_data[i] = rlhf_samples[i].first;
+    doc_id_data[i] = std::to_string(rlhf_samples[i].second);
   }
+  auto text_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(text_data));
+  auto doc_id_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(doc_id_data));
 
-  teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+  thirdai::data::TransformedTable upvotes(
+      /* table= */ thirdai::data::ColumnMap(
+          {{text_column_name, text_column},
+           {doc_id_column_name, doc_id_column}}),
+      /* transform_config */ _featurizer->trainTransform(),
+      /* state= */ *_state);
+
+  auto balancing_table = rlhfBalancers(
+      /* sampler= */ *_state->rlhfSampler(),
+      /* text_dataset= */ _featurizer->textDatasetConfig(),
+      /* num_samples= */ rlhf_samples.size() * n_balancing_samples);
+
+  thirdai::data::TransformedTable balancers(
+      /* table= */ std::move(balancing_table),
+      /* transform_config= */ _featurizer->trainTransform(),
+      /* state= */ *_state);
+
+  _mach->upvote(std::move(upvotes), std::move(balancers), learning_rate,
+                /* repeats= */ n_upvote_samples, /* epochs= */ epochs,
+                /* batch_size= */ defaults::ASSOCIATE_BATCH_SIZE);
 }
 
-void UDTMachClassifier::teach(const std::vector<RlhfSample>& rlhf_samples,
-                              uint32_t n_balancing_samples, float learning_rate,
-                              uint32_t epochs) {
-  requireRLHFSampler();
-
-  auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples);
-
-  samples.insert(samples.end(), rlhf_samples.begin(), rlhf_samples.end());
-
-  auto columns = _featurizer->featurizeRlhfSamples(samples);
-  columns.shuffle();
-  auto [data, labels] =
-      _featurizer->columnsToTensors(columns, defaults::ASSOCIATE_BATCH_SIZE);
-
-  for (uint32_t e = 0; e < epochs; e++) {
-    for (size_t i = 0; i < data.size(); i++) {
-      _classifier->model()->trainOnBatch(data.at(i), labels.at(i));
-      _classifier->model()->updateParameters(learning_rate);
-    }
-  }
-}
-
-std::vector<RlhfSample> UDTMachClassifier::getAssociateSamples(
+auto columnMapsFromAssociateSamples(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    size_t n_buckets, size_t n_association_samples) {
-  std::string text_column = _featurizer->textDatasetConfig().textColumn();
-  MapInputBatch batch;
-  for (const auto& [_, target] : rlhf_samples) {
-    batch.push_back({{text_column, target}});
+    const TextDatasetConfig& text_dataset) {
+  std::vector<std::string> from_data(rlhf_samples.size());
+  std::vector<std::string> to_data(rlhf_samples.size());
+  for (uint32_t i = 0; i < rlhf_samples.size(); i++) {
+    from_data[i] = rlhf_samples[i].first;
+    to_data[i] = rlhf_samples[i].second;
   }
+  auto from_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(from_data));
+  auto to_column =
+      thirdai::data::ValueColumn<std::string>::make(std::move(to_data));
+  const auto& text_column_name = text_dataset.textColumn();
 
-  auto all_predicted_hashes = predictHashesImpl(
-      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+  return std::make_pair(
+      thirdai::data::ColumnMap({{text_column_name, std::move(from_column)}}),
+      thirdai::data::ColumnMap({{text_column_name, std::move(to_column)}}));
+}
 
-  std::mt19937 rng(global_random::nextSeed());
+py::object UDTMachClassifier::associateTrain(
+    thirdai::data::ColumnMap balancing_table,
+    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  warnOnNonHashBasedMetrics(metrics);
 
-  std::vector<RlhfSample> associate_samples;
-  associate_samples.reserve(rlhf_samples.size() * n_association_samples);
+  auto [from_samples, to_samples] = columnMapsFromAssociateSamples(
+      rlhf_samples, _featurizer->textDatasetConfig());
 
-  for (size_t i = 0; i < rlhf_samples.size(); i++) {
-    for (size_t j = 0; j < n_association_samples; j++) {
-      const auto& all_buckets = rlhf_samples[i].second;
-      std::vector<uint32_t> sampled_buckets;
-      std::sample(all_buckets.begin(), all_buckets.end(),
-                  std::back_inserter(sampled_buckets), n_buckets, rng);
+  thirdai::data::TransformedTable from_table(
+      /* table= */ std::move(from_samples),
+      /* transform_config= */ _featurizer->inferTransform(),
+      /* state= */ *_state);
 
-      associate_samples.emplace_back(rlhf_samples[i].first,
-                                     all_predicted_hashes[i]);
-    }
-  }
+  thirdai::data::TransformedTable to_table(
+      /* table= */ std::move(to_samples),
+      /* transform_config= */ _featurizer->inferTransform(),
+      /* state= */ *_state);
 
-  return associate_samples;
+  thirdai::data::TransformedTable balancers(
+      /* table= */ std::move(balancing_table),
+      /* transform_config= */ _featurizer->trainTransform(),
+      /* state= */ *_state);
+
+  return py::cast(_mach->associate(
+      /* from_table= */ std::move(from_table),
+      /* to_table= */ to_table,
+      /* balancers= */ std::move(balancers),
+      /* learning_rate= */ learning_rate, /* repeats= */ n_association_samples,
+      /* num_buckets= */ n_buckets, /* epochs= */ epochs,
+      /* batch_size= */ options.batchSize(),
+      /* metrics= */ getMetrics(metrics, "train_"),
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval));
+}
+
+void UDTMachClassifier::associate(
+    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+    uint32_t n_buckets, uint32_t n_association_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+  auto balancing_table = rlhfBalancers(
+      /* sampler= */ *_state->rlhfSampler(),
+      /* text_dataset= */ _featurizer->textDatasetConfig(),
+      /* num_samples= */ rlhf_samples.size() * n_balancing_samples);
+
+  TrainOptions options;
+  options.batch_size = defaults::ASSOCIATE_BATCH_SIZE;
+  associateTrain(balancing_table, rlhf_samples, n_buckets,
+                 n_association_samples, learning_rate, epochs,
+                 /* metrics= */ {}, /* options= */ options);
 }
 
 py::object UDTMachClassifier::associateTrain(
@@ -833,9 +616,11 @@ py::object UDTMachClassifier::associateTrain(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
-  return associateColdStart(balancing_data, {}, {}, rlhf_samples, n_buckets,
-                            n_association_samples, learning_rate, epochs,
-                            metrics, options);
+  auto balancing_table =
+      thirdai::data::CsvIterator::all(balancing_data, _delimiter);
+  return associateTrain(balancing_table, rlhf_samples, n_buckets,
+                        n_association_samples, learning_rate, epochs, metrics,
+                        options);
 }
 
 py::object UDTMachClassifier::associateColdStart(
@@ -846,40 +631,15 @@ py::object UDTMachClassifier::associateColdStart(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
-  warnOnNonHashBasedMetrics(metrics);
-
-  // TODO(nicholas): make sure max_in_memory_batches is none
-
-  auto featurized_data = _featurizer->featurizeDataset(
-      balancing_data, strong_column_names, weak_column_names);
-
-  auto associate_samples =
-      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
-
-  auto featurized_rlhf_data =
-      _featurizer->featurizeRlhfSamples(associate_samples);
-
-  auto columns = featurized_data.concat(featurized_rlhf_data);
-  columns.shuffle();
-
-  auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
-
-  bolt::Trainer trainer(_classifier->model());
-
-  auto output_metrics =
-      trainer.train(/* train_data= */ dataset,
-                    /* learning_rate= */ learning_rate, /* epochs= */ epochs,
-                    /* train_metrics= */ getMetrics(metrics, "train_"),
-                    /* validation_data= */ {},
-                    /* validation_metrics= */ {},
-                    /* steps_per_validation= */ {},
-                    /* use_sparsity_in_validation= */ false,
-                    /* callbacks= */ {},
-                    /* autotune_rehash_rebuild= */ true,
-                    /* verbose= */ options.verbose,
-                    /* logging_interval= */ options.logging_interval);
-
-  return py::cast(output_metrics);
+  auto balancing_table =
+      thirdai::data::CsvIterator::all(balancing_data, _delimiter);
+  balancing_table = _featurizer
+                        ->unsupAugmenter(strong_column_names, weak_column_names,
+                                         /* fast_approximation= */ false)
+                        ->apply(std::move(balancing_table), *_state);
+  return associateTrain(balancing_table, rlhf_samples, n_buckets,
+                        n_association_samples, learning_rate, epochs, metrics,
+                        options);
 }
 
 void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,
@@ -909,20 +669,16 @@ void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,
 }
 
 void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output ranges
-  _featurizer->state()->setMachIndex(index);
-
-  updateSamplingStrategy();
+  _mach->setIndex(index);
 }
 
 void UDTMachClassifier::setMachSamplingThreshold(float threshold) {
-  _mach_sampling_threshold = threshold;
-  updateSamplingStrategy();
+  _mach->setMachSamplingThreshold(threshold);
 }
 
 InputMetrics UDTMachClassifier::getMetrics(
     const std::vector<std::string>& metric_names, const std::string& prefix) {
-  const auto& model = _classifier->model();
+  const auto& model = _mach->model();
   if (model->outputs().size() != 1 || model->labels().size() != 2 ||
       model->losses().size() != 1) {
     throw std::invalid_argument(
@@ -997,9 +753,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
-          _default_top_k_to_return, _num_buckets_to_eval,
-          _mach_sampling_threshold, _rlhf_sampler);
+  archive(cereal::base_class<UDTBackend>(this), _mach, _delimiter, _featurizer,
+          _state, _default_top_k_to_return, _num_buckets_to_eval);
 }
 
 }  // namespace thirdai::automl::udt

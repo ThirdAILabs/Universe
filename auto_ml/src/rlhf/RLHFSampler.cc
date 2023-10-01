@@ -9,7 +9,8 @@
 
 namespace thirdai::automl::udt {
 
-std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
+std::vector<RlhfSample> RLHFSampler::balancingSamples(
+    size_t num_samples) const {
   if (num_samples == 0) {
     return {};
   }
@@ -31,10 +32,10 @@ std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
     }
   }
 
-  std::vector<uint32_t> docs_to_sample;
+  std::vector<std::string> docs_to_sample;
   std::sample(_doc_ids.begin(), _doc_ids.end(),
               std::back_inserter(docs_to_sample), num_samples, _rng);
-  for (uint32_t doc_id : docs_to_sample) {
+  for (const auto& doc_id : docs_to_sample) {
     std::sample(_samples_per_doc.at(doc_id).begin(),
                 _samples_per_doc.at(doc_id).end(), std::back_inserter(samples),
                 1, _rng);
@@ -43,7 +44,8 @@ std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
   return samples;
 }
 
-void RLHFSampler::addSample(uint32_t doc_id, const RlhfSample& sample) {
+void RLHFSampler::addSample(const std::string& doc_id,
+                            const RlhfSample& sample) {
   if (_samples_per_doc.size() >= _max_docs) {
     return;
   }

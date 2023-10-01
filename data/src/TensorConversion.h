@@ -3,7 +3,12 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/transformations/Transformation.h>
+#include <cstddef>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -43,11 +48,73 @@ class OutputColumns {
 
 using OutputColumnsList = std::vector<OutputColumns>;
 
+struct TransformConfig {
+  TransformConfig(
+      thirdai::data::TransformationPtr _transform,
+      thirdai::data::OutputColumnsList _input_columns,
+      std::optional<thirdai::data::OutputColumnsList> _label_columns)
+      : transform(std::move(_transform)),
+        input_columns(std::move(_input_columns)),
+        label_columns(std::move(_label_columns)) {}
+
+  TransformConfig() {}
+
+  thirdai::data::TransformationPtr transform;
+  thirdai::data::OutputColumnsList input_columns;
+  std::optional<thirdai::data::OutputColumnsList> label_columns;
+};
+
+struct TransformedTable {
+  TransformedTable(thirdai::data::ColumnMap _table,
+                   thirdai::data::OutputColumnsList _inputs,
+                   std::optional<thirdai::data::OutputColumnsList> _labels)
+      : table(std::move(_table)),
+        inputs(std::move(_inputs)),
+        labels(std::move(_labels)) {}
+
+  TransformedTable(thirdai::data::ColumnMap table,
+                   const TransformConfig& transform_config,
+                   thirdai::data::State& state);
+
+  void removeIntermediateColumns();
+
+  thirdai::data::ColumnMap table;
+  thirdai::data::OutputColumnsList inputs;
+  std::optional<thirdai::data::OutputColumnsList> labels;
+};
+
+struct TransformedIterator {
+  TransformedIterator(thirdai::data::ColumnMapIteratorPtr _iter,
+                      thirdai::data::OutputColumnsList _inputs,
+                      std::optional<thirdai::data::OutputColumnsList> _labels)
+      : iter(std::move(_iter)),
+        inputs(std::move(_inputs)),
+        labels(std::move(_labels)) {}
+
+  TransformedIterator(thirdai::data::ColumnMapIteratorPtr iter,
+                      const TransformConfig& transform_config,
+                      thirdai::data::StatePtr state);
+
+  thirdai::data::ColumnMapIteratorPtr iter;
+  thirdai::data::OutputColumnsList inputs;
+  std::optional<thirdai::data::OutputColumnsList> labels;
+};
+
+struct TransformedTensors {
+  explicit TransformedTensors(const TransformedTable& table);
+
+  bolt::TensorList inputs;
+  std::optional<bolt::TensorList> labels;
+};
+
 std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const OutputColumnsList& columns_to_convert,
     size_t batch_size);
 
 bolt::TensorList toTensors(const ColumnMap& columns,
                            const OutputColumnsList& columns_to_convert);
+
+bolt::LabeledDataset toLabeledDataset(const TransformedTable&,
+                                      size_t batch_size);
 
 }  // namespace thirdai::data

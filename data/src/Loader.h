@@ -5,6 +5,7 @@
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/TransformationList.h>
 #include <utils/Random.h>
 #include <limits>
 #include <optional>
@@ -37,6 +38,20 @@ class Loader {
         std::move(data_iterator), std::move(transformation), std::move(state),
         std::move(input_columns), std::move(label_columns), batch_size, shuffle,
         verbose, shuffle_buffer_size, shuffle_seed);
+  }
+
+  static auto make(ColumnMapIteratorPtr data_iterator,
+                   OutputColumnsList input_columns,
+                   OutputColumnsList label_columns, size_t batch_size,
+                   bool shuffle, bool verbose = true,
+                   size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
+                   uint32_t shuffle_seed = global_random::nextSeed()) {
+    return std::make_shared<Loader>(
+        std::move(data_iterator),
+        /* transformation= */ TransformationList::make({}),
+        /* state= */ nullptr, std::move(input_columns),
+        std::move(label_columns), batch_size, shuffle, verbose,
+        shuffle_buffer_size, shuffle_seed);
   }
 
   std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);

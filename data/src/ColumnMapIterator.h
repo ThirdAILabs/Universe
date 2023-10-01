@@ -1,7 +1,10 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
+#include <data/src/transformations/State.h>
+#include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
+#include <memory>
 
 namespace thirdai::data {
 
@@ -76,6 +79,38 @@ class JsonIterator final : public ColumnMapIterator {
   size_t _rows_per_load;
 
   std::vector<std::string> _column_names;
+};
+
+class TransformIterator final : public ColumnMapIterator {
+ public:
+  TransformIterator(ColumnMapIteratorPtr iter, TransformationPtr transform,
+                    StatePtr state)
+      : _iter(std::move(iter)),
+        _transform(std::move(transform)),
+        _state(std::move(state)) {}
+
+  static auto make(ColumnMapIteratorPtr iter, TransformationPtr transform,
+                   StatePtr state) {
+    return std::make_shared<TransformIterator>(
+        std::move(iter), std::move(transform), std::move(state));
+  }
+
+  std::optional<ColumnMap> next() final {
+    auto next_column_map = _iter->next();
+    if (next_column_map) {
+      next_column_map = _transform->apply(std::move(*next_column_map), *_state);
+    }
+    return next_column_map;
+  }
+
+  void restart() final { _iter->restart(); }
+
+  std::string resourceName() const final { return _iter->resourceName(); }
+
+ private:
+  ColumnMapIteratorPtr _iter;
+  TransformationPtr _transform;
+  StatePtr _state;
 };
 
 }  // namespace thirdai::data

@@ -11,20 +11,31 @@
 
 namespace thirdai::dataset::mach {
 
-MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
-                     uint32_t num_elements)
+MachIndex::MachIndex(
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
+    uint32_t num_buckets, uint32_t num_hashes)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
-  if (num_hashes == 0) {
+  for (auto [entity, hashes] : entity_to_hashes) {
+    insert(entity, hashes);
+  }
+}
+
+MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes)
+    : _buckets(num_buckets), _num_hashes(num_hashes) {
+  if (_num_hashes == 0) {
     throw std::invalid_argument("Cannot have num_hashes=0.");
   }
   if (num_hashes > num_buckets) {
     throw std::invalid_argument("Can't have more hashes than buckets");
   }
+}
+
+void MachIndex::randomlyAssignBuckets(uint32_t num_elements) {
   std::mt19937 mt(341);
-  std::uniform_int_distribution<uint32_t> dist(0, num_buckets - 1);
+  std::uniform_int_distribution<uint32_t> dist(0, _buckets.size() - 1);
   for (uint32_t element = 0; element < num_elements; element++) {
-    std::vector<uint32_t> hashes(num_hashes);
-    for (uint32_t i = 0; i < num_hashes; i++) {
+    std::vector<uint32_t> hashes(_num_hashes);
+    for (uint32_t i = 0; i < _num_hashes; i++) {
       auto hash = dist(mt);
       while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
         hash = dist(mt);
@@ -32,15 +43,6 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
       hashes[i] = hash;
     }
     insert(element, hashes);
-  }
-}
-
-MachIndex::MachIndex(
-    const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
-    uint32_t num_buckets, uint32_t num_hashes)
-    : _buckets(num_buckets), _num_hashes(num_hashes) {
-  for (auto [entity, hashes] : entity_to_hashes) {
-    insert(entity, hashes);
   }
 }
 

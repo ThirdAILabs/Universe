@@ -4,10 +4,12 @@
 #include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -64,6 +66,16 @@ class State {
 
   State() {}
 
+  static auto make(MachIndexPtr mach_index) {
+    return std::make_shared<State>(std::move(mach_index));
+  }
+
+  static auto make(automl::data::GraphInfoPtr graph) {
+    return std::make_shared<State>(std::move(graph));
+  }
+
+  static auto make() { return std::make_shared<State>(); }
+
   const auto& machIndex() const {
     if (!_mach_index) {
       throw std::invalid_argument(
@@ -73,7 +85,7 @@ class State {
   }
 
   void setMachIndex(MachIndexPtr new_index) {
-    if (_mach_index->numBuckets() != new_index->numBuckets()) {
+    if (_mach_index && _mach_index->numBuckets() != new_index->numBuckets()) {
       throw std::invalid_argument(
           "Output range mismatch in new index. Index output range should be " +
           std::to_string(_mach_index->numBuckets()) +
@@ -82,6 +94,18 @@ class State {
     }
 
     _mach_index = std::move(new_index);
+  }
+
+  const auto& rlhfSampler() const {
+    if (!_rlhf_sampler) {
+      throw std::invalid_argument(
+          "Transformation state does not contain RLHFSampler.");
+    }
+    return _rlhf_sampler;
+  }
+
+  void setRlhfSampler(automl::udt::RLHFSamplerPtr new_sampler) {
+    _rlhf_sampler = std::move(new_sampler);
   }
 
   bool containsVocab(const std::string& key) const {
@@ -115,6 +139,8 @@ class State {
 
  private:
   MachIndexPtr _mach_index = nullptr;
+
+  automl::udt::RLHFSamplerPtr _rlhf_sampler = nullptr;
 
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 

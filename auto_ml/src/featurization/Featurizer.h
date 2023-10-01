@@ -9,6 +9,7 @@
 #include <data/src/transformations/State.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl {
@@ -20,6 +21,22 @@ class TextDatasetConfig {
       : _text_column(std::move(text_column)),
         _label_column(std::move(label_column)),
         _label_delimiter(label_delimiter) {}
+
+  static std::optional<TextDatasetConfig> fromDataTypes(
+      data::ColumnDataTypes data_types,
+      const data::TemporalRelationships& temporal_relationships,
+      const std::string& label_column) {
+    if (data_types.size() == 2 && temporal_relationships.empty()) {
+      auto cat_label = data::asCategorical(data_types.at(label_column));
+      data_types.erase(label_column);
+      auto text_type = data::asText(data_types.begin()->second);
+      if (text_type && cat_label) {
+        return TextDatasetConfig(data_types.begin()->first, label_column,
+                                 cat_label->delimiter);
+      }
+    }
+    return std::nullopt;
+  }
 
   const auto& textColumn() const { return _text_column; }
 
