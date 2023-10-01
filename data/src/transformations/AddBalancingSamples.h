@@ -22,7 +22,7 @@ class AddBalancingSamples final : public Transformation {
   ColumnMap apply(ColumnMap columns, State& state) const final {
     const auto& sampler = state.rlhfSampler();
     auto texts = columns.getValueColumn<std::string>(_text_column_name);
-    auto ids = columns.getValueColumn<std::string>(_id_column_name);
+    auto ids = columns.getValueColumn<uint32_t>(_id_column_name);
     for (uint32_t row = 0; row < columns.numRows(); row++) {
       sampler->addSample(
           /* doc_id= */ ids->row(row)[0],
