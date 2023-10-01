@@ -45,6 +45,18 @@ static bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
   return computations.at(computations.size() - 2);
 }
 
+/**
+ * Mach is a classifier that is agnostic to how inputs are featurized.
+ * Its methods expect column maps (often called tables for brevity) or column
+ * map iterators as input so that it can apply additional transformations when
+ * necessary. Column maps are always expected to have "bolt input columns" [1]
+ * and sometimes expected to have a "doc id column" [2].
+ *
+ * [1] "bolt input columns" are columns that contain indices and values
+ * that will be passed into BOLT as input.
+ * [2] A "doc id column" contains integer IDs / labels since Mach currenlty only
+ * supports integer labels.
+ */
 class Mach {
  public:
   Mach(uint32_t input_dim, uint32_t num_buckets, uint32_t num_hashes,
@@ -83,6 +95,9 @@ class Mach {
     index()->randomlyAssignBuckets(num_entities);
   }
 
+  /**
+   * `table` is expected to have bolt input columns and a doc id column.
+   */
   void introduceEntities(const feat::ColumnMap& table,
                          const feat::OutputColumnsList& input_columns,
                          const std::string& doc_id_column,
@@ -107,6 +122,10 @@ class Mach {
     updateSamplingStrategy();
   }
 
+  /**
+   * Tables returned by `train_iter` and `valid_iter` are expected to have bolt
+   * input columns and a doc id column.
+   */
   bolt::metrics::History train(feat::ColumnMapIteratorPtr train_iter,
                                feat::ColumnMapIteratorPtr valid_iter,
                                const feat::OutputColumnsList& input_columns,
@@ -118,21 +137,36 @@ class Mach {
                                TrainOptions options,
                                const bolt::DistributedCommPtr& comm);
 
+  /**
+   * `table` is expected to have bolt input columns and a doc id column.
+   */
   void trainBatch(feat::ColumnMap table,
                   const feat::OutputColumnsList& input_columns,
                   const std::string& doc_id_column, float learning_rate);
 
+  /**
+   * Tables returned by `eval_iter` are expected to have bolt input columns and
+   * a doc id column.
+   */
   bolt::metrics::History evaluate(feat::ColumnMapIteratorPtr eval_iter,
                                   const feat::OutputColumnsList& input_columns,
                                   const std::string& doc_id_column,
                                   const InputMetrics& metrics,
                                   bool sparse_inference, bool verbose);
 
+  /**
+   * `table` is expected to have bolt input columns.
+   */
   std::vector<std::vector<std::pair<uint32_t, double>>> predict(
       const feat::ColumnMap& table,
       const feat::OutputColumnsList& input_columns, bool sparse_inference,
       uint32_t top_k, uint32_t num_scanned_buckets);
 
+  /**
+   * `from_table` and `to_table` are expected to have bolt input columns.
+   * `balancing_table` is expected to have bolt input columns and a doc id
+   * column.
+   */
   bolt::metrics::History associate(
       feat::ColumnMap from_table, const feat::ColumnMap& to_table,
       feat::ColumnMap balancing_table,
@@ -142,17 +176,27 @@ class Mach {
       const InputMetrics& metrics = {}, bool verbose = false,
       std::optional<uint32_t> logging_interval = std::nullopt);
 
+  /**
+   * `upvotes` and `balancers` are expected to have bolt input columns and a doc
+   * id column.
+   */
   void upvote(feat::ColumnMap upvotes, feat::ColumnMap balancers,
               const feat::OutputColumnsList& input_columns,
               const std::string& doc_id_column, float learning_rate,
               uint32_t repeats, uint32_t epochs, size_t batch_size);
 
+  /**
+   * `table` is expected to have bolt input columns.
+   */
   std::vector<uint32_t> outputCorrectness(
       const feat::ColumnMap& table,
       const feat::OutputColumnsList& input_columns,
       const std::vector<uint32_t>& labels, std::optional<uint32_t> num_hashes,
       bool sparse_inference);
 
+  /**
+   * `table` is expected to have bolt input columns.
+   */
   bolt::TensorPtr embedding(const feat::ColumnMap& table,
                             const feat::OutputColumnsList& input_columns);
 
