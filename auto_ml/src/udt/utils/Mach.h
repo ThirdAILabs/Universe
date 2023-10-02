@@ -54,7 +54,7 @@ static bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
  *
  * [1] "bolt input columns" are columns that contain indices and values
  * that will be passed into BOLT as input.
- * [2] A "doc id column" contains integer IDs / labels since Mach currenlty only
+ * [2] A "doc id column" contains integer IDs / labels since Mach currently only
  * supports integer labels.
  */
 class Mach {
