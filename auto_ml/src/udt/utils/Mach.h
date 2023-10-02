@@ -9,8 +9,8 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <auto_ml/src/config/ModelConfig.h>
-#include <auto_ml/src/featurization/LiteFeat.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
+#include <auto_ml/src/featurization/UDTTransformationFactory.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>

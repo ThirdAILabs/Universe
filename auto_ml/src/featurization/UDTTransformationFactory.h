@@ -25,14 +25,14 @@ namespace feat = thirdai::data;
 /**
  * We currently assume integer targets for simplicity.
  */
-class LiteFeat {
+class UDTTransformationFactory {
  public:
-  LiteFeat(data::ColumnDataTypes data_types,
-           const data::UserProvidedTemporalRelationships&
-               user_temporal_relationships,
-           const std::string& label_column,
-           thirdai::data::ValueFillType label_value_fill,
-           const data::TabularOptions& options);
+  UDTTransformationFactory(data::ColumnDataTypes data_types,
+                           const data::UserProvidedTemporalRelationships&
+                               user_temporal_relationships,
+                           const std::string& label_column,
+                           thirdai::data::ValueFillType label_value_fill,
+                           const data::TabularOptions& options);
 
   static auto make(data::ColumnDataTypes data_types,
                    const data::UserProvidedTemporalRelationships&
@@ -40,9 +40,9 @@ class LiteFeat {
                    const std::string& label_column,
                    thirdai::data::ValueFillType label_value_fill,
                    const data::TabularOptions& options) {
-    return std::make_shared<LiteFeat>(std::move(data_types),
-                                      user_temporal_relationships, label_column,
-                                      label_value_fill, options);
+    return std::make_shared<UDTTransformationFactory>(
+        std::move(data_types), user_temporal_relationships, label_column,
+        label_value_fill, options);
   }
 
   const thirdai::data::TransformationPtr& trainInputTransform() const {
@@ -96,7 +96,7 @@ class LiteFeat {
   std::optional<TextDatasetConfig> _text_dataset;
   bool _has_temporal_transform;
 
-  LiteFeat() {}  // For cereal
+  UDTTransformationFactory() {}  // For cereal
 
  private:
   friend class cereal::access;
@@ -104,6 +104,6 @@ class LiteFeat {
   void serialize(Archive& archive);
 };
 
-using LiteFeatPtr = std::shared_ptr<LiteFeat>;
+using UDTTransformationFactoryPtr = std::shared_ptr<UDTTransformationFactory>;
 
 }  // namespace thirdai::automl

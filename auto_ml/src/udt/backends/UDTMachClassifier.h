@@ -5,8 +5,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/featurization/LiteFeat.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/featurization/UDTTransformationFactory.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
@@ -252,7 +252,7 @@ class UDTMachClassifier final : public UDTBackend {
   utils::MachPtr _mach;
 
   char _delimiter;
-  LiteFeatPtr _featurizer;
+  UDTTransformationFactoryPtr _featurizer;
   thirdai::data::StatePtr _state;
 
   uint32_t _default_top_k_to_return;

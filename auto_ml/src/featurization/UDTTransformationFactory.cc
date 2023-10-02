@@ -1,4 +1,4 @@
-#include "LiteFeat.h"
+#include "UDTTransformationFactory.h"
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
@@ -26,7 +26,7 @@ thirdai::data::TransformationPtr makeLabelTransform(
       /* dim= */ std::nullopt);
 }
 
-LiteFeat::LiteFeat(
+UDTTransformationFactory::UDTTransformationFactory(
     data::ColumnDataTypes data_types,
     const data::UserProvidedTemporalRelationships& user_temporal_relationships,
     const std::string& label_column,
@@ -55,7 +55,7 @@ LiteFeat::LiteFeat(
       std::move(data_types), temporal_relationships, label_column);
 }
 
-thirdai::data::TransformationPtr LiteFeat::unsupAugmenter(
+thirdai::data::TransformationPtr UDTTransformationFactory::unsupAugmenter(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bool fast_approximation) const {

@@ -16,8 +16,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/Featurizer.h>
-#include <auto_ml/src/featurization/LiteFeat.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
+#include <auto_ml/src/featurization/UDTTransformationFactory.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -143,7 +143,7 @@ UDTMachClassifier::UDTMachClassifier(
 
   _state = feat::State::make();
 
-  _featurizer = LiteFeat::make(
+  _featurizer = UDTTransformationFactory::make(
       /* data_types= */ input_data_types,
       /* user_temporal_relationships= */ temporal_tracking_relationships,
       /* label_column= */ target_name,

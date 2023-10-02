@@ -433,7 +433,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/DataTypes.cc
     auto_ml/src/featurization/TabularTransformations.cc
     auto_ml/src/featurization/Featurizer.cc
-    auto_ml/src/featurization/LiteFeat.cc
+    auto_ml/src/featurization/UDTTransformationFactory.cc
     auto_ml/src/featurization/GraphFeaturizer.cc
     auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
