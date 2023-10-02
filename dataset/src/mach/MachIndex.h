@@ -92,7 +92,7 @@ class MachIndex {
  private:
   void verifyHash(uint32_t hash) const;
 
-  std::unordered_set<uint32_t> shortlistEntities(
+  std::unordered_set<uint32_t> entitiesInTopBuckets(
       const BoltVector& output, uint32_t num_buckets_to_eval) const;
 
   std::unordered_map<uint32_t, double> entityScoresSparse(

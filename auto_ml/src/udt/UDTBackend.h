@@ -85,7 +85,7 @@ class UDTBackend {
                                   std::optional<uint32_t> top_k) = 0;
 
   virtual py::object scoreBatch(const MapInputBatch& samples,
-                                const std::vector<Label>& classes,
+                                const std::vector<std::vector<Label>>& classes,
                                 bool sparse_inference,
                                 std::optional<uint32_t> top_k) {
     (void)samples;

@@ -3,7 +3,6 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <sys/types.h>
 #include <utils/Containers.h>
 #include <utils/Random.h>
 #include <optional>
@@ -75,7 +74,7 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t top_k,
     uint32_t num_buckets_to_eval) const {
-  auto entities = shortlistEntities(output, num_buckets_to_eval);
+  auto entities = entitiesInTopBuckets(output, num_buckets_to_eval);
   return scoreEntities(output, entities, top_k);
 }
 
@@ -94,6 +93,10 @@ std::vector<std::pair<uint32_t, double>> MachIndex::scoreEntities(
     entity_to_scores = entityScoresDense(output, entities);
   } else {
     entity_to_scores = entityScoresSparse(output, entities);
+  }
+
+  for (auto& [_, score] : entity_to_scores) {
+    score /= _num_hashes;
   }
 
   return containers::rankedIdScorePairsFromMap(entity_to_scores, top_k);
@@ -152,7 +155,7 @@ TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
   return top_k;
 }
 
-std::unordered_set<uint32_t> MachIndex::shortlistEntities(
+std::unordered_set<uint32_t> MachIndex::entitiesInTopBuckets(
     const BoltVector& output, uint32_t num_buckets_to_eval) const {
   auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
   std::unordered_set<uint32_t> entities;
@@ -162,6 +165,7 @@ std::unordered_set<uint32_t> MachIndex::shortlistEntities(
     }
     top_k.pop();
   }
+
   return entities;
 }
 
@@ -181,10 +185,6 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
     }
   }
 
-  for (auto& [_, score] : entity_to_scores) {
-    score /= _num_hashes;
-  }
-
   return entity_to_scores;
 }
 
@@ -196,10 +196,6 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresDense(
     for (uint32_t hash : getHashes(entity)) {
       entity_to_scores[entity] += output.activations[hash];
     }
-  }
-
-  for (auto& [_, score] : entity_to_scores) {
-    score /= _num_hashes;
   }
 
   return entity_to_scores;

@@ -212,7 +212,7 @@ py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
 }
 
 py::object UDT::scoreBatch(const MapInputBatch& samples,
-                           const std::vector<Label>& classes,
+                           const std::vector<std::vector<Label>>& classes,
                            bool sparse_inference,
                            std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;

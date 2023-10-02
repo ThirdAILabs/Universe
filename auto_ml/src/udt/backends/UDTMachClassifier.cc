@@ -298,14 +298,16 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predictImpl(samples, sparse_inference, top_k));
 }
 
-py::object UDTMachClassifier::scoreBatch(const MapInputBatch& samples,
-                                         const std::vector<Label>& classes,
-                                         bool sparse_inference,
-                                         std::optional<uint32_t> top_k) {
-  std::unordered_set<uint32_t> entities;
-  entities.reserve(classes.size());
-  for (const Label& entity : classes) {
-    entities.insert(expectInteger(entity));
+py::object UDTMachClassifier::scoreBatch(
+    const MapInputBatch& samples,
+    const std::vector<std::vector<Label>>& classes, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
+  std::vector<std::unordered_set<uint32_t>> entities(classes.size());
+  for (uint32_t row = 0; row < classes.size(); row++) {
+    entities[row].reserve(classes[row].size());
+    for (const auto& entity : classes[row]) {
+      entities[row].insert(expectInteger(entity));
+    }
   }
 
   auto outputs = _classifier->model()
@@ -314,20 +316,17 @@ py::object UDTMachClassifier::scoreBatch(const MapInputBatch& samples,
                      .at(0);
 
   size_t batch_size = samples.size();
-  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
-      samples.size());
+  std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
 
-#pragma omp parallel for default(none)                   \
-    shared(entities, outputs, predicted_entities, top_k, \
-           batch_size) if (batch_size > 1)
+  const auto& index = _mach_label_block->index();
+#pragma omp parallel for default(none) shared( \
+    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
     const BoltVector& vector = outputs->getVector(i);
-    auto predictions =
-        _mach_label_block->index()->scoreEntities(vector, entities, top_k);
-    predicted_entities[i] = predictions;
+    scores[i] = index->scoreEntities(vector, entities[i], top_k);
   }
 
-  return py::cast(predicted_entities);
+  return py::cast(scores);
 }
 
 py::object UDTMachClassifier::predictHashes(
