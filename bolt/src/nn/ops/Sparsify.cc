@@ -19,6 +19,9 @@ void Sparsify::forward(const ComputationList& inputs, TensorPtr& output,
   BoltVector& output_vec = output->getVector(index_in_batch);
 
   if (output_vec.isDense()) {
+    assert(input_vec.isDense());
+    assert(input_vec.len == output_vec.len);
+    
     std::copy(input_vec.activations, input_vec.activations + input_vec.len,
               output_vec.activations);
   } else {
@@ -38,14 +41,15 @@ void Sparsify::backpropagate(ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch) {
   assert(inputs.size() == 1);
 
-  assert(inputs.size() == 1);
-
   const BoltVector& input_vec =
       inputs.at(0)->tensor()->getVector(index_in_batch);
 
   BoltVector& output_vec = output->getVector(index_in_batch);
 
   if (output_vec.isDense()) {
+    assert(input_vec.isDense());
+    assert(input_vec.len == output_vec.len);
+
     std::copy(output_vec.gradients, output_vec.gradients + output_vec.len,
               input_vec.gradients);
   } else {
