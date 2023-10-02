@@ -20,7 +20,6 @@
 #include <bolt/src/nn/ops/PatchEmbedding.h>
 #include <bolt/src/nn/ops/PatchSum.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Sparsify.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -401,10 +400,6 @@ void defineOps(py::module_& nn) {
       .def(py::init(&PatchSum::make), py::arg("n_patches"),
            py::arg("patch_dim"))
       .def("__call__", &PatchSum::apply);
-
-  py::class_<Sparsify, SparsifyPtr, Op>(nn, "Sparsify")
-      .def(py::init(&Sparsify::make), py::arg("sparsity"))
-      .def("__call__", &Sparsify::apply);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }
