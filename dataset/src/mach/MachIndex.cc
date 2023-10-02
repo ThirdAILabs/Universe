@@ -3,7 +3,6 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <utils/Containers.h>
 #include <utils/Random.h>
 #include <optional>
 #include <random>
@@ -99,7 +98,17 @@ std::vector<std::pair<uint32_t, double>> MachIndex::scoreEntities(
     score /= _num_hashes;
   }
 
-  return containers::rankedIdScorePairsFromMap(entity_to_scores, top_k);
+  std::vector<std::pair<uint32_t, double>> ranked(entity_to_scores.begin(),
+                                                  entity_to_scores.end());
+
+  std::sort(ranked.begin(), ranked.end(),
+            [](auto& left, auto& right) { return left.second > right.second; });
+
+  if (top_k && *top_k < ranked.size()) {
+    ranked.resize(*top_k);
+  }
+
+  return ranked;
 }
 
 void MachIndex::erase(uint32_t entity) {
