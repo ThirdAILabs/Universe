@@ -40,20 +40,6 @@ class Loader {
         verbose, shuffle_buffer_size, shuffle_seed);
   }
 
-  static auto make(ColumnMapIteratorPtr data_iterator,
-                   OutputColumnsList input_columns,
-                   OutputColumnsList label_columns, size_t batch_size,
-                   bool shuffle, bool verbose = true,
-                   size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
-                   uint32_t shuffle_seed = global_random::nextSeed()) {
-    return std::make_shared<Loader>(
-        std::move(data_iterator),
-        /* transformation= */ TransformationList::make({}),
-        /* state= */ nullptr, std::move(input_columns),
-        std::move(label_columns), batch_size, shuffle, verbose,
-        shuffle_buffer_size, shuffle_seed);
-  }
-
   std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
   bolt::LabeledDataset all();
