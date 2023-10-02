@@ -226,9 +226,11 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   table = _featurizer->inferInputTransform()->apply(std::move(table), *_state);
 
   return py::cast(
-      _mach->predict(table, inputColumns(), sparse_inference,
-                     /* top_k= */ top_k.value_or(_default_top_k_to_return),
-                     /* num_scanned_buckets= */ _num_buckets_to_eval));
+      _mach
+          ->predict(table, inputColumns(), sparse_inference,
+                    /* top_k= */ top_k.value_or(_default_top_k_to_return),
+                    /* num_scanned_buckets= */ _num_buckets_to_eval)
+          .at(0));
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
