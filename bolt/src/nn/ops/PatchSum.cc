@@ -39,6 +39,9 @@ void PatchSum::forward(const ComputationList& inputs, TensorPtr& output,
     }
   } else {
     for (size_t i = 0; i < patches.len; i++) {
+      // If the patches are sparse then each should only have indices in the
+      // range [0, patch_dim). Since the output of this op is dense we can just
+      // index directly into the output using the index to accumulate the values. 
       if (patches.active_neurons[i] >= _patch_dim) {
         throw std::invalid_argument(
             "Cannot sum sparse index " +
