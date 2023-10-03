@@ -89,9 +89,9 @@ TEST(TabularTransformationTests, TabularTransformations) {
 
   ASSERT_TRANSFORM_TYPE(transformation, data::TransformationList);
 
-  auto t_list = std::dynamic_pointer_cast<data::TransformationList>(
-                    transformation)
-                    ->transformations();
+  auto t_list =
+      std::dynamic_pointer_cast<data::TransformationList>(transformation)
+          ->transformations();
 
   ASSERT_EQ(t_list.size(), 7);
 
@@ -111,8 +111,7 @@ TEST(TabularTransformationTests, TabularTransformations) {
   ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<data::FeatureHash>(t_list[6])
-          ->inputColumns();
+      std::dynamic_pointer_cast<data::FeatureHash>(t_list[6])->inputColumns();
 
   // The transformations on columns b and d are at the end because after
   // processing all data types we check if cross column pairgrams is enabled and
@@ -148,9 +147,9 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
 
   ASSERT_TRANSFORM_TYPE(transformation, data::TransformationList);
 
-  auto t_list = std::dynamic_pointer_cast<data::TransformationList>(
-                    transformation)
-                    ->transformations();
+  auto t_list =
+      std::dynamic_pointer_cast<data::TransformationList>(transformation)
+          ->transformations();
 
   ASSERT_EQ(t_list.size(), 11);
 
@@ -174,8 +173,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<data::FeatureHash>(t_list[10])
-          ->inputColumns();
+      std::dynamic_pointer_cast<data::FeatureHash>(t_list[10])->inputColumns();
 
   // The transformations on columns b and d are at the end because after
   // processing all data types we check if cross column pairgrams is enabled and
