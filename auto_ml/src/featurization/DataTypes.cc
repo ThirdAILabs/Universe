@@ -1,7 +1,8 @@
 #include "DataTypes.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 dataset::TextTokenizerPtr getTextTokenizerFromString(
     const std::string& string) {
@@ -101,12 +102,19 @@ NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type) {
   return std::dynamic_pointer_cast<NodeIDDataType>(data_type);
 }
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl
 
-CEREAL_REGISTER_TYPE(thirdai::automl::data::CategoricalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NumericalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::DateDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::TextDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::SequenceDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NeighborsDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NodeIDDataType)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::CategoricalDataType,
+                               "thirdai::automl::data::CategoricalDataType")
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::NumericalDataType,
+                               "thirdai::automl::data::NumericalDataType")
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::DateDataType,
+                               "thirdai::automl::data::DateDataType")
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::TextDataType,
+                               "thirdai::automl::data::TextDataType")
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::SequenceDataType,
+                               "thirdai::automl::data::SequenceDataType")
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::NeighborsDataType,
+                               "thirdai::automl::data::NeighborsDataType")
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::automl::NodeIDDataType,
+                               "thirdai::automl::data::NodeIDDataType")

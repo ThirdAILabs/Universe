@@ -7,7 +7,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 using PreprocessedVectorsMap =
     std::unordered_map<std::string, dataset::PreprocessedVectorsPtr>;
@@ -33,4 +33,4 @@ std::vector<dataset::BlockPtr> makeTemporalInputBlocks(
     TemporalContext& temporal_context, bool should_update_history,
     const TabularOptions& options);
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl
