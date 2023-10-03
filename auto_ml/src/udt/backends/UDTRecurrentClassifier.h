@@ -16,13 +16,13 @@ namespace thirdai::automl::udt {
 
 class UDTRecurrentClassifier final : public UDTBackend {
  public:
-  UDTRecurrentClassifier(const data::ColumnDataTypes& input_data_types,
-                         const data::UserProvidedTemporalRelationships&
+  UDTRecurrentClassifier(const ColumnDataTypes& input_data_types,
+                         const UserProvidedTemporalRelationships&
                              temporal_tracking_relationships,
                          const std::string& target_name,
-                         const data::SequenceDataTypePtr& target,
+                         const SequenceDataTypePtr& target,
                          uint32_t n_target_classes,
-                         const data::TabularOptions& tabular_options,
+                         const TabularOptions& tabular_options,
                          const std::optional<std::string>& model_config,
                          const config::ArgumentMap& user_args);
 
@@ -76,10 +76,10 @@ class UDTRecurrentClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  data::SequenceDataTypePtr _target;
+  SequenceDataTypePtr _target;
 
   ModelPtr _model;
-  data::RecurrentDatasetFactoryPtr _dataset_factory;
+  RecurrentDatasetFactoryPtr _dataset_factory;
 
   bool _freeze_hash_tables;
   std::optional<float> _binary_prediction_threshold;

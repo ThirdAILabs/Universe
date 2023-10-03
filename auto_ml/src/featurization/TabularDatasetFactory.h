@@ -18,7 +18,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <optional>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 class TabularDatasetFactory {
  public:
@@ -189,4 +189,4 @@ class TabularDatasetFactory {
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl
