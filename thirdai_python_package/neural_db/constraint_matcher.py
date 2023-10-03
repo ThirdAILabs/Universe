@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import List, Set, Any, TypeVar, Generic, Dict, Optional, Set, Iterable
-from collections import defaultdict
-from sortedcontainers import SortedDict
 
+from collections import defaultdict
+from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
+
+from sortedcontainers import SortedDict
 
 ItemT = TypeVar("ItemT")
 

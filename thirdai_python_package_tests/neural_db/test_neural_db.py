@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import all_doc_getters, docs_with_meta, metadata_constraints, PDF_FILE
+from ndb_utils import PDF_FILE, all_doc_getters, docs_with_meta, metadata_constraints
 from thirdai import bolt
 from thirdai import neural_db as ndb
 
