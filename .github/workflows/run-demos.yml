@@ -44,7 +44,7 @@ jobs:
         
       - name: Delete Container
         run: sudo docker system prune -a -f
-
+        
       - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: success()
         env:
@@ -63,4 +63,4 @@ jobs:
         with:
           channel_id: demos_testing
           status: FAILED
-          color: danger 
+          color: danger   
