@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict, defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, Set
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .utils import hash_file, hash_string
+from .constraint_matcher import ConstraintValue, ConstraintMatcher, Filter, to_filters
 
 
 class Reference:
@@ -26,9 +27,6 @@ class Reference:
 
 def _raise_unknown_doc_error(element_id: int):
     raise ValueError(f"Unable to find document that has id {element_id}.")
-
-
-Constraints = Dict[str, set]
 
 
 class Document:
@@ -49,10 +47,10 @@ class Document:
         return sha1.hexdigest()
 
     @property
-    def constraints(self) -> Dict[str, Optional[set]]:
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
         raise NotImplementedError()
 
-    def entity_ids_by_constraints(self, constraints: Constraints):
+    def all_entity_ids(self) -> List[int]:
         raise NotImplementedError()
 
     # This attribute allows certain things to be saved or not saved during
@@ -161,10 +159,13 @@ class DocumentRow:
         self.weak = weak
 
 
+DocAndOffset = Tuple[Document, int]
+
+
 class DocumentDataSource(PyDataSource):
     def __init__(self, id_column, strong_column, weak_column):
         PyDataSource.__init__(self)
-        self.documents: List[Tuple[Document, int]] = []
+        self.documents: List[DocAndOffset] = []
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
@@ -216,27 +217,6 @@ class IntroAndTrainDocuments:
         self.train = train
 
 
-class MatchingDocuments:
-    def __init__(self):
-        self.by_value = defaultdict(lambda: set())
-        self.any_value = set()
-
-
-def preprocess_metadata(metadata):
-    for key, value in metadata.items():
-        if isinstance(value, list):
-            metadata[key] = set(value)
-        elif (
-            isinstance(value, str) or isinstance(value, int) or isinstance(value, float)
-        ):
-            metadata[key] = set([value])
-        elif not isinstance(value, set):
-            raise ValueError(
-                "Metadata must be a dictionary of str -> str | int | float | list | set"
-            )
-    return metadata
-
-
 class DocumentManager:
     def __init__(self, id_column, strong_column, weak_column) -> None:
         self.id_column = id_column
@@ -244,9 +224,9 @@ class DocumentManager:
         self.weak_column = weak_column
 
         # After python 3.8, we don't need to use OrderedDict as Dict is ordered by default
-        self.registry: OrderedDict[str, Tuple[Document, int]] = OrderedDict()
+        self.registry: OrderedDict[str, DocAndOffset] = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
-        self.constraints_to_docs = defaultdict(lambda: MatchingDocuments())
+        self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
 
     def _next_id(self):
         if len(self.registry) == 0:
@@ -254,23 +234,9 @@ class DocumentManager:
         doc, start_id = next(reversed(self.registry.values()))
         return start_id + doc.size
 
-    def add_to_constraints_map(
-        self, start_ids_and_documents: List[Tuple[Document, int]]
-    ):
-        for doc, start_id in start_ids_and_documents:
-            for key, values in doc.constraints.items():
-                if values is not None:
-                    for value in values:
-                        self.constraints_to_docs[key].by_value[value].add(
-                            (doc, start_id)
-                        )
-                else:
-                    self.constraints_to_docs[key].any_value.add((doc, start_id))
-
     def add(self, documents: List[Document]):
         intro = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
         train = DocumentDataSource(self.id_column, self.strong_column, self.weak_column)
-        docs_to_add_to_constraints_map = []
         for doc in documents:
             doc_hash = doc.hash
             if doc_hash not in self.registry:
@@ -279,35 +245,23 @@ class DocumentManager:
                 self.registry[doc_hash] = doc_and_id
                 self.source_id_prefix_trie[doc_hash] = doc_hash
                 intro.add(doc, start_id)
-                docs_to_add_to_constraints_map.append((doc, start_id))
+                self.constraint_matcher.index(
+                    item=(doc, start_id), constraints=doc.matched_constraints
+                )
             doc, start_id = self.registry[doc_hash]
             train.add(doc, start_id)
-
-        self.add_to_constraints_map(docs_to_add_to_constraints_map)
 
         return IntroAndTrainDocuments(intro=intro, train=train), [
             doc.hash for doc in documents
         ]
 
-    def entity_ids_by_constraints(self, constraints: Constraints):
-        constraints = preprocess_metadata(constraints)
+    def entity_ids_by_constraints(self, constraints: Dict[str, Any]):
+        filters = to_filters(constraints)
         return [
             start_id + entity_id
-            for doc, start_id in self._docs_and_start_ids_by_constraints(constraints)
-            for entity_id in doc.entity_ids_by_constraints(constraints)
+            for doc, start_id in self.constraint_matcher.match(filters)
+            for entity_id in doc.all_entity_ids()
         ]
-
-    def _docs_and_start_ids_by_constraints(
-        self, constraints: Constraints
-    ) -> List[Tuple[Document, int]]:
-        docs_and_start_ids = set(self.registry.values())
-        for key, values in constraints.items():
-            constraint_docs = set()
-            constraint_docs.update(self.constraints_to_docs[key].any_value)
-            for value in values:
-                constraint_docs.update(self.constraints_to_docs[key].by_value[value])
-            docs_and_start_ids.intersection_update(constraint_docs)
-        return docs_and_start_ids
 
     def sources(self):
         return {doc_hash: doc for doc_hash, (doc, _) in self.registry.items()}
@@ -366,8 +320,9 @@ class DocumentManager:
             doc.load_meta(subdir)
 
         if not hasattr(self, "doc_constraints"):
-            self.constraints_to_docs = defaultdict(lambda: MatchingDocuments())
-            self.add_to_constraints_map(self.registry.values())
+            self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
+            for item in self.registry.values():
+                self.constraint_matcher.index(item, item[0].matched_constraints)
 
 
 class CSV(Document):
@@ -417,13 +372,13 @@ class CSV(Document):
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
-        self._hash = hash_file(path)
+        self._hash = hash_file(path, metadata="csv-" + str(metadata))
         self.id_column = id_column
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
-        self.file_metadata = preprocess_metadata(metadata)
+        self.doc_metadata = metadata
 
     @property
     def hash(self) -> str:
@@ -438,29 +393,11 @@ class CSV(Document):
         return self.path.name
 
     @property
-    def constraints(self) -> Dict[str, Optional[set]]:
-        row_constraints = {col: None for col in self.df.columns}
-        return {**row_constraints, **self.file_metadata}
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
-    def entity_ids_by_constraints(self, constraints: Constraints):
-        constraint_keys_set = set(constraints.keys())
-        file_meta_keys_set = set(self.file_metadata.keys())
-        file_meta_constraints = constraint_keys_set.intersection(file_meta_keys_set)
-        row_meta_constraints = constraint_keys_set.difference(file_meta_keys_set)
-        if not all(
-            [
-                len(constraints[key].intersection(self.file_metadata[key])) > 0
-                for key in file_meta_constraints
-            ]
-        ):
-            return []
-
-        constrained_rows = self.df
-        for key in row_meta_constraints:
-            constrained_rows = constrained_rows.loc[
-                constrained_rows[key] in constraints[key]
-            ]
-        return list(constrained_rows[self.id_column])
+    def all_entity_ids(self) -> List[int]:
+        return self.df[self.id_column].to_list()
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -480,7 +417,7 @@ class CSV(Document):
             element_id=element_id,
             text=text,
             source=str(self.path.absolute()),
-            metadata={**row.to_dict(), **self.file_metadata},
+            metadata={**row.to_dict(), **self.doc_metadata},
         )
 
     def context(self, element_id: int, radius) -> str:
@@ -529,8 +466,8 @@ class CSV(Document):
             # this else statement handles the deprecated attribute "path" in self, we can remove this soon
             self.path = directory / self.path.name
 
-        if not hasattr(self, "file_metadata"):
-            self.file_metadata = {}
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
 
 
 # Base class for PDF and DOCX classes because they share the same logic.
@@ -538,11 +475,11 @@ class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True, metadata={}):
         path = str(path)
         self.df = self.process_data(path)
-        self.hash_val = hash_file(path)
+        self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
-        self.file_metadata = preprocess_metadata(metadata)
+        self.doc_metadata = metadata
 
     def process_data(
         self,
@@ -563,19 +500,11 @@ class Extracted(Document):
         return self.path.name
 
     @property
-    def constraints(self) -> Dict[str, Optional[set]]:
-        return self.file_metadata
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
-    def entity_ids_by_constraints(self, constraints: Constraints):
-        constraints = preprocess_metadata(constraints)
-        if all(
-            [
-                len(values.intersection(self.file_metadata[key])) > 0
-                for key, values in constraints.items()
-            ]
-        ):
-            return list(range(self.size))
-        return []
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
 
     def strong_text(self, element_id: int) -> str:
         return ""
@@ -594,7 +523,7 @@ class Extracted(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=str(self.path.absolute()),
-            metadata={**self.df.iloc[element_id].to_dict(), **self.file_metadata},
+            metadata={**self.df.iloc[element_id].to_dict(), **self.doc_metadata},
         )
 
     def context(self, element_id, radius) -> str:
@@ -653,8 +582,8 @@ class Extracted(Document):
             # this else statement handles the deprecated attribute "path" in self, we can remove this soon
             self.path = directory / self.path.name
 
-        if not hasattr(self, "file_metadata"):
-            self.file_metadata = {}
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
 
 
 def process_pdf(path: str) -> pd.DataFrame:
@@ -712,10 +641,10 @@ class URL(Document):
     ):
         self.url = url
         self.df = self.process_data(url, url_response)
-        self.hash_val = hash_string(url)
+        self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
-        self.file_metadata = preprocess_metadata(metadata)
+        self.doc_metadata = metadata
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -741,18 +670,11 @@ class URL(Document):
         return self.url
 
     @property
-    def constraints(self) -> Dict[str, Optional[set]]:
-        return self.file_metadata
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
-    def entity_ids_by_constraints(self, constraints: Constraints):
-        if all(
-            [
-                len(values.intersection(self.file_metadata[key])) > 0
-                for key, values in constraints.items()
-            ]
-        ):
-            return list(range(self.size))
-        return []
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
 
     def strong_text(self, element_id: int) -> str:
         return self.df[self._strong_column if self._strong_column else "text"].iloc[
@@ -770,9 +692,9 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={"title": self.df["title"].iloc[element_id], **self.file_metadata}
+            metadata={"title": self.df["title"].iloc[element_id], **self.doc_metadata}
             if "title" in self.df.columns
-            else self.file_metadata,
+            else self.doc_metadata,
         )
 
     def context(self, element_id, radius) -> str:
@@ -795,10 +717,12 @@ class SentenceLevelExtracted(Extracted):
     def __init__(self, path: str, save_extra_info: bool = True, metadata={}):
         self.path = Path(path)
         self.df = self.parse_sentences(self.process_data(path))
-        self.hash_val = hash_file(path, metadata="sentence-level")
+        self.hash_val = hash_file(
+            path, metadata="sentence-level-extracted-" + str(metadata)
+        )
         self.para_df = self.df["para"].unique()
         self._save_extra_info = save_extra_info
-        self.file_metadata = preprocess_metadata(metadata)
+        self.doc_metadata = metadata
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -882,7 +806,7 @@ class SentenceLevelExtracted(Extracted):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=str(self.path.absolute()),
-            metadata={**self.df.iloc[element_id].to_dict(), **self.file_metadata},
+            metadata={**self.df.iloc[element_id].to_dict(), **self.doc_metadata},
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
 
@@ -911,8 +835,8 @@ class SentenceLevelExtracted(Extracted):
             # deprecated, self.path should not be in self
             self.path = directory / self.path.name
 
-        if not hasattr(self, "file_metadata"):
-            self.file_metadata = {}
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):

@@ -399,7 +399,7 @@ class Mach(Model):
             )
             return self.model.predict_batch(infer_batch)
 
-        return self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
+        return self.model.score_batch(infer_batch, classes=[entities], top_k=n_results)
 
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
