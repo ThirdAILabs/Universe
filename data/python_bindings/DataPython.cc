@@ -241,9 +241,10 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
-                                                  "TransformationList")
+                                                  "List")
       .def(py::init<std::vector<TransformationPtr>>(),
-           py::arg("transformations"));
+           py::arg("transformations"))
+      .def("then", &TransformationList::then, py::arg("transformation"));
 
   py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
       transformations_submodule, "ToTokens")

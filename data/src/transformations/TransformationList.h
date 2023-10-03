@@ -9,9 +9,13 @@
 
 namespace thirdai::data {
 
+class TransformationList;
+using TransformationListPtr = std::shared_ptr<TransformationList>;
+
 class TransformationList final : public Transformation {
  public:
-  explicit TransformationList(std::vector<TransformationPtr> transformations)
+  explicit TransformationList(
+      std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
 
   static auto make(std::vector<TransformationPtr> transformations) {
@@ -26,6 +30,12 @@ class TransformationList final : public Transformation {
     }
 
     return columns;
+  }
+
+  TransformationListPtr then(TransformationPtr transformation) const {
+    std::vector<TransformationPtr> transformations = _transformations;
+    transformations.emplace_back(std::move(transformation));
+    return TransformationList::make(std::move(transformations));
   }
 
   void buildExplanationMap(const ColumnMap& input, State& state,
@@ -45,14 +55,9 @@ class TransformationList final : public Transformation {
  private:
   std::vector<TransformationPtr> _transformations;
 
-  // Private constructor for cereal.
-  TransformationList(){};
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
 };
-
-using TransformationListPtr = std::shared_ptr<TransformationList>;
 
 }  // namespace thirdai::data

@@ -11,11 +11,10 @@ def text_transformation():
 
 
 def load_data(filename):
-    transformations = data.transformations.TransformationList(
-        [
-            data.transformations.ToTokens("category", "category_id", dim=150),
-            text_transformation(),
-        ]
+    transformations = (
+        data.transformations.TransformationList()
+        .then(data.transformations.ToTokens("category", "category_id", dim=150))
+        .then(text_transformation())
     )
 
     data_iter = data.CsvIterator(
