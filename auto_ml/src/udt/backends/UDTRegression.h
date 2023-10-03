@@ -11,15 +11,13 @@ namespace thirdai::automl::udt {
 
 class UDTRegression final : public UDTBackend {
  public:
-  UDTRegression(const data::ColumnDataTypes& input_data_types,
-                const data::UserProvidedTemporalRelationships&
-                    temporal_tracking_relationships,
-                const std::string& target_name,
-                const data::NumericalDataTypePtr& target,
-                std::optional<uint32_t> num_bins,
-                const data::TabularOptions& tabular_options,
-                const std::optional<std::string>& model_config,
-                const config::ArgumentMap& user_args);
+  UDTRegression(
+      const ColumnDataTypes& input_data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+      const std::string& target_name, const NumericalDataTypePtr& target,
+      std::optional<uint32_t> num_bins, const TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -45,11 +43,11 @@ class UDTRegression final : public UDTBackend {
 
   ModelPtr model() const final { return _model; }
 
-  data::ColumnDataTypes dataTypes() const final {
+  ColumnDataTypes dataTypes() const final {
     return _dataset_factory->dataTypes();
   }
 
-  data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
+  TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
 
@@ -64,7 +62,7 @@ class UDTRegression final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   ModelPtr _model;
-  data::TabularDatasetFactoryPtr _dataset_factory;
+  TabularDatasetFactoryPtr _dataset_factory;
 
   dataset::RegressionBinningStrategy _binning;
 
