@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <data/tests/MockDataSource.h>
 #include <optional>
 #include <sstream>
@@ -59,14 +59,14 @@ TEST(DataLoaderTest, Streaming) {
                                          /* delimiter= */ ',',
                                          /* rows_per_load= */ 64);
 
-  auto transformations = TransformationList::make({
-      std::make_shared<StringToToken>("token", "token_cast", n_rows),
-      std::make_shared<StringToTokenArray>("tokens", "tokens_cast", ' ',
-                                           n_rows + 10),
-      std::make_shared<StringToDecimal>("decimal", "decimal_cast"),
-      std::make_shared<StringToDecimalArray>("decimals", "decimals_cast", ' ',
-                                             std::nullopt),
-  });
+  auto transformations =
+      Pipeline::make()
+          ->then(std::make_shared<StringToToken>("token", "token_cast", n_rows))
+          ->then(std::make_shared<StringToTokenArray>("tokens", "tokens_cast",
+                                                      ' ', n_rows + 10))
+          ->then(std::make_shared<StringToDecimal>("decimal", "decimal_cast"))
+          ->then(std::make_shared<StringToDecimalArray>(
+              "decimals", "decimals_cast", ' ', std::nullopt));
 
   auto loader = Loader::make(
       data_iterator, transformations, std::make_shared<State>(),

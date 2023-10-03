@@ -8,12 +8,12 @@
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <memory>
 #include <stdexcept>
 
@@ -88,11 +88,11 @@ TEST(TabularTransformationTests, TabularTransformations) {
 
   checkOutputs(outputs);
 
-  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TransformationList);
+  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::Pipeline);
 
-  auto t_list = std::dynamic_pointer_cast<thirdai::data::TransformationList>(
-                    transformation)
-                    ->transformations();
+  auto t_list =
+      std::dynamic_pointer_cast<thirdai::data::Pipeline>(transformation)
+          ->transformations();
 
   ASSERT_EQ(t_list.size(), 7);
 
@@ -127,7 +127,7 @@ TEST(TabularTransformationTests, TabularTransformations) {
 
   // Check that transformations can process data without errors.
   thirdai::data::State state;
-  thirdai::data::TransformationList pipeline(t_list);
+  thirdai::data::Pipeline pipeline(t_list);
   pipeline.apply(getInput(), state);
 }
 
@@ -147,11 +147,11 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
 
   checkOutputs(outputs);
 
-  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TransformationList);
+  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::Pipeline);
 
-  auto t_list = std::dynamic_pointer_cast<thirdai::data::TransformationList>(
-                    transformation)
-                    ->transformations();
+  auto t_list =
+      std::dynamic_pointer_cast<thirdai::data::Pipeline>(transformation)
+          ->transformations();
 
   ASSERT_EQ(t_list.size(), 11);
 
@@ -194,7 +194,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
 
   // Check that transformations can process data without errors.
   thirdai::data::State state;
-  thirdai::data::TransformationList pipeline(t_list);
+  thirdai::data::Pipeline pipeline(t_list);
   pipeline.apply(getInput(), state);
 }
 

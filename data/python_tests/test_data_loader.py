@@ -12,7 +12,7 @@ def text_transformation():
 
 def load_data(filename):
     transformations = (
-        data.transformations.TransformationList()
+        data.transformations.Pipeline()
         .then(data.transformations.ToTokens("category", "category_id", dim=150))
         .then(text_transformation())
     )

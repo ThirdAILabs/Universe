@@ -5,12 +5,12 @@
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <limits>
 #include <memory>
@@ -348,11 +348,10 @@ inputTransformations(const data::ColumnDataTypes& data_types,
 
   transformations.push_back(feature_hash);
 
-  auto t_list =
-      std::make_shared<thirdai::data::TransformationList>(transformations);
+  auto pipeline = thirdai::data::Pipeline::make(transformations);
 
   return {
-      t_list,
+      pipeline,
       {thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
 }
 

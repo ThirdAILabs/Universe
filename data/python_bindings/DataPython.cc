@@ -12,13 +12,13 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/attr.h>
@@ -239,12 +239,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("__call__", &Transformation::apply, py::arg("columns"),
            py::arg("state"));
 
-  py::class_<TransformationList, Transformation,
-             std::shared_ptr<TransformationList>>(transformations_submodule,
-                                                  "List")
-      .def(py::init<std::vector<TransformationPtr>>(),
-           py::arg("transformations"))
-      .def("then", &TransformationList::then, py::arg("transformation"));
+  py::class_<Pipeline, Transformation, PipelinePtr>(transformations_submodule,
+                                                    "Pipeline")
+      .def(py::init(&Pipeline::make),
+           py::arg("transformations") = std::vector<TransformationPtr>{})
+      .def("then", &Pipeline::then, py::arg("transformation"));
 
   py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
       transformations_submodule, "ToTokens")
