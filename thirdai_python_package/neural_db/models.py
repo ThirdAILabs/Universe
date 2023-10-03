@@ -79,8 +79,12 @@ class Model:
         self,
         samples: InferSamples,
         n_results: int,
-        entities: List[int] = None,
         **kwargs,
+    ) -> Predictions:
+        raise NotImplementedError()
+
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
         raise NotImplementedError()
 
@@ -389,17 +393,17 @@ class Mach(Model):
         self,
         samples: InferSamples,
         n_results: int,
-        entities: List[int] = None,
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        if not entities:
-            self.model.set_decode_params(
-                min(self.n_ids, n_results), min(self.n_ids, 100)
-            )
-            return self.model.predict_batch(infer_batch)
+        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
+        return self.model.predict_batch(infer_batch)
 
-        return self.model.score_batch(infer_batch, classes=[entities], top_k=n_results)
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
+    ) -> Predictions:
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        return self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
 
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs

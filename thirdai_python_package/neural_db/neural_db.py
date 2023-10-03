@@ -546,9 +546,14 @@ class NeuralDB:
             id_range = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
-        result_ids = self._savable_state.model.infer_labels(
-            samples=[query], n_results=top_k, entities=id_range
-        )[0]
+        if id_range:
+            result_ids = self._savable_state.model.score(
+                samples=[query], entities=[id_range], n_results=top_k
+            )[0]
+        else:
+            result_ids = self._savable_state.model.infer_labels(
+                samples=[query], n_results=top_k
+            )[0]
 
         references = []
         for rid, score in result_ids:
