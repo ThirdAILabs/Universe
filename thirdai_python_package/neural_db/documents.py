@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .parsing_utils import doc_parse, pdf_parse, url_parse
+from .parsing_utils import doc_parse, pdf_parse, url_parse, unstructured_parse
 from .utils import hash_file, hash_string
 
 
@@ -584,6 +584,47 @@ class DOCX(Extracted):
     ) -> pd.DataFrame:
         return process_docx(path)
 
+class Unstructured(Extracted):
+    def __init__(
+        self,
+        path: Union[str, Path],
+        save_extra_info: bool = True,
+    ):
+        path = str(path)
+        super().__init__(path=path)
+
+        self.parser = None
+
+        if (path.endswith(".pdf") or path.endswith(".docx")):
+            print("For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX ")
+            return
+        elif (path.endswith(".pptx")):
+            self.parser = PptxParse(path)
+
+        elif (path.endswith(".txt")):
+            self.parser = TxtParse(path)
+
+        elif (path.endswith(".eml")):
+            self.parser = EmlParse(path)
+
+        else:
+            print("File Type Not Supported")
+            return
+
+    def process_data(
+        self, 
+        path: str,
+    ) -> pd.DataFrame:
+        if not self.parser:
+            print("Please initialize with supported file extensions")
+            return
+
+        elements, success = self.parser.process_elements()
+
+        # TODO(Gautam) 
+        # join(elements) 
+
+        return self.parser.create_train_df(elements)
 
 class URL(Document):
     def __init__(
