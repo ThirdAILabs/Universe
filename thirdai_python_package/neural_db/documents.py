@@ -17,7 +17,7 @@ from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
 from .parsing_utils import doc_parse, pdf_parse, url_parse
-from .parsing_utils.unstructured_parse import PptxParse, EmlParse, TxtParse
+from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
 from .utils import hash_file, hash_string
 
 
@@ -603,7 +603,7 @@ class Unstructured(Extracted):
             return
         elif path.endswith(".pptx"):
             self.parser = PptxParse(path)
-            
+
         elif path.endswith(".txt"):
             self.parser = TxtParse(path)
 
@@ -617,7 +617,7 @@ class Unstructured(Extracted):
 
         if not success:
             raise ValueError(f"Could not read file: {path}")
-        
+
         return self.parser.create_train_df(elements)
 
 

@@ -1,7 +1,8 @@
+import re
+
 import unidecode
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize, word_tokenize
-import re
 
 ATTACH_N_WORD_THRESHOLD = 20
 MIN_WORDS_PER_CHUNK = 50
@@ -79,7 +80,8 @@ def chunk_text(text: str):
 
     return chunks
 
+
 def clean_text_and_remove_urls(text: str) -> str:
     text = text.strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ")
-    text = re.sub(r"http\S+", "", text, flags = re.MULTILINE)
+    text = re.sub(r"http\S+", "", text, flags=re.MULTILINE)
     return text
