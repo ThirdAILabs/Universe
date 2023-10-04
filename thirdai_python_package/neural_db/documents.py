@@ -16,7 +16,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .parsing_utils import doc_parse, pdf_parse, url_parse, unstructured_parse
+from .parsing_utils import doc_parse, pdf_parse, unstructured_parse, url_parse
 from .utils import hash_file, hash_string
 
 
@@ -584,6 +584,7 @@ class DOCX(Extracted):
     ) -> pd.DataFrame:
         return process_docx(path)
 
+
 class Unstructured(Extracted):
     def __init__(
         self,
@@ -595,16 +596,16 @@ class Unstructured(Extracted):
 
         self.parser = None
 
-        if (path.endswith(".pdf") or path.endswith(".docx")):
+        if path.endswith(".pdf") or path.endswith(".docx"):
             print("For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX ")
             return
-        elif (path.endswith(".pptx")):
+        elif path.endswith(".pptx"):
             self.parser = PptxParse(path)
 
-        elif (path.endswith(".txt")):
+        elif path.endswith(".txt"):
             self.parser = TxtParse(path)
 
-        elif (path.endswith(".eml")):
+        elif path.endswith(".eml"):
             self.parser = EmlParse(path)
 
         else:
@@ -612,7 +613,7 @@ class Unstructured(Extracted):
             return
 
     def process_data(
-        self, 
+        self,
         path: str,
     ) -> pd.DataFrame:
         if not self.parser:
@@ -621,10 +622,11 @@ class Unstructured(Extracted):
 
         elements, success = self.parser.process_elements()
 
-        # TODO(Gautam) 
-        # join(elements) 
+        # TODO(Gautam)
+        # join(elements)
 
         return self.parser.create_train_df(elements)
+
 
 class URL(Document):
     def __init__(

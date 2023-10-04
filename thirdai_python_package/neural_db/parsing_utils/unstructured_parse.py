@@ -1,14 +1,28 @@
 # https://python.langchain.com/en/latest/modules/indexes/document_loaders/examples/unstructured_file.html
-from langchain.document_loaders import UnstructuredFileLoader, UnstructuredPowerPointLoader, UnstructuredEmailLoader
-from unstructured.cleaners.core import (clean_extra_whitespace, clean_non_ascii_chars, clean_bullets, clean_ordered_bullets, clean_ligatures, replace_mime_encodings, replace_unicode_quotes)
-from nltk.tokenize import sent_tokenize
 from dataclasses import dataclass
-import parsing_utils.utils as utils
 from typing import List, Tuple, Union
+
+import pandas as pd
+import parsing_utils.utils as utils
+from langchain.document_loaders import (
+    UnstructuredEmailLoader,
+    UnstructuredFileLoader,
+    UnstructuredPowerPointLoader,
+)
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from nltk.tokenize import sent_tokenize
+from unstructured.cleaners.core import (
+    clean_bullets,
+    clean_extra_whitespace,
+    clean_ligatures,
+    clean_non_ascii_chars,
+    clean_ordered_bullets,
+    replace_mime_encodings,
+    replace_unicode_quotes,
+)
+
 from utils import chunk_text
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-import pandas as pd
 
 @dataclass
 class UnstructuredParagraph():
