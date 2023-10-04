@@ -3,10 +3,11 @@
 namespace thirdai::dataset::mach {
 
 MachBlock::MachBlock(ColumnIdentifier col, MachIndexPtr index,
-                     std::optional<char> delimiter)
+                     std::optional<char> delimiter, bool normalize_labels)
     : CategoricalBlock(std::move(col),
                        /* dim= */ index->numBuckets(), delimiter),
-      _index(std::move(index)) {}
+      _index(std::move(index)),
+      _normalize_labels {}
 
 void MachBlock::setIndex(const MachIndexPtr& index) {
   if (_index->numBuckets() != index->numBuckets()) {
@@ -36,8 +37,14 @@ void MachBlock::encodeCategory(std::string_view category,
 
   auto hashes = _index->getHashes(entity);
 
-  for (const auto& hash : hashes) {
-    vec.addSparseFeatureToSegment(hash, 1.0);
+  if (_normalize_labels) {
+    for (const auto& hash : hashes) {
+      vec.addSparseFeatureToSegment(hash, 1.0 / hashes.size());
+    }
+  } else {
+    for (const auto& hash : hashes) {
+      vec.addSparseFeatureToSegment(hash, 1.0);
+    }
   }
 }
 

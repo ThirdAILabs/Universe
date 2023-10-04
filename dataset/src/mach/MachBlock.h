@@ -21,12 +21,14 @@ namespace thirdai::dataset::mach {
 class MachBlock final : public CategoricalBlock {
  public:
   MachBlock(ColumnIdentifier col, MachIndexPtr index,
-            std::optional<char> delimiter = std::nullopt);
+            std::optional<char> delimiter = std::nullopt,
+            bool normalize_labels = false);
 
   static auto make(ColumnIdentifier col, MachIndexPtr index,
-                   std::optional<char> delimiter = std::nullopt) {
+                   std::optional<char> delimiter = std::nullopt,
+                   bool normalize_labels = false) {
     return std::make_shared<MachBlock>(std::move(col), std::move(index),
-                                       delimiter);
+                                       delimiter, normalize_labels);
   }
 
   MachIndexPtr index() const { return _index; }
@@ -45,6 +47,7 @@ class MachBlock final : public CategoricalBlock {
 
  private:
   MachIndexPtr _index;
+  bool _normalize_labels;
 
   // Private constructor for cereal.
   MachBlock() {}
