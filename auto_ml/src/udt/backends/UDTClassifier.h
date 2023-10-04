@@ -18,15 +18,14 @@ namespace thirdai::automl::udt {
 
 class UDTClassifier final : public UDTBackend {
  public:
-  UDTClassifier(const data::ColumnDataTypes& input_data_types,
-                const data::UserProvidedTemporalRelationships&
-                    temporal_tracking_relationships,
-                const std::string& target_name,
-                data::CategoricalDataTypePtr target, uint32_t n_target_classes,
-                bool integer_target,
-                const data::TabularOptions& tabular_options,
-                const std::optional<std::string>& model_config,
-                const config::ArgumentMap& user_args);
+  UDTClassifier(
+      const ColumnDataTypes& input_data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+      const std::string& target_name, CategoricalDataTypePtr target,
+      uint32_t n_target_classes, bool integer_target,
+      const TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -113,9 +112,8 @@ class UDTClassifier final : public UDTBackend {
 
  private:
   thirdai::data::TransformationPtr labelTransformation(
-      const std::string& target_name,
-      data::CategoricalDataTypePtr& target_config, uint32_t n_target_classes,
-      bool integer_target) const;
+      const std::string& target_name, CategoricalDataTypePtr& target_config,
+      uint32_t n_target_classes, bool integer_target) const;
 
   uint32_t labelToNeuronId(
       const std::variant<uint32_t, std::string>& label) const;

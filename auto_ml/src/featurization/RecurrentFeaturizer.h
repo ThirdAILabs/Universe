@@ -12,11 +12,11 @@ namespace thirdai::automl {
 
 class RecurrentFeaturizer {
  public:
-  RecurrentFeaturizer(const data::ColumnDataTypes& data_types,
+  RecurrentFeaturizer(const ColumnDataTypes& data_types,
                       const std::string& target_name,
-                      const data::SequenceDataTypePtr& target,
+                      const SequenceDataTypePtr& target,
                       uint32_t n_target_classes,
-                      const data::TabularOptions& tabular_options);
+                      const TabularOptions& tabular_options);
 
   thirdai::data::LoaderPtr getDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -41,11 +41,11 @@ class RecurrentFeaturizer {
  private:
   std::pair<thirdai::data::TransformationPtr,
             std::shared_ptr<thirdai::data::Recurrence>>
-  makeTransformation(const data::ColumnDataTypes& data_types,
+  makeTransformation(const ColumnDataTypes& data_types,
                      const std::string& target_name,
-                     const data::SequenceDataTypePtr& target,
+                     const SequenceDataTypePtr& target,
                      uint32_t n_target_classes,
-                     const data::TabularOptions& tabular_options,
+                     const TabularOptions& tabular_options,
                      bool add_recurrence_augmentation) const;
 
   thirdai::data::TransformationPtr _augmenting_transform;

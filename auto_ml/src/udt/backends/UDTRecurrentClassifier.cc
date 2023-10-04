@@ -20,11 +20,10 @@ namespace thirdai::automl::udt {
 using bolt::metrics::fromMetricNames;
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_name, const data::SequenceDataTypePtr& target,
-    uint32_t n_target_classes, const data::TabularOptions& tabular_options,
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const SequenceDataTypePtr& target,
+    uint32_t n_target_classes, const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _target_name(target_name), _target(target) {

@@ -11,11 +11,10 @@ namespace thirdai::automl {
 // with thirdai::data.
 
 std::pair<thirdai::data::TransformationPtr, thirdai::data::OutputColumnsList>
-inputTransformations(const data::ColumnDataTypes& data_types,
+inputTransformations(const ColumnDataTypes& data_types,
                      const std::string& label_column,
-                     const data::TemporalRelationships& temporal_relationships,
-                     const data::TabularOptions& options,
-                     bool should_update_history);
+                     const TemporalRelationships& temporal_relationships,
+                     const TabularOptions& options, bool should_update_history);
 
 // This represents the transformations and outputs for a set of columns in the
 // input.
@@ -24,7 +23,7 @@ using MergedTransformSeries =
               std::vector<std::string>>;
 
 MergedTransformSeries nonTemporalTransformations(
-    data::ColumnDataTypes data_types, const std::string& label_column,
-    const data::TabularOptions& options);
+    ColumnDataTypes data_types, const std::string& label_column,
+    const TabularOptions& options);
 
 }  // namespace thirdai::automl

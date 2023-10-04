@@ -6,9 +6,9 @@
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/StringIDLookup.h>
-#include <data/src/transformations/TransformationList.h>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -16,10 +16,11 @@
 
 namespace thirdai::automl {
 
-RecurrentFeaturizer::RecurrentFeaturizer(
-    const data::ColumnDataTypes& data_types, const std::string& target_name,
-    const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
-    const data::TabularOptions& tabular_options)
+RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
+                                         const std::string& target_name,
+                                         const SequenceDataTypePtr& target,
+                                         uint32_t n_target_classes,
+                                         const TabularOptions& tabular_options)
     : _delimiter(tabular_options.delimiter),
       _state(std::make_shared<thirdai::data::State>()) {
   if (!target->max_length) {
@@ -51,9 +52,9 @@ RecurrentFeaturizer::RecurrentFeaturizer(
 std::pair<thirdai::data::TransformationPtr,
           std::shared_ptr<thirdai::data::Recurrence>>
 RecurrentFeaturizer::makeTransformation(
-    const data::ColumnDataTypes& data_types, const std::string& target_name,
-    const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
-    const data::TabularOptions& tabular_options,
+    const ColumnDataTypes& data_types, const std::string& target_name,
+    const SequenceDataTypePtr& target, uint32_t n_target_classes,
+    const TabularOptions& tabular_options,
     bool add_recurrence_augmentation) const {
   auto [input_transforms, outputs] =
       nonTemporalTransformations(data_types, target_name, tabular_options);
@@ -86,8 +87,7 @@ RecurrentFeaturizer::makeTransformation(
       tabular_options.feature_hash_range);
   input_transforms.push_back(fh);
 
-  return {thirdai::data::TransformationList::make(input_transforms),
-          recurrence};
+  return {data::Pipeline::make(input_transforms), recurrence};
 }
 
 thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(

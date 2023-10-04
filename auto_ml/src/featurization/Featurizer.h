@@ -43,12 +43,12 @@ class TextDatasetConfig {
 
 class Featurizer {
  public:
-  Featurizer(data::ColumnDataTypes data_types,
-             const data::TemporalRelationships& temporal_relationships,
+  Featurizer(ColumnDataTypes data_types,
+             const TemporalRelationships& temporal_relationships,
              const std::string& label_column,
-             thirdai::data::TransformationPtr label_transform,
-             thirdai::data::OutputColumnsList bolt_label_columns,
-             const data::TabularOptions& options);
+             data::TransformationPtr label_transform,
+             data::OutputColumnsList bolt_label_columns,
+             const TabularOptions& options);
 
   thirdai::data::LoaderPtr getDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,

@@ -96,6 +96,7 @@ class TextGenerationFeaturizer final : public Featurizer {
       const std::vector<uint32_t>& context) const;
 
   bolt::TensorList featurizeInputBatch(
+      const std::vector<uint32_t>& prompt,
       const std::vector<std::vector<uint32_t>>& tokens,
       const std::vector<uint32_t>& dims) const;
 
@@ -116,7 +117,8 @@ class TextGenerationFeaturizer final : public Featurizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _context_featurizer);
+    archive(cereal::base_class<Featurizer>(this), _context_featurizer,
+            _featurize_in_chunks);
   }
 
   /**

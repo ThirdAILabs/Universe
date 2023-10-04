@@ -13,11 +13,11 @@ using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
 
 class MachFeaturizer final : public Featurizer {
  public:
-  MachFeaturizer(data::ColumnDataTypes data_types,
-                 const data::TemporalRelationships& temporal_relationship,
+  MachFeaturizer(ColumnDataTypes data_types,
+                 const TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
-                 const data::TabularOptions& options);
+                 const TabularOptions& options);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
@@ -54,11 +54,11 @@ class MachFeaturizer final : public Featurizer {
 
   static thirdai::data::TransformationPtr makeDocIdTransformation(
       const std::string& label_column_name,
-      const data::CategoricalDataTypePtr& label_column_info);
+      const CategoricalDataTypePtr& label_column_info);
 
   static thirdai::data::TransformationPtr makeLabelTransformations(
       const std::string& label_column_name,
-      const data::CategoricalDataTypePtr& label_column_info);
+      const CategoricalDataTypePtr& label_column_info);
 
   // The Mach model takes in two labels, one for the buckets, and one containing
   // the doc ids which is used by the mach metrics. For some inputs, for
@@ -67,8 +67,8 @@ class MachFeaturizer final : public Featurizer {
   // number of labels the model is expecting.
   static void addDummyDocIds(thirdai::data::ColumnMap& columns);
 
-  thirdai::data::TransformationPtr _doc_id_transform;
-  thirdai::data::TransformationPtr _prehashed_labels_transform;
+  data::TransformationPtr _doc_id_transform;
+  data::TransformationPtr _prehashed_labels_transform;
 
   MachFeaturizer() {}
 

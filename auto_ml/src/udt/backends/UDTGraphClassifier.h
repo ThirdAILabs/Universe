@@ -9,9 +9,9 @@ namespace thirdai::automl::udt {
 
 class UDTGraphClassifier final : public UDTBackend {
  public:
-  UDTGraphClassifier(const data::ColumnDataTypes& data_types,
+  UDTGraphClassifier(const ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
-                     bool integer_target, const data::TabularOptions& options);
+                     bool integer_target, const TabularOptions& options);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,

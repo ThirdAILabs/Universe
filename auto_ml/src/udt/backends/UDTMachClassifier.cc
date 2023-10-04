@@ -54,13 +54,11 @@ using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
 UDTMachClassifier::UDTMachClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_name,
-    const data::CategoricalDataTypePtr& target_config,
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
-    const data::TabularOptions& tabular_options,
+    const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
@@ -106,7 +104,7 @@ UDTMachClassifier::UDTMachClassifier(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
       /* num_elements = */ n_target_classes);
 
-  auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
+  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 

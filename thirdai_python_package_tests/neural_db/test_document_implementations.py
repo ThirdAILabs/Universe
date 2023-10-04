@@ -31,7 +31,7 @@ def test_size_property(get_doc):
     for i in range(doc.size):
         # We don't make assertions since we only want to make sure nothing is out of range.
         doc.reference(i)
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError):
         doc.reference(doc.size)
 
 

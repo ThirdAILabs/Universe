@@ -7,22 +7,21 @@
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <memory>
 #include <stdexcept>
 
 namespace thirdai::automl {
 
-Featurizer::Featurizer(
-    data::ColumnDataTypes data_types,
-    const data::TemporalRelationships& temporal_relationships,
-    const std::string& label_column,
-    thirdai::data::TransformationPtr label_transform,
-    thirdai::data::OutputColumnsList bolt_label_columns,
-    const data::TabularOptions& options)
+Featurizer::Featurizer(ColumnDataTypes data_types,
+                       const TemporalRelationships& temporal_relationships,
+                       const std::string& label_column,
+                       thirdai::data::TransformationPtr label_transform,
+                       thirdai::data::OutputColumnsList bolt_label_columns,
+                       const TabularOptions& options)
     : _label_transform(std::move(label_transform)),
       _bolt_label_columns(std::move(bolt_label_columns)),
       _delimiter(options.delimiter),
@@ -37,9 +36,9 @@ Featurizer::Featurizer(
           .first;
 
   if (data_types.size() == 2 && temporal_relationships.empty()) {
-    auto cat_label = data::asCategorical(data_types.at(label_column));
+    auto cat_label = asCategorical(data_types.at(label_column));
     data_types.erase(label_column);
-    auto text_type = data::asText(data_types.begin()->second);
+    auto text_type = asText(data_types.begin()->second);
     if (text_type && cat_label) {
       _text_dataset = TextDatasetConfig(data_types.begin()->first, label_column,
                                         cat_label->delimiter);
@@ -83,8 +82,7 @@ thirdai::data::LoaderPtr Featurizer::getDataLoaderHelper(
   transformations.push_back(_input_transform);
   transformations.push_back(_label_transform);
 
-  auto transformation_list =
-      thirdai::data::TransformationList::make(transformations);
+  auto transformation_list = data::Pipeline::make(transformations);
 
   return thirdai::data::Loader::make(
       data_iter, transformation_list, _state, _bolt_input_columns,
@@ -166,7 +164,7 @@ thirdai::data::TransformationPtr Featurizer::coldStartTransform(
 }
 
 auto asTransformationList(const thirdai::data::TransformationPtr& t) {
-  return std::dynamic_pointer_cast<thirdai::data::TransformationList>(t);
+  return std::dynamic_pointer_cast<data::Pipeline>(t);
 }
 
 auto asTemporal(const thirdai::data::TransformationPtr& t) {

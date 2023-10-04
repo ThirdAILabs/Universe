@@ -11,8 +11,8 @@
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <limits>
 #include <optional>
@@ -23,18 +23,17 @@
 namespace thirdai::automl {
 
 MachFeaturizer::MachFeaturizer(
-    data::ColumnDataTypes data_types,
-    const data::TemporalRelationships& temporal_relationship,
+    ColumnDataTypes data_types,
+    const TemporalRelationships& temporal_relationship,
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
-    const data::TabularOptions& options)
-    : Featurizer(
-          data_types, temporal_relationship, label_column,
-          makeLabelTransformations(
-              label_column, data::asCategorical(data_types.at(label_column))),
-          {thirdai::data::OutputColumns(MACH_LABELS),
-           thirdai::data::OutputColumns(MACH_DOC_IDS)},
-          options) {
+    const TabularOptions& options)
+    : Featurizer(data_types, temporal_relationship, label_column,
+                 makeLabelTransformations(
+                     label_column, asCategorical(data_types.at(label_column))),
+                 {thirdai::data::OutputColumns(MACH_LABELS),
+                  thirdai::data::OutputColumns(MACH_DOC_IDS)},
+                 options) {
   _state = std::make_shared<thirdai::data::State>(mach_index);
 
   _prehashed_labels_transform =
@@ -42,7 +41,7 @@ MachFeaturizer::MachFeaturizer(
           label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(
-      label_column, data::asCategorical(data_types.at(label_column)));
+      label_column, asCategorical(data_types.at(label_column)));
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
@@ -56,7 +55,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   thirdai::data::ColumnMap columns =
       thirdai::data::CsvIterator::all(csv_data_source, _delimiter);
 
-  auto transform = thirdai::data::TransformationList::make({
+  auto transform = data::Pipeline::make({
       coldStartTransform(strong_column_names, weak_column_names,
                          fast_approximation),
       _input_transform,
@@ -224,7 +223,7 @@ thirdai::data::ColumnMap MachFeaturizer::removeIntermediateColumns(
 
 thirdai::data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
     const std::string& label_column_name,
-    const data::CategoricalDataTypePtr& label_column_info) {
+    const CategoricalDataTypePtr& label_column_info) {
   if (auto delim = label_column_info->delimiter) {
     return std::make_shared<thirdai::data::StringToTokenArray>(
         label_column_name, MACH_DOC_IDS, *delim,
@@ -236,15 +235,14 @@ thirdai::data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
 
 thirdai::data::TransformationPtr MachFeaturizer::makeLabelTransformations(
     const std::string& label_column_name,
-    const data::CategoricalDataTypePtr& label_column_info) {
+    const CategoricalDataTypePtr& label_column_info) {
   auto doc_id_transform =
       makeDocIdTransformation(label_column_name, label_column_info);
 
   auto mach_label_transform =
       std::make_shared<thirdai::data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
 
-  return thirdai::data::TransformationList::make(
-      {doc_id_transform, mach_label_transform});
+  return data::Pipeline::make({doc_id_transform, mach_label_transform});
 }
 
 void MachFeaturizer::addDummyDocIds(thirdai::data::ColumnMap& columns) {

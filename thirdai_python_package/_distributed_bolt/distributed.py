@@ -24,11 +24,11 @@ class Communication(bolt.train.Communication):
     def communicate(self, model):
         import torch
         import torch.distributed as dist
-        from ray.air import session
+        from ray import train
 
         self.synchronize_workers()
 
-        num_workers = session.get_world_size()
+        num_workers = train.get_context().get_world_size()
         gradients = torch.from_numpy(np.array(model.get_gradients()))
 
         dist.all_reduce(gradients)
