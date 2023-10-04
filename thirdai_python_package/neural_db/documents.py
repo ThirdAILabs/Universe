@@ -624,8 +624,10 @@ class Unstructured(Extracted):
 
         # TODO(Gautam)
         # join(elements)
-
-        return self.parser.create_train_df(elements)
+        if not success:
+            raise ValueError(f"Could not read file: {path}")
+        
+        self.parser.create_train_df(elements)
 
 
 class URL(Document):
