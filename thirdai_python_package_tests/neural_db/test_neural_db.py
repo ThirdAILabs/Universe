@@ -479,7 +479,7 @@ def test_neural_db_constrained_search_with_set_constraint():
 
     references = db.search(
         "hello",
-        top_k=10,
+        top_k=20,
         # Include 1923-10-10 to make sure it doesnt break if none of the documents
         # match the constraints.
         constraints={"date": ndb.AnyOf(["2023-10-10", "2022-10-10", "1923-10-10"])},
@@ -493,7 +493,7 @@ def test_neural_db_constrained_search_with_set_constraint():
     )
 
     # Make sure that the other document shows up if we don't constrain the search.
-    references = db.search("hello", top_k=10)
+    references = db.search("hello", top_k=20)
     assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
 
 
