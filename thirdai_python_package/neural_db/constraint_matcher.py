@@ -92,6 +92,9 @@ class ConstraintIndex(Generic[ItemT]):
         if constraint_value.any():
             self._any_value.add(item)
         else:
+            value = constraint_value.value()
+            if not value in self._match_value:
+                self._match_value[value] = set()
             self._match_value[constraint_value.value()].add(item)
 
 
