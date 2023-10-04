@@ -39,6 +39,8 @@ class Loader {
         verbose, shuffle_buffer_size, shuffle_seed);
   }
 
+  std::optional<ColumnMap> nextColumnMap(size_t max_batches = NO_LIMIT);
+
   std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
   bolt::LabeledDataset all();
