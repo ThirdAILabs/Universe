@@ -1,28 +1,14 @@
 # https://python.langchain.com/en/latest/modules/indexes/document_loaders/examples/unstructured_file.html
-from dataclasses import dataclass
-from typing import List, Tuple, Union
-
-import pandas as pd
-import parsing_utils.utils as utils
-from langchain.document_loaders import (
-    UnstructuredEmailLoader,
-    UnstructuredFileLoader,
-    UnstructuredPowerPointLoader,
-)
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.document_loaders import UnstructuredFileLoader, UnstructuredPowerPointLoader, UnstructuredEmailLoader
+from unstructured.cleaners.core import (clean_extra_whitespace, clean_non_ascii_chars, clean_bullets, clean_ordered_bullets, clean_ligatures, replace_mime_encodings, replace_unicode_quotes)
 from nltk.tokenize import sent_tokenize
-from unstructured.cleaners.core import (
-    clean_bullets,
-    clean_extra_whitespace,
-    clean_ligatures,
-    clean_non_ascii_chars,
-    clean_ordered_bullets,
-    replace_mime_encodings,
-    replace_unicode_quotes,
-)
-
+from dataclasses import dataclass
+import parsing_utils.utils as utils
+from typing import List, Tuple, Union
 from utils import chunk_text
 
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import pandas as pd
 
 @dataclass
 class UnstructuredParagraph():
@@ -35,38 +21,7 @@ class UnstructuredParagraph():
 class EmlParagraph(UnstructuredParagraph):
     subject: str
     sent_from: str
-    sent_to: str
-
-# def process_unstructured_file(filename, text_splitter):
-#     try:
-#         rows = []
-#         loader = UnstructuredFileLoader(filename, mode="elements")
-#         docs = loader.load()
-#         content = docs[0].page_content
-#         texts = text_splitter.split_text(content)
-#         for text in texts:
-#             text = str(text).strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ").replace(",", " ")
-#             row = [text, filename]
-#             rows.append(row)
-                
-#         return rows, True
-#     except Exception as e:
-#         print(e.__str__())
-#         return "Cannot process pdf file:" + filename, False
-    
-# def create_train_df(elements, id_col):
-#     count = 0
-#     df = pd.DataFrame(index=range(len(elements)), columns=[id_col, "passage", "para", "filename", "page", "display"])
-#     for i, elem in enumerate(elements):
-#         sents = sent_tokenize(elem[0])
-#         sents = list(map(lambda x: x.lower(), sents))
-#         passage = " ".join(sents)
-#         df.iloc[i] = [elem[-1], passage, passage, elem[1], 0, passage]
-#         count = count + 1
-#     for column in ["passage"]:
-#         df[column] = df[column].apply(utils.ensure_valid_encoding)
-#     return df
-    
+    sent_to: str    
 
 class UnstructuredParse():
     def __init__(self, filepath: str):
@@ -155,9 +110,13 @@ class EmlParse(UnstructuredParse):
                     for sent in sents
                 ]
                 para = " ".join(sents)
-                row = EmlParagraph(para=para, filepath=doc.metadata['filename'], 
-                                            page_no=doc.metadata['page_number'], display=str(text.replace("\n", " "))
-                                            subject=doc.metadata['subject'], sent_from=doc.metadata['sent_from'], sent_to=doc.metadata['sent_to'])
+                row = EmlParagraph(para=para, 
+                                   filepath=doc.metadata['filename'], 
+                                   page_no=doc.metadata['page_number'], 
+                                   display=str(text.replace("\n", " ")),
+                                   subject=doc.metadata['subject'], 
+                                   sent_from=doc.metadata['sent_from'], 
+                                   sent_to=doc.metadata['sent_to'])
                 rows.append(row)
                     
             return rows, True
