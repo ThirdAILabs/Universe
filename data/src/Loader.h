@@ -39,10 +39,26 @@ class Loader {
         verbose, shuffle_buffer_size, shuffle_seed);
   }
 
+  /**
+   * Returns the shuffled and featurized data for the next set of batches in as
+   * a ColumnMap. It is called in the next method, and the resulting data is
+   * converted to bolt::Tensors. It is also exposed in case a user wants to
+   * construct a different type of batch, then they can use this method so get
+   * the featurized data, and construct batches themselves.
+   */
   std::optional<ColumnMap> nextColumnMap(size_t max_batches = NO_LIMIT);
 
+  /**
+   * Returns the shuffled and featurized data for the next set of batches as
+   * bolt::Tensors, with one tensor per batch foreach (indices, values) column
+   * pair.
+   */
   std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
+  /**
+   * Returns all of the data in the dataset, featurized and converted to batches
+   * of bolt::Tensors.
+   */
   bolt::LabeledDataset all();
 
   void restart();
