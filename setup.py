@@ -162,6 +162,7 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
+    "unstructured"
 ]
 
 # The information here can also be placed in setup.cfg - better separation of

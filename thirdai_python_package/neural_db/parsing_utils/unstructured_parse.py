@@ -3,9 +3,10 @@ from langchain.document_loaders import UnstructuredFileLoader, UnstructuredPower
 from unstructured.cleaners.core import (clean_extra_whitespace, clean_non_ascii_chars, clean_bullets, clean_ordered_bullets, clean_ligatures, replace_mime_encodings, replace_unicode_quotes)
 from nltk.tokenize import sent_tokenize
 from dataclasses import dataclass
-import parsing_utils.utils as utils
+from utils import chunk_text, ensure_valid_encoding, clean_text_and_remove_urls
 from typing import List, Tuple, Union
-from utils import chunk_text
+from pathlib import Path
+import re
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import pandas as pd
@@ -14,6 +15,7 @@ import pandas as pd
 class UnstructuredParagraph():
     para: str
     filepath: str
+    filetype: str
     page_no: int
     display: str
     
@@ -31,6 +33,7 @@ class UnstructuredParse():
             length_function = len,
         )
         self._filepath = filepath
+        self._ext = Path(filepath).suffix
         self._post_processors = [clean_extra_whitespace, clean_non_ascii_chars, clean_bullets, clean_ordered_bullets, clean_ligatures, replace_unicode_quotes, replace_mime_encodings]
     
     def process_elements(self) ->  Tuple[Union[UnstructuredParagraph, str], bool]:
@@ -43,50 +46,48 @@ class PptxParse(UnstructuredParse):
     def __init__(self, filepath: str):
         super().__init__(filepath)
         try:
-            self.PptxLoader = UnstructuredPowerPointLoader(file_path=self._filepath, mode = "elements", 
+            self.PptxLoader = UnstructuredPowerPointLoader(file_path=self._filepath, mode = "paged", 
                                                        post_processors=self._post_processors)
         except Exception as e:
             print(e.__str__())
             print("Cannot process file:" , filepath)
     
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
-        rows = []
+        paragraphs = []
         try:
             docs = self.PptxLoader.load()
             for doc in docs:
                 text = doc.page_content
-                text = str(text).strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ").replace(",", " ")
-                sents = sent_tokenize(text)
-                sents = [
-                    sent.replace("\t", " ").replace(",", " ").replace("\n", " ").strip().lower()
-                    for sent in sents
+                text = str(text).strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ").lower()
+                chunks = chunk_text(text)
+                
+                row = [
+                    UnstructuredParagraph(para=chunk, filepath=self._filepath, filetype=self._ext,page_no=doc.metadata['page_number'], display=str(text.replace("\n", " "))) 
+                    for chunk in chunks
                 ]
-                para = " ".join(sents)
-                row = UnstructuredParagraph(para=para, filepath=doc.metadata['filename'], page_no=doc.metadata['page_number'], display=str(text.replace("\n", " ")))
-                rows.append(row)
+                paragraphs.extend(row)
                     
-            return rows, True
+            return paragraphs, True
         except Exception as e:
             print(e.__str__())
-            return None, False
+            return "Cannot process Eml file: " + self._filepath, False
         
     def create_train_df(self, paragrpahs:List[UnstructuredParagraph]) -> pd.DataFrame:
-        df = pd.DataFrame(index=range(len(paragrpahs)), columns=["para", "filename", "page", "display"])
+        df = pd.DataFrame(index=range(len(paragrpahs)), columns=["para", "filename", "filetype", "page", "display"])
         for i, elem in enumerate(paragrpahs):
             
             df.iloc[i] = [
                 elem.para,
                 elem.filepath,
+                elem.filetype,
                 elem.page_no,
                 elem.display
             ]
             
         for column in ["para", "display"]:
-            df[column] = df[column].apply(utils.ensure_valid_encoding)
+            df[column] = df[column].apply(ensure_valid_encoding)
         return df
         
-
-
 class EmlParse(UnstructuredParse):
     def __init__(self, filepath: str):
         super().__init__(filepath)
@@ -101,23 +102,24 @@ class EmlParse(UnstructuredParse):
         rows = []
         try:
             docs = self.EmlLoader.load()
+            text = ""
             for doc in docs:
-                text = doc.page_content
-                text = str(text).strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ").replace(",", " ")
-                sents = sent_tokenize(text)
-                sents = [
-                    sent.replace("\t", " ").replace(",", " ").replace("\n", " ").strip().lower()
-                    for sent in sents
-                ]
-                para = " ".join(sents)
-                row = EmlParagraph(para=para, 
-                                   filepath=doc.metadata['filename'], 
-                                   page_no=doc.metadata['page_number'], 
-                                   display=str(text.replace("\n", " ")),
-                                   subject=doc.metadata['subject'], 
-                                   sent_from=doc.metadata['sent_from'], 
-                                   sent_to=doc.metadata['sent_to'])
-                rows.append(row)
+                content = doc.page_content
+                text += clean_text_and_remove_urls(content).lower() + " "
+            chunks = chunk_text(text)
+            
+            row = [
+                    EmlParagraph(para=chunk, 
+                                filepath=self._filepath, 
+                                filetype=self._ext,
+                                page_no=None, 
+                                display=str(text.replace("\n", " ")),
+                                subject=doc.metadata['subject'], 
+                                sent_from=doc.metadata['sent_from'], 
+                                sent_to=doc.metadata['sent_to'])
+                    for chunk in chunks
+            ]
+            rows.append(row)
                     
             return rows, True
         except Exception as e:
@@ -125,12 +127,13 @@ class EmlParse(UnstructuredParse):
             return "Cannot process Eml file: " + self._filepath, False
         
     def create_train_df(self, paragrpahs:List[EmlParagraph]) -> pd.DataFrame:
-        df = pd.DataFrame(index=range(len(paragrpahs)), columns=["para", "filename", "page", "display", "subject", "sent_from", "sent_to"])
+        df = pd.DataFrame(index=range(len(paragrpahs)), columns=["para", "filename", "filetype", "page", "display", "subject", "sent_from", "sent_to"])
         for i, elem in enumerate(paragrpahs):
             
             df.iloc[i] = [
                 elem.para,
                 elem.filepath,
+                elem.filetype,
                 elem.page_no,
                 elem.display,
                 elem.subject,
@@ -139,10 +142,9 @@ class EmlParse(UnstructuredParse):
             ]
             
         for column in ["para", "display", "subject", "sent_from", "sent_to"]:
-            df[column] = df[column].apply(utils.ensure_valid_encoding)
+            df[column] = df[column].apply(ensure_valid_encoding)
         return df
         
-
 class TxtParse(UnstructuredParse):
     def __init__(self, filepath: str):
         super().__init__(filepath)
@@ -159,14 +161,17 @@ class TxtParse(UnstructuredParse):
             content = str(doc[0].page_content).strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ")
             chunks = chunk_text(content)
 
-            paragraphs = [UnstructuredParagraph(para = chunk, filepath = self._filepath, page_no = None, display = chunk) for chunk in chunks]
+            paragraphs = [
+                UnstructuredParagraph(para = chunk, filepath = self._filepath, filetype=self._ext, page_no = None, display = chunk)
+                for chunk in chunks
+            ]
             return paragraphs
         except Exception as e:
             print(str(e))
             return "Cannot process Text file: " + self._filepath, False
         
     def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
-        df = pd.DataFrame(index = range(len(paragraphs)), columns = ["para", "filepath", "page", "display"])
+        df = pd.DataFrame(index = range(len(paragraphs)), columns = ["para", "filepath", "filetype", "page", "display"])
 
         for idx, paragraph in enumerate(paragraphs):
             sentences = sent_tokenize(paragraph.para)
@@ -179,11 +184,12 @@ class TxtParse(UnstructuredParse):
             df.iloc[idx] = [
                 para,
                 paragraph.filepath,
+                paragraph.filetype,
                 paragraph.page_no,
                 paragraph.display
             ]
         for column in ["para", "display"]:
-            df[column] = df[column].apply(utils.ensure_valid_encoding)
+            df[column] = df[column].apply(ensure_valid_encoding)
         
         return df, True 
 

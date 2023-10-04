@@ -592,17 +592,18 @@ class Unstructured(Extracted):
         path: Union[str, Path],
         save_extra_info: bool = True,
     ):
-        path = str(path)
         super().__init__(path=path)
 
-        self.parser = None
-
+    def process_data(
+        self,
+        path: str,
+    ) -> pd.DataFrame:
         if path.endswith(".pdf") or path.endswith(".docx"):
             print("For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX ")
             return
         elif path.endswith(".pptx"):
             self.parser = PptxParse(path)
-
+            
         elif path.endswith(".txt"):
             self.parser = TxtParse(path)
 
@@ -610,25 +611,14 @@ class Unstructured(Extracted):
             self.parser = EmlParse(path)
 
         else:
-            print("File Type Not Supported")
-            return
-
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
-        if not self.parser:
-            print("Please initialize with supported file extensions")
-            return
+            raise Exception(f"File type is not yet supported")
 
         elements, success = self.parser.process_elements()
 
-        # TODO(Gautam)
-        # join(elements)
         if not success:
             raise ValueError(f"Could not read file: {path}")
         
-        self.parser.create_train_df(elements)
+        return self.parser.create_train_df(elements)
 
 
 class URL(Document):
