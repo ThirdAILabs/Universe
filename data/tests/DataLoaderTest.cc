@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-#include <_types/_uint32_t.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
