@@ -3,7 +3,6 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/symspell.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -11,6 +10,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <search/src/Flash.h>
+#include <utils/src/SymSpellBackend/symspell.h>
 #include <optional>
 #include <unordered_map>
 

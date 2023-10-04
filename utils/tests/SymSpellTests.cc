@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <auto_ml/src/udt/utils/symspell.h>
 #include <sys/types.h>
+#include <utils/src/SymSpellBackend/symspell.h>
 #include <ctime>
 #include <random>
 #include <vector>
