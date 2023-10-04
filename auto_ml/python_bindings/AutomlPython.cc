@@ -47,9 +47,8 @@ class ValidationOptions {
 };
 
 std::shared_ptr<udt::UDT> makeUDT(
-    data::ColumnDataTypes data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
+    ColumnDataTypes data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
@@ -100,7 +99,7 @@ void defineAutomlInModule(py::module_& module) {
                                                   "UniversalDeepTransformer")
       .def(py::init(&makeUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
-               data::UserProvidedTemporalRelationships(),
+               UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
@@ -255,63 +254,56 @@ void defineAutomlInModule(py::module_& module) {
 void createModelsSubmodule(py::module_& module) {
   auto models_submodule = module.def_submodule("models");
 
-  py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
+  py::class_<TabularDatasetFactory, TabularDatasetFactoryPtr>(
       models_submodule, "TabularDatasetFactory")
       .def("get_dataset_loader",
-           &data::TabularDatasetFactory::getLabeledDatasetLoader,
+           &TabularDatasetFactory::getLabeledDatasetLoader,
            py::arg("data_source"), py::arg("training"),
            py::arg("shuffle_config") = std::nullopt)
-      .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
+      .def(bolt::python::getPickleFunction<TabularDatasetFactory>());
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
   auto udt_types_submodule = module.def_submodule("types");
 
-  py::class_<automl::data::DataType,
-             automl::data::DataTypePtr>(  // NOLINT
+  py::class_<DataType,
+             DataTypePtr>(  // NOLINT
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
-      .def("__str__", &automl::data::DataType::toString)
-      .def("__repr__", &automl::data::DataType::toString);
+      .def("__str__", &DataType::toString)
+      .def("__repr__", &DataType::toString);
 
   // TODO(Any): Add docs for graph UDT types
-  py::class_<automl::data::NeighborsDataType, automl::data::DataType,
-             automl::data::NeighborsDataTypePtr>(udt_types_submodule,
-                                                 "neighbors")
+  py::class_<NeighborsDataType, DataType, NeighborsDataTypePtr>(
+      udt_types_submodule, "neighbors")
       .def(py::init<>());
 
-  py::class_<automl::data::NodeIDDataType, automl::data::DataType,
-             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "node_id")
+  py::class_<NodeIDDataType, DataType, NodeIDDataTypePtr>(udt_types_submodule,
+                                                          "node_id")
       .def(py::init<>());
 
-  py::class_<automl::data::CategoricalMetadataConfig,
-             automl::data::CategoricalMetadataConfigPtr>(udt_types_submodule,
-                                                         "metadata")
-      .def(py::init<std::string, std::string, automl::data::ColumnDataTypes,
-                    char>(),
+  py::class_<CategoricalMetadataConfig, CategoricalMetadataConfigPtr>(
+      udt_types_submodule, "metadata")
+      .def(py::init<std::string, std::string, ColumnDataTypes, char>(),
            py::arg("filename"), py::arg("key_column_name"),
            py::arg("data_types"), py::arg("delimiter") = ',',
            docs::UDT_CATEGORICAL_METADATA_CONFIG);
 
-  py::class_<automl::data::CategoricalDataType, automl::data::DataType,
-             automl::data::CategoricalDataTypePtr>(udt_types_submodule,
-                                                   "categorical")
-      .def(py::init<std::optional<char>,
-                    automl::data::CategoricalMetadataConfigPtr>(),
+  py::class_<CategoricalDataType, DataType, CategoricalDataTypePtr>(
+      udt_types_submodule, "categorical")
+      .def(py::init<std::optional<char>, CategoricalMetadataConfigPtr>(),
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
            docs::UDT_CATEGORICAL_TEMPORAL)
-      .def_property_readonly(
-          "delimiter", [](automl::data::CategoricalDataType& categorical) {
-            return categorical.delimiter;
-          });
+      .def_property_readonly("delimiter", [](CategoricalDataType& categorical) {
+        return categorical.delimiter;
+      });
 
-  py::class_<automl::data::NumericalDataType, automl::data::DataType,
-             automl::data::NumericalDataTypePtr>(udt_types_submodule,
-                                                 "numerical")
+  py::class_<NumericalDataType, DataType, NumericalDataTypePtr>(
+      udt_types_submodule, "numerical")
       .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
            py::arg("granularity") = "m", docs::UDT_NUMERICAL_TYPE);
 
-  py::class_<automl::data::TextDataType, automl::data::DataType,
-             automl::data::TextDataTypePtr>(udt_types_submodule, "text")
+  py::class_<TextDataType, DataType, TextDataTypePtr>(udt_types_submodule,
+                                                      "text")
       // TODO(any): run benchmarks to improve the defaults
       .def(py::init<std::string, std::string, bool>(),
            py::arg("tokenizer") = "words",
@@ -321,12 +313,12 @@ void createUDTTypesSubmodule(py::module_& module) {
            py::arg("tokenizer"), py::arg("contextual_encoding") = "none",
            docs::UDT_TEXT_TYPE);
 
-  py::class_<automl::data::DateDataType, automl::data::DataType,
-             automl::data::DateDataTypePtr>(udt_types_submodule, "date")
+  py::class_<DateDataType, DataType, DateDataTypePtr>(udt_types_submodule,
+                                                      "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
 
-  py::class_<automl::data::SequenceDataType, automl::data::DataType,
-             automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
+  py::class_<SequenceDataType, DataType, SequenceDataTypePtr>(
+      udt_types_submodule, "sequence")
       .def(py::init<char, std::optional<uint32_t>>(),
            py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
            docs::UDT_SEQUENCE_TYPE);
@@ -335,18 +327,16 @@ void createUDTTypesSubmodule(py::module_& module) {
 void createUDTTemporalSubmodule(py::module_& module) {
   auto udt_temporal_submodule = module.def_submodule("temporal");
 
-  py::class_<automl::data::TemporalConfig>(  // NOLINT
+  py::class_<TemporalConfig>(  // NOLINT
       udt_temporal_submodule, "TemporalConfig",
       "Base class for temporal feature configs.");
 
   udt_temporal_submodule.def(
-      "categorical", automl::data::TemporalConfig::categorical,
-      py::arg("column_name"), py::arg("track_last_n"),
-      py::arg("column_known_during_inference") = false,
+      "categorical", TemporalConfig::categorical, py::arg("column_name"),
+      py::arg("track_last_n"), py::arg("column_known_during_inference") = false,
       py::arg("use_metadata") = false, docs::UDT_CATEGORICAL_TEMPORAL);
 
-  udt_temporal_submodule.def("numerical",
-                             automl::data::TemporalConfig::numerical,
+  udt_temporal_submodule.def("numerical", TemporalConfig::numerical,
                              py::arg("column_name"), py::arg("history_length"),
                              py::arg("column_known_during_inference") = false,
                              docs::UDT_NUMERICAL_TEMPORAL);
@@ -420,9 +410,8 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
 }
 
 std::shared_ptr<udt::UDT> makeUDT(
-    data::ColumnDataTypes data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
+    ColumnDataTypes data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,

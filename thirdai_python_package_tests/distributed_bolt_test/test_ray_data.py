@@ -6,7 +6,7 @@ import ray
 import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
-from ray.air import session
+from ray import train
 from thirdai import bolt, dataset
 from thirdai.dataset import RayTextDataSource
 
@@ -15,7 +15,7 @@ from thirdai.dataset import RayTextDataSource
 def test_ray_file_data_source():
     def training_loop_per_worker(config):
         VOCAB_SIZE = 25
-        stream_split_data_iterator = session.get_dataset_shard("train")
+        stream_split_data_iterator = train.get_dataset_shard("train")
         featurizer = dataset.TextGenerationFeaturizer(
             lrc_len=3,
             irc_len=2,
@@ -51,10 +51,15 @@ def test_ray_file_data_source():
     train_ray_ds = ray.data.read_text(filename)
 
     scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(storage_path="~/ray_results")
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=training_loop_per_worker,
         scaling_config=scaling_config,
         datasets={"train": train_ray_ds},
+        run_config=run_config,
     )
 
     trainer.fit()

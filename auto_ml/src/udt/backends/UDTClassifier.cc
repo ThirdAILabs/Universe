@@ -26,15 +26,14 @@
 
 namespace thirdai::automl::udt {
 
-UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
-                             const data::UserProvidedTemporalRelationships&
-                                 temporal_tracking_relationships,
-                             const std::string& target_name,
-                             data::CategoricalDataTypePtr target,
-                             uint32_t n_target_classes, bool integer_target,
-                             const data::TabularOptions& tabular_options,
-                             const std::optional<std::string>& model_config,
-                             const config::ArgumentMap& user_args)
+UDTClassifier::UDTClassifier(
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, CategoricalDataTypePtr target,
+    uint32_t n_target_classes, bool integer_target,
+    const TabularOptions& tabular_options,
+    const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
               /* input_dim= */ tabular_options.feature_hash_range,
@@ -51,7 +50,7 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
-  _dataset_factory = data::TabularDatasetFactory::make(
+  _dataset_factory = TabularDatasetFactory::make(
       input_data_types, temporal_tracking_relationships,
       {dataset::BlockList({_label_block})}, std::set<std::string>{target_name},
       tabular_options, force_parallel);
@@ -221,7 +220,7 @@ py::object UDTClassifier::entityEmbedding(
 }
 
 dataset::CategoricalBlockPtr UDTClassifier::labelBlock(
-    const std::string& target_name, data::CategoricalDataTypePtr& target_config,
+    const std::string& target_name, CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
     bool normalize_target_categories) {
   if (integer_target) {

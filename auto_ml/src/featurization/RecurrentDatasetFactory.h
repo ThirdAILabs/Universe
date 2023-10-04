@@ -14,13 +14,13 @@
 #include <memory>
 #include <vector>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 class RecurrentDatasetFactory {
  public:
   RecurrentDatasetFactory(const ColumnDataTypes& data_types,
                           const std::string& target_name,
-                          const data::SequenceDataTypePtr& target,
+                          const SequenceDataTypePtr& target,
                           uint32_t n_target_classes,
                           const TabularOptions& tabular_options);
 
@@ -63,4 +63,4 @@ class RecurrentDatasetFactory {
 
 using RecurrentDatasetFactoryPtr = std::shared_ptr<RecurrentDatasetFactory>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl
