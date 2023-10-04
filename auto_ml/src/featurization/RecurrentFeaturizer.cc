@@ -22,13 +22,13 @@ RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
                                          uint32_t n_target_classes,
                                          const TabularOptions& tabular_options)
     : _delimiter(tabular_options.delimiter),
-      _state(std::make_shared<thirdai::data::State>()) {
+      _state(std::make_shared<data::State>()) {
   if (!target->max_length) {
     throw std::invalid_argument(
         "Paramter max_length must be specified for target sequence.");
   }
 
-  _recurrence_augmentation = std::make_shared<thirdai::data::Recurrence>(
+  _recurrence_augmentation = std::make_shared<data::Recurrence>(
       /* source_input_column= */ RECURRENT_SEQUENCE,
       /* target_input_column= */ target_name,
       /* source_output_column= */ RECURRENT_SEQUENCE,
@@ -45,12 +45,11 @@ RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
           .first;
 
   _bolt_input_columns = {
-      thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
-  _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
+      data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
+  _bolt_label_columns = {data::OutputColumns(FEATURIZED_LABELS)};
 }
 
-std::pair<thirdai::data::TransformationPtr,
-          std::shared_ptr<thirdai::data::Recurrence>>
+std::pair<data::TransformationPtr, std::shared_ptr<data::Recurrence>>
 RecurrentFeaturizer::makeTransformation(
     const ColumnDataTypes& data_types, const std::string& target_name,
     const SequenceDataTypePtr& target, uint32_t n_target_classes,
@@ -59,21 +58,20 @@ RecurrentFeaturizer::makeTransformation(
   auto [input_transforms, outputs] =
       nonTemporalTransformations(data_types, target_name, tabular_options);
 
-  auto target_lookup = std::make_shared<thirdai::data::StringIDLookup>(
+  auto target_lookup = std::make_shared<data::StringIDLookup>(
       /* input_column= */ target_name, /* output_column= */ target_name,
       /* vocab_key= */ TARGET_VOCAB, /* max_vocab_size= */ n_target_classes,
       target->delimiter);
   input_transforms.push_back(target_lookup);
 
-  auto target_encoding =
-      std::make_shared<thirdai::data::OffsetPositionTransform>(
-          target_name, RECURRENT_SEQUENCE, target->max_length.value());
+  auto target_encoding = std::make_shared<data::OffsetPositionTransform>(
+      target_name, RECURRENT_SEQUENCE, target->max_length.value());
   input_transforms.push_back(target_encoding);
   outputs.push_back(RECURRENT_SEQUENCE);
 
-  std::shared_ptr<thirdai::data::Recurrence> recurrence = nullptr;
+  std::shared_ptr<data::Recurrence> recurrence = nullptr;
   if (add_recurrence_augmentation) {
-    recurrence = std::make_shared<thirdai::data::Recurrence>(
+    recurrence = std::make_shared<data::Recurrence>(
         /* source_input_column= */ RECURRENT_SEQUENCE,
         /* target_input_column= */ target_name,
         /* source_output_column= */ RECURRENT_SEQUENCE,
@@ -82,7 +80,7 @@ RecurrentFeaturizer::makeTransformation(
     input_transforms.push_back(recurrence);
   }
 
-  auto fh = std::make_shared<thirdai::data::FeatureHash>(
+  auto fh = std::make_shared<data::FeatureHash>(
       outputs, FEATURIZED_INDICES, FEATURIZED_VALUES,
       tabular_options.feature_hash_range);
   input_transforms.push_back(fh);
@@ -90,17 +88,16 @@ RecurrentFeaturizer::makeTransformation(
   return {data::Pipeline::make(input_transforms), recurrence};
 }
 
-thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
+data::LoaderPtr RecurrentFeaturizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
   csv_data_source->restart();
 
-  auto data_iter =
-      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
+  auto data_iter = data::CsvIterator::make(csv_data_source, _delimiter);
 
-  return thirdai::data::Loader::make(
+  return data::Loader::make(
       data_iter, _augmenting_transform, _state, _bolt_input_columns,
       _bolt_label_columns, /* batch_size= */ batch_size, /* shuffle= */ shuffle,
       /* verbose= */ verbose,
@@ -109,24 +106,23 @@ thirdai::data::LoaderPtr RecurrentFeaturizer::getDataLoader(
 }
 
 bolt::TensorList RecurrentFeaturizer::featurizeInput(const MapInput& sample) {
-  auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
+  auto columns = data::ColumnMap::fromMapInput(sample);
 
   columns = _non_augmenting_transform->apply(std::move(columns), *_state);
 
-  return thirdai::data::toTensors(columns, _bolt_input_columns);
+  return data::toTensors(columns, _bolt_input_columns);
 }
 
 bolt::TensorList RecurrentFeaturizer::featurizeInputBatch(
     const MapInputBatch& samples) {
-  auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
+  auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _non_augmenting_transform->apply(std::move(columns), *_state);
 
-  return thirdai::data::toTensors(columns, _bolt_input_columns);
+  return data::toTensors(columns, _bolt_input_columns);
 }
 
-const thirdai::data::ThreadSafeVocabularyPtr& RecurrentFeaturizer::vocab()
-    const {
+const data::ThreadSafeVocabularyPtr& RecurrentFeaturizer::vocab() const {
   return _state->getVocab(TARGET_VOCAB);
 }
 

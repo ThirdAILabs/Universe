@@ -57,7 +57,7 @@ class UDTRegression final : public UDTBackend {
 
   FeaturizerPtr _featurizer;
 
-  std::shared_ptr<thirdai::data::RegressionBinning> _binning;
+  std::shared_ptr<data::RegressionBinning> _binning;
 };
 
 }  // namespace thirdai::automl::udt

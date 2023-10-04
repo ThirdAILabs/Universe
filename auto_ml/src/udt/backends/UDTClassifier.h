@@ -111,7 +111,7 @@ class UDTClassifier final : public UDTBackend {
   }
 
  private:
-  thirdai::data::TransformationPtr labelTransformation(
+  data::TransformationPtr labelTransformation(
       const std::string& target_name, CategoricalDataTypePtr& target_config,
       uint32_t n_target_classes, bool integer_target) const;
 

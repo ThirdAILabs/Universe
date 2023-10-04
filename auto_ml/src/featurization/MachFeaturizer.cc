@@ -28,17 +28,16 @@ MachFeaturizer::MachFeaturizer(
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
     const TabularOptions& options)
-    : Featurizer(data_types, temporal_relationship, label_column,
-                 makeLabelTransformations(
-                     label_column, asCategorical(data_types.at(label_column))),
-                 {thirdai::data::OutputColumns(MACH_LABELS),
-                  thirdai::data::OutputColumns(MACH_DOC_IDS)},
-                 options) {
-  _state = std::make_shared<thirdai::data::State>(mach_index);
+    : Featurizer(
+          data_types, temporal_relationship, label_column,
+          makeLabelTransformations(label_column,
+                                   asCategorical(data_types.at(label_column))),
+          {data::OutputColumns(MACH_LABELS), data::OutputColumns(MACH_DOC_IDS)},
+          options) {
+  _state = std::make_shared<data::State>(mach_index);
 
-  _prehashed_labels_transform =
-      std::make_shared<thirdai::data::StringToTokenArray>(
-          label_column, MACH_LABELS, ' ', mach_index->numBuckets());
+  _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
+      label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(
       label_column, asCategorical(data_types.at(label_column)));
@@ -52,8 +51,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
     size_t batch_size) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  thirdai::data::ColumnMap columns =
-      thirdai::data::CsvIterator::all(csv_data_source, _delimiter);
+  data::ColumnMap columns = data::CsvIterator::all(csv_data_source, _delimiter);
 
   auto transform = data::Pipeline::make({
       coldStartTransform(strong_column_names, weak_column_names,
@@ -65,7 +63,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   columns = transform->apply(columns, *_state);
 
   auto input_tensors =
-      thirdai::data::toTensorBatches(columns, _bolt_input_columns, batch_size);
+      data::toTensorBatches(columns, _bolt_input_columns, batch_size);
 
   auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
 
@@ -91,27 +89,26 @@ MachFeaturizer::featurizeForIntroduceDocuments(
 
 std::pair<bolt::TensorList, bolt::TensorList>
 MachFeaturizer::featurizeHashesTrainingBatch(const MapInputBatch& samples) {
-  auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
+  auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(columns, *_state);
   columns = _prehashed_labels_transform->apply(columns, *_state);
 
   addDummyDocIds(columns);
 
-  auto data = thirdai::data::toTensors(columns, _bolt_input_columns);
-  auto labels = thirdai::data::toTensors(columns, _bolt_label_columns);
+  auto data = data::toTensors(columns, _bolt_input_columns);
+  auto labels = data::toTensors(columns, _bolt_label_columns);
 
   return std::make_pair(std::move(data), std::move(labels));
 }
 
-thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
+data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  thirdai::data::ColumnMap columns =
-      thirdai::data::CsvIterator::all(csv_data_source, _delimiter);
+  data::ColumnMap columns = data::CsvIterator::all(csv_data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names)
@@ -124,7 +121,7 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeDataset(
   return removeIntermediateColumns(columns);
 }
 
-thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
+data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
     const std::vector<RlhfSample>& samples) {
   if (!_text_dataset) {
     throw std::invalid_argument("RLHF is only supported for text datasets.");
@@ -137,14 +134,14 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
     labels.push_back(sample.second);
   }
 
-  thirdai::data::ColumnMap columns(
+  data::ColumnMap columns(
       {{_text_dataset->textColumn(),
-        thirdai::data::ValueColumn<std::string>::make(std::move(text))}});
+        data::ValueColumn<std::string>::make(std::move(text))}});
 
   columns = _input_transform->apply(columns, *_state);
 
   columns.setColumn(MACH_LABELS,
-                    thirdai::data::ArrayColumn<uint32_t>::make(
+                    data::ArrayColumn<uint32_t>::make(
                         std::move(labels), _state->machIndex()->numBuckets()));
 
   addDummyDocIds(columns);
@@ -153,11 +150,9 @@ thirdai::data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
 }
 
 bolt::LabeledDataset MachFeaturizer::columnsToTensors(
-    const thirdai::data::ColumnMap& columns, size_t batch_size) const {
-  auto data =
-      thirdai::data::toTensorBatches(columns, _bolt_input_columns, batch_size);
-  auto labels =
-      thirdai::data::toTensorBatches(columns, _bolt_label_columns, batch_size);
+    const data::ColumnMap& columns, size_t batch_size) const {
+  auto data = data::toTensorBatches(columns, _bolt_input_columns, batch_size);
+  auto labels = data::toTensorBatches(columns, _bolt_label_columns, batch_size);
 
   return std::make_pair(std::move(data), std::move(labels));
 }
@@ -170,7 +165,7 @@ MachFeaturizer::getBalancingSamples(
     size_t n_balancing_samples, size_t rows_to_read) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  auto data_iter = thirdai::data::CsvIterator::make(
+  auto data_iter = data::CsvIterator::make(
       csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
 
   auto columns = data_iter->next().value();
@@ -203,9 +198,9 @@ MachFeaturizer::getBalancingSamples(
   return samples;
 }
 
-thirdai::data::ColumnMap MachFeaturizer::removeIntermediateColumns(
-    const thirdai::data::ColumnMap& columns) {
-  std::unordered_map<std::string, thirdai::data::ColumnPtr> new_columns;
+data::ColumnMap MachFeaturizer::removeIntermediateColumns(
+    const data::ColumnMap& columns) {
+  std::unordered_map<std::string, data::ColumnPtr> new_columns;
   for (const auto& column : _bolt_input_columns) {
     new_columns[column.indices()] = columns.getColumn(column.indices());
     if (column.values()) {
@@ -218,35 +213,35 @@ thirdai::data::ColumnMap MachFeaturizer::removeIntermediateColumns(
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
   }
-  return thirdai::data::ColumnMap(std::move(new_columns));
+  return data::ColumnMap(std::move(new_columns));
 }
 
-thirdai::data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
+data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
     const std::string& label_column_name,
     const CategoricalDataTypePtr& label_column_info) {
   if (auto delim = label_column_info->delimiter) {
-    return std::make_shared<thirdai::data::StringToTokenArray>(
+    return std::make_shared<data::StringToTokenArray>(
         label_column_name, MACH_DOC_IDS, *delim,
         std::numeric_limits<uint32_t>::max());
   }
-  return std::make_shared<thirdai::data::StringToToken>(
+  return std::make_shared<data::StringToToken>(
       label_column_name, MACH_DOC_IDS, std::numeric_limits<uint32_t>::max());
 }
 
-thirdai::data::TransformationPtr MachFeaturizer::makeLabelTransformations(
+data::TransformationPtr MachFeaturizer::makeLabelTransformations(
     const std::string& label_column_name,
     const CategoricalDataTypePtr& label_column_info) {
   auto doc_id_transform =
       makeDocIdTransformation(label_column_name, label_column_info);
 
   auto mach_label_transform =
-      std::make_shared<thirdai::data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
+      std::make_shared<data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
 
   return data::Pipeline::make({doc_id_transform, mach_label_transform});
 }
 
-void MachFeaturizer::addDummyDocIds(thirdai::data::ColumnMap& columns) {
-  auto dummy_doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
+void MachFeaturizer::addDummyDocIds(data::ColumnMap& columns) {
+  auto dummy_doc_ids = data::ValueColumn<uint32_t>::make(
       std::vector<uint32_t>(columns.numRows(), 0),
       std::numeric_limits<uint32_t>::max());
 

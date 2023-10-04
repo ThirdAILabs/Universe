@@ -45,7 +45,7 @@ py::object UDTGraphClassifier::train(
       data, options.batchSize(), /* shuffle = */ true, options.verbose,
       options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->indexAndGetDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle = */ false, options.verbose);

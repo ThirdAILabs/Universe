@@ -66,7 +66,7 @@ TransformSeries sequence(const std::string& column_name,
                          const SequenceDataTypePtr& sequence) {
   std::string output = sequenceOutputColumn(column_name);
 
-  auto hash = std::make_shared<thirdai::data::StringHash>(
+  auto hash = std::make_shared<data::StringHash>(
       column_name, column_name,
       /* hash_range= */ std::numeric_limits<uint32_t>::max(),
       /* delimiter= */ sequence->delimiter);
@@ -245,7 +245,7 @@ MergedTransformSeries temporalTransformations(
           temporalItemIdsOutput(categorical_temporal.column_name);
 
       if (should_update_history || !tracking_labels) {
-        auto item_hash = std::make_shared<thirdai::data::StringHash>(
+        auto item_hash = std::make_shared<data::StringHash>(
             categorical_temporal.column_name, item_column, std::nullopt,
             tracked_column->delimiter);
         transformations.push_back(item_hash);
@@ -345,9 +345,8 @@ inputTransformations(const ColumnDataTypes& data_types,
 
   auto pipeline = data::Pipeline::make(transformations);
 
-  return {
-      pipeline,
-      {thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
+  return {pipeline,
+          {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
 }
 
 MergedTransformSeries nonTemporalTransformations(

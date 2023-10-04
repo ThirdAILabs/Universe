@@ -143,7 +143,7 @@ py::object UDTMachClassifier::train(
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
                                  options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
@@ -377,7 +377,7 @@ py::object UDTMachClassifier::coldstart(
       /* fast_approximation= */ false, options.batchSize(),
       /* shuffle= */ true, options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
         _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,

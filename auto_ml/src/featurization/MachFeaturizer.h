@@ -29,15 +29,14 @@ class MachFeaturizer final : public Featurizer {
   std::pair<bolt::TensorList, bolt::TensorList> featurizeHashesTrainingBatch(
       const MapInputBatch& samples);
 
-  thirdai::data::ColumnMap featurizeDataset(
+  data::ColumnMap featurizeDataset(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
-  thirdai::data::ColumnMap featurizeRlhfSamples(
-      const std::vector<RlhfSample>& samples);
+  data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
 
-  bolt::LabeledDataset columnsToTensors(const thirdai::data::ColumnMap& columns,
+  bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
                                         size_t batch_size) const;
 
   std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
@@ -49,14 +48,13 @@ class MachFeaturizer final : public Featurizer {
   const auto& machIndex() const { return _state->machIndex(); }
 
  private:
-  thirdai::data::ColumnMap removeIntermediateColumns(
-      const thirdai::data::ColumnMap& columns);
+  data::ColumnMap removeIntermediateColumns(const data::ColumnMap& columns);
 
-  static thirdai::data::TransformationPtr makeDocIdTransformation(
+  static data::TransformationPtr makeDocIdTransformation(
       const std::string& label_column_name,
       const CategoricalDataTypePtr& label_column_info);
 
-  static thirdai::data::TransformationPtr makeLabelTransformations(
+  static data::TransformationPtr makeLabelTransformations(
       const std::string& label_column_name,
       const CategoricalDataTypePtr& label_column_info);
 
@@ -65,7 +63,7 @@ class MachFeaturizer final : public Featurizer {
   // instance in trainWithHashes, we don't have the doc ids that the model is
   // expecting, this adds a dummy input for the doc ids so that we have the
   // number of labels the model is expecting.
-  static void addDummyDocIds(thirdai::data::ColumnMap& columns);
+  static void addDummyDocIds(data::ColumnMap& columns);
 
   data::TransformationPtr _doc_id_transform;
   data::TransformationPtr _prehashed_labels_transform;

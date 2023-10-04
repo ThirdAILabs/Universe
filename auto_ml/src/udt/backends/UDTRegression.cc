@@ -38,22 +38,21 @@ UDTRegression::UDTRegression(
       /* output_dim= */ output_bins, /* args= */ user_args,
       /* model_config= */ model_config);
 
-  auto cast = std::make_shared<thirdai::data::StringToDecimal>(target_name,
-                                                               target_name);
+  auto cast = std::make_shared<data::StringToDecimal>(target_name, target_name);
 
-  _binning = std::make_shared<thirdai::data::RegressionBinning>(
+  _binning = std::make_shared<data::RegressionBinning>(
       target_name, FEATURIZED_LABELS, target->range.first, target->range.second,
       output_bins, defaults::REGRESSION_CORRECT_LABEL_RADIUS);
 
   auto label_transform = data::Pipeline::make({cast, _binning});
 
   bool softmax_output = utils::hasSoftmaxOutput(_model);
-  thirdai::data::ValueFillType value_fill =
-      softmax_output ? thirdai::data::ValueFillType::SumToOne
-                     : thirdai::data::ValueFillType::Ones;
+  data::ValueFillType value_fill = softmax_output
+                                       ? data::ValueFillType::SumToOne
+                                       : data::ValueFillType::Ones;
 
-  thirdai::data::OutputColumnsList bolt_labels = {
-      thirdai::data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+  data::OutputColumnsList bolt_labels = {
+      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
@@ -76,7 +75,7 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
                                  options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);

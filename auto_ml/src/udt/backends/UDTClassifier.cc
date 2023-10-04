@@ -59,12 +59,12 @@ UDTClassifier::UDTClassifier(
       tabular_options.lookahead);
 
   bool softmax_output = utils::hasSoftmaxOutput(model());
-  thirdai::data::ValueFillType value_fill =
-      softmax_output ? thirdai::data::ValueFillType::SumToOne
-                     : thirdai::data::ValueFillType::Ones;
+  data::ValueFillType value_fill = softmax_output
+                                       ? data::ValueFillType::SumToOne
+                                       : data::ValueFillType::Ones;
 
-  thirdai::data::OutputColumnsList bolt_labels = {
-      thirdai::data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+  data::OutputColumnsList bolt_labels = {
+      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
 
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,
@@ -83,7 +83,7 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
                                  options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
         _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
@@ -194,7 +194,7 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
         "decreasing the learning rate.");
   }
 
-  auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
+  auto columns = data::ColumnMap::fromMapInput(sample);
   auto explanation_map = _featurizer->explain(columns);
 
   std::vector<std::pair<std::string, float>> explanations;
@@ -223,7 +223,7 @@ py::object UDTClassifier::coldstart(
       /* fast_approximation= */ false, options.batchSize(),
       /* shuffle= */ true, options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
         _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
@@ -274,22 +274,22 @@ std::string UDTClassifier::className(uint32_t class_id) const {
   return vocab->getString(class_id);
 }
 
-thirdai::data::TransformationPtr UDTClassifier::labelTransformation(
+data::TransformationPtr UDTClassifier::labelTransformation(
     const std::string& target_name, CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target) const {
   if (integer_target) {
     if (!target_config->delimiter) {
-      return std::make_shared<thirdai::data::StringToToken>(
+      return std::make_shared<data::StringToToken>(
           target_name, FEATURIZED_LABELS, n_target_classes);
     }
-    return std::make_shared<thirdai::data::StringToTokenArray>(
+    return std::make_shared<data::StringToTokenArray>(
         target_name, FEATURIZED_LABELS, target_config->delimiter.value(),
         n_target_classes);
   }
 
-  return std::make_shared<thirdai::data::StringIDLookup>(
-      target_name, FEATURIZED_LABELS, LABEL_VOCAB, n_target_classes,
-      target_config->delimiter);
+  return std::make_shared<data::StringIDLookup>(target_name, FEATURIZED_LABELS,
+                                                LABEL_VOCAB, n_target_classes,
+                                                target_config->delimiter);
 }
 
 uint32_t UDTClassifier::labelToNeuronId(
