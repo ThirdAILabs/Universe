@@ -82,7 +82,7 @@ class ConstraintValue:
 
 class ConstraintIndex(Generic[ItemT]):
     def __init__(self):
-        self._any_value = Set[ItemT]()
+        self._any_value = set()
         self._match_value = ValueItemIndex()
 
     def match(self, filterer: Filter) -> Set[ItemT]:
