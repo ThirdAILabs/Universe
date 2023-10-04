@@ -6,8 +6,8 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/DyadicInterval.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -71,10 +71,10 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
   auto data_iter = data::JsonIterator::make(data, {"target"});
 
-  auto transform = data::TransformationList::make(
-      {std::make_shared<data::StringToTokenArray>("target", "target", ' ',
-                                                  _vocab_size),
-       _dyadic_transform});
+  auto transform =
+      data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
+                                "target", "target", ' ', _vocab_size),
+                            _dyadic_transform});
 
   return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
                       {data::OutputColumns("next_word")},

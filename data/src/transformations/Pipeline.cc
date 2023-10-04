@@ -1,4 +1,4 @@
-#include "TransformationList.h"
+#include "Pipeline.h"
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
@@ -8,8 +8,8 @@
 
 namespace thirdai::data {
 
-void TransformationList::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
+                                   ExplanationMap& explanations) const {
   ColumnMap last_input = input;
 
   for (const auto& transformation : _transformations) {
@@ -20,37 +20,35 @@ void TransformationList::buildExplanationMap(
   }
 }
 
-void TransformationList::save(const std::string& filename) const {
+void Pipeline::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void TransformationList::save_stream(std::ostream& output_stream) const {
+void Pipeline::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
-TransformationListPtr TransformationList::load(const std::string& filename) {
+PipelinePtr Pipeline::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-TransformationListPtr TransformationList::load_stream(
-    std::istream& input_stream) {
+PipelinePtr Pipeline::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
-  std::shared_ptr<TransformationList> deserialize_into(
-      new TransformationList());
+  PipelinePtr deserialize_into(new Pipeline());
   iarchive(*deserialize_into);
   return deserialize_into;
 }
 
 template <class Archive>
-void TransformationList::serialize(Archive& archive) {
+void Pipeline::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _transformations);
 }
 
 }  // namespace thirdai::data
 
-CEREAL_REGISTER_TYPE(thirdai::data::TransformationList)
+CEREAL_REGISTER_TYPE(thirdai::data::Pipeline)
