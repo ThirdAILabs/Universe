@@ -41,9 +41,9 @@ void ColdStartMetaData::serialize(Archive& archive) {
   archive(_label_delimiter, _label_column_name);
 }
 
-void verifyDataTypes(data::TabularDatasetFactoryPtr& dataset_factory) {
+void verifyDataTypes(TabularDatasetFactoryPtr& dataset_factory) {
   if (dataset_factory->inputDataTypes().size() != 1 ||
-      !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
+      !asText(dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
         "This function can only be used on datasets with a single "
         "text input column and target column. The current model is configured "
@@ -57,8 +57,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    data::TabularDatasetFactoryPtr& dataset_factory,
-    ColdStartMetaDataPtr& metadata) {
+    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata) {
   verifyDataTypes(dataset_factory);
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;
@@ -92,8 +91,7 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    data::TabularDatasetFactoryPtr& dataset_factory,
-    ColdStartMetaDataPtr& metadata) {
+    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata) {
   verifyDataTypes(dataset_factory);
 
   std::string text_column_name =
