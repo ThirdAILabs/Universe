@@ -540,7 +540,7 @@ class NeuralDB:
         self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
         matching_entities = None
-        if constraints and len(constraints) > 0:
+        if constraints:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
