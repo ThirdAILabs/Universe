@@ -2,7 +2,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 import pandas as pd
 from langchain.document_loaders import (
@@ -30,7 +30,7 @@ class UnstructuredParagraph:
     para: str
     filepath: str
     filetype: str
-    page_no: int
+    page_no: Optional[int]
     display: str
 
 
@@ -43,11 +43,6 @@ class EmlParagraph(UnstructuredParagraph):
 
 class UnstructuredParse:
     def __init__(self, filepath: str):
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,
-            chunk_overlap=75,
-            length_function=len,
-        )
         self._filepath = filepath
         self._ext = Path(filepath).suffix
         self._post_processors = [
@@ -273,7 +268,7 @@ class TxtParse(UnstructuredParse):
         for column in ["para", "display"]:
             df[column] = df[column].apply(ensure_valid_encoding)
 
-        return df, True
+        return df
 
 
 class DocParse(UnstructuredParse):
