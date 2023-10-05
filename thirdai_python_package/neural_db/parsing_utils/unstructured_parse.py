@@ -174,7 +174,7 @@ class EmlParse(UnstructuredParse):
             index=range(len(paragraphs)),
             columns=[
                 "para",
-                "filename",
+                "filepath",
                 "filetype",
                 "page",
                 "display",
