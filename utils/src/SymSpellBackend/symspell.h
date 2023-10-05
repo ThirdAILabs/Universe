@@ -57,9 +57,6 @@ class SpellCheckedSentence {
                        std::vector<float> scores)
       : _tokens(std::move(tokens)), _scores(std::move(scores)) {}
 
-  SpellCheckedSentence(const SpellCheckedSentence& other)
-      : _tokens(other._tokens), _scores(other._scores) {}
-
   SpellCheckedSentence copyWithTokenAndScore(const std::string& token,
                                              float score, uint32_t index) {
     SpellCheckedSentence temp(*this);
