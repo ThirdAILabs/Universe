@@ -540,11 +540,10 @@ class NeuralDB:
         self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
         matching_entities = None
-        if constraints:
+        if constraints and len(constraints) > 0:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
-        if matching_entities:
             result_ids = self._savable_state.model.score(
                 samples=[query], entities=[matching_entities], n_results=top_k
             )[0]
