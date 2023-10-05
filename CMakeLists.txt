@@ -443,6 +443,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
+    utils/src/SymSpellBackend/symspell.cc
+    utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc

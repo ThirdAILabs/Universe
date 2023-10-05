@@ -36,6 +36,10 @@ class DatasetLoader final {
                                                       size_t num_batches,
                                                       bool verbose = true);
 
+  std::vector<MapInputBatch> loadAllMapInputs(
+      size_t batch_size, const std::string& output_column_name,
+      const std::string& input_column_name);
+
   void restart();
 
   uint32_t getInputDim() {
