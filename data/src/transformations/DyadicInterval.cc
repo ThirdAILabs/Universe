@@ -12,10 +12,12 @@
 namespace thirdai::data {
 
 DyadicInterval::DyadicInterval(std::string input_column,
+                               std::optional<std::string> prompt_column,
                                std::string output_interval_prefix,
                                std::string target_column, size_t n_intervals,
                                bool is_bidirectional)
-    : _input_column(std::move(input_column)),
+    : _prompt_column(std::move(prompt_column)),
+      _input_column(std::move(input_column)),
       _output_interval_prefix(std::move(output_interval_prefix)),
       _target_column(std::move(target_column)),
       _is_bidirectional(is_bidirectional),
@@ -25,6 +27,8 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto texts = columns.getArrayColumn<uint32_t>(_input_column);
+
+  ArrayColumnBasePtr<uint32_t> prompts;
 
   size_t chunk_size = (1UL << (_n_intervals - 1)) + 1;
 
@@ -42,11 +46,17 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
     }
   }
   std::vector<uint32_t> targets(sample_offsets.back());
+  std::vector<std::vector<uint32_t>> prompt_inputs;
+  if (_prompt_column) {
+    prompt_inputs.resize(sample_offsets.back());
+    prompts = columns.getArrayColumn<uint32_t>(*_prompt_column);
+  }
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) \
-    shared(texts, sample_offsets, intervals, targets, chunk_size, error)
+#pragma omp parallel for default(none)                                \
+    shared(texts, sample_offsets, intervals, _prompt_column, prompts, \
+           prompt_inputs, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto tokens = texts->row(i);
@@ -70,6 +80,10 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
           }
 
           targets[sample_offset] = tokens[target];
+          if (_prompt_column) {
+            auto prompt = prompts->row(i);
+            prompt_inputs[sample_offset] = prompt.range(0, prompt.size());
+          }
 
           sample_offset++;
         }
@@ -106,6 +120,11 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   output_columns[_target_column] =
       ValueColumn<uint32_t>::make(std::move(targets), texts->dim());
+
+  if (_prompt_column) {
+    output_columns[*_prompt_column] =
+        ArrayColumn<uint32_t>::make(std::move(prompt_inputs), prompts->dim());
+  }
 
   return ColumnMap(output_columns);
 }
