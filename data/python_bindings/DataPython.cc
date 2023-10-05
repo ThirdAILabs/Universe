@@ -102,6 +102,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE,
            py::arg("shuffle_seed") = global_random::nextSeed())
       .def("next", &Loader::next, py::arg("max_batches") = Loader::NO_LIMIT)
+      .def("next_column_map", &Loader::nextColumnMap,
+           py::arg("max_batches") = Loader::NO_LIMIT)
       .def("all", &Loader::all);
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
