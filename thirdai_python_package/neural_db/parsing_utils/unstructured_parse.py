@@ -146,7 +146,6 @@ class EmlParse(UnstructuredParse):
             print("Cannot process file:", filepath)
 
     def process_elements(self) -> Tuple[Union[EmlParagraph, str], bool]:
-        rows = []
         try:
             docs = self.EmlLoader.load()
             text = ""
@@ -156,7 +155,7 @@ class EmlParse(UnstructuredParse):
             text = re.sub(pattern=r"\s+", repl=" ", string=text)
             chunks = chunk_text(text)
 
-            row = [
+            rows = [
                 EmlParagraph(
                     para=chunk,
                     filepath=self._filepath,
@@ -169,7 +168,6 @@ class EmlParse(UnstructuredParse):
                 )
                 for chunk in chunks
             ]
-            rows.append(row)
 
             return rows, True
         except Exception as e:
