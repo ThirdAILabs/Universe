@@ -335,10 +335,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/ops/PatchEmbedding.cc
     bolt/src/nn/ops/PatchSum.cc
-<<<<<<< HEAD
     bolt/src/nn/ops/Sparsify.cc
-=======
->>>>>>> 2f72dfec765fe8b17d62c6c671d2a0156a63002c
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
