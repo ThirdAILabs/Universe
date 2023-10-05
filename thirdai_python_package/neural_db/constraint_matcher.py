@@ -8,11 +8,11 @@ from sortedcontainers import SortedDict
 ItemT = TypeVar("ItemT")
 
 
-ValueItemIndex = SortedDict
+ItemConstraintIndex = SortedDict
 
 
 class Filter(Generic[ItemT]):
-    def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         raise NotImplementedError()
 
 
@@ -20,7 +20,7 @@ class AnyOf(Filter[ItemT]):
     def __init__(self, values: Iterable[Any]):
         self.values = values
 
-    def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         matches = set()
         for value in self.values:
             if value in value_to_items:
@@ -41,7 +41,7 @@ class InRange(Filter[ItemT]):
         self.max = maximum
         self.inclusive = (inclusive_min, inclusive_max)
 
-    def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         values = value_to_items.irange(self.min, self.max, self.inclusive)
         return AnyOf(values).filter(value_to_items)
 
@@ -50,7 +50,7 @@ class GreaterThan(InRange[ItemT]):
     def __init__(self, minimum: Any, include_equal=False):
         super().__init__(minimum, maximum=None, inclusive_min=include_equal)
 
-    def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         return self.in_range.filter(value_to_items)
 
 
@@ -58,7 +58,7 @@ class LessThan(InRange[ItemT]):
     def __init__(self, maximum: Any, include_equal=False):
         super().__init__(minimum=None, maximum=maximum, inclusive_max=include_equal)
 
-    def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         return self.in_range.filter(value_to_items)
 
 
@@ -81,7 +81,7 @@ class ConstraintValue:
 class ConstraintIndex(Generic[ItemT]):
     def __init__(self):
         self._any_value = set()
-        self._match_value = ValueItemIndex()
+        self._match_value = ItemConstraintIndex()
 
     def match(self, filterer: Filter) -> Set[ItemT]:
         return self._any_value.union(filterer.filter(self._match_value))
