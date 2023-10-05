@@ -97,7 +97,7 @@ class PptxParse(UnstructuredParse):
                         filepath=self._filepath,
                         filetype=self._ext,
                         page_no=doc.metadata["page_number"],
-                        display=str(text.replace("\n", " ")),
+                        display=str(chunk.replace("\n", " ")),
                     )
                     for chunk in chunks
                 ]
@@ -156,7 +156,7 @@ class EmlParse(UnstructuredParse):
                     filepath=self._filepath,
                     filetype=self._ext,
                     page_no=None,
-                    display=str(text.replace("\n", " ")),
+                    display=chunk.replace("\n", " "),
                     subject=doc.metadata["subject"],
                     sent_from=doc.metadata["sent_from"],
                     sent_to=doc.metadata["sent_to"],
