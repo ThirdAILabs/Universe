@@ -448,7 +448,9 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        samples = [(clean_text(text), label) for text, label in pairs]
+        samples = [
+            ({self.get_query_col(): clean_text(text)}, label) for text, label in pairs
+        ]
 
         self.model.upvote(
             source_target_samples=samples,
