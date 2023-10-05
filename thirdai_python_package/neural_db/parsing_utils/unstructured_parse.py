@@ -2,7 +2,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, final
 
 import pandas as pd
 from langchain.document_loaders import (
@@ -24,6 +24,7 @@ from unstructured.cleaners.core import (
 
 from .utils import chunk_text, clean_text_and_remove_urls, ensure_valid_encoding
 
+PPTX_CHUNK_THRESHOLD: final = 30
 
 @dataclass
 class UnstructuredParagraph:
@@ -79,8 +80,10 @@ class PptxParse(UnstructuredParse):
         paragraphs = []
         try:
             docs = self.PptxLoader.load()
+            current_text = ""
+            last_page_no = len(docs)
             for doc in docs:
-                text = doc.page_content
+                text = current_text + " " + doc.page_content
                 text = (
                     str(text)
                     .strip()
@@ -90,7 +93,19 @@ class PptxParse(UnstructuredParse):
                     .lower()
                 )
                 chunks = chunk_text(text)
-
+                if len(chunks[-1]) < PPTX_CHUNK_THRESHOLD:
+                    if len(chunks) == 1:
+                        if last_page_no != doc.metadata["page_number"]:
+                            current_text = text
+                            continue
+                        elif len(paragraphs) > 0:
+                            paragraphs[-1].para += " " + text
+                            continue
+                    else:
+                        chunks[-2] += " " + chunks[-1]
+                        chunks.pop()
+                        
+                
                 row = [
                     UnstructuredParagraph(
                         para=chunk,
