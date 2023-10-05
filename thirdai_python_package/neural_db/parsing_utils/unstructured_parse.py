@@ -27,7 +27,7 @@ PPTX_CHUNK_THRESHOLD: final = 30
 
 
 @dataclass
-class UnstructuredParagraph():
+class UnstructuredParagraph:
     para: str
     filepath: str
     filetype: str
