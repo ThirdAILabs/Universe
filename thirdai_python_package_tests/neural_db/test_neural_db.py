@@ -7,10 +7,10 @@ import pytest
 from ndb_utils import (
     PDF_FILE,
     all_doc_getters,
+    create_simple_dataset,
     docs_with_meta,
     metadata_constraints,
     train_simple_neural_db,
-    create_simple_dataset,
 )
 from thirdai import bolt
 from thirdai import neural_db as ndb
