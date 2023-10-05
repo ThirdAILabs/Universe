@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
+from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .utils import hash_file, hash_string
 
@@ -44,6 +45,13 @@ class Document:
         for i in range(self.size):
             sha1.update(bytes(self.reference(i).text, "utf-8"))
         return sha1.hexdigest()
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        raise NotImplementedError()
+
+    def all_entity_ids(self) -> List[int]:
+        raise NotImplementedError()
 
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
@@ -151,10 +159,13 @@ class DocumentRow:
         self.weak = weak
 
 
+DocAndOffset = Tuple[Document, int]
+
+
 class DocumentDataSource(PyDataSource):
     def __init__(self, id_column, strong_column, weak_column):
         PyDataSource.__init__(self)
-        self.documents: List[Tuple[Document, int]] = []
+        self.documents: List[DocAndOffset] = []
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
@@ -213,8 +224,9 @@ class DocumentManager:
         self.weak_column = weak_column
 
         # After python 3.8, we don't need to use OrderedDict as Dict is ordered by default
-        self.registry: OrderedDict[str, Tuple[Document, int]] = OrderedDict()
+        self.registry: OrderedDict[str, DocAndOffset] = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
+        self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
 
     def _next_id(self):
         if len(self.registry) == 0:
@@ -233,11 +245,22 @@ class DocumentManager:
                 self.registry[doc_hash] = doc_and_id
                 self.source_id_prefix_trie[doc_hash] = doc_hash
                 intro.add(doc, start_id)
+                self.constraint_matcher.index(
+                    item=(doc, start_id), constraints=doc.matched_constraints
+                )
             doc, start_id = self.registry[doc_hash]
             train.add(doc, start_id)
 
         return IntroAndTrainDocuments(intro=intro, train=train), [
             doc.hash for doc in documents
+        ]
+
+    def entity_ids_by_constraints(self, constraints: Dict[str, Any]):
+        filters = to_filters(constraints)
+        return [
+            start_id + entity_id
+            for doc, start_id in self.constraint_matcher.match(filters)
+            for entity_id in doc.all_entity_ids()
         ]
 
     def sources(self):
@@ -296,6 +319,11 @@ class DocumentManager:
             subdir = directory / str(i)
             doc.load_meta(subdir)
 
+        if not hasattr(self, "doc_constraints"):
+            self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
+            for item in self.registry.values():
+                self.constraint_matcher.index(item, item[0].matched_constraints)
+
 
 class CSV(Document):
     def __init__(
@@ -306,6 +334,7 @@ class CSV(Document):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
+        metadata={},
     ) -> None:
         self.df = pd.read_csv(path)
 
@@ -343,12 +372,13 @@ class CSV(Document):
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
-        self._hash = hash_file(path)
+        self._hash = hash_file(path, metadata="csv-" + str(metadata))
         self.id_column = id_column
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
 
     @property
     def hash(self) -> str:
@@ -361,6 +391,13 @@ class CSV(Document):
     @property
     def name(self) -> str:
         return self.path.name
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def all_entity_ids(self) -> List[int]:
+        return self.df[self.id_column].to_list()
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -380,7 +417,7 @@ class CSV(Document):
             element_id=element_id,
             text=text,
             source=str(self.path.absolute()),
-            metadata=row.to_dict(),
+            metadata={**row.to_dict(), **self.doc_metadata},
         )
 
     def context(self, element_id: int, radius) -> str:
@@ -429,16 +466,20 @@ class CSV(Document):
             # this else statement handles the deprecated attribute "path" in self, we can remove this soon
             self.path = directory / self.path.name
 
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
+
 
 # Base class for PDF and DOCX classes because they share the same logic.
 class Extracted(Document):
-    def __init__(self, path: str, save_extra_info=True):
+    def __init__(self, path: str, save_extra_info=True, metadata={}):
         path = str(path)
         self.df = self.process_data(path)
-        self.hash_val = hash_file(path)
+        self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
+        self.doc_metadata = metadata
 
     def process_data(
         self,
@@ -458,6 +499,13 @@ class Extracted(Document):
     def name(self) -> str:
         return self.path.name
 
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
     def strong_text(self, element_id: int) -> str:
         return ""
 
@@ -475,7 +523,7 @@ class Extracted(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=str(self.path.absolute()),
-            metadata=self.df.iloc[element_id].to_dict(),
+            metadata={**self.df.iloc[element_id].to_dict(), **self.doc_metadata},
         )
 
     def context(self, element_id, radius) -> str:
@@ -534,6 +582,9 @@ class Extracted(Document):
             # this else statement handles the deprecated attribute "path" in self, we can remove this soon
             self.path = directory / self.path.name
 
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
+
 
 def process_pdf(path: str) -> pd.DataFrame:
     elements, success = pdf_parse.process_pdf_file(path)
@@ -558,11 +609,8 @@ def process_docx(path: str) -> pd.DataFrame:
 
 
 class PDF(Extracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
@@ -572,11 +620,8 @@ class PDF(Extracted):
 
 
 class DOCX(Extracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
@@ -592,12 +637,14 @@ class URL(Document):
         url_response: Response = None,
         save_extra_info: bool = True,
         title_is_strong: bool = False,
+        metadata={},
     ):
         self.url = url
         self.df = self.process_data(url, url_response)
-        self.hash_val = hash_string(url)
+        self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
+        self.doc_metadata = metadata
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -622,6 +669,13 @@ class URL(Document):
     def name(self) -> str:
         return self.url
 
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
     def strong_text(self, element_id: int) -> str:
         return self.df[self._strong_column if self._strong_column else "text"].iloc[
             element_id
@@ -638,9 +692,9 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={"title": self.df["title"].iloc[element_id]}
+            metadata={"title": self.df["title"].iloc[element_id], **self.doc_metadata}
             if "title" in self.df.columns
-            else {},
+            else self.doc_metadata,
         )
 
     def context(self, element_id, radius) -> str:
@@ -660,12 +714,15 @@ class SentenceLevelExtracted(Extracted):
     sentence to increase recall.
     """
 
-    def __init__(self, path: str, save_extra_info: bool = True):
+    def __init__(self, path: str, save_extra_info: bool = True, metadata={}):
         self.path = Path(path)
         self.df = self.parse_sentences(self.process_data(path))
-        self.hash_val = hash_file(path)
+        self.hash_val = hash_file(
+            path, metadata="sentence-level-extracted-" + str(metadata)
+        )
         self.para_df = self.df["para"].unique()
         self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -749,7 +806,7 @@ class SentenceLevelExtracted(Extracted):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=str(self.path.absolute()),
-            metadata=self.df.iloc[element_id].to_dict(),
+            metadata={**self.df.iloc[element_id].to_dict(), **self.doc_metadata},
             upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
         )
 
@@ -778,13 +835,13 @@ class SentenceLevelExtracted(Extracted):
             # deprecated, self.path should not be in self
             self.path = directory / self.path.name
 
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
+
 
 class SentenceLevelPDF(SentenceLevelExtracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,
@@ -794,11 +851,8 @@ class SentenceLevelPDF(SentenceLevelExtracted):
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
-    def __init__(
-        self,
-        path: str,
-    ):
-        super().__init__(path=path)
+    def __init__(self, path: str, metadata={}):
+        super().__init__(path=path, metadata=metadata)
 
     def process_data(
         self,

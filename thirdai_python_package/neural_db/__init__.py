@@ -1,5 +1,6 @@
 try:
     from . import parsing_utils
+    from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan
     from .documents import (
         CSV,
         DOCX,

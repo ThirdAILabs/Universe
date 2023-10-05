@@ -76,7 +76,15 @@ class Model:
         raise NotImplementedError()
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
+        self,
+        samples: InferSamples,
+        n_results: int,
+        **kwargs,
+    ) -> Predictions:
+        raise NotImplementedError()
+
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
         raise NotImplementedError()
 
@@ -382,11 +390,20 @@ class Mach(Model):
         return self.n_ids != 0
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
+        self,
+        samples: InferSamples,
+        n_results: int,
+        **kwargs,
     ) -> Predictions:
-        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
+        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         return self.model.predict_batch(infer_batch)
+
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
+    ) -> Predictions:
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        return self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
 
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
@@ -431,9 +448,9 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        query_col = self.get_query_col()
-        query_col = self.get_query_col()
-        samples = [({query_col: clean_text(text)}, label) for text, label in pairs]
+        samples = [
+            ({self.get_query_col(): clean_text(text)}, label) for text, label in pairs
+        ]
 
         self.model.upvote(
             source_target_samples=samples,
