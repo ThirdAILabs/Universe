@@ -73,7 +73,6 @@ class UDTMachClassifier final : public UDTBackend {
 
   py::object scoreBatch(const MapInputBatch& samples,
                         const std::vector<std::vector<Label>>& classes,
-                        bool sparse_inference,
                         std::optional<uint32_t> top_k) final;
 
   py::object outputCorrectness(const MapInputBatch& samples,

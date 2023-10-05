@@ -97,7 +97,7 @@ class UDT {
    */
   py::object scoreBatch(const MapInputBatch& samples,
                         const std::vector<std::vector<Label>>& classes,
-                        bool sparse_inference, std::optional<uint32_t> top_k);
+                        std::optional<uint32_t> top_k);
 
   py::object outputCorrectness(const MapInputBatch& sample,
                                const std::vector<uint32_t>& labels,

@@ -7,8 +7,6 @@ from sortedcontainers import SortedDict
 
 ItemT = TypeVar("ItemT")
 
-# TODO(Geordie): Support range queries
-
 
 ValueItemIndex = SortedDict
 
@@ -30,12 +28,9 @@ class AnyOf(Filter[ItemT]):
         return matches
 
 
-class EqualTo(Filter[ItemT]):
+class EqualTo(AnyOf[ItemT]):
     def __init__(self, value: Any):
-        self.any_of = AnyOf([value])
-
-    def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
-        return self.any_of.filter(value_to_items)
+        super().__init__([value])
 
 
 class InRange(Filter[ItemT]):
@@ -51,30 +46,33 @@ class InRange(Filter[ItemT]):
         return AnyOf(values).filter(value_to_items)
 
 
-class GreaterThan(Filter[ItemT]):
+class GreaterThan(InRange[ItemT]):
     def __init__(self, minimum: Any, include_equal=False):
-        self.in_range = InRange(minimum, maximum=None, inclusive_min=include_equal)
+        super().__init__(minimum, maximum=None, inclusive_min=include_equal)
 
     def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
         return self.in_range.filter(value_to_items)
 
 
-class LessThan(Filter[ItemT]):
+class LessThan(InRange[ItemT]):
     def __init__(self, maximum: Any, include_equal=False):
-        self.in_range = InRange(
-            minimum=None, maximum=maximum, inclusive_max=include_equal
-        )
+        super().__init__(minimum=None, maximum=maximum, inclusive_max=include_equal)
 
     def filter(self, value_to_items: ValueItemIndex) -> Set[ItemT]:
         return self.in_range.filter(value_to_items)
 
 
 class ConstraintValue:
-    def __init__(self, value: Optional[Any]):
+    def __init__(self, value: Any = None, is_any: bool = False):
+        if is_any and value is not None:
+            raise RuntimeError(
+                "ConstraintValue cannot accept non-None value and is_any=True at the same time."
+            )
         self._value = value
+        self._is_any = is_any
 
     def any(self):
-        return self._value is None
+        return self._is_any
 
     def value(self):
         return self._value

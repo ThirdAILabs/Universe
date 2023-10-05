@@ -541,14 +541,14 @@ class NeuralDB:
     def search(
         self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
-        id_range = None
+        matching_entities = None
         if constraints:
-            id_range = self._savable_state.documents.entity_ids_by_constraints(
+            matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
-        if id_range:
+        if matching_entities:
             result_ids = self._savable_state.model.score(
-                samples=[query], entities=[id_range], n_results=top_k
+                samples=[query], entities=[matching_entities], n_results=top_k
             )[0]
         else:
             result_ids = self._savable_state.model.infer_labels(

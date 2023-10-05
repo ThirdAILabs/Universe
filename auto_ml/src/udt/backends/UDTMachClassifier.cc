@@ -300,7 +300,7 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
 
 py::object UDTMachClassifier::scoreBatch(
     const MapInputBatch& samples,
-    const std::vector<std::vector<Label>>& classes, bool sparse_inference,
+    const std::vector<std::vector<Label>>& classes,
     std::optional<uint32_t> top_k) {
   std::vector<std::unordered_set<uint32_t>> entities(classes.size());
   for (uint32_t row = 0; row < classes.size(); row++) {
@@ -310,9 +310,12 @@ py::object UDTMachClassifier::scoreBatch(
     }
   }
 
+  // sparse inference could become an issue here because maybe the entities
+  // we score wouldn't otherwise be in the top results, thus their buckets have
+  // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
                      ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               sparse_inference)
+                               /* sparse_inference= */ false)
                      .at(0);
 
   size_t batch_size = samples.size();
