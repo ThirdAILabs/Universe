@@ -111,7 +111,7 @@ class PptxParse(UnstructuredParse):
     def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
         df = pd.DataFrame(
             index=range(len(paragraphs)),
-            columns=["para", "filename", "filetype", "page", "display"],
+            columns=["para", "filepath", "filetype", "page", "display"],
         )
         for i, elem in enumerate(paragraphs):
             df.iloc[i] = [
