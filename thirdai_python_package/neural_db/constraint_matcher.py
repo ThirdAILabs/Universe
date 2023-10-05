@@ -50,16 +50,10 @@ class GreaterThan(InRange[ItemT]):
     def __init__(self, minimum: Any, include_equal=False):
         super().__init__(minimum, maximum=None, inclusive_min=include_equal)
 
-    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
-        return self.in_range.filter(value_to_items)
-
 
 class LessThan(InRange[ItemT]):
     def __init__(self, maximum: Any, include_equal=False):
         super().__init__(minimum=None, maximum=maximum, inclusive_max=include_equal)
-
-    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
-        return self.in_range.filter(value_to_items)
 
 
 class ConstraintValue:
