@@ -99,12 +99,14 @@ class ConstraintIndex(Generic[ItemT]):
 class ConstraintMatcher(Generic[ItemT]):
     def __init__(self):
         self._all_items = set()
-        self._item_constraints = defaultdict(lambda: ConstraintIndex[ItemT]())
+        self._item_constraints = {}
 
     def match(self, filters: Dict[str, Filter]) -> Set[ItemT]:
         matches = self._all_items
 
         for key, filterer in filters.items():
+            if key not in self._item_constraints:
+                return set()
             matches = matches.intersection(self._item_constraints[key].match(filterer))
 
         return matches
@@ -112,6 +114,8 @@ class ConstraintMatcher(Generic[ItemT]):
     def index(self, item: ItemT, constraints: Dict[str, ConstraintValue]) -> None:
         for key, constraint_value in constraints.items():
             self._all_items.add(item)
+            if key not in self._item_constraints:
+                self._item_constraints[key] = ConstraintIndex[ItemT]()
             self._item_constraints[key].index(item, constraint_value)
 
 
