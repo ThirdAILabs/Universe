@@ -111,7 +111,7 @@ class PptxParse(UnstructuredParse):
             return paragraphs, True
         except Exception as e:
             print(e.__str__())
-            return "Cannot process Eml file: " + self._filepath, False
+            return "Cannot process pptx file: " + self._filepath, False
 
     def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
         df = pd.DataFrame(
@@ -153,6 +153,7 @@ class EmlParse(UnstructuredParse):
             for doc in docs:
                 content = doc.page_content
                 text += clean_text_and_remove_urls(content).lower() + " "
+            text = re.sub(pattern=r"\s+", repl=" ", string=text)
             chunks = chunk_text(text)
 
             row = [
@@ -241,10 +242,10 @@ class TxtParse(UnstructuredParse):
                 )
                 for chunk in chunks
             ]
-            return paragraphs
+            return paragraphs, True
         except Exception as e:
             print(str(e))
-            return "Cannot process Text file: " + self._filepath, False
+            return "Cannot process txt file: " + self._filepath, False
 
     def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
         df = pd.DataFrame(
