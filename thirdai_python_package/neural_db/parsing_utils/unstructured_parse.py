@@ -22,7 +22,7 @@ from unstructured.cleaners.core import (
     replace_unicode_quotes,
 )
 
-from utils import chunk_text, clean_text_and_remove_urls, ensure_valid_encoding
+from .utils import chunk_text, clean_text_and_remove_urls, ensure_valid_encoding
 
 
 @dataclass
