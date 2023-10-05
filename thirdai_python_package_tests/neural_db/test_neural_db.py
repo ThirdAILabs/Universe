@@ -528,3 +528,27 @@ def test_neural_db_constrained_search_with_range_constraint():
     )
     assert len(references) > 0
     assert all([ref.metadata["score"] == 0.9 for ref in references])
+
+
+def test_neural_db_constrained_search_with_comparison_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    # Make sure that without constraints, we get results from both documents.
+    references = db.search("hello", top_k=10)
+    assert len(references) > 0
+    assert not all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.GreaterThan("2023-01-01")}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search("hello", top_k=10, constraints={"score": ndb.LessThan(0.6)})
+    assert len(references) > 0
+    assert all([ref.metadata["score"] == 0.5 for ref in references])
