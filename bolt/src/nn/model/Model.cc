@@ -6,6 +6,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -52,7 +53,6 @@ Model::Model(ComputationList inputs, ComputationList outputs,
   std::unordered_set<std::string> op_names;
   std::unordered_set<OpPtr> ops;
   for (const auto& comp : _computation_order) {
-    ops.insert(comp->op());
     std::string name = comp->op()->name();
 
     // Check if we have found a new op with the same name.
@@ -60,8 +60,9 @@ Model::Model(ComputationList inputs, ComputationList outputs,
       throw std::invalid_argument(
           "Found multiple Ops in model with the name '" + name +
           "'. All ops in a model must have unique names. The name of the op "
-          "can be updated with `op.name = 'op_name'`.");
+          "can be updated with `op.name = 'new_name'`.");
     }
+    ops.insert(comp->op());
     op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
@@ -518,8 +519,9 @@ uint32_t Model::setLabels(const TensorList& label_batches) {
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
     auto fully_connected = FullyConnected::cast(output->op());
+    auto switch_op = Switch::cast(output->op());
 
-    if (fully_connected) {
+    if (fully_connected || switch_op) {
       output->addInput(label);
     }
   }

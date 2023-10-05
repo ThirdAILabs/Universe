@@ -7,13 +7,13 @@
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <limits>
@@ -152,7 +152,7 @@ TEST(ExplanationTests, FeatureHash) {
 }
 
 TEST(ExplanationTests, StringCast) {
-  TransformationList casts({
+  Pipeline casts({
       std::make_shared<StringToToken>("a", "aa", /* dim= */ std::nullopt),
       std::make_shared<StringToDecimal>("b", "bb"),
       std::make_shared<StringToTimestamp>("c", "cc", /* format= */ "%Y-%m-%d"),
@@ -278,7 +278,7 @@ TEST(ExplanationTests, TextTokenizer) {
 }
 
 TEST(ExplanationTests, ComposedTransformations) {
-  TransformationList transformations({
+  Pipeline transformations({
       std::make_shared<TextTokenizer>("a", "words", std::nullopt,
                                       dataset::NaiveSplitTokenizer::make(),
                                       dataset::NGramEncoder::make(1)),

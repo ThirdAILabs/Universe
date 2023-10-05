@@ -274,7 +274,7 @@ BoltVector BoltVector::viewChunk(size_t chunk_idx, size_t chunk_size) const {
     throw std::invalid_argument(
         "Cannot access chunk " + std::to_string(chunk_idx) +
         " with chunk size " + std::to_string(chunk_size) +
-        " vector of length " + std::to_string(len) + ".");
+        " in vector of length " + std::to_string(len) + ".");
   }
   uint32_t* chunk_active_neurons = nullptr;
   if (!isDense()) {

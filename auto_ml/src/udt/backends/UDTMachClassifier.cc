@@ -52,13 +52,11 @@ using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
 UDTMachClassifier::UDTMachClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_name,
-    const data::CategoricalDataTypePtr& target_config,
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
-    const data::TabularOptions& tabular_options,
+    const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
@@ -112,7 +110,7 @@ UDTMachClassifier::UDTMachClassifier(
       target_name, std::numeric_limits<uint32_t>::max(),
       /* delimiter= */ target_config->delimiter);
 
-  _dataset_factory = data::TabularDatasetFactory::make(
+  _dataset_factory = TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
       /* provided_temporal_relationships = */ temporal_tracking_relationships,
       /* label_blocks = */
@@ -130,7 +128,7 @@ UDTMachClassifier::UDTMachClassifier(
   // We want to be able to train input samples on a specific set of hashes so
   // we create a separate dataset factory that does all the same things as the
   // regular dataset factory except with the label block switched out
-  _pre_hashed_labels_dataset_factory = data::TabularDatasetFactory::make(
+  _pre_hashed_labels_dataset_factory = TabularDatasetFactory::make(
       /* input_data_types = */ input_data_types,
       /* provided_temporal_relationships = */ temporal_tracking_relationships,
       /* label_blocks = */ {dataset::BlockList({hash_processing_block})},
@@ -463,7 +461,7 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
 
 std::string UDTMachClassifier::textColumnForDocumentIntroduction() {
   if (_dataset_factory->inputDataTypes().size() != 1 ||
-      !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
+      !asText(_dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
         "Introducing documents can only be used when UDT is configured "
         "with a "
@@ -584,7 +582,7 @@ void UDTMachClassifier::introduceDocument(
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
-  thirdai::data::ColdStartTextAugmentation augmentation(
+  data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
       /* label_column_name= */ _mach_label_block->columnName(),
@@ -751,6 +749,11 @@ void UDTMachClassifier::addBalancingSamples(
     const dataset::DataSourcePtr& data) {
   if (_rlhf_sampler) {
     data->restart();
+    // TODO(Geordie / Nick) Right now, we only load MAX_BALANCING_SAMPLES
+    // samples to avoid the overhead of loading the entire dataset. It's
+    // possible this won't load enough samples to cover all classes.
+    // We may try to keep streaming data until all classes are covered or load
+    // the entire dataset and see if it makes a difference.
     auto samples =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
             ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,

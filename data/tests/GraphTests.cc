@@ -9,7 +9,7 @@
 namespace thirdai::data::tests {
 
 State buildGraph() {
-  auto graph = std::make_shared<automl::data::GraphInfo>(/* feature_dim= */ 4);
+  auto graph = std::make_shared<automl::GraphInfo>(/* feature_dim= */ 4);
 
   State state(graph);
 

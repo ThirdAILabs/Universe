@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 TabularDatasetFactory::TabularDatasetFactory(
     ColumnDataTypes data_types,
@@ -266,4 +266,4 @@ void TabularDatasetFactory::serialize(Archive& archive) {
           _vectors_map, _temporal_context, _data_types, _label_col_names,
           _options);
 }
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

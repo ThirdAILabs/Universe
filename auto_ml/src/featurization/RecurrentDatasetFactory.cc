@@ -15,10 +15,10 @@
 #include <stdexcept>
 #include <vector>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 static void validate(const ColumnDataTypes& data_types,
-                     const data::SequenceDataTypePtr& target) {
+                     const SequenceDataTypePtr& target) {
   for (const auto& [name, type] : data_types) {
     if (auto categorical = asCategorical(type)) {
       if (categorical->metadata_config) {
@@ -36,7 +36,7 @@ static void validate(const ColumnDataTypes& data_types,
 
 RecurrentDatasetFactory::RecurrentDatasetFactory(
     const ColumnDataTypes& data_types, const std::string& target_name,
-    const data::SequenceDataTypePtr& target, uint32_t n_target_classes,
+    const SequenceDataTypePtr& target, uint32_t n_target_classes,
     const TabularOptions& tabular_options)
     : _delimiter(tabular_options.delimiter),
       _target_name(target_name),
@@ -152,4 +152,4 @@ void RecurrentDatasetFactory::serialize(Archive& archive) {
           _inference_featurizer);
 }
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

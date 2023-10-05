@@ -8,11 +8,11 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/GraphInfo.h>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 class GraphDatasetManager {
  public:
-  GraphDatasetManager(data::ColumnDataTypes data_types, std::string target_col,
+  GraphDatasetManager(ColumnDataTypes data_types, std::string target_col,
                       uint32_t n_target_classes, const TabularOptions& options);
 
   dataset::DatasetLoaderPtr indexAndGetLabeledDatasetLoader(
@@ -34,10 +34,10 @@ class GraphDatasetManager {
 
   uint32_t getLabelDim() const { return _n_target_classes; }
 
-  data::ColumnDataTypes dataTypes() { return _data_types; }
+  ColumnDataTypes dataTypes() { return _data_types; }
 
  private:
-  data::ColumnDataTypes _data_types;
+  ColumnDataTypes _data_types;
   std::string _target_col;
   uint32_t _n_target_classes;
   char _delimiter;
@@ -55,4 +55,4 @@ class GraphDatasetManager {
 
 using GraphDatasetManagerPtr = std::shared_ptr<GraphDatasetManager>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl
