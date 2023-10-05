@@ -10,7 +10,6 @@ from langchain.document_loaders import (
     UnstructuredFileLoader,
     UnstructuredPowerPointLoader,
 )
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize
 from unstructured.cleaners.core import (
     clean_bullets,
@@ -283,7 +282,3 @@ class TxtParse(UnstructuredParse):
             df[column] = df[column].apply(ensure_valid_encoding)
 
         return df
-
-
-class DocParse(UnstructuredParse):
-    pass
