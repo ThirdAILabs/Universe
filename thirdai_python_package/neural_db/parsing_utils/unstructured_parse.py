@@ -2,7 +2,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union, Optional, final
+from typing import List, Optional, Tuple, Union, final
 
 import pandas as pd
 from langchain.document_loaders import (
@@ -25,6 +25,7 @@ from unstructured.cleaners.core import (
 from .utils import chunk_text, clean_text_and_remove_urls, ensure_valid_encoding
 
 PPTX_CHUNK_THRESHOLD: final = 30
+
 
 @dataclass
 class UnstructuredParagraph:
@@ -104,8 +105,7 @@ class PptxParse(UnstructuredParse):
                     else:
                         chunks[-2] += " " + chunks[-1]
                         chunks.pop()
-                        
-                
+
                 row = [
                     UnstructuredParagraph(
                         para=chunk,
