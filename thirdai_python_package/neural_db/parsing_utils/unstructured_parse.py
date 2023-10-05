@@ -63,7 +63,7 @@ class UnstructuredParse:
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
         raise NotImplementedError()
 
-    def create_train_df(self, paragraphs: UnstructuredParagraph) -> pd.DataFrame:
+    def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
         raise NotImplementedError()
 
 
