@@ -147,7 +147,7 @@ class EmlParse(UnstructuredParse):
             for doc in docs:
                 content = doc.page_content
                 text += clean_text_and_remove_urls(content).lower() + " "
-            text = re.sub(pattern=r"\s+", repl=" ", string=text)
+            text = re.sub(pattern=r"\s+", repl=" ", string=text).strip()
             chunks = chunk_text(text)
 
             rows = [
