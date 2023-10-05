@@ -191,11 +191,10 @@ class EmlParse(UnstructuredParse):
                 elem.page_no,
                 elem.display,
                 elem.subject,
-                elem.sent_from,
-                elem.sent_to,
+                ",".join(elem.sent_from),
+                ",".join(elem.sent_to),
             ]
-
-        for column in ["para", "display", "subject", "sent_from", "sent_to"]:
+        for column in ["para", "display", "subject"]:
             df[column] = df[column].apply(ensure_valid_encoding)
         return df
 
