@@ -63,7 +63,7 @@ class UnstructuredParse:
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
         raise NotImplementedError()
 
-    def create_train_df(self, paragrpahs: UnstructuredParagraph) -> pd.DataFrame:
+    def create_train_df(self, paragraphs: UnstructuredParagraph) -> pd.DataFrame:
         raise NotImplementedError()
 
 
@@ -113,12 +113,12 @@ class PptxParse(UnstructuredParse):
             print(e.__str__())
             return "Cannot process Eml file: " + self._filepath, False
 
-    def create_train_df(self, paragrpahs: List[UnstructuredParagraph]) -> pd.DataFrame:
+    def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
         df = pd.DataFrame(
-            index=range(len(paragrpahs)),
+            index=range(len(paragraphs)),
             columns=["para", "filename", "filetype", "page", "display"],
         )
-        for i, elem in enumerate(paragrpahs):
+        for i, elem in enumerate(paragraphs):
             df.iloc[i] = [
                 elem.para,
                 elem.filepath,
@@ -175,9 +175,9 @@ class EmlParse(UnstructuredParse):
             print(e.__str__())
             return "Cannot process Eml file: " + self._filepath, False
 
-    def create_train_df(self, paragrpahs: List[EmlParagraph]) -> pd.DataFrame:
+    def create_train_df(self, paragraphs: List[EmlParagraph]) -> pd.DataFrame:
         df = pd.DataFrame(
-            index=range(len(paragrpahs)),
+            index=range(len(paragraphs)),
             columns=[
                 "para",
                 "filename",
@@ -189,7 +189,7 @@ class EmlParse(UnstructuredParse):
                 "sent_to",
             ],
         )
-        for i, elem in enumerate(paragrpahs):
+        for i, elem in enumerate(paragraphs):
             df.iloc[i] = [
                 elem.para,
                 elem.filepath,
@@ -219,7 +219,7 @@ class TxtParse(UnstructuredParse):
             print(str(e))
             print("Cannot process file: ", filepath)
 
-    def get_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
+    def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
         try:
             doc = self.TxtLoader.load()
             content = (
