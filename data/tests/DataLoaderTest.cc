@@ -1,8 +1,10 @@
 #include "gtest/gtest.h"
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
+#include <data/src/TensorConversion.h>
+#include <data/src/columns/Column.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <data/tests/MockDataSource.h>
 #include <optional>
 #include <sstream>
@@ -59,14 +61,14 @@ TEST(DataLoaderTest, Streaming) {
                                          /* delimiter= */ ',',
                                          /* rows_per_load= */ 64);
 
-  auto transformations = TransformationList::make({
-      std::make_shared<StringToToken>("token", "token_cast", n_rows),
-      std::make_shared<StringToTokenArray>("tokens", "tokens_cast", ' ',
-                                           n_rows + 10),
-      std::make_shared<StringToDecimal>("decimal", "decimal_cast"),
-      std::make_shared<StringToDecimalArray>("decimals", "decimals_cast", ' ',
-                                             std::nullopt),
-  });
+  auto transformations =
+      Pipeline::make()
+          ->then(std::make_shared<StringToToken>("token", "token_cast", n_rows))
+          ->then(std::make_shared<StringToTokenArray>("tokens", "tokens_cast",
+                                                      ' ', n_rows + 10))
+          ->then(std::make_shared<StringToDecimal>("decimal", "decimal_cast"))
+          ->then(std::make_shared<StringToDecimalArray>(
+              "decimals", "decimals_cast", ' ', std::nullopt));
 
   auto loader = Loader::make(
       data_iterator, transformations, std::make_shared<State>(),
@@ -128,6 +130,47 @@ TEST(DataLoaderTest, Streaming) {
   ASSERT_EQ(rows_seen.size(), n_rows);
 
   ASSERT_FALSE(loader->next(10).has_value());
+}
+
+void checkColumnContents(const ArrayColumnBasePtr<uint32_t>& column,
+                         const std::vector<std::vector<uint32_t>>& expected) {
+  ASSERT_EQ(column->numRows(), expected.size());
+
+  for (size_t i = 0; i < column->numRows(); i++) {
+    auto row = column->row(i);
+    ASSERT_EQ(row.range(0, row.size()), expected[i]);
+  }
+}
+
+TEST(DataLoaderTest, NextColumnMap) {
+  std::vector<std::string> lines = {"tokens", "1 2 3 4",  "5 6",        "7",
+                                    "8 9 10", "11 12 13", "14 15 16 17"};
+
+  auto data_iterator =
+      CsvIterator::make(std::make_shared<MockDataSource>(lines),
+                        /* delimiter= */ ',',
+                        /* rows_per_load= */ 2);
+
+  auto transform = std::make_shared<StringToTokenArray>("tokens", "tokens_cast",
+                                                        ' ', std::nullopt);
+
+  auto loader = Loader::make(
+      data_iterator, transform, std::make_shared<State>(),
+      {data::OutputColumns("tokens_cast")}, {},
+      /* batch_size= */ 2, /* shuffle= */ false, /* verbose= */ true);
+
+  auto chunk_1 = loader->nextColumnMap(/* max_batches= */ 2);
+  ASSERT_EQ(chunk_1->columns().size(), 1);
+  checkColumnContents(chunk_1->getArrayColumn<uint32_t>("tokens_cast"),
+                      {{1, 2, 3, 4}, {5, 6}, {7}, {8, 9, 10}});
+
+  auto chunk_2 = loader->nextColumnMap(/* max_batches= */ 2);
+  ASSERT_EQ(chunk_2->columns().size(), 1);
+  checkColumnContents(chunk_2->getArrayColumn<uint32_t>("tokens_cast"),
+                      {{11, 12, 13}, {14, 15, 16, 17}});
+
+  auto chunk_3 = loader->nextColumnMap();
+  ASSERT_FALSE(chunk_3.has_value());
 }
 
 }  // namespace thirdai::data::tests

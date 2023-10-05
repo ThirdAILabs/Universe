@@ -17,6 +17,8 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/PatchEmbedding.h>
+#include <bolt/src/nn/ops/PatchSum.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
@@ -66,7 +68,8 @@ py::object toNumpy(const TensorPtr& tensor, const T* data) {
 }
 
 TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
-                          const NumpyArray<float>& values, uint32_t last_dim) {
+                          const NumpyArray<float>& values, uint32_t last_dim,
+                          bool with_grad) {
   if (indices.ndim() != 2) {
     throw std::invalid_argument("Expected indices to be 2D.");
   }
@@ -78,10 +81,10 @@ TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
   uint32_t nonzeros = indices.shape(1);
 
   return Tensor::fromArray(indices.data(), values.data(), batch_size, last_dim,
-                           nonzeros, /* with_grad= */ false);
+                           nonzeros, /* with_grad= */ with_grad);
 }
 
-TensorPtr fromNumpyDense(const NumpyArray<float>& values) {
+TensorPtr fromNumpyDense(const NumpyArray<float>& values, bool with_grad) {
   if (values.ndim() != 2) {
     throw std::invalid_argument("Expected values to be 2D.");
   }
@@ -90,7 +93,7 @@ TensorPtr fromNumpyDense(const NumpyArray<float>& values) {
   uint32_t dim = values.shape(1);
 
   return Tensor::fromArray(nullptr, values.data(), batch_size, dim,
-                           /* nonzeros= */ dim, /* with_grad= */ false);
+                           /* nonzeros= */ dim, /* with_grad= */ with_grad);
 }
 
 void defineTensor(py::module_& nn);
@@ -171,8 +174,9 @@ void defineTensor(py::module_& nn) {
            }),
            py::arg("vector"), py::arg("dim"))
       .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
-           py::arg("dense_dim"))
-      .def(py::init(&fromNumpyDense), py::arg("values"))
+           py::arg("dense_dim"), py::arg("with_grad") = false)
+      .def(py::init(&fromNumpyDense), py::arg("values"),
+           py::arg("with_grad") = false)
       .def("__getitem__", &Tensor::getVector)
       .def("__len__", &Tensor::batchSize)
       .def_property_readonly(
@@ -357,6 +361,45 @@ void defineOps(py::module_& nn) {
   py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
       .def(py::init(&DlrmAttention::make))
       .def("__call__", &DlrmAttention::apply);
+
+  py::class_<PatchEmbedding, PatchEmbeddingPtr, Op>(nn, "PatchEmbedding")
+      .def(py::init(&PatchEmbedding::make), py::arg("emb_dim"),
+           py::arg("patch_dim"), py::arg("n_patches"),
+           py::arg("sparsity") = 1.0, py::arg("activation") = "relu",
+           py::arg("sampling_config") = nullptr, py::arg("use_bias") = true,
+           py::arg("rebuild_hash_tables") = 10,
+           py::arg("reconstruct_hash_functions") = 100)
+      .def("__call__", &PatchEmbedding::apply)
+      .def("set_weights",
+           [](PatchEmbedding& op, const NumpyArray<float>& weights) {
+             if (weights.ndim() != 2 ||
+                 weights.shape(0) != op.patchEmbeddingDim() ||
+                 weights.shape(1) != op.patchDim()) {
+               std::stringstream error;
+               error << "Expected weights to be 2D array with shape ("
+                     << op.patchEmbeddingDim() << ", " << op.patchDim() << ").";
+               throw std::invalid_argument(error.str());
+             }
+             op.setWeights(weights.data());
+           })
+      .def("set_biases",
+           [](PatchEmbedding& op, const NumpyArray<float>& biases) {
+             if (biases.ndim() != 1 ||
+                 biases.shape(0) != op.patchEmbeddingDim()) {
+               std::stringstream error;
+               error << "Expected biases to be 1D array with shape ("
+                     << op.patchEmbeddingDim() << ",).";
+               throw std::invalid_argument(error.str());
+             }
+             op.setBiases(biases.data());
+           })
+      .def("set_hash_table", &PatchEmbedding::setHashTable, py::arg("hash_fn"),
+           py::arg("hash_table"));
+
+  py::class_<PatchSum, PatchSumPtr, Op>(nn, "PatchSum")
+      .def(py::init(&PatchSum::make), py::arg("n_patches"),
+           py::arg("patch_dim"))
+      .def("__call__", &PatchSum::apply);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }

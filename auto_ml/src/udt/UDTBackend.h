@@ -164,11 +164,11 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
+  virtual TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
   }
 
-  virtual data::ColumnDataTypes dataTypes() const {
+  virtual ColumnDataTypes dataTypes() const {
     throw notSupported("data_types");
   }
 

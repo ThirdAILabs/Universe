@@ -12,7 +12,7 @@
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <stdexcept>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 struct GraphBlocks {
   std::shared_ptr<dataset::GraphBuilderBlock> builder_block;
@@ -22,9 +22,9 @@ struct GraphBlocks {
 };
 
 std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
-    const data::ColumnDataTypes& data_types);
+    const ColumnDataTypes& data_types);
 
-GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
+GraphDatasetManager::GraphDatasetManager(ColumnDataTypes data_types,
                                          std::string target_col,
                                          uint32_t n_target_classes,
                                          const TabularOptions& options)
@@ -100,7 +100,7 @@ void GraphDatasetManager::index(const dataset::DataSourcePtr& data_source) {
 }
 
 std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
-    const data::ColumnDataTypes& data_types) {
+    const ColumnDataTypes& data_types) {
   std::vector<dataset::ColumnIdentifier> feature_col_names;
   std::string neighbor_col_name, node_id_col_name;
   GraphBlocks graph_blocks;
@@ -169,4 +169,4 @@ bolt::TensorList GraphDatasetManager::featurizeInput(
                               _inference_featurizer->getDimensions());
 }
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

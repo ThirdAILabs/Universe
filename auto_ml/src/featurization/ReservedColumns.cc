@@ -10,7 +10,7 @@ bool isReservedColumnName(const std::string& name) {
   return std::regex_match(name, re);
 }
 
-void checkNoReservedColumnNames(const data::ColumnDataTypes& data_types) {
+void checkNoReservedColumnNames(const ColumnDataTypes& data_types) {
   for (const auto& [name, _] : data_types) {
     if (isReservedColumnName(name)) {
       throw std::invalid_argument("Column name '" + name +

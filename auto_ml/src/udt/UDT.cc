@@ -24,15 +24,14 @@
 
 namespace thirdai::automl::udt {
 
-UDT::UDT(data::ColumnDataTypes data_types,
-         const data::UserProvidedTemporalRelationships&
-             temporal_tracking_relationships,
-         const std::string& target_col,
-         std::optional<uint32_t> n_target_classes, bool integer_target,
-         std::string time_granularity, uint32_t lookahead, char delimiter,
-         const std::optional<std::string>& model_config,
-         const config::ArgumentMap& user_args) {
-  data::TabularOptions tabular_options;
+UDT::UDT(
+    ColumnDataTypes data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_col, std::optional<uint32_t> n_target_classes,
+    bool integer_target, std::string time_granularity, uint32_t lookahead,
+    char delimiter, const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args) {
+  TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
       "contextual_columns", "boolean", defaults::CONTEXTUAL_COLUMNS);
   tabular_options.time_granularity = std::move(time_granularity);
@@ -55,9 +54,9 @@ UDT::UDT(data::ColumnDataTypes data_types,
   auto target = data_types.at(target_col);
 
   bool has_graph_inputs = hasGraphInputs(data_types);
-  auto as_categorical = data::asCategorical(target);
-  auto as_numerical = data::asNumerical(target);
-  auto as_sequence = data::asSequence(target);
+  auto as_categorical = asCategorical(target);
+  auto as_numerical = asNumerical(target);
+  auto as_sequence = asSequence(target);
 
   if (as_categorical || as_sequence) {
     if (!n_target_classes.has_value()) {
@@ -315,7 +314,7 @@ std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
   return deserialize_into;
 }
 
-bool UDT::hasGraphInputs(const data::ColumnDataTypes& data_types) {
+bool UDT::hasGraphInputs(const ColumnDataTypes& data_types) {
   uint64_t neighbor_col_count = 0;
   uint64_t node_id_col_count = 0;
   for (const auto& [col_name, data_type] : data_types) {
@@ -358,10 +357,9 @@ void UDT::serialize(Archive& archive, const uint32_t version) {
 }
 
 void UDT::throwUnsupportedUDTConfigurationError(
-    const data::CategoricalDataTypePtr& target_as_categorical,
-    const data::NumericalDataTypePtr& target_as_numerical,
-    const data::SequenceDataTypePtr& target_as_sequence,
-    bool has_graph_inputs) {
+    const CategoricalDataTypePtr& target_as_categorical,
+    const NumericalDataTypePtr& target_as_numerical,
+    const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs) {
   std::stringstream error_msg;
   error_msg << "Unsupported UDT configuration: ";
 

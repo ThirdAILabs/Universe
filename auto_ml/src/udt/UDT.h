@@ -30,9 +30,8 @@ namespace thirdai::automl::udt {
  */
 class UDT {
  public:
-  UDT(data::ColumnDataTypes data_types,
-      const data::UserProvidedTemporalRelationships&
-          temporal_tracking_relationships,
+  UDT(ColumnDataTypes data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
@@ -226,7 +225,7 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
-  data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
+  ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
 
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a
@@ -461,7 +460,7 @@ class UDT {
    * backend implements this method then UDT instances that use it will support
    * methods relating to temporal tracking and metadata.
    */
-  data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
+  TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }
 
@@ -486,13 +485,12 @@ class UDT {
  private:
   UDT() {}
 
-  static bool hasGraphInputs(const data::ColumnDataTypes& data_types);
+  static bool hasGraphInputs(const ColumnDataTypes& data_types);
 
   static void throwUnsupportedUDTConfigurationError(
-      const data::CategoricalDataTypePtr& target_as_categorical,
-      const data::NumericalDataTypePtr& target_as_numerical,
-      const data::SequenceDataTypePtr& target_as_sequence,
-      bool has_graph_inputs);
+      const CategoricalDataTypePtr& target_as_categorical,
+      const NumericalDataTypePtr& target_as_numerical,
+      const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs);
 
   friend class cereal::access;
 
