@@ -636,8 +636,9 @@ class Unstructured(Extracted):
         self,
         path: Union[str, Path],
         save_extra_info: bool = True,
+        metadata = {}
     ):
-        super().__init__(path=path)
+        super().__init__(path=path, save_extra_info=save_extra_info, metadata=metadata)
 
     def process_data(
         self,

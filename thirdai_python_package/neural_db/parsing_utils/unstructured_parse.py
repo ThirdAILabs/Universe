@@ -16,7 +16,6 @@ from unstructured.cleaners.core import (
     clean_extra_whitespace,
     clean_ligatures,
     clean_non_ascii_chars,
-    clean_ordered_bullets,
     replace_mime_encodings,
     replace_unicode_quotes,
 )
@@ -50,7 +49,6 @@ class UnstructuredParse:
             clean_extra_whitespace,
             clean_non_ascii_chars,
             clean_bullets,
-            clean_ordered_bullets,
             clean_ligatures,
             replace_unicode_quotes,
             replace_mime_encodings,
