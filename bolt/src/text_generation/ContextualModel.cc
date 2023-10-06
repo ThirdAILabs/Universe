@@ -8,6 +8,15 @@ ContextualModel::ContextualModel(
     bolt::ModelPtr model, dataset::TextGenerationFeaturizerPtr featurizer)
     : _model(std::move(model)), _featurizer(std::move(featurizer)) {}
 
+ContextualModel::ContextualModel(
+    ModelPtr model, const proto::bolt::ContextualBackend& backend_config)
+    : _model(std::move(model)),
+      _featurizer(std::make_shared<dataset::TextGenerationFeaturizer>(
+          backend_config.lrc_len(), backend_config.irc_len(),
+          backend_config.src_len(), backend_config.vocab_size(),
+          backend_config.include_position(),
+          backend_config.featurize_in_chunks())) {}
+
 bolt::TensorPtr ContextualModel::nextTokenProbs(
     std::vector<std::vector<uint32_t>> tokens) {
   auto tensors = _featurizer->featurizeInputBatch(tokens, _model->inputDims());
@@ -46,6 +55,21 @@ LabeledDataset ContextualModel::loadDataset(const dataset::DataSourcePtr& data,
 
   return {convertDatasets(dataset, _model->inputDims()),
           convertDataset(labels, _model->labelDims().at(0))};
+}
+
+proto::bolt::GenerativeBackend* ContextualModel::toProto() const {
+  auto* backend = new proto::bolt::GenerativeBackend();
+  auto* model = backend->mutable_contextual();
+
+  const auto& context_info = _featurizer->_context_featurizer;
+  model->set_lrc_len(context_info._lrc_len);
+  model->set_irc_len(context_info._irc_len);
+  model->set_src_len(context_info._src_len);
+  model->set_vocab_size(context_info._vocab_size);
+  model->set_include_position(context_info._include_position);
+  model->set_featurize_in_chunks(_featurizer->_featurize_in_chunks);
+
+  return backend;
 }
 
 }  // namespace thirdai::bolt

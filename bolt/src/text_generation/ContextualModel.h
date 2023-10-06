@@ -7,13 +7,17 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
+#include <proto/generative_model.pb.h>
 
 namespace thirdai::bolt {
 
 class ContextualModel final : public GenerativeBackend {
  public:
-  ContextualModel(bolt::ModelPtr model,
+  ContextualModel(ModelPtr model,
                   dataset::TextGenerationFeaturizerPtr featurizer);
+
+  ContextualModel(ModelPtr model,
+                  const proto::bolt::ContextualBackend& backend_config);
 
   bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>> tokens) final;
@@ -27,6 +31,8 @@ class ContextualModel final : public GenerativeBackend {
                          const DistributedCommPtr& comm) final;
 
   bolt::ModelPtr getBoltModel() final { return _model; }
+
+  proto::bolt::GenerativeBackend* toProto() const final;
 
  private:
   LabeledDataset loadDataset(const dataset::DataSourcePtr& data,

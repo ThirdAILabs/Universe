@@ -40,7 +40,7 @@ ProtobufReader::ProtobufReader(std::shared_ptr<ZeroCopyInputStream> input)
 
 void ProtobufReader::deserialize(google::protobuf::MessageLite& object) {
   // We create a new coded stream for each message.  This is not an overhead.
-  google::protobuf::io::CodedInputStream input(_input.get());
+  CodedInputStream input(_input.get());
 
   // Read the size of the object.
   uint64_t size;
