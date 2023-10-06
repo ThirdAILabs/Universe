@@ -178,7 +178,7 @@ class EmlParse(UnstructuredParse):
 
             return rows, True
         except Exception as e:
-            print(e.__str__())
+            print(str(e))
             return "Cannot process Eml file: " + self._filepath, False
 
     def create_train_df(self, paragraphs: List[EmlParagraph]) -> pd.DataFrame:
