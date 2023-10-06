@@ -82,4 +82,10 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                       /* shuffle_buffer_size= */ 200000);
 }
 
+proto::bolt::GenerativeBackend* DyadicModel::toProto() const {
+  auto* backend = new proto::bolt::GenerativeBackend();
+  backend->mutable_dyadic();
+  return backend;
+}
+
 }  // namespace thirdai::bolt

@@ -8,6 +8,7 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/generative_model.pb.h>
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -28,6 +29,8 @@ class GenerativeBackend {
                                  const DistributedCommPtr& comm) = 0;
 
   virtual ModelPtr getBoltModel() = 0;
+
+  virtual proto::bolt::GenerativeBackend* toProto() const = 0;
 
   virtual ~GenerativeBackend() = default;
 
@@ -90,6 +93,8 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
                   std::unordered_set<uint32_t> punctuation_tokens,
                   float punctuation_repeat_threshold);
 
+  GenerativeModel(ModelPtr model, const proto::bolt::GenerativeModel& config);
+
  public:
   static auto make(std::shared_ptr<GenerativeBackend> model,
                    std::unordered_set<uint32_t> allowed_repeats,
@@ -134,6 +139,16 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
 
   bolt::ModelPtr getBoltModel() { return _model->getBoltModel(); }
 
+  void serializeToStream(std::ostream& output) const;
+
+  static std::shared_ptr<GenerativeModel> deserializeFromStream(
+      std::istream& input);
+
+  void serializeToFile(const std::string& filename) const;
+
+  static std::shared_ptr<GenerativeModel> deserializeFromFile(
+      const std::string& filename);
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<GenerativeModel> load(const std::string& filename);
@@ -144,6 +159,8 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       std::istream& input_stream);
 
  private:
+  proto::bolt::GenerativeModel toProto() const;
+
   std::shared_ptr<GenerativeBackend> _model;
 
   std::unordered_set<uint32_t> _allowed_repeats;

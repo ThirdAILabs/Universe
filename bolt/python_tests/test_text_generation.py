@@ -136,6 +136,29 @@ def test_generation(backend):
     assert gen_1 == gen_2
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("backend", [create_dyadic_backend, create_contextual_backend])
+def test_generative_model_save_load(backend):
+    model = bolt.GenerativeModel(
+        backend(), allowed_repeats=set(), punctuation_tokens=set()
+    )
+
+    gen_1 = model.generate(
+        input_tokens=list(range(20)), beam_width=5, max_predictions=20, temperature=0.4
+    )
+
+    save_path = "./generative_model.proto"
+    model.save_proto(save_path)
+    model = bolt.GenerativeModel.load_proto(save_path)
+    os.remove(save_path)
+
+    gen_2 = model.generate(
+        input_tokens=list(range(20)), beam_width=5, max_predictions=20, temperature=0.4
+    )
+
+    assert gen_1 == gen_2
+
+
 @pytest.fixture()
 def create_simple_dataset():
     def to_json_sample(text):

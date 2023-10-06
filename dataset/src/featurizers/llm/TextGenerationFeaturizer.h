@@ -13,6 +13,12 @@
 
 using json = nlohmann::json;
 
+namespace thirdai::bolt {
+
+class ContextualModel;
+
+}  // namespace thirdai::bolt
+
 namespace thirdai::dataset {
 
 /**
@@ -63,6 +69,8 @@ class TextGenerationFeaturizer;
 using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 
 class TextGenerationFeaturizer final : public Featurizer {
+  friend class bolt::ContextualModel;
+
  public:
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
                            uint32_t vocab_size, bool include_position = false,

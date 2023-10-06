@@ -32,6 +32,8 @@ class DyadicModel final : public GenerativeBackend {
 
   bolt::ModelPtr getBoltModel() final { return _model; }
 
+  proto::bolt::GenerativeBackend* toProto() const final;
+
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
                              size_t batch_size, bool shuffle);
