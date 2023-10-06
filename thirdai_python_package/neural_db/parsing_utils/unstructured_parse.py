@@ -260,10 +260,7 @@ class TxtParse(UnstructuredParse):
         for idx, paragraph in enumerate(paragraphs):
             sentences = sent_tokenize(paragraph.para)
             sentences = [
-                sent.replace("\t", " ")
-                .replace("\n", " ")
-                .strip()
-                .lower()
+                sent.replace("\t", " ").replace("\n", " ").strip().lower()
                 for sent in sentences
             ]
 
