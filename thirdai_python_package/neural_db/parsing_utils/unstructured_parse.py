@@ -170,8 +170,8 @@ class EmlParse(UnstructuredParse):
                     page_no=None,
                     display=chunk.replace("\n", " "),
                     subject=doc.metadata["subject"],
-                    sent_from=doc.metadata["sent_from"],
-                    sent_to=doc.metadata["sent_to"],
+                    sent_from=",".join(doc.metadata["sent_from"]),
+                    sent_to=",".join(doc.metadata["sent_to"]),
                 )
                 for chunk in chunks
             ]
@@ -203,8 +203,8 @@ class EmlParse(UnstructuredParse):
                 elem.page_no,
                 elem.display,
                 elem.subject,
-                ",".join(elem.sent_from),
-                ",".join(elem.sent_to),
+                elem.sent_from,
+                elem.sent_to,
             ]
         for column in ["para", "display", "subject"]:
             df[column] = df[column].apply(ensure_valid_encoding)
