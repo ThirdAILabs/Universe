@@ -642,7 +642,9 @@ class Unstructured(Extracted):
         path: str,
     ) -> pd.DataFrame:
         if path.endswith(".pdf") or path.endswith(".docx"):
-            raise NotImplementedError("For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX ")
+            raise NotImplementedError(
+                "For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX "
+            )
         elif path.endswith(".pptx"):
             self.parser = PptxParse(path)
 
