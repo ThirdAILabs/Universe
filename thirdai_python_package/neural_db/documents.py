@@ -633,10 +633,7 @@ class DOCX(Extracted):
 
 class Unstructured(Extracted):
     def __init__(
-        self,
-        path: Union[str, Path],
-        save_extra_info: bool = True,
-        metadata = {}
+        self, path: Union[str, Path], save_extra_info: bool = True, metadata={}
     ):
         super().__init__(path=path, save_extra_info=save_extra_info, metadata=metadata)
 
