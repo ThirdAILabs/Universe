@@ -71,7 +71,7 @@ class PptxParse(UnstructuredParse):
                 post_processors=self._post_processors,
             )
         except Exception as e:
-            print(e.__str__())
+            print(str(e))
             print("Cannot process file:", filepath)
 
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
@@ -117,7 +117,7 @@ class PptxParse(UnstructuredParse):
 
             return paragraphs, True
         except Exception as e:
-            print(e.__str__())
+            print(str(e))
             return "Cannot process pptx file: " + self._filepath, False
 
     def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
@@ -149,7 +149,7 @@ class EmlParse(UnstructuredParse):
                 post_processors=self._post_processors,
             )
         except Exception as e:
-            print(e.__str__())
+            print(str(e))
             print("Cannot process file:", filepath)
 
     def process_elements(self) -> Tuple[Union[EmlParagraph, str], bool]:
@@ -261,7 +261,6 @@ class TxtParse(UnstructuredParse):
             sentences = sent_tokenize(paragraph.para)
             sentences = [
                 sent.replace("\t", " ")
-                .replace(",", " ")
                 .replace("\n", " ")
                 .strip()
                 .lower()
