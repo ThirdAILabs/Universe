@@ -36,13 +36,16 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
       args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
   bool output_bias =
       args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
+  bool is_output_dense =
+      args.get<bool>("is_output_dense", "bool", defaults::IS_OUTPUT_DENSE);
 
   bool normalize_embeddings = args.get<bool>("normalize_embeddings", "bool",
                                              defaults::NORMALIZE_EMBEDDINGS);
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, /* hidden_bias= */ hidden_bias,
                              /* output_bias= */ output_bias, /* mach= */ mach,
-                             /* normalize_embeddings= */ normalize_embeddings);
+                             /* normalize_embeddings= */ normalize_embeddings,
+                             /* is_output_dense= */ is_output_dense);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -61,7 +64,7 @@ float autotuneSparsity(uint32_t dim) {
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
                       bool hidden_bias, bool output_bias, bool mach,
-                      bool normalize_embeddings) {
+                      bool normalize_embeddings, bool is_output_dense) {
   auto input = bolt::Input::make(input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
@@ -76,10 +79,16 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
-  auto output = bolt::FullyConnected::make(
-                    output_dim, hidden->dim(), sparsity, activation,
-                    /* sampling= */ nullptr, /* use_bias= */ output_bias)
-                    ->apply(hidden);
+
+  auto output = is_output_dense
+                    ? bolt::FullyConnected::make(
+                          output_dim, hidden->dim(), 1, activation,
+                          /* sampling= */ nullptr, /* use_bias= */ output_bias)
+                          ->apply(hidden)
+                    : bolt::FullyConnected::make(
+                          output_dim, hidden->dim(), sparsity, activation,
+                          /* sampling= */ nullptr, /* use_bias= */ output_bias)
+                          ->apply(hidden);
 
   auto labels = bolt::Input::make(output_dim);
 

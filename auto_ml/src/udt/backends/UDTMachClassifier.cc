@@ -548,7 +548,8 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
+    uint32_t batch_size) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -565,7 +566,7 @@ void UDTMachClassifier::introduceDocuments(
   auto dataset_loader =
       _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
 
-  auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE, verbose);
+  auto doc_samples = dataset_loader->loadAll(batch_size, verbose);
 
   auto doc_samples_tensors =
       bolt::convertDatasets(doc_samples, _classifier->model()->inputDims());
@@ -606,7 +607,14 @@ void UDTMachClassifier::introduceDocuments(
 
   addBalancingSamples(cold_start_data);
 
-  updateSamplingStrategy();
+  // No need to update sampling startegy if the output layer is dense.
+  float sparsity = bolt::FullyConnected::cast(
+                       _classifier->model()->opExecutionOrder().back())
+                       ->getSparsity();
+
+  if (sparsity < 1.0) {
+    updateSamplingStrategy();
+  }
 }
 
 void UDTMachClassifier::introduceDocument(

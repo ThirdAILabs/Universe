@@ -16,7 +16,8 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce = false,
                       bool use_tanh = false, bool hidden_bias = true,
                       bool output_bias = true, bool mach = false,
-                      bool normalize_embeddings = false);
+                      bool normalize_embeddings = false,
+                      bool is_output_dense = false);
 
 float autotuneSparsity(uint32_t dim);
 

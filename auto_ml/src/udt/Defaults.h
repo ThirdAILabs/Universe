@@ -24,6 +24,9 @@ constexpr bool HIDDEN_BIAS = true;
 // Whether the output layer has a bias
 constexpr bool OUTPUT_BIAS = true;
 
+// Whether the output layer is dense or not
+constexpr bool IS_OUTPUT_DENSE = false;
+
 // Whether to have layer normalization between hidden layer and output layer
 constexpr bool NORMALIZE_EMBEDDINGS = false;
 
