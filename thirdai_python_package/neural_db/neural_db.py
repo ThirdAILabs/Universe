@@ -503,9 +503,19 @@ class NeuralDB:
         cancel_state: an object that can be used to stop an ongoing insertion.
         Primarily used for PocketLLM.
         """
+        import time
+
+        print("ABOUT TO DEEPCOPY")
+        a = time.time()
         documents_copy = copy.deepcopy(self._savable_state.documents)
+        print("DEEPCOPY TAKES", time.time() - a)
+        a = time.time()
         try:
+            print("ADDING TO DOCS")
             intro_and_train, ids = self._savable_state.documents.add(sources)
+            print("FINISHED ADDING TO DOCS")
+            print("ADD TO DOCS TAKES", time.time() - a)
+            a = time.time()
         except Exception as e:
             self._savable_state.documents = documents_copy
             if on_error is not None:
@@ -513,6 +523,7 @@ class NeuralDB:
                 return []
             raise e
 
+        print("INDEXING DOCS")
         self._savable_state.model.index_documents(
             intro_documents=intro_and_train.intro,
             train_documents=intro_and_train.train,
@@ -522,6 +533,7 @@ class NeuralDB:
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
+        print("INDEXING DOCS TAKES", time.time() - a)
 
         self._savable_state.logger.log(
             session_id=self._user_id,

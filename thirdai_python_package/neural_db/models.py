@@ -199,6 +199,7 @@ def unsupervised_train_on_docs(
     freeze_before_train: bool,
     cancel_state: CancelState,
 ):
+    print("ABOUT TO TRAIN IN UNSUPERVISED FASHION")
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
 
@@ -236,6 +237,26 @@ def make_balancing_samples(documents: DocumentDataSource):
     if len(samples) > 25000:
         samples = random.sample(samples, k=25000)
     return samples
+
+
+def autotune_from_scratch_min_max_epochs(size):
+    if size < 1000:
+        return 10, 15
+    if size < 10000:
+        return 8, 13
+    if size < 100000:
+        return 5, 10
+    if size < 1000000:
+        return 3, 8
+    return 1, 5
+
+
+def autotune_from_base_min_max_epochs(size):
+    if size < 100000:
+        return 5, 10
+    if size < 1000000:
+        return 3, 8
+    return 1, 5
 
 
 class Mach(Model):
@@ -304,8 +325,10 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_before_train = False
-            min_epochs = 10
-            max_epochs = 15
+            print("ABOUT TO AUTOTUNE FROM SCRATCH MIN MAX EPOCHS")
+            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+                train_documents.size
+            )
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -331,11 +354,14 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            min_epochs = 5
-            max_epochs = 10
+            print("ABOUT TO AUTOTUNE FROM BASE MIN MAX EPOCHS")
+            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
+                train_documents.size
+            )
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
+        print("ADDED BALANCING SAMPLES")
 
         if should_train:
             unsupervised_train_on_docs(

@@ -565,3 +565,38 @@ def test_neural_db_constrained_search_no_matches():
         "hello", top_k=10, constraints={"date": ndb.GreaterThan("2024-01-01")}
     )
     assert len(references) == 0
+
+
+def test_neural_db_constrained_search_row_level_constraints():
+    csv_contents = [
+        "id,text,date",
+    ] + [f"{i},a reusable chunk of text,{1500 + i}-10-10" for i in range(1000)]
+
+    with open("chunks.csv", "w") as o:
+        for line in csv_contents:
+            o.write(line + "\n")
+
+    documents = [
+        ndb.CSV(
+            "chunks.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            index_columns=["date"],
+        )
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=True)
+
+    references = db.search(
+        "a reusable chunk of text",
+        top_k=10,
+        constraints={"date": ndb.GreaterThan("2000-01-01")},
+    )
+    assert len(references) > 0
+    assert all([r.metadata["date"] > "2000-01-01" for r in references])
+
+    references = db.search("a reusable chunk of text", top_k=10)
+    assert any([r.metadata["date"] < "2000-01-01" for r in references])
+    assert any([r.metadata["date"] > "2000-01-01" for r in references])

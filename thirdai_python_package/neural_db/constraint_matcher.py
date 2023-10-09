@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
+import pandas as pd
 
 from sortedcontainers import SortedDict
 
@@ -13,6 +14,9 @@ ItemConstraintIndex = SortedDict
 
 class Filter(Generic[ItemT]):
     def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
+        raise NotImplementedError()
+
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
         raise NotImplementedError()
 
 
@@ -27,6 +31,9 @@ class AnyOf(Filter[ItemT]):
                 matches = matches.union(value_to_items[value])
         return matches
 
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
+        return df[df[column_name].isin(self.values)]
+
 
 class EqualTo(AnyOf[ItemT]):
     def __init__(self, value: Any):
@@ -37,6 +44,9 @@ class InRange(Filter[ItemT]):
     def __init__(
         self, minimum: Any, maximum: Any, inclusive_min=True, inclusive_max=True
     ):
+        if minimum is None and maximum is None:
+            raise ValueError("InRange cannot accept None for both minimum and maximum.")
+
         self.min = minimum
         self.max = maximum
         self.inclusive = (inclusive_min, inclusive_max)
@@ -44,6 +54,28 @@ class InRange(Filter[ItemT]):
     def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         values = value_to_items.irange(self.min, self.max, self.inclusive)
         return AnyOf(values).filter(value_to_items)
+
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
+        left_inclusive, right_inclusive = self.inclusive
+        if self.min is None and right_inclusive:
+            return df[df[column_name].le(self.max)]
+        elif self.min is None:
+            return df[df[column_name].lt(self.max)]
+        elif self.max is None and left_inclusive:
+            return df[df[column_name].ge(self.min)]
+        elif self.max is None:
+            return df[df[column_name].gt(self.min)]
+
+        if left_inclusive and right_inclusive:
+            inclusive = "both"
+        elif left_inclusive:
+            inclusive = "left"
+        elif right_inclusive:
+            inclusive = "right"
+        else:
+            inclusive = "neither"
+
+        return df[df[column_name].between(self.min, self.max, inclusive=inclusive)]
 
 
 class GreaterThan(InRange[ItemT]):
