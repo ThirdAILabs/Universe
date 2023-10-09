@@ -23,7 +23,7 @@ def test_dyadic_interval_augmentation():
     columns = transform(columns)
 
     interval_1 = [[0], [1], [2], [3], [5], [6], [7], [8], [10], [20], [21], [22], [23]]
-    assert columns["interval_1"].data() == interval_1
+    assert columns["interval_from_end_1"].data() == interval_1
 
     interval_2 = [
         [0],
@@ -40,7 +40,7 @@ def test_dyadic_interval_augmentation():
         [21, 22],
         [22, 23],
     ]
-    assert columns["interval_2"].data() == interval_2
+    assert columns["interval_from_end_2"].data() == interval_2
 
     interval_4 = [
         [0],
@@ -57,7 +57,7 @@ def test_dyadic_interval_augmentation():
         [20, 21, 22],
         [20, 21, 22, 23],
     ]
-    assert columns["interval_4"].data() == interval_4
+    assert columns["interval_from_end_4"].data() == interval_4
 
     target = [1, 2, 3, 4, 6, 7, 8, 9, 11, 21, 22, 23, 24]
     assert columns["target"].data() == target
@@ -92,13 +92,13 @@ def test_dyadic_interval_inference():
     assert columns["prompt"].data() == prompt
 
     interval_1 = [[4], [7], [8]]
-    assert columns["interval_1"].data() == interval_1
+    assert columns["interval_from_end_1"].data() == interval_1
 
     interval_2 = [[3, 4], [6, 7], [8]]
-    assert columns["interval_2"].data() == interval_2
+    assert columns["interval_from_end_2"].data() == interval_2
 
     interval_4 = [[1, 2, 3, 4], [5, 6, 7], [8]]
-    assert columns["interval_4"].data() == interval_4
+    assert columns["interval_from_end_4"].data() == interval_4
 
 
 @pytest.mark.unit
@@ -145,7 +145,7 @@ def test_dyadic_interval_augmentation_bidirectional():
     assert columns["prompt"].data() == prompt
 
     interval_1 = [[0], [0], [0], [0], [5], [5], [5], [5], [10], [20], [20], [20], [20]]
-    assert columns["rev_interval_1"].data() == interval_1
+    assert columns["interval_from_start_1"].data() == interval_1
 
     interval_2 = [
         [0],
@@ -162,7 +162,7 @@ def test_dyadic_interval_augmentation_bidirectional():
         [20, 21],
         [20, 21],
     ]
-    assert columns["rev_interval_2"].data() == interval_2
+    assert columns["interval_from_start_2"].data() == interval_2
 
     interval_4 = [
         [0],
@@ -179,7 +179,7 @@ def test_dyadic_interval_augmentation_bidirectional():
         [20, 21, 22],
         [20, 21, 22, 23],
     ]
-    assert columns["rev_interval_4"].data() == interval_4
+    assert columns["interval_from_start_4"].data() == interval_4
 
     target = [1, 2, 3, 4, 6, 7, 8, 9, 11, 21, 22, 23, 24]
     assert columns["target"].data() == target
@@ -207,10 +207,10 @@ def test_dyadic_interval_inference_bidirectional():
     columns = transform.inference_featurization(columns)
 
     interval_1 = [[0], [5], [8]]
-    assert columns["rev_interval_1"].data() == interval_1
+    assert columns["interval_from_start_1"].data() == interval_1
 
     interval_2 = [[0, 1], [5, 6], [8]]
-    assert columns["rev_interval_2"].data() == interval_2
+    assert columns["interval_from_start_2"].data() == interval_2
 
     interval_4 = [[0, 1, 2, 3], [5, 6, 7], [8]]
-    assert columns["rev_interval_4"].data() == interval_4
+    assert columns["interval_from_start_4"].data() == interval_4

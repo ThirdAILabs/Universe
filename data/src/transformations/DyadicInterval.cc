@@ -34,15 +34,17 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   std::vector<size_t> sample_offsets = computeOffsets(texts, chunk_size);
 
-  std::vector<std::vector<std::vector<uint32_t>>> intervals(_n_intervals);
+  std::vector<std::vector<std::vector<uint32_t>>> interval_from_end(_n_intervals);
   for (size_t i = 0; i < _n_intervals; i++) {
-    intervals.at(i).assign(sample_offsets.back(), {});
+    interval_from_end.at(i).assign(sample_offsets.back(), {});
   }
+  
+  std::vector<std::vector<std::vector<uint32_t>>> interval_from_start;
   if (_is_bidirectional) {
-    intervals.resize(2 * _n_intervals);
+    interval_from_start.resize(_n_intervals);
 
     for (size_t i = 0; i < _n_intervals; i++) {
-      intervals.at(_n_intervals + i).assign(sample_offsets.back(), {});
+      interval_from_start.at(i).assign(sample_offsets.back(), {});
     }
   }
   std::vector<uint32_t> targets(sample_offsets.back());
@@ -55,7 +57,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
   std::exception_ptr error;
 
 #pragma omp parallel for default(none)                                \
-    shared(texts, sample_offsets, intervals, _prompt_column, prompts, \
+    shared(texts, sample_offsets, interval_from_end, interval_from_start, _prompt_column, prompts, \
            prompt_inputs, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
@@ -69,12 +71,11 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
           for (size_t interval = 0; interval < _n_intervals; interval++) {
             size_t int_len = std::min<size_t>(target - start, 1UL << interval);
             size_t int_start = target - int_len;
-            intervals[interval][sample_offset] =
+            interval_from_end[interval][sample_offset] =
                 tokens.range(int_start, target);
             if (_is_bidirectional) {
-              assert(intervals.size() == 2 * _n_intervals);
               size_t int_end = start + int_len;
-              intervals[_n_intervals + interval][sample_offset] =
+              interval_from_start[interval][sample_offset] =
                   tokens.range(start, int_end);
             }
           }
@@ -101,20 +102,18 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
   std::unordered_map<std::string, ColumnPtr> output_columns;
 
   for (size_t interval = 0; interval < _n_intervals; interval++) {
-    std::string name = _output_interval_prefix + std::to_string(1 << interval);
+    std::string name = _output_interval_prefix + "from_end_" + std::to_string(1 << interval);
 
     output_columns[name] = ArrayColumn<uint32_t>::make(
-        std::move(intervals[interval]), texts->dim());
+        std::move(interval_from_end[interval]), texts->dim());
   }
 
   if (_is_bidirectional) {
-    assert(intervals.size() == 2 * _n_intervals);
     for (size_t interval = 0; interval < _n_intervals; interval++) {
-      std::string name =
-          "rev_" + _output_interval_prefix + std::to_string(1 << interval);
+      std::string name = _output_interval_prefix + "from_start_" + std::to_string(1 << interval);
 
       output_columns[name] = ArrayColumn<uint32_t>::make(
-          std::move(intervals[_n_intervals + interval]), texts->dim());
+          std::move(interval_from_start[interval]), texts->dim());
     }
   }
 
@@ -147,48 +146,48 @@ std::vector<size_t> DyadicInterval::computeOffsets(
 ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
   auto tokens = columns.getArrayColumn<uint32_t>(_input_column);
 
-  std::vector<std::vector<std::vector<uint32_t>>> intervals(_n_intervals);
+  std::vector<std::vector<std::vector<uint32_t>>> intervals_from_end(_n_intervals);
+  std::vector<std::vector<std::vector<uint32_t>>> intervals_from_start;
   for (size_t i = 0; i < _n_intervals; i++) {
-    intervals.at(i).assign(columns.numRows(), {});
+    intervals_from_end.at(i).assign(columns.numRows(), {});
   }
   if (_is_bidirectional) {
-    intervals.resize(2 * _n_intervals);
+    intervals_from_start.resize( _n_intervals);
 
     for (size_t i = 0; i < _n_intervals; i++) {
-      intervals.at(_n_intervals + i).assign(columns.numRows(), {});
+      intervals_from_start.at(i).assign(columns.numRows(), {});
     }
   }
 
 #pragma omp parallel for default(none) \
-    shared(tokens, intervals) if (tokens->numRows() > 1)
+    shared(tokens, intervals_from_start, intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
 
     for (size_t interval = 0; interval < _n_intervals; interval++) {
       size_t int_len = std::min<size_t>(row_tokens.size(), 1UL << interval);
       size_t int_start = row_tokens.size() - int_len;
-      intervals[interval][i] = row_tokens.range(int_start, row_tokens.size());
+      intervals_from_end[interval][i] = row_tokens.range(int_start, row_tokens.size());
       if (_is_bidirectional) {
-        assert(intervals.size() == 2 * _n_intervals);
-        intervals[_n_intervals + interval][i] = row_tokens.range(0, int_len);
+        intervals_from_start[interval][i] = row_tokens.range(0, int_len);
       }
     }
   }
 
   for (size_t interval = 0; interval < _n_intervals; interval++) {
-    std::string name = _output_interval_prefix + std::to_string(1 << interval);
+    std::string name = _output_interval_prefix + "from_end_" + std::to_string(1 << interval);
 
     columns.setColumn(name, ArrayColumn<uint32_t>::make(
-                                std::move(intervals[interval]), tokens->dim()));
+                                std::move(intervals_from_end[interval]), tokens->dim()));
   }
 
   if (_is_bidirectional) {
     for (size_t interval = 0; interval < _n_intervals; interval++) {
       std::string name =
-          "rev_" + _output_interval_prefix + std::to_string(1 << interval);
+          _output_interval_prefix + "from_start_" + std::to_string(1 << interval);
 
       columns.setColumn(name, ArrayColumn<uint32_t>::make(
-                                  std::move(intervals[interval + _n_intervals]),
+                                  std::move(intervals_from_start[interval]),
                                   tokens->dim()));
     }
   }

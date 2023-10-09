@@ -33,12 +33,12 @@ DyadicModel::DyadicModel(bolt::ModelPtr model, bool is_bidirectional)
 
   for (size_t i = 0; i < n_intervals; i++) {
     _bolt_inputs.push_back(
-        data::OutputColumns("interval_" + std::to_string(1 << i)));
+        data::OutputColumns("interval_from_end_" + std::to_string(1 << i)));
   }
   if (is_bidirectional) {
     for (size_t i = 0; i < n_intervals; i++) {
       _bolt_inputs.push_back(
-          data::OutputColumns("rev_interval_" + std::to_string(1 << i)));
+          data::OutputColumns("interval_from_start_" + std::to_string(1 << i)));
     }
   }
 }
