@@ -203,7 +203,7 @@ template <class Archive>
 void DyadicInterval::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_interval_prefix, _target_column, _n_intervals,
-          _is_bidirectional);
+          _is_bidirectional, _prompt_column);
 }
 
 }  // namespace thirdai::data
