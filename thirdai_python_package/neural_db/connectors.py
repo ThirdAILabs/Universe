@@ -1,11 +1,13 @@
 from typing import List
 
 import pandas as pd
+import os
 from sqlalchemy import ColumnCollection, MetaData, create_engine, select, text
 from sqlalchemy.sql.base import ReadOnlyColumnCollection
 from office365.runtime.auth.user_credential import UserCredential
 from office365.sharepoint.client_context import ClientContext
-from .utils import ClientCredentials
+from .utils import ClientCredentials, SUPPORTED_EXT
+import tempfile
 
 BATCH_SIZE = 100_000
 
@@ -55,8 +57,8 @@ class SharePointConnector(DataConnector):
         super().__init__(client_credentials)
         self._site_url = site_url
         self.connect()
-        self.index = pd.DataFrame(columns = ["File_ID", "FileName", "Ext", "server_relative_url"])
-        self.index.set_index(keys = "File_ID", inplace = True)
+        self.index_table = pd.DataFrame(columns = ["File_ID", "FileName", "Ext", "server_relative_url"])
+        self.index_table.set_index(keys = "File_ID", inplace = True)
 
     def connect(self) -> bool:
         creds = UserCredential(user_name = self._username, password = self._password)
@@ -73,13 +75,35 @@ class SharePointConnector(DataConnector):
 
         return True
         
-    def next_batch(self):
+    def next_batch(self) -> str:
         try:
             # Sharepoint Library by it's path
             library = self._ctx.web.get_folder_by_server_relative_path(self._client_credentials._library_path)
             self._ctx.load(library)
+
+            # Get file properties from the library
+            files = library.files
+            self._ctx.load(files)
+
+            # query Execution retrieving file information
+            self._ctx.execute_query()
+
+            for start_file_id in slice(0, len(files), self.FILE_LIMIT):
+                batch_folder = tempfile.TemporaryDirectory()
+                batched_files = files[start_file_id: start_file_id + self.FILE_LIMIT]
+                for file in batched_files:
+                    filename = file.properties["Name"]
+                    file_server_relative_url = file.properties["ServerRelativeUrl"]
+
+                    file_ext = filename.split(sep = '.')[-1]
+
+                    if file_ext in SUPPORTED_EXT:
+                        with open(os.path.join(batch_folder.name, filename)) as fp:
+                            file.download(fp).execute_query()
+                    yield batch_folder
         except Exception as e:
-            pass
+            self.index_table.drop(labels = self.index_table.index, inplace = True)
+            print(str(e))
 
     def get_session(self):
         return self._ctx
