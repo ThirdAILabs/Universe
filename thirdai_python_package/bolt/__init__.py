@@ -8,10 +8,13 @@ from .udt_modifications import (
     modify_udt,
 )
 
+from seismic_modifications import modify_seismic
+
 modify_udt()
 modify_graph_udt()
 modify_mach_udt()
 add_neural_index_aliases()
+modify_seismic()
 
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.bolt))
