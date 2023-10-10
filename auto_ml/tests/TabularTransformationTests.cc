@@ -8,12 +8,12 @@
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <memory>
 #include <stdexcept>
 
@@ -26,14 +26,13 @@ namespace thirdai::automl::tests {
 
 TEST(TabularTransformationTests, TextOnlyTransformation) {
   auto [transformation, outputs] = inputTransformations(
-      /* data_types= */ {{"text", std::make_shared<data::TextDataType>()},
-                         {"label",
-                          std::make_shared<data::CategoricalDataType>()}},
+      /* data_types= */ {{"text", std::make_shared<TextDataType>()},
+                         {"label", std::make_shared<CategoricalDataType>()}},
       /* label_column= */ "label", /* temporal_relationships= */ {},
-      /* options= */ data::TabularOptions(),
+      /* options= */ TabularOptions(),
       /* should_update_history= */ false);
 
-  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TextTokenizer);
+  ASSERT_TRANSFORM_TYPE(transformation, data::TextTokenizer);
   ASSERT_EQ(outputs.size(), 1);
   ASSERT_EQ(outputs.at(0).indices(), "__featurized_input_indices__");
   // There should not be a specified values column, just indices.
@@ -41,29 +40,29 @@ TEST(TabularTransformationTests, TextOnlyTransformation) {
   ASSERT_EQ(outputs.at(0).values(), "__featurized_input_values__");
 }
 
-data::ColumnDataTypes getTabularDataTypes() {
+ColumnDataTypes getTabularDataTypes() {
   // We use a-f as the column names so that we know the order in which they will
   // be iterated over to create transformations since std::map is used.
   return {
       // Text
-      {"a", std::make_shared<data::TextDataType>()},
+      {"a", std::make_shared<TextDataType>()},
       // Categorical
-      {"b", std::make_shared<data::CategoricalDataType>()},
+      {"b", std::make_shared<CategoricalDataType>()},
       // Multi categorical
-      {"c", std::make_shared<data::CategoricalDataType>('-')},
+      {"c", std::make_shared<CategoricalDataType>('-')},
       // Numerical
-      {"d", std::make_shared<data::NumericalDataType>(0.0, 1.0)},
+      {"d", std::make_shared<NumericalDataType>(0.0, 1.0)},
       // Sequence
-      {"e", std::make_shared<data::SequenceDataType>()},
+      {"e", std::make_shared<SequenceDataType>()},
       // Date
-      {"f", std::make_shared<data::DateDataType>()},
+      {"f", std::make_shared<DateDataType>()},
       // Extra for label
-      {"label", std::make_shared<data::CategoricalDataType>()},
+      {"label", std::make_shared<CategoricalDataType>()},
   };
 }
 
-thirdai::data::ColumnMap getInput() {
-  return thirdai::data::ColumnMap::fromMapInput({
+data::ColumnMap getInput() {
+  return data::ColumnMap::fromMapInput({
       {"a", "some text"},
       {"b", "cat_str"},
       {"c", "20-24-22"},
@@ -74,7 +73,7 @@ thirdai::data::ColumnMap getInput() {
   });
 }
 
-void checkOutputs(const thirdai::data::OutputColumnsList& outputs) {
+void checkOutputs(const data::OutputColumnsList& outputs) {
   ASSERT_EQ(outputs.size(), 1);
   ASSERT_EQ(outputs.at(0).indices(), "__featurized_input_indices__");
   ASSERT_EQ(outputs.at(0).values(), "__featurized_input_values__");
@@ -83,28 +82,27 @@ void checkOutputs(const thirdai::data::OutputColumnsList& outputs) {
 TEST(TabularTransformationTests, TabularTransformations) {
   auto [transformation, outputs] = inputTransformations(
       /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
-      /* temporal_relationships= */ {}, /* options= */ data::TabularOptions(),
+      /* temporal_relationships= */ {}, /* options= */ TabularOptions(),
       /* should_update_history= */ false);
 
   checkOutputs(outputs);
 
-  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TransformationList);
+  ASSERT_TRANSFORM_TYPE(transformation, data::Pipeline);
 
-  auto t_list = std::dynamic_pointer_cast<thirdai::data::TransformationList>(
-                    transformation)
+  auto t_list = std::dynamic_pointer_cast<data::Pipeline>(transformation)
                     ->transformations();
 
   ASSERT_EQ(t_list.size(), 7);
 
-  ASSERT_TRANSFORM_TYPE(t_list[0], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::HashPositionTransform);
-  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::Date);
-  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::Tabular);
-  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::FeatureHash);
+  ASSERT_TRANSFORM_TYPE(t_list[0], data::TextTokenizer);
+  ASSERT_TRANSFORM_TYPE(t_list[1], data::TextTokenizer);
+  ASSERT_TRANSFORM_TYPE(t_list[2], data::StringHash);
+  ASSERT_TRANSFORM_TYPE(t_list[3], data::HashPositionTransform);
+  ASSERT_TRANSFORM_TYPE(t_list[4], data::Date);
+  ASSERT_TRANSFORM_TYPE(t_list[5], data::Tabular);
+  ASSERT_TRANSFORM_TYPE(t_list[6], data::FeatureHash);
 
-  auto tabular = std::dynamic_pointer_cast<thirdai::data::Tabular>(t_list[5]);
+  auto tabular = std::dynamic_pointer_cast<data::Tabular>(t_list[5]);
 
   ASSERT_EQ(tabular->numericalColumns().size(), 1);
   ASSERT_EQ(tabular->numericalColumns().at(0).name, "d");
@@ -112,8 +110,7 @@ TEST(TabularTransformationTests, TabularTransformations) {
   ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[6])
-          ->inputColumns();
+      std::dynamic_pointer_cast<data::FeatureHash>(t_list[6])->inputColumns();
 
   // The transformations on columns b and d are at the end because after
   // processing all data types we check if cross column pairgrams is enabled and
@@ -126,19 +123,19 @@ TEST(TabularTransformationTests, TabularTransformations) {
   ASSERT_EQ(fh_cols, expected_fh_cols);
 
   // Check that transformations can process data without errors.
-  thirdai::data::State state;
-  thirdai::data::TransformationList pipeline(t_list);
+  data::State state;
+  data::Pipeline pipeline(t_list);
   pipeline.apply(getInput(), state);
 }
 
 TEST(TabularTransformationTests, TabularTransformationsTemporal) {
-  data::TabularOptions options;
+  TabularOptions options;
   options.contextual_columns = true;
 
-  data::TemporalRelationships relationships = {
+  TemporalRelationships relationships = {
       {"b",
-       {data::TemporalConfig::categorical("c", 2),
-        data::TemporalConfig::categorical("label", 4)}}};
+       {TemporalConfig::categorical("c", 2),
+        TemporalConfig::categorical("label", 4)}}};
 
   auto [transformation, outputs] = inputTransformations(
       /* data_types= */ getTabularDataTypes(), /* label_column= */ "label",
@@ -147,26 +144,25 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
 
   checkOutputs(outputs);
 
-  ASSERT_TRANSFORM_TYPE(transformation, thirdai::data::TransformationList);
+  ASSERT_TRANSFORM_TYPE(transformation, data::Pipeline);
 
-  auto t_list = std::dynamic_pointer_cast<thirdai::data::TransformationList>(
-                    transformation)
+  auto t_list = std::dynamic_pointer_cast<data::Pipeline>(transformation)
                     ->transformations();
 
   ASSERT_EQ(t_list.size(), 10);
 
-  ASSERT_TRANSFORM_TYPE(t_list[0], thirdai::data::TextTokenizer);
-  ASSERT_TRANSFORM_TYPE(t_list[1], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[2], thirdai::data::HashPositionTransform);
-  ASSERT_TRANSFORM_TYPE(t_list[3], thirdai::data::Date);
-  ASSERT_TRANSFORM_TYPE(t_list[4], thirdai::data::Tabular);
-  ASSERT_TRANSFORM_TYPE(t_list[5], thirdai::data::StringToTimestamp);
-  ASSERT_TRANSFORM_TYPE(t_list[6], thirdai::data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[7], thirdai::data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[8], thirdai::data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[9], thirdai::data::FeatureHash);
+  ASSERT_TRANSFORM_TYPE(t_list[0], data::TextTokenizer);
+  ASSERT_TRANSFORM_TYPE(t_list[1], data::StringHash);
+  ASSERT_TRANSFORM_TYPE(t_list[2], data::HashPositionTransform);
+  ASSERT_TRANSFORM_TYPE(t_list[3], data::Date);
+  ASSERT_TRANSFORM_TYPE(t_list[4], data::Tabular);
+  ASSERT_TRANSFORM_TYPE(t_list[5], data::StringToTimestamp);
+  ASSERT_TRANSFORM_TYPE(t_list[6], data::StringHash);
+  ASSERT_TRANSFORM_TYPE(t_list[7], data::CategoricalTemporal);
+  ASSERT_TRANSFORM_TYPE(t_list[8], data::CategoricalTemporal);
+  ASSERT_TRANSFORM_TYPE(t_list[9], data::FeatureHash);
 
-  auto tabular = std::dynamic_pointer_cast<thirdai::data::Tabular>(t_list[4]);
+  auto tabular = std::dynamic_pointer_cast<data::Tabular>(t_list[4]);
 
   ASSERT_EQ(tabular->numericalColumns().size(), 1);
   ASSERT_EQ(tabular->numericalColumns().at(0).name, "d");
@@ -174,8 +170,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<thirdai::data::FeatureHash>(t_list[9])
-          ->inputColumns();
+      std::dynamic_pointer_cast<data::FeatureHash>(t_list[9])->inputColumns();
 
   // The transformations on columns b and d are at the end because after
   // processing all data types we check if cross column pairgrams is enabled and
@@ -192,18 +187,17 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_EQ(fh_cols, expected_fh_cols);
 
   // Check that transformations can process data without errors.
-  thirdai::data::State state;
-  thirdai::data::TransformationList pipeline(t_list);
+  data::State state;
+  data::Pipeline pipeline(t_list);
   pipeline.apply(getInput(), state);
 }
 
 TEST(TabularTransformationTests, CheckRejectsReservedColumns) {
   ASSERT_THROW(  // NOLINT clang-tidy doens't like ASSERT_THROW
       inputTransformations(
-          /* data_types= */ {{"__text__",
-                              std::make_shared<data::TextDataType>()}},
+          /* data_types= */ {{"__text__", std::make_shared<TextDataType>()}},
           /* label_column= */ "label", /* temporal_relationships= */ {},
-          /* options= */ data::TabularOptions(),
+          /* options= */ TabularOptions(),
           /* should_update_history= */ false),
       std::invalid_argument);
 }

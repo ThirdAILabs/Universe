@@ -9,13 +9,16 @@
 
 namespace thirdai::data {
 
-class TransformationList final : public Transformation {
+class Pipeline;
+using PipelinePtr = std::shared_ptr<Pipeline>;
+
+class Pipeline final : public Transformation {
  public:
-  explicit TransformationList(std::vector<TransformationPtr> transformations)
+  explicit Pipeline(std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
 
-  static auto make(std::vector<TransformationPtr> transformations) {
-    return std::make_shared<TransformationList>(std::move(transformations));
+  static auto make(std::vector<TransformationPtr> transformations = {}) {
+    return std::make_shared<Pipeline>(std::move(transformations));
   }
 
   ColumnMap apply(ColumnMap columns, State& state) const final {
@@ -28,6 +31,12 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
+  PipelinePtr then(TransformationPtr transformation) const {
+    std::vector<TransformationPtr> transformations = _transformations;
+    transformations.emplace_back(std::move(transformation));
+    return Pipeline::make(std::move(transformations));
+  }
+
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
@@ -37,22 +46,16 @@ class TransformationList final : public Transformation {
 
   void save_stream(std::ostream& output_stream) const;
 
-  static std::shared_ptr<TransformationList> load(const std::string& filename);
+  static PipelinePtr load(const std::string& filename);
 
-  static std::shared_ptr<TransformationList> load_stream(
-      std::istream& input_stream);
+  static PipelinePtr load_stream(std::istream& input_stream);
 
  private:
   std::vector<TransformationPtr> _transformations;
-
-  // Private constructor for cereal.
-  TransformationList(){};
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
 };
-
-using TransformationListPtr = std::shared_ptr<TransformationList>;
 
 }  // namespace thirdai::data

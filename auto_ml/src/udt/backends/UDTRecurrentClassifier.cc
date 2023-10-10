@@ -20,11 +20,10 @@ namespace thirdai::automl::udt {
 using bolt::metrics::fromMetricNames;
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_name, const data::SequenceDataTypePtr& target,
-    uint32_t n_target_classes, const data::TabularOptions& tabular_options,
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const SequenceDataTypePtr& target,
+    uint32_t n_target_classes, const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _target_name(target_name), _target(target) {
@@ -61,7 +60,7 @@ py::object UDTRecurrentClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  thirdai::data::LoaderPtr val_dataset = nullptr;
+  data::LoaderPtr val_dataset = nullptr;
   if (val_data) {
     val_dataset =
         _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
@@ -246,7 +245,7 @@ uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
 }
 
 std::string UDTRecurrentClassifier::elementString(
-    uint32_t element_id, const thirdai::data::ThreadSafeVocabularyPtr& vocab) {
+    uint32_t element_id, const data::ThreadSafeVocabularyPtr& vocab) {
   uint32_t element_id_without_position = element_id % vocab->maxSize().value();
   return vocab->getString(element_id_without_position);
 }

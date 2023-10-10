@@ -29,9 +29,8 @@ namespace thirdai::automl::udt {
  */
 class UDT {
  public:
-  UDT(data::ColumnDataTypes data_types,
-      const data::UserProvidedTemporalRelationships&
-          temporal_tracking_relationships,
+  UDT(ColumnDataTypes data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
@@ -400,11 +399,7 @@ class UDT {
   /**
    * Gets the internal index for UDTMachClassifier.
    */
-  dataset::mach::MachIndexPtr getIndex() {
-    licensing::entitlements().verifyFullAccess();
-
-    return _backend->getIndex();
-  }
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   /**
    * Sets the internal index for UDTMachClassifier.
@@ -443,13 +438,12 @@ class UDT {
  private:
   UDT() {}
 
-  static bool hasGraphInputs(const data::ColumnDataTypes& data_types);
+  static bool hasGraphInputs(const ColumnDataTypes& data_types);
 
   static void throwUnsupportedUDTConfigurationError(
-      const data::CategoricalDataTypePtr& target_as_categorical,
-      const data::NumericalDataTypePtr& target_as_numerical,
-      const data::SequenceDataTypePtr& target_as_sequence,
-      bool has_graph_inputs);
+      const CategoricalDataTypePtr& target_as_categorical,
+      const NumericalDataTypePtr& target_as_numerical,
+      const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs);
 
   friend class cereal::access;
 

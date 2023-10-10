@@ -11,15 +11,13 @@ namespace thirdai::automl::udt {
 
 class UDTRegression final : public UDTBackend {
  public:
-  UDTRegression(const data::ColumnDataTypes& input_data_types,
-                const data::UserProvidedTemporalRelationships&
-                    temporal_tracking_relationships,
-                const std::string& target_name,
-                const data::NumericalDataTypePtr& target,
-                std::optional<uint32_t> num_bins,
-                const data::TabularOptions& tabular_options,
-                const std::optional<std::string>& model_config,
-                const config::ArgumentMap& user_args);
+  UDTRegression(
+      const ColumnDataTypes& input_data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+      const std::string& target_name, const NumericalDataTypePtr& target,
+      std::optional<uint32_t> num_bins, const TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -59,7 +57,7 @@ class UDTRegression final : public UDTBackend {
 
   FeaturizerPtr _featurizer;
 
-  std::shared_ptr<thirdai::data::RegressionBinning> _binning;
+  std::shared_ptr<data::RegressionBinning> _binning;
 };
 
 }  // namespace thirdai::automl::udt

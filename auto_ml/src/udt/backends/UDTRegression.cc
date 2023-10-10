@@ -13,8 +13,8 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/Loader.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -24,15 +24,13 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::fromMetricNames;
 
-UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
-                             const data::UserProvidedTemporalRelationships&
-                                 temporal_tracking_relationships,
-                             const std::string& target_name,
-                             const data::NumericalDataTypePtr& target,
-                             std::optional<uint32_t> num_bins,
-                             const data::TabularOptions& tabular_options,
-                             const std::optional<std::string>& model_config,
-                             const config::ArgumentMap& user_args) {
+UDTRegression::UDTRegression(
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const NumericalDataTypePtr& target,
+    std::optional<uint32_t> num_bins, const TabularOptions& tabular_options,
+    const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args) {
   uint32_t output_bins = num_bins.value_or(defaults::REGRESSION_BINS);
 
   _model = utils::buildModel(
@@ -40,25 +38,23 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
       /* output_dim= */ output_bins, /* args= */ user_args,
       /* model_config= */ model_config);
 
-  auto cast = std::make_shared<thirdai::data::StringToDecimal>(target_name,
-                                                               target_name);
+  auto cast = std::make_shared<data::StringToDecimal>(target_name, target_name);
 
-  _binning = std::make_shared<thirdai::data::RegressionBinning>(
+  _binning = std::make_shared<data::RegressionBinning>(
       target_name, FEATURIZED_LABELS, target->range.first, target->range.second,
       output_bins, defaults::REGRESSION_CORRECT_LABEL_RADIUS);
 
-  auto label_transform =
-      thirdai::data::TransformationList::make({cast, _binning});
+  auto label_transform = data::Pipeline::make({cast, _binning});
 
   bool softmax_output = utils::hasSoftmaxOutput(_model);
-  thirdai::data::ValueFillType value_fill =
-      softmax_output ? thirdai::data::ValueFillType::SumToOne
-                     : thirdai::data::ValueFillType::Ones;
+  data::ValueFillType value_fill = softmax_output
+                                       ? data::ValueFillType::SumToOne
+                                       : data::ValueFillType::Ones;
 
-  thirdai::data::OutputColumnsList bolt_labels = {
-      thirdai::data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+  data::OutputColumnsList bolt_labels = {
+      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
 
-  auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
+  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
@@ -79,7 +75,7 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
                                  options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);

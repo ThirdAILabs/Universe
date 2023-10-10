@@ -14,11 +14,11 @@
 
 namespace thirdai::automl::udt {
 
-UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
+UDTGraphClassifier::UDTGraphClassifier(const ColumnDataTypes& data_types,
                                        const std::string& target_col,
                                        uint32_t n_target_classes,
                                        bool integer_target,
-                                       const data::TabularOptions& options) {
+                                       const TabularOptions& options) {
   if (!integer_target) {
     throw exceptions::NotImplemented(
         "We do not yet support non integer classes on graphs.");
@@ -45,7 +45,7 @@ py::object UDTGraphClassifier::train(
       data, options.batchSize(), /* shuffle = */ true, options.verbose,
       options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->indexAndGetDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle = */ false, options.verbose);

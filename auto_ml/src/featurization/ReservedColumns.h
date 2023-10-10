@@ -8,7 +8,7 @@ namespace thirdai::automl {
 
 bool isReservedColumnName(const std::string& name);
 
-void checkNoReservedColumnNames(const data::ColumnDataTypes& data_types);
+void checkNoReservedColumnNames(const ColumnDataTypes& data_types);
 
 std::string textOutputColumn(const std::string& input_column_name);
 

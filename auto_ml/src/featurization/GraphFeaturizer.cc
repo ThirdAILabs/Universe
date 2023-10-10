@@ -9,18 +9,18 @@
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl {
 
-GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
+GraphFeaturizer::GraphFeaturizer(const ColumnDataTypes& data_types,
                                  const std::string& target_col,
                                  uint32_t n_target_classes,
-                                 const data::TabularOptions& options)
+                                 const TabularOptions& options)
     : _delimiter(options.delimiter) {
   auto [input_transforms, output_cols] =
       nonTemporalTransformations(data_types, target_col, options);
@@ -35,30 +35,30 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   input_transforms.push_back(nbr_features);
   output_cols.push_back(nbr_features_output);
 
-  auto fh = std::make_shared<thirdai::data::FeatureHash>(
+  auto fh = std::make_shared<data::FeatureHash>(
       output_cols, FEATURIZED_INDICES, FEATURIZED_VALUES,
       udt::defaults::FEATURE_HASH_RANGE);
   input_transforms.push_back(fh);
 
-  _input_transform = thirdai::data::TransformationList::make(input_transforms);
+  _input_transform = data::Pipeline::make(input_transforms);
 
   _bolt_input_columns = {
-      thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES),
-      thirdai::data::OutputColumns(nbr_ids_output)};
+      data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES),
+      data::OutputColumns(nbr_ids_output)};
 
-  _label_transform = std::make_shared<thirdai::data::StringToToken>(
+  _label_transform = std::make_shared<data::StringToToken>(
       target_col, FEATURIZED_LABELS, n_target_classes);
 
-  _bolt_label_columns = {thirdai::data::OutputColumns(FEATURIZED_LABELS)};
+  _bolt_label_columns = {data::OutputColumns(FEATURIZED_LABELS)};
 
   auto [graph_builder, graph_info] = graphBuilder(data_types);
   // clang-tidy things this can be done in the member initialization above.
   _graph_builder = graph_builder;  // NOLINT
 
-  _state = std::make_shared<thirdai::data::State>(graph_info);
+  _state = std::make_shared<data::State>(graph_info);
 }
 
-thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
+data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
@@ -67,13 +67,12 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 
   csv_data_source->restart();
 
-  auto data_iter =
-      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
+  auto data_iter = data::CsvIterator::make(csv_data_source, _delimiter);
 
-  auto transformation_list = thirdai::data::TransformationList::make(
-      {_input_transform, _label_transform});
+  auto transformation_list =
+      data::Pipeline::make({_input_transform, _label_transform});
 
-  return thirdai::data::Loader::make(
+  return data::Loader::make(
       data_iter, transformation_list, _state, _bolt_input_columns,
       _bolt_label_columns, /* batch_size= */ batch_size, /* shuffle= */ shuffle,
       /* verbose= */ verbose,
@@ -82,7 +81,7 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 }
 
 void GraphFeaturizer::index(const dataset::DataSourcePtr& data_source) {
-  auto data_iter = thirdai::data::CsvIterator::make(data_source, _delimiter);
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   while (auto chunk = data_iter->next()) {
     _graph_builder->apply(*chunk, *_state);
@@ -90,26 +89,26 @@ void GraphFeaturizer::index(const dataset::DataSourcePtr& data_source) {
 }
 
 bolt::TensorList GraphFeaturizer::featurizeInput(const MapInput& sample) {
-  auto columns = thirdai::data::ColumnMap::fromMapInput(sample);
+  auto columns = data::ColumnMap::fromMapInput(sample);
 
   columns = _input_transform->apply(std::move(columns), *_state);
 
-  return thirdai::data::toTensors(columns, _bolt_input_columns);
+  return data::toTensors(columns, _bolt_input_columns);
 }
 
 bolt::TensorList GraphFeaturizer::featurizeInputBatch(
     const MapInputBatch& samples) {
-  auto columns = thirdai::data::ColumnMap::fromMapInputBatch(samples);
+  auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(std::move(columns), *_state);
 
-  return thirdai::data::toTensors(columns, _bolt_input_columns);
+  return data::toTensors(columns, _bolt_input_columns);
 }
 
-std::string neighborsColumn(const data::ColumnDataTypes& data_types) {
+std::string neighborsColumn(const ColumnDataTypes& data_types) {
   std::optional<std::string> neighbors_col = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
-    if (data::asNeighbors(data_type)) {
+    if (asNeighbors(data_type)) {
       if (neighbors_col) {
         throw std::invalid_argument(
             "Only a single neighbors column is allowed in GNN.");
@@ -124,10 +123,10 @@ std::string neighborsColumn(const data::ColumnDataTypes& data_types) {
   return *neighbors_col;
 }
 
-std::string nodeIdColumn(const data::ColumnDataTypes& data_types) {
+std::string nodeIdColumn(const ColumnDataTypes& data_types) {
   std::optional<std::string> node_id_column = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
-    if (data::asNodeID(data_type)) {
+    if (asNodeID(data_type)) {
       if (node_id_column) {
         throw std::invalid_argument(
             "Only a single node ID column is allowed in GNN.");
@@ -142,45 +141,45 @@ std::string nodeIdColumn(const data::ColumnDataTypes& data_types) {
   return *node_id_column;
 }
 
-std::pair<thirdai::data::TransformationPtr, std::string>
-GraphFeaturizer::nodeId(const data::ColumnDataTypes& data_types) {
+std::pair<data::TransformationPtr, std::string> GraphFeaturizer::nodeId(
+    const ColumnDataTypes& data_types) {
   for (const auto& [col_name, data_type] : data_types) {
-    if (data::asNodeID(data_type)) {
-      return {std::make_shared<thirdai::data::StringToToken>(col_name, col_name,
-                                                             std::nullopt),
+    if (asNodeID(data_type)) {
+      return {std::make_shared<data::StringToToken>(col_name, col_name,
+                                                    std::nullopt),
               col_name};
     }
   }
   throw std::invalid_argument("NodeID column is required for GNN.");
 }
 
-std::pair<thirdai::data::TransformationPtr, std::string>
+std::pair<data::TransformationPtr, std::string>
 GraphFeaturizer::neighborFeatures(const std::string& nod_id_col) {
-  auto transform = std::make_shared<thirdai::data::NeighborFeatures>(
-      nod_id_col, GRAPH_NBR_FEATURES);
+  auto transform =
+      std::make_shared<data::NeighborFeatures>(nod_id_col, GRAPH_NBR_FEATURES);
 
   return {transform, GRAPH_NBR_FEATURES};
 }
 
-std::pair<thirdai::data::TransformationPtr, std::string>
-GraphFeaturizer::neighborIds(const std::string& nod_id_col) {
+std::pair<data::TransformationPtr, std::string> GraphFeaturizer::neighborIds(
+    const std::string& nod_id_col) {
   auto transform =
-      std::make_shared<thirdai::data::NeighborIds>(nod_id_col, GRAPH_NBR_IDS);
+      std::make_shared<data::NeighborIds>(nod_id_col, GRAPH_NBR_IDS);
 
   return {transform, GRAPH_NBR_IDS};
 }
 
-std::pair<thirdai::data::TransformationPtr, data::GraphInfoPtr>
-GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
+std::pair<data::TransformationPtr, GraphInfoPtr> GraphFeaturizer::graphBuilder(
+    const ColumnDataTypes& data_types) {
   std::vector<std::string> feature_col_names;
 
-  std::vector<thirdai::data::TransformationPtr> transforms;
+  std::vector<data::TransformationPtr> transforms;
 
   for (const auto& [col_name, data_type] : data_types) {
     if (asNumerical(data_type)) {
       feature_col_names.push_back(col_name);
       transforms.push_back(
-          std::make_shared<thirdai::data::StringToDecimal>(col_name, col_name));
+          std::make_shared<data::StringToDecimal>(col_name, col_name));
     }
   }
 
@@ -190,17 +189,17 @@ GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
 
   std::string nbrs_column = neighborsColumn(data_types);
 
-  auto parse_nbrs = std::make_shared<thirdai::data::StringToTokenArray>(
+  auto parse_nbrs = std::make_shared<data::StringToTokenArray>(
       nbrs_column, nbrs_column, ' ', std::nullopt);
   transforms.push_back(parse_nbrs);
 
-  auto graph_builder = std::make_shared<thirdai::data::GraphBuilder>(
+  auto graph_builder = std::make_shared<data::GraphBuilder>(
       node_id_col, nbrs_column, feature_col_names);
   transforms.push_back(graph_builder);
 
-  auto graph_info = std::make_shared<data::GraphInfo>(feature_col_names.size());
+  auto graph_info = std::make_shared<GraphInfo>(feature_col_names.size());
 
-  return {thirdai::data::TransformationList::make(transforms), graph_info};
+  return {data::Pipeline::make(transforms), graph_info};
 }
 
 template void GraphFeaturizer::serialize(cereal::BinaryInputArchive&);

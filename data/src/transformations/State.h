@@ -62,7 +62,7 @@ class State {
   explicit State(MachIndexPtr mach_index)
       : _mach_index(std::move(mach_index)) {}
 
-  explicit State(automl::data::GraphInfoPtr graph) : _graph(std::move(graph)) {}
+  explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
   State() {}
 
@@ -154,7 +154,7 @@ class State {
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
 
-  automl::data::GraphInfoPtr _graph;
+  automl::GraphInfoPtr _graph;
 
   friend class cereal::access;
   template <class Archive>

@@ -80,13 +80,11 @@ config::ArgumentMap setNeuraldbDefaultArgs(config::ArgumentMap&& user_args) {
 }
 
 UDTMachClassifier::UDTMachClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_name,
-    const data::CategoricalDataTypePtr& target_config,
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
-    const data::TabularOptions& tabular_options,
+    const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
     : _delimiter(tabular_options.delimiter),

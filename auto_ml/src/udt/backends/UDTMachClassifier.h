@@ -30,15 +30,14 @@ using Label = std::variant<uint32_t, std::string>;
 
 class UDTMachClassifier final : public UDTBackend {
  public:
-  UDTMachClassifier(const data::ColumnDataTypes& input_data_types,
-                    const data::UserProvidedTemporalRelationships&
-                        temporal_tracking_relationships,
-                    const std::string& target_name,
-                    const data::CategoricalDataTypePtr& target,
-                    uint32_t n_target_classes, bool integer_target,
-                    const data::TabularOptions& tabular_options,
-                    const std::optional<std::string>& model_config,
-                    config::ArgumentMap user_args);
+  UDTMachClassifier(
+      const ColumnDataTypes& input_data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+      const std::string& target_name, const CategoricalDataTypePtr& target,
+      uint32_t n_target_classes, bool integer_target,
+      const TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      config::ArgumentMap user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,

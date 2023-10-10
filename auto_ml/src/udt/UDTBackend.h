@@ -183,7 +183,7 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual data::ColumnDataTypes dataTypes() const {
+  virtual ColumnDataTypes dataTypes() const {
     throw notSupported("data_types");
   }
 
