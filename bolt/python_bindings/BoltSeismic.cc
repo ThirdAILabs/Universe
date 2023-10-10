@@ -24,6 +24,13 @@ void createSeismicSubmodule(py::module_& module) {
       .def_property_readonly("patch_shape", &SeismicModel::patchShape)
       .def("save", &SeismicModel::save, py::arg("filename"))
       .def_static("load", &SeismicModel::load, py::arg("filename"));
+
+#if THIRDAI_EXPOSE_ALL
+  seismic.def("seismic_labels", &seismicLabels, py::arg("volume"),
+              py::arg("x_coord"), py::arg("y_coord"), py::arg("z_coord"),
+              py::arg("subcube_shape"), py::arg("label_cube_shape"),
+              py::arg("max_label"));
+#endif
 }
 
 }  // namespace thirdai::bolt::seismic::python

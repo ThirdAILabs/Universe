@@ -1,14 +1,13 @@
 import thirdai._thirdai.bolt
 from thirdai._thirdai.bolt import *
 
+from .seismic_modifications import modify_seismic
 from .udt_modifications import (
     add_neural_index_aliases,
     modify_graph_udt,
     modify_mach_udt,
     modify_udt,
 )
-
-from .seismic_modifications import modify_seismic
 
 modify_udt()
 modify_graph_udt()

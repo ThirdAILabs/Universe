@@ -102,8 +102,9 @@ bolt::Dataset SeismicModel::makeLabelBatches(
     std::vector<size_t> lens;
 
     for (size_t i = start; i < end; i++) {
-      auto labels = seismicLabels(subcube_metadata[i], _subcube_shape,
-                                  _label_cube_dim, _n_output_classes);
+      auto labels =
+          seismicLabelsFromMetadata(subcube_metadata[i], _subcube_shape,
+                                    _label_cube_dim, _n_output_classes);
 
       indices.insert(indices.end(), labels.begin(), labels.end());
 

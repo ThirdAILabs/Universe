@@ -6,19 +6,19 @@
 
 namespace thirdai::bolt::seismic {
 
-std::vector<uint32_t> seismicLabels(const SubcubeMetadata& subcube_metadata,
-                                    size_t subcube_dim, size_t label_cube_dim,
-                                    size_t max_label) {
+std::vector<uint32_t> seismicLabelsFromMetadata(
+    const SubcubeMetadata& subcube_metadata, size_t subcube_dim,
+    size_t label_cube_dim, size_t max_label) {
   return seismicLabels(subcube_metadata.volume_name, subcube_metadata.x_coord,
                        subcube_metadata.y_coord, subcube_metadata.z_coord,
                        subcube_dim, label_cube_dim, max_label);
 }
 
-std::vector<uint32_t> seismicLabels(const std::string& trace, size_t x_coord,
+std::vector<uint32_t> seismicLabels(const std::string& volume, size_t x_coord,
                                     size_t y_coord, size_t z_coord,
-                                    size_t subcube_dim, size_t label_cube_dim,
-                                    size_t max_label) {
-  if ((subcube_dim % label_cube_dim) != 0) {
+                                    size_t subcube_shape,
+                                    size_t label_cube_shape, size_t max_label) {
+  if ((subcube_shape % label_cube_shape) != 0) {
     throw std::invalid_argument(
         "Expected subcube_dim to be a multiple of label_cube_dim.");
   }
@@ -26,14 +26,14 @@ std::vector<uint32_t> seismicLabels(const std::string& trace, size_t x_coord,
   // We use the label_cube_dim as the seed so that if we want to get multiple
   // sets of labels at different granularities we can.
   uint32_t trace_seed =
-      hashing::MurmurHash(trace.data(), trace.size(), label_cube_dim);
+      hashing::MurmurHash(volume.data(), volume.size(), label_cube_shape);
 
   std::vector<uint32_t> labels;
 
-  size_t start_x_label = x_coord / label_cube_dim;
-  size_t start_y_label = y_coord / label_cube_dim;
-  size_t start_z_label = z_coord / label_cube_dim;
-  size_t label_cubes_per_subcube = subcube_dim / label_cube_dim;
+  size_t start_x_label = x_coord / label_cube_shape;
+  size_t start_y_label = y_coord / label_cube_shape;
+  size_t start_z_label = z_coord / label_cube_shape;
+  size_t label_cubes_per_subcube = subcube_shape / label_cube_shape;
 
   for (size_t x = 0; x < label_cubes_per_subcube; x++) {
     for (size_t y = 0; y < label_cubes_per_subcube; y++) {
