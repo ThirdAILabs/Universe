@@ -8,7 +8,7 @@ from .udt_modifications import (
     modify_udt,
 )
 
-from seismic_modifications import modify_seismic
+from .seismic_modifications import modify_seismic
 
 modify_udt()
 modify_graph_udt()
