@@ -50,16 +50,11 @@ class DataConnector:
 class SQLConnector(DataConnector):
     def __init__(self, auth_options: Credentials, table_name: str, id_col: str, strong_columns: List[str], weak_columns: List[str]):
         self.connect(auth_options)
-        self.query_cols = id_col + strong_columns + weak_columns
         self.df_iter = pd.read_sql(sql = table_name, con=self.connection, columns=[id_col] + strong_columns + weak_columns, chunksize=BATCH_SIZE)
             
     def connect(self, auth_options: Credentials):
         db_url = auth_options.get_db_url
         engine = create_engine(db_url)
-        metadata = MetaData()
-        metadata.reflect(bind=engine)
-        
-        metadata = metadata
         self.connection = engine.connect()
         
     def next_batch(self):
