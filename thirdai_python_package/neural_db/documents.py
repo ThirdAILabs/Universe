@@ -705,6 +705,80 @@ class URL(Document):
         ]
         return "\n".join(rows["text"])
 
+class DocumentConnector(Document):
+    def __init__(self, username: str, password: str, doc_metadata = {}) -> None:
+        super().__init__()
+        self._connector = None
+        self._username = username
+        self._password = password
+        self._session = None
+        self.doc_metadata = doc_metadata
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def next_batch(**kwargs) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def get_session(self):
+        return self._session
+
+class SQLDocument(DocumentConnector):
+    def __init__(self, username: str, password: str, uri: str, doc_metadata={}) -> None:
+        super().__init__(username, password, doc_metadata)
+
+    def next_batch(**kwargs) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def size(self) -> int:
+        raise NotImplementedError()
+
+    @property
+    def name(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def hash(self) -> str:
+        pass
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        raise NotImplementedError()
+
+    def all_entity_ids(self) -> List[int]:
+        raise NotImplementedError()
+
+    def reference(self, element_id: int) -> Reference:
+        raise NotImplementedError()
+    
+class SharePointDocument(DocumentConnector):
+    def __init__(self, username: str, password: str, uri: str, doc_metadata={}) -> None:
+        super().__init__(username, password, doc_metadata)
+
+    def next_batch(**kwargs) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def size(self) -> int:
+        raise NotImplementedError()
+
+    @property
+    def name(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def hash(self) -> str:
+        pass
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        raise NotImplementedError()
+
+    def all_entity_ids(self) -> List[int]:
+        raise NotImplementedError()
+
+    def reference(self, element_id: int) -> Reference:
+        raise NotImplementedError()
 
 class SentenceLevelExtracted(Extracted):
     """Parses a document into sentences and creates a NeuralDB entry for each
