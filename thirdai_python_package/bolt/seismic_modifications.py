@@ -17,9 +17,9 @@ def convert_to_patches(subcubes, pd):
     patches = np.reshape(subcubes, (n_cubes, x // pd, pd, y // pd, pd, z // pd, pd))
     patches = np.transpose(patches, (0, 1, 3, 5, 2, 4, 6))
 
-    patches = np.reshape(patches, (n_cubes, n_patches * pd_flat))
+    patches = np.reshape(patches, (n_cubes, n_patches, pd_flat))
 
-    return patches, n_patches, pd_flat
+    return patches
 
 
 def modify_seismic():
@@ -54,27 +54,26 @@ def modify_seismic():
                 ]:
                     volume_name, x, y, z = Path(file).stem.split("_")
 
-                    subcubes.append(np.load(file))
+                    subcubes.append(np.load(os.path.join(subcube_directory, file)))
                     metadata.append(
                         bolt.seismic.SubcubeMetadata(
                             volume=volume_name, x=int(x), y=int(y), z=int(z)
                         )
                     )
 
-                subcubes = convert_to_patches(
-                    subcubes=np.stack(subcubes, axis=0), pd=self.patch_shape
-                )
+                subcubes = np.stack(subcubes, axis=0)
+                subcubes = convert_to_patches(subcubes=subcubes, pd=self.patch_shape)
 
                 original_train(
                     self,
                     subcubes=subcubes,
-                    subecube_metadata=metadata,
+                    subcube_metadata=metadata,
                     learning_rate=learning_rate,
                     batch_size=batch_size,
                 )
 
     def wrapped_embeddings(self, subcubes):
-        subcubes = convert_to_patches(subcubes)
+        subcubes = convert_to_patches(subcubes, pd=self.patch_shape)
         return original_embeddings(self, subcubes)
 
     bolt.seismic.SeismicModel.train = wrapped_train
