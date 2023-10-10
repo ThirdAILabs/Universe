@@ -731,6 +731,7 @@ class SQLDocument(DocumentConnector):
         super().__init__(client_credentials, doc_metadata)
         self._connector = SQLConnector(client_credentials, table_name, id_col, strong_columns, weak_columns)
         self.total_rows = self._connector.connection.execute(text(f'select count(*) from {table_name}')).fetchone()[0]
+        self.table_name = table_name
         
     def next_batch(self, **kwargs) -> pd.DataFrame:
         return self._connector.next_batch()
@@ -740,7 +741,7 @@ class SQLDocument(DocumentConnector):
 
     @property
     def name(self) -> str:
-        raise NotImplementedError()
+        return self.table_name
 
     @property
     def hash(self) -> str:
