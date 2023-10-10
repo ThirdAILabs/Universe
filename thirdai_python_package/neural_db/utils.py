@@ -9,6 +9,16 @@ class ClientCredentials:
     def __init__(
         self, username: str, password: str, host: str, port: int, database_name: str
     ):
+        """
+            Creates Object of ClientCredential to initiliaze a SQL Database connection
+            Args: 
+                username: str, the username for database authentication
+                password: str, the password for database authentication
+                host: str, the hostname or IP address of the database server
+                port: int, the port number for the database connection
+                database_name: str, the name of the specific database to connect to
+        """
+        
         self.username = username
         self.password = password
         self.host = host
