@@ -1,6 +1,7 @@
 #include "BoltSeismic.h"
 #include <bolt/src/seismic/SeismicLabels.h>
 #include <bolt/src/seismic/SeismicModel.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::bolt::seismic::python {
 
