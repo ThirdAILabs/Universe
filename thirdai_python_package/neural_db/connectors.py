@@ -51,33 +51,25 @@ class DataConnector:
 
 class SQLConnector(DataConnector):
     def __init__(self, auth_options: Credentials, table_name: str, id_col: str, strong_columns: List[str], weak_columns: List[str]):
-        self.connection = self.connect(auth_options)
-        self.table_name = table_name
+        self.connect(auth_options)
         self.query_cols = id_col + strong_columns + weak_columns
-        self.total_rows = self.connection.execute(text(f'select count(*) from {self.table_name}')).fetchone()[0]
-        table = self.metadata.tables[self.config['table_name']]
-        self.offset = 0
-        self.cols = ColumnCollection([(col, getattr(table.c, col)) for col in self.query_cols])  
-        
+        self.df_iter = pd.read_sql(sql = table_name, con=self.connection, columns=[id_col] + strong_columns + weak_columns, chunksize=BATCH_SIZE)
+            
     def connect(self, auth_options: Credentials):
         db_url = auth_options.get_db_url
-        self.engine = create_engine(db_url)
+        engine = create_engine(db_url)
         metadata = MetaData()
-        metadata.reflect(bind=self.engine)
+        metadata.reflect(bind=engine)
         
-        self.metadata = metadata
-        self.connection = self.engine.connect()
+        metadata = metadata
+        self.connection = engine.connect()
         
     def next_batch(self):
-
-        if (self.offset < self.total_rows):
-            select_query = select(ReadOnlyColumnCollection(self.cols)).offset(offset).limit(BATCH_SIZE)
-            result = self.connection.execute(select_query)
-            
-            offset+=BATCH_SIZE
-            for row in result:
-                new_row_df = pd.DataFrame([row], columns=df.columns)
-                df = pd.concat([df, new_row_df], ignore_index=True)
+        for batch in self.df_iter:
+            yield batch
+    
+    def get_session(self):
+        return self.connection
         
             
 class SharePointConnector(DataConnector):
