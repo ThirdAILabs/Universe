@@ -16,10 +16,11 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
+from sqlalchemy import text
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
-from .utils import hash_file, hash_string
-
+from .utils import hash_file, hash_string, ClientCredentials
+from .connectors import SQLConnector, SharePointConnector
 
 class Reference:
     pass
@@ -707,12 +708,11 @@ class URL(Document):
 
 
 class DocumentConnector(Document):
-    def __init__(self, username: str, password: str, doc_metadata={}) -> None:
+    def __init__(self, client_credentials: ClientCredentials, doc_metadata={}) -> None:
         super().__init__()
         self._connector = None
-        self._username = username
-        self._password = password
         self._session = None
+        self._credentials = client_credentials
         self.doc_metadata = doc_metadata
 
     @property
@@ -727,14 +727,16 @@ class DocumentConnector(Document):
 
 
 class SQLDocument(DocumentConnector):
-    def __init__(self, username: str, password: str, uri: str, doc_metadata={}) -> None:
-        super().__init__(username, password, doc_metadata)
-
-    def next_batch(**kwargs) -> pd.DataFrame:
-        raise NotImplementedError()
+    def __init__(self, client_credentials: ClientCredentials, table_name: str, id_col: str, strong_columns: List[str], weak_columns: List[str], doc_metadata={}) -> None:
+        super().__init__(client_credentials, doc_metadata)
+        self._connector = SQLConnector(client_credentials, table_name, id_col, strong_columns, weak_columns)
+        self.total_rows = self._connector.connection.execute(text(f'select count(*) from {table_name}')).fetchone()[0]
+        
+    def next_batch(self, **kwargs) -> pd.DataFrame:
+        return self._connector.next_batch()
 
     def size(self) -> int:
-        raise NotImplementedError()
+        return self.total_rows
 
     @property
     def name(self) -> str:
@@ -756,9 +758,10 @@ class SQLDocument(DocumentConnector):
 
 
 class SharePointDocument(DocumentConnector):
-    def __init__(self, username: str, password: str, uri: str, doc_metadata={}) -> None:
-        super().__init__(username, password, doc_metadata)
-
+    def __init__(self, client_credentials: ClientCredentials, doc_metadata={}) -> None:
+        super().__init__(client_credentials, doc_metadata)
+        self._connector = SharePointConnector(client_credentials)
+        
     def next_batch(**kwargs) -> pd.DataFrame:
         raise NotImplementedError()
 
