@@ -11,24 +11,24 @@ BATCH_SIZE = 100_000
 
 class DataConnector:
     def __init__(self, client_credentials: ClientCredentials):
-        self._username = client_credentials.username
-        self._password = client_credentials.password
-        self._uri = client_credentials.uri
-        self._session = None
+        self._client_credentials = client_credentials
 
-    def connect() -> bool:
+    def connect(self) -> bool:
         raise NotImplementedError()
 
-    def next_batch(self):
+    def next_batch(self) -> pd.DataFrame:
+        raise NotImplementedError()
+    
+    def get_session(self):
         raise NotImplementedError()
 
     @property
     def username(self):
-        return self._username
+        return self._client_credentials._username
 
     @property
     def password(self, new_password):
-        self._password = new_password
+        self._client_credentials._password = new_password
 
 
 class SQLConnector(DataConnector):
@@ -50,10 +50,13 @@ class SQLConnector(DataConnector):
         
             
 class SharePointConnector(DataConnector):
-    def __init__(self, username: str, password: str, site_url: str):
-        super().__init__(ClientCredentials(username, password))
+    FILE_LIMIT: int = 10
+    def __init__(self, client_credentials: ClientCredentials, site_url: str):
+        super().__init__(client_credentials)
         self._site_url = site_url
         self.connect()
+        self.index = pd.DataFrame(columns = ["File_ID", "FileName", "Ext", "server_relative_url"])
+        self.index.set_index(keys = "File_ID", inplace = True)
 
     def connect(self) -> bool:
         creds = UserCredential(user_name = self._username, password = self._password)
@@ -61,7 +64,7 @@ class SharePointConnector(DataConnector):
         try:
             self._ctx = ClientContext(base_url=self._site_url).with_credentials(credentials = creds)
 
-            #dummy query execute to check authentication
+            # executing dummy query to check authentication
             self._ctx.execute_query()
             
         except Exception as e:
@@ -70,9 +73,13 @@ class SharePointConnector(DataConnector):
 
         return True
         
-
     def next_batch(self):
-        raise NotImplementedError()
+        try:
+            # Sharepoint Library by it's path
+            library = self._ctx.web.get_folder_by_server_relative_path(self._client_credentials._library_path)
+            self._ctx.load(library)
+        except Exception as e:
+            pass
 
     def get_session(self):
-        return self._session
+        return self._ctx

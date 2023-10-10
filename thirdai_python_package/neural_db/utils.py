@@ -1,7 +1,9 @@
 import hashlib
 import math
+import urllib.parse
 import random
 
+SUPPORTED_EXT = [".pdf", ".docx", ".csv"]
 
 class ClientCredentials:
     def __init__(
@@ -14,17 +16,24 @@ class ClientCredentials:
         self.database_name = database_name
         
     def __init__(
-        self, username: str, password: str
+        self, username: str, password: str, site_url: str, library_path: str = "Shared Documents"
     ):
-        self.username = username
-        self.password = password
+        """
+            Creates Object of ClientCredential to fetch the documents from sharepoint
+            Args: 
+                username: Registered username or email ID
+                password: password for the registered account
+                site_url: URL or web address that points to a specific SharePoint site or site collection. E.g: https://<organization>.sharepoint.com/sites/yourSite
+                library_path: location of the sharepoint folder. Defaults to 'Shared Documents'
+        """
+        self._username = username
+        self._password = password
+        self._site_url = urllib.parse.quote(site_url)
+        self._library_path = library_path
         
     def get_db_url(self):
         db_url = f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}"
         return db_url
-
-    def get_site_url(self):
-        pass
     
 
 def clean_text(text):
