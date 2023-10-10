@@ -705,8 +705,9 @@ class URL(Document):
         ]
         return "\n".join(rows["text"])
 
+
 class DocumentConnector(Document):
-    def __init__(self, username: str, password: str, doc_metadata = {}) -> None:
+    def __init__(self, username: str, password: str, doc_metadata={}) -> None:
         super().__init__()
         self._connector = None
         self._username = username
@@ -723,6 +724,7 @@ class DocumentConnector(Document):
 
     def get_session(self):
         return self._session
+
 
 class SQLDocument(DocumentConnector):
     def __init__(self, username: str, password: str, uri: str, doc_metadata={}) -> None:
@@ -751,7 +753,8 @@ class SQLDocument(DocumentConnector):
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
-    
+
+
 class SharePointDocument(DocumentConnector):
     def __init__(self, username: str, password: str, uri: str, doc_metadata={}) -> None:
         super().__init__(username, password, doc_metadata)
@@ -779,6 +782,7 @@ class SharePointDocument(DocumentConnector):
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
+
 
 class SentenceLevelExtracted(Extracted):
     """Parses a document into sentences and creates a NeuralDB entry for each

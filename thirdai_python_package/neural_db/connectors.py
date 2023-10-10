@@ -1,12 +1,16 @@
-from sqlalchemy import create_engine, ColumnCollection, select, text, MetaData
-from sqlalchemy.sql.base import ReadOnlyColumnCollection
 from typing import List
+
 import pandas as pd
+from sqlalchemy import ColumnCollection, MetaData, create_engine, select, text
+from sqlalchemy.sql.base import ReadOnlyColumnCollection
 
 BATCH_SIZE = 100_000
 
+
 class Credentials:
-    def __init__(self, username: str, password: str, host: str, port: int, database_name: str):
+    def __init__(
+        self, username: str, password: str, host: str, port: int, database_name: str
+    ):
         self.username = username
         self.password = password
         self.host = host
@@ -16,37 +20,31 @@ class Credentials:
     def get_db_url(self):
         db_url = f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}"
         return db_url
-    
-class DataConnector:
-  
-    def __init__(self, username, password, URI):
-        pass
-    
-    def connect()-> bool:
-        # establish the connection with the (username, password)
-        pass
-    
-    def process_data(self);
-        """
-        Process the data in batch using nextbatch() function
-        """
-        pass
-    
-    def next_batch(self):
-        pass
 
-    def get_session():
-        """
-        Returns the connection session
-        """
+
+class DataConnector:
+    def __init__(self, username: str, password: str, uri: str):
+        self._username = username
+        self._password = password
+        self._uri = uri
+        self._session = None
+
+    def connect() -> bool:
+        raise NotImplementedError()
+
+    def next_batch(self):
+        raise NotImplementedError()
+
+    def get_session(self):
+        return self._session
 
     @property
     def username(self):
-        raise NotImplementedError()
+        return self._username
 
     @property
     def password(self, new_password):
-        raise NotImplementedError()
+        self._password = new_password
 
 
 class SQLConnector(DataConnector):
@@ -74,10 +72,3 @@ class SQLConnector(DataConnector):
             
 class SharePointConnector(DataConnector):
     pass
-        
-        
-        
-        
-        
-    
-    
