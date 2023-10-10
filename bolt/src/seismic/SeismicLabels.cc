@@ -1,12 +1,18 @@
-#include "Seismic.h"
+#include "SeismicLabels.h"
 #include <hashing/src/MurmurHash.h>
 #include <cstddef>
 #include <stdexcept>
 #include <vector>
 
-namespace thirdai::data {
+namespace thirdai::bolt::seismic {
 
-constexpr uint32_t SEED = 102942;
+std::vector<uint32_t> seismicLabels(const SubcubeMetadata& subcube_metadata,
+                                    size_t subcube_dim, size_t label_cube_dim,
+                                    size_t max_label) {
+  return seismicLabels(subcube_metadata.volume_name, subcube_metadata.x_coord,
+                       subcube_metadata.y_coord, subcube_metadata.z_coord,
+                       subcube_dim, label_cube_dim, max_label);
+}
 
 std::vector<uint32_t> seismicLabels(const std::string& trace, size_t x_coord,
                                     size_t y_coord, size_t z_coord,
@@ -16,7 +22,11 @@ std::vector<uint32_t> seismicLabels(const std::string& trace, size_t x_coord,
     throw std::invalid_argument(
         "Expected subcube_dim to be a multiple of label_cube_dim.");
   }
-  uint32_t trace_seed = hashing::MurmurHash(trace.data(), trace.size(), SEED);
+
+  // We use the label_cube_dim as the seed so that if we want to get multiple
+  // sets of labels at different granularities we can.
+  uint32_t trace_seed =
+      hashing::MurmurHash(trace.data(), trace.size(), label_cube_dim);
 
   std::vector<uint32_t> labels;
 
@@ -41,4 +51,4 @@ std::vector<uint32_t> seismicLabels(const std::string& trace, size_t x_coord,
   return labels;
 }
 
-}  // namespace thirdai::data
+}  // namespace thirdai::bolt::seismic
