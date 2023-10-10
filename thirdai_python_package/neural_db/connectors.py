@@ -3,30 +3,15 @@ from typing import List
 import pandas as pd
 from sqlalchemy import ColumnCollection, MetaData, create_engine, select, text
 from sqlalchemy.sql.base import ReadOnlyColumnCollection
+from .utils import ClientCredentials
 
 BATCH_SIZE = 100_000
 
-
-class Credentials:
-    def __init__(
-        self, username: str, password: str, host: str, port: int, database_name: str
-    ):
-        self.username = username
-        self.password = password
-        self.host = host
-        self.port = port
-        self.database_name = database_name
-
-    def get_db_url(self):
-        db_url = f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}"
-        return db_url
-
-
 class DataConnector:
-    def __init__(self, username: str, password: str, uri: str):
-        self._username = username
-        self._password = password
-        self._uri = uri
+    def __init__(self, client_credentials: ClientCredentials):
+        self._username = client_credentials.username
+        self._password = client_credentials.password
+        self._uri = client_credentials.uri
         self._session = None
 
     def connect() -> bool:
@@ -48,12 +33,12 @@ class DataConnector:
 
 
 class SQLConnector(DataConnector):
-    def __init__(self, auth_options: Credentials, table_name: str, id_col: str, strong_columns: List[str], weak_columns: List[str]):
-        self.connect(auth_options)
+    def __init__(self, client_credentials: ClientCredentials, table_name: str, id_col: str, strong_columns: List[str], weak_columns: List[str]):
+        self.connect(client_credentials)
         self.df_iter = pd.read_sql(sql = table_name, con=self.connection, columns=[id_col] + strong_columns + weak_columns, chunksize=BATCH_SIZE)
             
-    def connect(self, auth_options: Credentials):
-        db_url = auth_options.get_db_url
+    def connect(self, client_credentials: ClientCredentials):
+        db_url = client_credentials.get_db_url
         engine = create_engine(db_url)
         self.connection = engine.connect()
         

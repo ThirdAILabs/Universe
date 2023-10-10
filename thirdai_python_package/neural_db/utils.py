@@ -3,9 +3,32 @@ import math
 import random
 
 
+class ClientCredentials:
+    def __init__(
+        self, username: str, password: str, host: str, port: int, database_name: str
+    ):
+        self.username = username
+        self.password = password
+        self.host = host
+        self.port = port
+        self.database_name = database_name
+        
+    def __init__(
+        self, username: str, password: str
+    ):
+        self.username = username
+        self.password = password
+        
+    def get_db_url(self):
+        db_url = f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}"
+        return db_url
+
+    def get_site_url(self):
+        pass
+    
+
 def clean_text(text):
     return text.encode("utf-8", "replace").decode("utf-8").lower()
-
 
 def hash_file(path: str, metadata=None):
     """https://stackoverflow.com/questions/22058048/hashing-a-file-in-python"""
