@@ -3,6 +3,8 @@ from typing import List
 import pandas as pd
 from sqlalchemy import ColumnCollection, MetaData, create_engine, select, text
 from sqlalchemy.sql.base import ReadOnlyColumnCollection
+from office365.runtime.auth.user_credential import UserCredential
+from office365.sharepoint.client_context import ClientContext
 
 BATCH_SIZE = 100_000
 
@@ -23,20 +25,15 @@ class Credentials:
 
 
 class DataConnector:
-    def __init__(self, username: str, password: str, uri: str):
+    def __init__(self, username: str, password: str):
         self._username = username
         self._password = password
-        self._uri = uri
-        self._session = None
 
     def connect() -> bool:
         raise NotImplementedError()
 
     def next_batch(self):
         raise NotImplementedError()
-
-    def get_session(self):
-        return self._session
 
     @property
     def username(self):
@@ -71,4 +68,29 @@ class SQLConnector(DataConnector):
         
             
 class SharePointConnector(DataConnector):
-    pass
+    def __init__(self, username: str, password: str, site_url: str):
+        super().__init__(username, password)
+        self._site_url = site_url
+        self.connect()
+
+    def connect(self) -> bool:
+        creds = UserCredential(user_name = self._username, password = self._password)
+
+        try:
+            self._ctx = ClientContext(base_url=self._site_url).with_credentials(credentials = creds)
+
+            #dummy query execute to check authentication
+            self._ctx.execute_query()
+            
+        except Exception as e:
+            print(str(e))
+            return False
+
+        return True
+        
+
+    def next_batch(self):
+        raise NotImplementedError()
+
+    def get_session(self):
+        return self._session
