@@ -32,7 +32,7 @@ def _raise_unknown_doc_error(element_id: int):
 class Document:
     @property
     def size(self) -> int:
-        raise NotImplementedError()
+        raise NotImplementedErrxor()
 
     @property
     def name(self) -> str:
