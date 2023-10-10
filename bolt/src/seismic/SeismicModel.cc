@@ -129,14 +129,15 @@ std::pair<bolt::ModelPtr, bolt::ComputationPtr> SeismicModel::buildModel(
     size_t n_output_classes) {
   auto patches = bolt::Input::make(n_patches * patch_dim);
 
+  size_t patch_emb_dim = 100000;
   auto patch_emb =
       bolt::PatchEmbedding::make(
-          /*emb_dim=*/100000, /*patch_dim=*/patch_dim,
+          /*emb_dim=*/patch_emb_dim, /*patch_dim=*/patch_dim,
           /*n_patches=*/n_patches, /*sparsity=*/0.01, /*activation=*/"relu")
           ->apply(patches);
 
   auto aggregated_embs = bolt::PatchSum::make(/*n_patches=*/n_patches,
-                                              /*patch_dim=*/patch_emb->dim())
+                                              /*patch_dim=*/patch_emb_dim)
                              ->apply(patch_emb);
 
   auto emb = bolt::FullyConnected::make(
