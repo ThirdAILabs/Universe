@@ -2,6 +2,7 @@ import copy
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
+import time
 
 import pandas as pd
 import thirdai
@@ -537,20 +538,40 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, constraints=None, on_error: Callable = None
+        self,
+        query: str,
+        top_k: int,
+        constraints=None,
+        on_error: Callable = None,
+        return_times: bool = False,
     ) -> List[Reference]:
         matching_entities = None
         if constraints:
+            if return_times:
+                start = time.time()
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
+            if return_times:
+                end_matching_entities = time.time()
             result_ids = self._savable_state.model.score(
                 samples=[query], entities=[matching_entities], n_results=top_k
             )[0]
+            if return_times:
+                end = time.time()
+                times = {
+                    "constraint_matching": end_matching_entities - start,
+                    "scoring": end - end_matching_entities,
+                }
         else:
+            if return_times:
+                start = time.time()
             result_ids = self._savable_state.model.infer_labels(
                 samples=[query], n_results=top_k
             )[0]
+            if return_times:
+                end = time.time()
+                times = {"scoring": end - start}
 
         references = []
         for rid, score in result_ids:
@@ -558,6 +579,8 @@ class NeuralDB:
             ref._score = score
             references.append(ref)
 
+        if return_times:
+            return references, times
         return references
 
     def reference(self, element_id: int):
