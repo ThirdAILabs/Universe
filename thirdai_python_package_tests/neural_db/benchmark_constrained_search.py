@@ -4,6 +4,7 @@ import string
 import argparse
 from thirdai import neural_db as ndb
 import mlflow
+import json
 
 
 def strings_of_length(length, num_strings):
@@ -190,6 +191,8 @@ if __name__ == "__main__":
     num_range_filters = 0
     num_metadata_fields = 10
 
+    run_number = 1
+
     for num_docs in [100, 1000, 10_000, 100_000, 1_000_000]:
         for num_entities_per_doc in [100, 1000, 5000]:
             for num_exact_filters, num_options_per_field in [
@@ -216,7 +219,11 @@ if __name__ == "__main__":
                     "entities_per_filter": entities_per_filter,
                 }
 
-                print(params, "\n")
+                print(
+                    f"Run {run_number}\n",
+                    json.dumps(params, sort_keys=True, indent=4),
+                    "\n",
+                )
 
                 mlflow.start_run()
                 mlflow.log_params(params)
@@ -237,3 +244,5 @@ if __name__ == "__main__":
                 )
                 mlflow.log_metrics(metrics)
                 mlflow.end_run()
+
+                run_number += 1
