@@ -201,23 +201,25 @@ if __name__ == "__main__":
                     num_docs * num_entities_per_doc / num_options_per_field
                 )
 
+                params = {
+                    "num_metadata_fields": num_metadata_fields,
+                    "num_options_per_field": num_options_per_field,
+                    "metadata_field_len": metadata_field_len,
+                    "metadata_option_len": metadata_option_len,
+                    "num_exact_filters": num_exact_filters,
+                    "num_range_filters": num_range_filters,
+                    "range_size": range_size,
+                    "num_docs": num_docs,
+                    "num_entities_per_doc": num_entities_per_doc,
+                    "num_queries": num_queries,
+                    "query_length": query_length,
+                    "entities_per_filter": entities_per_filter,
+                }
+
+                print(params, "\n")
+
                 mlflow.start_run()
-                mlflow.log_params(
-                    {
-                        "num_metadata_fields": num_metadata_fields,
-                        "num_options_per_field": num_options_per_field,
-                        "metadata_field_len": metadata_field_len,
-                        "metadata_option_len": metadata_option_len,
-                        "num_exact_filters": num_exact_filters,
-                        "num_range_filters": num_range_filters,
-                        "range_size": range_size,
-                        "num_docs": num_docs,
-                        "num_entities_per_doc": num_entities_per_doc,
-                        "num_queries": num_queries,
-                        "query_length": query_length,
-                        "entities_per_filter": entities_per_filter,
-                    }
-                )
+                mlflow.log_params(params)
                 metrics = benchmark(
                     num_metadata_fields=num_metadata_fields,
                     num_options_per_field=num_options_per_field,
