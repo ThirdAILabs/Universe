@@ -9,14 +9,12 @@
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <optional>
 
 namespace thirdai::automl {
 
 thirdai::data::TransformationPtr makeLabelTransform(
-    const std::string& target_name,
-    const data::CategoricalDataType& target_config) {
+    const std::string& target_name, const CategoricalDataType& target_config) {
   if (!target_config.delimiter) {
     return std::make_shared<thirdai::data::StringToToken>(
         target_name, FEATURIZED_LABELS, /* dim= */ std::nullopt);
@@ -27,19 +25,17 @@ thirdai::data::TransformationPtr makeLabelTransform(
 }
 
 UDTTransformationFactory::UDTTransformationFactory(
-    data::ColumnDataTypes data_types,
-    const data::UserProvidedTemporalRelationships& user_temporal_relationships,
-    const std::string& label_column,
-    thirdai::data::ValueFillType label_value_fill,
-    const data::TabularOptions& options)
+    ColumnDataTypes data_types,
+    const UserProvidedTemporalRelationships& user_temporal_relationships,
+    const std::string& label_column, data::ValueFillType label_value_fill,
+    const TabularOptions& options)
     : _label_transform(makeLabelTransform(
           /* target_name= */ label_column,
-          /* target_config= */ *data::asCategorical(
-              data_types.at(label_column)))),
+          /* target_config= */ *asCategorical(data_types.at(label_column)))),
       _label_columns(
           {feat::OutputColumns(FEATURIZED_LABELS, label_value_fill)}),
       _has_temporal_transform(!user_temporal_relationships.empty()) {
-  auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
+  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       data_types, user_temporal_relationships, options.lookahead);
 
   std::tie(_train_input_transform, _input_columns) =

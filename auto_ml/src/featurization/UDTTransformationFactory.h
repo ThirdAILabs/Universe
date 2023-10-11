@@ -10,7 +10,6 @@
 #include <data/src/transformations/AddBalancingSamples.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <memory>
@@ -27,19 +26,17 @@ namespace feat = thirdai::data;
  */
 class UDTTransformationFactory {
  public:
-  UDTTransformationFactory(data::ColumnDataTypes data_types,
-                           const data::UserProvidedTemporalRelationships&
-                               user_temporal_relationships,
-                           const std::string& label_column,
-                           thirdai::data::ValueFillType label_value_fill,
-                           const data::TabularOptions& options);
+  UDTTransformationFactory(
+      ColumnDataTypes data_types,
+      const UserProvidedTemporalRelationships& user_temporal_relationships,
+      const std::string& label_column, data::ValueFillType label_value_fill,
+      const TabularOptions& options);
 
-  static auto make(data::ColumnDataTypes data_types,
-                   const data::UserProvidedTemporalRelationships&
-                       user_temporal_relationships,
-                   const std::string& label_column,
-                   thirdai::data::ValueFillType label_value_fill,
-                   const data::TabularOptions& options) {
+  static auto make(
+      ColumnDataTypes data_types,
+      const UserProvidedTemporalRelationships& user_temporal_relationships,
+      const std::string& label_column, data::ValueFillType label_value_fill,
+      const TabularOptions& options) {
     return std::make_shared<UDTTransformationFactory>(
         std::move(data_types), user_temporal_relationships, label_column,
         label_value_fill, options);

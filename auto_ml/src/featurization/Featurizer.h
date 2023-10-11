@@ -23,13 +23,13 @@ class TextDatasetConfig {
         _label_delimiter(label_delimiter) {}
 
   static std::optional<TextDatasetConfig> fromDataTypes(
-      data::ColumnDataTypes data_types,
-      const data::TemporalRelationships& temporal_relationships,
+      ColumnDataTypes data_types,
+      const TemporalRelationships& temporal_relationships,
       const std::string& label_column) {
     if (data_types.size() == 2 && temporal_relationships.empty()) {
-      auto cat_label = data::asCategorical(data_types.at(label_column));
+      auto cat_label = asCategorical(data_types.at(label_column));
       data_types.erase(label_column);
-      auto text_type = data::asText(data_types.begin()->second);
+      auto text_type = asText(data_types.begin()->second);
       if (text_type && cat_label) {
         return TextDatasetConfig(data_types.begin()->first, label_column,
                                  cat_label->delimiter);

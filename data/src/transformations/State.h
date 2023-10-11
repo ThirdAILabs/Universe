@@ -70,7 +70,7 @@ class State {
     return std::make_shared<State>(std::move(mach_index));
   }
 
-  static auto make(automl::data::GraphInfoPtr graph) {
+  static auto make(automl::GraphInfoPtr graph) {
     return std::make_shared<State>(std::move(graph));
   }
 
