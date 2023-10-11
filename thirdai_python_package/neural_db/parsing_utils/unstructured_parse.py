@@ -49,7 +49,7 @@ class EmlParagraph(UnstructuredParagraph):
 class UnstructuredParse:
     def __init__(self, filepath: str):
         self._filepath = filepath
-        self._ext = Path(filepath).suffix[1:]    # Removing '.' from the extension
+        self._ext = Path(filepath).suffix[1:]  # Removing '.' from the extension
         self._post_processors = [
             clean_extra_whitespace,
             clean_non_ascii_chars,
@@ -66,12 +66,8 @@ class UnstructuredParse:
     def create_train_df(
         self, paragraphs: List[Type[UnstructuredParagraph]]
     ) -> pd.DataFrame:
-        
         columns = paragraphs[0].__dict__.keys()
-        df = pd.DataFrame(
-            index=range(len(paragraphs)),
-            columns=columns
-        )
+        df = pd.DataFrame(index=range(len(paragraphs)), columns=columns)
 
         for i, elem in enumerate(paragraphs):
             df.iloc[i] = elem.__dict__
@@ -127,7 +123,11 @@ class PptxParse(UnstructuredParse):
                 ]
                 paragraphs.extend(rows)
 
-            return (paragraphs, True) if len(paragraphs) > 0 else (f"Empty pptx file OR {self._error_msg}", False)
+            return (
+                (paragraphs, True)
+                if len(paragraphs) > 0
+                else (f"Empty pptx file OR {self._error_msg}", False)
+            )
         except Exception as e:
             print(str(e))
             return self._error_msg, False
@@ -152,7 +152,7 @@ class EmlParse(UnstructuredParse):
             text = ""
             for doc in docs:
                 content = doc.page_content
-                text += clean_text_and_remove_urls(content)+ " "
+                text += clean_text_and_remove_urls(content) + " "
             text = re.sub(pattern=r"\s+", repl=" ", string=text).strip()
 
             paragraphs = [
@@ -169,7 +169,11 @@ class EmlParse(UnstructuredParse):
                 for chunk in chunk_text(text)
             ]
 
-            return (paragraphs, True) if len(paragraphs) > 0 else (f"Empty eml file OR {self._error_msg}", False)
+            return (
+                (paragraphs, True)
+                if len(paragraphs) > 0
+                else (f"Empty eml file OR {self._error_msg}", False)
+            )
         except Exception as e:
             print(str(e))
             return self._error_msg, False
@@ -203,7 +207,11 @@ class TxtParse(UnstructuredParse):
                 )
                 for chunk in chunk_text(content)
             ]
-            return (paragraphs, True) if len(paragraphs) > 0 else (f"Empty txt file OR {self._error_msg}", False)
+            return (
+                (paragraphs, True)
+                if len(paragraphs) > 0
+                else (f"Empty txt file OR {self._error_msg}", False)
+            )
         except Exception as e:
             print(str(e))
             return self._error_msg, False
