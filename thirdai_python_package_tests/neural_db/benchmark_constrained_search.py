@@ -144,7 +144,7 @@ def benchmark(
     ]
 
     db = ndb.NeuralDB()
-    db.insert(documents, train=False)
+    _, insert_times = db.insert(documents, train=False, return_times=True)
 
     constraint_matching_time = 0
     scoring_time = 0
@@ -170,6 +170,7 @@ def benchmark(
     return {
         "avg_constraint_matching_time": avg_constraint_matching_time,
         "avg_scoring_time": avg_scoring_time,
+        **insert_times,
     }
 
 
@@ -193,7 +194,7 @@ if __name__ == "__main__":
 
     run_number = 1
 
-    for num_docs in [100, 1000, 10_000, 100_000, 1_000_000]:
+    for num_docs in [100_000, 1_000_000]:
         for num_entities_per_doc in [100, 1000, 5000]:
             for num_exact_filters, num_options_per_field in [
                 (3, 10),

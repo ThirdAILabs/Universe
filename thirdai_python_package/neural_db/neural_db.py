@@ -494,6 +494,7 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = None,
         cancel_state: CancelState = None,
+        return_times: bool = False,
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in
@@ -505,6 +506,8 @@ class NeuralDB:
         Primarily used for PocketLLM.
         """
         documents_copy = copy.deepcopy(self._savable_state.documents)
+        if return_times:
+            start = time.time()
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)
         except Exception as e:
@@ -513,6 +516,9 @@ class NeuralDB:
                 on_error(error_msg=f"Failed to add files. {e.__str__()}")
                 return []
             raise e
+        if return_times:
+            register_sources_time = time.time() - start
+            start = time.time()
 
         self._savable_state.model.index_documents(
             intro_documents=intro_and_train.intro,
@@ -524,6 +530,9 @@ class NeuralDB:
             cancel_state=cancel_state,
         )
 
+        if return_times:
+            indexing_time = time.time() - start
+
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
@@ -531,6 +540,13 @@ class NeuralDB:
         )
 
         on_success()
+
+        if return_times:
+            return ids, {
+                "register_sources_time": register_sources_time,
+                "indexing_time": indexing_time,
+            }
+
         return ids
 
     def clear_sources(self) -> None:
