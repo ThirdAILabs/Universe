@@ -32,7 +32,7 @@ def write_files(folder: str, num_docs: int, num_entities_per_doc: int, entity: s
             for j in range(num_entities_per_doc):
                 f.write(f"{j},{entity},\n")
 
-    return [f"doc_{i}.csv" for i in range(num_docs)]
+    return [f"{folder}/doc_{i}.csv" for i in range(num_docs)]
 
 
 def assign_metadata_to_docs(
