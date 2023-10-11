@@ -4,8 +4,21 @@ from pathlib import Path
 import numpy as np
 import thirdai._thirdai.bolt as bolt
 
+import torch
+import torch.nn.functional as F
 
-def convert_to_patches(subcubes, pd):
+
+def convert_to_patches(subcubes, pd, max_pool=None):
+    if max_pool:
+        assert pd % max_pool == 0
+        tensor = torch.from_numpy(subcubes)
+        # Unsqueeze/squeeze are to add/remove the 'channels' dimension
+        tensor = F.max_pool3d(
+            tensor.unsqueeze_(1), kernel_size=max_pool, stride=max_pool
+        )
+        subcubes = tensor.squeeze_(1).numpy()
+        pd //= max_pool  # Scale the patch dim since pooling is applied first.
+
     n_cubes, x, y, z = subcubes.shape
     assert x % pd == 0
     assert y % pd == 0
@@ -40,7 +53,7 @@ def modify_seismic():
         subcube_size = (self.subcube_shape**3) * 4
         # Load less than 10Gb of subcubes
         n_subcubes_per_chunk = min(
-            int((10**9) * 10 / subcube_size), len(subcube_files)
+            int((10**9) * 20 / subcube_size), len(subcube_files)
         )
 
         for _ in range(epochs):
@@ -62,7 +75,14 @@ def modify_seismic():
                     )
 
                 subcubes = np.stack(subcubes, axis=0)
-                subcubes = convert_to_patches(subcubes=subcubes, pd=self.patch_shape)
+                expected_shape = tuple([self.subcube_shape] * 3)
+                if subcubes.shape[1:] != expected_shape:
+                    raise ValueError(
+                        f"Expected subcubes with shape {expected_shape}. But received subcubes with shape {subcubes.shape[1:]}"
+                    )
+                subcubes = convert_to_patches(
+                    subcubes=subcubes, pd=self.patch_shape, max_pool=self.max_pool
+                )
 
                 original_train(
                     self,
@@ -73,7 +93,9 @@ def modify_seismic():
                 )
 
     def wrapped_embeddings(self, subcubes):
-        subcubes = convert_to_patches(subcubes, pd=self.patch_shape)
+        subcubes = convert_to_patches(
+            subcubes, pd=self.patch_shape, max_pool=self.max_pool
+        )
         return original_embeddings(self, subcubes)
 
     bolt.seismic.SeismicModel.train = wrapped_train

@@ -49,12 +49,14 @@ def subcube_directory():
 
 
 @pytest.mark.unit
-def test_seismic_model(subcube_directory):
+@pytest.mark.parametrize("max_pool", [None, 2])
+def test_seismic_model(subcube_directory, max_pool):
     emb_dim = 256
     model = bolt.seismic.SeismicModel(
         subcube_shape=SUBCUBE_SHAPE[0],
         patch_shape=PATCH_SHAPE[0],
         embedding_dim=emb_dim,
+        max_pool=max_pool,
     )
 
     model.train(

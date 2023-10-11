@@ -14,14 +14,16 @@ void createSeismicSubmodule(py::module_& module) {
 
   py::class_<SeismicModel, std::shared_ptr<SeismicModel>>(seismic,
                                                           "SeismicModel")
-      .def(py::init<size_t, size_t, size_t>(), py::arg("subcube_shape"),
-           py::arg("patch_shape"), py::arg("embedding_dim"))
+      .def(py::init<size_t, size_t, size_t, std::optional<size_t>>(),
+           py::arg("subcube_shape"), py::arg("patch_shape"),
+           py::arg("embedding_dim"), py::arg("max_pool") = std::nullopt)
       .def("train", &SeismicModel::train, py::arg("subcubes"),
            py::arg("subcube_metadata"), py::arg("learning_rate"),
            py::arg("batch_size"))
       .def("embeddings", &SeismicModel::embeddings, py::arg("subcubes"))
       .def_property_readonly("subcube_shape", &SeismicModel::subcubeShape)
       .def_property_readonly("patch_shape", &SeismicModel::patchShape)
+      .def_property_readonly("max_pool", &SeismicModel::maxPool)
       .def("save", &SeismicModel::save, py::arg("filename"))
       .def_static("load", &SeismicModel::load, py::arg("filename"));
 

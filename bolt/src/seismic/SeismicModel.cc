@@ -16,10 +16,19 @@
 namespace thirdai::bolt::seismic {
 
 SeismicModel::SeismicModel(size_t subcube_shape, size_t patch_shape,
-                           size_t embedding_dim)
-    : _subcube_shape(subcube_shape), _patch_shape(patch_shape) {
-  std::tie(_model, _emb) =
-      buildModel(nPatches(), patchDim(), embedding_dim, _n_output_classes);
+                           size_t embedding_dim, std::optional<size_t> max_pool)
+    : _subcube_shape(subcube_shape),
+      _patch_shape(patch_shape),
+      _max_pool(max_pool) {
+  if (_subcube_shape % _patch_shape != 0) {
+    throw std::invalid_argument(
+        "Subcube shape should be a multiple of the patch shape.");
+  }
+  if (_max_pool && (_patch_shape % *_max_pool != 0)) {
+    throw std::invalid_argument("Max pool dimension should divide patch dim.");
+  }
+  std::tie(_model, _emb) = buildModel(nPatches(), flattenedPatchDim(),
+                                      embedding_dim, _n_output_classes);
 }
 
 void SeismicModel::train(const NumpyArray& subcubes,
@@ -54,9 +63,9 @@ NumpyArray SeismicModel::embeddings(const NumpyArray& subcubes) {
 bolt::Dataset SeismicModel::convertToBatches(const NumpyArray& array,
                                              size_t batch_size) const {
   size_t n_patches = nPatches();
-  size_t patch_dim = patchDim();
+  size_t flattened_patch_dim = flattenedPatchDim();
   if (array.ndim() != 3 || static_cast<size_t>(array.shape(1)) != n_patches ||
-      static_cast<size_t>(array.shape(2)) != patch_dim) {
+      static_cast<size_t>(array.shape(2)) != flattened_patch_dim) {
     throw std::invalid_argument(
         "Expected 3D numpy array of shape (n_subcubes, n_patches, "
         "patch_size).");
@@ -75,10 +84,10 @@ bolt::Dataset SeismicModel::convertToBatches(const NumpyArray& array,
     size_t start = batch * batch_size;
     size_t end = std::min<size_t>(start + batch_size, array.shape(0));
 
-    auto tensor =
-        bolt::Tensor::fromArray(nullptr, array.data(start), end - start,
-                                n_patches * patch_dim, n_patches * patch_dim,
-                                /* with_grad= */ false);
+    auto tensor = bolt::Tensor::fromArray(
+        nullptr, array.data(start), end - start,
+        n_patches * flattened_patch_dim, n_patches * flattened_patch_dim,
+        /* with_grad= */ false);
 
     batches.push_back({tensor});
   }

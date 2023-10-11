@@ -17,7 +17,8 @@ using NumpyArray =
 
 class SeismicModel {
  public:
-  SeismicModel(size_t subcube_shape, size_t patch_shape, size_t embedding_dim);
+  SeismicModel(size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
+               std::optional<size_t> max_pool = std::nullopt);
 
   void train(const NumpyArray& subcubes,
              const std::vector<SubcubeMetadata>& subcube_metadata,
@@ -28,6 +29,8 @@ class SeismicModel {
   auto subcubeShape() const { return _subcube_shape; }
 
   auto patchShape() const { return _patch_shape; }
+
+  auto maxPool() const { return _max_pool; }
 
   void save(const std::string& filename) const;
 
@@ -50,7 +53,11 @@ class SeismicModel {
     return patches_per_side * patches_per_side * patches_per_side;
   }
 
-  size_t patchDim() const { return _patch_shape * _patch_shape * _patch_shape; }
+  size_t flattenedPatchDim() const {
+    size_t patch_shape_w_pool =
+        _max_pool ? _patch_shape / *_max_pool : _patch_shape;
+    return patch_shape_w_pool * patch_shape_w_pool * patch_shape_w_pool;
+  }
 
   static std::pair<bolt::ModelPtr, bolt::ComputationPtr> buildModel(
       size_t n_patches, size_t patch_dim, size_t embedding_dim,
@@ -63,6 +70,7 @@ class SeismicModel {
   // for 2D case.
   size_t _subcube_shape;
   size_t _patch_shape;
+  std::optional<size_t> _max_pool;
   // TODO(Nicholas): support for list of label cube dims for different
   // granularities.
   size_t _label_cube_dim = 32;
