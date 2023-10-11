@@ -218,7 +218,7 @@ if __name__ == "__main__":
                         "entities_per_filter": entities_per_filter,
                     }
                 )
-                benchmark(
+                metrics = benchmark(
                     num_metadata_fields=num_metadata_fields,
                     num_options_per_field=num_options_per_field,
                     metadata_field_len=metadata_field_len,
@@ -233,4 +233,5 @@ if __name__ == "__main__":
                     entity="paragraph.",
                     folder=args.folder,
                 )
+                mlflow.log_metrics(metrics)
                 mlflow.end_run()
