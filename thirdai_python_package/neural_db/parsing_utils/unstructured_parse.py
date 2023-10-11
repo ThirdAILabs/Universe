@@ -2,7 +2,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple, Union, final
+from typing import List, Optional, Tuple, Type, Union, final
 
 import pandas as pd
 from langchain.document_loaders import (
@@ -20,7 +20,12 @@ from unstructured.cleaners.core import (
     replace_unicode_quotes,
 )
 
-from .utils import chunk_text, clean_text_and_remove_urls, ensure_valid_encoding
+from .utils import (
+    chunk_text,
+    clean_text,
+    clean_text_and_remove_urls,
+    ensure_valid_encoding,
+)
 
 PPTX_CHUNK_THRESHOLD: final = 30
 
@@ -44,7 +49,7 @@ class EmlParagraph(UnstructuredParagraph):
 class UnstructuredParse:
     def __init__(self, filepath: str):
         self._filepath = filepath
-        self._ext = Path(filepath).suffix
+        self._ext = Path(filepath).suffix[1:]    # Removing '.' from the extension
         self._post_processors = [
             clean_extra_whitespace,
             clean_non_ascii_chars,
@@ -53,12 +58,27 @@ class UnstructuredParse:
             replace_unicode_quotes,
             replace_mime_encodings,
         ]
+        self._error_msg = f"Cannot process {self._ext} file: {self._filepath}"
 
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
         raise NotImplementedError()
 
-    def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
-        raise NotImplementedError()
+    def create_train_df(
+        self, paragraphs: List[Type[UnstructuredParagraph]]
+    ) -> pd.DataFrame:
+        
+        columns = paragraphs[0].__dict__.keys()
+        df = pd.DataFrame(
+            index=range(len(paragraphs)),
+            columns=columns
+        )
+
+        for i, elem in enumerate(paragraphs):
+            df.iloc[i] = elem.__dict__
+
+        for column in ["para", "display"]:
+            df[column] = df[column].apply(ensure_valid_encoding)
+        return df
 
 
 class PptxParse(UnstructuredParse):
@@ -72,7 +92,7 @@ class PptxParse(UnstructuredParse):
             )
         except Exception as e:
             print(str(e))
-            print("Cannot process file:", filepath)
+            print(self._error_msg)
 
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
         paragraphs = []
@@ -81,15 +101,7 @@ class PptxParse(UnstructuredParse):
             current_text = ""
             last_page_no = len(docs)
             for doc in docs:
-                text = current_text + " " + doc.page_content
-                text = (
-                    str(text)
-                    .strip()
-                    .replace("\r\n", " ")
-                    .replace("\n", " ")
-                    .replace("\t", " ")
-                    .lower()
-                )
+                text = clean_text(text=current_text + " " + doc.page_content)
                 chunks = chunk_text(text)
                 if len(chunks[-1]) < PPTX_CHUNK_THRESHOLD:
                     if len(chunks) == 1:
@@ -103,7 +115,7 @@ class PptxParse(UnstructuredParse):
                         chunks[-2] += " " + chunks[-1]
                         chunks.pop()
 
-                row = [
+                rows = [
                     UnstructuredParagraph(
                         para=chunk,
                         filepath=self._filepath,
@@ -113,30 +125,12 @@ class PptxParse(UnstructuredParse):
                     )
                     for chunk in chunks
                 ]
-                paragraphs.extend(row)
+                paragraphs.extend(rows)
 
-            return paragraphs, True
+            return (paragraphs, True) if len(paragraphs) > 0 else (f"Empty pptx file OR {self._error_msg}", False)
         except Exception as e:
             print(str(e))
-            return "Cannot process pptx file: " + self._filepath, False
-
-    def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
-        df = pd.DataFrame(
-            index=range(len(paragraphs)),
-            columns=["para", "filepath", "filetype", "page", "display"],
-        )
-        for i, elem in enumerate(paragraphs):
-            df.iloc[i] = [
-                elem.para,
-                elem.filepath,
-                elem.filetype,
-                elem.page_no,
-                elem.display,
-            ]
-
-        for column in ["para", "display"]:
-            df[column] = df[column].apply(ensure_valid_encoding)
-        return df
+            return self._error_msg, False
 
 
 class EmlParse(UnstructuredParse):
@@ -150,7 +144,7 @@ class EmlParse(UnstructuredParse):
             )
         except Exception as e:
             print(str(e))
-            print("Cannot process file:", filepath)
+            print(self._error_msg)
 
     def process_elements(self) -> Tuple[Union[EmlParagraph, str], bool]:
         try:
@@ -158,57 +152,27 @@ class EmlParse(UnstructuredParse):
             text = ""
             for doc in docs:
                 content = doc.page_content
-                text += clean_text_and_remove_urls(content).lower() + " "
+                text += clean_text_and_remove_urls(content)+ " "
             text = re.sub(pattern=r"\s+", repl=" ", string=text).strip()
-            chunks = chunk_text(text)
 
-            rows = [
+            paragraphs = [
                 EmlParagraph(
                     para=chunk,
                     filepath=self._filepath,
                     filetype=self._ext,
                     page_no=None,
-                    display=chunk.replace("\n", " "),
+                    display=chunk,
                     subject=doc.metadata["subject"],
                     sent_from=",".join(doc.metadata["sent_from"]),
                     sent_to=",".join(doc.metadata["sent_to"]),
                 )
-                for chunk in chunks
+                for chunk in chunk_text(text)
             ]
 
-            return rows, True
+            return (paragraphs, True) if len(paragraphs) > 0 else (f"Empty eml file OR {self._error_msg}", False)
         except Exception as e:
             print(str(e))
-            return "Cannot process Eml file: " + self._filepath, False
-
-    def create_train_df(self, paragraphs: List[EmlParagraph]) -> pd.DataFrame:
-        df = pd.DataFrame(
-            index=range(len(paragraphs)),
-            columns=[
-                "para",
-                "filepath",
-                "filetype",
-                "page",
-                "display",
-                "subject",
-                "sent_from",
-                "sent_to",
-            ],
-        )
-        for i, elem in enumerate(paragraphs):
-            df.iloc[i] = [
-                elem.para,
-                elem.filepath,
-                elem.filetype,
-                elem.page_no,
-                elem.display,
-                elem.subject,
-                elem.sent_from,
-                elem.sent_to,
-            ]
-        for column in ["para", "display", "subject"]:
-            df[column] = df[column].apply(ensure_valid_encoding)
-        return df
+            return self._error_msg, False
 
 
 class TxtParse(UnstructuredParse):
@@ -222,19 +186,12 @@ class TxtParse(UnstructuredParse):
             )
         except Exception as e:
             print(str(e))
-            print("Cannot process file: ", filepath)
+            print(self._error_msg)
 
     def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
         try:
             doc = self.TxtLoader.load()
-            content = (
-                str(doc[0].page_content)
-                .strip()
-                .replace("\r\n", " ")
-                .replace("\n", " ")
-                .replace("\t", " ")
-            )
-            chunks = chunk_text(content)
+            content = clean_text(doc[0].page_content)
 
             paragraphs = [
                 UnstructuredParagraph(
@@ -244,35 +201,9 @@ class TxtParse(UnstructuredParse):
                     page_no=None,
                     display=chunk,
                 )
-                for chunk in chunks
+                for chunk in chunk_text(content)
             ]
-            return paragraphs, True
+            return (paragraphs, True) if len(paragraphs) > 0 else (f"Empty txt file OR {self._error_msg}", False)
         except Exception as e:
             print(str(e))
-            return "Cannot process txt file: " + self._filepath, False
-
-    def create_train_df(self, paragraphs: List[UnstructuredParagraph]) -> pd.DataFrame:
-        df = pd.DataFrame(
-            index=range(len(paragraphs)),
-            columns=["para", "filepath", "filetype", "page", "display"],
-        )
-
-        for idx, paragraph in enumerate(paragraphs):
-            sentences = sent_tokenize(paragraph.para)
-            sentences = [
-                sent.replace("\t", " ").replace("\n", " ").strip().lower()
-                for sent in sentences
-            ]
-
-            para = " ".join(sentences)
-            df.iloc[idx] = [
-                para,
-                paragraph.filepath,
-                paragraph.filetype,
-                paragraph.page_no,
-                paragraph.display,
-            ]
-        for column in ["para", "display"]:
-            df[column] = df[column].apply(ensure_valid_encoding)
-
-        return df
+            return self._error_msg, False

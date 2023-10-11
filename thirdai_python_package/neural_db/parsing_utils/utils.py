@@ -82,6 +82,19 @@ def chunk_text(text: str):
 
 
 def clean_text_and_remove_urls(text: str) -> str:
-    text = text.strip().replace("\r\n", " ").replace("\n", " ").replace("\t", " ")
+    text = clean_text(text)
     text = re.sub(r"http\S+", "", text, flags=re.MULTILINE)
+    return text
+
+
+def clean_text(text: str) -> str:
+    text = (
+        str(text)
+        .strip()
+        .replace("\r\n", " ")
+        .replace("\n", " ")
+        .replace("\t", " ")
+        .lower()
+    )
+
     return text
