@@ -230,7 +230,7 @@ if __name__ == "__main__":
                     num_entities_per_doc=num_entities_per_doc,
                     num_queries=num_queries,
                     query_length=query_length,
-                    entity="this is a paragraph in the document. It's not too long or too short. It's quick like the quick brown fox and lorem like the lorem ipsum.",
+                    entity="paragraph.",
                     folder=args.folder,
                 )
                 mlflow.end_run()
