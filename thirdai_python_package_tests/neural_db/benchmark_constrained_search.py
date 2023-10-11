@@ -153,5 +153,3 @@ def benchmark(
 
     avg_constraint_matching_time = constraint_matching_time / num_queries
     avg_scoring_time = scoring_time / num_queries
-
-    
