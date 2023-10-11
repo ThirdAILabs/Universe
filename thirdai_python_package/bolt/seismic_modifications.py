@@ -3,7 +3,6 @@ from pathlib import Path
 
 import numpy as np
 import thirdai._thirdai.bolt as bolt
-
 import torch
 import torch.nn.functional as F
 
