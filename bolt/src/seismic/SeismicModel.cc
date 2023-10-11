@@ -9,6 +9,7 @@
 #include <bolt/src/seismic/SeismicLabels.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <bolt/src/utils/Timer.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <stdexcept>
 #include <utility>
@@ -29,6 +30,10 @@ SeismicModel::SeismicModel(size_t subcube_shape, size_t patch_shape,
   }
   std::tie(_model, _emb) = buildModel(nPatches(), flattenedPatchDim(),
                                       embedding_dim, _n_output_classes);
+
+#if THIRDAI_EXPOSE_ALL
+  _model->summary();
+#endif
 }
 
 void SeismicModel::train(const NumpyArray& subcubes,
@@ -39,8 +44,17 @@ void SeismicModel::train(const NumpyArray& subcubes,
         "Expected number of subcubes to match the number of subcube "
         "metadatas.");
   }
+
+  bolt::utils::Timer timer;
+
   auto data = convertToBatches(subcubes, batch_size);
   auto labels = makeLabelBatches(subcube_metadata, batch_size);
+
+  timer.stop();
+
+  std::cout << "Created " << data.size() << " batches from "
+            << subcubes.shape(0) << " subcubes in " << timer.seconds()
+            << " seconds." << std::endl;
 
   bolt::LabeledDataset dataset =
       std::make_pair(std::move(data), std::move(labels));

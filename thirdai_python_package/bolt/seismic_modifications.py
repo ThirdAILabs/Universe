@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -61,6 +62,8 @@ def modify_seismic():
             for chunk_start in range(0, len(subcube_files), n_subcubes_per_chunk):
                 subcubes = []
                 metadata = []
+
+                load_start = time.perf_counter()
                 for file in subcube_files[
                     chunk_start : chunk_start + n_subcubes_per_chunk
                 ]:
@@ -81,6 +84,13 @@ def modify_seismic():
                     )
                 subcubes = convert_to_patches(
                     subcubes=subcubes, pd=self.patch_shape, max_pool=self.max_pool
+                )
+
+                load_end = time.perf_counter()
+
+                print(
+                    f"Loaded {subcubes.shape[0]} subcubes and converted to patches in {load_end - load_start} seconds.",
+                    flush=True,
                 )
 
                 original_train(
