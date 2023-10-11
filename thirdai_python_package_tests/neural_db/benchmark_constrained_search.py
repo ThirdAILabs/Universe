@@ -1,7 +1,9 @@
 from typing import List
 import random
 import string
+import argparse
 from thirdai import neural_db as ndb
+import mlflow
 
 
 def strings_of_length(length, num_strings):
@@ -11,21 +13,21 @@ def strings_of_length(length, num_strings):
             f"There are only {len(alphabet) ** length} strings of length {length}"
         )
 
-    strings = ["a" * length] * num_strings
+    strings = ["" for _ in range(num_strings)]
     for i in range(num_strings):
         to_be_modded = i
-        for pos in range(length):
-            strings[i][pos] = alphabet[to_be_modded % len(alphabet)]
-            to_be_modded /= len(alphabet)
+        for _ in range(length):
+            strings[i] += alphabet[to_be_modded % len(alphabet)]
+            to_be_modded //= len(alphabet)
     return strings
 
 
-def write_files(num_docs: int, num_entities_per_doc: int, entity: str):
+def write_files(folder: str, num_docs: int, num_entities_per_doc: int, entity: str):
     if "," in entity:
         raise ValueError("Entity cannot contain delimiter character ','")
 
     for i in range(num_docs):
-        with open(f"doc_{i}.csv", "w") as f:
+        with open(f"{folder}/doc_{i}.csv", "w") as f:
             f.write("id,text\n")
             for j in range(num_entities_per_doc):
                 f.write(f"{j},{entity},\n")
@@ -41,7 +43,7 @@ def assign_metadata_to_docs(
         to_be_modded = i
         for field in metadata_fields:
             metadata[i][field] = metadata_options[to_be_modded % len(metadata_options)]
-            to_be_modded /= len(metadata_options)
+            to_be_modded //= len(metadata_options)
     return metadata
 
 
@@ -53,14 +55,14 @@ def random_filters(
     sorted_metadata_options: List[str],
 ):
     exact_filter_fields = random.choices(metadata_fields, k=num_exact_filters)
-    range_filter_fields = set(metadata_fields).difference(exact_filter_fields)
+    range_filter_fields = list(set(metadata_fields).difference(exact_filter_fields))
     range_filter_fields = random.choices(range_filter_fields, k=num_range_filters)
 
     exact_filters = {
         field: random.choice(sorted_metadata_options) for field in exact_filter_fields
     }
 
-    max_idx = len(sorted_metadata_options) - range_size + 1
+    max_idx = len(sorted_metadata_options) - range_size
     random_indices = [random.randint(0, max_idx) for _ in range_filter_fields]
     range_filters = {
         field: ndb.InRange(
@@ -85,7 +87,7 @@ def generate_queries(
         raise ValueError(
             "num_exact_filters + num_range_filters has to be less than or equal to the number of metadata fields."
         )
-    if range_size < metadata_options:
+    if range_size > len(metadata_options):
         raise ValueError(
             "Number of metadata options must be greater than or equal to range_size."
         )
@@ -123,16 +125,17 @@ def benchmark(
     num_queries: int,
     query_length: int,
     entity: str,
+    folder: str,
 ):
-    if num_docs < 10 * num_metadata_fields * num_options_per_field:
+    if num_docs < num_metadata_fields * num_options_per_field:
         raise ValueError(
-            "Num docs must be at least 10 x num_metadata_fields x num_options_per field."
+            "Num docs must be at least num_metadata_fields x num_options_per field."
         )
     # Steps:
     # Generate metadata options
     metadata_fields = strings_of_length(metadata_field_len, num_metadata_fields)
     metadata_options = strings_of_length(metadata_option_len, num_options_per_field)
-    filenames = write_files(num_docs, num_entities_per_doc, entity)
+    filenames = write_files(folder, num_docs, num_entities_per_doc, entity)
     doc_metadata = assign_metadata_to_docs(metadata_fields, metadata_options, num_docs)
     documents = [
         ndb.CSV(filename, metadata=meta)
@@ -154,12 +157,80 @@ def benchmark(
         num_queries,
         query_length,
     ):
-        _, times = db.search(query, constraints=constraints, return_times=True)
+        _, times = db.search(
+            query, top_k=1000, constraints=constraints, return_times=True
+        )
         constraint_matching_time += times["constraint_matching"]
         scoring_time += times["scoring"]
 
     avg_constraint_matching_time = constraint_matching_time / num_queries
     avg_scoring_time = scoring_time / num_queries
 
-    print("avg_constraint_matching_time", avg_constraint_matching_time)
-    print("avg_scoring_time", avg_scoring_time)
+    return {
+        "avg_constraint_matching_time": avg_constraint_matching_time,
+        "avg_scoring_time": avg_scoring_time,
+    }
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("folder")
+    args = parser.parse_args()
+
+    mlflow_uri = (
+        "http://thirdai:rwRp8GBNVplnLCIveMIz@ec2-184-73-150-35.compute-1.amazonaws.com/"
+    )
+    mlflow.set_tracking_uri(mlflow_uri)
+    mlflow.set_experiment("Constrained Search Benchmarks")
+    num_queries = 1000
+    query_length = 50
+    metadata_field_len = 5
+    metadata_option_len = 5
+    range_size = 3
+    num_range_filters = 0
+    num_metadata_fields = 10
+
+    for num_docs in [100, 1000, 10_000, 100_000, 1_000_000]:
+        for num_entities_per_doc in [100, 1000, 5000]:
+            for num_exact_filters, num_options_per_field in [
+                (3, 10),
+                (5, 7),
+                (10, 3),
+            ]:
+                entities_per_filter = (
+                    num_docs * num_entities_per_doc / num_options_per_field
+                )
+
+                mlflow.start_run()
+                mlflow.log_params(
+                    {
+                        "num_metadata_fields": num_metadata_fields,
+                        "num_options_per_field": num_options_per_field,
+                        "metadata_field_len": metadata_field_len,
+                        "metadata_option_len": metadata_option_len,
+                        "num_exact_filters": num_exact_filters,
+                        "num_range_filters": num_range_filters,
+                        "range_size": range_size,
+                        "num_docs": num_docs,
+                        "num_entities_per_doc": num_entities_per_doc,
+                        "num_queries": num_queries,
+                        "query_length": query_length,
+                        "entities_per_filter": entities_per_filter,
+                    }
+                )
+                benchmark(
+                    num_metadata_fields=num_metadata_fields,
+                    num_options_per_field=num_options_per_field,
+                    metadata_field_len=metadata_field_len,
+                    metadata_option_len=metadata_option_len,
+                    num_exact_filters=num_exact_filters,
+                    num_range_filters=num_range_filters,
+                    range_size=range_size,
+                    num_docs=num_docs,
+                    num_entities_per_doc=num_entities_per_doc,
+                    num_queries=num_queries,
+                    query_length=query_length,
+                    entity="this is a paragraph in the document. It's not too long or too short. It's quick like the quick brown fox and lorem like the lorem ipsum.",
+                    folder=args.folder,
+                )
+                mlflow.end_run()
