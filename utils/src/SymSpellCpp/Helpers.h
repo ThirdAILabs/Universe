@@ -110,9 +110,9 @@ class Helpers {
   static int NullDistanceResults(xstring string1, xstring string2,
                                  double maxDistance) {
     if (string1.empty())
-      return (string2.empty())
-                 ? 0
-                 : (string2.size() <= maxDistance) ? string2.size() : -1;
+      return (string2.empty())                 ? 0
+             : (string2.size() <= maxDistance) ? string2.size()
+                                               : -1;
     return (string1.size() <= maxDistance) ? string1.size() : -1;
   }
 
@@ -121,7 +121,8 @@ class Helpers {
   static int NullSimilarityResults(xstring string1, xstring string2,
                                    double minSimilarity) {
     return (string1.empty() && string2.empty()) ? 1
-                                                : (0 <= minSimilarity) ? 0 : -1;
+           : (0 <= minSimilarity)               ? 0
+                                                : -1;
   }
 
   /// <summary>Calculates starting position and lengths of two strings such that

@@ -21,7 +21,7 @@ std::vector<uint32_t> seismicLabelsFromMetadata(
 
 std::vector<uint32_t> seismicLabels(const std::string& volume, size_t x_coord,
                                     size_t y_coord, size_t z_coord,
-                                    size_t subcube_shape, size_t label_cube_shape,
-                                    size_t max_label);
+                                    size_t subcube_shape,
+                                    size_t label_cube_shape, size_t max_label);
 
 }  // namespace thirdai::bolt::seismic
