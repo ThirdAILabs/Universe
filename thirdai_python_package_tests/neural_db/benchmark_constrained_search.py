@@ -121,6 +121,7 @@ def benchmark(
     num_docs: int,
     num_entities_per_doc: int,
     num_queries: int,
+    query_length: int,
     entity: str,
 ):
     if num_docs < 10 * num_metadata_fields * num_options_per_field:
@@ -145,7 +146,13 @@ def benchmark(
     scoring_time = 0
 
     for query, constraints in generate_queries(
-        num_exact_filters, num_range_filters, num_queries, metadata_options
+        num_exact_filters,
+        num_range_filters,
+        range_size,
+        metadata_fields,
+        metadata_options,
+        num_queries,
+        query_length,
     ):
         _, times = db.search(query, constraints=constraints, return_times=True)
         constraint_matching_time += times["constraint_matching"]
