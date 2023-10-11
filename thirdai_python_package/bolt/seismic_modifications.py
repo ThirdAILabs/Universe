@@ -51,9 +51,9 @@ def modify_seismic():
 
         # Number of byes per subcube
         subcube_size = (self.subcube_shape**3) * 4
-        # Load less than 10Gb of subcubes
+        # Load less than 60Gb of subcubes
         n_subcubes_per_chunk = min(
-            int((10**9) * 20 / subcube_size), len(subcube_files)
+            int((10**9) * 60 / subcube_size), len(subcube_files)
         )
 
         for _ in range(epochs):
