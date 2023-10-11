@@ -2,7 +2,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple, Type, Union, final
+from typing import List, Optional, Tuple, Type, TypeVar, Union, final
 
 import pandas as pd
 from langchain.document_loaders import (
@@ -46,6 +46,9 @@ class EmlParagraph(UnstructuredParagraph):
     sent_to: str
 
 
+paras_type = TypeVar("paras_type", bound=List[Type[UnstructuredParagraph]])
+
+
 class UnstructuredParse:
     def __init__(self, filepath: str):
         self._filepath = filepath
@@ -60,7 +63,7 @@ class UnstructuredParse:
         ]
         self._error_msg = f"Cannot process {self._ext} file: {self._filepath}"
 
-    def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
+    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
         raise NotImplementedError()
 
     def create_train_df(
@@ -90,7 +93,7 @@ class PptxParse(UnstructuredParse):
             print(str(e))
             print(self._error_msg)
 
-    def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
+    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
         paragraphs = []
         try:
             docs = self.PptxLoader.load()
@@ -146,7 +149,7 @@ class EmlParse(UnstructuredParse):
             print(str(e))
             print(self._error_msg)
 
-    def process_elements(self) -> Tuple[Union[EmlParagraph, str], bool]:
+    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
         try:
             docs = self.EmlLoader.load()
             text = ""
@@ -192,7 +195,7 @@ class TxtParse(UnstructuredParse):
             print(str(e))
             print(self._error_msg)
 
-    def process_elements(self) -> Tuple[Union[UnstructuredParagraph, str], bool]:
+    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
         try:
             doc = self.TxtLoader.load()
             content = clean_text(doc[0].page_content)
