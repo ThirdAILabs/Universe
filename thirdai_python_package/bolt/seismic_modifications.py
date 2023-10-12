@@ -138,8 +138,8 @@ def modify_seismic():
         communication_backend: str = "gloo",
     ):
         import ray
-        from ray import train
         import thirdai.distributed_bolt as dist
+        from ray import train
         from ray.train.torch import TorchConfig
 
         def train_loop_per_worker(config):
