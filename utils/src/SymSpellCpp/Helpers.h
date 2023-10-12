@@ -985,10 +985,8 @@ class SuggestionStage {
     for (auto it = Deletes.begin(); it != Deletes.end(); ++it) {
       auto permanentDeletesFinded = permanentDeletes->find(it->first);
       vector<xstring> suggestions;
-      int i;
       if (permanentDeletesFinded != permanentDeletesEnd) {
         suggestions = permanentDeletesFinded->second;
-        i = suggestions.size();
 
         vector<xstring> newSuggestions;
         newSuggestions.reserve(suggestions.size() + it->second.count);
@@ -996,7 +994,6 @@ class SuggestionStage {
                   back_inserter(newSuggestions));
         // permanentDeletes[it->first] = newSuggestions;
       } else {
-        i = 0;
         int32_t count = it->second.count;
         suggestions.reserve(count);
         // permanentDeletes[it->first] = suggestions;
@@ -1007,7 +1004,6 @@ class SuggestionStage {
         auto node = Nodes.At(next);
         suggestions.push_back(node.suggestion);
         next = node.next;
-        ++i;
       }
       (*permanentDeletes)[it->first] = suggestions;
     }
