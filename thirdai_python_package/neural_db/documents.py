@@ -5,24 +5,29 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
+from sqlalchemy import text
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from sqlalchemy import text
+from .connectors import SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
-from .utils import hash_file, hash_string, ClientCredentials
-from .connectors import SQLConnector, SharePointConnector
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
-from .utils import hash_file, hash_string
+from .utils import (
+    Credentials,
+    SharePointCredentials,
+    SqlCredentials,
+    hash_file,
+    hash_string,
+)
 
 
 class Reference:
@@ -90,6 +95,14 @@ class Document:
 
     def load_meta(self, directory: Path):
         pass
+
+    def row_iterator(self, start_id: int):
+        for i in range(self.size):
+            yield DocumentRow(
+                element_id=start_id + i,
+                strong=self.strong_text(i),
+                weak_column=self.weak_text(i),
+            )
 
     def save(self, directory: str):
         dirpath = Path(directory)
@@ -182,12 +195,8 @@ class DocumentDataSource(PyDataSource):
 
     def row_iterator(self):
         for doc, start_id in self.documents:
-            for i in range(doc.size):
-                yield DocumentRow(
-                    element_id=start_id + i,
-                    strong=doc.strong_text(i),
-                    weak=doc.weak_text(i),
-                )
+            for row in doc.row_iterator(start_id):
+                yield row
 
     @property
     def size(self):
@@ -745,32 +754,78 @@ class URL(Document):
 
 
 class DocumentConnector(Document):
-    def __init__(self, client_credentials: ClientCredentials, doc_metadata={}) -> None:
+    def __init__(self, user_creds: Type[Credentials], doc_metadata={}) -> None:
         super().__init__()
         self._connector = None
         self._session = None
-        self._credentials = client_credentials
+        self._credentials = user_creds
         self.doc_metadata = doc_metadata
+        self._current_batch: pd.DataFrame = None
+        self._index_table: pd.DataFrame = None
+        self.hash = self.hash_connection()
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
-    def next_batch(**kwargs) -> pd.DataFrame:
+    def row_iterator(self, start_id: int):
+        current_doc_global_id = 0
+        while True:
+            self._current_batch = self.next_batch()
+            if self._current_batch is None:
+                break
+            for idx in range(len(self._current_batch)):
+                yield DocumentRow(
+                    element_id=start_id + current_doc_global_id,
+                    strong=self.strong_text(idx),
+                    weak=self.weak_text(idx),
+                )
+                current_doc_global_id += 1
+
+    @property
+    def index_table(self):
+        return self._index_table
+
+    def next_batch(self) -> pd.DataFrame:
         raise NotImplementedError()
 
     def get_session(self):
         return self._session
 
+    def reference(self, element_id: int) -> Reference:
+        pass
+
+    def strong_column(self, element_id):
+        raise NotImplementedError()
+
+    def weak_column(self, element_id):
+        raise NotImplementedError()
+
+    def hash_connection(self):
+        pass
+
 
 class SQLDocument(DocumentConnector):
-    def __init__(self, client_credentials: ClientCredentials, table_name: str, id_col: str, strong_columns: List[str], weak_columns: List[str], doc_metadata={}) -> None:
-        super().__init__(client_credentials, doc_metadata)
-        self._connector = SQLConnector(client_credentials, table_name, id_col, strong_columns, weak_columns)
-        self.total_rows = self._connector.connection.execute(text(f'select count(*) from {table_name}')).fetchone()[0]
-        self.table_name = table_name
-        
-    def next_batch(self, **kwargs) -> pd.DataFrame:
+    def __init__(
+        self,
+        user_creds: SqlCredentials,
+        id_col: str,
+        strong_columns: List[str],
+        weak_columns: List[str],
+        doc_metadata={},
+    ) -> None:
+        super().__init__(user_creds, doc_metadata)
+        self._strong_columns = strong_columns
+        self._weak_columns = weak_columns
+        self._connector = SQLConnector(user_creds, id_col, strong_columns, weak_columns)
+        self._table_name = self._credentials._table_name
+        self.total_rows = self._connector.connection.execute(
+            text(f"select count(*) from {self._table_name}")
+        ).fetchone()[0]
+
+        self._doc_metadata = doc_metadata
+
+    def next_batch(self) -> pd.DataFrame:
         return self._connector.next_batch()
 
     def size(self) -> int:
@@ -784,22 +839,26 @@ class SQLDocument(DocumentConnector):
     def hash(self) -> str:
         pass
 
-    @property
-    def matched_constraints(self) -> Dict[str, ConstraintValue]:
-        raise NotImplementedError()
-
     def all_entity_ids(self) -> List[int]:
         raise NotImplementedError()
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
+    def strong_text(self, element_id: int) -> str:
+        row = self.df.iloc[element_id]
+        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
+
+    def weak_text(self, element_id: int) -> str:
+        row = self.df.iloc[element_id]
+        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
+
 
 class SharePointDocument(DocumentConnector):
-    def __init__(self, client_credentials: ClientCredentials, doc_metadata={}) -> None:
-        super().__init__(client_credentials, doc_metadata)
-        self._connector = SharePointConnector(client_credentials)
-        
+    def __init__(self, user_creds: SharePointCredentials, doc_metadata={}) -> None:
+        super().__init__(user_creds, doc_metadata)
+        self._connector = SharePointConnector(user_creds)
+
     def next_batch(**kwargs) -> pd.DataFrame:
         raise NotImplementedError()
 
@@ -813,10 +872,6 @@ class SharePointDocument(DocumentConnector):
     @property
     def hash(self) -> str:
         pass
-
-    @property
-    def matched_constraints(self) -> Dict[str, ConstraintValue]:
-        raise NotImplementedError()
 
     def all_entity_ids(self) -> List[int]:
         raise NotImplementedError()

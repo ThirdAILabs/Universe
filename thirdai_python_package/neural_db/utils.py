@@ -1,53 +1,75 @@
 import hashlib
 import math
-import urllib.parse
 import random
+import urllib.parse
+from dataclasses import dataclass
+from typing import Optional
 
 SUPPORTED_EXT = [".pdf", ".docx", ".csv"]
 
-class ClientCredentials:
-    def __init__(
-        self, username: str, password: str, host: str, port: int, database_name: str
-    ):
+
+class Credentials:
+    def __init__(self, username: str, password: str) -> None:
         """
-            Creates Object of ClientCredential to initiliaze a SQL Database connection
-            Args: 
-                username: str, the username for database authentication
-                password: str, the password for database authentication
-                host: str, the hostname or IP address of the database server
-                port: int, the port number for the database connection
-                database_name: str, the name of the specific database to connect to
-        """
-        
-        self.username = username
-        self.password = password
-        self.host = host
-        self.port = port
-        self.database_name = database_name
-        
-    def __init__(
-        self, username: str, password: str, site_url: str, library_path: str = "Shared Documents"
-    ):
-        """
-            Creates Object of ClientCredential to fetch the documents from sharepoint
-            Args: 
-                username: Registered username or email ID
-                password: password for the registered account
-                site_url: URL or web address that points to a specific SharePoint site or site collection. E.g: https://<organization>.sharepoint.com/sites/yourSite
-                library_path: location of the sharepoint folder. Defaults to 'Shared Documents'
+        Creates the Base object for taking credentials as input
         """
         self._username = username
         self._password = password
+
+    @property
+    def username(self):
+        return self._username
+
+    def with_configs(self, **kwargs):
+        raise NotImplementedError()
+
+
+class SqlCredentials(Credentials):
+    def __init__(self, username: str, password: str) -> None:
+        """
+        Creates the cred object with SQL credentials as input
+        """
+        super().__init__(username, password)
+
+    def with_configs(self, host: str, port: int, database_name: str, table_name: str):
+        """
+        Configs to initialize a SQL Database connection
+        Args:
+            host: str, the hostname or IP address of the database server
+            port: int, the port number for the database connection
+            database_name: str, the name of the specific database to connect to
+        """
+        self._host = host
+        self._port = port
+        self._database_name = database_name
+        self._table_name = table_name
+
+    def get_db_url(self):
+        db_url = f"postgresql://{self._username}:{self._password}@{self._host}:{self._port}/{self._database_name}"
+        return db_url
+
+
+class SharePointCredentials(Credentials):
+    def __init__(self, username: str, password: str) -> None:
+        """
+        Creates the cred object with sharepoint credentials as input
+        """
+        super().__init__(username, password)
+
+    def with_configs(self, site_url: str, library_path="Shared Documents"):
+        """
+        Configs to fetch the documents from sharepoint
+        Args:
+            site_url: URL or web address that points to a specific SharePoint site or site collection. E.g: https://<organization>.sharepoint.com/sites/yourSite
+            library_path: location of the sharepoint folder. Default is 'Shared Documents'
+        """
         self._site_url = urllib.parse.quote(site_url)
         self._library_path = library_path
-        
-    def get_db_url(self):
-        db_url = f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}"
-        return db_url
-    
+
 
 def clean_text(text):
     return text.encode("utf-8", "replace").decode("utf-8").lower()
+
 
 def hash_file(path: str, metadata=None):
     """https://stackoverflow.com/questions/22058048/hashing-a-file-in-python"""
