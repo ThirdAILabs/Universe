@@ -1,4 +1,5 @@
 #include "BoltSeismic.h"
+#include <bolt/python_bindings/PybindUtils.h>
 #include <bolt/src/seismic/SeismicLabels.h>
 #include <bolt/src/seismic/SeismicModel.h>
 #include <pybind11/stl.h>
@@ -17,15 +18,19 @@ void createSeismicSubmodule(py::module_& module) {
       .def(py::init<size_t, size_t, size_t, std::optional<size_t>>(),
            py::arg("subcube_shape"), py::arg("patch_shape"),
            py::arg("embedding_dim"), py::arg("max_pool") = std::nullopt)
-      .def("train", &SeismicModel::train, py::arg("subcubes"),
-           py::arg("subcube_metadata"), py::arg("learning_rate"),
-           py::arg("batch_size"))
-      .def("embeddings", &SeismicModel::embeddings, py::arg("subcubes"))
+      .def("train_on_patches", &SeismicModel::trainOnPatches,
+           py::arg("subcubes"), py::arg("subcube_metadata"),
+           py::arg("learning_rate"), py::arg("batch_size"),
+           py::arg("comm") = std::nullopt)
+      .def("embeddings_for_patches", &SeismicModel::embeddingsForPatches,
+           py::arg("subcubes"))
       .def_property_readonly("subcube_shape", &SeismicModel::subcubeShape)
       .def_property_readonly("patch_shape", &SeismicModel::patchShape)
       .def_property_readonly("max_pool", &SeismicModel::maxPool)
+      .def_property("model", &SeismicModel::getModel, &SeismicModel::setModel)
       .def("save", &SeismicModel::save, py::arg("filename"))
-      .def_static("load", &SeismicModel::load, py::arg("filename"));
+      .def_static("load", &SeismicModel::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<SeismicModel>());
 
 #if THIRDAI_EXPOSE_ALL
   seismic.def("seismic_labels", &seismicLabels, py::arg("volume"),

@@ -3,6 +3,8 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/seismic/SeismicLabels.h>
+#include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/DistributedComm.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -20,11 +22,12 @@ class SeismicModel {
   SeismicModel(size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
                std::optional<size_t> max_pool = std::nullopt);
 
-  void train(const NumpyArray& subcubes,
-             const std::vector<SubcubeMetadata>& subcube_metadata,
-             float learning_rate, size_t batch_size);
+  metrics::History trainOnPatches(
+      const NumpyArray& subcubes,
+      const std::vector<SubcubeMetadata>& subcube_metadata, float learning_rate,
+      size_t batch_size, const DistributedCommPtr& comm);
 
-  NumpyArray embeddings(const NumpyArray& subcubes);
+  NumpyArray embeddingsForPatches(const NumpyArray& subcubes);
 
   auto subcubeShape() const { return _subcube_shape; }
 
@@ -40,13 +43,15 @@ class SeismicModel {
 
   static std::shared_ptr<SeismicModel> load_stream(std::istream& input);
 
- private:
-  bolt::Dataset convertToBatches(const NumpyArray& array,
-                                 size_t batch_size) const;
+  ModelPtr getModel() const { return _model; }
 
-  bolt::Dataset makeLabelBatches(
-      const std::vector<SubcubeMetadata>& subcube_metadata,
-      size_t batch_size) const;
+  void setModel(ModelPtr model) { _model = std::move(model); }
+
+ private:
+  Dataset convertToBatches(const NumpyArray& array, size_t batch_size) const;
+
+  Dataset makeLabelBatches(const std::vector<SubcubeMetadata>& subcube_metadata,
+                           size_t batch_size) const;
 
   size_t nPatches() const {
     size_t patches_per_side = _subcube_shape / _patch_shape;
@@ -59,12 +64,12 @@ class SeismicModel {
     return patch_shape_w_pool * patch_shape_w_pool * patch_shape_w_pool;
   }
 
-  static std::pair<bolt::ModelPtr, bolt::ComputationPtr> buildModel(
+  static std::pair<ModelPtr, ComputationPtr> buildModel(
       size_t n_patches, size_t patch_dim, size_t embedding_dim,
       size_t n_output_classes);
 
-  bolt::ModelPtr _model;
-  bolt::ComputationPtr _emb;
+  ModelPtr _model;
+  ComputationPtr _emb;
 
   // TODO(Nicholas): Make these explicit tuples so that we can pass in (N,N,1)
   // for 2D case.

@@ -3,9 +3,12 @@ import time
 from pathlib import Path
 
 import numpy as np
+import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
+
+from .._distributed_bolt.distributed import Communication
 
 
 def convert_to_patches(subcubes, pd, max_pool=None):
@@ -35,16 +38,38 @@ def convert_to_patches(subcubes, pd, max_pool=None):
     return patches
 
 
-def modify_seismic():
-    original_train = bolt.seismic.SeismicModel.train
-    original_embeddings = bolt.seismic.SeismicModel.embeddings
+def subcube_range_for_worker(n_subcubes: int):
+    from ray import train
 
+    rank = train.get_context().get_world_rank()
+    world_size = train.get_context().get_world_size()
+
+    subcubes_for_worker = n_subcubes // world_size
+    if rank < (n_subcubes % world_size):
+        subcubes_for_worker += 1
+
+    offset = (n_subcubes // world_size * rank) + min(n_subcubes % world_size, rank)
+
+    return offset, offset + subcubes_for_worker
+
+
+def modify_seismic():
     def wrapped_train(
-        self, subcube_directory: str, learning_rate: float, epochs: int, batch_size: int
+        self,
+        subcube_directory: str,
+        learning_rate: float,
+        epochs: int,
+        batch_size: int,
+        comm: Communication = None,
     ):
         subcube_files = [
             file for file in os.listdir(subcube_directory) if file.endswith(".npy")
         ]
+
+        if comm:
+            # For distributed training give each worker a seperate partition of the subcubes.
+            worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
+            subcube_files = subcube_files[worker_start:worker_end]
 
         if not subcube_files:
             raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
@@ -93,19 +118,91 @@ def modify_seismic():
                     flush=True,
                 )
 
-                original_train(
+                self.train_on_patches(
                     self,
                     subcubes=subcubes,
                     subcube_metadata=metadata,
                     learning_rate=learning_rate,
                     batch_size=batch_size,
+                    comm=comm,
                 )
+
+    def train_distributed(
+        self,
+        subcube_directory: str,
+        learning_rate: float,
+        epochs: int,
+        batch_size: int,
+        run_name: str,
+        scaling_config,
+        communication_backend: str = "gloo",
+    ):
+        import ray
+        from ray import train
+        import thirdai.distributed_bolt as dist
+        from ray.train.torch import TorchConfig
+
+        def train_loop_per_worker(config):
+            import ray
+            from ray import train
+
+            model_ref = config["model_ref"]
+            subcube_directory = config["subcube_directory"]
+            learning_rate = config["learning_rate"]
+            epochs = config["epochs"]
+            batch_size = config["batch_size"] / train.get_context().get_world_size()
+            config["licensing_lambda"]()
+
+            model = ray.get(model_ref)
+
+            metrics = model.train(
+                subcube_directory=subcube_directory,
+                learning_rate=learning_rate,
+                epochs=epochs,
+                batch_size=batch_size,
+                comm=Communication(),
+            )
+
+            rank = train.get_context().get_world_rank()
+            checkpoint = None
+            if rank == 0:
+                # Use `with_optimizers=False` to save model without optimizer states
+                checkpoint = dist.BoltCheckPoint.from_model(model.model)
+
+            train.report(metrics=metrics, checkpoint=checkpoint)
+
+        config = {}
+        config["model_ref"] = ray.put(self)
+        config["subcube_directory"] = subcube_directory
+        config["learning_rate"] = learning_rate
+        config["epochs"] = epochs
+        config["batch_size"] = batch_size
+
+        license_state = thirdai._thirdai.licensing._get_license_state()
+        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+            license_state
+        )
+        config["licensing_lambda"] = licensing_lambda
+
+        trainer = dist.BoltTrainer(
+            train_loop_per_worker=train_loop_per_worker,
+            train_loop_config=config,
+            scaling_config=scaling_config,
+            backend_config=TorchConfig(backend=communication_backend),
+            datasets={},
+            run_config=train.RunConfig(name=run_name),
+        )
+
+        result = trainer.fit()
+
+        self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
 
     def wrapped_embeddings(self, subcubes):
         subcubes = convert_to_patches(
             subcubes, pd=self.patch_shape, max_pool=self.max_pool
         )
-        return original_embeddings(self, subcubes)
+        return self.embeddings_for_patches(self, subcubes)
 
     bolt.seismic.SeismicModel.train = wrapped_train
+    bolt.seismic.SeismicModel.train_distributed = train_distributed
     bolt.seismic.SeismicModel.embeddings = wrapped_embeddings
