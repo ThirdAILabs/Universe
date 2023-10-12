@@ -79,6 +79,8 @@ def modify_seismic():
             int((10**9) * 60 / subcube_size), len(subcube_files)
         )
 
+        output_metrics = {}
+
         for _ in range(epochs):
             np.random.shuffle(subcube_files)
 
@@ -116,8 +118,7 @@ def modify_seismic():
                     flush=True,
                 )
 
-                self.train_on_patches(
-                    self,
+                metrics = self.train_on_patches(
                     subcubes=subcubes,
                     subcube_metadata=metadata,
                     learning_rate=learning_rate,
@@ -125,13 +126,22 @@ def modify_seismic():
                     comm=comm,
                 )
 
+                metrics = {k: v[-1] for k, v in metrics.items()}
+                metrics["train_steps"] = self.model.train_steps()
+                for k, v in metrics.items():
+                    if k not in output_metrics:
+                        output_metrics[k] = []
+                    output_metrics[k].append(v)
+
+        return metrics
+
     def train_distributed(
         self,
         subcube_directory: str,
         learning_rate: float,
         epochs: int,
         batch_size: int,
-        run_name: str,
+        run_config,
         scaling_config,
         communication_backend: str = "gloo",
     ):
@@ -139,6 +149,7 @@ def modify_seismic():
         import thirdai.distributed_bolt as dist
         from ray import train
         from ray.train.torch import TorchConfig
+
         from .._distributed_bolt.distributed import Communication
 
         def train_loop_per_worker(config):
@@ -149,7 +160,7 @@ def modify_seismic():
             subcube_directory = config["subcube_directory"]
             learning_rate = config["learning_rate"]
             epochs = config["epochs"]
-            batch_size = config["batch_size"] / train.get_context().get_world_size()
+            batch_size = config["batch_size"] // train.get_context().get_world_size()
             config["licensing_lambda"]()
 
             model = ray.get(model_ref)
@@ -172,7 +183,7 @@ def modify_seismic():
 
         config = {}
         config["model_ref"] = ray.put(self)
-        config["subcube_directory"] = subcube_directory
+        config["subcube_directory"] = os.path.abspath(subcube_directory)
         config["learning_rate"] = learning_rate
         config["epochs"] = epochs
         config["batch_size"] = batch_size
@@ -188,8 +199,7 @@ def modify_seismic():
             train_loop_config=config,
             scaling_config=scaling_config,
             backend_config=TorchConfig(backend=communication_backend),
-            datasets={},
-            run_config=train.RunConfig(name=run_name),
+            run_config=run_config,
         )
 
         result = trainer.fit()
@@ -200,7 +210,7 @@ def modify_seismic():
         subcubes = convert_to_patches(
             subcubes, pd=self.patch_shape, max_pool=self.max_pool
         )
-        return self.embeddings_for_patches(self, subcubes)
+        return self.embeddings_for_patches(subcubes)
 
     bolt.seismic.SeismicModel.train = wrapped_train
     bolt.seismic.SeismicModel.train_distributed = train_distributed

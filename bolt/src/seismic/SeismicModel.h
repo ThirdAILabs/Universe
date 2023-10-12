@@ -45,7 +45,11 @@ class SeismicModel {
 
   ModelPtr getModel() const { return _model; }
 
-  void setModel(ModelPtr model) { _model = std::move(model); }
+  void setModel(ModelPtr model) {
+    _model = std::move(model);
+    auto computations = _model->computationOrderWithoutInputs();
+    _emb = computations.at(computations.size() - 2);
+  }
 
  private:
   Dataset convertToBatches(const NumpyArray& array, size_t batch_size) const;

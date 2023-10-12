@@ -63,13 +63,23 @@ metrics::History SeismicModel::trainOnPatches(
 
   Trainer trainer(_model);
 
-  return trainer.train_with_metric_names(
+  if (comm) {
+    _model->disableSparseParameterUpdates();
+  }
+
+  auto metrics = trainer.train_with_metric_names(
       dataset, learning_rate, /* epochs= */ 1,
       /* train_metrics= */ {"loss"}, /* validation_data= */ std::nullopt,
       /* validation_metrics= */ {}, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
       /* logging_interval= */ std::nullopt, /* comm= */ comm);
+
+  if (comm) {
+    _model->enableSparseParameterUpdates();
+  }
+
+  return metrics;
 }
 
 NumpyArray SeismicModel::embeddingsForPatches(const NumpyArray& subcubes) {
@@ -216,8 +226,8 @@ std::shared_ptr<SeismicModel> SeismicModel::load_stream(std::istream& input) {
 
 template <class Archive>
 void SeismicModel::serialize(Archive& archive) {
-  archive(_model, _emb, _subcube_shape, _patch_shape, _label_cube_dim,
-          _n_output_classes);
+  archive(_model, _emb, _subcube_shape, _patch_shape, _max_pool,
+          _label_cube_dim, _n_output_classes);
 }
 
 }  // namespace thirdai::bolt::seismic
