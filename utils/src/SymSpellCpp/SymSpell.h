@@ -14,7 +14,7 @@
 #include <memory>
 #include <regex>
 #include <sstream>
-//#define UNICODE_SUPPORT
+// #define UNICODE_SUPPORT
 #include "Helpers.h"
 
 // SymSpell: 1 million times faster through Symmetric Delete spelling correction
@@ -341,7 +341,7 @@ class SymSpell {
   int GetstringHash(xstring s);
 
  public:
-  //######################
+  // ######################
 
   // LookupCompound supports compound aware automatic spelling correction of
   // multi-word input strings with three cases:
@@ -364,7 +364,7 @@ class SymSpell {
   /// string.</returns>
   vector<SuggestItem> LookupCompound(xstring input, uint32_t editDistanceMax);
 
-  //######
+  // ######
 
   // WordSegmentation divides a string into words by inserting missing spaces at
   // the appropriate positions misspelled words are corrected and do not affect
