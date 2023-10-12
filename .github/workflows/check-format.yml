@@ -27,11 +27,11 @@ jobs:
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
             
     - name: Run clang-format
-      uses: DoozyX/clang-format-lint-action@v0.12
+      uses: DoozyX/clang-format-lint-action@v0.16.2
       with:
         source: '.'
         exclude: './deps'
-        clangFormatVersion: 10
+        clangFormatVersion: 15
         style: file
 
   python-format:
