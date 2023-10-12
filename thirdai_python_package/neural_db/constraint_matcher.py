@@ -44,8 +44,8 @@ class InRange(Filter[ItemT]):
     def __init__(
         self, minimum: Any, maximum: Any, inclusive_min=True, inclusive_max=True
     ):
-        if minimum is None and maximum is None:
-            raise ValueError("InRange cannot accept None for both minimum and maximum.")
+        if minimum is None or maximum is None:
+            raise ValueError("InRange cannot accept None for minimum and maximum.")
 
         self.min = minimum
         self.max = maximum
@@ -57,14 +57,6 @@ class InRange(Filter[ItemT]):
 
     def filter_df_column(self, df: pd.DataFrame, column_name: str):
         left_inclusive, right_inclusive = self.inclusive
-        if self.min is None and right_inclusive:
-            return df[df[column_name].le(self.max)]
-        elif self.min is None:
-            return df[df[column_name].lt(self.max)]
-        elif self.max is None and left_inclusive:
-            return df[df[column_name].ge(self.min)]
-        elif self.max is None:
-            return df[df[column_name].gt(self.min)]
 
         if left_inclusive and right_inclusive:
             inclusive = "both"
@@ -80,12 +72,32 @@ class InRange(Filter[ItemT]):
 
 class GreaterThan(InRange[ItemT]):
     def __init__(self, minimum: Any, include_equal=False):
-        super().__init__(minimum, maximum=None, inclusive_min=include_equal)
+        self.minimum = minimum
+        self.include_equal = include_equal
+
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
+        values = value_to_items.irange(self.minimum, None, (self.include_equal, False))
+        return AnyOf(values).filter(value_to_items)
+
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
+        if self.include_equal:
+            return df[df[column_name].ge(self.minimum)]
+        return df[df[column_name].gt(self.minimum)]
 
 
 class LessThan(InRange[ItemT]):
     def __init__(self, maximum: Any, include_equal=False):
-        super().__init__(minimum=None, maximum=maximum, inclusive_max=include_equal)
+        self.maximum = maximum
+        self.include_equal = include_equal
+
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
+        values = value_to_items.irange(None, self.maximum, (False, self.include_equal))
+        return AnyOf(values).filter(value_to_items)
+
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
+        if self.include_equal:
+            return df[df[column_name].le(self.maximum)]
+        return df[df[column_name].lt(self.maximum)]
 
 
 class ConstraintValue:
