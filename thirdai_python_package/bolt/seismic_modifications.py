@@ -8,8 +8,6 @@ import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
 
-from .._distributed_bolt.distributed import Communication
-
 
 def convert_to_patches(subcubes, pd, max_pool=None):
     if max_pool:
@@ -60,7 +58,7 @@ def modify_seismic():
         learning_rate: float,
         epochs: int,
         batch_size: int,
-        comm: Communication = None,
+        comm=None,
     ):
         subcube_files = [
             file for file in os.listdir(subcube_directory) if file.endswith(".npy")
@@ -141,6 +139,7 @@ def modify_seismic():
         import thirdai.distributed_bolt as dist
         from ray import train
         from ray.train.torch import TorchConfig
+        from .._distributed_bolt.distributed import Communication
 
         def train_loop_per_worker(config):
             import ray
