@@ -10,6 +10,7 @@ try:
         Reference,
         SentenceLevelDOCX,
         SentenceLevelPDF,
+        Unstructured,
     )
     from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
