@@ -7,6 +7,7 @@ from thirdai.neural_db.constraint_matcher import (
     ConstraintValue,
     to_filters,
 )
+from tqdm import tqdm
 
 
 def strings_of_length(length, num_strings):
@@ -98,6 +99,11 @@ def generate_constraints(
     return metadata
 
 
+def print_if_verbose(verbose, *args, **kwargs):
+    if verbose:
+        print(*args, **kwargs)
+
+
 def benchmark(
     num_metadata_fields: int,
     num_options_per_field: int,
@@ -108,27 +114,33 @@ def benchmark(
     range_size: int,
     num_docs: int,
     num_queries: int,
+    verbose: bool,
 ):
     if num_docs < num_metadata_fields * num_options_per_field:
         raise ValueError(
             "Num docs must be at least num_metadata_fields x num_options_per field."
         )
 
+    print_if_verbose(verbose, "Making metadata fields...")
     metadata_fields = strings_of_length(metadata_field_len, num_metadata_fields)
+    print_if_verbose(verbose, "Making metadata options...")
     metadata_options = strings_of_length(metadata_option_len, num_options_per_field)
+    print_if_verbose(verbose, "Generating item metadata...")
     item_metadata = generate_item_metadata(metadata_fields, metadata_options, num_docs)
     dummy_item = 0
 
     constraint_matcher = ConstraintMatcher()
 
+    print_if_verbose(verbose, "Indexing items...")
     start = time.time()
-    for meta in item_metadata:
+    for meta in tqdm(item_metadata):
         constraint_matcher.index(
             item=dummy_item,
-            constraints={key: ConstraintValue(value) for key, value in meta},
+            constraints={key: ConstraintValue(value) for key, value in meta.items()},
         )
     constraint_indexing_time = time.time() - start
 
+    print_if_verbose(verbose, "Generating constraints...")
     constraint_queries = generate_constraints(
         num_exact_filters,
         num_range_filters,
@@ -138,11 +150,22 @@ def benchmark(
         num_queries,
     )
 
+    print_if_verbose(verbose, "Matching...")
     start = time.time()
-    for constraints in constraint_queries:
+    for constraints in tqdm(constraint_queries):
         start = time.time()
         constraint_matcher.match(filters=to_filters(constraints))
     constraint_matching_time = time.time() - start
+
+    print_if_verbose(verbose, "Done.")
+    print_if_verbose(
+        verbose,
+        "Average constraint matching time:",
+        constraint_matching_time / num_queries,
+    )
+    print_if_verbose(
+        verbose, "Total constraint indexing time:", constraint_indexing_time
+    )
 
     return {
         "avg_constraint_matching_time": constraint_matching_time / num_queries,
@@ -151,14 +174,21 @@ def benchmark(
 
 
 def main():
-    benchmark(
-        num_metadata_fields=10,
-        num_options_per_field=3,
-        metadata_field_len=5,
-        metadata_option_len=5,
-        num_exact_filters=7,
-        num_range_filters=3,
-        range_size=3,
-        num_docs=10_000_000,
-        num_queries=1000,
+    print(
+        benchmark(
+            num_metadata_fields=10,
+            num_options_per_field=3,
+            metadata_field_len=5,
+            metadata_option_len=5,
+            num_exact_filters=7,
+            num_range_filters=3,
+            range_size=3,
+            num_docs=10_000_000,
+            num_queries=1000,
+            verbose=True,
+        )
     )
+
+
+if __name__ == "__main__":
+    main()
