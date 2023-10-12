@@ -1,7 +1,8 @@
-import pytest
-from typing import List
 import random
 import time
+from typing import List
+
+import pytest
 from thirdai import neural_db as ndb
 from thirdai.neural_db.constraint_matcher import (
     ConstraintMatcher,
