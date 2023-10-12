@@ -31,7 +31,7 @@ jobs:
       with:
         source: '.'
         exclude: './deps'
-        clangFormatVersion: 15
+        clangFormatVersion: 10
         style: file
 
   python-format:
