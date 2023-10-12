@@ -10,7 +10,6 @@ from langchain.document_loaders import (
     UnstructuredFileLoader,
     UnstructuredPowerPointLoader,
 )
-from nltk.tokenize import sent_tokenize
 from unstructured.cleaners.core import (
     clean_bullets,
     clean_extra_whitespace,
@@ -46,9 +45,6 @@ class EmlParagraph(UnstructuredParagraph):
     sent_to: str
 
 
-paras_type = TypeVar("paras_type", bound=List[Type[UnstructuredParagraph]])
-
-
 class UnstructuredParse:
     def __init__(self, filepath: str):
         self._filepath = filepath
@@ -63,7 +59,9 @@ class UnstructuredParse:
         ]
         self._error_msg = f"Cannot process {self._ext} file: {self._filepath}"
 
-    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
+    def process_elements(
+        self,
+    ) -> Tuple[Union[List[Type[UnstructuredParagraph]], str], bool]:
         raise NotImplementedError()
 
     def create_train_df(
@@ -93,7 +91,9 @@ class PptxParse(UnstructuredParse):
             print(str(e))
             print(self._error_msg)
 
-    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
+    def process_elements(
+        self,
+    ) -> Tuple[Union[List[Type[UnstructuredParagraph]], str], bool]:
         paragraphs = []
         try:
             docs = self.PptxLoader.load()
@@ -149,7 +149,9 @@ class EmlParse(UnstructuredParse):
             print(str(e))
             print(self._error_msg)
 
-    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
+    def process_elements(
+        self,
+    ) -> Tuple[Union[List[Type[UnstructuredParagraph]], str], bool]:
         try:
             docs = self.EmlLoader.load()
             text = ""
@@ -195,7 +197,9 @@ class TxtParse(UnstructuredParse):
             print(str(e))
             print(self._error_msg)
 
-    def process_elements(self) -> Tuple[Union[paras_type, str], bool]:
+    def process_elements(
+        self,
+    ) -> Tuple[Union[List[Type[UnstructuredParagraph]], str], bool]:
         try:
             doc = self.TxtLoader.load()
             content = clean_text(doc[0].page_content)
