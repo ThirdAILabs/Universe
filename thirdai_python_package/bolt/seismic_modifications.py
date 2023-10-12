@@ -7,6 +7,22 @@ import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
+
+
+class SubcubeDataset(Dataset):
+    def __init__(self, subcube_directory, subcube_files):
+        self.subcube_directory = subcube_directory
+        self.subcube_files = subcube_files
+
+    def __len__(self):
+        return len(self.subcube_files)
+
+    def __getitem__(self, index):
+        filename = self.subcube_files[index]
+        metadata = Path(filename).stem
+        subcube = np.load(os.path.join(self.subcube_directory, filename))
+        return subcube, metadata
 
 
 def convert_to_patches(subcubes, pd, max_pool=None):
@@ -51,6 +67,26 @@ def subcube_range_for_worker(n_subcubes: int):
     return offset, offset + subcubes_for_worker
 
 
+class TimedIterator:
+    def __init__(self, obj):
+        self.iter = iter(obj)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        start = time.perf_counter()
+        out = next(self.iter)
+        end = time.perf_counter()
+        print(f"Loaded {len(out[0])} subcubes in {end-start} seconds.")
+        return out
+
+
+def parse_metadata(metadata):
+    volume, x, y, z = metadata.split("_")
+    return bolt.seismic.SubcubeMetadata(volume=volume, x=int(x), y=int(y), z=int(z))
+
+
 def modify_seismic():
     def wrapped_train(
         self,
@@ -74,34 +110,29 @@ def modify_seismic():
 
         # Number of byes per subcube
         subcube_size = (self.subcube_shape**3) * 4
-        # Load less than 60Gb of subcubes
+        # Load less than 30Gb of subcubes
         n_subcubes_per_chunk = min(
-            int((10**9) * 60 / subcube_size), len(subcube_files)
+            int((10**9) * 30 / subcube_size), len(subcube_files)
         )
 
         output_metrics = {}
 
         for _ in range(epochs):
-            np.random.shuffle(subcube_files)
+            data_loader = DataLoader(
+                dataset=SubcubeDataset(
+                    subcube_directory=subcube_directory, subcube_files=subcube_files
+                ),
+                batch_size=n_subcubes_per_chunk,
+                shuffle=True,
+                num_workers=4,
+            )
 
-            for chunk_start in range(0, len(subcube_files), n_subcubes_per_chunk):
-                subcubes = []
-                metadata = []
+            for subcubes, metadata in TimedIterator(data_loader):
+                subcubes = subcubes.numpy()
+                metadata = [parse_metadata(meta) for meta in metadata]
 
-                load_start = time.perf_counter()
-                for file in subcube_files[
-                    chunk_start : chunk_start + n_subcubes_per_chunk
-                ]:
-                    volume_name, x, y, z = Path(file).stem.split("_")
+                patch_start = time.perf_counter()
 
-                    subcubes.append(np.load(os.path.join(subcube_directory, file)))
-                    metadata.append(
-                        bolt.seismic.SubcubeMetadata(
-                            volume=volume_name, x=int(x), y=int(y), z=int(z)
-                        )
-                    )
-
-                subcubes = np.stack(subcubes, axis=0)
                 expected_shape = tuple([self.subcube_shape] * 3)
                 if subcubes.shape[1:] != expected_shape:
                     raise ValueError(
@@ -111,10 +142,10 @@ def modify_seismic():
                     subcubes=subcubes, pd=self.patch_shape, max_pool=self.max_pool
                 )
 
-                load_end = time.perf_counter()
+                patch_end = time.perf_counter()
 
                 print(
-                    f"Loaded {subcubes.shape[0]} subcubes and converted to patches in {load_end - load_start} seconds.",
+                    f"Converted {subcubes.shape[0]} subcubes to patches in {patch_end - patch_start} seconds.",
                     flush=True,
                 )
 
