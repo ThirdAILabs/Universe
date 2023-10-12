@@ -151,63 +151,15 @@ def benchmark(
     }
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("folder")
-    args = parser.parse_args()
-
-    mlflow_uri = (
-        "http://thirdai:rwRp8GBNVplnLCIveMIz@ec2-184-73-150-35.compute-1.amazonaws.com/"
+def main():
+    benchmark(
+        num_metadata_fields=10,
+        num_options_per_field=3,
+        metadata_field_len=5,
+        metadata_option_len=5,
+        num_exact_filters=7,
+        num_range_filters=3,
+        range_size=3,
+        num_docs=10_000_000,
+        num_queries=1000,
     )
-    mlflow.set_tracking_uri(mlflow_uri)
-    mlflow.set_experiment("Constrained Search Benchmarks")
-    num_queries = 1000
-    metadata_field_len = 5
-    metadata_option_len = 5
-    range_size = 3
-    num_range_filters = 0
-    num_metadata_fields = 10
-
-    run_number = 1
-
-    for num_docs in [100_000, 1_000_000]:
-        for num_exact_filters, num_options_per_field in [
-            (3, 10),
-            (5, 7),
-            (10, 3),
-        ]:
-            params = {
-                "num_metadata_fields": num_metadata_fields,
-                "num_options_per_field": num_options_per_field,
-                "metadata_field_len": metadata_field_len,
-                "metadata_option_len": metadata_option_len,
-                "num_exact_filters": num_exact_filters,
-                "num_range_filters": num_range_filters,
-                "range_size": range_size,
-                "num_docs": num_docs,
-                "num_queries": num_queries,
-            }
-
-            print(
-                f"Run {run_number}\n",
-                json.dumps(params, sort_keys=True, indent=4),
-                "\n",
-            )
-
-            mlflow.start_run()
-            mlflow.log_params(params)
-            metrics = benchmark(
-                num_metadata_fields=num_metadata_fields,
-                num_options_per_field=num_options_per_field,
-                metadata_field_len=metadata_field_len,
-                metadata_option_len=metadata_option_len,
-                num_exact_filters=num_exact_filters,
-                num_range_filters=num_range_filters,
-                range_size=range_size,
-                num_docs=num_docs,
-                num_queries=num_queries,
-            )
-            mlflow.log_metrics(metrics)
-            mlflow.end_run()
-
-            run_number += 1
