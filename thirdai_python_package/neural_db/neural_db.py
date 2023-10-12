@@ -2,7 +2,6 @@ import copy
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
-import time
 
 import pandas as pd
 import thirdai
@@ -494,7 +493,6 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = None,
         cancel_state: CancelState = None,
-        return_times: bool = False,
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in
@@ -506,8 +504,6 @@ class NeuralDB:
         Primarily used for PocketLLM.
         """
         documents_copy = copy.deepcopy(self._savable_state.documents)
-        if return_times:
-            start = time.time()
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)
         except Exception as e:
@@ -516,9 +512,6 @@ class NeuralDB:
                 on_error(error_msg=f"Failed to add files. {e.__str__()}")
                 return []
             raise e
-        if return_times:
-            register_sources_time = time.time() - start
-            start = time.time()
 
         self._savable_state.model.index_documents(
             intro_documents=intro_and_train.intro,
@@ -530,9 +523,6 @@ class NeuralDB:
             cancel_state=cancel_state,
         )
 
-        if return_times:
-            indexing_time = time.time() - start
-
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
@@ -540,13 +530,6 @@ class NeuralDB:
         )
 
         on_success()
-
-        if return_times:
-            return ids, {
-                "register_sources_time": register_sources_time,
-                "indexing_time": indexing_time,
-            }
-
         return ids
 
     def clear_sources(self) -> None:
@@ -554,40 +537,20 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self,
-        query: str,
-        top_k: int,
-        constraints=None,
-        on_error: Callable = None,
-        return_times: bool = False,
+        self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
         matching_entities = None
         if constraints:
-            if return_times:
-                start = time.time()
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
-            if return_times:
-                end_matching_entities = time.time()
             result_ids = self._savable_state.model.score(
                 samples=[query], entities=[matching_entities], n_results=top_k
             )[0]
-            if return_times:
-                end = time.time()
-                times = {
-                    "constraint_matching": end_matching_entities - start,
-                    "scoring": end - end_matching_entities,
-                }
         else:
-            if return_times:
-                start = time.time()
             result_ids = self._savable_state.model.infer_labels(
                 samples=[query], n_results=top_k
             )[0]
-            if return_times:
-                end = time.time()
-                times = {"scoring": end - start}
 
         references = []
         for rid, score in result_ids:
@@ -595,8 +558,6 @@ class NeuralDB:
             ref._score = score
             references.append(ref)
 
-        if return_times:
-            return references, times
         return references
 
     def reference(self, element_id: int):
