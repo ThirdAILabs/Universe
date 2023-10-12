@@ -31,7 +31,7 @@ def generate_item_metadata(
     metadata_options: List[str],
     num_items: int,
 ):
-    metadata = [{field: ""} for field in metadata_fields] * num_items
+    metadata = [{}] * num_items
     for i in range(num_items):
         to_be_modded = i
         for field in metadata_fields:
@@ -131,7 +131,7 @@ def benchmark(
 
     constraint_matcher = ConstraintMatcher()
 
-    print_if_verbose(verbose, "Indexing items...")
+    print_if_verbose(verbose, f"Indexing {len(item_metadata)} items...")
     start = time.time()
     for meta in tqdm(item_metadata):
         constraint_matcher.index(
