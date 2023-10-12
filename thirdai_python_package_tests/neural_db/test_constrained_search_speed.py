@@ -33,7 +33,7 @@ def generate_item_metadata(
     metadata_options: List[str],
     num_items: int,
 ):
-    metadata = [{}] * num_items
+    metadata = [{} for _ in range(num_items)]
     for i in range(num_items):
         to_be_modded = i
         for field in metadata_fields:
@@ -156,7 +156,7 @@ def benchmark(
     start = time.time()
     for constraints in tqdm(constraint_queries):
         start = time.time()
-        constraint_matcher.match(filters=to_filters(constraints))
+        assert len(constraint_matcher.match(filters=to_filters(constraints))) > 0
     constraint_matching_time = time.time() - start
 
     print_if_verbose(verbose, "Done.")
@@ -190,7 +190,7 @@ def test_constrained_search_speed():
         verbose=True,
     )
 
-    # Average constraint matching time is less than 10^-8 seconds on mac.
+    # Average constraint matching time is 2 * 10^-7 seconds on mac.
     assert times["avg_constraint_matching_time"] < 0.00001
     # Total constraint indexing time is less than 40 seconds on mac.
     assert times["total_constraint_indexing_time"] < 300
