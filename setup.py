@@ -162,6 +162,7 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
+    "unstructured[all-docs]",
     "sortedcontainers",
 ]
 
