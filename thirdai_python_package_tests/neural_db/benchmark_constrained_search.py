@@ -1,15 +1,12 @@
 from typing import List
 import random
 import time
-import argparse
 from thirdai import neural_db as ndb
 from thirdai.neural_db.constraint_matcher import (
     ConstraintMatcher,
     ConstraintValue,
     to_filters,
 )
-import mlflow
-import json
 
 
 def strings_of_length(length, num_strings):
@@ -29,10 +26,12 @@ def strings_of_length(length, num_strings):
 
 
 def generate_item_metadata(
-    metadata_fields: List[str], metadata_options: List[str], num_items: int
+    metadata_fields: List[str],
+    metadata_options: List[str],
+    num_items: int,
 ):
     metadata = [{field: ""} for field in metadata_fields] * num_items
-    for i in range(num_docs):
+    for i in range(num_items):
         to_be_modded = i
         for field in metadata_fields:
             metadata[i][field] = metadata_options[to_be_modded % len(metadata_options)]
