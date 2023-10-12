@@ -1,3 +1,4 @@
+import pytest
 from typing import List
 import random
 import time
@@ -173,22 +174,22 @@ def benchmark(
     }
 
 
-def main():
-    print(
-        benchmark(
-            num_metadata_fields=10,
-            num_options_per_field=3,
-            metadata_field_len=5,
-            metadata_option_len=5,
-            num_exact_filters=7,
-            num_range_filters=3,
-            range_size=3,
-            num_docs=10_000_000,
-            num_queries=1000,
-            verbose=True,
-        )
+@pytest.mark.unit
+def test_constrained_search_speed():
+    times = benchmark(
+        num_metadata_fields=10,
+        num_options_per_field=3,
+        metadata_field_len=5,
+        metadata_option_len=5,
+        num_exact_filters=7,
+        num_range_filters=3,
+        range_size=3,
+        num_docs=10_000_000,
+        num_queries=1000,
+        verbose=True,
     )
 
-
-if __name__ == "__main__":
-    main()
+    # Average constraint matching time is less than 10^-8 seconds on mac.
+    assert times["avg_constraint_matching_time"] < 0.00001
+    # Total constraint indexing time is less than 40 seconds on mac.
+    assert times["total_constraint_indexing_time"] < 300
