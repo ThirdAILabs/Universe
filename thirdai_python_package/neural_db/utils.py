@@ -11,7 +11,7 @@ SUPPORTED_EXT = [".pdf", ".docx", ".csv"]
 class Credentials:
     def __init__(self, username: str, password: str) -> None:
         """
-        Creates the Base object for taking credentials as input
+        Creates the object for credentials provided as input
         """
         self._username = username
         self._password = password
@@ -20,48 +20,26 @@ class Credentials:
     def username(self):
         return self._username
 
-    def with_configs(self, **kwargs):
-        raise NotImplementedError()
-
-
-class SqlCredentials(Credentials):
-    def __init__(self, username: str, password: str) -> None:
-        """
-        Creates the cred object with SQL credentials as input
-        """
-        super().__init__(username, password)
-
-    def with_configs(self, host: str, port: int, database_name: str, table_name: str):
+    def with_SqlConfig(self, database_name: str, table_name: str, host = "localhost", port = 5432):
         """
         Configs to initialize a SQL Database connection
         Args:
-            host: str, the hostname or IP address of the database server
-            port: int, the port number for the database connection
-            database_name: str, the name of the specific database to connect to
+            database_name: str, Database name
+            table_name: str, Table name
+            host: str, Hostname or IP address of the database server. Default is 5432
+            port: int, Port number for the database connection. Default is 'localhost' 
         """
-        self._host = host
-        self._port = port
         self._database_name = database_name
         self._table_name = table_name
-
-    def get_db_url(self):
-        db_url = f"postgresql://{self._username}:{self._password}@{self._host}:{self._port}/{self._database_name}"
-        return db_url
-
-
-class SharePointCredentials(Credentials):
-    def __init__(self, username: str, password: str) -> None:
-        """
-        Creates the cred object with sharepoint credentials as input
-        """
-        super().__init__(username, password)
-
-    def with_configs(self, site_url: str, library_path="Shared Documents"):
+        self._host = host
+        self._port = port
+    
+    def with_SharepointConfig(self, site_url: str, library_path="Shared Documents"):
         """
         Configs to fetch the documents from sharepoint
         Args:
-            site_url: URL or web address that points to a specific SharePoint site or site collection. E.g: https://<organization>.sharepoint.com/sites/yourSite
-            library_path: location of the sharepoint folder. Default is 'Shared Documents'
+            site_url: str, URL or web address that points to a specific SharePoint site or site collection. E.g: https://<organization>.sharepoint.com/sites/yourSite
+            library_path: str, Location of the sharepoint folder. Default is 'Shared Documents'
         """
         self._site_url = urllib.parse.quote(site_url)
         self._library_path = library_path

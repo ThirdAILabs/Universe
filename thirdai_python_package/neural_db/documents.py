@@ -793,7 +793,7 @@ class DocumentConnector(Document):
         return self._session
 
     def reference(self, element_id: int) -> Reference:
-        pass
+        raise NotImplementedError()
 
     def strong_column(self, element_id):
         raise NotImplementedError()

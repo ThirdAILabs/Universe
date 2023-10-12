@@ -44,6 +44,7 @@ class Model:
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        max_in_memory_batches: int = None
     ) -> None:
         raise NotImplementedError()
 
@@ -198,6 +199,7 @@ def unsupervised_train_on_docs(
     on_progress: Callable,
     freeze_before_train: bool,
     cancel_state: CancelState,
+    max_in_memory_batches: int
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -225,6 +227,7 @@ def unsupervised_train_on_docs(
         epochs=max_epochs,
         metrics=[metric],
         callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+        max_in_memory_batches = max_in_memory_batches
     )
 
 
@@ -293,6 +296,7 @@ class Mach(Model):
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        max_in_memory_batches: int = None
     ) -> None:
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -324,6 +328,7 @@ class Mach(Model):
                     weak_column_names=[intro_documents.weak_column],
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
+                    max_in_memory_batches = max_in_memory_batches
                 )
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
@@ -349,6 +354,7 @@ class Mach(Model):
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
+                max_in_memory_batches = max_in_memory_batches
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):

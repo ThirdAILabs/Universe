@@ -8,11 +8,11 @@ from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import ColumnCollection, MetaData, create_engine, select, text
 from sqlalchemy.sql.base import ReadOnlyColumnCollection
 
-from .utils import SUPPORTED_EXT, Credentials, SharePointCredentials, SqlCredentials
+from .utils import SUPPORTED_EXT, Credentials
 
 
 class Connector:
-    def __init__(self, user_creds: Type[Credentials]):
+    def __init__(self, user_creds: Credentials):
         self._user_creds = user_creds
 
     def connect(self):
@@ -34,7 +34,7 @@ class SQLConnector(Connector):
 
     def __init__(
         self,
-        user_creds: SqlCredentials,
+        user_creds: Credentials,
         id_col: str,
         strong_columns: List[str],
         weak_columns: List[str],
@@ -48,6 +48,10 @@ class SQLConnector(Connector):
             chunksize=self.BATCH_SIZE,
         )
 
+    def get_db_url(self):
+        db_url = f"postgresql://{self._user_creds._username}:{self._user_creds._password}@{self._user_creds._host}:{self._user_creds._port}/{self._user_creds._database_name}"
+        return db_url
+    
     def connect(self):
         db_url = self._user_creds.get_db_url()
         engine = create_engine(db_url)
@@ -64,7 +68,7 @@ class SQLConnector(Connector):
 class SharePointConnector(Connector):
     FILE_LIMIT: int = 10
 
-    def __init__(self, user_creds: SharePointCredentials):
+    def __init__(self, user_creds: Credentials):
         super().__init__(user_creds)
         self.connect()
         self.index_table = pd.DataFrame(
@@ -73,8 +77,8 @@ class SharePointConnector(Connector):
         self.index_table.set_index(keys="File_ID", inplace=True)
 
     def connect(self):
-        creds = UserCredential(user_name=self._username, password=self._password)
-        self._ctx = ClientContext(base_url=self._site_url).with_credentials(
+        creds = UserCredential(user_name=self._user_creds._username, password=self._user_creds._password)
+        self._ctx = ClientContext(base_url=self._user_creds._site_url).with_credentials(
             credentials=creds
         )
 
@@ -85,7 +89,7 @@ class SharePointConnector(Connector):
         try:
             # Sharepoint Library by it's path
             library = self._ctx.web.get_folder_by_server_relative_path(
-                self._client_credentials._library_path
+                self._user_creds._library_path
             )
             self._ctx.load(library)
 
