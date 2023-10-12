@@ -421,8 +421,11 @@ class NeuralDB:
 
         train_loop_config = {}
 
+        model = self._savable_state.model.get_model()
+        model._get_model().disable_sparse_parameter_updates()
+
         # we cannot pass the model directly to config given config results in OOM very frequently with bigger model.
-        model_ref = ray.put(self._savable_state.model.get_model())
+        model_ref = ray.put(model)
 
         # If this is a file based license, it will assume the license to available at the same location on each of the
         # machine
@@ -463,6 +466,8 @@ class NeuralDB:
         # Update: https://github.com/ThirdAILabs/Universe/pull/1784
         # `run_config` is made required argument in `pretrained_distributed` function
         model = dist.UDTCheckPoint.get_model(result_and_checkpoint.checkpoint)
+
+        model._get_model().enable_sparse_parameter_updates()
 
         self._savable_state.model.set_model(model)
 
