@@ -1,26 +1,23 @@
 #include "Mach.h"
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
+#include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/MachLabel.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <cstddef>
 #include <tuple>
+#include <vector>
 
 namespace thirdai::automl::udt::utils {
 
-std::tuple<feat::MachLabelPtr, feat::OutputColumnsList> Mach::machTransform(
-    const std::string& doc_id_column) {
-  auto transform = feat::MachLabel::make(doc_id_column, MACH_LABELS);
-  feat::OutputColumnsList output_columns{feat::OutputColumns(MACH_LABELS),
-                                         feat::OutputColumns(doc_id_column)};
-  return std::make_tuple(std::move(transform), std::move(output_columns));
-}
-
 void Mach::introduceEntities(const feat::ColumnMap& table,
-                             const feat::OutputColumnsList& input_columns,
-                             const std::string& doc_id_column,
                              std::optional<uint32_t> num_buckets_to_sample_opt,
                              uint32_t num_random_hashes) {
   uint32_t num_buckets_to_sample =
@@ -34,12 +31,12 @@ void Mach::introduceEntities(const feat::ColumnMap& table,
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
   // entities.
-  auto inputs = feat::toTensors(table, input_columns);
+  auto inputs = feat::toTensors(table, _bolt_input_columns);
   auto scores = _model->forward(inputs).at(0);
 
   ctrl_c_check();
 
-  auto doc_ids = table.getArrayColumn<uint32_t>(doc_id_column);
+  auto doc_ids = table.getArrayColumn<uint32_t>(labelColumn());
   for (uint32_t row = 0; row < scores->batchSize(); row++) {
     uint32_t label = doc_ids->row(row)[0];
     top_k_per_doc[label].push_back(
@@ -58,34 +55,20 @@ void Mach::introduceEntities(const feat::ColumnMap& table,
   updateSamplingStrategy();
 }
 
-bolt::metrics::History Mach::train(feat::ColumnMapIteratorPtr train_iter,
-                                   feat::ColumnMapIteratorPtr valid_iter,
-                                   const feat::OutputColumnsList& input_columns,
-                                   const std::string& doc_id_column,
-                                   float learning_rate, uint32_t epochs,
-                                   const InputMetrics& train_metrics,
-                                   const InputMetrics& val_metrics,
-                                   const std::vector<CallbackPtr>& callbacks,
-                                   TrainOptions options,
-                                   const bolt::DistributedCommPtr& comm) {
-  auto [mach_transform, label_columns] = machTransform(doc_id_column);
+bolt::metrics::History Mach::train(
+    feat::ColumnMapIteratorPtr train_iter, feat::ColumnMapIteratorPtr val_iter,
+    float learning_rate, uint32_t epochs, const InputMetrics& train_metrics,
+    const InputMetrics& val_metrics, const std::vector<CallbackPtr>& callbacks,
+    TrainOptions options, const bolt::DistributedCommPtr& comm) {
+  auto train_loader = getDataLoader(
+      std::move(train_iter), /* store_balancers= */ true, options.batchSize(),
+      /* shuffle= */ true, options.verbose, options.shuffle_config);
 
-  auto train_loader = feat::Loader::make(
-      std::move(train_iter), mach_transform, _state, input_columns,
-      label_columns,
-      /* batch_size= */ options.batch_size.value_or(defaults::BATCH_SIZE),
-      /* shuffle= */ true,
-      /* verbose= */ options.verbose,
-      /* shuffle_buffer_size= */ options.shuffle_config.min_buffer_size,
-      /* shuffle_seed= */ options.shuffle_config.seed);
-
-  feat::LoaderPtr valid_loader;
-  if (valid_iter) {
-    valid_loader = feat::Loader::make(std::move(valid_iter), mach_transform,
-                                      _state, input_columns, label_columns,
-                                      /* batch_size= */ defaults::BATCH_SIZE,
-                                      /* shuffle= */ false,
-                                      /* verbose= */ options.verbose);
+  feat::LoaderPtr val_loader;
+  if (val_iter) {
+    val_loader = getDataLoader(
+        std::move(val_iter), /* store_balancers= */ false, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose);
   }
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
@@ -101,7 +84,7 @@ bolt::metrics::History Mach::train(feat::ColumnMapIteratorPtr train_iter,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
       /* max_in_memory_batches= */ options.max_in_memory_batches,
       /* train_metrics= */ train_metrics,
-      /* validation_data_loader= */ valid_loader,
+      /* validation_data_loader= */ val_loader,
       /* validation_metrics= */ val_metrics,
       /* steps_per_validation= */ options.steps_per_validation,
       /* use_sparsity_in_validation= */ options.sparse_validation,
@@ -111,41 +94,33 @@ bolt::metrics::History Mach::train(feat::ColumnMapIteratorPtr train_iter,
       /*comm= */ comm);
 }
 
-void Mach::trainBatch(feat::ColumnMap table,
-                      const feat::OutputColumnsList& input_columns,
-                      const std::string& doc_id_column, float learning_rate) {
-  auto [mach_transform, label_columns] = machTransform(doc_id_column);
-  table = mach_transform->apply(std::move(table), *_state);
-  auto inputs = feat::toTensors(table, input_columns);
-  auto labels = feat::toTensors(table, label_columns);
+void Mach::train(feat::ColumnMap table, float learning_rate) {
+  table = _label_to_buckets->apply(std::move(table), *_state);
+  _store_rlhf_samples->apply(table, *_state);
+  auto inputs = feat::toTensors(table, _bolt_input_columns);
+  auto labels = feat::toTensors(table, _bolt_label_columns);
   _model->trainOnBatch(inputs, labels);
   _model->updateParameters(learning_rate);
 }
 
-bolt::metrics::History Mach::evaluate(
-    feat::ColumnMapIteratorPtr eval_iter,
-    const feat::OutputColumnsList& input_columns,
-    const std::string& doc_id_column, const InputMetrics& metrics,
-    bool sparse_inference, bool verbose) {
-  auto [mach_transform, label_columns] = machTransform(doc_id_column);
-
-  auto valid_loader = feat::Loader::make(std::move(eval_iter), mach_transform,
-                                         _state, input_columns, label_columns,
-                                         /* batch_size= */ defaults::BATCH_SIZE,
-                                         /* shuffle= */ false,
-                                         /* verbose= */ verbose);
+bolt::metrics::History Mach::evaluate(feat::ColumnMapIteratorPtr eval_iter,
+                                      const InputMetrics& metrics,
+                                      bool sparse_inference, bool verbose) {
+  auto eval_loader = getDataLoader(
+      std::move(eval_iter), /* store_balancers= */ false,
+      /* batch_size= */ defaults::BATCH_SIZE, /* shuffle= */ false, verbose);
 
   bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
-  auto history = trainer.validate_with_data_loader(valid_loader, metrics,
+  auto history = trainer.validate_with_data_loader(eval_loader, metrics,
                                                    sparse_inference, verbose);
 
   return history;
 }
 
 std::vector<std::vector<std::pair<uint32_t, double>>> Mach::predict(
-    const feat::ColumnMap& table, const feat::OutputColumnsList& input_columns,
-    bool sparse_inference, uint32_t top_k, uint32_t num_scanned_buckets) {
-  auto inputs = feat::toTensors(table, input_columns);
+    const feat::ColumnMap& table, bool sparse_inference, uint32_t top_k,
+    uint32_t num_scanned_buckets) {
+  auto inputs = feat::toTensors(table, _bolt_input_columns);
   auto outputs = _model->forward(inputs, sparse_inference).at(0);
 
   uint32_t num_classes = index()->numEntities();
@@ -185,25 +160,64 @@ auto repeatRows(feat::ColumnMap&& table, uint32_t repetitions) {
   return table.permute(permutation);
 }
 
-auto teach(bolt::ModelPtr& model, feat::ColumnMap rlhf_table,
-           feat::ColumnMap balancing_table,
-           const feat::OutputColumnsList& input_columns,
-           const feat::OutputColumnsList& label_columns, float learning_rate,
-           uint32_t repeats, uint32_t epochs, size_t batch_size,
-           const InputMetrics& metrics = {}, bool verbose = false,
-           std::optional<uint32_t> logging_interval = std::nullopt) {
-  rlhf_table = repeatRows(std::move(rlhf_table), repeats);
+void Mach::teach(feat::ColumnMap feedback, float learning_rate,
+                 uint32_t feedback_repetitions, uint32_t num_balancers,
+                 uint32_t epochs, size_t batch_size) {
+  feedback = repeatRows(std::move(feedback), feedback_repetitions);
+  feedback = feat::keepColumns(std::move(feedback), _all_bolt_columns);
 
-  auto all_columns = feat::allColumns(input_columns, label_columns);
-  rlhf_table = feat::keepColumns(std::move(rlhf_table), all_columns);
-  balancing_table = feat::keepColumns(std::move(balancing_table), all_columns);
-  auto train_table = rlhf_table.concat(balancing_table);
+  auto balancers = _state->rlhfSampler()->balancingSamples(num_balancers);
+  balancers = feat::keepColumns(std::move(balancers), _all_bolt_columns);
 
-  bolt::Trainer trainer(model);
+  auto train_table = feedback.concat(balancers);
+
+  auto train_data = thirdai::data::toLabeledDataset(
+      train_table, _bolt_input_columns, _bolt_label_columns, batch_size);
+
+  for (uint32_t epoch = 0; epoch < epochs; epoch++) {
+    for (uint32_t batch = 0; batch < train_data.first.size(); batch++) {
+      _model->trainOnBatch(train_data.first.at(batch),
+                           train_data.second.at(batch));
+      _model->updateParameters(learning_rate);
+    }
+  }
+}
+
+void Mach::associate(feat::ColumnMap from_table,
+                     const feat::ColumnMap& to_table, float learning_rate,
+                     uint32_t repeats, uint32_t num_balancers,
+                     uint32_t num_buckets, uint32_t epochs, size_t batch_size) {
+  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
+      predictBuckets(to_table, /* sparse_inference= */ false, num_buckets),
+      index()->numBuckets());
+  from_table.setColumn(MACH_LABELS, mach_labels);
+  from_table = addDummyLabels(std::move(from_table));
+  return teach(std::move(from_table), learning_rate, repeats, num_balancers,
+               epochs, batch_size);
+}
+
+bolt::metrics::History Mach::associateTrain(
+    feat::ColumnMap from_table, const feat::ColumnMap& to_table,
+    data::ColumnMap train_data, float learning_rate, uint32_t repeats,
+    uint32_t num_buckets, uint32_t epochs, size_t batch_size,
+    const InputMetrics& metrics, TrainOptions options) {
+  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
+      predictBuckets(to_table, /* sparse_inference= */ false, num_buckets),
+      index()->numBuckets());
+  from_table.setColumn(MACH_LABELS, mach_labels);
+  from_table = addDummyLabels(std::move(from_table));
+  from_table = repeatRows(std::move(from_table), repeats);
+  from_table = data::keepColumns(std::move(from_table), _all_bolt_columns);
+
+  train_data = _label_to_buckets->apply(std::move(train_data), *_state);
+  _store_rlhf_samples->apply(train_data, *_state);
+  train_data = data::keepColumns(std::move(train_data), _all_bolt_columns);
+  train_data = train_data.concat(from_table);
+
+  bolt::Trainer trainer(_model);
   return trainer.train(
       /* train_data= */ thirdai::data::toLabeledDataset(
-          /* table= */ train_table, /* input_columns= */ input_columns,
-          /* label_columns= */ label_columns, /* batch_size= */ batch_size),
+          train_data, _bolt_input_columns, _bolt_label_columns, batch_size),
       /* learning_rate= */ learning_rate,
       /* epochs= */ epochs,
       /* train_metrics= */ metrics,
@@ -213,39 +227,40 @@ auto teach(bolt::ModelPtr& model, feat::ColumnMap rlhf_table,
       /* use_sparsity_in_validation= */ false,
       /* callbacks= */ {},
       /* autotune_rehash_rebuild= */ true,
-      /* verbose= */ verbose,
-      /* logging_interval= */ logging_interval);
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval);
 }
 
-void Mach::upvote(feat::ColumnMap upvotes, feat::ColumnMap balancers,
-                  const feat::OutputColumnsList& input_columns,
-                  const std::string& doc_id_column, float learning_rate,
-                  uint32_t repeats, uint32_t epochs, size_t batch_size) {
-  auto [mach_transform, label_columns] = machTransform(doc_id_column);
-  upvotes = mach_transform->apply(std::move(upvotes), *_state);
-  balancers = mach_transform->apply(std::move(balancers), *_state);
-
-  teach(_model, std::move(upvotes), std::move(balancers), input_columns,
-        label_columns, learning_rate, repeats, epochs, batch_size);
+void Mach::upvote(feat::ColumnMap upvotes, float learning_rate,
+                  uint32_t repeats, uint32_t num_balancers, uint32_t epochs,
+                  size_t batch_size) {
+  upvotes = _label_to_buckets->apply(std::move(upvotes), *_state);
+  teach(std::move(upvotes), learning_rate, repeats, num_balancers, epochs,
+        batch_size);
 }
 
-auto predictBuckets(bolt::Model& model, const dataset::mach::MachIndex& index,
-                    const feat::ColumnMap& table,
-                    const feat::OutputColumnsList& input_columns,
-                    std::optional<uint32_t> num_buckets,
-                    bool sparse_inference = false) {
-  auto inputs = feat::toTensors(table, input_columns);
-  auto outputs = model.forward(inputs, sparse_inference).at(0);
+void Mach::trainBuckets(feat::ColumnMap table, float learning_rate) {
+  table = addDummyLabels(std::move(table));
+  auto inputs = feat::toTensors(table, _bolt_input_columns);
+  auto labels = feat::toTensors(table, _bolt_label_columns);
+  _model->trainOnBatch(inputs, labels);
+  _model->updateParameters(learning_rate);
+}
+
+std::vector<std::vector<uint32_t>> Mach::predictBuckets(
+    const feat::ColumnMap& table, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
+  auto inputs = feat::toTensors(table, _bolt_input_columns);
+  auto outputs = _model->forward(inputs, sparse_inference).at(0);
 
   std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
-#pragma omp parallel for default(none) \
-    shared(outputs, all_hashes, index, num_buckets)
+#pragma omp parallel for default(none) shared(outputs, all_hashes, top_k)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
     const BoltVector& output = outputs->getVector(i);
 
     TopKActivationsQueue heap;
-    heap = index.topKNonEmptyBuckets(output,
-                                     num_buckets.value_or(index.numHashes()));
+    heap = _state->machIndex()->topKNonEmptyBuckets(
+        output, top_k.value_or(_state->machIndex()->numHashes()));
 
     std::vector<uint32_t> hashes;
     while (!heap.empty()) {
@@ -262,40 +277,10 @@ auto predictBuckets(bolt::Model& model, const dataset::mach::MachIndex& index,
   return all_hashes;
 }
 
-bolt::metrics::History Mach::associate(
-    feat::ColumnMap from_table, const feat::ColumnMap& to_table,
-    feat::ColumnMap balancing_table,
-    const feat::OutputColumnsList& input_columns,
-    const std::string& doc_id_column, float learning_rate, uint32_t repeats,
-    uint32_t num_buckets, uint32_t epochs, size_t batch_size,
-    const InputMetrics& metrics, bool verbose,
-    std::optional<uint32_t> logging_interval) {
-  auto rlhf_table = std::move(from_table);
-
-  auto dummy_doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
-      std::vector<uint32_t>(from_table.numRows(), 0),
-      std::numeric_limits<uint32_t>::max());
-  rlhf_table.setColumn(doc_id_column, dummy_doc_ids);
-
-  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
-      predictBuckets(*_model, *index(), to_table, input_columns, num_buckets),
-      index()->numBuckets());
-  rlhf_table.setColumn(MACH_LABELS, mach_labels);
-
-  auto [mach_transform, label_columns] = machTransform(doc_id_column);
-  balancing_table = mach_transform->apply(std::move(balancing_table), *_state);
-
-  return teach(_model, std::move(rlhf_table), std::move(balancing_table),
-               input_columns, label_columns, learning_rate, repeats, epochs,
-               batch_size, metrics, verbose, logging_interval);
-}
-
 std::vector<uint32_t> Mach::outputCorrectness(
-    const feat::ColumnMap& table, const feat::OutputColumnsList& input_columns,
-    const std::vector<uint32_t>& labels, std::optional<uint32_t> num_hashes,
-    bool sparse_inference) {
-  auto top_buckets = predictBuckets(*_model, *index(), table, input_columns,
-                                    num_hashes, sparse_inference);
+    const feat::ColumnMap& table, const std::vector<uint32_t>& labels,
+    std::optional<uint32_t> num_hashes, bool sparse_inference) {
+  auto top_buckets = predictBuckets(table, sparse_inference, num_hashes);
 
   std::vector<uint32_t> matching_buckets(labels.size());
   std::exception_ptr hashes_err;
@@ -326,12 +311,11 @@ std::vector<uint32_t> Mach::outputCorrectness(
   return matching_buckets;
 }
 
-bolt::TensorPtr Mach::embedding(const feat::ColumnMap& table,
-                                const feat::OutputColumnsList& input_columns) {
+bolt::TensorPtr Mach::embedding(const feat::ColumnMap& table) {
   // TODO(Nicholas): Sparsity could speed this up, and wouldn't affect the
   // embeddings if the sparsity is in the output layer and the embeddings are
   // from the hidden layer.
-  auto inputs = feat::toTensors(table, input_columns);
+  auto inputs = feat::toTensors(table, _bolt_input_columns);
   _model->forward(inputs, /* use_sparsity= */ false);
   return _emb->tensor();
 }

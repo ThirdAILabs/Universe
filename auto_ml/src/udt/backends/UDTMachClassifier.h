@@ -12,6 +12,7 @@
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Mach.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/State.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -182,18 +183,14 @@ class UDTMachClassifier final : public UDTBackend {
   void setMachSamplingThreshold(float threshold) final;
 
  private:
-  const auto& inputColumns() const { return _featurizer->inputColumns(); }
-
-  const std::string& docIdColumn() const {
-    return _featurizer->labelColumns().front().indices();
-  }
-
-  py::object associateTrain(
-      thirdai::data::ColumnMap balancing_table,
+  py::object associateTrainOnColumnMap(
+      data::ColumnMap train_data,
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options);
+
+  const auto& inputColumns() const { return _featurizer->inputColumns(); }
 
   void requireRLHFSampler();
 

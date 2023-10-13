@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <data/src/ColumnMap.h>
 #include <cstddef>
 #include <iterator>
 #include <memory>
@@ -26,7 +27,7 @@ class RLHFSampler {
     return std::make_shared<RLHFSampler>(max_docs, max_samples_per_doc);
   }
 
-  std::vector<RlhfSample> balancingSamples(size_t num_samples) const;
+  data::ColumnMap balancingSamples(size_t num_samples) const;
 
   void addSample(uint32_t doc_id, const RlhfSample& sample);
 

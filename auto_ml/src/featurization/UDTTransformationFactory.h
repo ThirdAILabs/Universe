@@ -58,9 +58,9 @@ class UDTTransformationFactory {
     return _input_columns;
   }
 
-  const thirdai::data::OutputColumnsList& labelColumns() const {
-    return _label_columns;
-  }
+  const std::string& labelColumn() const { return _label_columns; }
+
+  const std::string& bucketColumn() const { return _label_columns; }
 
   thirdai::data::TransformationPtr unsupAugmenter(
       const std::vector<std::string>& strong_column_names,
