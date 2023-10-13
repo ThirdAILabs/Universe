@@ -88,4 +88,6 @@ def test_distributed_seismic_model(subcube_directory):
     assert os.path.exists(log_file)
     assert os.path.exists(log_file + ".worker_1")
 
-    # shutil.rmtree(checkpoint_dir)
+    shutil.rmtree(checkpoint_dir)
+    os.remove(log_file)
+    os.remove(log_file + ".worker_1")
