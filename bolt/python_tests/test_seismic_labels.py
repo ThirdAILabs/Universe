@@ -12,7 +12,7 @@ def seismic_labels(x_coord, y_coord, z_coord, subcube_shape, label_cube_shape):
             x_coord=x_coord,
             y_coord=y_coord,
             z_coord=z_coord,
-            subcube_shape=subcube_shape,
+            subcube_shape=(subcube_shape, subcube_shape, subcube_shape),
             label_cube_shape=label_cube_shape,
             max_label=100_000,
         )

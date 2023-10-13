@@ -26,30 +26,34 @@ class SubcubeDataset(Dataset):
 
 
 def convert_to_patches(subcubes, pd, max_pool=None):
+    pd_x, pd_y, pd_z = pd
     if max_pool:
-        assert pd % max_pool == 0
-        tensor = torch.from_numpy(subcubes)
         # Unsqueeze/squeeze are to add/remove the 'channels' dimension
-        tensor = F.max_pool3d(
-            tensor.unsqueeze_(1), kernel_size=max_pool, stride=max_pool
+        subcubes = F.max_pool3d(
+            subcubes.unsqueeze_(1), kernel_size=max_pool, stride=max_pool
         )
-        subcubes = tensor.squeeze_(1).numpy()
-        pd //= max_pool  # Scale the patch dim since pooling is applied first.
+        subcubes = subcubes.squeeze_(1)
+        # Scale the patch dim since pooling is applied first.
+        pd_x //= max_pool[0]
+        pd_y //= max_pool[1]
+        pd_z //= max_pool[2]
 
     n_cubes, x, y, z = subcubes.shape
-    assert x % pd == 0
-    assert y % pd == 0
-    assert z % pd == 0
+    assert x % pd_x == 0
+    assert y % pd_y == 0
+    assert z % pd_z == 0
 
-    pd_flat = pd**3
+    pd_flat = pd_x * pd_y * pd_z
     n_patches = (x * y * z) // pd_flat
 
-    patches = np.reshape(subcubes, (n_cubes, x // pd, pd, y // pd, pd, z // pd, pd))
-    patches = np.transpose(patches, (0, 1, 3, 5, 2, 4, 6))
+    patches = torch.reshape(
+        subcubes, (n_cubes, x // pd_x, pd_x, y // pd_y, pd_y, z // pd_z, pd_z)
+    )
+    patches = torch.permute(patches, (0, 1, 3, 5, 2, 4, 6))
 
-    patches = np.reshape(patches, (n_cubes, n_patches, pd_flat))
+    patches = torch.reshape(patches, (n_cubes, n_patches, pd_flat))
 
-    return patches
+    return patches.numpy()
 
 
 def subcube_range_for_worker(n_subcubes: int):
@@ -111,7 +115,7 @@ def modify_seismic():
             raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
 
         # Number of byes per subcube
-        subcube_size = (self.subcube_shape**3) * 4
+        subcube_size = np.prod(self.subcube_shape) * 4
         # Load less than 30Gb of subcubes
         n_subcubes_per_chunk = min(
             int((10**9) * 30 / subcube_size), len(subcube_files)
@@ -130,15 +134,13 @@ def modify_seismic():
             )
 
             for subcubes, metadata in TimedIterator(data_loader):
-                subcubes = subcubes.numpy()
                 metadata = [parse_metadata(meta) for meta in metadata]
 
                 patch_start = time.perf_counter()
 
-                expected_shape = tuple([self.subcube_shape] * 3)
-                if subcubes.shape[1:] != expected_shape:
+                if subcubes.shape[1:] != self.subcube_shape:
                     raise ValueError(
-                        f"Expected subcubes with shape {expected_shape}. But received subcubes with shape {subcubes.shape[1:]}"
+                        f"Expected subcubes with shape {self.subcube_shape}. But received subcubes with shape {subcubes.shape[1:]}"
                     )
                 subcubes = convert_to_patches(
                     subcubes=subcubes, pd=self.patch_shape, max_pool=self.max_pool
@@ -186,7 +188,6 @@ def modify_seismic():
     ):
         import ray
         import thirdai.distributed_bolt as dist
-        from ray import train
         from ray.train.torch import TorchConfig
 
         from .._distributed_bolt.distributed import Communication
@@ -275,7 +276,7 @@ def modify_seismic():
 
     def wrapped_embeddings(self, subcubes):
         subcubes = convert_to_patches(
-            subcubes, pd=self.patch_shape, max_pool=self.max_pool
+            torch.from_numpy(subcubes), pd=self.patch_shape, max_pool=self.max_pool
         )
         return self.embeddings_for_patches(subcubes)
 

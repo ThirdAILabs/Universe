@@ -1,9 +1,12 @@
 #pragma once
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace thirdai::bolt::seismic {
+
+using Shape = std::tuple<size_t, size_t, size_t>;
 
 struct SubcubeMetadata {
   SubcubeMetadata(std::string volume, size_t x, size_t y, size_t z)
@@ -16,12 +19,12 @@ struct SubcubeMetadata {
 };
 
 std::vector<uint32_t> seismicLabelsFromMetadata(
-    const SubcubeMetadata& subcube_metadata, size_t subcube_dim,
+    const SubcubeMetadata& subcube_metadata, const Shape& subcube_shape,
     size_t label_cube_dim, size_t max_label);
 
 std::vector<uint32_t> seismicLabels(const std::string& volume, size_t x_coord,
                                     size_t y_coord, size_t z_coord,
-                                    size_t subcube_shape,
-                                    size_t label_cube_shape, size_t max_label);
+                                    const Shape& subcube_shape,
+                                    size_t label_cube_dim, size_t max_label);
 
 }  // namespace thirdai::bolt::seismic

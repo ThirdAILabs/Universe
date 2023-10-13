@@ -7,37 +7,37 @@
 namespace thirdai::bolt::seismic {
 
 std::vector<uint32_t> seismicLabelsFromMetadata(
-    const SubcubeMetadata& subcube_metadata, size_t subcube_dim,
+    const SubcubeMetadata& subcube_metadata, const Shape& subcube_shape,
     size_t label_cube_dim, size_t max_label) {
   return seismicLabels(subcube_metadata.volume_name, subcube_metadata.x_coord,
                        subcube_metadata.y_coord, subcube_metadata.z_coord,
-                       subcube_dim, label_cube_dim, max_label);
+                       subcube_shape, label_cube_dim, max_label);
 }
 
 std::vector<uint32_t> seismicLabels(const std::string& volume, size_t x_coord,
                                     size_t y_coord, size_t z_coord,
-                                    size_t subcube_shape,
-                                    size_t label_cube_shape, size_t max_label) {
-  if ((subcube_shape % label_cube_shape) != 0) {
-    throw std::invalid_argument(
-        "Expected subcube_dim to be a multiple of label_cube_dim.");
-  }
-
+                                    const Shape& subcube_shape,
+                                    size_t label_cube_dim, size_t max_label) {
   // We use the label_cube_dim as the seed so that if we want to get multiple
   // sets of labels at different granularities we can.
   uint32_t trace_seed =
-      hashing::MurmurHash(volume.data(), volume.size(), label_cube_shape);
+      hashing::MurmurHash(volume.data(), volume.size(), label_cube_dim);
 
   std::vector<uint32_t> labels;
 
-  size_t start_x_label = x_coord / label_cube_shape;
-  size_t start_y_label = y_coord / label_cube_shape;
-  size_t start_z_label = z_coord / label_cube_shape;
-  size_t label_cubes_per_subcube = subcube_shape / label_cube_shape;
+  size_t start_x_label = x_coord / label_cube_dim;
+  size_t start_y_label = y_coord / label_cube_dim;
+  size_t start_z_label = z_coord / label_cube_dim;
 
-  for (size_t x = 0; x < label_cubes_per_subcube; x++) {
-    for (size_t y = 0; y < label_cubes_per_subcube; y++) {
-      for (size_t z = 0; z < label_cubes_per_subcube; z++) {
+  auto [dim_x, dim_y, dim_z] = subcube_shape;
+
+  // We take max(dim / label_cube_dim, 1) because if the subcube has a shape
+  // like  (1, 10, 10), and the label cube dim is 5, then we still want to
+  // compute labels in the x axis, there will just only be one label in the
+  // x-axis, and 2 in each of the y and z.
+  for (size_t x = 0; x < std::max<size_t>(dim_x / label_cube_dim, 1); x++) {
+    for (size_t y = 0; y < std::max<size_t>(dim_y / label_cube_dim, 1); y++) {
+      for (size_t z = 0; z < std::max<size_t>(dim_z / label_cube_dim, 1); z++) {
         size_t label_coords[3] = {start_x_label + x, start_y_label + y,
                                   start_z_label + z};
         uint32_t hash =

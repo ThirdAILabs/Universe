@@ -15,6 +15,8 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::seismic {
 
+using Shape = std::tuple<size_t, size_t, size_t>;
+
 using NumpyArray =
     py::array_t<float, py::array::c_style | py::array::forcecast>;
 
@@ -60,14 +62,18 @@ class SeismicModel {
                            size_t batch_size) const;
 
   size_t nPatches() const {
-    size_t patches_per_side = _subcube_shape / _patch_shape;
-    return patches_per_side * patches_per_side * patches_per_side;
+    auto [dim_x, dim_y, dim_z] = _subcube_shape;
+    auto [patch_x, patch_y, patch_z] = _patch_shape;
+    return (dim_x / patch_x) * (dim_y / patch_y) * (dim_z / patch_z);
   }
 
   size_t flattenedPatchDim() const {
-    size_t patch_shape_w_pool =
-        _max_pool ? _patch_shape / *_max_pool : _patch_shape;
-    return patch_shape_w_pool * patch_shape_w_pool * patch_shape_w_pool;
+    auto [patch_x, patch_y, patch_z] = _patch_shape;
+    if (_max_pool) {
+      auto [pool_x, pool_y, pool_z] = *_max_pool;
+      return (patch_x / pool_x) * (patch_y / pool_y) * (patch_z / pool_z);
+    }
+    return patch_x * patch_y * patch_z;
   }
 
   static std::pair<ModelPtr, ComputationPtr> buildModel(
@@ -77,11 +83,15 @@ class SeismicModel {
   ModelPtr _model;
   ComputationPtr _emb;
 
-  // TODO(Nicholas): Make these explicit tuples so that we can pass in (N,N,1)
-  // for 2D case.
-  size_t _subcube_shape;
-  size_t _patch_shape;
-  std::optional<size_t> _max_pool;
+  // These shapes are stored as tuples because we want to support a case  where
+  // the subcubes are 2D, with a shape like (1, 10, 10), but we sill want these
+  // 2D slices that are nearby in the x-axis to share labels. Thus the labels
+  // are always associated with 3D cubes in space, which ensures that
+  // overlapping subcubes in any of the three axes will share labels.
+  Shape _subcube_shape;
+  Shape _patch_shape;
+  std::optional<Shape> _max_pool;
+
   // TODO(Nicholas): support for list of label cube dims for different
   // granularities.
   size_t _label_cube_dim = 32;

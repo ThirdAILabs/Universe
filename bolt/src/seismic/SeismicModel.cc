@@ -1,5 +1,6 @@
 #include "SeismicModel.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/tuple.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -19,16 +20,38 @@
 
 namespace thirdai::bolt::seismic {
 
+void checkNonzeroDims(const Shape& a) {
+  auto [x, y, z] = a;
+  if (x == 0 || y == 0 || z == 0) {
+    throw std::invalid_argument(
+        "Expected all dimensions of shape to be nonzero.");
+  }
+}
+
+bool shapesAreMultiples(const Shape& a, const Shape& b) {
+  auto [a_x, a_y, a_z] = a;
+  auto [b_x, b_y, b_z] = b;
+  return (a_x % b_x == 0) && (a_y % b_y == 0) && (a_z % b_z == 0);
+}
+
 SeismicModel::SeismicModel(size_t subcube_shape, size_t patch_shape,
                            size_t embedding_dim, std::optional<size_t> max_pool)
-    : _subcube_shape(subcube_shape),
-      _patch_shape(patch_shape),
-      _max_pool(max_pool) {
-  if (_subcube_shape % _patch_shape != 0) {
+    : _subcube_shape(subcube_shape, subcube_shape, subcube_shape),
+      _patch_shape(patch_shape, patch_shape, patch_shape),
+      _max_pool(max_pool
+                    ? std::make_optional<Shape>(*max_pool, *max_pool, *max_pool)
+                    : std::nullopt) {
+  checkNonzeroDims(_subcube_shape);
+  checkNonzeroDims(_patch_shape);
+  if (_max_pool) {
+    checkNonzeroDims(*_max_pool);
+  }
+
+  if (!shapesAreMultiples(_subcube_shape, _patch_shape)) {
     throw std::invalid_argument(
         "Subcube shape should be a multiple of the patch shape.");
   }
-  if (_max_pool && (_patch_shape % *_max_pool != 0)) {
+  if (_max_pool && !shapesAreMultiples(_patch_shape, *_max_pool)) {
     throw std::invalid_argument("Max pool dimension should divide patch dim.");
   }
   std::tie(_model, _emb) = buildModel(nPatches(), flattenedPatchDim(),
