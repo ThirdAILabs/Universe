@@ -130,7 +130,7 @@ def modify_seismic():
                 ),
                 batch_size=n_subcubes_per_chunk,
                 shuffle=True,
-                num_workers=4,
+                num_workers=2,
             )
 
             for subcubes, metadata in TimedIterator(data_loader):
