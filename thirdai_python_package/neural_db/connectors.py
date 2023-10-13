@@ -3,17 +3,16 @@ import tempfile
 from typing import List, Type
 
 import pandas as pd
-from office365.runtime.auth.user_credential import UserCredential
 from office365.sharepoint.client_context import ClientContext
-from sqlalchemy import ColumnCollection, MetaData, create_engine, select, text
+from sqlalchemy import text, inspect
 from sqlalchemy.sql.base import ReadOnlyColumnCollection
+from sqlalchemy.engine.base import Connection as sqlConn
+from sqlalchemy.orm import sessionmaker
 
 from .utils import SUPPORTED_EXT, Credentials
 
 
 class Connector:
-    def __init__(self, user_creds: Credentials):
-        self._user_creds = user_creds
 
     def connect(self):
         raise NotImplementedError()
@@ -27,20 +26,25 @@ class Connector:
     @property
     def username(self):
         return self._user_creds._username
-
+    
+    def __call__(self, query: str):
+        return self._connection.execute(
+            text(query)
+        )
 
 class SQLConnector(Connector):
     BATCH_SIZE = 100_000
 
     def __init__(
         self,
-        user_creds: Credentials,
+        engine: sqlConn,
         id_col: str,
         strong_columns: List[str],
         weak_columns: List[str],
     ):
-        super().__init__(user_creds)
-        self.connect(user_creds)
+        super().__init__()
+        self._engine = engine
+        self.connect()
         self.df_iter = pd.read_sql(
             sql=self._user_creds._table_name,
             con=self._connection,
@@ -48,22 +52,19 @@ class SQLConnector(Connector):
             chunksize=self.BATCH_SIZE,
         )
 
-    def get_db_url(self):
-        db_url = f"postgresql://{self._user_creds._username}:{self._user_creds._password}@{self._user_creds._host}:{self._user_creds._port}/{self._user_creds._database_name}"
-        return db_url
+    def get_engine_url(self):
+        return self._engine.url
     
     def connect(self):
-        db_url = self._user_creds.get_db_url()
-        engine = create_engine(db_url)
-        self._connection = engine.connect()
+        self._connection = self._engine.connect()
 
     def next_batch(self):
         for batch in self.df_iter:
             yield batch
-
+        
     def get_session(self):
-        return self._connection
-
+        Session = sessionmaker(bind = self._engine)
+        yield Session()
 
 class SharePointConnector(Connector):
     FILE_LIMIT: int = 10

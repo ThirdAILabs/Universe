@@ -21,13 +21,11 @@ from .connectors import SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
-from .utils import (
-    Credentials,
-    SharePointCredentials,
-    SqlCredentials,
-    hash_file,
-    hash_string,
-)
+from office365.sharepoint.client_context import ClientContext
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.engine.base import Connection as sqlConn
+
+from .utils import hash_file, hash_string
 
 
 class Reference:
@@ -752,16 +750,14 @@ class URL(Document):
         ]
         return "\n".join(rows["text"])
 
-
 class DocumentConnector(Document):
-    def __init__(self, user_creds: Type[Credentials], doc_metadata={}) -> None:
+    def __init__(self, doc_name: str, connector: Union[SQLConnector, SharePointConnector], doc_metadata={}) -> None:
         super().__init__()
-        self._connector = None
-        self._session = None
-        self._credentials = user_creds
+        self.doc_name = doc_name + ".csv"
+        self._connector = connector
         self.doc_metadata = doc_metadata
         self._current_batch: pd.DataFrame = None
-        self._index_table: pd.DataFrame = None
+        self.index_table: pd.DataFrame = None
         self.hash = self.hash_connection()
 
     @property
@@ -769,28 +765,35 @@ class DocumentConnector(Document):
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
     def row_iterator(self, start_id: int):
-        current_doc_global_id = 0
+        current_doc_row_id = 0
         while True:
             self._current_batch = self.next_batch()
             if self._current_batch is None:
                 break
             for idx in range(len(self._current_batch)):
+                ele_id = start_id + current_doc_row_id
                 yield DocumentRow(
-                    element_id=start_id + current_doc_global_id,
+                    element_id=ele_id,
                     strong=self.strong_text(idx),
                     weak=self.weak_text(idx),
                 )
+                
+                self.add_entry(current_doc_row_id, ele_id)
                 current_doc_global_id += 1
 
     @property
+    def name(self) -> str:
+        return self.doc_name
+    
+    @property
     def index_table(self):
-        return self._index_table
+        return self.index_table
 
     def next_batch(self) -> pd.DataFrame:
         raise NotImplementedError()
 
-    def get_session(self):
-        return self._session
+    def get_connector(self):
+        return self._connector
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
@@ -801,27 +804,76 @@ class DocumentConnector(Document):
     def weak_column(self, element_id):
         raise NotImplementedError()
 
-    def hash_connection(self):
-        pass
+    @property
+    def hash(self):
+        raise NotImplementedError()
+    
+    def add_entry(self, current_doc_row_id: int, ele_id: int):
+        raise NotImplementedError()
+    
+    def save_meta(self, directory: Path):
+        # Save the index tabel
+        if self.save_extra_info:
+            self.index_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
+
+    def load_meta(self, directory: Path):
+        # Since we've moved the file to the provided directory, let's make
+        # sure that we point to this file.
+        if hasattr(self, "doc_name"):
+            self.path = directory / self.doc_name
+        else:
+            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
+            self.path = directory / self.path.name
+
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        
+        # Removing the current_batch attribute as it was being used for iterating on document
+        if "_current_batch" in state:
+            del state['_current_batch']
+
+        return state
+
+    def __setstate__(self, state):
+        # Add new attributes to state for older document object version backward compatibility
+        if "_save_extra_info" not in state:
+            state["_save_extra_info"] = True
+
+        self.__dict__.update(state)
 
 
 class SQLDocument(DocumentConnector):
     def __init__(
         self,
-        user_creds: SqlCredentials,
+        engine: sqlConn,
+        table_name: str,
         id_col: str,
         strong_columns: List[str],
         weak_columns: List[str],
+        reference_columns: List[str],
         doc_metadata={},
     ) -> None:
-        super().__init__(user_creds, doc_metadata)
-        self._strong_columns = strong_columns
-        self._weak_columns = weak_columns
-        self._connector = SQLConnector(user_creds, id_col, strong_columns, weak_columns)
-        self._table_name = self._credentials._table_name
-        self.total_rows = self._connector.connection.execute(
-            text(f"select count(*) from {self._table_name}")
+        
+        self._connector = SQLConnector(
+            engine = engine,
+            id_col = id_col,
+            strong_columns=strong_columns,
+            weak_columns=weak_columns
+        )
+        super().__init__(doc_name=table_name, connector = self._connector, doc_metadata = doc_metadata)
+        self.id_col = id_col
+        self.strong_columns = strong_columns
+        self.weak_columns = weak_columns
+        self.reference_columns = reference_columns
+        self.table_name = table_name
+        self.total_rows = self._connector(
+            f"select count(*) from {self._table_name}"
         ).fetchone()[0]
+
+        self.index_table = pd.DataFrame(columns = ["Row_id", "DB_id"], index = range(self.size))
 
         self._doc_metadata = doc_metadata
 
@@ -832,20 +884,17 @@ class SQLDocument(DocumentConnector):
         return self.total_rows
 
     @property
-    def name(self) -> str:
-        return self.table_name
-
-    @property
     def hash(self) -> str:
-        pass
+        return hash_string(self._connector.get_engine_url())
 
     def all_entity_ids(self) -> List[int]:
-        raise NotImplementedError()
+        return self.index_table[self.id_col].to_list()
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
     def strong_text(self, element_id: int) -> str:
+        # Fetch the element_id from the 
         row = self.df.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
@@ -853,11 +902,14 @@ class SQLDocument(DocumentConnector):
         row = self.df.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
+    def add_entry(self, current_doc_row_id: int, ele_id: int):
+        self.index_table.iloc[current_doc_row_id] = [current_doc_row_id, ele_id]
+
 
 class SharePointDocument(DocumentConnector):
-    def __init__(self, user_creds: SharePointCredentials, doc_metadata={}) -> None:
-        super().__init__(user_creds, doc_metadata)
-        self._connector = SharePointConnector(user_creds)
+    def __init__(self, client_context: ClientContext, doc_metadata={}) -> None:
+        super().__init__(session = client_context, doc_metadata = doc_metadata)
+        self._connector = SharePointConnector(client_context)
 
     def next_batch(**kwargs) -> pd.DataFrame:
         raise NotImplementedError()

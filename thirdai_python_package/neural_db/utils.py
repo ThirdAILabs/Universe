@@ -33,6 +33,7 @@ class Credentials:
         self._table_name = table_name
         self._host = host
         self._port = port
+        return self
     
     def with_SharepointConfig(self, site_url: str, library_path="Shared Documents"):
         """
@@ -43,6 +44,7 @@ class Credentials:
         """
         self._site_url = urllib.parse.quote(site_url)
         self._library_path = library_path
+        return self
 
 
 def clean_text(text):
