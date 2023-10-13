@@ -9,6 +9,17 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
+import scipy.ndimage
+
+
+def median_blur(subcube):
+    return scipy.ndimage.median_filter(subcube, size=3)
+
+
+def gaussian_blur(subcube):
+    blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
+    return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
+
 
 class SubcubeDataset(Dataset):
     def __init__(self, subcube_directory, subcube_files):
@@ -22,6 +33,13 @@ class SubcubeDataset(Dataset):
         filename = self.subcube_files[index]
         metadata = Path(filename).stem
         subcube = np.load(os.path.join(self.subcube_directory, filename))
+
+        r = np.random.rand()
+        if r < 0.1:
+            subcube = median_blur(subcube)
+        elif r < 0.2:
+            subcube = gaussian_blur(subcube)
+
         return subcube, metadata
 
 
