@@ -3,13 +3,12 @@ import time
 from pathlib import Path
 
 import numpy as np
+import scipy.ndimage
 import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
-
-import scipy.ndimage
 
 
 def median_blur(subcube):
