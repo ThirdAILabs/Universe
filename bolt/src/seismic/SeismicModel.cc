@@ -1,5 +1,6 @@
 #include "SeismicModel.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -61,7 +62,7 @@ metrics::History SeismicModel::trainOnPatches(
 
   LabeledDataset dataset = std::make_pair(std::move(data), std::move(labels));
 
-  Trainer trainer(_model);
+  Trainer trainer(_model, std::nullopt, python::CtrlCCheck());
 
   if (comm) {
     _model->disableSparseParameterUpdates();
