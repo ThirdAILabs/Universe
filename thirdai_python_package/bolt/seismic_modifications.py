@@ -94,6 +94,8 @@ def modify_seismic():
         learning_rate: float,
         epochs: int,
         batch_size: int,
+        callbacks=[],
+        log_interval=20,
         comm=None,
     ):
         subcube_files = [
@@ -154,6 +156,8 @@ def modify_seismic():
                     subcube_metadata=metadata,
                     learning_rate=learning_rate,
                     batch_size=batch_size,
+                    callbacks=callbacks,
+                    log_interval=log_interval,
                     comm=comm,
                 )
 
@@ -174,6 +178,10 @@ def modify_seismic():
         batch_size: int,
         run_config,
         scaling_config,
+        log_file: str,
+        checkpoint_dir: str,
+        log_interval: int = 20,
+        checkpoint_interval: int = 1000,
         communication_backend: str = "gloo",
     ):
         import ray
@@ -187,43 +195,71 @@ def modify_seismic():
             import ray
             from ray import train
 
+            rank = train.get_context().get_world_rank()
+
             model_ref = config["model_ref"]
             subcube_directory = config["subcube_directory"]
             learning_rate = config["learning_rate"]
             epochs = config["epochs"]
             batch_size = config["batch_size"] // train.get_context().get_world_size()
+            log_file = config["log_file"]
+            log_interval = config["log_interval"]
+            checkpoint_dir = config["checkpoint_dir"]
+            checkpoint_interval = config["checkpoint_interval"]
             config["licensing_lambda"]()
 
+            if rank != 0:
+                log_file += f".worker_{rank}"
+            thirdai.logging.setup(log_to_stderr=False, path=log_file, level="info")
+
             model = ray.get(model_ref)
+
+            callbacks = []
+            if rank == 0:
+                callbacks = [
+                    bolt.seismic.Checkpoint(
+                        seismic_model=model,
+                        checkpoint_dir=checkpoint_dir,
+                        interval=checkpoint_interval,
+                    )
+                ]
 
             metrics = model.train(
                 subcube_directory=subcube_directory,
                 learning_rate=learning_rate,
                 epochs=epochs,
                 batch_size=batch_size,
+                callbacks=callbacks,
+                log_interval=log_interval,
                 comm=Communication(),
             )
 
-            rank = train.get_context().get_world_rank()
             checkpoint = None
             if rank == 0:
-                # Use `with_optimizers=False` to save model without optimizer states
                 checkpoint = dist.BoltCheckPoint.from_model(model.model)
 
             train.report(metrics=metrics, checkpoint=checkpoint)
 
-        config = {}
-        config["model_ref"] = ray.put(self)
-        config["subcube_directory"] = os.path.abspath(subcube_directory)
-        config["learning_rate"] = learning_rate
-        config["epochs"] = epochs
-        config["batch_size"] = batch_size
+        config = {
+            "model_ref": ray.put(self),
+            "subcube_directory": os.path.abspath(subcube_directory),
+            "learning_rate": learning_rate,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "log_file": os.path.abspath(log_file),
+            "log_interval": log_interval,
+            "checkpoint_dir": os.path.abspath(checkpoint_dir),
+            "checkpoint_interval": checkpoint_interval,
+        }
 
         license_state = thirdai._thirdai.licensing._get_license_state()
         licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
             license_state
         )
         config["licensing_lambda"] = licensing_lambda
+
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
 
         trainer = dist.BoltTrainer(
             train_loop_per_worker=train_loop_per_worker,

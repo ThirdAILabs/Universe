@@ -8,6 +8,7 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <filesystem>
 #include <istream>
 
 namespace py = pybind11;
@@ -25,7 +26,8 @@ class SeismicModel {
   metrics::History trainOnPatches(
       const NumpyArray& subcubes,
       const std::vector<SubcubeMetadata>& subcube_metadata, float learning_rate,
-      size_t batch_size, const DistributedCommPtr& comm);
+      size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
+      std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
   NumpyArray embeddingsForPatches(const NumpyArray& subcubes);
 
@@ -91,6 +93,35 @@ class SeismicModel {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
+};
+
+class Checkpoint final : public callbacks::Callback {
+ public:
+  Checkpoint(std::shared_ptr<SeismicModel> seismic_model,
+             const std::string& checkpoint_dir, size_t interval)
+      : _seismic_model(std::move(seismic_model)),
+        _checkpoint_dir(checkpoint_dir),
+        _interval(interval) {}
+
+  void onBatchEnd() final {
+    if ((model->trainSteps() % _interval) == (_interval - 1)) {
+      _seismic_model->save(checkpointPath());
+    }
+  }
+
+  void onEpochEnd() final {
+    _seismic_model->save(checkpointPath() + "_epoch_end");
+  }
+
+ private:
+  std::string checkpointPath() const {
+    std::filesystem::path ckpt = "step_" + std::to_string(model->trainSteps());
+    return (_checkpoint_dir / ckpt).string();
+  }
+
+  std::shared_ptr<SeismicModel> _seismic_model;
+  std::filesystem::path _checkpoint_dir;
+  size_t _interval;
 };
 
 }  // namespace thirdai::bolt::seismic

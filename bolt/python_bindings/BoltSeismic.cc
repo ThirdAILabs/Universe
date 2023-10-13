@@ -21,6 +21,7 @@ void createSeismicSubmodule(py::module_& module) {
       .def("train_on_patches", &SeismicModel::trainOnPatches,
            py::arg("subcubes"), py::arg("subcube_metadata"),
            py::arg("learning_rate"), py::arg("batch_size"),
+           py::arg("callbacks"), py::arg("log_interval"),
            py::arg("comm") = std::nullopt)
       .def("embeddings_for_patches", &SeismicModel::embeddingsForPatches,
            py::arg("subcubes"))
@@ -31,6 +32,12 @@ void createSeismicSubmodule(py::module_& module) {
       .def("save", &SeismicModel::save, py::arg("filename"))
       .def_static("load", &SeismicModel::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<SeismicModel>());
+
+  py::class_<seismic::Checkpoint, std::shared_ptr<seismic::Checkpoint>,
+             callbacks::Callback>(seismic, "Checkpoint")
+      .def(py::init<std::shared_ptr<SeismicModel>, std::string, size_t>(),
+           py::arg("seismic_model"), py::arg("checkpoint_dir"),
+           py::arg("interval"));
 
 #if THIRDAI_EXPOSE_ALL
   seismic.def("seismic_labels", &seismicLabels, py::arg("volume"),

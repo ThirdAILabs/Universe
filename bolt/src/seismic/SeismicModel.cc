@@ -42,7 +42,8 @@ SeismicModel::SeismicModel(size_t subcube_shape, size_t patch_shape,
 metrics::History SeismicModel::trainOnPatches(
     const NumpyArray& subcubes,
     const std::vector<SubcubeMetadata>& subcube_metadata, float learning_rate,
-    size_t batch_size, const DistributedCommPtr& comm) {
+    size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
+    std::optional<uint32_t> log_interval, const DistributedCommPtr& comm) {
   if (static_cast<size_t>(subcubes.shape(0)) != subcube_metadata.size()) {
     throw std::invalid_argument(
         "Expected number of subcubes to match the number of subcube "
@@ -72,9 +73,9 @@ metrics::History SeismicModel::trainOnPatches(
       dataset, learning_rate, /* epochs= */ 1,
       /* train_metrics= */ {"loss"}, /* validation_data= */ std::nullopt,
       /* validation_metrics= */ {}, /* steps_per_validation= */ std::nullopt,
-      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+      /* use_sparsity_in_validation= */ false, /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ std::nullopt, /* comm= */ comm);
+      /* logging_interval= */ log_interval, /* comm= */ comm);
 
   if (comm) {
     _model->enableSparseParameterUpdates();

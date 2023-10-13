@@ -62,13 +62,17 @@ def test_distributed_seismic_model(subcube_directory):
 
     scaling_config = setup_ray()
 
+    log_file = "seismic_log"
+    checkpoint_dir = "seismic_checkpoints"
     model.train_distributed(
         subcube_directory=subcube_directory,
         learning_rate=0.0001,
-        epochs=1,
+        epochs=2,
         batch_size=8,
         scaling_config=scaling_config,
         run_config=RunConfig(storage_path="~/ray_results"),
+        log_file=log_file,
+        checkpoint_dir=checkpoint_dir,
     )
 
     n_cubes_to_embed = 3
@@ -79,3 +83,9 @@ def test_distributed_seismic_model(subcube_directory):
     embeddings = model.embeddings(subcubes_to_embed)
 
     assert embeddings.shape == (n_cubes_to_embed, emb_dim)
+
+    assert len(os.listdir(checkpoint_dir)) == 2
+    assert os.path.exists(log_file)
+    assert os.path.exists(log_file + ".worker_1")
+
+    # shutil.rmtree(checkpoint_dir)
