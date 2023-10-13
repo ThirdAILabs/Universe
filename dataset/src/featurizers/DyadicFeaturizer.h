@@ -34,8 +34,11 @@ class DyadicFeaturizer final : public Featurizer {
         _output_interval_prefix("dyadic_" + _text_column),
         _delimiter(delimiter),
         _label_column(std::move(label_column)),
-        _label_delimiter(label_delimiter),
-        _mach_label_block(std::move(mach_label_block)) {}
+        _mach_label_block(std::move(mach_label_block)) {
+    if (_label_column != std::nullopt) {
+      _label_delimiter = label_delimiter.value_or(':');
+    }
+  }
 
   bool expectsHeader() const final { return true; }
 

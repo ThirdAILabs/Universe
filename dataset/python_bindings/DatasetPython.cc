@@ -282,12 +282,14 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<DyadicFeaturizer, Featurizer, DyadicFeaturizerPtr>(
       dataset_submodule, "DyadicFeaturizer")
-      .def(py::init<bool, size_t, size_t, std::string, std::string, char, char,
+      .def(py::init<bool, size_t, size_t, std::string, char,
+                    std::optional<std::string>, std::optional<char>,
                     std::optional<mach::MachBlockPtr>>(),
            py::arg("expects_header"), py::arg("n_intervals"),
            py::arg("context_length"), py::arg("text_column"),
-           py::arg("label_column"), py::arg("delimiter"),
-           py::arg("label_delimiter"), py::arg("mach_block"))
+           py::arg("delimiter"), py::arg("label_column") = std::nullopt,
+           py::arg("label_delimiter") = std::nullopt,
+           py::arg("mach_block") = std::nullopt)
       .def("process_header", &DyadicFeaturizer::processHeader,
            py::arg("header"))
       .def("featurize",

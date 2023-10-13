@@ -124,8 +124,8 @@ template void DyadicFeaturizer::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void DyadicFeaturizer::serialize(Archive& archive) {
   archive(_expects_header, _n_intervals, _context_length, _text_column,
-          _label_column, _output_interval_prefix, _delimiter, _label_delimiter,
-          _num_cols_in_header, _column_number_map);
+          _output_interval_prefix, _delimiter, _label_column, _label_delimiter,
+          _mach_label_block, _num_cols_in_header, _column_number_map);
 }
 
 }  // namespace thirdai::dataset

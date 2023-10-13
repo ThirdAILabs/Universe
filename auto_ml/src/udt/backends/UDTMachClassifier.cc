@@ -181,8 +181,8 @@ UDTMachClassifier::UDTMachClassifier(
     }
 
     _dyadic_featurizer = std::make_shared<dataset::DyadicFeaturizer>(
-        expects_header, n_intervals, context_length, text_column, label_column,
-        delimiter, label_delimiter, _mach_label_block);
+        expects_header, n_intervals, context_length, text_column, delimiter,
+        label_column, label_delimiter, _mach_label_block);
   }
 }
 
@@ -314,7 +314,7 @@ std::vector<std::vector<std::pair<uint32_t, double>>>
 UDTMachClassifier::predictImpl(const MapInputBatch& samples,
                                bool sparse_inference,
                                std::optional<uint32_t> top_k) {
-  bolt::TensorList outputs;
+  std::shared_ptr<thirdai::bolt::Tensor> outputs;
 
   if (_dyadic_featurizer != std::nullopt) {
     auto inference_featurizer =
@@ -326,6 +326,8 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
     }
     auto tensor_lists = bolt::convertBatch(
         std::move(result), inference_featurizer.getDimensions());
+    outputs =
+        _classifier->model()->forward(tensor_lists, sparse_inference).at(0);
   }
 
   else {
@@ -396,10 +398,26 @@ py::object UDTMachClassifier::predictHashesBatch(
 std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
     const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
-  auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               sparse_inference)
-                     .at(0);
+  std::shared_ptr<thirdai::bolt::Tensor> outputs;
+
+  if (_dyadic_featurizer != std::nullopt) {
+    auto inference_featurizer =
+        _dyadic_featurizer.value()->makeInferenceFeaturizer();
+    auto vector_output = inference_featurizer.featurize(samples);
+    std::vector<BoltBatch> result;
+    for (auto& batch_id : vector_output) {
+      result.emplace_back(std::move(batch_id));
+    }
+    auto tensor_lists = bolt::convertBatch(
+        std::move(result), inference_featurizer.getDimensions());
+    outputs =
+        _classifier->model()->forward(tensor_lists, sparse_inference).at(0);
+  } else {
+    outputs = _classifier->model()
+                  ->forward(_dataset_factory->featurizeInputBatch(samples),
+                            sparse_inference)
+                  .at(0);
+  }
 
   uint32_t k = num_hashes.value_or(_mach_label_block->index()->numHashes());
 
