@@ -4,16 +4,15 @@ from typing import List, Type
 
 import pandas as pd
 from office365.sharepoint.client_context import ClientContext
-from sqlalchemy import text, inspect
-from sqlalchemy.sql.base import ReadOnlyColumnCollection
+from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.base import ReadOnlyColumnCollection
 
 from .utils import SUPPORTED_EXT, Credentials
 
 
 class Connector:
-
     def connect(self):
         raise NotImplementedError()
 
@@ -23,100 +22,98 @@ class Connector:
     def get_session(self):
         raise NotImplementedError()
 
-    @property
-    def username(self):
-        return self._user_creds._username
-    
-    def __call__(self, query: str):
-        return self._connection.execute(
-            text(query)
-        )
+    def execute(self, query: str):
+        return self._connection.execute(text(query))
+
 
 class SQLConnector(Connector):
-    BATCH_SIZE = 100_000
-
     def __init__(
         self,
         engine: sqlConn,
         id_col: str,
         strong_columns: List[str],
         weak_columns: List[str],
+        batch_size: int,
+        table_name: str,
     ):
         super().__init__()
         self._engine = engine
         self.connect()
         self.df_iter = pd.read_sql(
-            sql=self._user_creds._table_name,
+            sql=table_name,
             con=self._connection,
             columns=[id_col] + strong_columns + weak_columns,
-            chunksize=self.BATCH_SIZE,
+            chunksize=batch_size,
         )
 
     def get_engine_url(self):
         return self._engine.url
-    
+
     def connect(self):
         self._connection = self._engine.connect()
 
     def next_batch(self):
         for batch in self.df_iter:
             yield batch
-        
+
     def get_session(self):
-        Session = sessionmaker(bind = self._engine)
+        Session = sessionmaker(bind=self._engine)
         yield Session()
 
-class SharePointConnector(Connector):
-    FILE_LIMIT: int = 10
 
-    def __init__(self, user_creds: Credentials):
-        super().__init__(user_creds)
-        self.connect()
-        self.index_table = pd.DataFrame(
-            columns=["File_ID", "FileName", "Ext", "server_relative_url"]
-        )
-        self.index_table.set_index(keys="File_ID", inplace=True)
+# class SharePointConnector(Connector):
+#     FILE_LIMIT: int = 10
 
-    def connect(self):
-        creds = UserCredential(user_name=self._user_creds._username, password=self._user_creds._password)
-        self._ctx = ClientContext(base_url=self._user_creds._site_url).with_credentials(
-            credentials=creds
-        )
+#     def __init__(self, user_creds: Credentials):
+#         super().__init__(user_creds)
+#         self.connect()
+#         self.index_table = pd.DataFrame(
+#             columns=["File_ID", "FileName", "Ext", "server_relative_url"]
+#         )
+#         self.index_table.set_index(keys="File_ID", inplace=True)
 
-        # executing dummy query to check authentication
-        self._ctx.execute_query()
+#     def connect(self):
+#         creds = UserCredential(
+#             user_name=self._user_creds._username, password=self._user_creds._password
+#         )
+#         self._ctx = ClientContext(base_url=self._user_creds._site_url).with_credentials(
+#             credentials=creds
+#         )
 
-    def next_batch(self) -> str:
-        try:
-            # Sharepoint Library by it's path
-            library = self._ctx.web.get_folder_by_server_relative_path(
-                self._user_creds._library_path
-            )
-            self._ctx.load(library)
+#         # executing dummy query to check authentication
+#         self._ctx.execute_query()
 
-            # Get file properties from the library
-            files = library.files
-            self._ctx.load(files)
+#     def next_batch(self) -> str:
+#         try:
+#             # Sharepoint Library by it's path
+#             library = self._ctx.web.get_folder_by_server_relative_path(
+#                 self._user_creds._library_path
+#             )
+#             self._ctx.load(library)
 
-            # query Execution retrieving file information
-            self._ctx.execute_query()
+#             # Get file properties from the library
+#             files = library.files
+#             self._ctx.load(files)
 
-            for start_file_id in slice(0, len(files), self.FILE_LIMIT):
-                batch_folder = tempfile.TemporaryDirectory()
-                batched_files = files[start_file_id : start_file_id + self.FILE_LIMIT]
-                for file in batched_files:
-                    filename = file.properties["Name"]
-                    file_server_relative_url = file.properties["ServerRelativeUrl"]
+#             # query Execution retrieving file information
+#             self._ctx.execute_query()
 
-                    file_ext = filename.split(sep=".")[-1]
+#             for start_file_id in slice(0, len(files), self.FILE_LIMIT):
+#                 batch_folder = tempfile.TemporaryDirectory()
+#                 batched_files = files[start_file_id : start_file_id + self.FILE_LIMIT]
+#                 for file in batched_files:
+#                     filename = file.properties["Name"]
+#                     file_server_relative_url = file.properties["ServerRelativeUrl"]
 
-                    if file_ext in SUPPORTED_EXT:
-                        with open(os.path.join(batch_folder.name, filename)) as fp:
-                            file.download(fp).execute_query()
-                    yield batch_folder
-        except Exception as e:
-            self.index_table.drop(labels=self.index_table.index, inplace=True)
-            print(str(e))
+#                     file_ext = filename.split(sep=".")[-1]
 
-    def get_session(self):
-        return self._ctx
+#                     if file_ext in SUPPORTED_EXT:
+#                         with open(os.path.join(batch_folder.name, filename)) as fp:
+#                             file.download(fp).execute_query()
+#                     yield batch_folder
+#         except Exception as e:
+#             self.index_table.drop(labels=self.index_table.index, inplace=True)
+#             print(str(e))
+
+#     def get_session(self):
+#         return self._ctx

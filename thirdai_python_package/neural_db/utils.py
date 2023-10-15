@@ -20,21 +20,23 @@ class Credentials:
     def username(self):
         return self._username
 
-    def with_SqlConfig(self, database_name: str, table_name: str, host = "localhost", port = 5432):
+    def with_SqlConfig(
+        self, database_name: str, table_name: str, host="localhost", port=5432
+    ):
         """
         Configs to initialize a SQL Database connection
         Args:
             database_name: str, Database name
             table_name: str, Table name
             host: str, Hostname or IP address of the database server. Default is 5432
-            port: int, Port number for the database connection. Default is 'localhost' 
+            port: int, Port number for the database connection. Default is 'localhost'
         """
         self._database_name = database_name
         self._table_name = table_name
         self._host = host
         self._port = port
         return self
-    
+
     def with_SharepointConfig(self, site_url: str, library_path="Shared Documents"):
         """
         Configs to fetch the documents from sharepoint

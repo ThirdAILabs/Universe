@@ -5,14 +5,16 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, Type
 
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
+from office365.sharepoint.client_context import ClientContext
 from pytrie import StringTrie
 from requests.models import Response
-from sqlalchemy import text
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine.base import Connection as sqlConn
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
@@ -21,12 +23,9 @@ from .connectors import SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
-from office365.sharepoint.client_context import ClientContext
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.engine.base import Connection as sqlConn
-
 from .utils import hash_file, hash_string
 
+ConnectorType = Type[Union[SQLConnector, SharePointConnector]]
 
 class Reference:
     pass
@@ -750,15 +749,21 @@ class URL(Document):
         ]
         return "\n".join(rows["text"])
 
+
 class DocumentConnector(Document):
-    def __init__(self, doc_name: str, connector: Union[SQLConnector, SharePointConnector], doc_metadata={}) -> None:
+    def __init__(
+        self,
+        doc_name: str,
+        connector: ConnectorType,
+        doc_metadata={},
+    ) -> None:
         super().__init__()
         self.doc_name = doc_name + ".csv"
         self._connector = connector
         self.doc_metadata = doc_metadata
         self._current_batch: pd.DataFrame = None
         self.index_table: pd.DataFrame = None
-        self.hash = self.hash_connection()
+        self._hash = self.hash_connection()
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -771,20 +776,29 @@ class DocumentConnector(Document):
             if self._current_batch is None:
                 break
             for idx in range(len(self._current_batch)):
-                ele_id = start_id + current_doc_row_id
+                ele_id = current_doc_row_id + start_id
+
                 yield DocumentRow(
                     element_id=ele_id,
-                    strong=self.strong_text(idx),
-                    weak=self.weak_text(idx),
+                    strong=self.strong_text(idx),           # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text(idx),               # Weak text from (idx)th row of the current_batch
                 )
-                
+
                 self.add_entry(current_doc_row_id, ele_id)
                 current_doc_global_id += 1
 
     @property
+    def connector(self):
+        return self._connector
+
+    @connector.setter
+    def connector(self, connector: ConnectorType):
+        self._connector = connector
+
+    @property
     def name(self) -> str:
         return self.doc_name
-    
+
     @property
     def index_table(self):
         return self.index_table
@@ -806,11 +820,14 @@ class DocumentConnector(Document):
 
     @property
     def hash(self):
-        raise NotImplementedError()
-    
+        return self._hash
+
     def add_entry(self, current_doc_row_id: int, ele_id: int):
         raise NotImplementedError()
-    
+
+    def hash_connection(self):
+        raise NotImplementedError()
+
     def save_meta(self, directory: Path):
         # Save the index tabel
         if self.save_extra_info:
@@ -830,10 +847,12 @@ class DocumentConnector(Document):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        
+
         # Removing the current_batch attribute as it was being used for iterating on document
         if "_current_batch" in state:
-            del state['_current_batch']
+            del state["_current_batch"]
+        
+        del state["_connector"]
 
         return state
 
@@ -854,26 +873,32 @@ class SQLDocument(DocumentConnector):
         strong_columns: List[str],
         weak_columns: List[str],
         reference_columns: List[str],
+        batch_size=100_00,
         doc_metadata={},
     ) -> None:
-        
         self._connector = SQLConnector(
-            engine = engine,
-            id_col = id_col,
+            engine=engine,
+            id_col=id_col,
             strong_columns=strong_columns,
-            weak_columns=weak_columns
+            weak_columns=weak_columns,
+            batch_size=batch_size,
+            table_name=table_name,
         )
-        super().__init__(doc_name=table_name, connector = self._connector, doc_metadata = doc_metadata)
+        super().__init__(
+            doc_name=table_name, connector=self._connector, doc_metadata=doc_metadata
+        )
         self.id_col = id_col
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
         self.table_name = table_name
-        self.total_rows = self._connector(
+        self.total_rows = self._connector.execute(
             f"select count(*) from {self._table_name}"
         ).fetchone()[0]
 
-        self.index_table = pd.DataFrame(columns = ["Row_id", "DB_id"], index = range(self.size))
+        self.index_table = pd.DataFrame(
+            columns=["Row_id", "DB_id"], index=range(self.size)
+        )
 
         self._doc_metadata = doc_metadata
 
@@ -883,8 +908,7 @@ class SQLDocument(DocumentConnector):
     def size(self) -> int:
         return self.total_rows
 
-    @property
-    def hash(self) -> str:
+    def hash_connetion(self) -> str:
         return hash_string(self._connector.get_engine_url())
 
     def all_entity_ids(self) -> List[int]:
@@ -894,12 +918,11 @@ class SQLDocument(DocumentConnector):
         raise NotImplementedError()
 
     def strong_text(self, element_id: int) -> str:
-        # Fetch the element_id from the 
-        row = self.df.iloc[element_id]
+        row = self._current_batch.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
+        row = self._current_batch.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def add_entry(self, current_doc_row_id: int, ele_id: int):
@@ -908,7 +931,7 @@ class SQLDocument(DocumentConnector):
 
 class SharePointDocument(DocumentConnector):
     def __init__(self, client_context: ClientContext, doc_metadata={}) -> None:
-        super().__init__(session = client_context, doc_metadata = doc_metadata)
+        super().__init__(session=client_context, doc_metadata=doc_metadata)
         self._connector = SharePointConnector(client_context)
 
     def next_batch(**kwargs) -> pd.DataFrame:
