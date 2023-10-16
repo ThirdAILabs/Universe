@@ -23,14 +23,16 @@ struct ColdStartConfig {
       std::optional<uint32_t> weak_sample_num_words = std::nullopt,
       uint32_t weak_sample_reps = 1,
       std::optional<uint32_t> strong_max_len = std::nullopt,
-      std::optional<uint32_t> strong_sample_num_words = std::nullopt)
+      std::optional<uint32_t> strong_sample_num_words = std::nullopt,
+      bool use_complete_sample = false)
       : weak_min_len(weak_min_len),
         weak_max_len(weak_max_len),
         weak_chunk_len(weak_chunk_len),
         weak_sample_num_words(weak_sample_num_words),
         weak_sample_reps(weak_sample_reps),
         strong_max_len(strong_max_len),
-        strong_sample_num_words(strong_sample_num_words) {}
+        strong_sample_num_words(strong_sample_num_words),
+        use_complete_sample(use_complete_sample) {}
 
   static ColdStartConfig longBothPhrases() {
     return ColdStartConfig(/* weak_min_len= */ 10, /* weak_max_len= */ 50,
@@ -38,7 +40,8 @@ struct ColdStartConfig {
                            /* weak_sample_num_words= */ std::nullopt,
                            /* weak_sample_reps= */ 1,
                            /* strong_max_len= */ std::nullopt,
-                           /* strong_sample_num_words= */ 3);
+                           /* strong_sample_num_words= */ 3, 
+                           /* use_complete_sample= */ true);
   }
 
   std::optional<uint32_t> weak_min_len;
@@ -48,6 +51,7 @@ struct ColdStartConfig {
   uint32_t weak_sample_reps;
   std::optional<uint32_t> strong_max_len;
   std::optional<uint32_t> strong_sample_num_words;
+  bool use_complete_sample;
 };
 
 /**
@@ -163,6 +167,7 @@ class ColdStartTextAugmentation final : public Transformation {
   std::optional<uint32_t> _strong_max_len;
   std::optional<uint32_t> _strong_sample_num_words;
   uint32_t _seed;
+  bool _use_complete_sample;
 
   /**
    * Creates a phrase by splitting an input string s into whitespace-separated
@@ -237,7 +242,8 @@ class ColdStartTextAugmentation final : public Transformation {
         _weak_sample_reps(1),
         _strong_max_len(std::nullopt),
         _strong_sample_num_words(std::nullopt),
-        _seed(0) {}
+        _seed(0),
+        _use_complete_sample(false) {}
 
   friend class cereal::access;
   template <class Archive>
@@ -246,7 +252,7 @@ class ColdStartTextAugmentation final : public Transformation {
             _weak_column_names, _label_column_name, _output_column_name,
             _weak_min_len, _weak_max_len, _weak_chunk_len,
             _weak_sample_num_words, _weak_sample_reps, _strong_max_len,
-            _strong_sample_num_words, _seed);
+            _strong_sample_num_words, _use_complete_sample, _seed);
   }
 };
 

@@ -28,7 +28,8 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
       _weak_sample_reps(config.weak_sample_reps),
       _strong_max_len(config.strong_max_len),
       _strong_sample_num_words(config.strong_sample_num_words),
-      _seed(seed) {
+      _seed(seed),
+      _use_complete_sample(config.use_complete_sample) {
   // Validate input parameters.
   validateGreaterThanZero(_weak_min_len, "weak_min_len");
   validateGreaterThanZero(_weak_max_len, "weak_max_len");
@@ -90,7 +91,7 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns,
   std::exception_ptr exception = nullptr;
 
 #pragma omp parallel for default(none) \
-    shared(label_column, columns, augmented_data, augmented_labels, exception)
+    shared(label_column, columns, augmented_data, augmented_labels, exception, _use_complete_sample)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
@@ -103,6 +104,10 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns,
 
       std::vector<std::string> augmented_samples =
           augmentSingleRow(strong_text, weak_text);
+      
+      if(_use_complete_sample){
+        augmented_samples.push_back(strong_text + weak_text);
+      }
 
 #pragma omp critical
       {

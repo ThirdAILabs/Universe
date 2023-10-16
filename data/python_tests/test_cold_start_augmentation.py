@@ -383,3 +383,9 @@ def test_real_input():
     # acceptable.
     assert 6 <= num_data <= 300
     assert num_valid_data / num_data > 0.95
+    
+    
+    # check complete sample is also present
+    concat_samples = [strong + weak for strong, weak in zip(strong_list, weak_list)]
+    for sample in concat_samples:
+        assert sample in new_columns["unigrams"].data()
