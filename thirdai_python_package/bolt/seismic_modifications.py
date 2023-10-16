@@ -75,6 +75,11 @@ def subcube_range_for_worker(n_subcubes: int):
     return offset, offset + subcubes_for_worker
 
 
+def log(msg):
+    thirdai.logging.info(msg)
+    print(msg, flush=True)
+
+
 class TimedIterator:
     def __init__(self, obj):
         self.iter = iter(obj)
@@ -86,7 +91,7 @@ class TimedIterator:
         start = time.perf_counter()
         out = next(self.iter)
         end = time.perf_counter()
-        print(f"Loaded {len(out[0])} subcubes in {end-start} seconds.")
+        log(f"Loaded {len(out[0])} subcubes in {end-start} seconds.")
         return out
 
 
@@ -104,6 +109,7 @@ def modify_seismic():
         batch_size: int,
         callbacks=[],
         log_interval=20,
+        validation_fn=None,
         comm=None,
     ):
         subcube_files = [
@@ -125,9 +131,11 @@ def modify_seismic():
             int((10**9) * 30 / subcube_size), len(subcube_files)
         )
 
-        output_metrics = {}
+        output_metrics = {"epoch_times": [], "train_loss": []}
 
-        for _ in range(epochs):
+        for epoch in range(epochs):
+            epoch_start = time.perf_counter()
+
             data_loader = DataLoader(
                 dataset=SubcubeDataset(
                     subcube_directory=subcube_directory, subcube_files=subcube_files
@@ -154,9 +162,8 @@ def modify_seismic():
 
                 patch_end = time.perf_counter()
 
-                print(
+                log(
                     f"Converted {subcubes.shape[0]} subcubes to patches in {patch_end - patch_start} seconds.",
-                    flush=True,
                 )
 
                 metrics = self.train_on_patches(
@@ -169,12 +176,15 @@ def modify_seismic():
                     comm=comm,
                 )
 
-                metrics = {k: v[-1] for k, v in metrics.items()}
-                metrics["train_steps"] = self.model.train_steps()
-                for k, v in metrics.items():
-                    if k not in output_metrics:
-                        output_metrics[k] = []
-                    output_metrics[k].append(v)
+            epoch_end = time.perf_counter()
+
+            output_metrics["epoch_times"].append(epoch_end - epoch_start)
+            output_metrics["train_loss"].append(metrics["train_loss"][-1])
+
+            log(f"train | completed epoch {epoch} | time={epoch_end-epoch_start} ")
+
+            if validation_fn:
+                validation_fn(self)
 
         return output_metrics
 
@@ -190,6 +200,7 @@ def modify_seismic():
         checkpoint_dir: str,
         log_interval: int = 20,
         checkpoint_interval: int = 1000,
+        validation_fn=None,
         communication_backend: str = "gloo",
     ):
         import ray
@@ -213,6 +224,7 @@ def modify_seismic():
             log_interval = config["log_interval"]
             checkpoint_dir = config["checkpoint_dir"]
             checkpoint_interval = config["checkpoint_interval"]
+            validation_fn = config["validation_fn"]
             config["licensing_lambda"]()
 
             if rank != 0:
@@ -238,6 +250,7 @@ def modify_seismic():
                 batch_size=batch_size,
                 callbacks=callbacks,
                 log_interval=log_interval,
+                validation_fn=validation_fn if rank == 0 else None,
                 comm=Communication(),
             )
 
@@ -257,6 +270,7 @@ def modify_seismic():
             "log_interval": log_interval,
             "checkpoint_dir": os.path.abspath(checkpoint_dir),
             "checkpoint_interval": checkpoint_interval,
+            "validation_fn": validation_fn,
         }
 
         license_state = thirdai._thirdai.licensing._get_license_state()

@@ -60,12 +60,24 @@ def test_seismic_model(subcube_directory, max_pool):
         max_pool=max_pool,
     )
 
+    class Validation:
+        def __init__(self):
+            self.invocation_cnt = 0
+
+        def __call__(self, model):
+            self.invocation_cnt += 1
+
+    validation_fn = Validation()
+
     model.train(
         subcube_directory=subcube_directory,
         learning_rate=0.0001,
         epochs=1,
         batch_size=8,
+        validation_fn=validation_fn,
     )
+
+    assert validation_fn.invocation_cnt == 1
 
     n_cubes_to_embed = 4
     subcubes_to_embed = np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(
