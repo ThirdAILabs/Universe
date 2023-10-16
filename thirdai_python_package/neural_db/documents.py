@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, Type
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
-from office365.sharepoint.client_context import ClientContext
+# from office365.sharepoint.client_context import ClientContext
 from pytrie import StringTrie
 from requests.models import Response
 from sqlalchemy import create_engine, inspect, text
@@ -19,13 +19,13 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import SharePointConnector, SQLConnector
+from .connectors import SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
 from .utils import hash_file, hash_string
 
-ConnectorType = Type[Union[SQLConnector, SharePointConnector]]
+ConnectorType = Type[Union[SQLConnector, None]]
 
 class Reference:
     pass
@@ -98,7 +98,7 @@ class Document:
             yield DocumentRow(
                 element_id=start_id + i,
                 strong=self.strong_text(i),
-                weak_column=self.weak_text(i),
+                weak=self.weak_text(i),
             )
 
     def save(self, directory: str):
@@ -776,16 +776,16 @@ class DocumentConnector(Document):
             if self._current_batch is None:
                 break
             for idx in range(len(self._current_batch)):
-                ele_id = current_doc_row_id + start_id
+                ele_id = start_id + current_doc_row_id
 
                 yield DocumentRow(
                     element_id=ele_id,
                     strong=self.strong_text(idx),           # Strong text from (idx)th row of the current_batch
                     weak=self.weak_text(idx),               # Weak text from (idx)th row of the current_batch
                 )
-
+                print(f"{current_doc_row_id = }, {ele_id = }")
                 self.add_entry(current_doc_row_id, ele_id)
-                current_doc_global_id += 1
+                current_doc_row_id += 1
 
     @property
     def connector(self):
@@ -799,15 +799,8 @@ class DocumentConnector(Document):
     def name(self) -> str:
         return self.doc_name
 
-    @property
-    def index_table(self):
-        return self.index_table
-
     def next_batch(self) -> pd.DataFrame:
         raise NotImplementedError()
-
-    def get_connector(self):
-        return self._connector
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
@@ -829,7 +822,7 @@ class DocumentConnector(Document):
         raise NotImplementedError()
 
     def save_meta(self, directory: Path):
-        # Save the index tabel
+        # Save the index table
         if self.save_extra_info:
             self.index_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
 
@@ -881,6 +874,7 @@ class SQLDocument(DocumentConnector):
             id_col=id_col,
             strong_columns=strong_columns,
             weak_columns=weak_columns,
+            reference_columns=reference_columns,
             batch_size=batch_size,
             table_name=table_name,
         )
@@ -893,7 +887,7 @@ class SQLDocument(DocumentConnector):
         self.reference_columns = reference_columns
         self.table_name = table_name
         self.total_rows = self._connector.execute(
-            f"select count(*) from {self._table_name}"
+            f"select count(*) from {self.table_name}"
         ).fetchone()[0]
 
         self.index_table = pd.DataFrame(
@@ -905,11 +899,12 @@ class SQLDocument(DocumentConnector):
     def next_batch(self) -> pd.DataFrame:
         return self._connector.next_batch()
 
+    @property
     def size(self) -> int:
         return self.total_rows
 
-    def hash_connetion(self) -> str:
-        return hash_string(self._connector.get_engine_url())
+    def hash_connection(self) -> str:
+        return hash_string(str(self._connector.get_engine_url()))
 
     def all_entity_ids(self) -> List[int]:
         return self.index_table[self.id_col].to_list()
@@ -929,30 +924,30 @@ class SQLDocument(DocumentConnector):
         self.index_table.iloc[current_doc_row_id] = [current_doc_row_id, ele_id]
 
 
-class SharePointDocument(DocumentConnector):
-    def __init__(self, client_context: ClientContext, doc_metadata={}) -> None:
-        super().__init__(session=client_context, doc_metadata=doc_metadata)
-        self._connector = SharePointConnector(client_context)
+# class SharePointDocument(DocumentConnector):
+#     def __init__(self, client_context: ClientContext, doc_metadata={}) -> None:
+#         super().__init__(session=client_context, doc_metadata=doc_metadata)
+#         self._connector = SharePointConnector(client_context)
 
-    def next_batch(**kwargs) -> pd.DataFrame:
-        raise NotImplementedError()
+#     def next_batch(**kwargs) -> pd.DataFrame:
+#         raise NotImplementedError()
 
-    def size(self) -> int:
-        raise NotImplementedError()
+#     def size(self) -> int:
+#         raise NotImplementedError()
 
-    @property
-    def name(self) -> str:
-        raise NotImplementedError()
+#     @property
+#     def name(self) -> str:
+#         raise NotImplementedError()
 
-    @property
-    def hash(self) -> str:
-        pass
+#     @property
+#     def hash(self) -> str:
+#         pass
 
-    def all_entity_ids(self) -> List[int]:
-        raise NotImplementedError()
+#     def all_entity_ids(self) -> List[int]:
+#         raise NotImplementedError()
 
-    def reference(self, element_id: int) -> Reference:
-        raise NotImplementedError()
+#     def reference(self, element_id: int) -> Reference:
+#         raise NotImplementedError()
 
 
 class SentenceLevelExtracted(Extracted):
