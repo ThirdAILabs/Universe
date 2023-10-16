@@ -3,6 +3,7 @@ import tempfile
 from typing import List, Type
 
 import pandas as pd
+
 # from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
@@ -22,7 +23,7 @@ class Connector:
     def get_session(self):
         raise NotImplementedError()
 
-    def execute(self, query: str):
+    def execute(self, query: str, params={}):
         return self._connection.execute(text(query))
 
 
@@ -40,7 +41,9 @@ class SQLConnector(Connector):
         super().__init__()
         self._engine = engine
         self.connect()
-        columns = list(set([id_col] + strong_columns + weak_columns + reference_columns))
+        columns = list(
+            set([id_col] + strong_columns + weak_columns + reference_columns)
+        )
         self.df_iter = pd.read_sql(
             sql=table_name,
             con=self._connection,
@@ -55,10 +58,7 @@ class SQLConnector(Connector):
         self._connection = self._engine.connect()
 
     def next_batch(self):
-        try:
-            return next(self.df_iter)
-        except StopIteration:
-            return None
+        return self.df_iter
 
     def get_session(self):
         Session = sessionmaker(bind=self._engine)

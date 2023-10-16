@@ -74,10 +74,10 @@ class Document:
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return self.reference(element_id).text
 
-    def weak_text(self, element_id: int) -> str:
+    def weak_text(self, element_id: int, chun: pd.DataFrame = None) -> str:
         return self.reference(element_id).text
 
     def context(self, element_id: int, radius: int) -> str:
@@ -409,7 +409,7 @@ class CSV(Document):
     def all_entity_ids(self) -> List[int]:
         return self.df[self.id_column].to_list()
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         row = self.df.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
@@ -516,10 +516,10 @@ class Extracted(Document):
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return ""
 
-    def weak_text(self, element_id: int) -> str:
+    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return self.df["para"].iloc[element_id]
 
     def show_fn(text, source, **kwargs):
@@ -720,12 +720,12 @@ class URL(Document):
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return self.df[self._strong_column if self._strong_column else "text"].iloc[
             element_id
         ]
 
-    def weak_text(self, element_id: int) -> str:
+    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return self.df["text"].iloc[element_id]
 
     def reference(self, element_id: int) -> Reference:
@@ -761,7 +761,6 @@ class DocumentConnector(Document):
         self.doc_name = doc_name + ".csv"
         self._connector = connector
         self.doc_metadata = doc_metadata
-        self._current_batch: pd.DataFrame = None
         self.index_table: pd.DataFrame = None
         self._hash = self.hash_connection()
 
@@ -771,19 +770,15 @@ class DocumentConnector(Document):
 
     def row_iterator(self, start_id: int):
         current_doc_row_id = 0
-        while True:
-            self._current_batch = self.next_batch()
-            if self._current_batch is None:
-                break
-            for idx in range(len(self._current_batch)):
+        for current_batch in self.next_batch(): 
+            for idx in range(len(current_batch)):
                 ele_id = start_id + current_doc_row_id
 
                 yield DocumentRow(
                     element_id=ele_id,
-                    strong=self.strong_text(idx),           # Strong text from (idx)th row of the current_batch
-                    weak=self.weak_text(idx),               # Weak text from (idx)th row of the current_batch
+                    strong=self.strong_text(idx, current_batch),           # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text(idx, current_batch),               # Weak text from (idx)th row of the current_batch
                 )
-                print(f"{current_doc_row_id = }, {ele_id = }")
                 self.add_entry(current_doc_row_id, ele_id)
                 current_doc_row_id += 1
 
@@ -805,10 +800,10 @@ class DocumentConnector(Document):
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def strong_column(self, element_id):
+    def strong_column(self, element_id, chunk: pd.DataFrame = None):
         raise NotImplementedError()
 
-    def weak_column(self, element_id):
+    def weak_column(self, element_id, chunk: pd.DataFrame = None):
         raise NotImplementedError()
 
     @property
@@ -841,10 +836,6 @@ class DocumentConnector(Document):
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Removing the current_batch attribute as it was being used for iterating on document
-        if "_current_batch" in state:
-            del state["_current_batch"]
-        
         del state["_connector"]
 
         return state
@@ -912,12 +903,12 @@ class SQLDocument(DocumentConnector):
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def strong_text(self, element_id: int) -> str:
-        row = self._current_batch.iloc[element_id]
+    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+        row = chunk.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
-    def weak_text(self, element_id: int) -> str:
-        row = self._current_batch.iloc[element_id]
+    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+        row = chunk.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def add_entry(self, current_doc_row_id: int, ele_id: int):

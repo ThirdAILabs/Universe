@@ -10,8 +10,8 @@ try:
         Reference,
         SentenceLevelDOCX,
         SentenceLevelPDF,
+        SQLDocument,
         Unstructured,
-        SQLDocument
     )
     from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
