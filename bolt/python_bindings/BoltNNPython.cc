@@ -200,7 +200,6 @@ void defineTensor(py::module_& nn) {
 }
 
 void defineOps(py::module_& nn) {
-#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
 
   py::class_<Computation, ComputationPtr>(nn, "Computation")
       .def("dim", &Computation::dim)
@@ -211,8 +210,9 @@ void defineOps(py::module_& nn) {
       .def("dim", &Op::dim)
       .def_property("trainable", &Op::isTrainable, &Op::setTrainable)
       .def_property("name", &Op::name, &Op::setName);
-      
+
 #if THIRDAI_EXPOSE_ALL
+#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn, "SamplingConfig");
 
