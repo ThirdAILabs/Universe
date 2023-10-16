@@ -67,14 +67,37 @@ def test_seismic_model(subcube_directory, max_pool):
         batch_size=8,
     )
 
-    n_cubes_to_embed = 3
+    n_cubes_to_embed = 4
     subcubes_to_embed = np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(
         np.float32
     )
 
-    embeddings = model.embeddings(subcubes_to_embed)
+    embs = model.embeddings(subcubes_to_embed)
 
-    assert embeddings.shape == (n_cubes_to_embed, emb_dim)
+    assert embs.shape == (n_cubes_to_embed, emb_dim)
+
+    eval_dir = "./eval_subcubes"
+    os.makedirs(eval_dir, exist_ok=True)
+
+    np.save(os.path.join(eval_dir, "tgt.npy"), subcubes_to_embed[0])
+    for i in range(n_cubes_to_embed):
+        np.save(os.path.join(eval_dir, f"candidate_{i}.npy"), subcubes_to_embed[i])
+
+    sims = model.score_subcubes(eval_dir)
+    print(sims)
+
+    expected_sims = [("candidate_0.npy", 1.0)]  # The first candidate is the target.
+
+    for i in range(1, n_cubes_to_embed):
+        sim = np.dot(embs[0], embs[i])
+        sim /= np.linalg.norm(embs[0]) * np.linalg.norm(embs[i])
+        expected_sims.append((f"candidate_{i}.npy", sim))
+
+    expected_sims.sort(reverse=True, key=lambda x: x[1])
+
+    for actual, expected in zip(sims, expected_sims):
+        assert actual[0] == expected[0]
+        assert np.isclose(actual[1], expected[1])
 
 
 @pytest.mark.unit

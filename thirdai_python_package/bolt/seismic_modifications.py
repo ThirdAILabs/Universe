@@ -288,6 +288,25 @@ def modify_seismic():
         )
         return self.embeddings_for_patches(subcubes)
 
+    def score_subcubes(self, directory, target_subcube="tgt.npy"):
+        files = [file for file in os.listdir(directory) if file.endswith(".npy")]
+        if target_subcube not in files:
+            raise ValueError(
+                f"Expected unable to find {target_subcube} in {directory}."
+            )
+        files.remove(target_subcube)
+        target = np.load(os.path.join(directory, target_subcube))
+        candidates = [np.load(os.path.join(directory, file)) for file in files]
+
+        # Feed in as a batch for best parallelism.
+        embs = self.embeddings(np.stack([target] + candidates))
+
+        embs /= np.linalg.norm(embs, axis=1, ord=2, keepdims=True)
+        cosine_sims = np.matmul(embs[1:], embs[0])  # The fist embedding is the target.
+
+        return sorted(list(zip(files, cosine_sims)), key=lambda x: x[1], reverse=True)
+
     bolt.seismic.SeismicModel.train = wrapped_train
     bolt.seismic.SeismicModel.train_distributed = train_distributed
     bolt.seismic.SeismicModel.embeddings = wrapped_embeddings
+    bolt.seismic.SeismicModel.score_subcubes = score_subcubes
