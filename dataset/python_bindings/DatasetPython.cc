@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <utils/Random.h>
 #include <chrono>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <type_traits>
@@ -62,6 +63,18 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString)
+      .def(
+          "top_k",
+          [](const BoltVector& vector, uint32_t k) -> py::object {
+            auto k_largest = vector.findKLargestActivations(k);
+            std::vector<uint32_t> largest_vec(k);
+            for (int32_t i = k - 1; i >= 0; i--) {
+              largest_vec[i] = k_largest.top().second;
+              k_largest.pop();
+            }
+            return py::cast(largest_vec);
+          },
+          py::arg("k"))
       .def("to_numpy", [](const BoltVector& vector) -> py::object {
         NumpyArray<float> activations_array(vector.len);
         std::copy(vector.activations, vector.activations + vector.len,
@@ -119,6 +132,13 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def("clear", &mach::MachIndex::clear)
+      .def("randomly_assign_buckets", &mach::MachIndex::randomlyAssignBuckets,
+           py::arg("num_elements"))
+      .def("insert", &mach::MachIndex::insert, py::arg("entity"),
+           py::arg("hashes"))
+      .def("decode", &mach::MachIndex::decode, py::arg("output"),
+           py::arg("top_k"), py::arg("num_buckets_to_eval"))
 #endif
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)

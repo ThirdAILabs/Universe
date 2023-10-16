@@ -206,6 +206,7 @@ void defineOps(py::module_& nn) {
   py::class_<Computation, ComputationPtr>(nn, "Computation")
       .def("dim", &Computation::dim)
       .def("tensor", &Computation::tensor)
+      .def("op", &Computation::op)
       .def("name", &Computation::name);
 
   py::class_<Op, OpPtr>(nn, "Op")

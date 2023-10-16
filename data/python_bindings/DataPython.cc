@@ -13,6 +13,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/State.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -233,7 +234,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<State, StatePtr>(transformations_submodule, "State")
       .def(py::init<>())
-      .def(py::init<MachIndexPtr>(), py::arg("mach_index"));
+      .def(py::init<MachIndexPtr>(), py::arg("mach_index"))
+      .def("mach_index", &State::machIndex);
 
   py::class_<Transformation, std::shared_ptr<Transformation>>(
       transformations_submodule, "Transformation")
