@@ -279,7 +279,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("format") = "%Y-%m-%d");
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<TextTokenizer, Transformation, std::shared_ptr<TextTokenizer>>(
       transformations_submodule, "Text")
       .def(py::init<std::string, std::string, std::optional<std::string>,
@@ -291,7 +290,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("encoder") = dataset::NGramEncoder(1),
            py::arg("lowercase") = false,
            py::arg("dim") = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
-
+           
+#if THIRDAI_EXPOSE_ALL
   py::class_<BinningTransformation, Transformation,
              std::shared_ptr<BinningTransformation>>(transformations_submodule,
                                                      "Binning")

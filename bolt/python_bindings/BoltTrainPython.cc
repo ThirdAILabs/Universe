@@ -90,7 +90,18 @@ void defineTrainer(py::module_& train) {
        * checks must be added to the train method.
        * ==============================================================
        */
-
+      .def("validate", &Trainer::validate, py::arg("validation_data"),
+           py::arg("validation_metrics") = metrics::InputMetrics(),
+           py::arg("use_sparsity") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect())
+      .def("validate", &Trainer::validate_with_metric_names,
+           py::arg("validation_data"),
+           py::arg("validation_metrics") = std::vector<std::string>(),
+           py::arg("use_sparsity") = false, py::arg("verbose") = true,
+           bolt::python::OutputRedirect())
+      .def_property_readonly("model", &Trainer::getModel,
+                             py::return_value_policy::reference_internal)
+#endif
       .def("train", &Trainer::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = metrics::InputMetrics(),
@@ -115,18 +126,6 @@ void defineTrainer(py::module_& train) {
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
            py::arg("comm") = nullptr, bolt::python::OutputRedirect())
-      .def("validate", &Trainer::validate, py::arg("validation_data"),
-           py::arg("validation_metrics") = metrics::InputMetrics(),
-           py::arg("use_sparsity") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect())
-      .def("validate", &Trainer::validate_with_metric_names,
-           py::arg("validation_data"),
-           py::arg("validation_metrics") = std::vector<std::string>(),
-           py::arg("use_sparsity") = false, py::arg("verbose") = true,
-           bolt::python::OutputRedirect())
-      .def_property_readonly("model", &Trainer::getModel,
-                             py::return_value_policy::reference_internal)
-#endif
       ;
 }
 

@@ -159,12 +159,12 @@ void createBoltNNSubmodule(py::module_& module) {
       .def(thirdai::bolt::python::getPickleFunction<Model>());
 
 #if THIRDAI_EXPOSE_ALL
+#endif
   defineTensor(nn);
 
   defineOps(nn);
 
   defineLosses(nn);
-#endif
 }
 
 void defineTensor(py::module_& nn) {
@@ -242,7 +242,6 @@ void defineOps(py::module_& nn) {
                   py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<
            hashtable::SampledHashTable>());
-#endif
 
   py::class_<FullyConnected, FullyConnectedPtr, Op>(nn, "FullyConnected")
       .def(py::init(&FullyConnected::make), py::arg("dim"),
@@ -299,6 +298,7 @@ void defineOps(py::module_& nn) {
       .def("__call__", &RobeZ::apply)
       .def("duplicate_with_new_reduction", &RobeZ::duplicateWithNewReduction,
            py::arg("reduction"), py::arg("num_tokens_per_input"));
+#endif
 
   py::class_<Embedding, EmbeddingPtr, Op>(nn, "Embedding")
       .def(py::init(&Embedding::make), py::arg("dim"), py::arg("input_dim"),
