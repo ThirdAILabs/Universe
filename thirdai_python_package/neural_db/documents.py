@@ -740,6 +740,10 @@ class URL(Document):
         ]
         return "\n".join(rows["text"])
 
+    def load_meta(self, directory: Path):
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
+
 
 class SentenceLevelExtracted(Extracted):
     """Parses a document into sentences and creates a NeuralDB entry for each
