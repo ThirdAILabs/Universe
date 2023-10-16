@@ -3,21 +3,11 @@ import time
 from pathlib import Path
 
 import numpy as np
-import scipy.ndimage
 import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
-
-
-def median_blur(subcube):
-    return scipy.ndimage.median_filter(subcube, size=3)
-
-
-def gaussian_blur(subcube):
-    blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
-    return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
 
 
 class SubcubeDataset(Dataset):
@@ -30,20 +20,17 @@ class SubcubeDataset(Dataset):
 
     def __getitem__(self, index):
         filename = self.subcube_files[index]
+        # We don't parse the metadata here because the torch data loader doesn't
+        # like the SubcubeMetadata object being returned by the dataset.
         metadata = Path(filename).stem
         subcube = np.load(os.path.join(self.subcube_directory, filename))
-
-        r = np.random.rand()
-        if r < 0.1:
-            subcube = median_blur(subcube)
-        elif r < 0.2:
-            subcube = gaussian_blur(subcube)
+        subcube = subcube.astype(np.float32)
 
         return subcube, metadata
 
 
-def convert_to_patches(subcubes, pd, max_pool=None):
-    pd_x, pd_y, pd_z = pd
+def convert_to_patches(subcubes, patch_dim, max_pool=None):
+    pd_x, pd_y, pd_z = patch_dim
     if max_pool:
         # Unsqueeze/squeeze are to add/remove the 'channels' dimension
         subcubes = F.max_pool3d(
@@ -123,15 +110,15 @@ def modify_seismic():
             file for file in os.listdir(subcube_directory) if file.endswith(".npy")
         ]
 
+        if not subcube_files:
+            raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
+
         if comm:
             # For distributed training give each worker a seperate partition of the subcubes.
             worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
             subcube_files = subcube_files[worker_start:worker_end]
 
-        if not subcube_files:
-            raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
-
-        # Number of byes per subcube
+        # Number of bytes per subcube
         subcube_size = np.prod(self.subcube_shape) * 4
         # Load less than 30Gb of subcubes
         n_subcubes_per_chunk = min(

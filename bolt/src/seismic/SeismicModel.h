@@ -23,7 +23,7 @@ using NumpyArray =
 class SeismicModel {
  public:
   SeismicModel(size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
-               std::optional<size_t> max_pool = std::nullopt);
+               std::optional<size_t> max_pool);
 
   metrics::History trainOnPatches(
       const NumpyArray& subcubes,

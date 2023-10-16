@@ -49,10 +49,11 @@ SeismicModel::SeismicModel(size_t subcube_shape, size_t patch_shape,
 
   if (!shapesAreMultiples(_subcube_shape, _patch_shape)) {
     throw std::invalid_argument(
-        "Subcube shape should be a multiple of the patch shape.");
+        "Subcube shape must be a multiple of the patch shape.");
   }
   if (_max_pool && !shapesAreMultiples(_patch_shape, *_max_pool)) {
-    throw std::invalid_argument("Max pool dimension should divide patch dim.");
+    throw std::invalid_argument(
+        "Max pool shape must be a multiple of the patch shape.");
   }
   std::tie(_model, _emb) = buildModel(nPatches(), flattenedPatchDim(),
                                       embedding_dim, _n_output_classes);

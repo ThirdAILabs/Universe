@@ -3,6 +3,7 @@ import shutil
 
 import numpy as np
 import pytest
+import torch
 from thirdai import bolt
 
 SUBCUBE_SHAPE = (64, 64, 64)
@@ -74,3 +75,53 @@ def test_seismic_model(subcube_directory, max_pool):
     embeddings = model.embeddings(subcubes_to_embed)
 
     assert embeddings.shape == (n_cubes_to_embed, emb_dim)
+
+
+@pytest.mark.unit
+def test_create_patches():
+    integer_cube = torch.arange(512).reshape((8, 8, 8)).type(torch.float32)
+
+    cubes = torch.stack([integer_cube, 512 + integer_cube, 1024 + integer_cube])
+
+    patches = bolt.seismic_modifications.convert_to_patches(cubes, (4, 4, 4))
+
+    patch = 0
+    ranges = [(0, 4), (4, 8)]
+    for x1, x2 in ranges:
+        for y1, y2 in ranges:
+            for z1, z2 in ranges:
+                assert np.array_equal(
+                    integer_cube[x1:x2, y1:y2, z1:z2].flatten(), patches[0][patch]
+                )
+                patch += 1
+
+    assert np.array_equal(512 + patches[0], patches[1])
+    assert np.array_equal(1024 + patches[0], patches[2])
+
+
+@pytest.mark.unit
+def test_create_patches_max_pool():
+    integer_cube = torch.arange(512).reshape((8, 8, 8)).type(torch.float32)
+
+    cubes = torch.stack([integer_cube, 512 + integer_cube, 1024 + integer_cube])
+
+    patches = bolt.seismic_modifications.convert_to_patches(cubes, (4, 4, 4), (2, 2, 2))
+
+    pooled_cube = np.zeros((4, 4, 4))
+    for x in range(4):
+        for y in range(4):
+            for z in range(4):
+                pooled_cube[x, y, z] = integer_cube[2 * x + 1, 2 * y + 1, 2 * z + 1]
+
+    patch = 0
+    ranges = [(0, 2), (2, 4)]
+    for x1, x2 in ranges:
+        for y1, y2 in ranges:
+            for z1, z2 in ranges:
+                assert np.array_equal(
+                    pooled_cube[x1:x2, y1:y2, z1:z2].flatten(), patches[0][patch]
+                )
+                patch += 1
+
+    assert np.array_equal(512 + patches[0], patches[1])
+    assert np.array_equal(1024 + patches[0], patches[2])

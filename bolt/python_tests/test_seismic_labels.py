@@ -62,16 +62,9 @@ def test_seismic_label_hash_overlap():
         label_cube_shape=label_cube_shape,
     )
 
-    for i in range(0, X, label_cube_shape):
-        for j in range(0, Y, label_cube_shape):
-            for k in range(0, Z, label_cube_shape):
-                if (
-                    (i + subcube_shape > X)
-                    or (j + subcube_shape > Y)
-                    or (k + subcube_shape) > Z
-                ):
-                    continue
-
+    for i in range(0, X - subcube_shape, label_cube_shape):
+        for j in range(0, Y - subcube_shape, label_cube_shape):
+            for k in range(0, Z - subcube_shape, label_cube_shape):
                 labels = seismic_labels(
                     x_coord=i,
                     y_coord=j,
@@ -95,6 +88,7 @@ def test_seismic_label_hash_overlap():
 
 
 def test_seismic_spatial_overlap():
+    # This test checks that we have the correct hashes match between partially overlapping subcubes.
     hashes_1 = seismic_labels(
         x_coord=10, y_coord=20, z_coord=30, subcube_shape=20, label_cube_shape=4
     )
@@ -111,8 +105,8 @@ def test_seismic_spatial_overlap():
 
     assert np.array_equal(hashes_1[2:, 1:, :], hashes_3[:-2, :-1, :])
 
-    hashes_3 = seismic_labels(
+    hashes_4 = seismic_labels(
         x_coord=14, y_coord=32, z_coord=26, subcube_shape=20, label_cube_shape=4
     )
 
-    assert np.array_equal(hashes_2[1:, 2:, :-1], hashes_3[:-1, :-2, 1:])
+    assert np.array_equal(hashes_2[1:, 2:, :-1], hashes_4[:-1, :-2, 1:])
