@@ -29,8 +29,8 @@ class SubcubeDataset(Dataset):
         return subcube, metadata
 
 
-def convert_to_patches(subcubes, patch_dim, max_pool=None):
-    pd_x, pd_y, pd_z = patch_dim
+def convert_to_patches(subcubes, patch_shape, max_pool=None):
+    pd_x, pd_y, pd_z = patch_shape
     if max_pool:
         # Unsqueeze/squeeze are to add/remove the 'channels' dimension
         subcubes = F.max_pool3d(
@@ -147,7 +147,9 @@ def modify_seismic():
                         f"Expected subcubes with shape {self.subcube_shape}. But received subcubes with shape {subcubes.shape[1:]}"
                     )
                 subcubes = convert_to_patches(
-                    subcubes=subcubes, pd=self.patch_shape, max_pool=self.max_pool
+                    subcubes=subcubes,
+                    patch_shape=self.patch_shape,
+                    max_pool=self.max_pool,
                 )
 
                 patch_end = time.perf_counter()
@@ -280,7 +282,9 @@ def modify_seismic():
 
     def wrapped_embeddings(self, subcubes):
         subcubes = convert_to_patches(
-            torch.from_numpy(subcubes), pd=self.patch_shape, max_pool=self.max_pool
+            torch.from_numpy(subcubes),
+            patch_shape=self.patch_shape,
+            max_pool=self.max_pool,
         )
         return self.embeddings_for_patches(subcubes)
 
