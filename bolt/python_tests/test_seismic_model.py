@@ -84,7 +84,6 @@ def test_seismic_model(subcube_directory, max_pool):
         np.save(os.path.join(eval_dir, f"candidate_{i}.npy"), subcubes_to_embed[i])
 
     sims = model.score_subcubes(eval_dir)
-    print(sims)
 
     expected_sims = [("candidate_0.npy", 1.0)]  # The first candidate is the target.
 

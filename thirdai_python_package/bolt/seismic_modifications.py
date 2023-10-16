@@ -176,7 +176,7 @@ def modify_seismic():
                         output_metrics[k] = []
                     output_metrics[k].append(v)
 
-        return metrics
+        return output_metrics
 
     def train_distributed(
         self,
