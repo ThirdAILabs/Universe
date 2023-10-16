@@ -359,6 +359,7 @@ def test_real_input():
         weak_min_len=5,
         weak_max_len=10,
         weak_chunk_len=5,
+        use_complete_sample=True,
     )
 
     expected_min_length = 5  # minimally, 0 from strong and 5 from smallest weak phrase.
@@ -386,6 +387,7 @@ def test_real_input():
     
     
     # check complete sample is also present
+    augmented_columns = augmentation(columns)
     concat_samples = [strong + weak for strong, weak in zip(strong_list, weak_list)]
     for sample in concat_samples:
-        assert sample in new_columns["unigrams"].data()
+        assert sample in augmented_columns["data"].data()

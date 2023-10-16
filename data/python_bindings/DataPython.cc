@@ -367,13 +367,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                        uint32_t weak_sample_reps,
                        std::optional<uint32_t> strong_max_len,
                        std::optional<uint32_t> strong_sample_num_words,
-                       uint32_t seed) {
+                       uint32_t seed,
+                       bool use_complete_sample) {
              return std::make_shared<ColdStartTextAugmentation>(
                  std::move(strong_column_names), std::move(weak_column_names),
                  std::move(label_column_name), std::move(output_column_name),
                  ColdStartConfig(weak_min_len, weak_max_len, weak_chunk_len,
                                  weak_sample_num_words, weak_sample_reps,
-                                 strong_max_len, strong_sample_num_words),
+                                 strong_max_len, strong_sample_num_words, use_complete_sample),
                  seed);
            }),
            py::arg("strong_columns"), py::arg("weak_columns"),
@@ -385,7 +386,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("weak_sample_reps") = 1,
            py::arg("strong_max_len") = std::nullopt,
            py::arg("strong_sample_num_words") = std::nullopt,
-           py::arg("seed") = 42803)
+           py::arg("seed") = 42803, py::arg("use_complete_sample")=false)
       .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
