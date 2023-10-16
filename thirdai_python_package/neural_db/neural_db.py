@@ -534,7 +534,7 @@ class NeuralDB:
 
     def delete(self, source_id: str):
         deleted_entities = self._savable_state.documents.delete(source_id)
-        self._savable_state.model.delete(deleted_entities)
+        self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
             session_id=self._user_id, action="delete", args={"source_id": source_id}
         )

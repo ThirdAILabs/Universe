@@ -565,3 +565,63 @@ def test_neural_db_constrained_search_no_matches():
         "hello", top_k=10, constraints={"date": ndb.GreaterThan("2024-01-01")}
     )
     assert len(references) == 0
+
+
+def test_neural_db_delete_document():
+    with open("ice_cream.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("ice cream,0\n")
+
+    with open("pizza.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("pizza,0\n")
+
+    db = ndb.NeuralDB()
+    docs = [
+        ndb.CSV(
+            "ice_cream.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+        ),
+        ndb.CSV(
+            "pizza.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+        ),
+    ]
+
+    for _ in range(5):
+        [ice_cream_source_id, _] = db.insert(docs, train=True)
+
+    # We will delete the ice cream file. To know that we successfully deleted
+    # it, make sure it comes up as a search result before deleting, and does not
+    # come up after deleting.
+    result = db.search("ice cream", top_k=1)[0]
+    assert result.text == "text: ice cream"
+    ice_cream_id = result.id
+
+    db.delete(ice_cream_source_id)
+
+    results = db.search("ice cream", top_k=1)
+    # pizza may not come up, so check if we got any result at all.
+    if len(results) > 0:
+        assert results[0].text != "text: ice cream"
+
+    # Make sure the other document is unaffected
+    result = db.search("pizza", top_k=1)[0]
+    assert result.text == "text: pizza"
+    pizza_id = result.id
+
+    # Make sure there are no problems with reinserting deleted document.
+    for _ in range(5):
+        db.insert(docs, train=True)
+    new_ice_cream_result = db.search("ice cream", top_k=1)[0]
+    assert new_ice_cream_result.text == "text: ice cream"
+    assert new_ice_cream_result.id != ice_cream_id
+    new_pizza_result = db.search("pizza", top_k=1)[0]
+    assert new_pizza_result.text == "text: pizza"
+    assert new_pizza_result.id == pizza_id
