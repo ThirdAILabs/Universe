@@ -584,6 +584,7 @@ def test_neural_db_delete_document():
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
+            metadata={"about": "ice cream"},
         ),
         ndb.CSV(
             "pizza.csv",
@@ -591,6 +592,7 @@ def test_neural_db_delete_document():
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
+            metadata={"about": "pizza"},
         ),
     ]
 
@@ -604,6 +606,9 @@ def test_neural_db_delete_document():
     assert result.text == "text: ice cream"
     ice_cream_id = result.id
 
+    result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
+    assert result.text == "text: ice cream"
+
     db.delete(ice_cream_source_id)
 
     results = db.search("ice cream", top_k=1)
@@ -611,10 +616,16 @@ def test_neural_db_delete_document():
     if len(results) > 0:
         assert results[0].text != "text: ice cream"
 
+    results = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})
+    assert len(results) == 0
+
     # Make sure the other document is unaffected
     result = db.search("pizza", top_k=1)[0]
     assert result.text == "text: pizza"
     pizza_id = result.id
+
+    result = db.search("pizza", top_k=1, constraints={"about": "pizza"})[0]
+    assert result.text == "text: pizza"
 
     # Make sure there are no problems with reinserting deleted document.
     for _ in range(5):
@@ -625,3 +636,7 @@ def test_neural_db_delete_document():
     new_pizza_result = db.search("pizza", top_k=1)[0]
     assert new_pizza_result.text == "text: pizza"
     assert new_pizza_result.id == pizza_id
+
+    # Make sure constrained search index is also updated
+    result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
+    assert result.text == "text: ice cream"
