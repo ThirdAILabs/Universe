@@ -10,8 +10,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
-
-# from office365.sharepoint.client_context import ClientContext
 from pytrie import StringTrie
 from requests.models import Response
 from sqlalchemy import Integer, String

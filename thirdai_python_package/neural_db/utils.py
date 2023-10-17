@@ -1,52 +1,6 @@
 import hashlib
 import math
 import random
-import urllib.parse
-from dataclasses import dataclass
-from typing import Optional
-
-SUPPORTED_EXT = [".pdf", ".docx", ".csv"]
-
-
-class Credentials:
-    def __init__(self, username: str, password: str) -> None:
-        """
-        Creates the object for credentials provided as input
-        """
-        self._username = username
-        self._password = password
-
-    @property
-    def username(self):
-        return self._username
-
-    def with_SqlConfig(
-        self, database_name: str, table_name: str, host="localhost", port=5432
-    ):
-        """
-        Configs to initialize a SQL Database connection
-        Args:
-            database_name: str, Database name
-            table_name: str, Table name
-            host: str, Hostname or IP address of the database server. Default is 5432
-            port: int, Port number for the database connection. Default is 'localhost'
-        """
-        self._database_name = database_name
-        self._table_name = table_name
-        self._host = host
-        self._port = port
-        return self
-
-    def with_SharepointConfig(self, site_url: str, library_path="Shared Documents"):
-        """
-        Configs to fetch the documents from sharepoint
-        Args:
-            site_url: str, URL or web address that points to a specific SharePoint site or site collection. E.g: https://<organization>.sharepoint.com/sites/yourSite
-            library_path: str, Location of the sharepoint folder. Default is 'Shared Documents'
-        """
-        self._site_url = urllib.parse.quote(site_url)
-        self._library_path = library_path
-        return self
 
 
 def clean_text(text):

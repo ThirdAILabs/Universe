@@ -1,14 +1,8 @@
-import os
-import tempfile
 from typing import List, Type
 
 import pandas as pd
-
-# from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.base import ReadOnlyColumnCollection
 
 from .utils import SUPPORTED_EXT, Credentials
 
