@@ -827,12 +827,19 @@ class DocumentConnector(Document):
         return self._hash
 
     def _add_entry(self, current_doc_row_id: int):
-        if len(self.index_table.loc[self.index_table[self.index_table_id_col] == current_doc_row_id]) > 0:
+        if (
+            len(
+                self.index_table.loc[
+                    self.index_table[self.index_table_id_col] == current_doc_row_id
+                ]
+            )
+            > 0
+        ):
             # row_iterator is being called twice, so add first time only
             return
-        
+
         self.add_index_entry(current_doc_row_id)
-        
+
     def add_index_entry(self, current_doc_row_id: int):
         raise NotImplementedError()
 
@@ -966,7 +973,9 @@ class SQLDocument(DocumentConnector):
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
     def add_index_entry(self, current_doc_row_id: int):
-        self.index_table.loc[len(self.index_table)] = {self.index_table_id_col: current_doc_row_id}
+        self.index_table.loc[len(self.index_table)] = {
+            self.index_table_id_col: current_doc_row_id
+        }
 
     def integrity_check(self):
         if not (
