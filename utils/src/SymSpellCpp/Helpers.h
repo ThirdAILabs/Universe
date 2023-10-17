@@ -110,9 +110,9 @@ class Helpers {
   static int NullDistanceResults(xstring string1, xstring string2,
                                  double maxDistance) {
     if (string1.empty())
-      return (string2.empty())
-                 ? 0
-                 : (string2.size() <= maxDistance) ? string2.size() : -1;
+      return (string2.empty())                 ? 0
+             : (string2.size() <= maxDistance) ? string2.size()
+                                               : -1;
     return (string1.size() <= maxDistance) ? string1.size() : -1;
   }
 
@@ -121,7 +121,8 @@ class Helpers {
   static int NullSimilarityResults(xstring string1, xstring string2,
                                    double minSimilarity) {
     return (string1.empty() && string2.empty()) ? 1
-                                                : (0 <= minSimilarity) ? 0 : -1;
+           : (0 <= minSimilarity)               ? 0
+                                                : -1;
   }
 
   /// <summary>Calculates starting position and lengths of two strings such that
@@ -985,10 +986,8 @@ class SuggestionStage {
     for (auto it = Deletes.begin(); it != Deletes.end(); ++it) {
       auto permanentDeletesFinded = permanentDeletes->find(it->first);
       vector<xstring> suggestions;
-      int i;
       if (permanentDeletesFinded != permanentDeletesEnd) {
         suggestions = permanentDeletesFinded->second;
-        i = suggestions.size();
 
         vector<xstring> newSuggestions;
         newSuggestions.reserve(suggestions.size() + it->second.count);
@@ -996,7 +995,6 @@ class SuggestionStage {
                   back_inserter(newSuggestions));
         // permanentDeletes[it->first] = newSuggestions;
       } else {
-        i = 0;
         int32_t count = it->second.count;
         suggestions.reserve(count);
         // permanentDeletes[it->first] = suggestions;
@@ -1007,7 +1005,6 @@ class SuggestionStage {
         auto node = Nodes.At(next);
         suggestions.push_back(node.suggestion);
         next = node.next;
-        ++i;
       }
       (*permanentDeletes)[it->first] = suggestions;
     }

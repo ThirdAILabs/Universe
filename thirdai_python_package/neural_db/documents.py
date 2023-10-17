@@ -755,6 +755,10 @@ class URL(Document):
         ]
         return "\n".join(rows["text"])
 
+    def load_meta(self, directory: Path):
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
+
 
 class DocumentConnector(Document):
     def __init__(
