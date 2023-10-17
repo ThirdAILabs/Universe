@@ -20,36 +20,24 @@ class Connector:
     def next_batch(self) -> pd.DataFrame:
         raise NotImplementedError()
 
-    def get_session(self):
-        raise NotImplementedError()
-
-    def execute(self, query: str, params={}):
-        return self._connection.execute(text(query))
-
 
 class SQLConnector(Connector):
     def __init__(
         self,
         engine: sqlConn,
-        id_col: str,
-        strong_columns: List[str],
-        weak_columns: List[str],
-        reference_columns: List[str],
-        batch_size: int,
+        columns: List[str],
+        chunk_size: int,
         table_name: str,
     ):
         super().__init__()
         self._engine = engine
         self.connect()
-        columns = list(
-            set([id_col] + strong_columns + weak_columns + reference_columns)
-        )
-        self.df_iter = pd.read_sql(
-            sql=table_name,
-            con=self._connection,
-            columns=columns,
-            chunksize=batch_size,
-        )
+        self.table_name = table_name
+        self.columns = list(set(columns))
+        self.chunk_size = chunk_size
+
+    def execute(self, query: str, param={}):
+        return self._connection.execute(statement=text(query), parameters=param)
 
     def get_engine_url(self):
         return self._engine.url
@@ -57,67 +45,29 @@ class SQLConnector(Connector):
     def connect(self):
         self._connection = self._engine.connect()
 
-    def next_batch(self):
-        return self.df_iter
+    def next_chunk(self):
+        return pd.read_sql(
+            sql=self.table_name,
+            con=self._connection,
+            columns=self.columns,
+            chunksize=self.chunk_size,
+        )
 
-    def get_session(self):
-        Session = sessionmaker(bind=self._engine)
-        yield Session()
+    def total_rows(self):
+        return self.execute(query=f"select count(*) from {self.table_name}").fetchone()[
+            0
+        ]
 
+    def cols_metadata(self):
+        inspector = inspect(self._engine)
+        return inspector.get_columns(self.table_name)
 
-# class SharePointConnector(Connector):
-#     FILE_LIMIT: int = 10
+    def get_rows(self, cols: List[str] = "*"):
+        if isinstance(cols, list):
+            cols = ", ".join(cols)
+        return self.execute(query=f"SELECT {cols} from {self.table_name}")
 
-#     def __init__(self, user_creds: Credentials):
-#         super().__init__(user_creds)
-#         self.connect()
-#         self.index_table = pd.DataFrame(
-#             columns=["File_ID", "FileName", "Ext", "server_relative_url"]
-#         )
-#         self.index_table.set_index(keys="File_ID", inplace=True)
-
-#     def connect(self):
-#         creds = UserCredential(
-#             user_name=self._user_creds._username, password=self._user_creds._password
-#         )
-#         self._ctx = ClientContext(base_url=self._user_creds._site_url).with_credentials(
-#             credentials=creds
-#         )
-
-#         # executing dummy query to check authentication
-#         self._ctx.execute_query()
-
-#     def next_batch(self) -> str:
-#         try:
-#             # Sharepoint Library by it's path
-#             library = self._ctx.web.get_folder_by_server_relative_path(
-#                 self._user_creds._library_path
-#             )
-#             self._ctx.load(library)
-
-#             # Get file properties from the library
-#             files = library.files
-#             self._ctx.load(files)
-
-#             # query Execution retrieving file information
-#             self._ctx.execute_query()
-
-#             for start_file_id in slice(0, len(files), self.FILE_LIMIT):
-#                 batch_folder = tempfile.TemporaryDirectory()
-#                 batched_files = files[start_file_id : start_file_id + self.FILE_LIMIT]
-#                 for file in batched_files:
-#                     filename = file.properties["Name"]
-#                     file_server_relative_url = file.properties["ServerRelativeUrl"]
-
-#                     file_ext = filename.split(sep=".")[-1]
-
-#                     if file_ext in SUPPORTED_EXT:
-#                         with open(os.path.join(batch_folder.name, filename)) as fp:
-#                             file.download(fp).execute_query()
-#                     yield batch_folder
-#         except Exception as e:
-#             self.index_table.drop(labels=self.index_table.index, inplace=True)
-#             print(str(e))
-
-#     def get_session(self):
-#         return self._ctx
+    def get_primary_keys(self):
+        inspector = inspect(self._engine)
+        pk_constraint = inspector.get_pk_constraint(self.table_name)
+        return pk_constraint["constrained_columns"]

@@ -5,15 +5,16 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
+
 # from office365.sharepoint.client_context import ClientContext
 from pytrie import StringTrie
 from requests.models import Response
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import Integer, String
 from sqlalchemy.engine.base import Connection as sqlConn
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
@@ -27,12 +28,17 @@ from .utils import hash_file, hash_string
 
 ConnectorType = Type[Union[SQLConnector, None]]
 
+
 class Reference:
     pass
 
 
 def _raise_unknown_doc_error(element_id: int):
     raise ValueError(f"Unable to find document that has id {element_id}.")
+
+
+def raise_attribute_error(text: str):
+    raise AttributeError(text)
 
 
 class Document:
@@ -94,6 +100,7 @@ class Document:
         pass
 
     def row_iterator(self, start_id: int):
+        print("pdf iter")
         for i in range(self.size):
             yield DocumentRow(
                 element_id=start_id + i,
@@ -184,7 +191,7 @@ class DocumentDataSource(PyDataSource):
         self.strong_column = strong_column
         self.weak_column = weak_column
         self._size = 0
-        self.restart()
+        # self.restart()
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
@@ -192,8 +199,8 @@ class DocumentDataSource(PyDataSource):
 
     def row_iterator(self):
         for doc, start_id in self.documents:
-            for row in doc.row_iterator(start_id):
-                yield row
+            for row1 in doc.row_iterator(start_id):
+                yield row1
 
     @property
     def size(self):
@@ -348,14 +355,14 @@ class CSV(Document):
     ) -> None:
         self.df = pd.read_csv(path)
 
-        if reference_columns == None:
+        if reference_columns is None:
             reference_columns = list(self.df.columns)
 
-        if id_column == None:
+        if id_column is None:
             id_column = "thirdai_index"
             self.df[id_column] = range(self.df.shape[0])
 
-        if strong_columns == None and weak_columns == None:
+        if strong_columns is None and weak_columns is None:
             # autotune column types
             text_col_names = []
             try:
@@ -368,9 +375,9 @@ class CSV(Document):
                 self.df[text_col_names] = self.df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
-        elif strong_columns == None:
+        elif strong_columns is None:
             strong_columns = []
-        elif weak_columns == None:
+        elif weak_columns is None:
             weak_columns = []
 
         self.df = self.df.sort_values(id_column)
@@ -757,11 +764,11 @@ class DocumentConnector(Document):
         connector: ConnectorType,
         doc_metadata={},
     ) -> None:
-        super().__init__()
         self.doc_name = doc_name + ".csv"
         self._connector = connector
         self.doc_metadata = doc_metadata
         self.index_table: pd.DataFrame = None
+        self.index_table_id_col = "Row_id"
         self._hash = self.hash_connection()
 
     @property
@@ -769,18 +776,29 @@ class DocumentConnector(Document):
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
     def row_iterator(self, start_id: int):
+        print(f"hi")
+        has_id_col = hasattr(self, "id_col")
         current_doc_row_id = 0
-        for current_batch in self.next_batch(): 
-            for idx in range(len(current_batch)):
-                ele_id = start_id + current_doc_row_id
+        for current_chunk in self.next_chunk():
+            for idx in range(len(current_chunk)):
+                if has_id_col:
+                    row_id = current_chunk.iloc[idx][self.id_col]
+                else:
+                    row_id = current_doc_row_id
+                    current_doc_row_id += 1
+
+                DB_id = start_id + row_id
 
                 yield DocumentRow(
-                    element_id=ele_id,
-                    strong=self.strong_text(idx, current_batch),           # Strong text from (idx)th row of the current_batch
-                    weak=self.weak_text(idx, current_batch),               # Weak text from (idx)th row of the current_batch
+                    element_id=DB_id,
+                    strong=self.strong_text(
+                        idx, current_chunk
+                    ),  # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text(
+                        idx, current_chunk
+                    ),  # Weak text from (idx)th row of the current_batch
                 )
-                self.add_entry(current_doc_row_id, ele_id)
-                current_doc_row_id += 1
+                self.add_entry(row_id)
 
     @property
     def connector(self):
@@ -794,7 +812,7 @@ class DocumentConnector(Document):
     def name(self) -> str:
         return self.doc_name
 
-    def next_batch(self) -> pd.DataFrame:
+    def next_chunk(self) -> pd.DataFrame:
         raise NotImplementedError()
 
     def reference(self, element_id: int) -> Reference:
@@ -810,7 +828,7 @@ class DocumentConnector(Document):
     def hash(self):
         return self._hash
 
-    def add_entry(self, current_doc_row_id: int, ele_id: int):
+    def add_entry(self, current_doc_row_id: int):
         raise NotImplementedError()
 
     def hash_connection(self):
@@ -857,16 +875,14 @@ class SQLDocument(DocumentConnector):
         strong_columns: List[str],
         weak_columns: List[str],
         reference_columns: List[str],
-        batch_size=100_00,
+        chunk_size=100_00,
         doc_metadata={},
     ) -> None:
+        self.table_name = table_name
         self._connector = SQLConnector(
             engine=engine,
-            id_col=id_col,
-            strong_columns=strong_columns,
-            weak_columns=weak_columns,
-            reference_columns=reference_columns,
-            batch_size=batch_size,
+            columns=[id_col] + strong_columns + weak_columns + reference_columns,
+            chunk_size=chunk_size,
             table_name=table_name,
         )
         super().__init__(
@@ -876,32 +892,65 @@ class SQLDocument(DocumentConnector):
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
-        self.table_name = table_name
-        self.total_rows = self._connector.execute(
-            f"select count(*) from {self.table_name}"
-        ).fetchone()[0]
 
-        self.index_table = pd.DataFrame(
-            columns=["Row_id", "DB_id"], index=range(self.size)
-        )
+        self.total_rows = self._connector.total_rows()
+
+        self.integrity_check()
+
+        self.index_table = pd.DataFrame(columns=[self.index_table_id_col])
 
         self._doc_metadata = doc_metadata
 
-    def next_batch(self) -> pd.DataFrame:
-        return self._connector.next_batch()
+    def next_chunk(self) -> pd.DataFrame:
+        return self._connector.next_chunk()
 
     @property
     def size(self) -> int:
         return self.total_rows
 
     def hash_connection(self) -> str:
-        return hash_string(str(self._connector.get_engine_url()))
+        self.engine_uq = str(self._connector.get_engine_url()) + f"/{self.table_name}"
+        return hash_string(self.engine_uq)
 
     def all_entity_ids(self) -> List[int]:
-        return self.index_table[self.id_col].to_list()
+        if self.index_table:
+            return self.index_table[self.index_table_id_col].to_list()
+        else:
+            id_rows = self._connector.get_rows(cols=self.id_col).fetchall()
+            return [temp[0] for temp in id_rows]
 
     def reference(self, element_id: int) -> Reference:
-        raise NotImplementedError()
+        if element_id >= self.size:
+            _raise_unknown_doc_error(element_id)
+
+        try:
+            reference_texts = self._connector.exexute(
+                query=f"SELECT {','.join(self.reference_columns)} FROM {self.table_name} WHERE {self.id_col} = {element_id}"
+            ).fetchone()
+
+            if len(self.reference_columns) == 1:
+                # Returned result is in the form '(text, )'
+                reference_texts = reference_texts[0]
+
+            text = "\n\n".join(
+                [
+                    f"{col_name}: {col_text}"
+                    for col_name, col_text in zip(
+                        self.reference_columns, reference_texts
+                    )
+                ]
+            )
+
+        except Exception as e:
+            text = f"Unable to connect to database, line no: {element_id}"
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=text,
+            source=self.engine_uq,
+            metadata={**self.doc_metadata},
+        )
 
     def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         row = chunk.iloc[element_id]
@@ -911,34 +960,60 @@ class SQLDocument(DocumentConnector):
         row = chunk.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
-    def add_entry(self, current_doc_row_id: int, ele_id: int):
-        self.index_table.iloc[current_doc_row_id] = [current_doc_row_id, ele_id]
+    def add_entry(self, current_doc_row_id: int):
+        self.index_table.loc[len(self.index_table)] = {"Row_id": current_doc_row_id}
 
+    def integrity_check(self):
+        if not (
+            len(self.strong_columns) > 0 and len(self.weak_columns) > 0 and self.id_col
+        ):
+            raise_attribute_error("Empty strong OR weak OR reference columns")
+        all_cols = self._connector.cols_metadata()
 
-# class SharePointDocument(DocumentConnector):
-#     def __init__(self, client_context: ClientContext, doc_metadata={}) -> None:
-#         super().__init__(session=client_context, doc_metadata=doc_metadata)
-#         self._connector = SharePointConnector(client_context)
+        all_col_name = set([col["name"] for col in all_cols])
 
-#     def next_batch(**kwargs) -> pd.DataFrame:
-#         raise NotImplementedError()
+        if not (
+            self.id_col in all_col_name
+            and set(self.strong_columns).issubset(all_col_name)
+            and set(self.weak_columns).issubset(all_col_name)
+            and set(self.reference_columns).issubset(all_col_name)
+        ):
+            raise_attribute_error("Provided column name doesn't exists in the table")
 
-#     def size(self) -> int:
-#         raise NotImplementedError()
+        primary_keys = self._connector.get_primary_keys()
+        if not primary_keys:
+            raise_attribute_error(f"{self.id_col} needs to be a primary key")
+        elif len(primary_keys) > 1:
+            raise_attribute_error("Composite primary key is not allowed")
 
-#     @property
-#     def name(self) -> str:
-#         raise NotImplementedError()
+        for col in all_cols:
+            if col["name"] == self.id_col and not isinstance(col["type"], Integer):
+                raise_attribute_error("id column needs to be of type Integer")
 
-#     @property
-#     def hash(self) -> str:
-#         pass
+            if col["name"] in self.strong_columns and not isinstance(
+                col["type"], String
+            ):
+                raise_attribute_error(
+                    f"strong column '{col['name']}' needs to be of type String"
+                )
 
-#     def all_entity_ids(self) -> List[int]:
-#         raise NotImplementedError()
+            if col["name"] in self.weak_columns and not isinstance(col["type"], String):
+                raise_attribute_error(
+                    f"weak column '{col['name']}' needs to be of type String"
+                )
 
-#     def reference(self, element_id: int) -> Reference:
-#         raise NotImplementedError()
+        min_id = self._connector.execute(
+            query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        max_id = self.connector.execute(
+            query=f"SELECT MAX({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        if min_id != 0 or max_id != self.size - 1:
+            raise_attribute_error(
+                f"id column needs to be unique from 0 to {self.size - 1}"
+            )
 
 
 class SentenceLevelExtracted(Extracted):
