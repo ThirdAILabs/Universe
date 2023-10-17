@@ -34,9 +34,24 @@ bool shapesAreMultiples(const Shape& a, const Shape& b) {
   return (a_x % b_x == 0) && (a_y % b_y == 0) && (a_z % b_z == 0);
 }
 
+std::pair<size_t, float> nOutputClasses(const std::string& model_size) {
+  if (model_size == "small") {
+    return {20000, 0.1};
+  }
+  if (model_size == "medium") {
+    return {50000, 0.05};
+  }
+  if (model_size == "large") {
+    return {100000, 0.025};
+  }
+  throw std::invalid_argument(
+      "Invalid model size. Please use 'small', 'medium', or 'large.");
+}
+
 SeismicEmbeddingModel::SeismicEmbeddingModel(size_t subcube_shape,
                                              size_t patch_shape,
                                              size_t embedding_dim,
+                                             const std::string& model_size,
                                              std::optional<size_t> max_pool)
     : _subcube_shape(subcube_shape, subcube_shape, subcube_shape),
       _patch_shape(patch_shape, patch_shape, patch_shape),
@@ -57,8 +72,12 @@ SeismicEmbeddingModel::SeismicEmbeddingModel(size_t subcube_shape,
     throw std::invalid_argument(
         "Max pool shape must be a multiple of the patch shape.");
   }
-  std::tie(_model, _emb) = buildModel(nPatches(), flattenedPatchDim(),
-                                      embedding_dim, _n_output_classes);
+
+  auto [n_output_classes, output_sparsity] = nOutputClasses(model_size);
+  _n_output_classes = n_output_classes;
+  std::tie(_model, _emb) =
+      buildModel(nPatches(), flattenedPatchDim(), embedding_dim,
+                 _n_output_classes, output_sparsity);
 
 #if THIRDAI_EXPOSE_ALL
   _model->summary();
@@ -196,7 +215,7 @@ Dataset SeismicEmbeddingModel::makeLabelBatches(
 
 std::pair<ModelPtr, ComputationPtr> SeismicEmbeddingModel::buildModel(
     size_t n_patches, size_t patch_dim, size_t embedding_dim,
-    size_t n_output_classes) {
+    size_t n_output_classes, float output_sparsity) {
   auto patches = Input::make(n_patches * patch_dim);
 
   size_t patch_emb_dim = 100000;
@@ -215,11 +234,11 @@ std::pair<ModelPtr, ComputationPtr> SeismicEmbeddingModel::buildModel(
                  /* sparsity=*/1.0, /*activation=*/"tanh")
                  ->apply(aggregated_embs);
 
-  auto output =
-      FullyConnected::make(
-          /*dim=*/n_output_classes, /*input_dim=*/emb->dim(), /*sparsity=*/0.05,
-          /*activation=*/"softmax")
-          ->apply(emb);
+  auto output = FullyConnected::make(
+                    /*dim=*/n_output_classes, /*input_dim=*/emb->dim(),
+                    /*sparsity=*/output_sparsity,
+                    /*activation=*/"softmax")
+                    ->apply(emb);
 
   auto loss =
       CategoricalCrossEntropy::make(output, Input::make(n_output_classes));

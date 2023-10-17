@@ -57,6 +57,7 @@ def test_distributed_seismic_model(subcube_directory):
         subcube_shape=SUBCUBE_SHAPE[0],
         patch_shape=PATCH_SHAPE[0],
         embedding_dim=emb_dim,
+        size="small",
         max_pool=2,
     )
 

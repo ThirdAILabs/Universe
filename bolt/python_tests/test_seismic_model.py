@@ -57,6 +57,7 @@ def test_seismic_model(subcube_directory, max_pool):
         subcube_shape=SUBCUBE_SHAPE[0],
         patch_shape=PATCH_SHAPE[0],
         embedding_dim=emb_dim,
+        size="small",
         max_pool=max_pool,
     )
 

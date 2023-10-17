@@ -15,9 +15,11 @@ void createSeismicSubmodule(py::module_& module) {
 
   py::class_<SeismicEmbeddingModel, std::shared_ptr<SeismicEmbeddingModel>>(
       seismic, "SeismicEmbeddingModel")
-      .def(py::init<size_t, size_t, size_t, std::optional<size_t>>(),
+      .def(py::init<size_t, size_t, size_t, const std::string&,
+                    std::optional<size_t>>(),
            py::arg("subcube_shape"), py::arg("patch_shape"),
-           py::arg("embedding_dim"), py::arg("max_pool") = std::nullopt)
+           py::arg("embedding_dim"), py::arg("size") = "large",
+           py::arg("max_pool") = std::nullopt)
       .def("train_on_patches", &SeismicEmbeddingModel::trainOnPatches,
            py::arg("subcubes"), py::arg("subcube_metadata"),
            py::arg("learning_rate"), py::arg("batch_size"),

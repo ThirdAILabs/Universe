@@ -23,7 +23,8 @@ using NumpyArray =
 class SeismicEmbeddingModel {
  public:
   SeismicEmbeddingModel(size_t subcube_shape, size_t patch_shape,
-                        size_t embedding_dim, std::optional<size_t> max_pool);
+                        size_t embedding_dim, const std::string& model_size,
+                        std::optional<size_t> max_pool);
 
   metrics::History trainOnPatches(
       const NumpyArray& subcubes,
@@ -78,9 +79,11 @@ class SeismicEmbeddingModel {
     return patch_x * patch_y * patch_z;
   }
 
-  static std::pair<ModelPtr, ComputationPtr> buildModel(
-      size_t n_patches, size_t patch_dim, size_t embedding_dim,
-      size_t n_output_classes);
+  static std::pair<ModelPtr, ComputationPtr> buildModel(size_t n_patches,
+                                                        size_t patch_dim,
+                                                        size_t embedding_dim,
+                                                        size_t n_output_classes,
+                                                        float output_sparsity);
 
   ModelPtr _model;
   ComputationPtr _emb;
@@ -98,7 +101,7 @@ class SeismicEmbeddingModel {
   // granularities.
   size_t _label_cube_dim = 32;
 
-  size_t _n_output_classes = 50000;
+  size_t _n_output_classes;
 
   SeismicEmbeddingModel() {}
 
