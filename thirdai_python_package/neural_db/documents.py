@@ -100,7 +100,6 @@ class Document:
         pass
 
     def row_iterator(self, start_id: int):
-        print("pdf iter")
         for i in range(self.size):
             yield DocumentRow(
                 element_id=start_id + i,
@@ -191,7 +190,7 @@ class DocumentDataSource(PyDataSource):
         self.strong_column = strong_column
         self.weak_column = weak_column
         self._size = 0
-        # self.restart()
+        self.restart()
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
@@ -776,7 +775,6 @@ class DocumentConnector(Document):
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
     def row_iterator(self, start_id: int):
-        print(f"hi")
         has_id_col = hasattr(self, "id_col")
         current_doc_row_id = 0
         for current_chunk in self.next_chunk():
@@ -798,7 +796,7 @@ class DocumentConnector(Document):
                         idx, current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self.add_entry(row_id)
+                self._add_entry(row_id)
 
     @property
     def connector(self):
@@ -828,7 +826,14 @@ class DocumentConnector(Document):
     def hash(self):
         return self._hash
 
-    def add_entry(self, current_doc_row_id: int):
+    def _add_entry(self, current_doc_row_id: int):
+        if len(self.index_table.loc[self.index_table[self.index_table_id_col] == current_doc_row_id]) > 0:
+            # row_iterator is being called twice, so add first time only
+            return
+        
+        self.add_index_entry(current_doc_row_id)
+        
+    def add_index_entry(self, current_doc_row_id: int):
         raise NotImplementedError()
 
     def hash_connection(self):
@@ -960,8 +965,8 @@ class SQLDocument(DocumentConnector):
         row = chunk.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
-    def add_entry(self, current_doc_row_id: int):
-        self.index_table.loc[len(self.index_table)] = {"Row_id": current_doc_row_id}
+    def add_index_entry(self, current_doc_row_id: int):
+        self.index_table.loc[len(self.index_table)] = {self.index_table_id_col: current_doc_row_id}
 
     def integrity_check(self):
         if not (
