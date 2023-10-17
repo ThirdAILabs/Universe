@@ -1,7 +1,7 @@
 #include "BoltSeismic.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <bolt/src/seismic/SeismicEmbeddingModel.h>
 #include <bolt/src/seismic/SeismicLabels.h>
-#include <bolt/src/seismic/SeismicModel.h>
 #include <pybind11/stl.h>
 
 namespace thirdai::bolt::seismic::python {
@@ -13,29 +13,32 @@ void createSeismicSubmodule(py::module_& module) {
       .def(py::init<std::string, size_t, size_t, size_t>(), py::arg("volume"),
            py::arg("x"), py::arg("y"), py::arg("z"));
 
-  py::class_<SeismicModel, std::shared_ptr<SeismicModel>>(seismic,
-                                                          "SeismicModel")
+  py::class_<SeismicEmbeddingModel, std::shared_ptr<SeismicEmbeddingModel>>(
+      seismic, "SeismicEmbeddingModel")
       .def(py::init<size_t, size_t, size_t, std::optional<size_t>>(),
            py::arg("subcube_shape"), py::arg("patch_shape"),
            py::arg("embedding_dim"), py::arg("max_pool") = std::nullopt)
-      .def("train_on_patches", &SeismicModel::trainOnPatches,
+      .def("train_on_patches", &SeismicEmbeddingModel::trainOnPatches,
            py::arg("subcubes"), py::arg("subcube_metadata"),
            py::arg("learning_rate"), py::arg("batch_size"),
            py::arg("callbacks"), py::arg("log_interval"),
            py::arg("comm") = std::nullopt)
-      .def("embeddings_for_patches", &SeismicModel::embeddingsForPatches,
-           py::arg("subcubes"))
-      .def_property_readonly("subcube_shape", &SeismicModel::subcubeShape)
-      .def_property_readonly("patch_shape", &SeismicModel::patchShape)
-      .def_property_readonly("max_pool", &SeismicModel::maxPool)
-      .def_property("model", &SeismicModel::getModel, &SeismicModel::setModel)
-      .def("save", &SeismicModel::save, py::arg("filename"))
-      .def_static("load", &SeismicModel::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<SeismicModel>());
+      .def("embeddings_for_patches",
+           &SeismicEmbeddingModel::embeddingsForPatches, py::arg("subcubes"))
+      .def_property_readonly("subcube_shape",
+                             &SeismicEmbeddingModel::subcubeShape)
+      .def_property_readonly("patch_shape", &SeismicEmbeddingModel::patchShape)
+      .def_property_readonly("max_pool", &SeismicEmbeddingModel::maxPool)
+      .def_property("model", &SeismicEmbeddingModel::getModel,
+                    &SeismicEmbeddingModel::setModel)
+      .def("save", &SeismicEmbeddingModel::save, py::arg("filename"))
+      .def_static("load", &SeismicEmbeddingModel::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<SeismicEmbeddingModel>());
 
   py::class_<seismic::Checkpoint, std::shared_ptr<seismic::Checkpoint>,
              callbacks::Callback>(seismic, "Checkpoint")
-      .def(py::init<std::shared_ptr<SeismicModel>, std::string, size_t>(),
+      .def(py::init<std::shared_ptr<SeismicEmbeddingModel>, std::string,
+                    size_t>(),
            py::arg("seismic_model"), py::arg("checkpoint_dir"),
            py::arg("interval"));
 

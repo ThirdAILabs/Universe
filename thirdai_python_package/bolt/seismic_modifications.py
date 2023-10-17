@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import scipy.ndimage
 import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
@@ -10,10 +11,20 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 
+def median_blur(subcube):
+    return scipy.ndimage.median_filter(subcube, size=3)
+
+
+def gaussian_blur(subcube):
+    blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
+    return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
+
+
 class SubcubeDataset(Dataset):
-    def __init__(self, subcube_directory, subcube_files):
+    def __init__(self, subcube_directory, subcube_files, blur_subcube_fraction=0.0):
         self.subcube_directory = subcube_directory
         self.subcube_files = subcube_files
+        self.blur_subcube_fraction = blur_subcube_fraction
 
     def __len__(self):
         return len(self.subcube_files)
@@ -25,6 +36,12 @@ class SubcubeDataset(Dataset):
         metadata = Path(filename).stem
         subcube = np.load(os.path.join(self.subcube_directory, filename))
         subcube = subcube.astype(np.float32)
+        if self.blur_subcube_fraction > 0:
+            r = np.random.rand()
+            if r < (self.blur_subcube_fraction / 2):
+                subcube = median_blur(subcube)
+            elif r < self.blur_subcube_fraction:
+                subcube = gaussian_blur(subcube)
 
         return subcube, metadata
 
@@ -110,6 +127,7 @@ def modify_seismic():
         callbacks=[],
         log_interval=20,
         validation_fn=None,
+        blur_subcubes_fraction=0.0,
         comm=None,
     ):
         subcube_files = [
@@ -138,7 +156,9 @@ def modify_seismic():
 
             data_loader = DataLoader(
                 dataset=SubcubeDataset(
-                    subcube_directory=subcube_directory, subcube_files=subcube_files
+                    subcube_directory=subcube_directory,
+                    subcube_files=subcube_files,
+                    blur_subcube_fraction=blur_subcubes_fraction,
                 ),
                 batch_size=n_subcubes_per_chunk,
                 shuffle=True,
@@ -201,6 +221,7 @@ def modify_seismic():
         log_interval: int = 20,
         checkpoint_interval: int = 1000,
         validation_fn=None,
+        blur_subcubes_fraction=0.0,
         communication_backend: str = "gloo",
     ):
         import ray
@@ -225,6 +246,7 @@ def modify_seismic():
             checkpoint_dir = config["checkpoint_dir"]
             checkpoint_interval = config["checkpoint_interval"]
             validation_fn = config["validation_fn"]
+            blur_subcubes_fraction = config["blur_subcubes_fraction"]
             config["licensing_lambda"]()
 
             if rank != 0:
@@ -251,6 +273,7 @@ def modify_seismic():
                 callbacks=callbacks,
                 log_interval=log_interval,
                 validation_fn=validation_fn if rank == 0 else None,
+                blur_subcubes_fraction=blur_subcubes_fraction,
                 comm=Communication(),
             )
 
@@ -271,6 +294,7 @@ def modify_seismic():
             "checkpoint_dir": os.path.abspath(checkpoint_dir),
             "checkpoint_interval": checkpoint_interval,
             "validation_fn": validation_fn,
+            "blur_subcubes_fraction": blur_subcubes_fraction,
         }
 
         license_state = thirdai._thirdai.licensing._get_license_state()
@@ -320,7 +344,7 @@ def modify_seismic():
 
         return sorted(list(zip(files, cosine_sims)), key=lambda x: x[1], reverse=True)
 
-    bolt.seismic.SeismicModel.train = wrapped_train
-    bolt.seismic.SeismicModel.train_distributed = train_distributed
-    bolt.seismic.SeismicModel.embeddings = wrapped_embeddings
-    bolt.seismic.SeismicModel.score_subcubes = score_subcubes
+    bolt.seismic.SeismicEmbeddingModel.train = wrapped_train
+    bolt.seismic.SeismicEmbeddingModel.train_distributed = train_distributed
+    bolt.seismic.SeismicEmbeddingModel.embeddings = wrapped_embeddings
+    bolt.seismic.SeismicEmbeddingModel.score_subcubes = score_subcubes

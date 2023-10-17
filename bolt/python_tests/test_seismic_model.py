@@ -53,7 +53,7 @@ def subcube_directory():
 @pytest.mark.parametrize("max_pool", [None, 2])
 def test_seismic_model(subcube_directory, max_pool):
     emb_dim = 256
-    model = bolt.seismic.SeismicModel(
+    model = bolt.seismic.SeismicEmbeddingModel(
         subcube_shape=SUBCUBE_SHAPE[0],
         patch_shape=PATCH_SHAPE[0],
         embedding_dim=emb_dim,
@@ -80,8 +80,8 @@ def test_seismic_model(subcube_directory, max_pool):
     assert validation_fn.invocation_cnt == 1
 
     n_cubes_to_embed = 4
-    subcubes_to_embed = np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(
-        np.float32
+    subcubes_to_embed = (
+        np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(np.float32) / 10
     )
 
     embs = model.embeddings(subcubes_to_embed)
@@ -97,9 +97,8 @@ def test_seismic_model(subcube_directory, max_pool):
 
     sims = model.score_subcubes(eval_dir)
 
-    expected_sims = [("candidate_0.npy", 1.0)]  # The first candidate is the target.
-
-    for i in range(1, n_cubes_to_embed):
+    expected_sims = []
+    for i in range(0, n_cubes_to_embed):
         sim = np.dot(embs[0], embs[i])
         sim /= np.linalg.norm(embs[0]) * np.linalg.norm(embs[i])
         expected_sims.append((f"candidate_{i}.npy", sim))
