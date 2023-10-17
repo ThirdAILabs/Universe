@@ -164,6 +164,7 @@ neural_db_deps = [
     "pydantic",
     "unstructured[all-docs]",
     "sortedcontainers",
+    "SQLAlchemy",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of

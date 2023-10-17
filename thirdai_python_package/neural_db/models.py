@@ -328,7 +328,6 @@ class Mach(Model):
                     weak_column_names=[intro_documents.weak_column],
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
-                    max_in_memory_batches=max_in_memory_batches,
                 )
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting

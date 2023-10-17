@@ -760,17 +760,15 @@ class URL(Document):
 
 class DocumentConnector(Document):
     def __init__(
-        self,
-        doc_name: str,
-        connector: ConnectorType,
-        doc_metadata={},
+        self, doc_name: str, connector: ConnectorType, metadata={}, save_extra_info=True
     ) -> None:
         self.doc_name = doc_name + ".csv"
         self._connector = connector
-        self.doc_metadata = doc_metadata
+        self.doc_metadata = metadata
         self.index_table: pd.DataFrame = None
         self.index_table_id_col = "Row_id"
         self._hash = self.hash_connection()
+        self._save_extra_info = save_extra_info
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -850,20 +848,8 @@ class DocumentConnector(Document):
 
     def save_meta(self, directory: Path):
         # Save the index table
-        if self.save_extra_info:
+        if self._save_extra_info:
             self.index_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
-
-    def load_meta(self, directory: Path):
-        # Since we've moved the file to the provided directory, let's make
-        # sure that we point to this file.
-        if hasattr(self, "doc_name"):
-            self.path = directory / self.doc_name
-        else:
-            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
-            self.path = directory / self.path.name
-
-        if not hasattr(self, "doc_metadata"):
-            self.doc_metadata = {}
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -871,13 +857,6 @@ class DocumentConnector(Document):
         del state["_connector"]
 
         return state
-
-    def __setstate__(self, state):
-        # Add new attributes to state for older document object version backward compatibility
-        if "_save_extra_info" not in state:
-            state["_save_extra_info"] = True
-
-        self.__dict__.update(state)
 
 
 class SQLDocument(DocumentConnector):
@@ -890,7 +869,7 @@ class SQLDocument(DocumentConnector):
         weak_columns: List[str],
         reference_columns: List[str],
         chunk_size=100_00,
-        doc_metadata={},
+        metadata={},
     ) -> None:
         self.table_name = table_name
         self._connector = SQLConnector(
@@ -900,7 +879,7 @@ class SQLDocument(DocumentConnector):
             table_name=table_name,
         )
         super().__init__(
-            doc_name=table_name, connector=self._connector, doc_metadata=doc_metadata
+            doc_name=table_name, connector=self._connector, metadata=metadata
         )
         self.id_col = id_col
         self.strong_columns = strong_columns
@@ -912,8 +891,6 @@ class SQLDocument(DocumentConnector):
         self.integrity_check()
 
         self.index_table = pd.DataFrame(columns=[self.index_table_id_col])
-
-        self._doc_metadata = doc_metadata
 
     def next_chunk(self) -> pd.DataFrame:
         return self._connector.next_chunk()
@@ -967,12 +944,22 @@ class SQLDocument(DocumentConnector):
         )
 
     def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
-        row = chunk.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
+        try:
+            row = chunk.iloc[element_id]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.strong_columns]
+            )
+        except AttributeError as e:
+            return ""
 
     def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
-        row = chunk.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
+        try:
+            row = chunk.iloc[element_id]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.weak_columns]
+            )
+        except AttributeError as e:
+            return ""
 
     def add_index_entry(self, current_doc_row_id: int):
         self.index_table.loc[len(self.index_table)] = {

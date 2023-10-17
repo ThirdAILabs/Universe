@@ -2,6 +2,7 @@ import os
 
 import pytest
 import requests
+from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 
 
@@ -53,6 +54,10 @@ PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
+DB_URL = "sqlite:///" + os.path.join(BASE_DIR, "Amazon_polarity.db")
+ENGINE = create_engine(DB_URL)
+TABLE_NAME = "Amzn_1K"
+
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
 DOCX_META = "docx"
@@ -60,6 +65,7 @@ URL_NO_RESPONSE_META = "url-no-response"
 PPTX_META = "pptx"
 TXT_META = "txt"
 EML_META = "eml"
+SQL_META = "sql"
 SENTENCE_PDF_META = "sentence-pdf"
 SENTENCE_DOCX_META = "sentence-docx"
 
@@ -89,6 +95,15 @@ all_doc_getters = [
     lambda: ndb.Unstructured(PPTX_FILE),
     lambda: ndb.Unstructured(TXT_FILE),
     lambda: ndb.Unstructured(EML_FILE),
+    lambda: ndb.SQLDocument(
+        engine=ENGINE,
+        table_name=TABLE_NAME,
+        id_col="id",
+        strong_columns=["content"],
+        weak_columns=["content"],
+        reference_columns=["content"],
+        chunk_size=100,
+    ),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
@@ -113,6 +128,16 @@ def docs_with_meta():
         ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
         ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
+        ndb.SQLDocument(
+            engine=ENGINE,
+            table_name=TABLE_NAME,
+            id_col="id",
+            strong_columns=["content"],
+            weak_columns=["content"],
+            reference_columns=["content"],
+            chunk_size=100,
+            metadata=meta(SQL_META),
+        ),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
         ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
     ]
