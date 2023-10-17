@@ -106,7 +106,7 @@ void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
   py::class_<Model, ModelPtr>(nn, "Model")
-#if THIRDAI_EXPOSE_ALL
+
       /**
        * ==============================================================
        * WARNING: If this THIRDAI_EXPOSE_ALL is removed then license
@@ -121,6 +121,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("forward",
            py::overload_cast<const TensorList&, bool>(&Model::forward),
            py::arg("inputs"), py::arg("use_sparsity") = false)
+#if THIRDAI_EXPOSE_ALL
       .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
@@ -200,7 +201,6 @@ void defineTensor(py::module_& nn) {
 }
 
 void defineOps(py::module_& nn) {
-
   py::class_<Computation, ComputationPtr>(nn, "Computation")
       .def("dim", &Computation::dim)
       .def("tensor", &Computation::tensor)
@@ -212,7 +212,7 @@ void defineOps(py::module_& nn) {
       .def_property("name", &Op::name, &Op::setName);
 
 #if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
+#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn, "SamplingConfig");
 

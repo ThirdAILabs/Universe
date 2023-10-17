@@ -69,12 +69,12 @@ void defineTrainer(py::module_& train) {
   // this.
 
 #if THIRDAI_EXPOSE_ALL
+#endif
   train.def("convert_dataset", convertDataset, py::arg("dataset"),
             py::arg("dim"), py::arg("copy") = true);
 
   train.def("convert_datasets", convertDatasets, py::arg("datasets"),
             py::arg("dims"), py::arg("copy") = true);
-#endif
 
   /*
    * DistributedTrainer inherits Trainer objects. Hence, we need to expose
@@ -125,8 +125,7 @@ void defineTrainer(py::module_& train) {
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
-           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
-      ;
+           py::arg("comm") = nullptr, bolt::python::OutputRedirect());
 }
 
 void defineMetrics(py::module_& train) {
