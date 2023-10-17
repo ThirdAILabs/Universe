@@ -4,8 +4,6 @@ import pandas as pd
 from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
 
-from .utils import SUPPORTED_EXT, Credentials
-
 
 class Connector:
     def connect(self):
