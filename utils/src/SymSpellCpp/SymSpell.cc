@@ -271,12 +271,10 @@ bool SymSpell::LoadDictionary(xifstream& corpusStream, uint32_t termIndex,
                               uint32_t countIndex, xchar separatorChars) {
   SuggestionStage staging(16384);
   xstring line;
-  int i = 0;
   // process a single line at a time only for memory efficiency
   while (getline(corpusStream, line)) {
     // end = clock();
     // cout << float((end - start) * 1000 / CLOCKS_PER_SEC) << " ";
-    i++;
     vector<xstring> lineParts;
     xstringstream ss(line);
     xstring token;
@@ -516,36 +514,36 @@ vector<SuggestItem> SymSpell::Lookup(xstring input, Verbosity verbosity,
             auto flag = hashset2.insert(suggestion);
             if (distance > maxEditDistance2 || !flag.second) continue;
           } else
-              // number of edits in prefix ==maxediddistance  AND no identic
-              // suffix , then editdistance>maxEditDistance and no need for
-              // Levenshtein calculation
-              //      (inputLen >= prefixLength) && (suggestionLen >=
-              //      prefixLength)
-              if (((prefixLength == (uint32_t)candidateLen + maxEditDistance) &&
-                   (((min_len = min(inputLen, suggestionLen) -
-                                (int)prefixLength) > 1) &&
-                    (input.substr(inputLen + 1 - min_len) !=
-                     suggestion.substr(suggestionLen + 1 - min_len)))) ||
-                  ((min_len > 0) &&
-                   (input[inputLen - min_len] !=
-                    suggestion[suggestionLen - min_len]) &&
-                   ((input[inputLen - min_len - 1] !=
-                     suggestion[suggestionLen - min_len]) ||
-                    (input[inputLen - min_len] !=
-                     suggestion[suggestionLen - min_len - 1])))) {
-            continue;
-          } else {
-            // DeleteInSuggestionPrefix is somewhat expensive, and only pays off
-            // when verbosity is Top or Closest.
-            if ((verbosity != All &&
-                 !DeleteInSuggestionPrefix(candidate, candidateLen, suggestion,
-                                           suggestionLen)) ||
-                !hashset2.insert(suggestion).second)
+            // number of edits in prefix ==maxediddistance  AND no identic
+            // suffix , then editdistance>maxEditDistance and no need for
+            // Levenshtein calculation
+            //      (inputLen >= prefixLength) && (suggestionLen >=
+            //      prefixLength)
+            if (((prefixLength == (uint32_t)candidateLen + maxEditDistance) &&
+                 (((min_len = min(inputLen, suggestionLen) -
+                              (int)prefixLength) > 1) &&
+                  (input.substr(inputLen + 1 - min_len) !=
+                   suggestion.substr(suggestionLen + 1 - min_len)))) ||
+                ((min_len > 0) &&
+                 (input[inputLen - min_len] !=
+                  suggestion[suggestionLen - min_len]) &&
+                 ((input[inputLen - min_len - 1] !=
+                   suggestion[suggestionLen - min_len]) ||
+                  (input[inputLen - min_len] !=
+                   suggestion[suggestionLen - min_len - 1])))) {
               continue;
-            distance =
-                distanceComparer.Compare(input, suggestion, maxEditDistance2);
-            if (distance < 0) continue;
-          }
+            } else {
+              // DeleteInSuggestionPrefix is somewhat expensive, and only pays
+              // off when verbosity is Top or Closest.
+              if ((verbosity != All &&
+                   !DeleteInSuggestionPrefix(candidate, candidateLen,
+                                             suggestion, suggestionLen)) ||
+                  !hashset2.insert(suggestion).second)
+                continue;
+              distance =
+                  distanceComparer.Compare(input, suggestion, maxEditDistance2);
+              if (distance < 0) continue;
+            }
 
           // save some time
           // do not process higher distances than those already found, if
@@ -702,7 +700,7 @@ int SymSpell::GetstringHash(xstring s) {
   return (int)hash;
 }
 
-//######################
+// ######################
 
 // LookupCompound supports compound aware automatic spelling correction of
 // multi-word input strings with three cases:
