@@ -128,6 +128,7 @@ def modify_seismic():
         log_interval=20,
         validation_fn=None,
         blur_subcubes_fraction=0.0,
+        max_data_in_memory=30,  # In Gb
         comm=None,
     ):
         subcube_files = [
@@ -146,7 +147,7 @@ def modify_seismic():
         subcube_size = np.prod(self.subcube_shape) * 4
         # Load less than 30Gb of subcubes
         n_subcubes_per_chunk = min(
-            int((10**9) * 30 / subcube_size), len(subcube_files)
+            int((10**9) * max_data_in_memory / subcube_size), len(subcube_files)
         )
 
         output_metrics = {"epoch_times": [], "train_loss": []}
@@ -222,6 +223,7 @@ def modify_seismic():
         checkpoint_interval: int = 1000,
         validation_fn=None,
         blur_subcubes_fraction=0.0,
+        max_data_in_memory=30,  # In Gb
         communication_backend: str = "gloo",
     ):
         import ray
@@ -247,6 +249,7 @@ def modify_seismic():
             checkpoint_interval = config["checkpoint_interval"]
             validation_fn = config["validation_fn"]
             blur_subcubes_fraction = config["blur_subcubes_fraction"]
+            max_data_in_memory = config["max_data_in_memory"]
             config["licensing_lambda"]()
 
             if rank != 0:
@@ -274,6 +277,7 @@ def modify_seismic():
                 log_interval=log_interval,
                 validation_fn=validation_fn if rank == 0 else None,
                 blur_subcubes_fraction=blur_subcubes_fraction,
+                max_data_in_memory=max_data_in_memory,
                 comm=Communication(),
             )
 
@@ -295,6 +299,7 @@ def modify_seismic():
             "checkpoint_interval": checkpoint_interval,
             "validation_fn": validation_fn,
             "blur_subcubes_fraction": blur_subcubes_fraction,
+            "max_data_in_memory": max_data_in_memory,
         }
 
         license_state = thirdai._thirdai.licensing._get_license_state()
