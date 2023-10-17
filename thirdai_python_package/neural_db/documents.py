@@ -81,7 +81,7 @@ class Document:
     def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return self.reference(element_id).text
 
-    def weak_text(self, element_id: int, chun: pd.DataFrame = None) -> str:
+    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
         return self.reference(element_id).text
 
     def context(self, element_id: int, radius: int) -> str:
