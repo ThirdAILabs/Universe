@@ -537,11 +537,20 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, on_error: Callable = None
+        self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
-        result_ids = self._savable_state.model.infer_labels(
-            samples=[query], n_results=top_k
-        )[0]
+        matching_entities = None
+        if constraints:
+            matching_entities = self._savable_state.documents.entity_ids_by_constraints(
+                constraints
+            )
+            result_ids = self._savable_state.model.score(
+                samples=[query], entities=[matching_entities], n_results=top_k
+            )[0]
+        else:
+            result_ids = self._savable_state.model.infer_labels(
+                samples=[query], n_results=top_k
+            )[0]
 
         references = []
         for rid, score in result_ids:

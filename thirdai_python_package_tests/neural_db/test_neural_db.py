@@ -4,7 +4,14 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import all_doc_getters, create_simple_dataset, train_simple_neural_db
+from ndb_utils import (
+    PDF_FILE,
+    all_doc_getters,
+    create_simple_dataset,
+    docs_with_meta,
+    metadata_constraints,
+    train_simple_neural_db,
+)
 from thirdai import bolt
 from thirdai import neural_db as ndb
 
@@ -46,12 +53,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 4
+    assert len(db.sources()) == 9
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 4
+    assert len(db.sources()) == 9
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
@@ -432,3 +439,129 @@ def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter)
     expect_top_2_results(db, "second", [8, 9])
     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+
+def test_neural_db_constrained_search_with_single_constraint():
+    db = ndb.NeuralDB()
+    db.insert(docs_with_meta(), train=False)
+    for constraint in metadata_constraints:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints={"meta": constraint})
+        assert len(references) > 0
+        assert all([constraint == ref.metadata["meta"] for ref in references])
+
+
+def test_neural_db_constrained_search_with_multiple_constraints():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
+        ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+    for constraints in [
+        {"language": "English", "county": "Harris"},
+        {"language": "Spanish", "county": "Austin"},
+    ]:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints=constraints)
+        assert len(references) > 0
+        assert all(
+            [
+                all([ref.metadata[key] == value for key, value in constraints.items()])
+                for ref in references
+            ]
+        )
+
+
+def test_neural_db_constrained_search_with_set_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10"}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2021-10-10"}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    references = db.search(
+        "hello",
+        top_k=20,
+        # Include 1923-10-10 to make sure it doesnt break if none of the documents
+        # match the constraints.
+        constraints={"date": ndb.AnyOf(["2023-10-10", "2022-10-10", "1923-10-10"])},
+    )
+    assert len(references) > 0
+    assert all(
+        [
+            ref.metadata["date"] == "2023-10-10" or ref.metadata["date"] == "2022-10-10"
+            for ref in references
+        ]
+    )
+
+    # Make sure that the other document shows up if we don't constrain the search.
+    references = db.search("hello", top_k=20)
+    assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
+
+
+def test_neural_db_constrained_search_with_range_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    # Make sure that without constraints, we get results from both documents.
+    references = db.search("hello", top_k=10)
+    assert len(references) > 0
+    assert not all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.InRange("2023-01-01", "2023-12-31")}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"score": ndb.InRange(0.6, 1.0)}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["score"] == 0.9 for ref in references])
+
+
+def test_neural_db_constrained_search_with_comparison_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    # Make sure that without constraints, we get results from both documents.
+    references = db.search("hello", top_k=10)
+    assert len(references) > 0
+    assert not all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.GreaterThan("2023-01-01")}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search("hello", top_k=10, constraints={"score": ndb.LessThan(0.6)})
+    assert len(references) > 0
+    assert all([ref.metadata["score"] == 0.5 for ref in references])
+
+
+def test_neural_db_constrained_search_no_matches():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.GreaterThan("2024-01-01")}
+    )
+    assert len(references) == 0

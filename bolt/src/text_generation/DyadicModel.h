@@ -17,7 +17,7 @@ namespace thirdai::bolt {
 
 class DyadicModel final : public GenerativeBackend {
  public:
-  explicit DyadicModel(bolt::ModelPtr model);
+  explicit DyadicModel(bolt::ModelPtr model, bool is_bidirectional = false);
 
   bolt::TensorPtr nextTokenProbs(
       std::vector<uint32_t>& prompt,
