@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -10,6 +11,8 @@ namespace thirdai::data {
 
 class Column;
 using ColumnPtr = std::shared_ptr<Column>;
+
+class ColumnRow;
 
 class Column {
  public:
@@ -39,6 +42,8 @@ class Column {
    * the values out of both of the original columns to avoid expensive copies.
    */
   virtual ColumnPtr concat(ColumnPtr&& other) = 0;
+
+  virtual void setRow(size_t row, ColumnRow new_row) = 0;
 
   /**
    * Splits the column into two columns. The first returned column will have
@@ -117,5 +122,25 @@ class ValueColumnBase : public ArrayColumnBase<T> {
 
 template <typename T>
 using ValueColumnBasePtr = std::shared_ptr<ValueColumnBase<T>>;
+
+class ColumnRow {
+ public:
+  ColumnRow(ColumnPtr source, size_t row)
+      : _source(std::move(source)), _row(row) {}
+
+  template <typename T>
+  RowView<T> getArray() {
+    return ArrayColumnBase<T>::cast(_source)->row(_row);
+  }
+
+  template <typename T>
+  const T& getValue() {
+    return ValueColumnBase<T>::cast(_source)->value(_row);
+  }
+
+ private:
+  ColumnPtr _source;
+  size_t _row;
+};
 
 }  // namespace thirdai::data

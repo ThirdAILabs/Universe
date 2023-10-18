@@ -27,22 +27,20 @@ thirdai::data::TransformationPtr makeLabelTransform(
 UDTTransformationFactory::UDTTransformationFactory(
     ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& user_temporal_relationships,
-    const std::string& label_column, data::ValueFillType label_value_fill,
-    const TabularOptions& options)
+    const std::string& label_column, const TabularOptions& options)
     : _label_transform(makeLabelTransform(
           /* target_name= */ label_column,
           /* target_config= */ *asCategorical(data_types.at(label_column)))),
-      _label_columns(
-          {feat::OutputColumns(FEATURIZED_LABELS, label_value_fill)}),
+      _label_column(FEATURIZED_LABELS),
       _has_temporal_transform(!user_temporal_relationships.empty()) {
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       data_types, user_temporal_relationships, options.lookahead);
 
-  std::tie(_train_input_transform, _input_columns) =
+  std::tie(_input_transform_with_temporal_updates, _input_columns) =
       inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ true);
 
-  _infer_input_transform =
+  _input_transform_no_temporal_updates =
       inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ true)
           .first;
@@ -51,7 +49,8 @@ UDTTransformationFactory::UDTTransformationFactory(
       std::move(data_types), temporal_relationships, label_column);
 }
 
-thirdai::data::TransformationPtr UDTTransformationFactory::unsupAugmenter(
+thirdai::data::TransformationPtr
+UDTTransformationFactory::coldstartAugmentation(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bool fast_approximation) const {

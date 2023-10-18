@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/columns/Column.h>
+#include <cstddef>
 #include <stdexcept>
 
 namespace thirdai::data {
@@ -35,6 +36,10 @@ class ValueColumn : public ValueColumnBase<T> {
       throw std::out_of_range("ValueColumn::row");
     }
     return {_data.data() + i, 1};
+  }
+
+  void setRow(size_t row, ColumnRow new_row) final {
+    _data[row] = new_row.getValue<T>();
   }
 
   void shuffle(const std::vector<size_t>& permutation) final;

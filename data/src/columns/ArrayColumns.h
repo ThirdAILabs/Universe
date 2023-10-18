@@ -29,6 +29,12 @@ class ArrayColumn : public ArrayColumnBase<T> {
     return {_data[i].data(), _data[i].size()};
   }
 
+  void setRow(size_t row, ColumnRow new_row) final {
+    _data[row].clear();
+    auto rowArray = new_row.getArray<T>();
+    _data[row].insert(_data[row].begin(), rowArray.begin(), rowArray.end());
+  }
+
   void shuffle(const std::vector<size_t>& permutation) final;
 
   ColumnPtr permute(const std::vector<size_t>& permutation) const final;

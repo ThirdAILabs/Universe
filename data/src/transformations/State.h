@@ -4,7 +4,7 @@
 #include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include <auto_ml/src/rlhf/RLHFSampler.h>
+#include <data/src/transformations/LabelwiseSamples.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -104,16 +104,16 @@ class State {
     _mach_index = std::move(new_index);
   }
 
-  const auto& rlhfSampler() const {
-    if (!_rlhf_sampler) {
-      throw std::invalid_argument(
-          "Transformation state does not contain RLHFSampler.");
-    }
-    return _rlhf_sampler;
+  void enableLabelwiseSamples(size_t max_labels, size_t max_samples_per_label,
+                              std::string label_column,
+                              std::vector<std::string> columns) {
+    _labelwise_samples =
+        LabelwiseSamples(max_labels, max_samples_per_label,
+                         std::move(label_column), std::move(columns));
   }
 
-  void setRlhfSampler(automl::udt::RLHFSamplerPtr new_sampler) {
-    _rlhf_sampler = std::move(new_sampler);
+  std::optional<LabelwiseSamples>& labelwiseSamples() {
+    return _labelwise_samples;
   }
 
   bool containsVocab(const std::string& key) const {
@@ -148,11 +148,11 @@ class State {
  private:
   MachIndexPtr _mach_index = nullptr;
 
-  automl::udt::RLHFSamplerPtr _rlhf_sampler = nullptr;
-
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
+
+  std::optional<LabelwiseSamples> _labelwise_samples;
 
   automl::GraphInfoPtr _graph;
 

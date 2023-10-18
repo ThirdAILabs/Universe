@@ -4,10 +4,11 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
-#include <data/src/transformations/AddBalancingSamples.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
@@ -15,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace thirdai::automl {
@@ -29,25 +31,33 @@ class UDTTransformationFactory {
   UDTTransformationFactory(
       ColumnDataTypes data_types,
       const UserProvidedTemporalRelationships& user_temporal_relationships,
-      const std::string& label_column, data::ValueFillType label_value_fill,
-      const TabularOptions& options);
+      const std::string& label_column, const TabularOptions& options);
 
   static auto make(
       ColumnDataTypes data_types,
       const UserProvidedTemporalRelationships& user_temporal_relationships,
-      const std::string& label_column, data::ValueFillType label_value_fill,
-      const TabularOptions& options) {
+      const std::string& label_column, const TabularOptions& options) {
     return std::make_shared<UDTTransformationFactory>(
         std::move(data_types), user_temporal_relationships, label_column,
-        label_value_fill, options);
+        options);
   }
 
-  const thirdai::data::TransformationPtr& trainInputTransform() const {
-    return _train_input_transform;
+  thirdai::data::TransformationPtr labeledTransformNoTemporalUpdates() {
+    return data::Pipeline::make(
+        {_input_transform_no_temporal_updates, _label_transform});
   }
 
-  const thirdai::data::TransformationPtr& inferInputTransform() const {
-    return _infer_input_transform;
+  thirdai::data::TransformationPtr labeledTransformWithTemporalUpdates() const {
+    return data::Pipeline::make(
+        {_input_transform_with_temporal_updates, _label_transform});
+  }
+
+  thirdai::data::TransformationPtr inputTransformNoTemporalUpdates() const {
+    return _input_transform_no_temporal_updates;
+  }
+
+  thirdai::data::TransformationPtr inputTransformWithTemporalUpdates() const {
+    return _input_transform_with_temporal_updates;
   }
 
   const thirdai::data::TransformationPtr& labelTransform() const {
@@ -58,19 +68,12 @@ class UDTTransformationFactory {
     return _input_columns;
   }
 
-  const std::string& labelColumn() const { return _label_columns; }
+  const std::string& labelColumn() const { return _label_column; }
 
-  const std::string& bucketColumn() const { return _label_columns; }
-
-  thirdai::data::TransformationPtr unsupAugmenter(
+  thirdai::data::TransformationPtr coldstartAugmentation(
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bool fast_approximation) const;
-
-  thirdai::data::TransformationPtr storeBalancers() const {
-    return thirdai::data::AddBalancingSamples::make(
-        _text_dataset->textColumn(), _text_dataset->labelColumn());
-  }
 
   const auto& textDatasetConfig() const {
     if (!_text_dataset) {
@@ -84,11 +87,11 @@ class UDTTransformationFactory {
   bool hasTemporalTransform() const { return _has_temporal_transform; }
 
  protected:
-  feat::TransformationPtr _train_input_transform;
-  feat::TransformationPtr _infer_input_transform;
+  feat::TransformationPtr _input_transform_with_temporal_updates;
+  feat::TransformationPtr _input_transform_no_temporal_updates;
   feat::TransformationPtr _label_transform;
   feat::OutputColumnsList _input_columns;
-  feat::OutputColumnsList _label_columns;
+  const std::string _label_column;
 
   std::optional<TextDatasetConfig> _text_dataset;
   bool _has_temporal_transform;

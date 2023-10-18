@@ -15,6 +15,8 @@
 
 namespace thirdai::data {
 
+class ColumnMapRow;
+
 class ColumnMap {
  public:
   explicit ColumnMap(std::unordered_map<std::string, ColumnPtr> columns);
@@ -63,6 +65,18 @@ class ColumnMap {
   ColumnMap concat(ColumnMap& other);
 
   /**
+   * Same as the above except it accepts an R-value reference.
+   */
+  ColumnMap concat(ColumnMap&& other);
+
+  /**
+   * Returns a row view of the column map.
+   */
+  ColumnMapRow row(size_t row) const;
+
+  void setRow(size_t row, ColumnMapRow new_row);
+
+  /**
    * Splits the ColumnMap in two, returning two new ColumnMaps. Consumes the
    * ColumnMap it is called on so that values can be moved without copying when
    * possible. The first ColumnMap will have rows [0, starting_offset), and the
@@ -82,6 +96,20 @@ class ColumnMap {
 
   std::unordered_map<std::string, ColumnPtr> _columns;
   size_t _num_rows;
+};
+
+class ColumnMapRow {
+ public:
+  explicit ColumnMapRow(const ColumnMap& source, size_t row)
+      : _source(source), _row(row) {}
+
+  ColumnRow column(const std::string& name) {
+    return ColumnRow(_source.getColumn(name), _row);
+  }
+
+ private:
+  const ColumnMap& _source;
+  size_t _row;
 };
 
 }  // namespace thirdai::data

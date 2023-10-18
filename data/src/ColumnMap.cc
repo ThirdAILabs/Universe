@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <numeric>
 #include <random>
 #include <stdexcept>
@@ -162,6 +163,18 @@ ColumnMap ColumnMap::concat(ColumnMap& other) {
   other.clear();
 
   return ColumnMap(std::move(new_columns));
+}
+
+ColumnMap ColumnMap::concat(ColumnMap&& other) { return concat(other); }
+
+ColumnMapRow ColumnMap::row(size_t row) const {
+  return ColumnMapRow(*this, row);
+}
+
+void ColumnMap::setRow(size_t row, ColumnMapRow new_row) {
+  for (const auto& [name, column] : _columns) {
+    column->setRow(row, new_row.column(name));
+  }
 }
 
 std::pair<ColumnMap, ColumnMap> ColumnMap::split(size_t starting_offset) {

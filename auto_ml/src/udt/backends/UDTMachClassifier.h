@@ -7,13 +7,14 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/featurization/UDTTransformationFactory.h>
-#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Mach.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -67,12 +68,14 @@ class UDTMachClassifier final : public UDTBackend {
 
   void updateTemporalTrackers(const MapInput& sample) final {
     auto table = thirdai::data::ColumnMap::fromMapInput(sample);
-    _featurizer->trainInputTransform()->apply(std::move(table), *_state);
+    _featurizer->inputTransformWithTemporalUpdates()->apply(std::move(table),
+                                                            *_state);
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
     auto table = thirdai::data::ColumnMap::fromMapInputBatch(samples);
-    _featurizer->trainInputTransform()->apply(std::move(table), *_state);
+    _featurizer->inputTransformWithTemporalUpdates()->apply(std::move(table),
+                                                            *_state);
   }
 
   void resetTemporalTrackers() final { _state->clearHistoryTrackers(); }
@@ -132,13 +135,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final {
-    _mach->eraseAllEntities();
-
-    if (auto sampler = _state->rlhfSampler()) {
-      sampler->clear();
-    }
-  }
+  void clearIndex() final { _mach->eraseAllEntities(); }
 
   void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
@@ -196,13 +193,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) final {
-    if (_state->rlhfSampler()) {
-      std::cout << "rlhf already enabled." << std::endl;
-      return;
-    }
-
-    _state->setRlhfSampler(
-        RLHFSampler::make(num_balancing_docs, num_balancing_samples_per_doc));
+    _mach->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
 
   std::vector<uint32_t> topHashesForDoc(
@@ -236,6 +227,24 @@ class UDTMachClassifier final : public UDTBackend {
     (void)n_target_classes;
     (void)output_range;
     return defaults::MACH_DEFAULT_NUM_REPETITIONS;
+  }
+
+  void applyNonUpdatingInputTransform(data::ColumnMap& columns) {
+    columns = _featurizer->inputTransformNoTemporalUpdates()->apply(
+        std::move(columns), *_state);
+  }
+
+  data::ColumnMapIteratorPtr trainIteratorFromCsv(
+      const dataset::DataSourcePtr& data,
+      const data::TransformationPtr& coldstart = nullptr) const {
+    auto train_csv_iter = feat::CsvIterator::make(data, _delimiter);
+    auto transform = data::Pipeline::make(
+        {_featurizer->labeledTransformWithTemporalUpdates()});
+    if (coldstart) {
+      transform = transform->then(coldstart);
+    }
+    return data::TransformedIterator::make(std::move(train_csv_iter), transform,
+                                           _state);
   }
 
   UDTMachClassifier() {}
