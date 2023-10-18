@@ -97,6 +97,7 @@ class PptxParse(UnstructuredParse):
         paragraphs = []
         try:
             docs = self.PptxLoader.load()
+            print(docs)
             current_text = ""
             last_page_no = len(docs)
             for doc in docs:
@@ -126,12 +127,15 @@ class PptxParse(UnstructuredParse):
                 ]
                 paragraphs.extend(rows)
 
+            print(paragraphs)
+            print("ABOUT TO RETURNNNNN")
             return (
                 (paragraphs, True)
                 if len(paragraphs) > 0
                 else (f"Empty pptx file OR {self._error_msg}", False)
             )
         except Exception as e:
+            print("HEEEEEEEEERE")
             print(str(e))
             return self._error_msg, False
 

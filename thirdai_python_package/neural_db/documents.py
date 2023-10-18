@@ -658,6 +658,8 @@ class Unstructured(Extracted):
             raise Exception(f"File type is not yet supported")
 
         elements, success = self.parser.process_elements()
+        print(elements, success)
+        print(path)
 
         if not success:
             raise ValueError(f"Could not read file: {path}")
