@@ -915,13 +915,9 @@ class SQLDocument(DocumentConnector):
             _raise_unknown_doc_error(element_id)
 
         try:
-            reference_texts = self._connector.exexute(
+            reference_texts = self._connector.execute(
                 query=f"SELECT {','.join(self.reference_columns)} FROM {self.table_name} WHERE {self.id_col} = {element_id}"
             ).fetchone()
-
-            if len(self.reference_columns) == 1:
-                # Returned result is in the form '(text, )'
-                reference_texts = reference_texts[0]
 
             text = "\n\n".join(
                 [
@@ -933,7 +929,8 @@ class SQLDocument(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to database, Referenced row: {element_id} "
+            print(str(e))
+            text = f"Unable to connect to database, Referenced row with {self.id_col}: {element_id} "
 
         return Reference(
             document=self,
