@@ -865,9 +865,9 @@ class SQLDocument(DocumentConnector):
         engine: sqlConn,
         table_name: str,
         id_col: str,
-        strong_columns: List[str],
-        weak_columns: List[str],
-        reference_columns: List[str],
+        strong_columns: Optional[List[str]] = None,
+        weak_columns: Optional[List[str]] = None,
+        reference_columns: Optional[List[str]] = None,
         chunk_size=100_00,
         metadata={},
     ) -> None:
@@ -933,7 +933,7 @@ class SQLDocument(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to database, line no: {element_id}"
+            text = f"Unable to connect to database, Referenced row: {element_id} "
 
         return Reference(
             document=self,
@@ -967,27 +967,39 @@ class SQLDocument(DocumentConnector):
         }
 
     def integrity_check(self):
-        if not (
-            len(self.strong_columns) > 0 and len(self.weak_columns) > 0 and self.id_col
-        ):
-            raise_attribute_error("Empty strong OR weak OR reference columns")
         all_cols = self._connector.cols_metadata()
 
-        all_col_name = set([col["name"] for col in all_cols])
+        all_col_name = [col["name"] for col in all_cols]
 
-        if not (
-            self.id_col in all_col_name
-            and set(self.strong_columns).issubset(all_col_name)
-            and set(self.weak_columns).issubset(all_col_name)
-            and set(self.reference_columns).issubset(all_col_name)
-        ):
-            raise_attribute_error("Provided column name doesn't exists in the table")
+        if self.id_col not in all_col_name:
+            raise_attribute_error("id column not present in the table")
+
+        if self.strong_columns is None and self.weak_columns is None:
+            all_col_name_copy = all_col_name[:]
+            all_col_name_copy.remove(self.id_col)
+            self.weak_columns = all_col_name_copy
+            self.strong_columns = []
+        elif self.strong_columns is None:
+            self.strong_columns = []
+        elif self.weak_columns is None:
+            self.weak_columns = []
+
+        if self.reference_columns is None:
+            self.reference_columns = all_col_name
 
         primary_keys = self._connector.get_primary_keys()
         if not primary_keys:
             raise_attribute_error(f"{self.id_col} needs to be a primary key")
         elif len(primary_keys) > 1:
             raise_attribute_error("Composite primary key is not allowed")
+
+        all_col_name = set(all_col_name)  # For checking subset inclusion property
+        if not (
+            set(self.strong_columns).issubset(all_col_name)
+            and set(self.weak_columns).issubset(all_col_name)
+            and set(self.reference_columns).issubset(all_col_name)
+        ):
+            raise_attribute_error("Provided column name doesn't exists in the table")
 
         for col in all_cols:
             if col["name"] == self.id_col and not isinstance(col["type"], Integer):

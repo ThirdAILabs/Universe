@@ -56,7 +56,7 @@ EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
 DB_URL = "sqlite:///" + os.path.join(BASE_DIR, "Amazon_polarity.db")
 ENGINE = create_engine(DB_URL)
-TABLE_NAME = "Amzn_1K"
+TABLE_NAME = "Amzn"
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
@@ -101,8 +101,8 @@ all_doc_getters = [
         id_col="id",
         strong_columns=["content"],
         weak_columns=["content"],
-        reference_columns=["content"],
-        chunk_size=100,
+        reference_columns=["label"],
+        chunk_size=3,
     ),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
@@ -135,7 +135,7 @@ def docs_with_meta():
             strong_columns=["content"],
             weak_columns=["content"],
             reference_columns=["content"],
-            chunk_size=100,
+            chunk_size=3,
             metadata=meta(SQL_META),
         ),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
