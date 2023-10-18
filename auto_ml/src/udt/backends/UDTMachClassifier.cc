@@ -788,12 +788,16 @@ void UDTMachClassifier::addBalancingSamples(
     // possible this won't load enough samples to cover all classes.
     // We may try to keep streaming data until all classes are covered or load
     // the entire dataset and see if it makes a difference.
-    auto samples =
+    auto optional_samples =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
             ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                       /* num_batches= */ 1, /* verbose= */ false)
-            .value();
+                       /* num_batches= */ 1, /* verbose= */ false);
 
+    if (!optional_samples) {
+      throw std::invalid_argument("No data found for training.");
+    }
+
+    auto samples = *optional_samples;
     for (uint32_t i = 0; i < samples.front()->len(); i++) {
       const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
       if (doc_id_vec.len < 1) {
