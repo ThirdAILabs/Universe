@@ -59,7 +59,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none)                                    \
     shared(texts, sample_offsets, interval_from_end, interval_from_start, \
-           _prompt_column, prompts, prompt_inputs, targets, chunk_size, error)
+           prompts, prompt_inputs, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto tokens = texts->row(i);
