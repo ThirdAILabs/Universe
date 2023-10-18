@@ -4,7 +4,6 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/seismic/Seismic.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
@@ -109,11 +108,6 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
                         py::arg("columns_to_convert"), py::arg("batch_size"));
-
-  dataset_submodule.def("seismic_labels", &seismicLabels, py::arg("trace"),
-                        py::arg("x_coord"), py::arg("y_coord"),
-                        py::arg("z_coord"), py::arg("subcube_dim"),
-                        py::arg("label_cube_dim"), py::arg("max_label"));
 }
 
 template <typename T>
