@@ -982,7 +982,7 @@ class SQLDocument(DocumentConnector):
         elif self.strong_columns is None:
             self.strong_columns = []
         elif self.weak_columns is None:
-            self.weak_columns = []
+            self.weak_columns = []    
 
         if self.reference_columns is None:
             self.reference_columns = all_col_name
@@ -993,13 +993,13 @@ class SQLDocument(DocumentConnector):
         elif len(primary_keys) > 1:
             raise_attribute_error("Composite primary key is not allowed")
 
-        all_col_name = set(all_col_name)  # For checking subset inclusion property
+        all_col_name = set(all_col_name)        # For checking subset inclusion property
         if not (
             set(self.strong_columns).issubset(all_col_name)
             and set(self.weak_columns).issubset(all_col_name)
             and set(self.reference_columns).issubset(all_col_name)
         ):
-            raise_attribute_error("Provided column name doesn't exists in the table")
+            raise_attribute_error("Provided column doesn't exists in the table")
 
         for col in all_cols:
             if col["name"] == self.id_col and not isinstance(col["type"], Integer):
@@ -1016,7 +1016,8 @@ class SQLDocument(DocumentConnector):
                 raise_attribute_error(
                     f"weak column '{col['name']}' needs to be of type String"
                 )
-
+        
+    
         min_id = self._connector.execute(
             query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
         ).fetchone()[0]
