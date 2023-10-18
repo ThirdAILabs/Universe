@@ -29,7 +29,9 @@ class SQLConnector(Connector):
         self.chunk_size = chunk_size
 
     def execute(self, query: str, param={}):
-        return self._connection.execute(statement=text(query), parameters=param)
+        result = self._connection.execute(statement=text(query), parameters=param)
+        self._connection.commit()
+        return result
 
     def get_engine_url(self):
         return self._engine.url
