@@ -13,7 +13,12 @@ namespace thirdai::dataset {
 
 class TextClassificationFeaturizer final : public Featurizer {
  public:
-  size_t getNumDatasets() final { return 4; }
+  size_t getNumDatasets() final {
+    if (_prompt_column) {
+      return 5;
+    }
+    return 4;
+  }
 
   TextClassificationFeaturizer(const std::string& text_column,
                                const std::string& label_column,
