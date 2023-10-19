@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
-import pandas as pd
 
+import pandas as pd
 from sortedcontainers import SortedDict
 
 ItemT = TypeVar("ItemT")

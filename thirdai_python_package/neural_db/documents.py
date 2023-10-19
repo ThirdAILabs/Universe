@@ -415,7 +415,7 @@ class CSV(Document):
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         df = self.df
         row_filters = {
-            k: v for k, v in filters.items() if k not in self.doc_metadata_keys)
+            k: v for k, v in filters.items() if k not in self.doc_metadata_keys
         }
         for column_name, filterer in row_filters.items():
             if column_name not in self.df.columns:

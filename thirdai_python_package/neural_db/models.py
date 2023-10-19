@@ -358,7 +358,7 @@ class Mach(Model):
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
-        
+
         if should_train:
             unsupervised_train_on_docs(
                 model=self.model,
