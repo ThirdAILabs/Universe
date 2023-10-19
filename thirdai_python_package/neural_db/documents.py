@@ -18,7 +18,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import Connector, SQLConnector
+from .connectors import SQLConnector, Connector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
@@ -140,7 +140,7 @@ class Reference:
     @property
     def id(self):
         return self._id
-
+    
     @property
     def id_in_document(self):
         return self.id_in_document
@@ -820,6 +820,7 @@ class DocumentConnector(Document):
         return self._hash
 
     def _add_entry(self, current_doc_row_id: int):
+        
         if self.index_table and (
             len(
                 self.index_table.loc[
@@ -861,7 +862,6 @@ class SQLDatabase(DocumentConnector):
 
     NOTE: It is being expected that the table will remain static in terms of both rows and columns.
     """
-
     def __init__(
         self,
         engine: sqlConn,
@@ -878,7 +878,7 @@ class SQLDatabase(DocumentConnector):
             engine=engine,
             columns=[id_col] + strong_columns + weak_columns + reference_columns,
             table_name=table_name,
-            chunk_size=chunk_size,
+            chunk_size=chunk_size
         )
         super().__init__(
             doc_name=table_name, connector=self._connector, metadata=metadata
@@ -891,20 +891,17 @@ class SQLDatabase(DocumentConnector):
         self.total_rows = self._connector.total_rows()
 
         self.integrity_check()
-
+    
     @property
     def engine(self):
         return self.engine
-
+    
     @engine.setter
     def engine(self, engine: sqlConn):
         self._connector = SQLConnector(
             engine=engine,
-            columns=[self.id_col]
-            + self.strong_columns
-            + self.weak_columns
-            + self.reference_columns,
-            table_name=self.table_name,
+            columns = [self.id_col] + self.strong_columns + self.weak_columns + self.reference_columns,
+            table_name=self.table_name
         )
 
     def next_chunk(self) -> pd.DataFrame:
@@ -948,7 +945,7 @@ class SQLDatabase(DocumentConnector):
             element_id=element_id,
             text=text,
             source=self.engine_uq,
-            metadata={"engine_url": self.engine_uq, **self.doc_metadata},
+            metadata={ "engine_url": self.engine_uq, **self.doc_metadata},
         )
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DatFrame) -> str:
@@ -959,6 +956,7 @@ class SQLDatabase(DocumentConnector):
             )
         except AttributeError as e:
             return ""
+        
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DatFrame) -> str:
         try:
