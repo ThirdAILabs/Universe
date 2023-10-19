@@ -50,6 +50,9 @@ class Model:
     def forget_documents(self) -> None:
         raise NotImplementedError()
 
+    def delete_entities(self, entities) -> None:
+        raise NotImplementedError()
+
     @property
     def searchable(self) -> bool:
         raise NotImplementedError()
@@ -356,6 +359,10 @@ class Mach(Model):
         self.balancing_samples += samples
         if len(self.balancing_samples) > 25000:
             self.balancing_samples = random.sample(self.balancing_samples, k=25000)
+
+    def delete_entities(self, entities) -> None:
+        for entity in entities:
+            self.get_model().forget(entity)
 
     def model_from_scratch(
         self,
