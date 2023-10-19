@@ -10,7 +10,7 @@ try:
         Reference,
         SentenceLevelDOCX,
         SentenceLevelPDF,
-        SQLDocument,
+        SQLDatabase,
         Unstructured,
     )
     from .model_bazaar import Bazaar

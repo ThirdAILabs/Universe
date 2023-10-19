@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, final
 
 import numpy as np
 import pandas as pd
@@ -18,13 +18,11 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import SQLConnector
+from .connectors import Connector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
 from .utils import hash_file, hash_string
-
-ConnectorType = Type[Union[SQLConnector, None]]
 
 
 class Reference:
@@ -33,10 +31,6 @@ class Reference:
 
 def _raise_unknown_doc_error(element_id: int):
     raise ValueError(f"Unable to find document that has id {element_id}.")
-
-
-def raise_attribute_error(text: str):
-    raise AttributeError(text)
 
 
 class Document:
@@ -78,10 +72,10 @@ class Document:
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def strong_text(self, element_id: int) -> str:
         return self.reference(element_id).text
 
-    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def weak_text(self, element_id: int) -> str:
         return self.reference(element_id).text
 
     def context(self, element_id: int, radius: int) -> str:
@@ -97,10 +91,10 @@ class Document:
     def load_meta(self, directory: Path):
         pass
 
-    def row_iterator(self, start_id: int):
+    def row_iterator(self):
         for i in range(self.size):
             yield DocumentRow(
-                element_id=start_id + i,
+                element_id=i,
                 strong=self.strong_text(i),
                 weak=self.weak_text(i),
             )
@@ -135,6 +129,7 @@ class Reference:
         upvote_ids: List[int] = None,
     ):
         self._id = element_id
+        self.id_in_document = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
         self._text = text
         self._source = source
@@ -145,6 +140,10 @@ class Reference:
     @property
     def id(self):
         return self._id
+
+    @property
+    def id_in_document(self):
+        return self.id_in_document
 
     @property
     def upvote_ids(self):
@@ -196,8 +195,9 @@ class DocumentDataSource(PyDataSource):
 
     def row_iterator(self):
         for doc, start_id in self.documents:
-            for row1 in doc.row_iterator(start_id):
-                yield row1
+            for row in doc.row_iterator():
+                row.id = row.id + start_id
+                yield row
 
     @property
     def size(self):
@@ -302,6 +302,7 @@ class DocumentManager:
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
         doc_ref = doc.reference(element_id - start_id)
+        doc_ref.hash = doc.hash
         doc_ref._id = element_id
         doc_ref._upvote_ids = [start_id + uid for uid in doc_ref._upvote_ids]
         return doc_ref
@@ -413,7 +414,7 @@ class CSV(Document):
     def all_entity_ids(self) -> List[int]:
         return self.df[self.id_column].to_list()
 
-    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
 
@@ -484,7 +485,7 @@ class CSV(Document):
             self.doc_metadata = {}
 
 
-# Base class for PDF and DOCX classes because they share the same logic.
+# Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True, metadata={}):
         path = str(path)
@@ -520,10 +521,10 @@ class Extracted(Document):
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
-    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def strong_text(self, element_id: int) -> str:
         return ""
 
-    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
 
     def show_fn(text, source, **kwargs):
@@ -724,12 +725,12 @@ class URL(Document):
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
-    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def strong_text(self, element_id: int) -> str:
         return self.df[self._strong_column if self._strong_column else "text"].iloc[
             element_id
         ]
 
-    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def weak_text(self, element_id: int) -> str:
         return self.df["text"].iloc[element_id]
 
     def reference(self, element_id: int) -> Reference:
@@ -760,12 +761,12 @@ class URL(Document):
 
 class DocumentConnector(Document):
     def __init__(
-        self, doc_name: str, connector: ConnectorType, metadata={}, save_extra_info=True
+        self, doc_name: str, connector: Connector, metadata={}, save_extra_info=True
     ) -> None:
         self.doc_name = doc_name + ".csv"
         self._connector = connector
         self.doc_metadata = metadata
-        self.index_table: pd.DataFrame = None
+        self.index_table: Optional[pd.DataFrame] = None
         self.index_table_id_col = "Row_id"
         self._hash = self.hash_connection()
         self._save_extra_info = save_extra_info
@@ -789,22 +790,14 @@ class DocumentConnector(Document):
 
                 yield DocumentRow(
                     element_id=DB_id,
-                    strong=self.strong_text(
-                        idx, current_chunk
+                    strong=self.strong_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
                     ),  # Strong text from (idx)th row of the current_batch
-                    weak=self.weak_text(
-                        idx, current_chunk
+                    weak=self.weak_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
                 self._add_entry(row_id)
-
-    @property
-    def connector(self):
-        return self._connector
-
-    @connector.setter
-    def connector(self, connector: ConnectorType):
-        self._connector = connector
 
     @property
     def name(self) -> str:
@@ -816,10 +809,10 @@ class DocumentConnector(Document):
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
-    def strong_column(self, element_id, chunk: pd.DataFrame = None):
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DatFrame) -> str:
         raise NotImplementedError()
 
-    def weak_column(self, element_id, chunk: pd.DataFrame = None):
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         raise NotImplementedError()
 
     @property
@@ -827,7 +820,7 @@ class DocumentConnector(Document):
         return self._hash
 
     def _add_entry(self, current_doc_row_id: int):
-        if (
+        if self.index_table and (
             len(
                 self.index_table.loc[
                     self.index_table[self.index_table_id_col] == current_doc_row_id
@@ -859,7 +852,16 @@ class DocumentConnector(Document):
         return state
 
 
-class SQLDocument(DocumentConnector):
+class SQLDatabase(DocumentConnector):
+    """
+    class for handling SQL database connections and data retrieval for training the neural_db model
+
+    This class encapsulates functionality for connecting to an SQL database, executing SQL queries, and retrieving
+    data for use in training the model.
+
+    NOTE: It is being expected that the table will remain static in terms of both rows and columns.
+    """
+
     def __init__(
         self,
         engine: sqlConn,
@@ -875,8 +877,8 @@ class SQLDocument(DocumentConnector):
         self._connector = SQLConnector(
             engine=engine,
             columns=[id_col] + strong_columns + weak_columns + reference_columns,
-            chunk_size=chunk_size,
             table_name=table_name,
+            chunk_size=chunk_size,
         )
         super().__init__(
             doc_name=table_name, connector=self._connector, metadata=metadata
@@ -890,10 +892,23 @@ class SQLDocument(DocumentConnector):
 
         self.integrity_check()
 
-        self.index_table = pd.DataFrame(columns=[self.index_table_id_col])
+    @property
+    def engine(self):
+        return self.engine
+
+    @engine.setter
+    def engine(self, engine: sqlConn):
+        self._connector = SQLConnector(
+            engine=engine,
+            columns=[self.id_col]
+            + self.strong_columns
+            + self.weak_columns
+            + self.reference_columns,
+            table_name=self.table_name,
+        )
 
     def next_chunk(self) -> pd.DataFrame:
-        return self._connector.next_chunk()
+        return self._connector.chunk_iterator()
 
     @property
     def size(self) -> int:
@@ -904,11 +919,7 @@ class SQLDocument(DocumentConnector):
         return hash_string(self.engine_uq)
 
     def all_entity_ids(self) -> List[int]:
-        if self.index_table:
-            return self.index_table[self.index_table_id_col].to_list()
-        else:
-            id_rows = self._connector.get_rows(cols=self.id_col).fetchall()
-            return [temp[0] for temp in id_rows]
+        return list(range(self.size))
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= self.size:
@@ -937,21 +948,21 @@ class SQLDocument(DocumentConnector):
             element_id=element_id,
             text=text,
             source=self.engine_uq,
-            metadata={**self.doc_metadata},
+            metadata={"engine_url": self.engine_uq, **self.doc_metadata},
         )
 
-    def strong_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DatFrame) -> str:
         try:
-            row = chunk.iloc[element_id]
+            row = chunk.iloc[id_in_chunk]
             return " ".join(
                 [str(row[col]).replace(",", "") for col in self.strong_columns]
             )
         except AttributeError as e:
             return ""
 
-    def weak_text(self, element_id: int, chunk: pd.DataFrame = None) -> str:
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DatFrame) -> str:
         try:
-            row = chunk.iloc[element_id]
+            row = chunk.iloc[id_in_chunk]
             return " ".join(
                 [str(row[col]).replace(",", "") for col in self.weak_columns]
             )
@@ -969,7 +980,7 @@ class SQLDocument(DocumentConnector):
         all_col_name = [col["name"] for col in all_cols]
 
         if self.id_col not in all_col_name:
-            raise_attribute_error("id column not present in the table")
+            raise AttributeError("id column not present in the table")
 
         if self.strong_columns is None and self.weak_columns is None:
             all_col_name_copy = all_col_name[:]
@@ -986,9 +997,9 @@ class SQLDocument(DocumentConnector):
 
         primary_keys = self._connector.get_primary_keys()
         if not primary_keys:
-            raise_attribute_error(f"{self.id_col} needs to be a primary key")
+            raise AttributeError(f"{self.id_col} needs to be a primary key")
         elif len(primary_keys) > 1:
-            raise_attribute_error("Composite primary key is not allowed")
+            raise AttributeError("Composite primary key is not allowed")
 
         all_col_name = set(all_col_name)  # For checking subset inclusion property
         if not (
@@ -996,21 +1007,21 @@ class SQLDocument(DocumentConnector):
             and set(self.weak_columns).issubset(all_col_name)
             and set(self.reference_columns).issubset(all_col_name)
         ):
-            raise_attribute_error("Provided column doesn't exists in the table")
+            raise AttributeError("Provided column doesn't exists in the table")
 
         for col in all_cols:
             if col["name"] == self.id_col and not isinstance(col["type"], Integer):
-                raise_attribute_error("id column needs to be of type Integer")
+                raise AttributeError("id column needs to be of type Integer")
 
             if col["name"] in self.strong_columns and not isinstance(
                 col["type"], String
             ):
-                raise_attribute_error(
+                raise AttributeError(
                     f"strong column '{col['name']}' needs to be of type String"
                 )
 
             if col["name"] in self.weak_columns and not isinstance(col["type"], String):
-                raise_attribute_error(
+                raise AttributeError(
                     f"weak column '{col['name']}' needs to be of type String"
                 )
 
@@ -1023,7 +1034,7 @@ class SQLDocument(DocumentConnector):
         ).fetchone()[0]
 
         if min_id != 0 or max_id != self.size - 1:
-            raise_attribute_error(
+            raise AttributeError(
                 f"id column needs to be unique from 0 to {self.size - 1}"
             )
 

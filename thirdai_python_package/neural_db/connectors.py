@@ -1,4 +1,4 @@
-from typing import List, Type
+from typing import List, Optional
 
 import pandas as pd
 from sqlalchemy import inspect, text
@@ -6,9 +6,6 @@ from sqlalchemy.engine.base import Connection as sqlConn
 
 
 class Connector:
-    def connect(self):
-        raise NotImplementedError()
-
     def next_batch(self) -> pd.DataFrame:
         raise NotImplementedError()
 
@@ -18,15 +15,14 @@ class SQLConnector(Connector):
         self,
         engine: sqlConn,
         columns: List[str],
-        chunk_size: int,
         table_name: str,
+        chunk_size: Optional[int] = None,
     ):
-        super().__init__()
         self._engine = engine
-        self.connect()
-        self.table_name = table_name
         self.columns = list(set(columns))
+        self.table_name = table_name
         self.chunk_size = chunk_size
+        self._connection = self._engine.connect()
 
     def execute(self, query: str, param={}):
         result = self._connection.execute(statement=text(query), parameters=param)
@@ -36,10 +32,7 @@ class SQLConnector(Connector):
     def get_engine_url(self):
         return self._engine.url
 
-    def connect(self):
-        self._connection = self._engine.connect()
-
-    def next_chunk(self):
+    def chunk_iterator(self):
         return pd.read_sql(
             sql=self.table_name,
             con=self._connection,
