@@ -54,6 +54,9 @@ class Document:
     def all_entity_ids(self) -> List[int]:
         raise NotImplementedError()
 
+    def filter_entity_ids(self, filters: Dict[str, Filter]):
+        return self.all_entity_ids()
+
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
     # to True for CSV docs, we will save the actual csv file in the pickle.
@@ -270,7 +273,7 @@ class DocumentManager:
         return [
             start_id + entity_id
             for doc, start_id in self.constraint_matcher.match(filters)
-            for entity_id in doc.all_entity_ids()
+            for entity_id in doc.filter_entity_ids(filters)
         ]
 
     def sources(self):
@@ -345,6 +348,7 @@ class CSV(Document):
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
         metadata={},
+        index_columns=[],
     ) -> None:
         self.df = pd.read_csv(path)
 
@@ -389,6 +393,8 @@ class CSV(Document):
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
+        self.doc_metadata_keys = set(self.doc_metadata.keys())
+        self.indexed_columns = index_columns
 
     @property
     def hash(self) -> str:
@@ -404,10 +410,27 @@ class CSV(Document):
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
-        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+        metadata_constraints = {
+            key: ConstraintValue(value) for key, value in self.doc_metadata.items()
+        }
+        indexed_column_constraints = {
+            key: ConstraintValue(is_any=True) for key in self.indexed_columns
+        }
+        return {**metadata_constraints, **indexed_column_constraints}
 
     def all_entity_ids(self) -> List[int]:
         return self.df[self.id_column].to_list()
+
+    def filter_entity_ids(self, filters: Dict[str, Filter]):
+        df = self.df
+        row_filters = {
+            k: v for k, v in filters.items() if k not in self.doc_metadata_keys
+        }
+        for column_name, filterer in row_filters.items():
+            if column_name not in self.df.columns:
+                return []
+            df = filterer.filter_df_column(df, column_name)
+        return df[self.id_column].to_list()
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -478,6 +501,10 @@ class CSV(Document):
 
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
+        if not hasattr(self, "doc_metadata_keys"):
+            self.doc_metadata_keys = set()
+        if not hasattr(self, "indexed_columns"):
+            self.indexed_columns = []
 
 
 # Base class for PDF and DOCX classes because they share the same logic.

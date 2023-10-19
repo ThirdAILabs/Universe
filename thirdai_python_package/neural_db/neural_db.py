@@ -522,7 +522,6 @@ class NeuralDB:
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
-
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
