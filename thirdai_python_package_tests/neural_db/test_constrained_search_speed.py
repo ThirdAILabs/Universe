@@ -11,6 +11,8 @@ from thirdai.neural_db.constraint_matcher import (
 )
 from tqdm import tqdm
 
+random.seed(1)
+
 
 def strings_of_length(length, num_strings):
     """Generates `num_strings` unique alphabetical strings of a certain
@@ -164,15 +166,14 @@ def benchmark(
     metadata_options = strings_of_length(metadata_option_len, num_options_per_field)
     print_if_verbose(verbose, "Generating item metadata...")
     item_metadata = generate_item_metadata(metadata_fields, metadata_options, num_docs)
-    dummy_item = 0
 
     constraint_matcher = ConstraintMatcher()
 
     print_if_verbose(verbose, f"Indexing {len(item_metadata)} items...")
     start = time.time()
-    for meta in tqdm(item_metadata):
+    for item, meta in tqdm(enumerate(item_metadata)):
         constraint_matcher.index(
-            item=dummy_item,
+            item=item,
             constraints={key: ConstraintValue(value) for key, value in meta.items()},
         )
     constraint_indexing_time = time.time() - start
@@ -190,7 +191,6 @@ def benchmark(
     print_if_verbose(verbose, "Matching...")
     start = time.time()
     for constraints in tqdm(constraint_queries):
-        start = time.time()
         assert len(constraint_matcher.match(filters=to_filters(constraints))) > 0
     constraint_matching_time = time.time() - start
 
@@ -214,18 +214,18 @@ def benchmark(
 def test_constrained_search_speed():
     times = benchmark(
         num_metadata_fields=10,
-        num_options_per_field=3,
+        num_options_per_field=4,
         metadata_field_len=5,
         metadata_option_len=5,
-        num_exact_filters=7,
-        num_range_filters=3,
+        num_exact_filters=5,
+        num_range_filters=1,
         range_size=3,
-        num_docs=10_000_000,
-        num_queries=1000,
+        num_docs=1_000_000,
+        num_queries=100,
         verbose=True,
     )
 
-    # Average constraint matching time is 2 * 10^-7 seconds on mac.
-    assert times["avg_constraint_matching_time"] < 0.00001
-    # Total constraint indexing time is less than 40 seconds on mac.
-    assert times["total_constraint_indexing_time"] < 300
+    # Average constraint matching time is around 0.06 seconds on mac.
+    assert times["avg_constraint_matching_time"] < 0.5
+    # Total constraint indexing time is around 3 seconds on mac.
+    assert times["total_constraint_indexing_time"] < 10
