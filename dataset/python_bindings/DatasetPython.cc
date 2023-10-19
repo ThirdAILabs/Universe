@@ -295,15 +295,17 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<TextClassificationFeaturizer, Featurizer,
              TextClassificationFeaturizerPtr>(dataset_submodule,
                                               "TextClassificationFeaturizer")
-      .def(py::init<const std::string&, const std::string&, uint32_t, uint32_t,
-                    uint32_t, uint32_t, uint32_t, char, std::optional<char>,
-                    bool, bool>(),
-           py::arg("text_column"), py::arg("label_column"), py::arg("lrc_len"),
-           py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
-           py::arg("n_labels"), py::arg("delimiter") = ',',
-           py::arg("label_delimiter") = std::nullopt,
-           py::arg("integer_labels") = false,
-           py::arg("normalize_categories") = true);
+      .def(
+          py::init<const std::string&, const std::string&,
+                   std::optional<std::string>, uint32_t, uint32_t, uint32_t,
+                   uint32_t, uint32_t, char, std::optional<char>, bool, bool>(),
+          py::arg("text_column"), py::arg("label_column"),
+          py::arg("prompt_column") = NULL, py::arg("lrc_len"),
+          py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
+          py::arg("n_labels"), py::arg("delimiter") = ',',
+          py::arg("label_delimiter") = std::nullopt,
+          py::arg("integer_labels") = false,
+          py::arg("normalize_categories") = true);
 
 #endif
 

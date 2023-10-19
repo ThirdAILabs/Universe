@@ -318,6 +318,7 @@ TEST(TextClassifierFeaturizerTest, Featurization) {
   TextClassificationFeaturizer featurizer(
       /* text_column= */ "text",
       /* label_column= */ "label",
+      /* prompt_column= */ std::nullopt,
       /* lrc_len= */ LRC_LEN,
       /* irc_len= */ IRC_LEN,
       /* src_len= */ SRC_LEN,
@@ -330,6 +331,39 @@ TEST(TextClassifierFeaturizerTest, Featurization) {
 
   auto data = featurizer.featurize({"1 2,0", "1 2 3,1", "1 2 3 4,2"});
 
+  verifyGeneratedSamples(data, expected_indices);
+}
+
+TEST(TextClassifierFeaturizerWithPromptTest, Featurization) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      // prompt
+      {{5, 6}, {5, 6, 7}, {5}},
+      //  LRC context input
+      {{1, 2}, {1, 2, 3}, {1, 2, 3, 4}},
+      // IRC context input
+      {expectedPairgrams({1, 2}), expectedPairgrams({1, 2, 3}),
+       expectedPairgrams({2, 3, 4})},
+      // SRC context input
+      {{1, 2}, {2, 3}, {3, 4}},
+      // Label
+      {{0}, {1}, {2}}};
+
+  TextClassificationFeaturizer featurizer(
+      /* text_column= */ "text",
+      /* label_column= */ "label",
+      /* prompt_column= */ "prompt",
+      /* lrc_len= */ LRC_LEN,
+      /* irc_len= */ IRC_LEN,
+      /* src_len= */ SRC_LEN,
+      /* vocab_size= */ VOCAB_SIZE,
+      /* n_labels= */ 3, /* delimiter= */ ',',
+      /* label_delimiter= */ std::nullopt, /* integer_labels= */ true,
+      /* normalize_categories= */ true);
+
+  featurizer.processHeader("prompt,text,label");
+
+  auto data =
+      featurizer.featurize({"5 6,1 2,0", "5 6 7,1 2 3,1", "5,1 2 3 4,2"});
   verifyGeneratedSamples(data, expected_indices);
 }
 

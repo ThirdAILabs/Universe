@@ -5,6 +5,7 @@
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <optional>
 
@@ -16,6 +17,7 @@ class TextClassificationFeaturizer final : public Featurizer {
 
   TextClassificationFeaturizer(const std::string& text_column,
                                const std::string& label_column,
+                               std::optional<std::string> prompt_column,
                                uint32_t lrc_len, uint32_t irc_len,
                                uint32_t src_len, uint32_t vocab_size,
                                uint32_t n_labels, char delimiter,
@@ -26,6 +28,9 @@ class TextClassificationFeaturizer final : public Featurizer {
 
   void processHeader(const std::string& header) final {
     ColumnNumberMap column_numbers(header, _delimiter);
+    if (_prompt_column) {
+      _prompt_column.value().updateColumnNumber(column_numbers);
+    }
     _text_column.updateColumnNumber(column_numbers);
     _label_block->updateColumnNumbers(column_numbers);
   }
@@ -60,6 +65,7 @@ class TextClassificationFeaturizer final : public Featurizer {
 
   ThreadSafeVocabularyPtr _vocab;
   BlockPtr _label_block;
+  std::optional<ColumnIdentifier> _prompt_column;
 };
 
 using TextClassificationFeaturizerPtr =
