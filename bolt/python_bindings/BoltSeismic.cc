@@ -43,7 +43,7 @@ void createSeismicSubmodule(py::module_& module) {
 
   py::class_<seismic::Checkpoint, std::shared_ptr<seismic::Checkpoint>,
              callbacks::Callback>(seismic, "Checkpoint")
-      .def(py::init<std::shared_ptr<SeismicEmbedding>, std::string, size_t>(),
+      .def(py::init<std::shared_ptr<SeismicBase>, std::string, size_t>(),
            py::arg("seismic_model"), py::arg("checkpoint_dir"),
            py::arg("interval"));
 

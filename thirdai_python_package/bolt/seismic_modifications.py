@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import scipy.ndimage
 import thirdai
 import thirdai._thirdai.bolt as bolt
@@ -49,7 +50,21 @@ class UnsupervisedSubcubeDataset(Dataset):
         return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
 
 
-def unsupervised_collate(batch):
+class ClassificationSubcubeDataset(Dataset):
+    def __init__(self, sample_index):
+        self.sample_index = sample_index
+
+    def __len__(self):
+        return len(self.sample_index)
+
+    def __getitem__(self, index):
+        subcube_path = self.sample_index["subcube"][index]
+        subcube = np.load(subcube_path).astype(np.float32)
+        labels = self.sample_index["labels"][index]
+        return subcube, labels
+
+
+def collate_fn(batch):
     data, metadata = zip(*batch)
     return default_collate(data), metadata
 
@@ -90,11 +105,16 @@ def convert_to_patches(subcubes, expected_subcube_shape, patch_shape, max_pool=N
     return patches.numpy()
 
 
-def subcube_range_for_worker(n_subcubes: int):
+def get_rank_and_world_size():
     from ray import train
 
     rank = train.get_context().get_world_rank()
     world_size = train.get_context().get_world_size()
+    return rank, world_size
+
+
+def subcube_range_for_worker(n_subcubes: int):
+    rank, world_size = get_rank_and_world_size()
 
     subcubes_for_worker = n_subcubes // world_size
     if rank < (n_subcubes % world_size):
@@ -128,7 +148,6 @@ class TimedIterator:
 def train_seismic_model(
     seismic_model,
     dataset: Dataset,
-    collate_fn,
     learning_rate: float,
     epochs: int,
     batch_size: int,
@@ -197,6 +216,191 @@ def train_seismic_model(
         return output_metrics
 
 
+def train_embedding_model(
+    self,
+    subcube_directory: str,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    callbacks=[],
+    log_interval=20,
+    validation_fn=None,
+    blur_subcubes_fraction=0.0,
+    max_data_in_memory=30,  # In Gb
+    comm=None,
+):
+    subcube_files = [
+        file for file in os.listdir(subcube_directory) if file.endswith(".npy")
+    ]
+
+    if not subcube_files:
+        raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
+
+    if comm:
+        # For distributed training give each worker a seperate partition of the subcubes.
+        worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
+        subcube_files = subcube_files[worker_start:worker_end]
+
+    dataset = UnsupervisedSubcubeDataset(
+        subcube_directory=subcube_directory,
+        subcube_files=subcube_files,
+        blur_subcube_fraction=blur_subcubes_fraction,
+    )
+
+    return train_seismic_model(
+        seismic_model=self,
+        dataset=dataset,
+        learning_rate=learning_rate,
+        epochs=epochs,
+        batch_size=batch_size,
+        callbacks=callbacks,
+        log_interval=log_interval,
+        validation_fn=validation_fn,
+        max_data_in_memory=max_data_in_memory,
+        comm=comm,
+    )
+
+
+def train_classifier(
+    self,
+    sample_index_file: str,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    callbacks=[],
+    log_interval=20,
+    validation_fn=None,
+    blur_subcubes_fraction=0.0,  # Unused
+    max_data_in_memory=30,  # In Gb
+    comm=None,
+):
+    sample_index = pd.read_csv(sample_index_file)
+
+    if comm:
+        # For distributed training give each worker a seperate partition of the subcubes.
+        worker_start, worker_end = subcube_range_for_worker(len(sample_index))
+        sample_index = sample_index.iloc[worker_start:worker_end]
+
+    dataset = ClassificationSubcubeDataset(sample_index=sample_index)
+
+    return train_seismic_model(
+        seismic_model=self,
+        dataset=dataset,
+        learning_rate=learning_rate,
+        epochs=epochs,
+        batch_size=batch_size,
+        callbacks=callbacks,
+        log_interval=log_interval,
+        validation_fn=validation_fn,
+        max_data_in_memory=max_data_in_memory,
+        comm=comm,
+    )
+
+
+def train_distributed(
+    self,
+    data_path: str,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    run_config,
+    scaling_config,
+    log_file: str,
+    checkpoint_dir: str,
+    log_interval: int = 20,
+    checkpoint_interval: int = 1000,
+    validation_fn=None,
+    blur_subcubes_fraction=0.0,
+    max_data_in_memory=30,  # In Gb
+    communication_backend: str = "gloo",
+):
+    import ray
+    import thirdai.distributed_bolt as dist
+    from ray.train.torch import TorchConfig
+
+    from .._distributed_bolt.distributed import Communication
+
+    def train_loop_per_worker(config):
+        import ray
+        from ray import train
+
+        rank, world_size = get_rank_and_world_size()
+
+        config["licensing_lambda"]()
+
+        log_file = config["log_file"]
+        if rank != 0:
+            log_file += f".worker_{rank}"
+        thirdai.logging.setup(log_to_stderr=False, path=log_file, level="info")
+
+        model = ray.get(config["model_ref"])
+
+        callbacks = []
+        if rank == 0:
+            callbacks = [
+                bolt.seismic.Checkpoint(
+                    seismic_model=model,
+                    checkpoint_dir=config["checkpoint_dir"],
+                    interval=config["checkpoint_interval"],
+                )
+            ]
+
+        metrics = model.train(
+            config["data_path"],
+            learning_rate=config["learning_rate"],
+            epochs=config["epochs"],
+            batch_size=config["batch_size"] // world_size,
+            callbacks=callbacks,
+            log_interval=config["log_interval"],
+            validation_fn=config["validation_fn"] if rank == 0 else None,
+            blur_subcubes_fraction=config["blur_subcubes_fraction"],
+            max_data_in_memory=config["max_data_in_memory"],
+            comm=Communication(),
+        )
+
+        checkpoint = None
+        if rank == 0:
+            checkpoint = dist.BoltCheckPoint.from_model(model.model)
+
+        train.report(metrics=metrics, checkpoint=checkpoint)
+
+    config = {
+        "model_ref": ray.put(self),
+        "data_path": os.path.abspath(data_path),
+        "learning_rate": learning_rate,
+        "epochs": epochs,
+        "batch_size": batch_size,
+        "log_file": os.path.abspath(log_file),
+        "log_interval": log_interval,
+        "checkpoint_dir": os.path.abspath(checkpoint_dir),
+        "checkpoint_interval": checkpoint_interval,
+        "validation_fn": validation_fn,
+        "blur_subcubes_fraction": blur_subcubes_fraction,
+        "max_data_in_memory": max_data_in_memory,
+    }
+
+    license_state = thirdai._thirdai.licensing._get_license_state()
+    licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+        license_state
+    )
+    config["licensing_lambda"] = licensing_lambda
+
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=train_loop_per_worker,
+        train_loop_config=config,
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend=communication_backend),
+        run_config=run_config,
+    )
+
+    result = trainer.fit()
+
+    self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
+
+
 def subcube_embeddings(seismic_model, subcubes):
     subcubes = convert_to_patches(
         torch.from_numpy(subcubes),
@@ -227,166 +431,9 @@ def score_subcubes(seismic_model, directory, target_subcube="tgt.npy"):
 
 
 def modify_seismic():
-    def wrapped_train(
-        self,
-        subcube_directory: str,
-        learning_rate: float,
-        epochs: int,
-        batch_size: int,
-        callbacks=[],
-        log_interval=20,
-        validation_fn=None,
-        blur_subcubes_fraction=0.0,
-        max_data_in_memory=30,  # In Gb
-        comm=None,
-    ):
-        subcube_files = [
-            file for file in os.listdir(subcube_directory) if file.endswith(".npy")
-        ]
+    bolt.seismic.SeismicBase.train_distributed = train_distributed
+    bolt.seismic.SeismicBase.embeddings = subcube_embeddings
+    bolt.seismic.SeismicBase.score_subcubes = score_subcubes
 
-        if not subcube_files:
-            raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
-
-        if comm:
-            # For distributed training give each worker a seperate partition of the subcubes.
-            worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
-            subcube_files = subcube_files[worker_start:worker_end]
-
-        dataset = UnsupervisedSubcubeDataset(
-            subcube_directory=subcube_directory,
-            subcube_files=subcube_files,
-            blur_subcube_fraction=blur_subcubes_fraction,
-        )
-
-        return train_seismic_model(
-            seismic_model=self,
-            dataset=dataset,
-            collate_fn=unsupervised_collate,
-            learning_rate=learning_rate,
-            epochs=epochs,
-            batch_size=batch_size,
-            callbacks=callbacks,
-            log_interval=log_interval,
-            validation_fn=validation_fn,
-            max_data_in_memory=max_data_in_memory,
-            comm=comm,
-        )
-
-    def train_distributed(
-        self,
-        subcube_directory: str,
-        learning_rate: float,
-        epochs: int,
-        batch_size: int,
-        run_config,
-        scaling_config,
-        log_file: str,
-        checkpoint_dir: str,
-        log_interval: int = 20,
-        checkpoint_interval: int = 1000,
-        validation_fn=None,
-        blur_subcubes_fraction=0.0,
-        max_data_in_memory=30,  # In Gb
-        communication_backend: str = "gloo",
-    ):
-        import ray
-        import thirdai.distributed_bolt as dist
-        from ray.train.torch import TorchConfig
-
-        from .._distributed_bolt.distributed import Communication
-
-        def train_loop_per_worker(config):
-            import ray
-            from ray import train
-
-            rank = train.get_context().get_world_rank()
-
-            model_ref = config["model_ref"]
-            subcube_directory = config["subcube_directory"]
-            learning_rate = config["learning_rate"]
-            epochs = config["epochs"]
-            batch_size = config["batch_size"] // train.get_context().get_world_size()
-            log_file = config["log_file"]
-            log_interval = config["log_interval"]
-            checkpoint_dir = config["checkpoint_dir"]
-            checkpoint_interval = config["checkpoint_interval"]
-            validation_fn = config["validation_fn"]
-            blur_subcubes_fraction = config["blur_subcubes_fraction"]
-            max_data_in_memory = config["max_data_in_memory"]
-            config["licensing_lambda"]()
-
-            if rank != 0:
-                log_file += f".worker_{rank}"
-            thirdai.logging.setup(log_to_stderr=False, path=log_file, level="info")
-
-            model = ray.get(model_ref)
-
-            callbacks = []
-            if rank == 0:
-                callbacks = [
-                    bolt.seismic.Checkpoint(
-                        seismic_model=model,
-                        checkpoint_dir=checkpoint_dir,
-                        interval=checkpoint_interval,
-                    )
-                ]
-
-            metrics = model.train(
-                subcube_directory=subcube_directory,
-                learning_rate=learning_rate,
-                epochs=epochs,
-                batch_size=batch_size,
-                callbacks=callbacks,
-                log_interval=log_interval,
-                validation_fn=validation_fn if rank == 0 else None,
-                blur_subcubes_fraction=blur_subcubes_fraction,
-                max_data_in_memory=max_data_in_memory,
-                comm=Communication(),
-            )
-
-            checkpoint = None
-            if rank == 0:
-                checkpoint = dist.BoltCheckPoint.from_model(model.model)
-
-            train.report(metrics=metrics, checkpoint=checkpoint)
-
-        config = {
-            "model_ref": ray.put(self),
-            "subcube_directory": os.path.abspath(subcube_directory),
-            "learning_rate": learning_rate,
-            "epochs": epochs,
-            "batch_size": batch_size,
-            "log_file": os.path.abspath(log_file),
-            "log_interval": log_interval,
-            "checkpoint_dir": os.path.abspath(checkpoint_dir),
-            "checkpoint_interval": checkpoint_interval,
-            "validation_fn": validation_fn,
-            "blur_subcubes_fraction": blur_subcubes_fraction,
-            "max_data_in_memory": max_data_in_memory,
-        }
-
-        license_state = thirdai._thirdai.licensing._get_license_state()
-        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
-            license_state
-        )
-        config["licensing_lambda"] = licensing_lambda
-
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-
-        trainer = dist.BoltTrainer(
-            train_loop_per_worker=train_loop_per_worker,
-            train_loop_config=config,
-            scaling_config=scaling_config,
-            backend_config=TorchConfig(backend=communication_backend),
-            run_config=run_config,
-        )
-
-        result = trainer.fit()
-
-        self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
-
-    bolt.seismic.SeismicEmbeddingModel.train = wrapped_train
-    bolt.seismic.SeismicEmbeddingModel.train_distributed = train_distributed
-    bolt.seismic.SeismicEmbeddingModel.embeddings = subcube_embeddings
-    bolt.seismic.SeismicEmbeddingModel.score_subcubes = score_subcubes
+    bolt.seismic.SeismicEmbeddingModel.train = train_embedding_model
+    bolt.seismic.SeismicClassifier.train = train_classifier
