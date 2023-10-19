@@ -90,6 +90,7 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
     assert(x < _rand_neurons.size());
     output.active_neurons[cnt++] = x;
   }
+  std::sort(output.active_neurons, output.active_neurons + output.len);
 }
 
 void LshIndex::buildIndex(const std::vector<float>& weights, uint32_t dim,

@@ -27,12 +27,17 @@ void Sparsify::forward(const ComputationList& inputs, TensorPtr& output,
   } else {
     auto top_k = input_vec.findKLargestActivations(output_vec.len);
 
-    size_t i = 0;
+    std::vector<std::pair<uint32_t, float>> nonzeros(top_k.size());
     while (!top_k.empty()) {
-      output_vec.active_neurons[i] = top_k.top().second;
-      output_vec.activations[i] = top_k.top().first;
+      nonzeros.emplace_back(top_k.top().second, top_k.top().first);
       top_k.pop();
-      i++;
+    }
+
+    std::sort(nonzeros.begin(), nonzeros.end());
+
+    for (size_t i = 0; i < nonzeros.size(); i++) {
+      output_vec.active_neurons[i] = nonzeros[i].first;
+      output_vec.activations[i] = nonzeros[i].second;
     }
   }
 }
