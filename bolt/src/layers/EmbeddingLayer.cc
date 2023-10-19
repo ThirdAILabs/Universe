@@ -54,6 +54,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
   assert(output.len == _total_embedding_dim);
   assert(_reduction == EmbeddingReductionType::SUM ||
+         _reduction == EmbeddingReductionType::AVERAGE ||
          _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 
