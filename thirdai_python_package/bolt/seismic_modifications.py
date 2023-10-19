@@ -275,6 +275,7 @@ def train_classifier(
     comm=None,
 ):
     sample_index = pd.read_csv(sample_index_file)
+    sample_index = sample_index.sample(frac=1.0)
 
     if comm:
         # For distributed training give each worker a seperate partition of the subcubes.
