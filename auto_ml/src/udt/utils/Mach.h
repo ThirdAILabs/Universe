@@ -372,6 +372,8 @@ class Mach {
     return _bolt_label_columns.back().indices();
   }
 
+  Mach() {}  // for cereal
+
   bolt::ModelPtr _model;
   bolt::ComputationPtr _emb;
   float _mach_sampling_threshold;
@@ -384,6 +386,10 @@ class Mach {
   data::OutputColumnsList _bolt_input_columns;
   data::OutputColumnsList _bolt_label_columns;
   data::OutputColumnsList _all_bolt_columns;
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive);
 };
 
 using MachPtr = std::shared_ptr<Mach>;

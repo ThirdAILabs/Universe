@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
@@ -30,7 +33,7 @@ class RLHFSampler final : public Transformation {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive();
+    archive(cereal::base_class<Transformation>(this));
   }
 };
 

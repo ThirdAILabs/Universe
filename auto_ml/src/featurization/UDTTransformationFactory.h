@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include "Featurizer.h"
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -91,7 +92,7 @@ class UDTTransformationFactory {
   feat::TransformationPtr _input_transform_no_temporal_updates;
   feat::TransformationPtr _label_transform;
   feat::OutputColumnsList _input_columns;
-  const std::string _label_column;
+  std::string _label_column;
 
   std::optional<TextDatasetConfig> _text_dataset;
   bool _has_temporal_transform;

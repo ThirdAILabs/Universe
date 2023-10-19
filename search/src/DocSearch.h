@@ -249,7 +249,7 @@ class DocSearch {
     std::vector<uint32_t> nearest_centroids(batch.getBatchSize() * nprobe);
 
 #pragma omp parallel for default(none) \
-    shared(batch, eigen_result, nprobe, nearest_centroids)
+    shared(batch, eigen_result, nprobe, nearest_centroids, Eigen::Dynamic)
     for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
       std::vector<uint32_t> probe_results = argmax(eigen_result.row(i), nprobe);
       for (uint32_t p = 0; p < nprobe; p++) {

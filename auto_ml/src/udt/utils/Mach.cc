@@ -370,4 +370,14 @@ void Mach::updateSamplingStrategy() {
   }
 }
 
+template void Mach::serialize(cereal::BinaryInputArchive&);
+template void Mach::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Mach::serialize(Archive& archive) {
+  archive(_model, _emb, _mach_sampling_threshold, _freeze_hash_tables, _state,
+          _label_to_buckets, _rlhf_sampler, _bolt_input_columns,
+          _bolt_label_columns, _all_bolt_columns);
+}
+
 }  // namespace thirdai::automl::udt::utils

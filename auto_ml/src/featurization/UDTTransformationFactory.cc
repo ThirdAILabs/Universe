@@ -1,4 +1,6 @@
 #include "UDTTransformationFactory.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
@@ -71,6 +73,17 @@ UDTTransformationFactory::coldstartAugmentation(
       /* weak_column_names= */ weak_column_names,
       /* label_column_name= */ _text_dataset->labelColumn(),
       /* output_column_name= */ _text_dataset->textColumn());
+}
+
+template void UDTTransformationFactory::serialize(cereal::BinaryInputArchive&);
+template void UDTTransformationFactory::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void UDTTransformationFactory::serialize(Archive& archive) {
+  archive(_input_transform_with_temporal_updates,
+          _input_transform_no_temporal_updates, _label_transform,
+          _input_columns, _label_column, _text_dataset,
+          _has_temporal_transform);
 }
 
 }  // namespace thirdai::automl

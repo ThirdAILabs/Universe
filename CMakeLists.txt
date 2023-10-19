@@ -442,7 +442,6 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
