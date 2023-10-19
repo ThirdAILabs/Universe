@@ -300,7 +300,7 @@ void createDatasetSubmodule(py::module_& module) {
                    std::optional<std::string>, uint32_t, uint32_t, uint32_t,
                    uint32_t, uint32_t, char, std::optional<char>, bool, bool>(),
           py::arg("text_column"), py::arg("label_column"),
-          py::arg("prompt_column") = NULL, py::arg("lrc_len"),
+          py::arg("prompt_column") = std::nullopt, py::arg("lrc_len"),
           py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
           py::arg("n_labels"), py::arg("delimiter") = ',',
           py::arg("label_delimiter") = std::nullopt,
