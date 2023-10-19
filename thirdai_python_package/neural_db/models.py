@@ -199,7 +199,6 @@ def unsupervised_train_on_docs(
     freeze_before_train: bool,
     cancel_state: CancelState,
 ):
-    print("ABOUT TO TRAIN IN UNSUPERVISED FASHION")
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
 
@@ -325,7 +324,6 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_before_train = False
-            print("ABOUT TO AUTOTUNE FROM SCRATCH MIN MAX EPOCHS")
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
                 train_documents.size
             )
@@ -354,15 +352,13 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            print("ABOUT TO AUTOTUNE FROM BASE MIN MAX EPOCHS")
             min_epochs, max_epochs = autotune_from_base_min_max_epochs(
                 train_documents.size
             )
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
-        print("ADDED BALANCING SAMPLES")
-
+        
         if should_train:
             unsupervised_train_on_docs(
                 model=self.model,

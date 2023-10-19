@@ -384,6 +384,7 @@ class CSV(Document):
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
+        self.doc_metadata_keys = set(self.doc_metadata.keys())
         self.indexed_columns = index_columns
 
     @property
@@ -412,17 +413,14 @@ class CSV(Document):
         return self.df[self.id_column].to_list()
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
-        print("filtering")
         df = self.df
         row_filters = {
-            k: v for k, v in filters.items() if k not in set(self.doc_metadata.keys())
+            k: v for k, v in filters.items() if k not in self.doc_metadata_keys)
         }
-        print(row_filters)
         for column_name, filterer in row_filters.items():
             if column_name not in self.df.columns:
-                return set()
+                return []
             df = filterer.filter_df_column(df, column_name)
-            print(df)
         return df[self.id_column].to_list()
 
     def strong_text(self, element_id: int) -> str:
@@ -494,6 +492,8 @@ class CSV(Document):
 
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
+        if not hasattr(self, "doc_metadata_keys"):
+            self.doc_metadata_keys = set()
         if not hasattr(self, "indexed_columns"):
             self.indexed_columns = []
 
