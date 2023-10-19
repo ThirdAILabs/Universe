@@ -13,10 +13,13 @@ from tqdm import tqdm
 
 
 def strings_of_length(length, num_strings):
+    """Generates `num_strings` unique alphabetical strings of a certain
+    `length`.
+    """
     alphabet = "abcdefghijklmnopqrstuvwxyz"
     if num_strings > len(alphabet) ** length:
         raise ValueError(
-            f"There are only {len(alphabet) ** length} strings of length {length}"
+            f"There are only {len(alphabet) ** length} alphabetical strings of length {length}"
         )
 
     strings = ["" for _ in range(num_strings)]
@@ -33,6 +36,17 @@ def generate_item_metadata(
     metadata_options: List[str],
     num_items: int,
 ):
+    """Generates `num_items` unique metadata dictionaries containing all the
+    fields listed in `metadata_fields`, where each field has one of the values
+    listed in `metadata_options`.
+
+    For example, if `metadata_fields` is ["a", "b", "c"] and `metadata_options`
+    is ["d", "e", "f"], then this function may generate
+    {"a": "d", "b": "d", "f": "d"}.
+    {"a": "d", "b": "d", "f": "e"},
+    {"a": "e", "b": "d", "f": "d"},
+    and so on.
+    """
     metadata = [{} for _ in range(num_items)]
     for i in range(num_items):
         to_be_modded = i
@@ -49,6 +63,24 @@ def random_filters(
     metadata_fields: List[str],
     sorted_metadata_options: List[str],
 ):
+    """This function generates a constraint dictionary with `num_exact_filters`
+    random exact value filters and `num_range_filters` random range filters that
+    cover `range_size` metadata options.
+
+    A filter constrains the values of a document's metadata field.
+    For example, a filter may impose a constraint that matching documents must
+    have a metadata field "a" with value "b", or have a metadata field "c" with
+    a value between "d" and "j".
+
+    For example, if `num_exact_filters` is 2, `num_range_filters` = is 1,
+    `range_size` is 2, `metadata_fields` is ["a", "b", "c", "d", "e", "f"] and
+    `sorted_metadata_options` is ["w", "x", "y", "z"], then this function may
+    return this constraint dictionary:
+
+    { "c": "w", "d": "w", "f": InRange("x", "y") }
+
+    Note that InRange is inclusive by default.
+    """
     exact_filter_fields = random.choices(metadata_fields, k=num_exact_filters)
     range_filter_fields = list(set(metadata_fields).difference(exact_filter_fields))
     range_filter_fields = random.choices(range_filter_fields, k=num_range_filters)
@@ -77,6 +109,9 @@ def generate_constraints(
     metadata_options: List[str],
     num_queries: int,
 ):
+    """Generates `num_queries` constraint dictionaries. See `random_filters`
+    for details.
+    """
     if num_exact_filters + num_range_filters > len(metadata_fields):
         raise ValueError(
             "num_exact_filters + num_range_filters has to be less than or equal to the number of metadata fields."
