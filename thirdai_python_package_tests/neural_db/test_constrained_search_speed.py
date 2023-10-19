@@ -1,6 +1,7 @@
 import random
 import time
 from typing import List
+import string
 
 import pytest
 from thirdai import neural_db as ndb
@@ -9,6 +10,7 @@ from thirdai.neural_db.constraint_matcher import (
     ConstraintValue,
     to_filters,
 )
+from ndb_utils import MockDocument
 from tqdm import tqdm
 
 random.seed(1)
@@ -143,7 +145,7 @@ def print_if_verbose(verbose, *args, **kwargs):
         print(*args, **kwargs)
 
 
-def benchmark(
+def benchmark_constraint_matcher(
     num_metadata_fields: int,
     num_options_per_field: int,
     metadata_field_len: int,
@@ -211,8 +213,8 @@ def benchmark(
 
 
 @pytest.mark.unit
-def test_constrained_search_speed():
-    times = benchmark(
+def test_constraint_matcher_speed():
+    times = benchmark_constraint_matcher(
         num_metadata_fields=10,
         num_options_per_field=4,
         metadata_field_len=5,
@@ -229,3 +231,54 @@ def test_constrained_search_speed():
     assert times["avg_constraint_matching_time"] < 0.5
     # Total constraint indexing time is around 3 seconds on mac.
     assert times["total_constraint_indexing_time"] < 10
+
+
+@pytest.mark.unit
+def test_doc_metadata_does_not_affect_unconstrained_search_latency():
+    num_docs = 1_000
+    metadata_fields = strings_of_length(length=5, num_strings=10)
+    metadata_options = strings_of_length(length=5, num_strings=4)
+    doc_metadata = generate_item_metadata(metadata_fields, metadata_options, num_docs)
+    queries = [
+        "".join(random.choices(string.ascii_lowercase, k=50)) for _ in range(100)
+    ]
+
+    db = ndb.NeuralDB()
+
+    # First test without metadata
+    no_meta_docs = [MockDocument(f"doc_{i}", size=1000) for i in range(num_docs)]
+
+    db.insert(no_meta_docs, train=False)
+
+    infer_start = time.time()
+    for query in queries:
+        db.search(query, top_k=10)
+    average_latency_without_doc_metadata = (time.time() - infer_start) / len(queries)
+    print(
+        "Average latency without document metadata:",
+        average_latency_without_doc_metadata,
+        "seconds.",
+    )
+
+    db = ndb.NeuralDB()
+
+    with_meta_docs = [
+        MockDocument(f"doc_{i}", size=1000, metadata=metadata)
+        for i, metadata in enumerate(doc_metadata)
+    ]
+
+    db.insert(with_meta_docs, train=False)
+
+    infer_start = time.time()
+    for query in queries:
+        db.search(query, top_k=10)
+    average_latency_with_doc_metadata = (time.time() - infer_start) / len(queries)
+    print(
+        "Average latency with document metadata:",
+        average_latency_with_doc_metadata,
+        "seconds.",
+    )
+
+    assert (
+        average_latency_with_doc_metadata < 1.5 * average_latency_without_doc_metadata
+    )

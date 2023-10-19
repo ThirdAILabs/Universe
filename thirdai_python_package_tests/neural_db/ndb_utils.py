@@ -2,7 +2,95 @@ import os
 
 import pytest
 import requests
+from pathlib import Path
 from thirdai import neural_db as ndb
+from thirdai.neural_db.documents import Document, Reference
+from thirdai.neural_db.constraint_matcher import ConstraintValue
+
+
+class MockDocument(Document):
+    def __init__(self, identifier: str, size: int, metadata: dict = {}) -> None:
+        self._identifier = identifier
+        self._size = size
+        self._save_meta_called = 0
+        self._save_meta_dir = None
+        self._load_meta_called = 0
+        self._load_meta_dir = None
+        self._doc_metadata = metadata
+
+    # We don't implement hash to test the default implementation
+
+    @property
+    def matched_constraints(self):
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    @property
+    def size(self) -> int:
+        return self._size
+
+    @property
+    def name(self) -> str:
+        return self._identifier
+
+    @property
+    def matched_constraints(self):
+        return {}
+
+    def all_entity_ids(self):
+        return list(range(self.size))
+
+    # Expected strings have commas (delimiter) to test that the data source
+    # converts it to proper CSV strings.
+    def expected_strong_text_for_id(doc_id: str, element_id: int):
+        return f"Strong text from {doc_id}, with id {element_id}"
+
+    def expected_weak_text_for_id(doc_id: str, element_id: int):
+        return f"Weak text from {doc_id}, with id {element_id}"
+
+    def expected_reference_text_for_id(doc_id: str, element_id: int):
+        return f"Reference text from {doc_id}, with id {element_id}"
+
+    def expected_context_for_id_and_radius(doc_id: str, element_id: int, radius: int):
+        return f"Context from {doc_id}, with id {element_id} and radius {radius}"
+
+    def check_id(self, element_id: int):
+        if element_id >= self._size:
+            raise ValueError("Out of range")
+
+    def strong_text(self, element_id: int) -> str:
+        self.check_id(element_id)
+        return MockDocument.expected_strong_text_for_id(self._identifier, element_id)
+
+    def weak_text(self, element_id: int) -> str:
+        self.check_id(element_id)
+        return MockDocument.expected_weak_text_for_id(self._identifier, element_id)
+
+    def reference(self, element_id: int) -> Reference:
+        self.check_id(element_id)
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=MockDocument.expected_reference_text_for_id(
+                self._identifier, element_id
+            ),
+            source=self._identifier,
+            metadata={},
+        )
+
+    def context(self, element_id: int, radius) -> str:
+        self.check_id(element_id)
+        return MockDocument.expected_context_for_id_and_radius(
+            self._identifier, element_id, radius
+        )
+
+    def save_meta(self, directory: Path):
+        self._save_meta_called += 1
+        self._save_meta_dir = directory
+
+    def load_meta(self, directory: Path):
+        self._load_meta_called += 1
+        self._load_meta_dir = directory
 
 
 @pytest.fixture
