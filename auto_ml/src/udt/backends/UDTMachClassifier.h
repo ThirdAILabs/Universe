@@ -53,6 +53,16 @@ class UDTMachClassifier final : public UDTBackend {
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
 
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
+                             const std::vector<std::string>& metrics) final {
+    (void)metrics;
+    auto columns = data::ColumnMap::fromMapInputBatch(batch);
+    applyNonUpdatingInputTransform(columns);
+    columns = _bucket_strings_to_buckets->applyStateless(std::move(columns));
+    _mach->trainBuckets(columns, learning_rate);
+    return py::none();
+  }
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
@@ -65,6 +75,26 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  py::object predictHashes(const MapInput& sample, bool sparse_inference,
+                           bool force_non_empty,
+                           std::optional<uint32_t> num_hashes) final {
+    auto columns = data::ColumnMap::fromMapInput(sample);
+    applyNonUpdatingInputTransform(columns);
+    return py::cast(_mach
+                        ->predictBuckets(columns, sparse_inference, num_hashes,
+                                         force_non_empty)
+                        .at(0));
+  }
+
+  py::object predictHashesBatch(const MapInputBatch& samples,
+                                bool sparse_inference, bool force_non_empty,
+                                std::optional<uint32_t> num_hashes) final {
+    auto columns = data::ColumnMap::fromMapInputBatch(samples);
+    applyNonUpdatingInputTransform(columns);
+    return py::cast(_mach->predictBuckets(columns, sparse_inference, num_hashes,
+                                          force_non_empty));
+  }
 
   void updateTemporalTrackers(const MapInput& sample) final {
     auto table = thirdai::data::ColumnMap::fromMapInput(sample);
@@ -258,6 +288,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   char _delimiter;
   UDTTransformationFactoryPtr _featurizer;
+  data::TransformationPtr _bucket_strings_to_buckets;
   thirdai::data::StatePtr _state;
 
   uint32_t _default_top_k_to_return;

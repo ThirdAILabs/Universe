@@ -231,17 +231,22 @@ void Mach::trainBuckets(feat::ColumnMap columns, float learning_rate) {
 
 std::vector<std::vector<uint32_t>> Mach::predictBuckets(
     const feat::ColumnMap& columns, bool sparse_inference,
-    std::optional<uint32_t> top_k) {
+    std::optional<uint32_t> top_k, bool force_non_empty) {
   auto outputs = _model->forward(inputTensors(columns), sparse_inference).at(0);
 
   std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
-#pragma omp parallel for default(none) shared(outputs, all_hashes, top_k)
+#pragma omp parallel for default(none) \
+    shared(outputs, all_hashes, top_k, force_non_empty)
   for (uint32_t i = 0; i < outputs->batchSize(); i++) {
     const BoltVector& output = outputs->getVector(i);
 
     TopKActivationsQueue heap;
-    heap = _state->machIndex()->topKNonEmptyBuckets(
-        output, top_k.value_or(_state->machIndex()->numHashes()));
+    uint32_t k = top_k.value_or(_state->machIndex()->numHashes());
+    if (force_non_empty) {
+      heap = _state->machIndex()->topKNonEmptyBuckets(output, k);
+    } else {
+      heap = output.findKLargestActivations(k);
+    }
 
     std::vector<uint32_t> hashes;
     while (!heap.empty()) {
@@ -261,7 +266,8 @@ std::vector<std::vector<uint32_t>> Mach::predictBuckets(
 std::vector<uint32_t> Mach::outputCorrectness(
     const feat::ColumnMap& columns, const std::vector<uint32_t>& labels,
     std::optional<uint32_t> num_hashes, bool sparse_inference) {
-  auto top_buckets = predictBuckets(columns, sparse_inference, num_hashes);
+  auto top_buckets = predictBuckets(columns, sparse_inference, num_hashes,
+                                    /* force_non_empty= */ true);
 
   std::vector<uint32_t> matching_buckets(labels.size());
   std::exception_ptr hashes_err;

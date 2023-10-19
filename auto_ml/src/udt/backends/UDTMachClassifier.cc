@@ -30,6 +30,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
@@ -134,6 +135,9 @@ UDTMachClassifier::UDTMachClassifier(
       /* user_temporal_relationships= */ temporal_tracking_relationships,
       /* label_column= */ target_name,
       /* options= */ tabular_options);
+
+  _bucket_strings_to_buckets = std::make_shared<data::StringToTokenArray>(
+      target_name, MACH_BUCKETS, /* delimiter= */ ' ', num_buckets);
 
   auto model =
       utils::buildModel(input_dim, num_buckets, user_args, model_config);
@@ -605,7 +609,8 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _mach, _delimiter, _featurizer,
-          _state, _default_top_k_to_return, _num_buckets_to_eval);
+          _bucket_strings_to_buckets, _state, _default_top_k_to_return,
+          _num_buckets_to_eval);
 }
 
 }  // namespace thirdai::automl::udt

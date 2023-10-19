@@ -224,7 +224,7 @@ class Mach {
 
   std::vector<std::vector<uint32_t>> predictBuckets(
       const feat::ColumnMap& columns, bool sparse_inference,
-      std::optional<uint32_t> top_k);
+      std::optional<uint32_t> top_k, bool force_non_empty);
 
   bolt::metrics::History associateTrain(
       feat::ColumnMap from_table, const feat::ColumnMap& to_table,
@@ -328,7 +328,8 @@ class Mach {
                                    const data::ColumnMap& to_columns,
                                    uint32_t num_buckets) {
     auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
-        predictBuckets(to_columns, /* sparse_inference= */ false, num_buckets),
+        predictBuckets(to_columns, /* sparse_inference= */ false, num_buckets,
+                       /* force_non_empty= */ true),
         index()->numBuckets());
     from_columns.setColumn(bucketColumn(), mach_labels);
     addDummyLabels(from_columns);
