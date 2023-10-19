@@ -497,7 +497,9 @@ pybind11_add_module(
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
   bolt/python_bindings/Porting.cc
-  bolt/src/seismic/SeismicEmbeddingModel.cc
+  bolt/src/seismic/SeismicBase.cc
+  bolt/src/seismic/SeismicEmbedding.cc
+  bolt/src/seismic/SeismicClassifier.cc
   bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
