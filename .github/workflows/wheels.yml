@@ -106,7 +106,7 @@ jobs:
           CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64"
           CIBW_BUILD_VERBOSITY: 3
 
-          CIBW_BEFORE_TEST_LINUX: yum install golang -y
+          CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"

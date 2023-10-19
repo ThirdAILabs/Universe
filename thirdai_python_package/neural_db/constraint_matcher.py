@@ -89,6 +89,13 @@ class ConstraintIndex(Generic[ItemT]):
                 self._match_value[value] = set()
             self._match_value[constraint_value.value()].add(item)
 
+    def delete(self, item: ItemT, constraint_value: ConstraintValue) -> None:
+        if constraint_value.any():
+            self._any_value.remove(item)
+        else:
+            value = constraint_value.value()
+            self._match_value[constraint_value.value()].remove(item)
+
 
 class ConstraintMatcher(Generic[ItemT]):
     def __init__(self):
@@ -111,6 +118,11 @@ class ConstraintMatcher(Generic[ItemT]):
             if key not in self._item_constraints:
                 self._item_constraints[key] = ConstraintIndex[ItemT]()
             self._item_constraints[key].index(item, constraint_value)
+
+    def delete(self, item: ItemT, constraints: Dict[str, ConstraintValue]) -> None:
+        for key, constraint_value in constraints.items():
+            self._all_items.remove(item)
+            self._item_constraints[key].delete(item, constraint_value)
 
 
 def to_filters(constraints: Dict[str, Any]):

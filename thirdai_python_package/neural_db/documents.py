@@ -256,6 +256,15 @@ class DocumentManager:
             doc.hash for doc in documents
         ]
 
+    def delete(self, source_id):
+        # TODO(Geordie): Error handling
+        doc, offset = self.registry[source_id]
+        deleted_entities = [offset + entity_id for entity_id in doc.all_entity_ids()]
+        del self.registry[source_id]
+        del self.source_id_prefix_trie[source_id]
+        self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+        return deleted_entities
+
     def entity_ids_by_constraints(self, constraints: Dict[str, Any]):
         filters = to_filters(constraints)
         return [
@@ -739,6 +748,10 @@ class URL(Document):
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
         return "\n".join(rows["text"])
+
+    def load_meta(self, directory: Path):
+        if not hasattr(self, "doc_metadata"):
+            self.doc_metadata = {}
 
 
 class SentenceLevelExtracted(Extracted):
