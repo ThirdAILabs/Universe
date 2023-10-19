@@ -10,10 +10,6 @@ namespace thirdai::bolt::seismic::python {
 void createSeismicSubmodule(py::module_& module) {
   auto seismic = module.def_submodule("seismic");
 
-  py::class_<SubcubeMetadata>(seismic, "SubcubeMetadata")
-      .def(py::init<std::string, size_t, size_t, size_t>(), py::arg("volume"),
-           py::arg("x"), py::arg("y"), py::arg("z"));
-
   py::class_<SeismicBase, std::shared_ptr<SeismicBase>>(seismic, "SeismicBase")
       .def("embeddings_for_patches", &SeismicBase::embeddingsForPatches,
            py::arg("subcubes"))

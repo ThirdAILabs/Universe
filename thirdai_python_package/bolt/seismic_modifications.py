@@ -8,19 +8,10 @@ import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, default_collate
 
 
-def median_blur(subcube):
-    return scipy.ndimage.median_filter(subcube, size=3)
-
-
-def gaussian_blur(subcube):
-    blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
-    return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
-
-
-class SubcubeDataset(Dataset):
+class UnsupervisedSubcubeDataset(Dataset):
     def __init__(self, subcube_directory, subcube_files, blur_subcube_fraction=0.0):
         self.subcube_directory = subcube_directory
         self.subcube_files = subcube_files
@@ -31,22 +22,44 @@ class SubcubeDataset(Dataset):
 
     def __getitem__(self, index):
         filename = self.subcube_files[index]
-        # We don't parse the metadata here because the torch data loader doesn't
-        # like the SubcubeMetadata object being returned by the dataset.
-        metadata = Path(filename).stem
+        metadata = UnsupervisedSubcubeDataset.parse_metadata(Path(filename).stem)
         subcube = np.load(os.path.join(self.subcube_directory, filename))
         subcube = subcube.astype(np.float32)
         if self.blur_subcube_fraction > 0:
             r = np.random.rand()
             if r < (self.blur_subcube_fraction / 2):
-                subcube = median_blur(subcube)
+                subcube = UnsupervisedSubcubeDataset.median_blur(subcube)
             elif r < self.blur_subcube_fraction:
-                subcube = gaussian_blur(subcube)
+                subcube = UnsupervisedSubcubeDataset.gaussian_blur(subcube)
 
         return subcube, metadata
 
+    @staticmethod
+    def parse_metadata(metadata):
+        volume, x, y, z = metadata.split("_")
+        return (volume, int(x), int(y), int(z))
 
-def convert_to_patches(subcubes, patch_shape, max_pool=None):
+    @staticmethod
+    def median_blur(subcube):
+        return scipy.ndimage.median_filter(subcube, size=3)
+
+    @staticmethod
+    def gaussian_blur(subcube):
+        blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
+        return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
+
+
+def unsupervised_collate(batch):
+    data, metadata = zip(*batch)
+    return default_collate(data), metadata
+
+
+def convert_to_patches(subcubes, expected_subcube_shape, patch_shape, max_pool=None):
+    if subcubes.shape[1:] != expected_subcube_shape:
+        raise ValueError(
+            f"Expected subcubes with shape {expected_subcube_shape}. But received subcubes with shape {subcubes.shape[1:]}"
+        )
+
     pd_x, pd_y, pd_z = patch_shape
     if max_pool:
         # Unsqueeze/squeeze are to add/remove the 'channels' dimension
@@ -112,9 +125,105 @@ class TimedIterator:
         return out
 
 
-def parse_metadata(metadata):
-    volume, x, y, z = metadata.split("_")
-    return bolt.seismic.SubcubeMetadata(volume=volume, x=int(x), y=int(y), z=int(z))
+def train_seismic_model(
+    seismic_model,
+    dataset: Dataset,
+    collate_fn,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    callbacks=[],
+    log_interval=20,
+    validation_fn=None,
+    max_data_in_memory=30,  # In Gb
+    comm=None,
+):
+    # Number of bytes per subcube
+    subcube_size = np.prod(seismic_model.subcube_shape) * 4
+    # Load less than 30Gb of subcubes
+    n_subcubes_per_chunk = min(
+        int((10**9) * max_data_in_memory / subcube_size), len(dataset)
+    )
+
+    data_loader = DataLoader(
+        dataset=dataset,
+        batch_size=n_subcubes_per_chunk,
+        shuffle=True,
+        num_workers=2,
+        collate_fn=collate_fn,
+    )
+
+    output_metrics = {"epoch_times": [], "train_loss": []}
+
+    for epoch in range(epochs):
+        epoch_start = time.perf_counter()
+
+        for subcubes, label_or_metadata in TimedIterator(data_loader):
+            patch_start = time.perf_counter()
+
+            subcubes = convert_to_patches(
+                subcubes=subcubes,
+                expected_subcube_shape=seismic_model.subcube_shape,
+                patch_shape=seismic_model.patch_shape,
+                max_pool=seismic_model.max_pool,
+            )
+
+            patch_end = time.perf_counter()
+
+            log(
+                f"Converted {subcubes.shape[0]} subcubes to patches in {patch_end - patch_start} seconds.",
+            )
+
+            metrics = seismic_model.train_on_patches(
+                subcubes,
+                label_or_metadata,
+                learning_rate=learning_rate,
+                batch_size=batch_size,
+                callbacks=callbacks,
+                log_interval=log_interval,
+                comm=comm,
+            )
+
+        epoch_end = time.perf_counter()
+
+        output_metrics["epoch_times"].append(epoch_end - epoch_start)
+        output_metrics["train_loss"].append(metrics["train_loss"][-1])
+
+        log(f"train | completed epoch {epoch} | time={epoch_end-epoch_start} ")
+
+        if validation_fn:
+            validation_fn(seismic_model)
+
+        return output_metrics
+
+
+def subcube_embeddings(seismic_model, subcubes):
+    subcubes = convert_to_patches(
+        torch.from_numpy(subcubes),
+        expected_subcube_shape=seismic_model.subcube_shape,
+        patch_shape=seismic_model.patch_shape,
+        max_pool=seismic_model.max_pool,
+    )
+    return seismic_model.embeddings_for_patches(subcubes)
+
+
+def score_subcubes(seismic_model, directory, target_subcube="tgt.npy"):
+    files = [file for file in os.listdir(directory) if file.endswith(".npy")]
+    if target_subcube not in files:
+        raise ValueError(f"Expected unable to find {target_subcube} in {directory}.")
+    files.remove(target_subcube)
+    target = np.load(os.path.join(directory, target_subcube))
+    candidates = [np.load(os.path.join(directory, file)) for file in files]
+
+    # Feed in as a batch for best parallelism.
+    embs = seismic_model.embeddings(np.stack([target] + candidates))
+
+    cosine_sims = np.matmul(embs[1:], embs[0])  # The fist embedding is the target.
+    magnitudes = np.linalg.norm(embs, axis=1, ord=2)
+    cosine_sims /= magnitudes[1:]  # The magnitude of the candidate embeddings.
+    cosine_sims /= magnitudes[0]  # The magnitude of the target embedding.
+
+    return sorted(list(zip(files, cosine_sims)), key=lambda x: x[1], reverse=True)
 
 
 def modify_seismic():
@@ -143,71 +252,25 @@ def modify_seismic():
             worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
             subcube_files = subcube_files[worker_start:worker_end]
 
-        # Number of bytes per subcube
-        subcube_size = np.prod(self.subcube_shape) * 4
-        # Load less than 30Gb of subcubes
-        n_subcubes_per_chunk = min(
-            int((10**9) * max_data_in_memory / subcube_size), len(subcube_files)
+        dataset = UnsupervisedSubcubeDataset(
+            subcube_directory=subcube_directory,
+            subcube_files=subcube_files,
+            blur_subcube_fraction=blur_subcubes_fraction,
         )
 
-        output_metrics = {"epoch_times": [], "train_loss": []}
-
-        for epoch in range(epochs):
-            epoch_start = time.perf_counter()
-
-            data_loader = DataLoader(
-                dataset=SubcubeDataset(
-                    subcube_directory=subcube_directory,
-                    subcube_files=subcube_files,
-                    blur_subcube_fraction=blur_subcubes_fraction,
-                ),
-                batch_size=n_subcubes_per_chunk,
-                shuffle=True,
-                num_workers=2,
-            )
-
-            for subcubes, metadata in TimedIterator(data_loader):
-                metadata = [parse_metadata(meta) for meta in metadata]
-
-                patch_start = time.perf_counter()
-
-                if subcubes.shape[1:] != self.subcube_shape:
-                    raise ValueError(
-                        f"Expected subcubes with shape {self.subcube_shape}. But received subcubes with shape {subcubes.shape[1:]}"
-                    )
-                subcubes = convert_to_patches(
-                    subcubes=subcubes,
-                    patch_shape=self.patch_shape,
-                    max_pool=self.max_pool,
-                )
-
-                patch_end = time.perf_counter()
-
-                log(
-                    f"Converted {subcubes.shape[0]} subcubes to patches in {patch_end - patch_start} seconds.",
-                )
-
-                metrics = self.train_on_patches(
-                    subcubes=subcubes,
-                    subcube_metadata=metadata,
-                    learning_rate=learning_rate,
-                    batch_size=batch_size,
-                    callbacks=callbacks,
-                    log_interval=log_interval,
-                    comm=comm,
-                )
-
-            epoch_end = time.perf_counter()
-
-            output_metrics["epoch_times"].append(epoch_end - epoch_start)
-            output_metrics["train_loss"].append(metrics["train_loss"][-1])
-
-            log(f"train | completed epoch {epoch} | time={epoch_end-epoch_start} ")
-
-            if validation_fn:
-                validation_fn(self)
-
-        return output_metrics
+        return train_seismic_model(
+            seismic_model=self,
+            dataset=dataset,
+            collate_fn=unsupervised_collate,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            callbacks=callbacks,
+            log_interval=log_interval,
+            validation_fn=validation_fn,
+            max_data_in_memory=max_data_in_memory,
+            comm=comm,
+        )
 
     def train_distributed(
         self,
@@ -323,33 +386,7 @@ def modify_seismic():
 
         self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
 
-    def wrapped_embeddings(self, subcubes):
-        subcubes = convert_to_patches(
-            torch.from_numpy(subcubes),
-            patch_shape=self.patch_shape,
-            max_pool=self.max_pool,
-        )
-        return self.embeddings_for_patches(subcubes)
-
-    def score_subcubes(self, directory, target_subcube="tgt.npy"):
-        files = [file for file in os.listdir(directory) if file.endswith(".npy")]
-        if target_subcube not in files:
-            raise ValueError(
-                f"Expected unable to find {target_subcube} in {directory}."
-            )
-        files.remove(target_subcube)
-        target = np.load(os.path.join(directory, target_subcube))
-        candidates = [np.load(os.path.join(directory, file)) for file in files]
-
-        # Feed in as a batch for best parallelism.
-        embs = self.embeddings(np.stack([target] + candidates))
-
-        embs /= np.linalg.norm(embs, axis=1, ord=2, keepdims=True)
-        cosine_sims = np.matmul(embs[1:], embs[0])  # The fist embedding is the target.
-
-        return sorted(list(zip(files, cosine_sims)), key=lambda x: x[1], reverse=True)
-
     bolt.seismic.SeismicEmbeddingModel.train = wrapped_train
     bolt.seismic.SeismicEmbeddingModel.train_distributed = train_distributed
-    bolt.seismic.SeismicEmbeddingModel.embeddings = wrapped_embeddings
+    bolt.seismic.SeismicEmbeddingModel.embeddings = subcube_embeddings
     bolt.seismic.SeismicEmbeddingModel.score_subcubes = score_subcubes
