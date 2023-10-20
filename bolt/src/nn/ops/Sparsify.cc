@@ -1,8 +1,8 @@
+#include "Sparsify.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include "Sparsify.h"
 #include <bolt/src/nn/autograd/Computation.h>
 #include <algorithm>
 #include <stdexcept>
@@ -108,7 +108,6 @@ ComputationPtr Sparsify::apply(ComputationPtr input) {
   return Computation::make(shared_from_this(), {std::move(input)});
 }
 
-
 template void Sparsify::serialize(cereal::BinaryInputArchive&);
 template void Sparsify::serialize(cereal::BinaryOutputArchive&);
 
@@ -117,9 +116,7 @@ void Sparsify::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _dim, _sparsity);
 }
 
-
 }  // namespace thirdai::bolt
-
 
 CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Sparsify,
                                "thirdai::bolt::nn::ops::Sparsify")
