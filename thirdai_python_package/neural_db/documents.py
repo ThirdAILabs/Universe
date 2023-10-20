@@ -796,20 +796,42 @@ class URL(Document):
 
 
 class DocumentConnector(Document):
-    def __init__(
-        self, doc_name: str, connector: Connector, metadata={}, save_extra_info=True
-    ) -> None:
-        self.doc_name = doc_name + ".csv"
-        self._connector = connector
-        self.doc_metadata = metadata
-        self.index_table: Optional[pd.DataFrame] = None
-        self.index_table_id_col = "id_in_document"
-        self._hash = self.hash_connection()
-        self._save_extra_info = save_extra_info
+    @property
+    def hash(self) -> str:
+        raise NotImplementedError()
 
     @property
-    def matched_constraints(self) -> Dict[str, ConstraintValue]:
-        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+    def connector(self) -> Connector:
+        raise NotImplementedError()
+
+    @connector.setter
+    def connector(self, **kwargs):
+        raise NotImplementedError()
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        raise NotImplementedError()
+
+    @property
+    def meta_table_id_col(self) -> str:
+        return "id_in_document"
+
+    def _add_meta_entry(self, current_doc_row_id: int):
+        if self.meta_table is None or (
+            len(
+                self.meta_table.loc[
+                    self.meta_table[self.meta_table_id_col] == current_doc_row_id
+                ]
+            )
+            > 0
+        ):
+            # row_iterator is being called twice, so add first time only
+            return
+
+        self.add_meta(current_doc_row_id)
+
+    def add_meta(self, current_doc_row_id: int):
+        raise NotImplementedError()
 
     def row_iterator(self):
         current_doc_row_id = 0
@@ -826,16 +848,9 @@ class DocumentConnector(Document):
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self._add_entry(row_id)
-
-    @property
-    def name(self) -> str:
-        return self.doc_name
+                self._add_meta_entry(row_id)
 
     def next_chunk(self) -> pd.DataFrame:
-        raise NotImplementedError()
-
-    def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
@@ -845,32 +860,12 @@ class DocumentConnector(Document):
         raise NotImplementedError()
 
     @property
-    def hash(self):
-        return self._hash
-
-    def _add_entry(self, current_doc_row_id: int):
-        if self.index_table is None or (
-            len(
-                self.index_table.loc[
-                    self.index_table[self.index_table_id_col] == current_doc_row_id
-                ]
-            )
-            > 0
-        ):
-            # row_iterator is being called twice, so add first time only
-            return
-
-        self.add_index_entry(current_doc_row_id)
-
-    def add_index_entry(self, current_doc_row_id: int):
-        raise NotImplementedError()
-
-    def hash_connection(self):
-        raise NotImplementedError()
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
     def save_meta(self, directory: Path):
         # Save the index table
-        if self._save_extra_info and self.index_table is not None:
+        if self.save_extra_info and self.index_table is not None:
             self.index_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
 
     def __getstate__(self):
@@ -900,24 +895,29 @@ class SQLDatabase(DocumentConnector):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         chunk_size=100_00,
+        save_extra_info=True,
         metadata={},
     ) -> None:
         self.table_name = table_name
-        self._connector = SQLConnector(
-            engine=engine,
-            columns=[id_col] + strong_columns + weak_columns + reference_columns,
-            table_name=table_name,
-            chunk_size=chunk_size,
-        )
-        super().__init__(
-            doc_name=table_name, connector=self._connector, metadata=metadata
-        )
         self.id_col = id_col
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
+        self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
+
+        self._connector = SQLConnector(
+            engine=engine,
+            columns=[self.id_col]
+            + self.strong_columns
+            + self.weak_columns
+            + self.reference_columns,
+            table_name=self.table_name,
+            chunk_size=chunk_size,
+        )
 
         self.total_rows = self._connector.total_rows()
+        self._hash = hash_string(string=str(engine.url) + f"/{self.table_name}")
 
         # Integrity checks
         self.assert_valid_id()
@@ -925,11 +925,19 @@ class SQLDatabase(DocumentConnector):
         self.assert_uniqueness()
 
     @property
-    def engine(self):
-        return self.engine
+    def name(self):
+        return self._connector._engine.url.database + "_" + self.table_name
 
-    @engine.setter
-    def engine(self, engine: sqlConn):
+    @property
+    def hash(self):
+        return self._hash
+
+    @property
+    def connector(self):
+        return self._connector._engine
+
+    @connector.setter
+    def connector(self, engine: sqlConn):
         self._connector = SQLConnector(
             engine=engine,
             columns=[self.id_col]
@@ -939,6 +947,10 @@ class SQLDatabase(DocumentConnector):
             table_name=self.table_name,
         )
 
+    @property
+    def meta_table(self):
+        return None
+
     def next_chunk(self) -> pd.DataFrame:
         return self._connector.chunk_iterator()
 
@@ -946,10 +958,6 @@ class SQLDatabase(DocumentConnector):
     def size(self) -> int:
         # It is verfied by the uniqueness assertion of the id column.
         return self.total_rows
-
-    def hash_connection(self) -> str:
-        self.engine_uq = str(self._connector.get_engine_url()) + f"/{self.table_name}"
-        return hash_string(self.engine_uq)
 
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
@@ -980,8 +988,12 @@ class SQLDatabase(DocumentConnector):
             document=self,
             element_id=element_id,
             text=text,
-            source=self.engine_uq,
-            metadata={**self.doc_metadata},
+            source=str(self._connector._engine.url),
+            metadata={
+                "Database": self._connector._engine.url.database,
+                "table_name": self.table_name,
+                **self.doc_metadata,
+            },
         )
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
@@ -1001,11 +1013,6 @@ class SQLDatabase(DocumentConnector):
             )
         except AttributeError as e:
             return ""
-
-    def add_index_entry(self, current_doc_row_id: int):
-        self.index_table.loc[len(self.index_table)] = {
-            self.index_table_id_col: current_doc_row_id
-        }
 
     def assert_valid_id(self):
         all_cols = self._connector.cols_metadata()

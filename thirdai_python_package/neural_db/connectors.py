@@ -6,7 +6,7 @@ from sqlalchemy.engine.base import Connection as sqlConn
 
 
 class Connector:
-    def next_batch(self) -> pd.DataFrame:
+    def chunk_iterator(self):
         raise NotImplementedError()
 
 
@@ -26,7 +26,6 @@ class SQLConnector(Connector):
 
     def execute(self, query: str, param={}):
         result = self._connection.execute(statement=text(query), parameters=param)
-        self._connection.commit()
         return result
 
     def get_engine_url(self):
