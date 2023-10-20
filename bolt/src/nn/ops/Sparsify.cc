@@ -27,7 +27,8 @@ void Sparsify::forward(const ComputationList& inputs, TensorPtr& output,
   } else {
     auto top_k = input_vec.findKLargestActivations(output_vec.len);
 
-    std::vector<std::pair<uint32_t, float>> nonzeros(top_k.size());
+    std::vector<std::pair<uint32_t, float>> nonzeros;
+    nonzeros.reserve(top_k.size());
     while (!top_k.empty()) {
       nonzeros.emplace_back(top_k.top().second, top_k.top().first);
       top_k.pop();

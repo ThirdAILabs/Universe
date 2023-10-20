@@ -124,6 +124,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
   void makeSparseLabels() {
     for (uint32_t b = 0; b < BATCH_SIZE; b++) {
       auto output_indices = genRandomIndices(SPARSE_LAYER_DIM, LAYER_DIM);
+      std::sort(output_indices.begin(), output_indices.end());
       BoltVector labels = BoltVector::makeSparseVector(
           output_indices, std::vector<float>(SPARSE_LAYER_DIM, 1.0));
 

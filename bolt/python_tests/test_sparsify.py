@@ -29,7 +29,7 @@ def test_sparsify():
     output_indices = sparsify.tensor().active_neurons
     output_values = sparsify.tensor().activations
 
-    expected_indices = np.argsort(inputs)[:, -int(DIM * SPARSITY) :]
+    expected_indices = np.sort(np.argsort(inputs)[:, -int(DIM * SPARSITY) :])
     expected_values = inputs[
         np.arange(len(expected_indices))[:, None], expected_indices
     ]
