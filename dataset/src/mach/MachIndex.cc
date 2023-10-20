@@ -167,15 +167,15 @@ TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
 std::vector<uint32_t> MachIndex::entitiesInTopBuckets(
     const BoltVector& output, uint32_t num_buckets_to_eval) const {
   auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
-  std::vector<uint32_t> entities(top_k.size());
+  std::unordered_set<uint32_t> entities_set;
   while (!top_k.empty()) {
     for (uint32_t entity : _buckets.at(top_k.top().second)) {
-      entities.push_back(entity);
+      entities_set.insert(entity);
     }
     top_k.pop();
   }
 
-  return entities;
+  return {entities_set.begin(), entities_set.end()};
 }
 
 std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
