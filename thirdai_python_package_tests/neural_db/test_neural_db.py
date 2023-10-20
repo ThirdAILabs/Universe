@@ -583,7 +583,7 @@ def test_neural_db_constrained_search_row_level_constraints():
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
-            index_columns=["date"],
+            index_columns=[("date", str)],
         )
     ]
     db = ndb.NeuralDB()

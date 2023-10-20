@@ -394,7 +394,10 @@ class CSV(Document):
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
-        self.indexed_columns = index_columns
+        self.indexed_columns = [column for column, _ in index_columns]
+
+        for column, typecast in index_columns:
+            self.df[column].apply(typecast)
 
     @property
     def hash(self) -> str:
