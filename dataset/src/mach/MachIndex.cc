@@ -167,15 +167,15 @@ TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
 std::vector<uint32_t> MachIndex::entitiesInTopBuckets(
     const BoltVector& output, uint32_t num_buckets_to_eval) const {
   auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
-  std::unordered_set<uint32_t> entities_set;
+  std::vector<uint32_t> entities;
   while (!top_k.empty()) {
     for (uint32_t entity : _buckets.at(top_k.top().second)) {
-      entities_set.insert(entity);
+      entities.push_back(entity);
     }
     top_k.pop();
   }
 
-  return {entities_set.begin(), entities_set.end()};
+  return entities;
 }
 
 std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
@@ -187,6 +187,9 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
 
   std::unordered_map<uint32_t, double> entity_to_scores;
   for (uint32_t entity : entities) {
+    if (entity_to_scores.count(entity)) {
+      continue;
+    }
     for (uint32_t hash : getHashes(entity)) {
       float score = activations.count(hash) ? activations.at(hash) : 0.0;
       entity_to_scores[entity] += score;
@@ -200,6 +203,9 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresDense(
     const BoltVector& output, const std::vector<uint32_t>& entities) const {
   std::unordered_map<uint32_t, double> entity_to_scores;
   for (uint32_t entity : entities) {
+    if (entity_to_scores.count(entity)) {
+      continue;
+    }
     for (uint32_t hash : getHashes(entity)) {
       entity_to_scores[entity] += output.activations[hash];
     }
