@@ -53,7 +53,7 @@ def subcube_directory():
 @pytest.mark.distributed
 def test_distributed_seismic_model(subcube_directory):
     emb_dim = 256
-    model = bolt.seismic.SeismicEmbeddingModel(
+    model = bolt.seismic.SeismicEmbedding(
         subcube_shape=SUBCUBE_SHAPE[0],
         patch_shape=PATCH_SHAPE[0],
         embedding_dim=emb_dim,

@@ -63,16 +63,12 @@ class SeismicBase {
 
   virtual ~SeismicBase() = default;
 
- private:
+ protected:
   Dataset convertToBatches(const NumpyArray& array, size_t batch_size) const;
 
-  static std::pair<ModelPtr, ComputationPtr> buildModel(size_t n_patches,
-                                                        size_t patch_dim,
-                                                        size_t embedding_dim,
-                                                        size_t n_output_classes,
-                                                        float output_sparsity);
-
   ModelPtr _model;
+
+ private:
   ComputationPtr _emb;
 
   InputShapeData _input_shape_data;

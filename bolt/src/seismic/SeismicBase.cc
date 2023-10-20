@@ -103,41 +103,6 @@ Dataset SeismicBase::convertToBatches(const NumpyArray& array,
   return batches;
 }
 
-std::pair<ModelPtr, ComputationPtr> SeismicBase::buildModel(
-    size_t n_patches, size_t patch_dim, size_t embedding_dim,
-    size_t n_output_classes, float output_sparsity) {
-  auto patches = Input::make(n_patches * patch_dim);
-
-  size_t patch_emb_dim = 100000;
-  auto patch_emb =
-      PatchEmbedding::make(
-          /*emb_dim=*/patch_emb_dim, /*patch_dim=*/patch_dim,
-          /*n_patches=*/n_patches, /*sparsity=*/0.01, /*activation=*/"relu")
-          ->apply(patches);
-
-  auto aggregated_embs = PatchSum::make(/*n_patches=*/n_patches,
-                                        /*patch_dim=*/patch_emb_dim)
-                             ->apply(patch_emb);
-
-  auto emb = FullyConnected::make(
-                 /*dim=*/embedding_dim, /*input_dim=*/aggregated_embs->dim(),
-                 /* sparsity=*/1.0, /*activation=*/"tanh")
-                 ->apply(aggregated_embs);
-
-  auto output = FullyConnected::make(
-                    /*dim=*/n_output_classes, /*input_dim=*/emb->dim(),
-                    /*sparsity=*/output_sparsity,
-                    /*activation=*/"softmax")
-                    ->apply(emb);
-
-  auto loss =
-      CategoricalCrossEntropy::make(output, Input::make(n_output_classes));
-
-  auto model = Model::make({patches}, {output}, {loss});
-
-  return {model, emb};
-}
-
 template void SeismicBase::serialize(cereal::BinaryInputArchive&);
 template void SeismicBase::serialize(cereal::BinaryOutputArchive&);
 

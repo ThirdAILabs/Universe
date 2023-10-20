@@ -1,4 +1,5 @@
 #include "SeismicClassifier.h"
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -30,6 +31,15 @@ metrics::History SeismicClassifier::trainOnPatches(
   return SeismicBase::trainOnPatches(
       subcubes, makeLabelbatches(std::move(labels), batch_size), learning_rate,
       batch_size, callbacks, log_interval, comm);
+}
+
+NumpyArray SeismicClassifier::predictionsForPatches(
+    const NumpyArray& subcubes) {
+  auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);
+
+  auto output = _model->forward(batch).at(0);
+
+  return python::tensorToNumpy(output, /* single_row_to_vector= */ false);
 }
 
 Dataset SeismicClassifier::makeLabelbatches(

@@ -19,7 +19,7 @@ void createSeismicSubmodule(py::module_& module) {
       .def_property("model", &SeismicBase::getModel, &SeismicBase::setModel);
 
   py::class_<SeismicEmbedding, std::shared_ptr<SeismicEmbedding>, SeismicBase>(
-      seismic, "SeismicEmbeddingModel")
+      seismic, "SeismicEmbedding")
       .def(py::init(&SeismicEmbedding::make), py::arg("subcube_shape"),
            py::arg("patch_shape"), py::arg("embedding_dim"),
            py::arg("size") = "large", py::arg("max_pool") = std::nullopt)
@@ -40,6 +40,8 @@ void createSeismicSubmodule(py::module_& module) {
            py::arg("subcubes"), py::arg("labels"), py::arg("learning_rate"),
            py::arg("batch_size"), py::arg("callbacks"), py::arg("log_interval"),
            py::arg("comm") = nullptr)
+      .def("predictions_for_patches", &SeismicClassifier::predictionsForPatches,
+           py::arg("subcubes"))
       .def("save", &SeismicClassifier::save, py::arg("filename"))
       .def_static("load", &SeismicClassifier::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<SeismicClassifier>());

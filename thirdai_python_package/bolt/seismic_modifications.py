@@ -292,7 +292,18 @@ def train_classifier(
     comm=None,
 ):
     sample_index = pd.read_csv(sample_index_file)
+    if "labels" not in sample_index.columns or "subcube" not in sample_index.columns:
+        raise ValueError(
+            "Expected sample index to contain the columns 'labels' and 'subcube'."
+        )
     sample_index = sample_index.sample(frac=1.0)
+    if sample_index["labels"].dtype == object:
+        sample_index["labels"] = sample_index["labels"].apply(
+            lambda x: list(map(int, x.split(" ")))
+        )
+    elif sample_index["labels"].dtype == int:
+        sample_index["labels"] = sample_index["labels"].apply(lambda x: [x])
+    sample_index["subcube"] = sample_index["subcube"].apply(os.path.abspath)
 
     if comm:
         # For distributed training give each worker a seperate partition of the subcubes.
@@ -421,6 +432,17 @@ def subcube_embeddings(seismic_model, subcubes):
     return seismic_model.embeddings_for_patches(subcubes)
 
 
+def classifier_predict(seismic_classifier, subcubes):
+    subcubes = convert_to_patches(
+        torch.from_numpy(subcubes),
+        expected_subcube_shape=seismic_classifier.subcube_shape,
+        patch_shape=seismic_classifier.patch_shape,
+        max_pool=seismic_classifier.max_pool,
+    )
+
+    return seismic_classifier.predictions_for_patches(subcubes)
+
+
 def score_subcubes(seismic_model, directory, target_subcube="tgt.npy"):
     files = [file for file in os.listdir(directory) if file.endswith(".npy")]
     if target_subcube not in files:
@@ -445,5 +467,6 @@ def modify_seismic():
     bolt.seismic.SeismicBase.embeddings = subcube_embeddings
     bolt.seismic.SeismicBase.score_subcubes = score_subcubes
 
-    bolt.seismic.SeismicEmbeddingModel.train = train_embedding_model
+    bolt.seismic.SeismicEmbedding.train = train_embedding_model
     bolt.seismic.SeismicClassifier.train = train_classifier
+    bolt.seismic.SeismicClassifier.predict = classifier_predict

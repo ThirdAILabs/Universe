@@ -2,12 +2,14 @@ import os
 import shutil
 
 import numpy as np
+import pandas as pd
 import pytest
 import torch
 from thirdai import bolt
 
-SUBCUBE_SHAPE = (64, 64, 64)
-PATCH_SHAPE = (16, 16, 16)
+SUBCUBE_SHAPE = (32, 32, 32)
+PATCH_SHAPE = (8, 8, 8)
+N_CLASSIFICATION_CLASSES = 10
 
 
 def create_subcubes(volume, volume_name, out_dir, shape, stride):
@@ -29,7 +31,7 @@ def create_subcubes(volume, volume_name, out_dir, shape, stride):
                 np.save(os.path.join(out_dir, subcube_name), subcube)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def subcube_directory():
     subcube_dir = "./subcubes"
     os.makedirs(subcube_dir, exist_ok=True)
@@ -52,8 +54,8 @@ def subcube_directory():
 @pytest.mark.unit
 @pytest.mark.parametrize("max_pool", [None, 2])
 def test_seismic_model(subcube_directory, max_pool):
-    emb_dim = 256
-    model = bolt.seismic.SeismicEmbeddingModel(
+    emb_dim = 100
+    model = bolt.seismic.SeismicEmbedding(
         subcube_shape=SUBCUBE_SHAPE[0],
         patch_shape=PATCH_SHAPE[0],
         embedding_dim=emb_dim,
@@ -102,7 +104,55 @@ def test_seismic_model(subcube_directory, max_pool):
         f"candidate_{i}.npy" for i in range(n_cubes_to_embed)
     )
 
+
+@pytest.fixture(scope="session")
+def classification_dataset(subcube_directory):
+    subcubes = [
+        os.path.join(subcube_directory, file) for file in os.listdir(subcube_directory)
+    ]
+    labels = np.random.randint(0, N_CLASSIFICATION_CLASSES, size=len(subcubes))
+
+    df = pd.DataFrame({"labels": labels, "subcube": subcubes})
+
+    sample_index = "./seismic_sample_index.csv"
+    df.to_csv(sample_index, sep=",", index=False)
+
+    yield sample_index
+
+    os.remove(sample_index)
+
+
+@pytest.mark.unit
+def test_seismic_classifier(classification_dataset):
+    emb_dim = 100
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=SUBCUBE_SHAPE[0],
+        patch_shape=PATCH_SHAPE[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
     classifier = bolt.seismic.SeismicClassifier(model, n_classes=10)
+
+    classifier.train(
+        sample_index_file=classification_dataset,
+        learning_rate=0.0001,
+        epochs=1,
+        batch_size=8,
+    )
+
+    n_cubes_to_embed = 2
+    subcubes_to_embed = (
+        np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(np.float32) / 10
+    )
+
+    assert np.array_equal(
+        model.embeddings(subcubes_to_embed), classifier.embeddings(subcubes_to_embed)
+    )
+
+    predictions = classifier.predict(subcubes_to_embed)
+    assert predictions.shape == (n_cubes_to_embed, N_CLASSIFICATION_CLASSES)
 
 
 @pytest.mark.unit
