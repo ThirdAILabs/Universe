@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
+#include <cereal/access.hpp>
 #include <memory>
 
 namespace thirdai::bolt {
@@ -46,6 +47,13 @@ class Sparsify final : public Op,
  private:
   size_t _dim = 0;
   float _sparsity;
+
+  Sparsify() {};
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
+
 };
 
 using SparsifyPtr = std::shared_ptr<Sparsify>;
