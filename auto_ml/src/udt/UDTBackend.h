@@ -84,9 +84,10 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
-  virtual py::object scoreBatch(const MapInputBatch& samples,
-                                const std::vector<std::vector<Label>>& classes,
-                                std::optional<uint32_t> top_k) {
+  virtual py::object scoreBatch(
+      const MapInputBatch& samples,
+      const std::vector<std::vector<uint32_t>>& classes,
+      std::optional<uint32_t> top_k) {
     (void)samples;
     (void)classes;
     (void)top_k;

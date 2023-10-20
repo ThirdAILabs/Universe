@@ -71,7 +71,7 @@ class UDTMachClassifier final : public UDTBackend {
                                 std::optional<uint32_t> num_hashes) final;
 
   py::object scoreBatch(const MapInputBatch& samples,
-                        const std::vector<std::vector<Label>>& classes,
+                        const std::vector<std::vector<uint32_t>>& classes,
                         std::optional<uint32_t> top_k) final;
 
   py::object outputCorrectness(const MapInputBatch& samples,

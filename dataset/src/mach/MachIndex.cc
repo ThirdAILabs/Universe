@@ -78,7 +78,7 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
 }
 
 std::vector<std::pair<uint32_t, double>> MachIndex::scoreEntities(
-    const BoltVector& output, const std::unordered_set<uint32_t>& entities,
+    const BoltVector& output, const std::vector<uint32_t>& entities,
     std::optional<uint32_t> top_k) const {
   std::unordered_map<uint32_t, double> entity_to_scores;
 
@@ -164,13 +164,13 @@ TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
   return top_k;
 }
 
-std::unordered_set<uint32_t> MachIndex::entitiesInTopBuckets(
+std::vector<uint32_t> MachIndex::entitiesInTopBuckets(
     const BoltVector& output, uint32_t num_buckets_to_eval) const {
   auto top_k = topKNonEmptyBuckets(output, num_buckets_to_eval);
-  std::unordered_set<uint32_t> entities;
+  std::vector<uint32_t> entities(top_k.size());
   while (!top_k.empty()) {
     for (uint32_t entity : _buckets.at(top_k.top().second)) {
-      entities.insert(entity);
+      entities.push_back(entity);
     }
     top_k.pop();
   }
@@ -179,8 +179,7 @@ std::unordered_set<uint32_t> MachIndex::entitiesInTopBuckets(
 }
 
 std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
-    const BoltVector& output,
-    const std::unordered_set<uint32_t>& entities) const {
+    const BoltVector& output, const std::vector<uint32_t>& entities) const {
   std::unordered_map<uint32_t, float> activations;
   for (uint32_t i = 0; i < output.len; i++) {
     activations[output.active_neurons[i]] = output.activations[i];
@@ -198,8 +197,7 @@ std::unordered_map<uint32_t, double> MachIndex::entityScoresSparse(
 }
 
 std::unordered_map<uint32_t, double> MachIndex::entityScoresDense(
-    const BoltVector& output,
-    const std::unordered_set<uint32_t>& entities) const {
+    const BoltVector& output, const std::vector<uint32_t>& entities) const {
   std::unordered_map<uint32_t, double> entity_to_scores;
   for (uint32_t entity : entities) {
     for (uint32_t hash : getHashes(entity)) {

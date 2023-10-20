@@ -96,7 +96,7 @@ class UDT {
    * for each of the provided output classes.
    */
   py::object scoreBatch(const MapInputBatch& samples,
-                        const std::vector<std::vector<Label>>& classes,
+                        const std::vector<std::vector<uint32_t>>& classes,
                         std::optional<uint32_t> top_k);
 
   py::object outputCorrectness(const MapInputBatch& sample,
