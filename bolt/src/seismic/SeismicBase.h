@@ -23,6 +23,8 @@ class SeismicBase {
  public:
   SeismicBase(InputShapeData input_shape_data, ModelPtr model);
 
+  SeismicBase() {}  // For serialization only.
+
   metrics::History trainOnPatches(
       const NumpyArray& subcubes, Dataset&& labels, float learning_rate,
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
@@ -57,13 +59,7 @@ class SeismicBase {
     return label_dims[0];
   }
 
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output) const;
-
-  static std::shared_ptr<SeismicBase> load(const std::string& filename);
-
-  static std::shared_ptr<SeismicBase> load_stream(std::istream& input);
+  virtual void save(const std::string& filename) const = 0;
 
   virtual ~SeismicBase() = default;
 
@@ -81,8 +77,6 @@ class SeismicBase {
 
   InputShapeData _input_shape_data;
 
-  SeismicBase() : _input_shape_data({}, {}, {}) {}
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
@@ -90,20 +84,16 @@ class SeismicBase {
 
 class Checkpoint final : public callbacks::Callback {
  public:
-  Checkpoint(std::shared_ptr<SeismicBase> seismic_model,
+  Checkpoint(std::shared_ptr<SeismicBase> model,
              const std::string& checkpoint_dir, size_t interval)
-      : _seismic_model(std::move(seismic_model)),
+      : _model(std::move(model)),
         _checkpoint_dir(checkpoint_dir),
         _interval(interval) {}
 
   void onBatchEnd() final {
     if ((model->trainSteps() % _interval) == (_interval - 1)) {
-      _seismic_model->save(checkpointPath());
+      _model->save(checkpointPath());
     }
-  }
-
-  void onEpochEnd() final {
-    _seismic_model->save(checkpointPath() + "_epoch_end");
   }
 
  private:
@@ -112,7 +102,7 @@ class Checkpoint final : public callbacks::Callback {
     return (_checkpoint_dir / ckpt).string();
   }
 
-  std::shared_ptr<SeismicBase> _seismic_model;
+  std::shared_ptr<SeismicBase> _model;
   std::filesystem::path _checkpoint_dir;
   size_t _interval;
 };

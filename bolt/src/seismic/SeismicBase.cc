@@ -138,30 +138,6 @@ std::pair<ModelPtr, ComputationPtr> SeismicBase::buildModel(
   return {model, emb};
 }
 
-void SeismicBase::save(const std::string& filename) const {
-  auto output = dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(output);
-}
-
-void SeismicBase::save_stream(std::ostream& output) const {
-  cereal::BinaryOutputArchive oarchive(output);
-  _model->setSerializeOptimizer(/* should_save_optimizer= */ true);
-  oarchive(*this);
-}
-
-std::shared_ptr<SeismicBase> SeismicBase::load(const std::string& filename) {
-  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(input_stream);
-}
-
-std::shared_ptr<SeismicBase> SeismicBase::load_stream(std::istream& input) {
-  cereal::BinaryInputArchive iarchive(input);
-  std::shared_ptr<SeismicBase> deserialize_into(new SeismicBase());
-  iarchive(*deserialize_into);
-
-  return deserialize_into;
-}
-
 template void SeismicBase::serialize(cereal::BinaryInputArchive&);
 template void SeismicBase::serialize(cereal::BinaryOutputArchive&);
 

@@ -16,10 +16,7 @@ void createSeismicSubmodule(py::module_& module) {
       .def_property_readonly("subcube_shape", &SeismicBase::subcubeShape)
       .def_property_readonly("patch_shape", &SeismicBase::patchShape)
       .def_property_readonly("max_pool", &SeismicBase::maxPool)
-      .def_property("model", &SeismicBase::getModel, &SeismicBase::setModel)
-      .def("save", &SeismicBase::save, py::arg("filename"))
-      .def_static("load", &SeismicBase::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<SeismicBase>());
+      .def_property("model", &SeismicBase::getModel, &SeismicBase::setModel);
 
   py::class_<SeismicEmbedding, std::shared_ptr<SeismicEmbedding>, SeismicBase>(
       seismic, "SeismicEmbeddingModel")
@@ -30,7 +27,10 @@ void createSeismicSubmodule(py::module_& module) {
            py::arg("subcubes"), py::arg("subcube_metadata"),
            py::arg("learning_rate"), py::arg("batch_size"),
            py::arg("callbacks"), py::arg("log_interval"),
-           py::arg("comm") = nullptr);
+           py::arg("comm") = nullptr)
+      .def("save", &SeismicEmbedding::save, py::arg("filename"))
+      .def_static("load", &SeismicEmbedding::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<SeismicEmbedding>());
 
   py::class_<SeismicClassifier, std::shared_ptr<SeismicClassifier>,
              SeismicBase>(seismic, "SeismicClassifier")
@@ -39,7 +39,10 @@ void createSeismicSubmodule(py::module_& module) {
       .def("train_on_patches", &SeismicClassifier::trainOnPatches,
            py::arg("subcubes"), py::arg("labels"), py::arg("learning_rate"),
            py::arg("batch_size"), py::arg("callbacks"), py::arg("log_interval"),
-           py::arg("comm") = nullptr);
+           py::arg("comm") = nullptr)
+      .def("save", &SeismicClassifier::save, py::arg("filename"))
+      .def_static("load", &SeismicClassifier::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<SeismicClassifier>());
 
   py::class_<seismic::Checkpoint, std::shared_ptr<seismic::Checkpoint>,
              callbacks::Callback>(seismic, "Checkpoint")

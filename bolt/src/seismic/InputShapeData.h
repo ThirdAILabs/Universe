@@ -35,6 +35,8 @@ class InputShapeData {
     }
   }
 
+  InputShapeData() {}  // Should only be used for cerealization
+
   const Shape& subcubeShape() const { return _subcube_shape; }
 
   const Shape& patchShape() const { return _patch_shape; }
@@ -74,8 +76,6 @@ class InputShapeData {
   Shape _subcube_shape;
   Shape _patch_shape;
   std::optional<Shape> _max_pool;
-
-  InputShapeData() {}
 
   friend class cereal::access;
   template <class Archive>

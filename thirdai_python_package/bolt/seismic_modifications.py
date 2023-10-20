@@ -151,12 +151,23 @@ def train_seismic_model(
     learning_rate: float,
     epochs: int,
     batch_size: int,
-    callbacks=[],
+    checkpoint_dir: str = None,
+    checkpoint_interval: int = 1000,
     log_interval=20,
     validation_fn=None,
     max_data_in_memory=30,  # In Gb
     comm=None,
 ):
+    callbacks = []
+    if checkpoint_dir:
+        callbacks = [
+            bolt.seismic.Checkpoint(
+                seismic_model=seismic_model,
+                checkpoint_dir=checkpoint_dir,
+                interval=checkpoint_interval,
+            )
+        ]
+
     # Number of bytes per subcube
     subcube_size = np.prod(seismic_model.subcube_shape) * 4
     # Load less than 30Gb of subcubes
@@ -213,7 +224,10 @@ def train_seismic_model(
         if validation_fn:
             validation_fn(seismic_model)
 
-        return output_metrics
+        if checkpoint_dir:
+            seismic_model.save(os.path.join(checkpoint_dir, f"epoch_{epoch}_end"))
+
+    return output_metrics
 
 
 def train_embedding_model(
@@ -222,7 +236,8 @@ def train_embedding_model(
     learning_rate: float,
     epochs: int,
     batch_size: int,
-    callbacks=[],
+    checkpoint_dir: str = None,
+    checkpoint_interval: int = 1000,
     log_interval=20,
     validation_fn=None,
     blur_subcubes_fraction=0.0,
@@ -253,7 +268,8 @@ def train_embedding_model(
         learning_rate=learning_rate,
         epochs=epochs,
         batch_size=batch_size,
-        callbacks=callbacks,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_interval=checkpoint_interval,
         log_interval=log_interval,
         validation_fn=validation_fn,
         max_data_in_memory=max_data_in_memory,
@@ -267,7 +283,8 @@ def train_classifier(
     learning_rate: float,
     epochs: int,
     batch_size: int,
-    callbacks=[],
+    checkpoint_dir: str = None,
+    checkpoint_interval: int = 1000,
     log_interval=20,
     validation_fn=None,
     blur_subcubes_fraction=0.0,  # Unused
@@ -290,7 +307,8 @@ def train_classifier(
         learning_rate=learning_rate,
         epochs=epochs,
         batch_size=batch_size,
-        callbacks=callbacks,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_interval=checkpoint_interval,
         log_interval=log_interval,
         validation_fn=validation_fn,
         max_data_in_memory=max_data_in_memory,
@@ -336,22 +354,13 @@ def train_distributed(
 
         model = ray.get(config["model_ref"])
 
-        callbacks = []
-        if rank == 0:
-            callbacks = [
-                bolt.seismic.Checkpoint(
-                    seismic_model=model,
-                    checkpoint_dir=config["checkpoint_dir"],
-                    interval=config["checkpoint_interval"],
-                )
-            ]
-
         metrics = model.train(
             config["data_path"],
             learning_rate=config["learning_rate"],
             epochs=config["epochs"],
             batch_size=config["batch_size"] // world_size,
-            callbacks=callbacks,
+            checkpoint_dir=config["checkpoint_dir"] if rank == 0 else None,
+            checkpoint_interval=config["checkpoint_interval"],
             log_interval=config["log_interval"],
             validation_fn=config["validation_fn"] if rank == 0 else None,
             blur_subcubes_fraction=config["blur_subcubes_fraction"],

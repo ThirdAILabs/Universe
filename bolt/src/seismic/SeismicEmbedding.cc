@@ -154,6 +154,32 @@ ModelPtr SeismicEmbedding::buildModel(size_t n_patches, size_t patch_dim,
   return Model::make({patches}, {output}, {loss});
 }
 
+void SeismicEmbedding::save(const std::string& filename) const {
+  auto output = dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(output);
+}
+
+void SeismicEmbedding::save_stream(std::ostream& output) const {
+  cereal::BinaryOutputArchive oarchive(output);
+  getModel()->setSerializeOptimizer(/* should_save_optimizer= */ true);
+  oarchive(*this);
+}
+
+std::shared_ptr<SeismicEmbedding> SeismicEmbedding::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(input_stream);
+}
+
+std::shared_ptr<SeismicEmbedding> SeismicEmbedding::load_stream(
+    std::istream& input) {
+  cereal::BinaryInputArchive iarchive(input);
+  std::shared_ptr<SeismicEmbedding> deserialize_into(new SeismicEmbedding());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
 template void SeismicEmbedding::serialize(cereal::BinaryInputArchive&);
 template void SeismicEmbedding::serialize(cereal::BinaryOutputArchive&);
 

@@ -103,7 +103,7 @@ def test_seismic_model(subcube_directory, max_pool):
     )
 
     classifier = bolt.seismic.SeismicClassifier(model, n_classes=10)
-    
+
 
 @pytest.mark.unit
 def test_create_patches():
@@ -111,7 +111,9 @@ def test_create_patches():
 
     cubes = torch.stack([integer_cube, 512 + integer_cube, 1024 + integer_cube])
 
-    patches = bolt.seismic_modifications.convert_to_patches(cubes, (4, 4, 4))
+    patches = bolt.seismic_modifications.convert_to_patches(
+        cubes, expected_subcube_shape=(8, 8, 8), patch_shape=(4, 4, 4)
+    )
 
     patch = 0
     ranges = [(0, 4), (4, 8)]
@@ -133,7 +135,12 @@ def test_create_patches_max_pool():
 
     cubes = torch.stack([integer_cube, 512 + integer_cube, 1024 + integer_cube])
 
-    patches = bolt.seismic_modifications.convert_to_patches(cubes, (4, 4, 4), (2, 2, 2))
+    patches = bolt.seismic_modifications.convert_to_patches(
+        cubes,
+        expected_subcube_shape=(8, 8, 8),
+        patch_shape=(4, 4, 4),
+        max_pool=(2, 2, 2),
+    )
 
     pooled_cube = np.zeros((4, 4, 4))
     for x in range(4):

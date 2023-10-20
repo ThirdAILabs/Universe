@@ -66,7 +66,7 @@ def test_distributed_seismic_model(subcube_directory):
     log_file = "seismic_log"
     checkpoint_dir = "seismic_checkpoints"
     model.train_distributed(
-        subcube_directory=subcube_directory,
+        data_path=subcube_directory,
         learning_rate=0.0001,
         epochs=2,
         batch_size=8,

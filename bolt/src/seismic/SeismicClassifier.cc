@@ -78,6 +78,32 @@ ModelPtr SeismicClassifier::addClassifierHead(const ModelPtr& emb_model,
   return Model::make({patches}, {output}, {loss});
 }
 
+void SeismicClassifier::save(const std::string& filename) const {
+  auto output = dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(output);
+}
+
+void SeismicClassifier::save_stream(std::ostream& output) const {
+  cereal::BinaryOutputArchive oarchive(output);
+  getModel()->setSerializeOptimizer(/* should_save_optimizer= */ true);
+  oarchive(*this);
+}
+
+std::shared_ptr<SeismicClassifier> SeismicClassifier::load(
+    const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(input_stream);
+}
+
+std::shared_ptr<SeismicClassifier> SeismicClassifier::load_stream(
+    std::istream& input) {
+  cereal::BinaryInputArchive iarchive(input);
+  std::shared_ptr<SeismicClassifier> deserialize_into(new SeismicClassifier());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
 template void SeismicClassifier::serialize(cereal::BinaryInputArchive&);
 template void SeismicClassifier::serialize(cereal::BinaryOutputArchive&);
 

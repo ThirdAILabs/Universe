@@ -26,6 +26,14 @@ class SeismicEmbedding final : public SeismicBase {
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
+  void save(const std::string& filename) const final;
+
+  void save_stream(std::ostream& output) const;
+
+  static std::shared_ptr<SeismicEmbedding> load(const std::string& filename);
+
+  static std::shared_ptr<SeismicEmbedding> load_stream(std::istream& input);
+
  private:
   Dataset makeLabelBatches(const std::vector<SubcubeMetadata>& subcube_metadata,
                            size_t batch_size) const;
@@ -46,7 +54,7 @@ class SeismicEmbedding final : public SeismicBase {
 
   size_t _n_output_classes;
 
-  SeismicEmbedding() : SeismicBase({{}, {}, {}}, {}) {}
+  SeismicEmbedding() {}
 
   friend class cereal::access;
   template <class Archive>
