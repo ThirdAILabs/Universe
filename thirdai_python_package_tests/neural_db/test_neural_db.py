@@ -565,3 +565,113 @@ def test_neural_db_constrained_search_no_matches():
         "hello", top_k=10, constraints={"date": ndb.GreaterThan("2024-01-01")}
     )
     assert len(references) == 0
+
+
+def test_neural_db_constrained_search_row_level_constraints():
+    csv_contents = [
+        "id,text,date",
+    ] + [f"{i},a reusable chunk of text,{1950 + i}-10-10" for i in range(100)]
+
+    with open("chunks.csv", "w") as o:
+        for line in csv_contents:
+            o.write(line + "\n")
+
+    documents = [
+        ndb.CSV(
+            "chunks.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            index_columns=["date"],
+        )
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=True)
+
+    references = db.search(
+        "a reusable chunk of text",
+        top_k=52,
+        constraints={"date": ndb.GreaterThan("2000-01-01")},
+    )
+    assert len(references) > 0
+    assert all([r.metadata["date"] > "2000-01-01" for r in references])
+
+    references = db.search("a reusable chunk of text", top_k=52)
+    assert any([r.metadata["date"] < "2000-01-01" for r in references])
+    assert any([r.metadata["date"] > "2000-01-01" for r in references])
+
+
+def test_neural_db_delete_document():
+    with open("ice_cream.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("ice cream,0\n")
+
+    with open("pizza.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("pizza,0\n")
+
+    db = ndb.NeuralDB()
+    docs = [
+        ndb.CSV(
+            "ice_cream.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            metadata={"about": "ice cream"},
+        ),
+        ndb.CSV(
+            "pizza.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            metadata={"about": "pizza"},
+        ),
+    ]
+
+    for _ in range(5):
+        [ice_cream_source_id, _] = db.insert(docs, train=True)
+
+    # We will delete the ice cream file. To know that we successfully deleted
+    # it, make sure it comes up as a search result before deleting, and does not
+    # come up after deleting.
+    result = db.search("ice cream", top_k=1)[0]
+    assert result.text == "text: ice cream"
+    ice_cream_id = result.id
+
+    result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
+    assert result.text == "text: ice cream"
+
+    db.delete(ice_cream_source_id)
+
+    results = db.search("ice cream", top_k=1)
+    # pizza may not come up, so check if we got any result at all.
+    if len(results) > 0:
+        assert results[0].text != "text: ice cream"
+
+    results = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})
+    assert len(results) == 0
+
+    # Make sure the other document is unaffected
+    result = db.search("pizza", top_k=1)[0]
+    assert result.text == "text: pizza"
+    pizza_id = result.id
+
+    result = db.search("pizza", top_k=1, constraints={"about": "pizza"})[0]
+    assert result.text == "text: pizza"
+
+    # Make sure there are no problems with reinserting deleted document.
+    for _ in range(5):
+        db.insert(docs, train=True)
+    new_ice_cream_result = db.search("ice cream", top_k=1)[0]
+    assert new_ice_cream_result.text == "text: ice cream"
+    assert new_ice_cream_result.id != ice_cream_id
+    new_pizza_result = db.search("pizza", top_k=1)[0]
+    assert new_pizza_result.text == "text: pizza"
+    assert new_pizza_result.id == pizza_id
+
+    # Make sure constrained search index is also updated
+    result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
+    assert result.text == "text: ice cream"
