@@ -33,10 +33,6 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
   std::vector<std::vector<BoltVector>> feature_columns(
       getNumDatasets(), std::vector<BoltVector>(rows.size()));
 
-  if (_prompt_column) {
-    feature_columns.push_back(std::vector<BoltVector>(rows.size()));
-  }
-
   std::exception_ptr err;
 
 #pragma omp parallel for default(none) shared(rows, feature_columns, err)
