@@ -7,13 +7,8 @@ import nltk
 nltk.download("punkt")
 
 import pytest
-from ndb_utils import all_doc_getters
+from ndb_utils import all_connectorDoc_getter, all_doc_getters
 from thirdai import neural_db as ndb
-
-pytestmark = [
-    pytest.mark.unit,
-    pytest.mark.parametrize("get_doc", all_doc_getters),
-]
 
 
 # The following tests are primarily to check that the implementations have a
@@ -24,6 +19,8 @@ pytestmark = [
 # to ensure that each test gets a new instance of the doc object. Some of the
 # tested methods may mutate the doc object, which then affects other tests if
 # they share the same doc instances.
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_size_property(get_doc):
     doc = get_doc()
     assert type(doc.size) == int
@@ -35,11 +32,15 @@ def test_size_property(get_doc):
         doc.reference(doc.size)
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_name_property(get_doc):
     doc = get_doc()
     assert type(doc.name) == str
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_reference_method(get_doc):
     doc = get_doc()
     for i in range(doc.size):
@@ -59,23 +60,31 @@ def test_reference_method(get_doc):
         assert type(reference.context(radius=0)) == str
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_hash_property(get_doc):
     doc = get_doc()
     assert type(doc.hash) == str
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_strong_text_method(get_doc):
     doc = get_doc()
     for i in range(doc.size):
         assert type(doc.strong_text(i)) == str
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_weak_text_method(get_doc):
     doc = get_doc()
     for i in range(doc.size):
         assert type(doc.weak_text(i)) == str
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_context_method(get_doc):
     doc = get_doc()
     for i in range(doc.size):
@@ -85,6 +94,8 @@ def test_context_method(get_doc):
             assert len(doc.context(i, radius=1)) > len(doc.context(i, radius=0))
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_save_load_meta_method(get_doc):
     doc = get_doc()
     save_dir = Path("doc_save_dir")
@@ -98,6 +109,8 @@ def test_save_load_meta_method(get_doc):
     shutil.rmtree(save_dir)
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("get_doc", all_doc_getters)
 def test_doc_save_load_method(get_doc):
     doc = get_doc()
     doc.save("doc_save_dir")
@@ -109,3 +122,14 @@ def test_doc_save_load_method(get_doc):
     assert loaded_doc.size == doc.size
     for i in range(doc.size):
         assert loaded_doc.reference(i).text == doc.reference(i).text
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("get_connectorDoc", all_connectorDoc_getter)
+def test_all_batch_fetchable(get_connectorDoc):
+    doc = get_connectorDoc()
+    rows_fetched = 0
+    for current_chunk in doc.next_chunk():
+        rows_fetched += len(current_chunk)
+
+    assert rows_fetched == doc.size

@@ -12,7 +12,7 @@ import pandas as pd
 from nltk.tokenize import sent_tokenize
 from pytrie import StringTrie
 from requests.models import Response
-from sqlalchemy import Integer, String
+from sqlalchemy import Integer, String, create_engine
 from sqlalchemy.engine.base import Connection as sqlConn
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
@@ -143,10 +143,6 @@ class Reference:
     @property
     def id(self):
         return self._id
-
-    @property
-    def id_in_document(self):
-        return self.id_in_document
 
     @property
     def upvote_ids(self):
@@ -801,14 +797,6 @@ class DocumentConnector(Document):
         raise NotImplementedError()
 
     @property
-    def connector(self) -> Connector:
-        raise NotImplementedError()
-
-    @connector.setter
-    def connector(self, **kwargs):
-        raise NotImplementedError()
-
-    @property
     def meta_table(self) -> Optional[pd.DataFrame]:
         raise NotImplementedError()
 
@@ -816,31 +804,12 @@ class DocumentConnector(Document):
     def meta_table_id_col(self) -> str:
         return "id_in_document"
 
-    def _add_meta_entry(self, current_doc_row_id: int):
-        if self.meta_table is None or (
-            len(
-                self.meta_table.loc[
-                    self.meta_table[self.meta_table_id_col] == current_doc_row_id
-                ]
-            )
-            > 0
-        ):
-            # row_iterator is being called twice, so add first time only
-            return
-
-        self.add_meta(current_doc_row_id)
-
-    def add_meta(self, current_doc_row_id: int):
-        raise NotImplementedError()
-
     def row_iterator(self):
-        current_doc_row_id = 0
+        id_in_document = 0
         for current_chunk in self.next_chunk():
-            for idx, row in current_chunk.iterrows():
-                row_id = row.get(self.id_col, current_doc_row_id)
-                current_doc_row_id += 1
+            for idx in range(len(current_chunk)):
                 yield DocumentRow(
-                    element_id=row_id,
+                    element_id=id_in_document,
                     strong=self.strong_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Strong text from (idx)th row of the current_batch
@@ -848,7 +817,25 @@ class DocumentConnector(Document):
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self._add_meta_entry(row_id)
+                self._add_meta_entry(id_in_document)
+                id_in_document += 1
+
+    def _add_meta_entry(self, id_in_document: int, **kwargs):
+        if self.meta_table is None or (
+            len(
+                self.meta_table.loc[
+                    self.meta_table[self.meta_table_id_col] == id_in_document
+                ]
+            )
+            > 0
+        ):
+            # row_iterator is being called twice, so add first time only
+            return
+
+        self.add_meta(id_in_document, **kwargs)
+
+    def add_meta(self, id_in_document: int, **kwargs):
+        raise NotImplementedError()
 
     def next_chunk(self) -> pd.DataFrame:
         raise NotImplementedError()
@@ -859,21 +846,14 @@ class DocumentConnector(Document):
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         raise NotImplementedError()
 
-    @property
-    def matched_constraints(self) -> Dict[str, ConstraintValue]:
-        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
-
     def save_meta(self, directory: Path):
         # Save the index table
-        if self.save_extra_info and self.index_table is not None:
-            self.index_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
+        if self.save_extra_info and self.meta_table is not None:
+            self.meta_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-
-        del state["_connector"]
-
-        return state
+        # Document Connectors are expected to remove their database connector(s)
+        raise NotImplementedError()
 
 
 class SQLDatabase(DocumentConnector):
@@ -894,9 +874,10 @@ class SQLDatabase(DocumentConnector):
         strong_columns: Optional[List[str]] = None,
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
-        chunk_size=100_00,
-        save_extra_info=True,
-        metadata={},
+        chunk_size: int = 10_000,
+        save_extra_info: bool = True,
+        metadata: dict = {},
+        save_credentials: bool = False,
     ) -> None:
         self.table_name = table_name
         self.id_col = id_col
@@ -905,6 +886,7 @@ class SQLDatabase(DocumentConnector):
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
+        self._save_credentials = save_credentials
 
         self._connector = SQLConnector(
             engine=engine,
@@ -917,42 +899,55 @@ class SQLDatabase(DocumentConnector):
         )
 
         self.total_rows = self._connector.total_rows()
-        self._hash = hash_string(string=str(engine.url) + f"/{self.table_name}")
+        if self._save_credentials:
+            self.engine_url = engine.url
+        self.database_name = engine.url.database
+        self.engine_uq = str(engine.url) + f"/{self.table_name}"
+        self._hash = hash_string(string=self.engine_uq)
 
         # Integrity checks
         self.assert_valid_id()
-        self.assert_valid_column_types()
+        self.assert_valid_columns()
         self.assert_uniqueness()
 
     @property
     def name(self):
-        return self._connector._engine.url.database + "_" + self.table_name
+        return self.database_name + "_" + self.table_name + ".csv"
 
     @property
     def hash(self):
         return self._hash
 
-    @property
-    def connector(self):
-        return self._connector._engine
-
-    @connector.setter
-    def connector(self, engine: sqlConn):
-        self._connector = SQLConnector(
-            engine=engine,
-            columns=[self.id_col]
-            + self.strong_columns
-            + self.weak_columns
-            + self.reference_columns,
-            table_name=self.table_name,
-        )
+    def get_engine(self):
+        try:
+            return self._connector._engine
+        except AttributeError as e:
+            raise AttributeError("engine is not available")
 
     @property
     def meta_table(self):
         return None
 
+    def add_meta(self, id_in_document: int, **kwargs):
+        pass
+
     def next_chunk(self) -> pd.DataFrame:
         return self._connector.chunk_iterator()
+
+    def row_iterator(self):
+        for current_chunk in self.next_chunk():
+            for idx, row in current_chunk.iterrows():
+                row_id = row[self.id_col]
+                yield DocumentRow(
+                    element_id=row_id,
+                    strong=self.strong_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Weak text from (idx)th row of the current_batch
+                )
+                self._add_meta_entry(row_id)
 
     @property
     def size(self) -> int:
@@ -988,13 +983,42 @@ class SQLDatabase(DocumentConnector):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self._connector._engine.url),
+            source=str(self.engine_uq),
             metadata={
-                "Database": self._connector._engine.url.database,
-                "table_name": self.table_name,
+                "Database": self.database_name,
+                "Table": self.table_name,
                 **self.doc_metadata,
             },
         )
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        del state["_connector"]
+
+        return state
+
+    def __setstate__(self, state):
+        # Trying to connect to the database if we have credentials
+        if state["_save_credentials"]:
+            try:
+                state["_connector"] = SQLConnector(
+                    engine=create_engine(state["engine_url"]),
+                    columns=[state["id_col"]]
+                    + state["strong_columns"]
+                    + state["weak_columns"]
+                    + state["reference_columns"],
+                    table_name=state["table_name"],
+                )
+            except Exception as e:
+                print(
+                    f"Failed to establish a connection with the engine at URL: {state['engine_url']}. Only {state['id_col']} will be available."
+                )
+        self.__dict__.update(state)
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
@@ -1028,47 +1052,63 @@ class SQLDatabase(DocumentConnector):
         elif len(primary_keys) > 1:
             raise AttributeError("Composite primary key is not allowed")
 
-    def assert_valid_column_types(self):
+    def assert_valid_columns(self):
         all_cols = self._connector.cols_metadata()
 
-        all_col_name = [col["name"] for col in all_cols]
-
-        if self.strong_columns is None and self.weak_columns is None:
-            all_col_name_copy = all_col_name[:]
-            all_col_name_copy.remove(self.id_col)
-            self.weak_columns = all_col_name_copy
-            self.strong_columns = []
-        elif self.strong_columns is None:
-            self.strong_columns = []
-        elif self.weak_columns is None:
-            self.weak_columns = []
-
-        if self.reference_columns is None:
-            self.reference_columns = all_col_name
-
-        all_col_name = set(all_col_name)  # For checking subset inclusion property
-        if not (
-            set(self.strong_columns).issubset(all_col_name)
-            and set(self.weak_columns).issubset(all_col_name)
-            and set(self.reference_columns).issubset(all_col_name)
+        columns_set = set([col["name"] for col in all_cols])
+        if not set([self.id_col]).issubset(columns_set):
+            raise AttributeError(
+                f"{self.id_col} is not present in the table '{self.table_name}'"
+            )
+        if (self.strong_columns is not None) and (
+            not set(self.strong_columns).issubset(columns_set)
         ):
-            raise AttributeError("Provided column doesn't exists in the table")
+            raise AttributeError(
+                f"Strong column(s) doesn't exists in the table '{self.table_name}'"
+            )
+        if (self.weak_columns is not None) and (
+            not set(self.weak_columns).issubset(columns_set)
+        ):
+            raise AttributeError(
+                f"Weak column(s) doesn't exists in the table '{self.table_name}'"
+            )
+        if (self.reference_columns is not None) and (
+            not set(self.reference_columns).issubset(columns_set)
+        ):
+            raise AttributeError(
+                f"Reference column(s) doesn't exists in the table '{self.table_name}'"
+            )
 
         for col in all_cols:
             if col["name"] == self.id_col and not isinstance(col["type"], Integer):
                 raise AttributeError("id column needs to be of type Integer")
-            elif col["name"] in self.strong_columns and not isinstance(
-                col["type"], String
+            elif (
+                self.strong_columns is not None
+                and col["name"] in self.strong_columns
+                and not isinstance(col["type"], String)
             ):
                 raise AttributeError(
                     f"strong column '{col['name']}' needs to be of type String"
                 )
-            elif col["name"] in self.weak_columns and not isinstance(
-                col["type"], String
+            elif (
+                self.weak_columns is not None
+                and col["name"] in self.weak_columns
+                and not isinstance(col["type"], String)
             ):
                 raise AttributeError(
                     f"weak column '{col['name']}' needs to be of type String"
                 )
+
+        if self.strong_columns is None and self.weak_columns is None:
+            self.strong_columns = []
+
+            for col in all_cols:
+                if isinstance(col["type"], String):
+                    self.weak_columns.append(col["name"])
+        elif self.strong_columns is None:
+            self.strong_columns = []
+        elif self.weak_columns is None:
+            self.weak_columns = []
 
     def assert_uniqueness(self):
         min_id = self._connector.execute(

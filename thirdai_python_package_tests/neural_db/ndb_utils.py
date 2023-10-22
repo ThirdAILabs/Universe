@@ -76,6 +76,19 @@ def meta(file_meta):
 
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
+all_connectorDoc_getter = [
+    lambda: ndb.SQLDatabase(
+        engine=ENGINE,
+        table_name=TABLE_NAME,
+        id_col="id",
+        strong_columns=["content"],
+        weak_columns=["content"],
+        reference_columns=["content"],
+        chunk_size=3,
+        save_credentials=True,
+    )
+]
+
 all_doc_getters = [
     lambda: ndb.CSV(
         CSV_FILE,
@@ -95,18 +108,10 @@ all_doc_getters = [
     lambda: ndb.Unstructured(PPTX_FILE),
     lambda: ndb.Unstructured(TXT_FILE),
     lambda: ndb.Unstructured(EML_FILE),
-    lambda: ndb.SQLDocument(
-        engine=ENGINE,
-        table_name=TABLE_NAME,
-        id_col="id",
-        strong_columns=["content"],
-        weak_columns=["content"],
-        reference_columns=["label"],
-        chunk_size=3,
-    ),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
+all_doc_getters.extend(all_connectorDoc_getter)
 
 
 def docs_with_meta():
@@ -128,7 +133,7 @@ def docs_with_meta():
         ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
         ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
-        ndb.SQLDocument(
+        ndb.SQLDatabase(
             engine=ENGINE,
             table_name=TABLE_NAME,
             id_col="id",
@@ -137,6 +142,7 @@ def docs_with_meta():
             reference_columns=["content"],
             chunk_size=3,
             metadata=meta(SQL_META),
+            save_credentials=True,
         ),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
         ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
