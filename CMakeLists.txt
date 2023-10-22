@@ -286,6 +286,13 @@ add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 # can work with vscode
 include_directories(deps)
 
+find_package(FFTW)
+if(FFTW_FOUND)
+  include_directories(${FFTW_INCLUDES})
+else()
+  message(FATAL_ERROR "FFTW library was not found. Some features might be disabled or performance might be suboptimal.")
+endif()
+
 find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -335,6 +342,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/ops/PatchEmbedding.cc
     bolt/src/nn/ops/PatchSum.cc
+    bolt/src/nn/ops/FFTMixer.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -477,7 +485,11 @@ target_link_libraries(
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
-                                       OpenSSL::SSL)
+                                       OpenSSL::SSL) 
+endif()
+
+if(FFTW_FOUND)
+  target_link_libraries(thirdai PUBLIC ${FFTW_LIBRARIES})
 endif()
 
 target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)

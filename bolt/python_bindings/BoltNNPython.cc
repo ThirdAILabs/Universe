@@ -14,6 +14,7 @@
 #include <bolt/src/nn/ops/DotProduct.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/FFTMixer.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -357,6 +358,10 @@ void defineOps(py::module_& nn) {
   py::class_<CosineSimilarity, CosineSimilarityPtr, Op>(nn, "CosineSimilarity")
       .def(py::init<>(&CosineSimilarity::make))
       .def("__call__", &CosineSimilarity::apply);
+
+  py::class_<FFTMixer, FFTMixerPtr, Op>(nn, "FFTMixer")
+      .def(py::init(&FFTMixer::make), py::arg("rows"), py::arg("columns"))
+      .def("__call__", &FFTMixer::apply);
 
   py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
       .def(py::init(&DlrmAttention::make))

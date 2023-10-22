@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BoltVector.h"
+#include <fftw3.h>
 
 namespace thirdai::bolt_vector {
 
@@ -60,6 +61,29 @@ void templatedVisitPair(const BoltVector& vec_1, const BoltVector& vec_2,
       visitor(vec_1_found, vec_2_found);
     }
   }
+}
+
+static float* fftwSegmentRowMajorActivations(const BoltVector& base_vector, uint32_t rows, uint32_t columns){
+  assert(rows * columns == base_vector.len);
+  std::vector<BoltVector> segmented_vectors;
+  float* input_data = static_cast<float*>(fftwf_malloc(columns * rows * sizeof(float)));
+  for (uint32_t i = 0; i < rows; i++) {
+    std::memcpy(&input_data[i * columns], base_vector.activations + i * columns, columns * sizeof(float));
+  }
+  return input_data;
+}
+
+static float* fftwSegmentRowMajorGradients(const BoltVector& base_vector, uint32_t rows, uint32_t columns){
+  if(!base_vector.hasGradients()){
+    throw std::runtime_error("This operation is not valid. Since, base_vector doesn't have gradients.");
+  }
+  assert(rows * columns == base_vector.len);
+  std::vector<BoltVector> segmented_vectors;
+  float* input_data = static_cast<float*>(fftwf_malloc(columns * rows * sizeof(float)));
+  for (uint32_t i = 0; i < rows; i++) {
+    std::memcpy(&input_data[i * columns], base_vector.gradients + i * columns, columns * sizeof(float));
+  }
+  return input_data;
 }
 
 template <typename Visitor>
