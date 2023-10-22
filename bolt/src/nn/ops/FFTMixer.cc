@@ -22,6 +22,8 @@ std::shared_ptr<FFTMixer> FFTMixer::make(uint32_t rows, uint32_t columns) {
   return std::shared_ptr<FFTMixer>(new FFTMixer(rows, columns));
 }
 
+
+//Input to this op must be dense. add a check for it.
 void FFTMixer::forward(const ComputationList& inputs,
                        TensorPtr& output, uint32_t index_in_batch,
                        bool training) {
@@ -34,7 +36,7 @@ void FFTMixer::forward(const ComputationList& inputs,
     labels = &inputs[1]->tensor()->getVector(index_in_batch);
   }
   if (labels != nullptr) {
-    throw std::logic_error("FCMixers should not have non null label pointers.");
+    throw std::logic_error("FFTMixers should not have non null label pointers.");
   }
   auto *fftwf_input_data = bolt_vector::fftwSegmentRowMajorActivations(
       inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
