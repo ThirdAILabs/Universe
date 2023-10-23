@@ -522,7 +522,6 @@ class NeuralDB:
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
-
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
@@ -531,6 +530,13 @@ class NeuralDB:
 
         on_success()
         return ids
+
+    def delete(self, source_id: str):
+        deleted_entities = self._savable_state.documents.delete(source_id)
+        self._savable_state.model.delete_entities(deleted_entities)
+        self._savable_state.logger.log(
+            session_id=self._user_id, action="delete", args={"source_id": source_id}
+        )
 
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()
