@@ -17,8 +17,9 @@
 #
 
 #If environment variable FFTWDIR is specified, it has same effect as FFTW_ROOT
-if( NOT FFTW_ROOT AND ENV{FFTWDIR} )
-  set( FFTW_ROOT $ENV{FFTWDIR} )
+if(NOT FFTW_ROOT AND DEFINED ENV{FFTWDIR})
+  set(FFTW_ROOT $ENV{FFTWDIR})
+  message(STATUS "Setting FFTW_ROOT to value of FFTWDIR: ${FFTW_ROOT}")
 endif()
 
 # Check if we can use PkgConfig
@@ -39,14 +40,17 @@ else()
   set( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_SHARED_LIBRARY_SUFFIX} )
 endif()
 
-if( FFTW_ROOT )
+if(FFTW_ROOT)
+  message(STATUS "FFTW_ROOT has value of: ${FFTW_ROOT}")
+endif()
 
+if( FFTW_ROOT )
   #find libs
   find_library(
     FFTW_LIB
     NAMES "fftw3"
     PATHS ${FFTW_ROOT}
-    PATH_SUFFIXES "lib" "lib64"
+    PATH_SUFFIXES "lib"
     NO_DEFAULT_PATH
   )
 
@@ -54,17 +58,10 @@ if( FFTW_ROOT )
     FFTWF_LIB
     NAMES "fftw3f"
     PATHS ${FFTW_ROOT}
-    PATH_SUFFIXES "lib" "lib64"
+    PATH_SUFFIXES "lib"
     NO_DEFAULT_PATH
   )
 
-  find_library(
-    FFTWL_LIB
-    NAMES "fftw3l"
-    PATHS ${FFTW_ROOT}
-    PATH_SUFFIXES "lib" "lib64"
-    NO_DEFAULT_PATH
-  )
 
   #find includes
   find_path(
@@ -89,13 +86,6 @@ else()
     PATHS ${PKG_FFTW_LIBRARY_DIRS} ${LIB_INSTALL_DIR}
   )
 
-
-  find_library(
-    FFTWL_LIB
-    NAMES "fftw3l"
-    PATHS ${PKG_FFTW_LIBRARY_DIRS} ${LIB_INSTALL_DIR}
-  )
-
   find_path(
     FFTW_INCLUDES
     NAMES "fftw3.h"
@@ -104,11 +94,29 @@ else()
 
 endif()
 
+# Print and check for FFTW_LIB
+if(FFTW_LIB)
+  message(STATUS "Found FFTW_LIB: ${FFTW_LIB}")
+else()
+  message(WARNING "FFTW_LIB not found!")
+endif()
+
+# Print and check for FFTWF_LIB
+if(FFTWF_LIB)
+  message(STATUS "Found FFTWF_LIB: ${FFTWF_LIB}")
+else()
+  message(WARNING "FFTWF_LIB not found!")
+endif()
+
+# Print and check for FFTW_INCLUDES
+if(FFTW_INCLUDES)
+  message(STATUS "Found FFTW_INCLUDES: ${FFTW_INCLUDES}")
+else()
+  message(WARNING "FFTW_INCLUDES not found!")
+endif()
+
 set(FFTW_LIBRARIES ${FFTW_LIB} ${FFTWF_LIB})
 
-if(FFTWL_LIB)
-  set(FFTW_LIBRARIES ${FFTW_LIBRARIES} ${FFTWL_LIB})
-endif()
 
 set( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SAV} )
 
@@ -116,4 +124,4 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FFTW DEFAULT_MSG
                                   FFTW_INCLUDES FFTW_LIBRARIES)
 
-mark_as_advanced(FFTW_INCLUDES FFTW_LIBRARIES FFTW_LIB FFTWF_LIB FFTWL_LIB)
+mark_as_advanced(FFTW_INCLUDES FFTW_LIBRARIES FFTW_LIB FFTWF_LIB)

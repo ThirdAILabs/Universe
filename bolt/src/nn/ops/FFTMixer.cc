@@ -43,16 +43,25 @@ void FFTMixer::forward(const ComputationList& inputs,
   float* fftwf_output_data =
       static_cast<float*>(fftwf_malloc(_columns * _rows * sizeof(float)));
 
-  fftwf_plan plan =
-      fftwf_plan_r2r_1d(_columns, fftwf_input_data, fftwf_output_data,
-                        FFTW_REDFT00, FFTW_ESTIMATE);
+  #pragma omp critical
+  {
+    fftwf_plan plan =
+        fftwf_plan_r2r_2d(_columns, _rows, fftwf_input_data, fftwf_output_data,
+                        FFTW_REDFT00, FFTW_REDFT00, FFTW_ESTIMATE);
 
-  fftwf_execute(plan);
+    if (!plan) {
+      fftwf_free(fftwf_input_data);
+      fftwf_free(fftwf_output_data);
+      throw std::runtime_error("Failed to create FFTW plan");
+    }
+    fftwf_execute(plan);
+
+    fftwf_destroy_plan(plan);
+  }
 
   std::memcpy(output->getVector(index_in_batch).activations, fftwf_output_data,
               _rows * _columns * sizeof(float));
 
-  fftwf_destroy_plan(plan);
   fftwf_free(fftwf_input_data);
   fftwf_free(fftwf_output_data);
 }
@@ -67,16 +76,25 @@ void FFTMixer::backpropagate(ComputationList& inputs,
   float* fftwf_output_data =
       static_cast<float*>(fftwf_malloc(_columns * _rows * sizeof(float)));
 
-  fftwf_plan plan =
-      fftwf_plan_r2r_1d(_columns, fftwf_input_data, fftwf_output_data,
-                        FFTW_REDFT00, FFTW_ESTIMATE);
+  #pragma omp critical 
+  {
+    fftwf_plan plan =
+        fftwf_plan_r2r_2d(_columns, _rows, fftwf_input_data, fftwf_output_data,
+                          FFTW_REDFT00, FFTW_REDFT00, FFTW_ESTIMATE);
 
-  fftwf_execute(plan);
+    if (!plan) {
+      fftwf_free(fftwf_input_data);
+      fftwf_free(fftwf_output_data);
+      throw std::runtime_error("Failed to create FFTW plan");
+    }
+    fftwf_execute(plan);
+    fftwf_destroy_plan(plan);
 
-  std::memcpy(inputs[0]->tensor()->getVector(index_in_batch).gradients,
-              fftwf_output_data, _rows * _columns * sizeof(float));
+  }
 
-  fftwf_destroy_plan(plan);
+    std::memcpy(inputs[0]->tensor()->getVector(index_in_batch).gradients,
+                fftwf_output_data, _rows * _columns * sizeof(float));
+
   fftwf_free(fftwf_input_data);
   fftwf_free(fftwf_output_data);
 }
