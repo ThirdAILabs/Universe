@@ -116,7 +116,6 @@ class SharePointConnector(Connector):
                     and file_size + currently_occupied >= self.chunk_size
                 ):
                     # Return the fetched files
-                    print(f"{currently_occupied = }")
                     yield files_dict
                     files_dict.clear()
                     currently_occupied = 0

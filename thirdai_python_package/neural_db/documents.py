@@ -1208,7 +1208,6 @@ class SharePoint(DocumentConnector):
     def next_chunk(self) -> pd.DataFrame:
         files = self._connector.chunk_iterator()
         for server_relative_url, filepath in next(files).items():
-            print(f"{filepath = }")
             if filepath.endswith(".pdf"):
                 doc = PDF(path=filepath, metadata=self.doc_metadata)
             elif filepath.endswith(".docx"):
