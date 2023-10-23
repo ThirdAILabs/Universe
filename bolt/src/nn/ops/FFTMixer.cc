@@ -92,9 +92,6 @@ void FFTMixer::backpropagate(ComputationList& inputs,
 
   }
 
-  for(size_t i=0; i<_columns * _rows; i++){
-    fftwf_output_data[i] *= _rows * _columns;
-  }
   std::memcpy(inputs[0]->tensor()->getVector(index_in_batch).gradients,
                 fftwf_output_data, _rows * _columns * sizeof(float));
 
