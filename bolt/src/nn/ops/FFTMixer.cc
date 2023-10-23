@@ -71,7 +71,7 @@ void FFTMixer::backpropagate(ComputationList& inputs,
                              uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
-  auto *fftwf_input_data = bolt_vector::fftwSegmentRowMajorActivations(
+  auto *fftwf_input_data = bolt_vector::fftwSegmentRowMajorGradients(
       output->getVector(index_in_batch), _rows, _columns);
   float* fftwf_output_data =
       static_cast<float*>(fftwf_malloc(_columns * _rows * sizeof(float)));
@@ -92,7 +92,10 @@ void FFTMixer::backpropagate(ComputationList& inputs,
 
   }
 
-    std::memcpy(inputs[0]->tensor()->getVector(index_in_batch).gradients,
+  for(size_t i=0; i<_columns * _rows; i++){
+    fftwf_output_data[i] *= _rows * _columns;
+  }
+  std::memcpy(inputs[0]->tensor()->getVector(index_in_batch).gradients,
                 fftwf_output_data, _rows * _columns * sizeof(float));
 
   fftwf_free(fftwf_input_data);
