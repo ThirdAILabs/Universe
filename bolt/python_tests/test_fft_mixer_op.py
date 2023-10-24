@@ -9,12 +9,11 @@ N_CLASSES = 100
 def build_model():
     input_layer = bolt.nn.Input(dim=N_CLASSES)
 
+    # layer must not have sparsity for fft mixing
     hidden_layers = [
         bolt.nn.FullyConnected(
-            dim=200,
+            dim=20,
             input_dim=input_layer.dim(),
-            sparsity=0.4,
-            activation="relu",
         )
         for _ in range(10)
     ]
@@ -22,7 +21,7 @@ def build_model():
     concat = bolt.nn.Concatenate()(
         [hidden_layer(input_layer) for hidden_layer in hidden_layers]
     )
-    mixing = bolt.nn.FFTMixer(200, 10)(concat)
+    mixing = bolt.nn.FFTMixer(10, 20)(concat)
 
     output_layer = bolt.nn.FullyConnected(
         dim=N_CLASSES,
@@ -54,7 +53,7 @@ def test_fft_mixer_op():
 
     metrics = trainer.train(
         train_data=train_data,
-        learning_rate=0.05,
+        learning_rate=0.001,
         epochs=5,
         validation_data=test_data,
         validation_metrics={"acc": metric},
