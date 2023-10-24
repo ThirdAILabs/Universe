@@ -70,7 +70,7 @@ class SharePointConnector(Connector):
         self,
         ctx: ClientContext,
         library_path: str,
-        chunk_size: int = 10485760,  # Each file is being treated as a chunk
+        chunk_size: int = 10485760,
     ):
         self._ctx = ctx
         self.library_path = library_path
@@ -101,7 +101,7 @@ class SharePointConnector(Connector):
             if not self.total_files > 0:
                 raise FileNotFoundError("No files of supported extension is present")
         except Exception as e:
-            print("Unable to retrieve files from SharePoint, Error0: " + str(e))
+            print("Unable to retrieve files from SharePoint, Error: " + str(e))
 
     def chunk_iterator(self):
         try:
@@ -132,6 +132,8 @@ class SharePointConnector(Connector):
                         currently_occupied += file_size
             if len(files_dict) > 0:
                 yield files_dict
+        except Exception as e:
+            print("Unable to retrieve files from SharePoint, Error: " + str(e))
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
