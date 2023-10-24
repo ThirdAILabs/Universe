@@ -10,6 +10,7 @@ try:
         Reference,
         SentenceLevelDOCX,
         SentenceLevelPDF,
+        SharePoint,
         SQLDatabase,
         Unstructured,
     )

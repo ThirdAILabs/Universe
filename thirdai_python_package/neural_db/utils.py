@@ -2,6 +2,8 @@ import hashlib
 import math
 import random
 
+SUPPORTED_EXT = ["csv", "pdf", "docx", "pptx", "txt", "eml"]
+
 
 def clean_text(text):
     return text.encode("utf-8", "replace").decode("utf-8").lower()
