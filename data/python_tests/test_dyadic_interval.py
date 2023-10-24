@@ -221,7 +221,7 @@ def test_dyadic_interval_classification_augmentation():
     columns = data.ColumnMap(
         {
             "text": data.columns.TokenArrayColumn(
-                [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [20, 21, 22, 23, 24, 25]],
+                [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [23, 24, 25]],
                 dim=100,
             ),
             "prompt": data.columns.TokenArrayColumn(
@@ -263,6 +263,6 @@ def test_dyadic_interval_classification_augmentation():
 
     interval_4 = [
         [8, 9, 10, 11],
-        [22, 23, 24, 25],
+        [23, 24, 25],
     ]
     assert columns["interval_from_end_4"].data() == interval_4
