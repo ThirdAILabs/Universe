@@ -165,7 +165,7 @@ neural_db_deps = [
     "unstructured[all-docs]",
     "sortedcontainers",
     "SQLAlchemy",
-    "Office365-REST-Python-Client"
+    "Office365-REST-Python-Client",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
