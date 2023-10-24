@@ -10,6 +10,27 @@
 
 namespace thirdai::bolt{
 
+static float* fftwSegmentRowMajorActivations(const BoltVector& base_vector, uint32_t rows, uint32_t columns){
+  assert(rows * columns == base_vector.len);
+  float* input_data = static_cast<float*>(fftwf_malloc(columns * rows * sizeof(float)));
+  for (uint32_t i = 0; i < rows; i++) {
+    std::memcpy(&input_data[i * columns], base_vector.activations + i * columns, columns * sizeof(float));
+  }
+  return input_data;
+}
+
+static float* fftwSegmentRowMajorGradients(const BoltVector& base_vector, uint32_t rows, uint32_t columns){
+  if(!base_vector.hasGradients()){
+    throw std::runtime_error("This operation is not valid. Since, base_vector doesn't have gradients.");
+  }
+  assert(rows * columns == base_vector.len);
+  float* input_data = static_cast<float*>(fftwf_malloc(columns * rows * sizeof(float)));
+  for (uint32_t i = 0; i < rows; i++) {
+    std::memcpy(&input_data[i * columns], base_vector.gradients + i * columns, columns * sizeof(float));
+  }
+  return input_data;
+}
+
 std::string nextFFTOpName() {
   static uint32_t constructed = 0;
   return "fft_mixer_" + std::to_string(++constructed);
@@ -38,7 +59,7 @@ void FFTMixer::forward(const ComputationList& inputs,
   if (labels != nullptr) {
     throw std::logic_error("FFTMixers should not have non null label pointers.");
   }
-  auto *fftwf_input_data = bolt_vector::fftwSegmentRowMajorActivations(
+  auto *fftwf_input_data = fftwSegmentRowMajorActivations(
       inputs[0]->tensor()->getVector(index_in_batch), _rows, _columns);
   float* fftwf_output_data =
       static_cast<float*>(fftwf_malloc(_columns * _rows * sizeof(float)));
@@ -71,7 +92,7 @@ void FFTMixer::backpropagate(ComputationList& inputs,
                              uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
-  auto *fftwf_input_data = bolt_vector::fftwSegmentRowMajorGradients(
+  auto *fftwf_input_data = fftwSegmentRowMajorGradients(
       output->getVector(index_in_batch), _rows, _columns);
   float* fftwf_output_data =
       static_cast<float*>(fftwf_malloc(_columns * _rows * sizeof(float)));
