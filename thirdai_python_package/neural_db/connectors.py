@@ -92,8 +92,7 @@ class SharePointConnector(Connector):
             exts.remove("csv")
             self._files = list(
                 filter(
-                    lambda file: file.properties["Name"].split(sep=".")[-1]
-                    in exts,
+                    lambda file: file.properties["Name"].split(sep=".")[-1] in exts,
                     self._files,
                 )
             )
