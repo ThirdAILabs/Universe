@@ -1048,10 +1048,10 @@ class SQLDatabase(DocumentConnector):
             raise AttributeError("id column not present in the table")
 
         primary_keys = self._connector.get_primary_keys()
-        if not primary_keys:
-            raise AttributeError(f"{self.id_col} needs to be a primary key")
-        elif len(primary_keys) > 1:
+        if len(primary_keys) > 1:
             raise AttributeError("Composite primary key is not allowed")
+        elif len(primary_keys) == 0 or primary_keys[0] != self.id_col:
+            raise AttributeError(f"{self.id_col} needs to be a primary key")
 
     def assert_valid_columns(self):
         all_cols = self._connector.cols_metadata()
