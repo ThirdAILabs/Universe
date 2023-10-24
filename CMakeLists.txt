@@ -352,6 +352,8 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/ops/DotProduct.cc
     bolt/src/nn/ops/CosineSimilarity.cc
+    bolt/src/nn/ops/PatchEmbedding.cc
+    bolt/src/nn/ops/PatchSum.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -383,6 +385,7 @@ set(THIRDAI_SOURCES
     bolt/src/text_generation/GenerativeModel.cc
     bolt/src/root_cause_analysis/RCA.cc
     bolt/src/metrics/Metric.cc
+    bolt/src/seismic/SeismicLabels.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -426,7 +429,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/TextTokenizer.cc
     data/src/transformations/ColdStartText.cc
     data/src/transformations/FeatureHash.cc
-    data/src/transformations/TransformationList.cc
+    data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
@@ -464,6 +467,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
     utils/ProtobufIO.cc
+    utils/src/SymSpellBackend/symspell.cc
+    utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
@@ -521,6 +526,8 @@ pybind11_add_module(
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
   bolt/python_bindings/Porting.cc
+  bolt/src/seismic/SeismicEmbeddingModel.cc
+  bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   data/python_bindings/DataPython.cc

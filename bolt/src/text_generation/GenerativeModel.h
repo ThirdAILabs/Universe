@@ -12,12 +12,14 @@
 #include <memory>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace thirdai::bolt {
 
 class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
+      std::vector<uint32_t>& prompt,
       std::vector<std::vector<uint32_t>> tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
@@ -47,6 +49,7 @@ class GenerativeModel;
 class BeamSearchDecoder {
  public:
   BeamSearchDecoder(std::shared_ptr<GenerativeModel> generator,
+                    std::vector<uint32_t> prompt,
                     const std::vector<uint32_t>& input_tokens,
                     size_t prediction_chunk_size, size_t max_predictions,
                     size_t beam_width, std::optional<float> temperature)
@@ -57,6 +60,7 @@ class BeamSearchDecoder {
         _beam_width(beam_width),
         _temperature(temperature),
         _candidate_sequences({input_tokens}),
+        _prompt(std::move(prompt)),
         _sequence_scores({0.0}) {}
 
   std::optional<std::vector<uint32_t>> next();
@@ -81,6 +85,7 @@ class BeamSearchDecoder {
   // nextTokenProbs directly, instead of having to split apart the sequences and
   // scores.
   std::vector<std::vector<uint32_t>> _candidate_sequences;
+  std::vector<uint32_t> _prompt;
   std::vector<double> _sequence_scores;
 };
 
@@ -106,12 +111,13 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   }
 
   std::vector<uint32_t> generate(
-      const std::vector<uint32_t>& input_tokens, size_t max_predictions,
-      size_t beam_width, std::optional<float> temperature = std::nullopt);
+      const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
+      size_t max_predictions, size_t beam_width,
+      std::optional<float> temperature = std::nullopt);
 
   BeamSearchDecoder streamingGenerate(
-      const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
-      size_t max_predictions, size_t beam_width,
+      const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
+      size_t prediction_chunk_size, size_t max_predictions, size_t beam_width,
       std::optional<float> temperature = std::nullopt);
 
   // TODO(Nicholas): should we add max_in_memory_batches option?

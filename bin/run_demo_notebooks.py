@@ -13,9 +13,6 @@ DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
 IGNORED_NBS = [
     "DeployThirdaiwithDatabricks.ipynb",
-    "TrainingDistributedUDT.ipynb",
-    "amazon_distributed.ipynb",
-    "ColdStartDistributedTraining.ipynb",
 ]
 
 

@@ -20,6 +20,7 @@ class ContextualModel final : public GenerativeBackend {
                   const proto::bolt::ContextualBackend& backend_config);
 
   bolt::TensorPtr nextTokenProbs(
+      std::vector<uint32_t>& prompt,
       std::vector<std::vector<uint32_t>> tokens) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,

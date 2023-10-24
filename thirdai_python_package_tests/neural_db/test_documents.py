@@ -35,6 +35,13 @@ def prepare_documents_test():
         def name(self) -> str:
             return self._identifier
 
+        @property
+        def matched_constraints(self):
+            return {}
+
+        def all_entity_ids(self):
+            return list(range(self.size))
+
         # Expected strings have commas (delimiter) to test that the data source
         # converts it to proper CSV strings.
         def expected_strong_text_for_id(doc_id: str, element_id: int):

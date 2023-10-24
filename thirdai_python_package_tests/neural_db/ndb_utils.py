@@ -49,6 +49,25 @@ BASE_DIR = os.path.join(
 CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
+PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
+TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
+EML_FILE = os.path.join(BASE_DIR, "Message.eml")
+
+CSV_EXPLICIT_META = "csv-explicit"
+PDF_META = "pdf"
+DOCX_META = "docx"
+URL_NO_RESPONSE_META = "url-no-response"
+PPTX_META = "pptx"
+TXT_META = "txt"
+EML_META = "eml"
+SENTENCE_PDF_META = "sentence-pdf"
+SENTENCE_DOCX_META = "sentence-docx"
+
+
+def meta(file_meta):
+    return {"meta": file_meta}
+
+
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
 all_doc_getters = [
@@ -67,6 +86,46 @@ all_doc_getters = [
         "https://en.wikipedia.org/wiki/Rice_University",
         requests.get("https://en.wikipedia.org/wiki/Rice_University"),
     ),
+    lambda: ndb.Unstructured(PPTX_FILE),
+    lambda: ndb.Unstructured(TXT_FILE),
+    lambda: ndb.Unstructured(EML_FILE),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
+]
+
+
+def docs_with_meta():
+    return [
+        ndb.CSV(
+            CSV_FILE,
+            id_column="category",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            metadata=meta(CSV_EXPLICIT_META),
+        ),
+        ndb.PDF(PDF_FILE, metadata=meta(PDF_META)),
+        ndb.DOCX(DOCX_FILE, metadata=meta(DOCX_META)),
+        ndb.URL(
+            "https://en.wikipedia.org/wiki/Rice_University",
+            metadata=meta(URL_NO_RESPONSE_META),
+        ),
+        ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
+        ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
+        ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
+        ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
+        ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
+    ]
+
+
+metadata_constraints = [
+    CSV_EXPLICIT_META,
+    PDF_META,
+    DOCX_META,
+    URL_NO_RESPONSE_META,
+    PPTX_META,
+    TXT_META,
+    EML_META,
+    SENTENCE_PDF_META,
+    SENTENCE_DOCX_META,
 ]
