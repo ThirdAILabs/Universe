@@ -460,8 +460,7 @@ class CSV(Document):
 
         return " ".join(
             [
-                str(row[col])
-                for col in self.reference_columns
+                "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
                 for _, row in rows.iterrows()
             ]
         )
