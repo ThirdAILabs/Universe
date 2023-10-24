@@ -103,11 +103,12 @@ UDT::UDT(
 
 UDT::UDT(std::optional<std::string> incorrect_column_name,
          std::string correct_column_name, const std::string& dataset_size,
-         char delimiter, const std::optional<std::string>& model_config,
+         bool use_spell_checker, char delimiter,
+         const std::optional<std::string>& model_config,
          const config::ArgumentMap& user_args) {
   _backend = std::make_unique<UDTQueryReformulation>(
       std::move(incorrect_column_name), std::move(correct_column_name),
-      dataset_size, delimiter, model_config, user_args);
+      dataset_size, use_spell_checker, delimiter, model_config, user_args);
 }
 
 UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
@@ -206,6 +207,20 @@ py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
   timer.stop();
   telemetry::client.trackBatchPredictions(
       /* inference_time_seconds= */ timer.seconds(), sample.size());
+
+  return result;
+}
+
+py::object UDT::scoreBatch(const MapInputBatch& samples,
+                           const std::vector<std::vector<Label>>& classes,
+                           std::optional<uint32_t> top_k) {
+  bolt::utils::Timer timer;
+
+  auto result = _backend->scoreBatch(samples, classes, top_k);
+
+  timer.stop();
+  telemetry::client.trackBatchPredictions(
+      /* inference_time_seconds= */ timer.seconds(), samples.size());
 
   return result;
 }

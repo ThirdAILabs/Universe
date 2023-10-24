@@ -505,7 +505,6 @@ class NeuralDB:
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
-
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
@@ -515,16 +514,32 @@ class NeuralDB:
         on_success()
         return ids
 
+    def delete(self, source_id: str):
+        deleted_entities = self._savable_state.documents.delete(source_id)
+        self._savable_state.model.delete_entities(deleted_entities)
+        self._savable_state.logger.log(
+            session_id=self._user_id, action="delete", args={"source_id": source_id}
+        )
+
     def clear_sources(self) -> None:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, on_error: Callable = None
+        self, query: str, top_k: int, constraints=None, on_error: Callable = None
     ) -> List[Reference]:
-        result_ids = self._savable_state.model.infer_labels(
-            samples=[query], n_results=top_k
-        )[0]
+        matching_entities = None
+        if constraints:
+            matching_entities = self._savable_state.documents.entity_ids_by_constraints(
+                constraints
+            )
+            result_ids = self._savable_state.model.score(
+                samples=[query], entities=[matching_entities], n_results=top_k
+            )[0]
+        else:
+            result_ids = self._savable_state.model.infer_labels(
+                samples=[query], n_results=top_k
+            )[0]
 
         references = []
         for rid, score in result_ids:

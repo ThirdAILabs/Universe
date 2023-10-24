@@ -102,6 +102,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE,
            py::arg("shuffle_seed") = global_random::nextSeed())
       .def("next", &Loader::next, py::arg("max_batches") = Loader::NO_LIMIT)
+      .def("next_column_map", &Loader::nextColumnMap,
+           py::arg("max_batches") = Loader::NO_LIMIT)
       .def("all", &Loader::all);
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
@@ -396,9 +398,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<DyadicInterval, Transformation, std::shared_ptr<DyadicInterval>>(
       transformations_submodule, "DyadicInterval")
-      .def(py::init<std::string, std::string, std::string, size_t>(),
-           py::arg("input_column"), py::arg("output_interval_prefix"),
-           py::arg("target_column"), py::arg("n_intervals"))
+      .def(py::init<std::string, std::optional<std::string>, std::string,
+                    std::string, size_t, bool>(),
+           py::arg("input_column"), py::arg("prompt_column") = std::nullopt,
+           py::arg("output_interval_prefix"), py::arg("target_column"),
+           py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
 #endif

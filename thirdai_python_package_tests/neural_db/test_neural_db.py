@@ -4,7 +4,14 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import all_doc_getters, create_simple_dataset, train_simple_neural_db
+from ndb_utils import (
+    PDF_FILE,
+    all_doc_getters,
+    create_simple_dataset,
+    docs_with_meta,
+    metadata_constraints,
+    train_simple_neural_db,
+)
 from thirdai import bolt
 from thirdai import neural_db as ndb
 
@@ -46,12 +53,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 4
+    assert len(db.sources()) == 9
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 4
+    assert len(db.sources()) == 9
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
@@ -434,3 +441,239 @@ def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter)
     expect_top_2_results(db, "second", [8, 9])
     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+
+def test_neural_db_constrained_search_with_single_constraint():
+    db = ndb.NeuralDB()
+    db.insert(docs_with_meta(), train=False)
+    for constraint in metadata_constraints:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints={"meta": constraint})
+        assert len(references) > 0
+        assert all([constraint == ref.metadata["meta"] for ref in references])
+
+
+def test_neural_db_constrained_search_with_multiple_constraints():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
+        ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+    for constraints in [
+        {"language": "English", "county": "Harris"},
+        {"language": "Spanish", "county": "Austin"},
+    ]:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints=constraints)
+        assert len(references) > 0
+        assert all(
+            [
+                all([ref.metadata[key] == value for key, value in constraints.items()])
+                for ref in references
+            ]
+        )
+
+
+def test_neural_db_constrained_search_with_set_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10"}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2021-10-10"}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    references = db.search(
+        "hello",
+        top_k=20,
+        # Include 1923-10-10 to make sure it doesnt break if none of the documents
+        # match the constraints.
+        constraints={"date": ndb.AnyOf(["2023-10-10", "2022-10-10", "1923-10-10"])},
+    )
+    assert len(references) > 0
+    assert all(
+        [
+            ref.metadata["date"] == "2023-10-10" or ref.metadata["date"] == "2022-10-10"
+            for ref in references
+        ]
+    )
+
+    # Make sure that the other document shows up if we don't constrain the search.
+    references = db.search("hello", top_k=20)
+    assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
+
+
+def test_neural_db_constrained_search_with_range_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    # Make sure that without constraints, we get results from both documents.
+    references = db.search("hello", top_k=10)
+    assert len(references) > 0
+    assert not all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.InRange("2023-01-01", "2023-12-31")}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"score": ndb.InRange(0.6, 1.0)}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["score"] == 0.9 for ref in references])
+
+
+def test_neural_db_constrained_search_with_comparison_constraint():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+        ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    # Make sure that without constraints, we get results from both documents.
+    references = db.search("hello", top_k=10)
+    assert len(references) > 0
+    assert not all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.GreaterThan("2023-01-01")}
+    )
+    assert len(references) > 0
+    assert all([ref.metadata["date"] == "2023-10-10" for ref in references])
+
+    references = db.search("hello", top_k=10, constraints={"score": ndb.LessThan(0.6)})
+    assert len(references) > 0
+    assert all([ref.metadata["score"] == 0.5 for ref in references])
+
+
+def test_neural_db_constrained_search_no_matches():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=False)
+
+    references = db.search(
+        "hello", top_k=10, constraints={"date": ndb.GreaterThan("2024-01-01")}
+    )
+    assert len(references) == 0
+
+
+def test_neural_db_constrained_search_row_level_constraints():
+    csv_contents = [
+        "id,text,date",
+    ] + [f"{i},a reusable chunk of text,{1950 + i}-10-10" for i in range(100)]
+
+    with open("chunks.csv", "w") as o:
+        for line in csv_contents:
+            o.write(line + "\n")
+
+    documents = [
+        ndb.CSV(
+            "chunks.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            index_columns=["date"],
+        )
+    ]
+    db = ndb.NeuralDB()
+    db.insert(documents, train=True)
+
+    references = db.search(
+        "a reusable chunk of text",
+        top_k=52,
+        constraints={"date": ndb.GreaterThan("2000-01-01")},
+    )
+    assert len(references) > 0
+    assert all([r.metadata["date"] > "2000-01-01" for r in references])
+
+    references = db.search("a reusable chunk of text", top_k=52)
+    assert any([r.metadata["date"] < "2000-01-01" for r in references])
+    assert any([r.metadata["date"] > "2000-01-01" for r in references])
+
+
+def test_neural_db_delete_document():
+    with open("ice_cream.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("ice cream,0\n")
+
+    with open("pizza.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("pizza,0\n")
+
+    db = ndb.NeuralDB()
+    docs = [
+        ndb.CSV(
+            "ice_cream.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            metadata={"about": "ice cream"},
+        ),
+        ndb.CSV(
+            "pizza.csv",
+            id_column="id",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            metadata={"about": "pizza"},
+        ),
+    ]
+
+    for _ in range(5):
+        [ice_cream_source_id, _] = db.insert(docs, train=True)
+
+    # We will delete the ice cream file. To know that we successfully deleted
+    # it, make sure it comes up as a search result before deleting, and does not
+    # come up after deleting.
+    result = db.search("ice cream", top_k=1)[0]
+    assert result.text == "text: ice cream"
+    ice_cream_id = result.id
+
+    result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
+    assert result.text == "text: ice cream"
+
+    db.delete(ice_cream_source_id)
+
+    results = db.search("ice cream", top_k=1)
+    # pizza may not come up, so check if we got any result at all.
+    if len(results) > 0:
+        assert results[0].text != "text: ice cream"
+
+    results = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})
+    assert len(results) == 0
+
+    # Make sure the other document is unaffected
+    result = db.search("pizza", top_k=1)[0]
+    assert result.text == "text: pizza"
+    pizza_id = result.id
+
+    result = db.search("pizza", top_k=1, constraints={"about": "pizza"})[0]
+    assert result.text == "text: pizza"
+
+    # Make sure there are no problems with reinserting deleted document.
+    for _ in range(5):
+        db.insert(docs, train=True)
+    new_ice_cream_result = db.search("ice cream", top_k=1)[0]
+    assert new_ice_cream_result.text == "text: ice cream"
+    assert new_ice_cream_result.id != ice_cream_id
+    new_pizza_result = db.search("pizza", top_k=1)[0]
+    assert new_pizza_result.text == "text: pizza"
+    assert new_pizza_result.id == pizza_id
+
+    # Make sure constrained search index is also updated
+    result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
+    assert result.text == "text: ice cream"

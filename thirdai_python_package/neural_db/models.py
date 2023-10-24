@@ -50,6 +50,9 @@ class Model:
     def forget_documents(self) -> None:
         raise NotImplementedError()
 
+    def delete_entities(self, entities) -> None:
+        raise NotImplementedError()
+
     @property
     def searchable(self) -> bool:
         raise NotImplementedError()
@@ -76,7 +79,15 @@ class Model:
         raise NotImplementedError()
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
+        self,
+        samples: InferSamples,
+        n_results: int,
+        **kwargs,
+    ) -> Predictions:
+        raise NotImplementedError()
+
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
         raise NotImplementedError()
 
@@ -230,6 +241,26 @@ def make_balancing_samples(documents: DocumentDataSource):
     return samples
 
 
+def autotune_from_scratch_min_max_epochs(size):
+    if size < 1000:
+        return 10, 15
+    if size < 10000:
+        return 8, 13
+    if size < 100000:
+        return 5, 10
+    if size < 1000000:
+        return 3, 8
+    return 1, 5
+
+
+def autotune_from_base_min_max_epochs(size):
+    if size < 100000:
+        return 5, 10
+    if size < 1000000:
+        return 3, 8
+    return 1, 5
+
+
 class Mach(Model):
     def __init__(
         self,
@@ -296,8 +327,9 @@ class Mach(Model):
             self.model = self.model_from_scratch(intro_documents)
             learning_rate = 0.005
             freeze_before_train = False
-            min_epochs = 10
-            max_epochs = 15
+            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+                train_documents.size
+            )
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -323,8 +355,9 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            min_epochs = 5
-            max_epochs = 10
+            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
+                train_documents.size
+            )
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
@@ -348,6 +381,10 @@ class Mach(Model):
         self.balancing_samples += samples
         if len(self.balancing_samples) > 25000:
             self.balancing_samples = random.sample(self.balancing_samples, k=25000)
+
+    def delete_entities(self, entities) -> None:
+        for entity in entities:
+            self.get_model().forget(entity)
 
     def model_from_scratch(
         self,
@@ -382,11 +419,20 @@ class Mach(Model):
         return self.n_ids != 0
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
+        self,
+        samples: InferSamples,
+        n_results: int,
+        **kwargs,
     ) -> Predictions:
-        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         infer_batch = self.infer_samples_to_infer_batch(samples)
+        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
         return self.model.predict_batch(infer_batch)
+
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
+    ) -> Predictions:
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        return self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
 
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs

@@ -168,7 +168,12 @@ MachFeaturizer::getBalancingSamples(
   auto data_iter = data::CsvIterator::make(
       csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
 
-  auto columns = data_iter->next().value();
+  auto columns_opt = data_iter->next();
+  if (!columns_opt) {
+    throw std::invalid_argument("No data found for training.");
+  }
+
+  auto columns = std::move(columns_opt.value());
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names)

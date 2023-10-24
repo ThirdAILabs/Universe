@@ -55,11 +55,12 @@ std::shared_ptr<udt::UDT> makeUDT(
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
-    const std::string& dataset_size, char delimiter,
+    const std::string& dataset_size, bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
-    std::string target_column, const std::string& dataset_size, char delimiter,
+    std::string target_column, const std::string& dataset_size,
+    bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeSvmClassifier(
@@ -112,11 +113,13 @@ void defineAutomlInModule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
            py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
+           py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def(py::init(&makeQueryReformulationTargetOnly),
            py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
+           py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def(py::init(&makeSvmClassifier), py::arg("file_format"),
            py::arg("n_target_classes"), py::arg("input_dim"),
@@ -149,6 +152,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt)
+      .def("score_batch", &udt::UDT::scoreBatch, py::arg("samples"),
+           py::arg("classes"), py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -414,23 +419,26 @@ std::shared_ptr<udt::UDT> makeUDT(
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
-    const std::string& dataset_size, char delimiter,
+    const std::string& dataset_size, bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* incorrect_column_name = */ std::move(source_column),
       /* correct_column_name = */ std::move(target_column),
       /* dataset_size = */ dataset_size,
+      /** use spell checker = */ use_spell_checker,
       /* delimiter = */ delimiter, /* model_config = */ model_config,
       /* user_args= */ createArgumentMap(options));
 }
 
 std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
-    std::string target_column, const std::string& dataset_size, char delimiter,
+    std::string target_column, const std::string& dataset_size,
+    bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* incorrect_column_name = */ std::nullopt,
       /* correct_column_name = */ std::move(target_column),
       /* dataset_size = */ dataset_size,
+      /** use spell checker = */ use_spell_checker,
       /* delimiter = */ delimiter, /* model_config = */ model_config,
       /* user_args= */ createArgumentMap(options));
 }

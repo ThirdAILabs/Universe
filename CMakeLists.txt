@@ -363,6 +363,7 @@ set(THIRDAI_SOURCES
     bolt/src/text_generation/GenerativeModel.cc
     bolt/src/root_cause_analysis/RCA.cc
     bolt/src/metrics/Metric.cc
+    bolt/src/seismic/SeismicLabels.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -443,6 +444,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/rlhf/RLHFSampler.cc
+    utils/src/SymSpellBackend/symspell.cc
+    utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
@@ -494,6 +497,8 @@ pybind11_add_module(
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
   bolt/python_bindings/Porting.cc
+  bolt/src/seismic/SeismicEmbeddingModel.cc
+  bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   data/python_bindings/DataPython.cc
