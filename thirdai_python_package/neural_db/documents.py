@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union, final
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
+from office365.sharepoint.client_context import ClientContext
 from pytrie import StringTrie
 from requests.models import Response
 from sqlalchemy import Integer, String, create_engine
@@ -18,7 +19,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import Connector, SQLConnector
+from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
@@ -817,7 +818,7 @@ class DocumentConnector(Document):
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self._add_meta_entry(id_in_document)
+                self._add_meta_entry(id_in_document, current_chunk=current_chunk)
                 id_in_document += 1
 
     def _add_meta_entry(self, id_in_document: int, **kwargs):
@@ -1123,6 +1124,141 @@ class SQLDatabase(DocumentConnector):
             raise AttributeError(
                 f"id column needs to be unique from 0 to {self.size - 1}"
             )
+
+
+class SharePoint(DocumentConnector):
+    def __init__(
+        self,
+        ctx: ClientContext,
+        library_path: str = "Shared Documents",
+        save_extra_info: bool = True,
+        metadata: dict = {},
+    ) -> None:
+        self._connector = SharePointConnector(ctx=ctx, library_path=library_path)
+        self.library_path = library_path
+        self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
+        self._meta_table = pd.DataFrame(
+            columns=[
+                self.meta_table_id_col,
+                "internal_doc_id",
+                "server_relative_url",
+                "filename",
+                "page",
+            ]
+        )
+        self._name = self._connector.site_name + "_" + self.library_path
+        self._hash = hash_string(self._connector.url + "/" + library_path)
+
+    @property
+    def size(self) -> int:
+        return len(self.meta_table)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def hash(self) -> str:
+        return self._hash
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
+    def reference(self, element_id: int) -> Reference:
+        if element_id >= len(self.df):
+            _raise_unknown_doc_error(element_id)
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=f"filename: {self.meta_table.iloc[element_id]['filename']}"
+            + (
+                f", page no: {self.meta_table.iloc[element_id]['page']}"
+                if self.meta_table.iloc[element_id]["page"] is not None
+                else ""
+            ),
+            source=self._connector.url + "/" + self.library_path,
+            metadata={
+                **self.meta_table.loc[element_id].to_dict(),
+                **self.doc_metadata,
+            },
+        )
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return self._meta_table
+
+    def add_meta(self, id_in_document: int, **kwargs):
+        current_chunk = kwargs["current_chunk"]
+
+        internal_doc_id = current_chunk.iloc[id_in_document]["internal_doc_id"]
+        server_relative_url = current_chunk.iloc[id_in_document]["server_relative_url"]
+        filename = current_chunk.iloc[id_in_document]["filename"]
+        page = current_chunk.iloc[id_in_document]["page"]
+
+        self.meta_table.loc[len(self.meta_table)] = {
+            self.meta_table_id_col: id_in_document,
+            "internal_doc_id": internal_doc_id,
+            "server_relative_url": server_relative_url,
+            "filename": filename,
+            "page": page,
+        }
+
+    def next_chunk(self) -> pd.DataFrame:
+        chunk_df = pd.DataFrame(
+            columns=[
+                "para",
+                "internal_doc_id",
+                "server_relative_url",
+                "filename",
+                "page",
+            ]
+        )
+        for file_dict in self._connector.chunk_iterator():
+            chunk_df.drop(chunk_df.index, inplace=True)
+            for server_relative_url, filepath in file_dict.items():
+                if filepath.endswith(".pdf"):
+                    doc = PDF(path=filepath, metadata=self.doc_metadata)
+                elif filepath.endswith(".docx"):
+                    doc = DOCX(path=filepath, metadata=self.doc_metadata)
+                else:
+                    doc = Unstructured(
+                        path=filepath,
+                        save_extra_info=self._save_extra_info,
+                        metadata=self.doc_metadata,
+                    )
+
+                df = doc.df
+                temp_df = pd.DataFrame(
+                    columns=chunk_df.columns.tolist(), index=range(len(df))
+                )
+                temp_df["para"] = df["para"]
+                temp_df["internal_doc_id"] = range(len(df))
+                temp_df["server_relative_url"] = [server_relative_url] * len(df)
+                temp_df["filename"] = df["filename"]
+                temp_df["page"] = (
+                    df["page"] if "page" in df.columns else ([None] * len(df))
+                )
+
+                chunk_df = pd.concat([chunk_df, temp_df], ignore_index=True)
+            yield chunk_df
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        return chunk["para"].iloc[id_in_chunk]
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state["_connector"]
+
+        return state
 
 
 class SentenceLevelExtracted(Extracted):

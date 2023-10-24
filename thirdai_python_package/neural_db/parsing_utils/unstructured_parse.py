@@ -32,9 +32,9 @@ PPTX_CHUNK_THRESHOLD: final = 30
 @dataclass
 class UnstructuredParagraph:
     para: str
-    filepath: str
+    filename: str
     filetype: str
-    page_no: Optional[int]
+    page: Optional[int]
     display: str
 
 
@@ -48,6 +48,7 @@ class EmlParagraph(UnstructuredParagraph):
 class UnstructuredParse:
     def __init__(self, filepath: str):
         self._filepath = filepath
+        self._filename = str(Path(filepath).name)
         self._ext = Path(filepath).suffix[1:]  # Removing '.' from the extension
         self._post_processors = [
             clean_extra_whitespace,
@@ -117,9 +118,9 @@ class PptxParse(UnstructuredParse):
                 rows = [
                     UnstructuredParagraph(
                         para=chunk,
-                        filepath=self._filepath,
+                        filename=self._filename,
                         filetype=self._ext,
-                        page_no=doc.metadata["page_number"],
+                        page=doc.metadata["page_number"],
                         display=str(chunk.replace("\n", " ")),
                     )
                     for chunk in chunks
@@ -163,9 +164,9 @@ class EmlParse(UnstructuredParse):
             paragraphs = [
                 EmlParagraph(
                     para=chunk,
-                    filepath=self._filepath,
+                    filename=self._filename,
                     filetype=self._ext,
-                    page_no=None,
+                    page=None,
                     display=chunk,
                     subject=doc.metadata["subject"],
                     sent_from=",".join(doc.metadata["sent_from"]),
@@ -207,9 +208,9 @@ class TxtParse(UnstructuredParse):
             paragraphs = [
                 UnstructuredParagraph(
                     para=chunk,
-                    filepath=self._filepath,
+                    filename=self._filename,
                     filetype=self._ext,
-                    page_no=None,
+                    page=None,
                     display=chunk,
                 )
                 for chunk in chunk_text(content)
