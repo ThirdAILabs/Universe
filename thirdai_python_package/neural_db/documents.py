@@ -808,6 +808,7 @@ class DocumentConnector(Document):
     def row_iterator(self):
         id_in_document = 0
         for current_chunk in self.next_chunk():
+            current_chunk.to_csv("/home/gautam/ThirdAI/ch.csv", index = False)
             for idx in range(len(current_chunk)):
                 yield DocumentRow(
                     element_id=id_in_document,
@@ -818,7 +819,7 @@ class DocumentConnector(Document):
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self._add_meta_entry(id_in_document, current_chunk=current_chunk, current_chunk_row_id = idx)
+                self._add_meta_entry(id_in_document, current_chunk=current_chunk)
                 id_in_document += 1
 
     def _add_meta_entry(self, id_in_document: int, **kwargs):
@@ -1141,6 +1142,7 @@ class SharePoint(DocumentConnector):
         self._meta_table = pd.DataFrame(
             columns=[
                 self.meta_table_id_col,
+                "internal_doc_id",
                 "server_relative_url",
                 "filename",
                 "page",
@@ -1194,35 +1196,47 @@ class SharePoint(DocumentConnector):
 
     def add_meta(self, id_in_document: int, **kwargs):
         current_chunk = kwargs["current_chunk"]
-        current_chunk_row_id = kwargs["current_chunk_row_id"]
-        server_relative_url = current_chunk.attrs["server_relative_url"]
-        filename = current_chunk.iloc[current_chunk_row_id]["filename"]
-        page = current_chunk.iloc[current_chunk_row_id].get("page", None)
+
+        internal_doc_id = current_chunk.iloc[id_in_document]["internal_doc_id"]
+        server_relative_url = current_chunk.iloc[id_in_document]["server_relative_url"]
+        filename = current_chunk.iloc[id_in_document]["filename"]
+        page = current_chunk.iloc[id_in_document]["page"]
+
         self.meta_table.loc[len(self.meta_table)] = {
             self.meta_table_id_col: id_in_document,
+            "internal_doc_id": internal_doc_id,
             "server_relative_url": server_relative_url,
             "filename": filename,
             "page": page,
         }
 
     def next_chunk(self) -> pd.DataFrame:
-        files = self._connector.chunk_iterator()
-        for server_relative_url, filepath in next(files).items():
-            if filepath.endswith(".pdf"):
-                doc = PDF(path=filepath, metadata=self.doc_metadata)
-            elif filepath.endswith(".docx"):
-                doc = DOCX(path=filepath, metadata=self.doc_metadata)
-            else:
-                doc = Unstructured(
-                    path=filepath,
-                    save_extra_info=self._save_extra_info,
-                    metadata=self.doc_metadata,
-                )
-
-            df = doc.df
-            df.attrs["server_relative_url"] = server_relative_url
-            yield df
-
+        chunk_df = pd.DataFrame(columns = ["para", "internal_doc_id", "server_relative_url", "filename", "page"])
+        for file_dict in self._connector.chunk_iterator():
+            for server_relative_url, filepath in file_dict.items():
+                if filepath.endswith(".pdf"):
+                    doc = PDF(path=filepath, metadata=self.doc_metadata)
+                elif filepath.endswith(".docx"):
+                    doc = DOCX(path=filepath, metadata=self.doc_metadata)
+                else:
+                    doc = Unstructured(
+                        path=filepath,
+                        save_extra_info=self._save_extra_info,
+                        metadata=self.doc_metadata,
+                    )
+                
+                df = doc.df
+                temp_df = pd.DataFrame(columns = chunk_df.columns.tolist(), index = range(len(df)))
+                temp_df["para"] = df["para"]
+                temp_df["internal_doc_id"] = range(len(df))
+                temp_df["server_relative_url"] = [server_relative_url] * len(df)
+                temp_df["filename"] = df["filename"]
+                temp_df["page"] = df['page'] if 'page' in df.columns else ([None] * len(df))
+                
+                chunk_df = pd.concat(objs = [chunk_df, temp_df], ignore_index=True)
+            yield chunk_df
+            chunk_df.drop(df.index, inplace = True)
+                
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         return ""
 

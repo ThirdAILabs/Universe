@@ -88,10 +88,12 @@ class SharePointConnector(Connector):
             self._ctx.execute_query()
 
             # filtering to only contain files of supported extensions
+            exts = SUPPORTED_EXT[:]
+            exts.remove("csv")
             self._files = list(
                 filter(
                     lambda file: file.properties["Name"].split(sep=".")[-1]
-                    in SUPPORTED_EXT,
+                    in exts,
                     self._files,
                 )
             )
