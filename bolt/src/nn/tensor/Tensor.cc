@@ -7,8 +7,7 @@
 
 namespace thirdai::bolt {
 
-Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
-               bool with_grad)
+Tensor::Tensor(size_t batch_size, size_t dim, size_t nonzeros, bool with_grad)
     : _dim(dim), _nonzeros(nonzeros) {
   if (nonzeros == 0) {
     throw std::invalid_argument("Cannot allocate tensor with 0 nonzeros.");
@@ -25,8 +24,7 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
 
   _vectors.reserve(batch_size);
 
-  for (uint32_t offset = 0; offset < batch_size * nonzeros;
-       offset += nonzeros) {
+  for (size_t offset = 0; offset < batch_size * nonzeros; offset += nonzeros) {
     uint32_t* active_neurons = nullptr;
     if (nonzeros < dim) {
       active_neurons = _active_neurons.data() + offset;
@@ -45,7 +43,7 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
 }
 
 Tensor::Tensor(std::vector<uint32_t>&& indices, std::vector<float>&& values,
-               std::vector<size_t>&& lens, uint32_t dim)
+               std::vector<size_t>&& lens, size_t dim)
     : _dim(dim),
       _nonzeros(std::nullopt),
       _active_neurons(std::move(indices)),
@@ -62,9 +60,8 @@ Tensor::Tensor(std::vector<uint32_t>&& indices, std::vector<float>&& values,
   }
 }
 
-Tensor::Tensor(const uint32_t* indices, const float* values,
-               uint32_t batch_size, uint32_t dim, uint32_t nonzeros,
-               bool with_grad)
+Tensor::Tensor(const uint32_t* indices, const float* values, size_t batch_size,
+               size_t dim, size_t nonzeros, bool with_grad)
     : Tensor(batch_size, dim, nonzeros, with_grad) {
   if (isSparse() && !indices) {
     throw std::invalid_argument(
@@ -89,7 +86,7 @@ Tensor::Tensor(const uint32_t* indices, const float* values,
   std::copy(values, values + _activations.size(), _activations.begin());
 }
 
-Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
+Tensor::Tensor(const BoltBatch& batch, size_t dim)
     : _dim(dim), _nonzeros(std::nullopt) {
   checkBatchContents(batch, _dim);
 
@@ -115,7 +112,7 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
                         vec.activations + vec.len);
   }
 
-  uint32_t offset = 0;
+  size_t offset = 0;
   for (const auto& vec : batch) {
     uint32_t* active_neurons =
         is_sparse ? _active_neurons.data() + offset : nullptr;
@@ -127,7 +124,7 @@ Tensor::Tensor(const BoltBatch& batch, uint32_t dim)
   }
 }
 
-Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
+Tensor::Tensor(BoltBatch&& batch, size_t dim)
     : _dim(dim), _nonzeros(std::nullopt) {
   checkBatchContents(batch, _dim);
 
@@ -141,56 +138,55 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
   }
 }
 
-std::shared_ptr<Tensor> Tensor::dense(uint32_t batch_size, uint32_t dim) {
+std::shared_ptr<Tensor> Tensor::dense(size_t batch_size, size_t dim) {
   return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
                                   /* nonzeros= */ dim);
 }
 
-std::shared_ptr<Tensor> Tensor::sparse(uint32_t batch_size, uint32_t dim,
-                                       uint32_t nonzeros) {
+std::shared_ptr<Tensor> Tensor::sparse(size_t batch_size, size_t dim,
+                                       size_t nonzeros) {
   return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
                                   /* nonzeros= */ nonzeros);
 }
 
 std::shared_ptr<Tensor> Tensor::sparse(std::vector<uint32_t>&& indices,
                                        std::vector<float>&& values,
-                                       std::vector<size_t>&& lens,
-                                       uint32_t dim) {
+                                       std::vector<size_t>&& lens, size_t dim) {
   return std::make_shared<Tensor>(std::move(indices), std::move(values),
                                   std::move(lens), dim);
 }
 
 std::shared_ptr<Tensor> Tensor::fromArray(const uint32_t* indices,
                                           const float* values,
-                                          uint32_t batch_size, uint32_t dim,
-                                          uint32_t nonzeros, bool with_grad) {
+                                          size_t batch_size, size_t dim,
+                                          size_t nonzeros, bool with_grad) {
   return std::make_shared<Tensor>(indices, values, batch_size, dim, nonzeros,
                                   with_grad);
 }
 
-std::shared_ptr<Tensor> Tensor::copy(const BoltBatch& batch, uint32_t dim) {
+std::shared_ptr<Tensor> Tensor::copy(const BoltBatch& batch, size_t dim) {
   return std::make_shared<Tensor>(batch, dim);
 }
 
-std::shared_ptr<Tensor> Tensor::convert(BoltBatch&& batch, uint32_t dim) {
+std::shared_ptr<Tensor> Tensor::convert(BoltBatch&& batch, size_t dim) {
   return std::make_shared<Tensor>(std::move(batch), dim);
 }
 
-std::shared_ptr<Tensor> Tensor::convert(BoltVector&& vector, uint32_t dim) {
+std::shared_ptr<Tensor> Tensor::convert(BoltVector&& vector, size_t dim) {
   BoltBatch batch({std::move(vector)});
   return convert(std::move(batch), dim);
 }
 
-uint32_t Tensor::dim() const { return _dim; }
+size_t Tensor::dim() const { return _dim; }
 
-std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
+std::optional<size_t> Tensor::nonzeros() const { return _nonzeros; }
 
-BoltVector& Tensor::getVector(uint32_t index) {
+BoltVector& Tensor::getVector(size_t index) {
   assert(index < _vectors.size());
   return _vectors[index];
 }
 
-uint32_t Tensor::batchSize() const { return _vectors.size(); }
+size_t Tensor::batchSize() const { return _vectors.size(); }
 
 const uint32_t* Tensor::activeNeuronsPtr() const {
   return _active_neurons.empty() ? nullptr : _active_neurons.data();
@@ -201,17 +197,17 @@ const float* Tensor::activationsPtr() const {
 }
 
 std::pair<std::vector<uint32_t>, std::vector<float> >
-Tensor::topKIndexValuePair(uint32_t topk) {
+Tensor::topKIndexValuePair(size_t topk) {
   std::vector<float> topk_activations;
   std::vector<uint32_t> topk_active_neurons;
 
-  uint32_t batch_size = batchSize();
-  uint32_t total_size = batch_size * topk;
+  size_t batch_size = batchSize();
+  size_t total_size = batch_size * topk;
 
   topk_activations.resize(total_size);
   topk_active_neurons.resize(total_size);
 
-  for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
+  for (size_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     int idx_ = topk - 1;
     TopKActivationsQueue topk_activations_queue =
         getVector(batch_idx).findKLargestActivations(topk);
@@ -233,7 +229,7 @@ const float* Tensor::gradientsPtr() const {
   return _gradients.empty() ? nullptr : _gradients.data();
 }
 
-void Tensor::checkBatchContents(const BoltBatch& batch, uint32_t dim) {
+void Tensor::checkBatchContents(const BoltBatch& batch, size_t dim) {
   if (batch.getBatchSize() == 0) {
     throw std::invalid_argument("Cannot convert empty batch to tensor.");
   }
@@ -256,7 +252,7 @@ void Tensor::checkBatchContents(const BoltBatch& batch, uint32_t dim) {
           "All dense vectors must have the same length to convert to tensor.");
     }
 
-    for (uint32_t i = 0; i < vec.len; i++) {
+    for (size_t i = 0; i < vec.len; i++) {
       if (!is_dense) {
         if (vec.active_neurons[i] >= dim) {
           throw std::invalid_argument(
