@@ -1,16 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/utility.hpp>
-#include <cereal/types/variant.hpp>
-#include <cereal/types/vector.hpp>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
@@ -36,13 +25,6 @@ struct DataType {
   virtual std::string toString() const = 0;
 
   virtual ~DataType() = default;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
 };
 
 using DataTypePtr = std::shared_ptr<DataType>;
@@ -61,13 +43,6 @@ struct CategoricalDataType final : public DataType {
                          delimiter.value());
     }
     return fmt::format(R"({{"type": "categorical"}})");
-  }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), delimiter, metadata_config);
   }
 };
 
@@ -98,13 +73,6 @@ struct TextDataType final : public DataType {
   bool lowercase;
 
   std::string toString() const final { return R"({"type": "text"})"; }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), tokenizer, encoder, lowercase);
-  }
 };
 
 using TextDataTypePtr = std::shared_ptr<TextDataType>;
@@ -129,26 +97,12 @@ struct NumericalDataType final : public DataType {
   }
 
   uint32_t numBins() const;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), range, granularity);
-  }
 };
 
 using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
 struct DateDataType final : public DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this));
-  }
 };
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
@@ -166,13 +120,6 @@ struct SequenceDataType final : public DataType {
   std::optional<uint32_t> max_length;
 
   std::string toString() const final { return R"({"type": "sequence"})"; }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), delimiter, max_length);
-  }
 };
 
 using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
@@ -191,13 +138,6 @@ using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
  */
 struct NeighborsDataType : DataType {
   std::string toString() const final { return R"({"type": "neighbors"})"; }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this));
-  }
 };
 
 using NeighborsDataTypePtr = std::shared_ptr<NeighborsDataType>;
@@ -215,13 +155,6 @@ using NeighborsDataTypePtr = std::shared_ptr<NeighborsDataType>;
  */
 struct NodeIDDataType : DataType {
   std::string toString() const final { return R"({"type": "node id"})"; }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this));
-  }
 };
 
 using NodeIDDataTypePtr = std::shared_ptr<NodeIDDataType>;
@@ -247,14 +180,6 @@ struct CategoricalMetadataConfig {
   std::string key;
   ColumnDataTypes column_data_types;
   char delimiter = ',';
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(metadata_file, key, column_data_types, delimiter);
-  }
 };
 
 struct TemporalCategoricalConfig {
@@ -338,14 +263,6 @@ class TemporalConfig {
   uint32_t _history_length;
   bool _include_current_row;
   bool _use_metadata;
-
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_type, _column_name, _track_last_n, _history_length,
-            _include_current_row);
-  }
 };
 
 using UserProvidedTemporalRelationships =

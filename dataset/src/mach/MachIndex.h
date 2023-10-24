@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <proto/state.pb.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -73,12 +74,19 @@ class MachIndex {
     return _buckets.at(bucket).size();
   }
 
+  const auto& entityToHashes() const { return _entity_to_hashes; }
+
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
   TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
                                            uint32_t k) const;
 
   float sparsity() const;
+
+  proto::data::MachIndex* toProto() const;
+
+  static std::shared_ptr<MachIndex> fromProto(
+      const proto::data::MachIndex& mach_index);
 
   void save(const std::string& filename) const;
 

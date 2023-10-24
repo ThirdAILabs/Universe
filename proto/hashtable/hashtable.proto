@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package proto.hashtable;
+
+message SampledHashTable {
+  required uint64 num_tables = 1;
+  required uint64 reservoir_size = 2;
+  required uint64 range = 3;
+
+  repeated uint32 data = 4;
+  repeated uint32 counters = 5;
+  repeated uint32 gen_rand = 6;
+}
+
+message Bucket {
+  repeated uint32 ids = 1;
+}
+
+message VectorHashTable {
+  required uint64 num_tables = 1;
+  required uint64 table_range = 2;
+  optional uint64 reservoir_size = 3;
+
+  repeated Bucket buckets = 4;
+
+  repeated uint32 gen_rand = 5;
+  repeated uint32 insertions_per_bucket = 6;
+  required uint64 total_insertions = 7;
+}

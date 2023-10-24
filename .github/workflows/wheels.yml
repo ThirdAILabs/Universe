@@ -15,10 +15,7 @@ concurrency:
 on: 
   push: 
     branches: [main]
-
-  release:
-    types:
-      - published
+    tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
 
@@ -40,7 +37,7 @@ jobs:
             os: macos-12
             archs: arm64
             deployment_target: "11.0"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DTHIRDAI_BUILD_PROTOBUF_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
 
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -65,8 +62,9 @@ jobs:
           $Env:VCPKG_ROOT = 'C:\'
           .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
+          .\vcpkg install protobuf
         shell: powershell
-
+  
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
@@ -96,11 +94,16 @@ jobs:
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
          
+          # Because manylinux is based on CentOS it uses yum package manager. 
+          # Yum will only install protobuf 2.3.1 which doens't support some 
+          # useful features we are using. To get around this we just build and
+          # install from source. 
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
-            yum install -y libxslt-devel libxml2-devel
-          CIBW_BEFORE_BUILD_MACOS: brew install openssl
+            yum install -y libxslt-devel libxml2-devel &&
+            sh ./bin/build_protobuf.sh
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl protobuf
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
@@ -152,7 +155,7 @@ jobs:
     name: Upload to test pypi
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
     - uses: actions/setup-python@v2
@@ -182,7 +185,7 @@ jobs:
     name: Upload to real pypi
     needs: [upload_to_test_pypi]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
     - uses: actions/setup-python@v2

@@ -9,6 +9,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <proto/udt_query_reformulation.pb.h>
 #include <search/src/Flash.h>
 #include <optional>
 #include <unordered_map>
@@ -22,6 +23,9 @@ class UDTQueryReformulation final : public UDTBackend {
                         const std::string& dataset_size, char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
+
+  explicit UDTQueryReformulation(
+      const proto::udt::UDTQueryReformulation& query_reformulation);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -45,6 +49,10 @@ class UDTQueryReformulation final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  proto::udt::UDT toProto() const final;
+
+  ModelPtr model() const final { return nullptr; }
+
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,
                       const std::string& column_name) const;
@@ -67,7 +75,7 @@ class UDTQueryReformulation final : public UDTBackend {
 
   // Returns the default flash instance to use for the given dataset size if no
   // model_config is specified.
-  static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
+  static std::unique_ptr<search::Flash> defaultFlashIndex(
       const std::string& dataset_size);
 
   static dataset::BlockList ngramBlockList(
@@ -84,13 +92,7 @@ class UDTQueryReformulation final : public UDTBackend {
     }
   }
 
-  UDTQueryReformulation() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
-
-  std::unique_ptr<search::Flash<uint32_t>> _flash_index;
+  std::unique_ptr<search::Flash> _flash_index;
 
   dataset::TabularFeaturizerPtr _inference_featurizer;
 

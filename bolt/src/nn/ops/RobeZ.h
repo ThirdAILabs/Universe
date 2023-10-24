@@ -29,6 +29,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;
@@ -42,7 +44,18 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  ComputationPtr apply(ComputationPtr input);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyUnary(ComputationPtr input);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<RobeZ> fromProto(const std::string& name,
+                                          const proto::bolt::RobeZ& robez_proto,
+                                          DeserializedParameters& parameter);
 
   std::shared_ptr<RobeZ> duplicateWithNewReduction(
       const std::string& reduction,
@@ -59,9 +72,14 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
   RobeZ(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
       : Op(name), _kernel(std::move(kernel)) {}
 
+  RobeZ(const std::string& name, const proto::bolt::RobeZ& robez_proto,
+        DeserializedParameters& parameter);
+
   std::unique_ptr<EmbeddingLayer> _kernel;
 
   RobeZ() {}
+
+  std::string embeddingBlockName() const { return name() + "_embedding_block"; }
 
   friend class cereal::access;
 

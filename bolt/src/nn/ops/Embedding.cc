@@ -6,6 +6,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
 #include <ios>
@@ -39,16 +40,52 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   if (_bias) {
     std::generate(_biases.begin(), _biases.end(), gen);
   }
+}
 
-  _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-  _bias_optimizer = AdamOptimizer(_dim);
+Embedding::Embedding(const std::string& name,
+                     const proto::bolt::Embedding& emb_proto,
+                     DeserializedParameters& parameters)
+    : Op(name),
+      _dim(emb_proto.dim()),
+      _input_dim(emb_proto.input_dim()),
+      _bias(emb_proto.use_bias()),
+      _act_func(activationFromProto(emb_proto.activation())),
+      _embeddings(parametersFromProto(emb_proto.embeddings(), parameters)),
+      _biases(parametersFromProto(emb_proto.bias(), parameters)),
+      _disable_sparse_parameter_updates(
+          emb_proto.disable_sparse_parameter_updates()),
+      _should_serialize_optimizer(false),
+      _embeddings_used(emb_proto.input_dim(), false) {
+  if (_embeddings.size() != _dim * _input_dim) {
+    throw std::runtime_error(
+        "Embeddings do not have expected size in fromProto.");
+  }
+  if (_biases.size() != _dim) {
+    throw std::runtime_error("Biases do not have expected size in fromProto.");
+  }
+
+  if (emb_proto.has_embeddings_optimizer() && emb_proto.has_bias_optimizer()) {
+    _embedding_optimizer =
+        optimizerFromProto(emb_proto.embeddings_optimizer(), parameters);
+    if (_embedding_optimizer->momentum.size() != _embeddings.size()) {
+      throw std::runtime_error(
+          "Embeddings optimizer does not have expected size in fromProto.");
+    }
+
+    _bias_optimizer =
+        optimizerFromProto(emb_proto.bias_optimizer(), parameters);
+    if (_bias_optimizer->momentum.size() != _biases.size()) {
+      throw std::runtime_error(
+          "Bias optimizer does not expected size in fromProto.");
+    }
+  }
 }
 
 void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
                         uint32_t index_in_batch, bool training) {
   (void)training;
 
-  assert(inputs.size() == 2);
+  assert(inputs.size() == 1);
 
   const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
@@ -73,7 +110,7 @@ void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
 
 void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
-  assert(inputs.size() == 2);
+  assert(inputs.size() == 1);
 
   const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
@@ -190,6 +227,13 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   }
 }
 
+void Embedding::initOptimizer() {
+  if (!_embedding_optimizer || !_bias_optimizer) {
+    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+  }
+}
+
 void Embedding::sparseEmbeddingUpdate(float learning_rate,
                                       uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
@@ -235,13 +279,62 @@ void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
           << ", bias=" << std::boolalpha << _bias << "]";
 }
 
-ComputationPtr Embedding::apply(ComputationPtr input) {
+ComputationPtr Embedding::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Embedding op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr Embedding::applyUnary(ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(
         "Input has too large of a dimension for embedding.");
   }
 
   return Computation::make(shared_from_this(), {std::move(input)});
+}
+
+proto::bolt::Op* Embedding::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
+
+  auto* emb = op->mutable_embedding();
+
+  emb->set_dim(_dim);
+  emb->set_input_dim(_input_dim);
+  emb->set_activation(activationToProto(_act_func));
+
+  emb->set_use_bias(_bias);
+
+  emb->set_allocated_embeddings(parametersToProto(embeddingsName()));
+  emb->set_allocated_bias(parametersToProto(biasesName()));
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    emb->set_allocated_embeddings_optimizer(
+        optimizerToProto(embeddingsName(), _input_dim, _dim));
+
+    emb->set_allocated_bias_optimizer(
+        optimizerToProto(biasesName(), /* rows= */ 1, _dim));
+  }
+
+  emb->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
+
+  return op;
+}
+
+SerializableParameters Embedding::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {{embeddingsName(), &_embeddings},
+                                       {biasesName(), &_biases}};
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    addOptimizerParameters(*_embedding_optimizer, embeddingsName(), parameters);
+    addOptimizerParameters(*_bias_optimizer, biasesName(), parameters);
+  }
+
+  return parameters;
 }
 
 template void Embedding::save(cereal::BinaryOutputArchive&) const;
@@ -268,8 +361,6 @@ void Embedding::load(Archive& archive) {
   if (_should_serialize_optimizer) {
     archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
   } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
     _embeddings_used.assign(_input_dim, false);
   }
 }

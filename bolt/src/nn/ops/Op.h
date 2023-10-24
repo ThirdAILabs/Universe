@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <proto/ops.pb.h>
 #include <memory>
 
 namespace thirdai::bolt {
@@ -95,6 +97,11 @@ class Op {
                                            bool use_sparsity) const = 0;
 
   /**
+   * Initializes the optimizer for the op.
+   */
+  virtual void initOptimizer() = 0;
+
+  /**
    * Disables sparse parameter updates for updateParameters in the op. This is
    * used for distributed and also can be beneficial in cases where most of the
    * parameters are being updated and dense updates are faster.
@@ -119,6 +126,8 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
+  virtual ComputationPtr apply(const ComputationList& inputs) = 0;
+
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
@@ -135,6 +144,14 @@ class Op {
   }
 
   virtual void registerModel(const std::weak_ptr<Model>& model) { (void)model; }
+
+  virtual proto::bolt::Op* toProto(bool with_optimizer) const = 0;
+
+  virtual SerializableParameters serializableParameters(
+      bool with_optimizer) const = 0;
+
+  static std::shared_ptr<Op> fromProto(const proto::bolt::Op& op_proto,
+                                       DeserializedParameters& parameters);
 
   /**
    * Returns the name of the op. All of the ops in a model must have a

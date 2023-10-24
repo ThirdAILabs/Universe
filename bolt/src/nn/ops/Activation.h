@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
+#include <proto/activation.pb.h>
 #include <cmath>
 #include <memory>
 
@@ -12,6 +13,10 @@ struct ReluImpl {
   static float gradient(float y) { return y > 0 ? 1 : 0; }
 
   static std::string name() { return "ReLU"; }
+
+  static proto::bolt::ActivationFunction toProto() {
+    return proto::bolt::ActivationFunction::RELU;
+  }
 };
 
 struct TanhImpl {
@@ -20,6 +25,10 @@ struct TanhImpl {
   static float gradient(float y) { return (1 - y * y); }
 
   static std::string name() { return "Tanh"; }
+
+  static proto::bolt::ActivationFunction toProto() {
+    return proto::bolt::ActivationFunction::TANH;
+  }
 };
 
 template <typename Impl>
@@ -41,6 +50,8 @@ class Activation final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;
@@ -52,10 +63,22 @@ class Activation final : public Op,
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
-  ComputationPtr apply(ComputationPtr input);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyUnary(ComputationPtr input);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<Activation<Impl>> fromProto(
+      const std::string& name, const proto::bolt::Activation& act_proto);
 
  private:
   Activation();
+
+  Activation(const std::string& name, const proto::bolt::Activation& act_proto);
 
   friend class cereal::access;
   template <class Archive>
@@ -63,6 +86,9 @@ class Activation final : public Op,
 
   uint32_t _dim = 0;
 };
+
+OpPtr activationOpFromProto(const std::string& name,
+                            const proto::bolt::Activation& act_proto);
 
 using Relu = Activation<ReluImpl>;
 using ReluPtr = std::shared_ptr<Relu>;

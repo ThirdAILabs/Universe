@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <_types/_uint32_t.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/Random.h>
 #include <random>
@@ -14,6 +15,9 @@ namespace thirdai::dataset::mach {
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
                      uint32_t num_elements)
     : _buckets(num_buckets), _num_hashes(num_hashes) {
+  if (num_hashes == 0) {
+    throw std::invalid_argument("Cannot have num_hashes=0.");
+  }
   if (num_hashes > num_buckets) {
     throw std::invalid_argument("Can't have more hashes than buckets");
   }
@@ -94,6 +98,10 @@ std::vector<std::pair<uint32_t, double>> MachIndex::decode(
 
   while (entity_scores.size() > num_to_return) {
     entity_scores.pop_back();
+  }
+
+  for (auto& item : entity_scores) {
+    item.second /= _num_hashes;
   }
 
   return entity_scores;
@@ -211,6 +219,35 @@ void MachIndex::verifyHash(uint32_t hash) const {
                                 " for index with range " +
                                 std::to_string(numBuckets()) + ".");
   }
+}
+
+proto::data::MachIndex* MachIndex::toProto() const {
+  proto::data::MachIndex* index = new proto::data::MachIndex();
+
+  index->set_num_buckets(numBuckets());
+  index->set_num_hashes(numHashes());
+
+  for (const auto& [entity, hashes] : _entity_to_hashes) {
+    auto* new_entity = index->add_entities();
+    new_entity->set_entity_id(entity);
+    *new_entity->mutable_hashes() = {hashes.begin(), hashes.end()};
+  }
+
+  return index;
+}
+
+std::shared_ptr<MachIndex> MachIndex::fromProto(
+    const proto::data::MachIndex& mach_index) {
+  std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes;
+
+  for (const auto& entity : mach_index.entities()) {
+    entity_to_hashes[entity.entity_id()] = {entity.hashes().begin(),
+                                            entity.hashes().end()};
+  }
+
+  return std::make_shared<MachIndex>(std::move(entity_to_hashes),
+                                     mach_index.num_buckets(),
+                                     mach_index.num_hashes());
 }
 
 template void MachIndex::serialize(cereal::BinaryInputArchive&);

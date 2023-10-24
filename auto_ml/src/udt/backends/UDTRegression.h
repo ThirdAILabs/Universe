@@ -21,6 +21,9 @@ class UDTRegression final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
+  explicit UDTRegression(const proto::udt::UDTRegression& regression,
+                         bolt::ModelPtr model);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -43,17 +46,12 @@ class UDTRegression final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  proto::udt::UDT toProto() const final;
+
   ModelPtr model() const final { return _model; }
 
  private:
   float unbinActivations(const BoltVector& output) const;
-
-  UDTRegression() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   ModelPtr _model;
 

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/optional.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <data/src/ColumnMap.h>
+#include <proto/output_columns.pb.h>
 
 namespace thirdai::data {
 
@@ -18,6 +17,8 @@ class OutputColumns {
                          ValueFillType value_fill_type = ValueFillType::Ones)
       : _indices(std::move(indices)), _value_fill_type(value_fill_type) {}
 
+  explicit OutputColumns(const proto::data::OutputColumns& output_columns);
+
   OutputColumns(std::string indices, std::string values)
       : _indices(std::move(indices)), _values(std::move(values)) {}
 
@@ -27,21 +28,22 @@ class OutputColumns {
 
   ValueFillType valueFillType() const { return _value_fill_type; }
 
-  OutputColumns() {}  // For cereal
+  proto::data::OutputColumns* toProto() const;
 
  private:
   std::string _indices;
   std::optional<std::string> _values;
   ValueFillType _value_fill_type;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_indices, _values, _value_fill_type);
-  }
 };
 
 using OutputColumnsList = std::vector<OutputColumns>;
+
+proto::data::OutputColumnsList* outputColumnsListToProto(
+    const OutputColumnsList& output_columns_list);
+
+OutputColumnsList outputColumnsListFromProto(
+
+    const proto::data::OutputColumnsList& output_columns_list);
 
 std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const OutputColumnsList& columns_to_convert,

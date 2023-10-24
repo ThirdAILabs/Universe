@@ -4,6 +4,15 @@
 
 namespace thirdai::data {
 
+BinningTransformation::BinningTransformation(
+    const proto::data::Binning& binning)
+    : _input_column_name(binning.input_column()),
+      _output_column_name(binning.output_column()),
+      _inclusive_min_value(binning.inclusive_min_value()),
+      _exclusive_max_value(binning.exclusive_max_value()),
+      _binsize(binning.binsize()),
+      _num_bins(binning.num_bins()) {}
+
 ColumnMap BinningTransformation::apply(ColumnMap columns, State& state) const {
   (void)state;
 
@@ -58,6 +67,20 @@ void BinningTransformation::buildExplanationMap(
   explanations.store(
       _output_column_name, bin,
       explanations.explain(_input_column_name, /* feature_index= */ 0));
+}
+
+proto::data::Transformation* BinningTransformation::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* binning = transformation->mutable_binning();
+
+  binning->set_input_column(_input_column_name);
+  binning->set_output_column(_output_column_name);
+  binning->set_inclusive_min_value(_inclusive_min_value);
+  binning->set_exclusive_max_value(_exclusive_max_value);
+  binning->set_binsize(_binsize);
+  binning->set_num_bins(_num_bins);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

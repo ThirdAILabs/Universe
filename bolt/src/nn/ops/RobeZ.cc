@@ -5,6 +5,8 @@
 #include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -27,6 +29,11 @@ RobeZ::RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
 
   _kernel = std::make_unique<EmbeddingLayer>(config, seed);
 }
+
+RobeZ::RobeZ(const std::string& name, const proto::bolt::RobeZ& robez_proto,
+             DeserializedParameters& parameters)
+    : Op(name),
+      _kernel(std::make_unique<EmbeddingLayer>(robez_proto, parameters)) {}
 
 std::shared_ptr<RobeZ> RobeZ::make(uint64_t num_embedding_lookups,
                                    uint64_t lookup_size,
@@ -74,6 +81,8 @@ std::optional<uint32_t> RobeZ::nonzeros(const ComputationList& inputs,
   return dim();
 }
 
+void RobeZ::initOptimizer() { _kernel->initOptimizer(); }
+
 void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
@@ -102,8 +111,47 @@ void RobeZ::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
-ComputationPtr RobeZ::apply(ComputationPtr input) {
+ComputationPtr RobeZ::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("RobeZ op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr RobeZ::applyUnary(ComputationPtr input) {
   return Computation::make(shared_from_this(), {std::move(input)});
+}
+
+proto::bolt::Op* RobeZ::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
+
+  // TODO(Nicholas) move everything into this class so we don't have to deal
+  // with the kernel. This will be easier to do once protobufs are added so it
+  // doesn't break compatability.
+  op->set_allocated_robez(_kernel->toProto(name(), with_optimizer));
+
+  return op;
+}
+
+SerializableParameters RobeZ::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {
+      {embeddingBlockName(), _kernel->_embedding_block.get()}};
+
+  if (with_optimizer && _kernel->_optimizer) {
+    addOptimizerParameters(*_kernel->_optimizer, embeddingBlockName(),
+                           parameters);
+  }
+
+  return parameters;
+}
+
+std::shared_ptr<RobeZ> RobeZ::fromProto(const std::string& name,
+                                        const proto::bolt::RobeZ& robez_proto,
+                                        DeserializedParameters& parameter) {
+  return std::shared_ptr<RobeZ>(new RobeZ(name, robez_proto, parameter));
 }
 
 template void RobeZ::save(cereal::BinaryOutputArchive&) const;
@@ -118,8 +166,6 @@ template void RobeZ::load(cereal::BinaryInputArchive&);
 template <class Archive>
 void RobeZ::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
-
-  _kernel->initOptimizer();
 }
 
 std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(

@@ -6,8 +6,10 @@
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <proto/ops.pb.h>
 #include <utils/Random.h>
 #include <cmath>
 #include <ctime>
@@ -21,12 +23,18 @@ namespace tests {
 class EmbeddingLayerTestFixture;
 }  // namespace tests
 
+class RobeZ;
+
 class EmbeddingLayer {
   friend class tests::EmbeddingLayerTestFixture;
+  friend class RobeZ;
 
  public:
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = global_random::nextSeed());
+
+  explicit EmbeddingLayer(const proto::bolt::RobeZ& robez_proto,
+                          DeserializedParameters& parameter);
 
   void forward(const BoltVector& tokens, BoltVector& output);
 
@@ -95,6 +103,9 @@ class EmbeddingLayer {
   uint64_t updateChunkSize() const { return _update_chunk_size; }
 
   uint32_t hashSeed() const { return _hash_fn.seed(); }
+
+  proto::bolt::RobeZ* toProto(const std::string& name,
+                              bool with_optimizer) const;
 
   ~EmbeddingLayer() = default;
 

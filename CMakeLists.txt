@@ -41,6 +41,7 @@ message("====================================")
 option(THIRDAI_REPORT_BUILD_STEP_TIMES
        "Report time using builtin for make/ninja compile-build steps" OFF)
 option(THIRDAI_BUILD_OPENSSL_FROM_SOURCE "Build OpenSSL from source" OFF)
+option(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE "Build Protobuf from source" OFF)
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
@@ -207,7 +208,6 @@ set(THIRDAI_COMPILE_OPTIONS
     -Wno-unused-function
     -Wno-ignored-optimization-argument
     -Wno-psabi
-    -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
     $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
@@ -267,6 +267,24 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
+# This controls if we use/link a preinstalled version of the protobuf library or
+# if we build and link protobuf from source using the submodule. This is becuase
+# we need to build and link from source when cross compiling for MacOS arm to
+# ensure that the target architecture of lib protobuf matches the target we are
+# compling for.
+if(THIRDAI_BUILD_PROTOBUF_FROM_SOURCE)
+  set(protobuf_BUILD_TESTS OFF)
+  add_subdirectory(deps/protobuf EXCLUDE_FROM_ALL)
+  include_directories(deps/protobuf/src)
+  include_directories(deps/protobuf/third_party/abseil-cpp)
+else()
+  include(FindProtobuf)
+  find_package(Protobuf REQUIRED)
+  include_directories(${Protobuf_INCLUDE_DIR})
+endif()
+
+add_subdirectory(proto)
+
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
 set(ENABLE_TESTING OFF)
@@ -322,21 +340,26 @@ set(THIRDAI_SOURCES
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/Op.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
+    bolt/src/nn/ops/Switch.cc
     bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
     bolt/src/nn/ops/DotProduct.cc
     bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/nn/ops/protobuf_utils/Conversions.cc
+    bolt/src/nn/ops/protobuf_utils/SerializedParameters.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
@@ -355,6 +378,9 @@ set(THIRDAI_SOURCES
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
+    bolt/src/text_generation/ContextualModel.cc
+    bolt/src/text_generation/DyadicModel.cc
+    bolt/src/text_generation/GenerativeModel.cc
     bolt/src/root_cause_analysis/RCA.cc
     bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
@@ -401,12 +427,16 @@ set(THIRDAI_SOURCES
     data/src/transformations/ColdStartText.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/TransformationList.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
+    data/src/transformations/Transformation.cc
+    data/src/transformations/State.cc
     data/src/transformations/CrossColumnPairgrams.cc
     data/src/transformations/DeduplicateTokens.cc
     data/src/transformations/EncodePosition.cc
@@ -414,6 +444,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
+    data/src/transformations/DyadicInterval.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -434,6 +465,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/rlhf/RLHFSampler.cc
+    utils/ProtobufIO.cc
     utils/Logging.cc
     utils/StringManipulation.cc
     utils/UUID.cc
@@ -460,8 +492,14 @@ endif()
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
-  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+  thirdai
+  PUBLIC proto
+         protobuf::libprotobuf
+         OpenMP::OpenMP_CXX
+         spdlog::spdlog
+         cereal::cereal
+         prometheus-cpp::pull
+         utf8proc)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
@@ -483,6 +521,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltTrainPython.cc
   bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
+  bolt/python_bindings/BoltTextGeneration.cc
   bolt/python_bindings/Porting.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc

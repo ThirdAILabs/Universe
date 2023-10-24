@@ -16,6 +16,8 @@ class BinaryCrossEntropy final : public ComparativeLoss {
   static std::shared_ptr<BinaryCrossEntropy> make(ComputationPtr output,
                                                   ComputationPtr labels);
 
+  proto::bolt::Loss* toProto() const final;
+
  private:
   float singleGradient(float activation, float label,
                        uint32_t batch_size) const final;

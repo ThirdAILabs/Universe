@@ -1,6 +1,7 @@
 import re
 
 import numpy as np
+import psutil
 import pytest
 import thirdai
 from thirdai import bolt, dataset
@@ -176,3 +177,35 @@ def test_bolt_model_porting():
     # Check that the model can continue to be trained after save/load.
     train_model(model, train_data, train_labels)
     evaluate_model(model, test_data, test_labels_np)
+
+
+@pytest.mark.unit
+def test_model_low_memory_inference():
+    def ram_gb_used():
+        return psutil.Process().memory_info().rss / 1000000000
+
+    initial_ram_usage = ram_gb_used()
+
+    input_layer = bolt.nn.Input(dim=10000)
+    output_layer = bolt.nn.FullyConnected(
+        dim=10000, input_dim=input_layer.dim(), activation="softmax"
+    )(input_layer)
+
+    loss = bolt.nn.losses.CategoricalCrossEntropy(
+        output_layer, labels=bolt.nn.Input(dim=output_layer.dim())
+    )
+
+    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+
+    x = [bolt.nn.Tensor(np.random.rand(1, input_layer.dim()))]
+    y = [bolt.nn.Tensor(np.random.rand(1, output_layer.dim()))]
+
+    model.forward(x)
+
+    before_train_ram_usage = ram_gb_used() - initial_ram_usage
+
+    model.train_on_batch(x, y)
+
+    after_train_ram_usage = ram_gb_used() - initial_ram_usage
+
+    assert (after_train_ram_usage / 2) > before_train_ram_usage

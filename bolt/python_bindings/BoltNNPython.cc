@@ -122,6 +122,7 @@ void createBoltNNSubmodule(py::module_& module) {
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
       .def("__getitem__", &Model::getOp, py::arg("name"))
+      .def("computation", &Model::getComputation, py::arg("name"))
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
@@ -149,6 +150,10 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("unfreeze_hash_tables", &Model::unfreezeHashTables)
       .def("save", &Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
+      .def("save_proto", &Model::serializeToFile, py::arg("filename"),
+           py::arg("with_optimizer") = false)
+      .def_static("load_proto", &Model::deserializeFromFile,
+                  py::arg("filename"))
       .def("checkpoint", &Model::checkpoint, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def_static("load", &Model::load, py::arg("filename"))
@@ -245,7 +250,7 @@ void defineOps(py::module_& nn) {
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
            py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
-      .def("__call__", &FullyConnected::apply)
+      .def("__call__", &FullyConnected::applyUnary)
       .def("dim", &FullyConnected::dim)
       .def("get_sparsity", &FullyConnected::getSparsity)
       .def("set_sparsity", &FullyConnected::setSparsity, py::arg("sparsity"),
@@ -291,14 +296,14 @@ void defineOps(py::module_& nn) {
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
            py::arg("seed") = global_random::nextSeed())
-      .def("__call__", &RobeZ::apply)
+      .def("__call__", &RobeZ::applyUnary)
       .def("duplicate_with_new_reduction", &RobeZ::duplicateWithNewReduction,
            py::arg("reduction"), py::arg("num_tokens_per_input"));
 
   py::class_<Embedding, EmbeddingPtr, Op>(nn, "Embedding")
       .def(py::init(&Embedding::make), py::arg("dim"), py::arg("input_dim"),
            py::arg("activation"), py::arg("bias") = true)
-      .def("__call__", &Embedding::apply)
+      .def("__call__", &Embedding::applyUnary)
       .def_property_readonly(
           "weights",
           [](const EmbeddingPtr& op) {
@@ -335,27 +340,27 @@ void defineOps(py::module_& nn) {
 
   py::class_<LayerNorm, LayerNormPtr, Op>(nn, "LayerNorm")
       .def(py::init(py::overload_cast<>(&LayerNorm::make)))
-      .def("__call__", &LayerNorm::apply);
+      .def("__call__", &LayerNorm::applyUnary);
 
   py::class_<Tanh, TanhPtr, Op>(nn, "Tanh")
       .def(py::init(&Tanh::make))
-      .def("__call__", &Tanh::apply);
+      .def("__call__", &Tanh::applyUnary);
 
   py::class_<Relu, ReluPtr, Op>(nn, "Relu")
       .def(py::init(&Relu::make))
-      .def("__call__", &Relu::apply);
+      .def("__call__", &Relu::applyUnary);
 
   py::class_<DotProduct, DotProductPtr, Op>(nn, "DotProduct")
       .def(py::init<>(&DotProduct::make))
-      .def("__call__", &DotProduct::apply);
+      .def("__call__", &DotProduct::applyBinary);
 
   py::class_<CosineSimilarity, CosineSimilarityPtr, Op>(nn, "CosineSimilarity")
       .def(py::init<>(&CosineSimilarity::make))
-      .def("__call__", &CosineSimilarity::apply);
+      .def("__call__", &CosineSimilarity::applyBinary);
 
   py::class_<DlrmAttention, DlrmAttentionPtr, Op>(nn, "DlrmAttention")
       .def(py::init(&DlrmAttention::make))
-      .def("__call__", &DlrmAttention::apply);
+      .def("__call__", &DlrmAttention::applyBinary);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }

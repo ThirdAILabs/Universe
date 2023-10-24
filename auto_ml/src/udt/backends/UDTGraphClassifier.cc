@@ -4,6 +4,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/RobeZ.h>
+#include <auto_ml/src/featurization/GraphFeaturizer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <data/src/Loader.h>
@@ -33,6 +34,12 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
   _classifier =
       utils::Classifier::make(model, /* freeze_hash_tables = */ false);
 }
+
+UDTGraphClassifier::UDTGraphClassifier(
+    const proto::udt::UDTGraphClassifier& graph, bolt::ModelPtr model)
+    : _classifier(
+          utils::Classifier::fromProto(graph.classifier(), std::move(model))),
+      _featurizer(std::make_shared<GraphFeaturizer>(graph.featurizer())) {}
 
 py::object UDTGraphClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
@@ -69,22 +76,15 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                verbose);
 }
 
-template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,
-                                            const uint32_t version);
-template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,
-                                            const uint32_t version);
+proto::udt::UDT UDTGraphClassifier::toProto() const {
+  proto::udt::UDT udt;
 
-template <class Archive>
-void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_GRAPH_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_GRAPH_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
+  auto* graph = udt.mutable_graph();
 
-  // Increment thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
+  graph->set_allocated_classifier(_classifier->toProto());
+  graph->set_allocated_featurizer(_featurizer->toProto());
+
+  return udt;
 }
 
 ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
@@ -96,14 +96,14 @@ ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
       bolt::RobeZ::make(
           /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
           /* log_embedding_block_size = */ 20, /* reduction = */ "average")
-          ->apply(neighbor_token_input);
+          ->applyUnary(neighbor_token_input);
 
   auto hidden_1 =
       bolt::FullyConnected::make(
           /* dim = */ 256,
           /* input_dim= */ node_features_input->dim(), /* sparsity = */ 1.0,
           /* activation = */ "relu")
-          ->apply(node_features_input);
+          ->applyUnary(node_features_input);
 
   auto concat_node = bolt::Concatenate::make()->apply({hidden_1, embedding_1});
 
@@ -112,12 +112,12 @@ ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
           /* dim = */ 256, /* input_dim= */ concat_node->dim(),
           /* sparsity = */ 0.5, /* activation = */ "relu",
           /* sampling = */ std::make_shared<bolt::RandomSamplingConfig>())
-          ->apply(concat_node);
+          ->applyUnary(concat_node);
 
   auto output = bolt::FullyConnected::make(
                     /* dim = */ output_dim, /* input_dim= */ hidden_3->dim(),
                     /* sparsity = */ 1, /* activation =*/"softmax")
-                    ->apply(hidden_3);
+                    ->applyUnary(hidden_3);
 
   auto labels = bolt::Input::make(output_dim);
 
@@ -130,7 +130,3 @@ ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
 }
 
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTGraphClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTGraphClassifier,
-                     thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION)

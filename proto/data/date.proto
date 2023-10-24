@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package proto.data;
+
+message Date {
+  required string input_column = 1;
+  required string output_column = 2;
+  required string format = 3;
+}

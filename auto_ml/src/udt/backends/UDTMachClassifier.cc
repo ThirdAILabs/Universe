@@ -1,5 +1,4 @@
 #include "UDTMachClassifier.h"
-#include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
@@ -13,6 +12,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/featurization/MachFeaturizer.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -41,6 +41,7 @@
 #include <random>
 #include <regex>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -129,6 +130,19 @@ UDTMachClassifier::UDTMachClassifier(
 
     _rlhf_sampler = std::make_optional<RLHFSampler>(
         num_balancing_docs, num_balancing_samples_per_doc);
+  }
+}
+
+UDTMachClassifier::UDTMachClassifier(const proto::udt::UDTMachClassifier& mach,
+                                     bolt::ModelPtr model)
+    : _classifier(
+          utils::Classifier::fromProto(mach.classifier(), std::move(model))),
+      _featurizer(std::make_shared<MachFeaturizer>(mach.featurizer())),
+      _default_top_k_to_return(mach.top_k_to_return()),
+      _num_buckets_to_eval(mach.num_buckets_to_eval()),
+      _mach_sampling_threshold(mach.mach_sampling_threshold()) {
+  if (mach.has_rlhf_smapler()) {
+    _rlhf_sampler = RLHFSampler(mach.rlhf_smapler());
   }
 }
 
@@ -265,6 +279,24 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return py::cast(predictImpl(samples, sparse_inference, top_k));
+}
+
+proto::udt::UDT UDTMachClassifier::toProto() const {
+  proto::udt::UDT udt;
+
+  auto* mach = udt.mutable_mach();
+
+  mach->set_allocated_classifier(_classifier->toProto());
+  mach->set_allocated_featurizer(_featurizer->toProto());
+  mach->set_top_k_to_return(_default_top_k_to_return);
+  mach->set_num_buckets_to_eval(_num_buckets_to_eval);
+  mach->set_mach_sampling_threshold(_mach_sampling_threshold);
+
+  if (_rlhf_sampler) {
+    mach->set_allocated_rlhf_smapler(_rlhf_sampler->toProto());
+  }
+
+  return udt;
 }
 
 py::object UDTMachClassifier::predictHashes(
@@ -703,6 +735,14 @@ void UDTMachClassifier::addBalancingSamples(
     const std::vector<std::string>& weak_column_names) {
   if (_rlhf_sampler) {
     data->restart();
+
+    // TODO(Geordie / Nick) Right now, we only load MAX_BALANCING_SAMPLES
+    // samples to avoid the overhead of loading the entire dataset. It's
+    // possible this won't load enough samples to cover all classes.
+    // We may try to keep streaming data until all classes are covered or load
+    // the entire dataset and see if it makes a difference. For now we just
+    // sample from 5x more rows than we need samples, to hopefully get a wider
+    // range of samples.
     auto samples = _featurizer->getBalancingSamples(
         data, strong_column_names, weak_column_names,
         defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
@@ -919,7 +959,10 @@ InputMetrics UDTMachClassifier::getMetrics(
       model->losses().size() != 1) {
     throw std::invalid_argument(
         "Expected model to have single input, two labels, and one "
-        "loss.");
+        "loss. GOT: " +
+        std::to_string(model->outputs().size()) + " " +
+        std::to_string(model->labels().size()) + " " +
+        std::to_string(model->losses().size()));
   }
 
   bolt::ComputationPtr output = model->outputs().front();
@@ -974,28 +1017,4 @@ bolt::TensorPtr UDTMachClassifier::placeholderDocIds(uint32_t batch_size) {
                               /* nonzeros= */ 1);
 }
 
-template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
-                                           const uint32_t version);
-template void UDTMachClassifier::serialize(cereal::BinaryOutputArchive&,
-                                           const uint32_t version);
-
-template <class Archive>
-void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_MACH_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_MACH_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
-          _default_top_k_to_return, _num_buckets_to_eval,
-          _mach_sampling_threshold, _rlhf_sampler);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTMachClassifier,
-                     thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)

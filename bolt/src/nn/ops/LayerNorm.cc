@@ -6,6 +6,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cmath>
 #include <stdexcept>
@@ -25,6 +26,35 @@ LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
       _beta(beta, beta + dim),
       _gamma_optimizer(dim),
       _beta_optimizer(dim) {}
+
+LayerNorm::LayerNorm(const std::string& name,
+                     const proto::bolt::LayerNorm& layer_norm_proto,
+                     DeserializedParameters& parameters)
+    : Op(name),
+      _gamma(parametersFromProto(layer_norm_proto.gamma(), parameters)),
+      _beta(parametersFromProto(layer_norm_proto.beta(), parameters)) {
+  if (_gamma.size() != _beta.size()) {
+    throw std::runtime_error(
+        "Gamma and beta do not have expect size in fromProt.");
+  }
+
+  if (layer_norm_proto.has_gamma_optimizer() &&
+      layer_norm_proto.has_beta_optimizer()) {
+    _gamma_optimizer =
+        optimizerFromProto(layer_norm_proto.gamma_optimizer(), parameters);
+    if (_gamma_optimizer.momentum.size() != _gamma.size()) {
+      throw std::runtime_error(
+          "Gamma optimizer does not have expected size in fromProto.");
+    }
+
+    _beta_optimizer =
+        optimizerFromProto(layer_norm_proto.beta_optimizer(), parameters);
+    if (_beta_optimizer.momentum.size() != _beta.size()) {
+      throw std::runtime_error(
+          "Beta optimizer does not have expected size in fromProto.");
+    }
+  }
+}
 
 std::shared_ptr<LayerNorm> LayerNorm::make() {
   return std::shared_ptr<LayerNorm>(new LayerNorm());
@@ -152,6 +182,11 @@ std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
+void LayerNorm::initOptimizer() {
+  // TODO(Nicholas): right now the optimizer is always saved in LayerNorm
+  // because it is small.
+}
+
 void LayerNorm::disableSparseParameterUpdates() {}
 
 void LayerNorm::enableSparseParameterUpdates() {}
@@ -170,7 +205,15 @@ void LayerNorm::summary(std::ostream& summary, const ComputationList& inputs,
           << output->name();
 }
 
-ComputationPtr LayerNorm::apply(const ComputationPtr& input) {
+ComputationPtr LayerNorm::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("LayerNorm op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr LayerNorm::applyUnary(const ComputationPtr& input) {
   if (dim() == 0) {
     _gamma.assign(input->dim(), 1.0);
     _beta.assign(input->dim(), 0.0);
@@ -184,6 +227,45 @@ ComputationPtr LayerNorm::apply(const ComputationPtr& input) {
   }
 
   return Computation::make(shared_from_this(), {input});
+}
+
+proto::bolt::Op* LayerNorm::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
+
+  auto* layer_norm = op->mutable_layer_norm();
+
+  layer_norm->set_allocated_gamma(parametersToProto(gammaName()));
+  layer_norm->set_allocated_beta(parametersToProto(betaName()));
+
+  if (with_optimizer) {
+    layer_norm->set_allocated_gamma_optimizer(
+        optimizerToProto(gammaName(), /* rows= */ 1, dim()));
+
+    layer_norm->set_allocated_beta_optimizer(
+        optimizerToProto(betaName(), /* rows= */ 1, dim()));
+  }
+
+  return op;
+}
+
+SerializableParameters LayerNorm::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {{gammaName(), &_gamma},
+                                       {betaName(), &_beta}};
+  if (with_optimizer) {
+    addOptimizerParameters(_gamma_optimizer, gammaName(), parameters);
+    addOptimizerParameters(_beta_optimizer, betaName(), parameters);
+  }
+
+  return parameters;
+}
+
+std::shared_ptr<LayerNorm> LayerNorm::fromProto(
+    const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto,
+    DeserializedParameters& parameters) {
+  return std::shared_ptr<LayerNorm>(
+      new LayerNorm(name, layer_norm_proto, parameters));
 }
 
 template void LayerNorm::serialize(cereal::BinaryInputArchive&);

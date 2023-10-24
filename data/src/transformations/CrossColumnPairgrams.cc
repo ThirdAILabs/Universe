@@ -1,9 +1,4 @@
 #include "CrossColumnPairgrams.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -16,6 +11,13 @@ CrossColumnPairgrams::CrossColumnPairgrams(
     : _input_column_names(std::move(input_column_names)),
       _output_column_name(std::move(output_column_name)),
       _hash_range(hash_range) {}
+
+CrossColumnPairgrams::CrossColumnPairgrams(
+    const proto::data::CrossColumnPairgrams& cross_columns)
+    : _input_column_names(cross_columns.input_columns().begin(),
+                          cross_columns.input_columns().end()),
+      _output_column_name(cross_columns.output_column()),
+      _hash_range(cross_columns.hash_range()) {}
 
 ColumnMap CrossColumnPairgrams::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -99,15 +101,16 @@ void CrossColumnPairgrams::buildExplanationMap(
   }
 }
 
-template void CrossColumnPairgrams::serialize(cereal::BinaryInputArchive&);
-template void CrossColumnPairgrams::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* CrossColumnPairgrams::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* cross_columns = transformation->mutable_cross_column_pairgrams();
 
-template <class Archive>
-void CrossColumnPairgrams::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_names,
-          _output_column_name, _hash_range);
+  *cross_columns->mutable_input_columns() = {_input_column_names.begin(),
+                                             _input_column_names.end()};
+  cross_columns->set_output_column(_output_column_name);
+  cross_columns->set_hash_range(_hash_range);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::CrossColumnPairgrams)

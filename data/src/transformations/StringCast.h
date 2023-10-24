@@ -2,6 +2,7 @@
 
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
+#include <proto/string_cast.pb.h>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -45,10 +46,14 @@ class CastToValue final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   T parse(const std::string& row) const;
 
   ColumnPtr makeColumn(std::vector<T>&& rows) const;
+
+  proto::data::StringCast::TargetType protoTargetType() const;
 
   std::string _input_column_name;
   std::string _output_column_name;
@@ -56,12 +61,6 @@ class CastToValue final : public Transformation {
 
   struct Empty {};
   std::conditional_t<std::is_same_v<T, int64_t>, std::string, Empty> _format;
-
-  CastToValue() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 template <typename T>
@@ -84,21 +83,19 @@ class CastToArray final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   T parse(const std::string& item) const;
 
   ColumnPtr makeColumn(std::vector<std::vector<T>>&& rows) const;
 
+  proto::data::StringCast::TargetType protoTargetType() const;
+
   std::string _input_column_name;
   std::string _output_column_name;
   char _delimiter;
   std::optional<size_t> _dim;
-
-  CastToArray() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 using StringToToken = CastToValue<uint32_t>;
@@ -107,5 +104,7 @@ using StringToTimestamp = CastToValue<int64_t>;
 
 using StringToDecimal = CastToValue<float>;
 using StringToDecimalArray = CastToArray<float>;
+
+TransformationPtr stringCastFromProto(const proto::data::StringCast& cast);
 
 }  // namespace thirdai::data

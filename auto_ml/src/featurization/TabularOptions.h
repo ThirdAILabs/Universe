@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <string>
@@ -21,14 +20,6 @@ struct TabularOptions {
 
     return lookahead *
            dataset::QuantityHistoryTracker::granularityToSeconds(granularity);
-  }
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(text_pairgrams_word_limit, contextual_columns, time_granularity,
-            lookahead, feature_hash_range, delimiter);
   }
 };
 

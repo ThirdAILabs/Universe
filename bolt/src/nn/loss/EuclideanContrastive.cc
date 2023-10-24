@@ -127,6 +127,10 @@ float EuclideanContrastive::euclideanDistanceSquared(
   return euclidean_distance_squared;
 }
 
+proto::bolt::Loss* EuclideanContrastive::toProto() const {
+  throw std::runtime_error("toProto is not implemented for Contrastive loss.");
+}
+
 template <class Archive>
 void EuclideanContrastive::serialize(Archive& archive) {
   archive(cereal::base_class<Loss>(this), _output_1, _output_2, _labels,

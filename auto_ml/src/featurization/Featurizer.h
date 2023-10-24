@@ -7,8 +7,10 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <proto/featurizers.pb.h>
 #include <stdexcept>
 
 namespace thirdai::automl {
@@ -21,24 +23,20 @@ class TextDatasetConfig {
         _label_column(std::move(label_column)),
         _label_delimiter(label_delimiter) {}
 
+  explicit TextDatasetConfig(const proto::udt::TextDatasetConfig& text_dataset);
+
   const auto& textColumn() const { return _text_column; }
 
   const auto& labelColumn() const { return _label_column; }
 
   auto labelDelimiter() const { return _label_delimiter; }
 
-  TextDatasetConfig() {}  // For cereal
+  proto::udt::TextDatasetConfig* toProto() const;
 
  private:
   std::string _text_column;
   std::string _label_column;
   std::optional<char> _label_delimiter;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_text_column, _label_column);
-  }
 };
 
 class Featurizer {
@@ -49,6 +47,8 @@ class Featurizer {
              thirdai::data::TransformationPtr label_transform,
              thirdai::data::OutputColumnsList bolt_label_columns,
              const data::TabularOptions& options);
+
+  explicit Featurizer(const proto::udt::Featurizer& featurizer);
 
   thirdai::data::LoaderPtr getDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -99,6 +99,8 @@ class Featurizer {
 
   void resetTemporalTrackers();
 
+  proto::udt::Featurizer* toProto() const;
+
  protected:
   thirdai::data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -122,13 +124,6 @@ class Featurizer {
   thirdai::data::StatePtr _state;
 
   std::optional<TextDatasetConfig> _text_dataset;
-
-  Featurizer() {}  // For cereal
-
- private:
-  friend class cereal::access;
-  template <typename Archive>
-  void serialize(Archive& archive);
 };
 
 using FeaturizerPtr = std::shared_ptr<Featurizer>;

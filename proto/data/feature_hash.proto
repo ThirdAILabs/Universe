@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package proto.data;
+
+message FeatureHash {
+  repeated string input_columns = 1;
+  required string output_indices_column = 2;
+  required string output_values_column = 3;
+
+  required uint64 hash_range = 4;
+}

@@ -1,0 +1,43 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "optimizers.proto";
+import "parameter.proto";
+import "fully_connected.proto";
+import "embedding.proto";
+import "robez.proto";
+import "activation.proto";
+
+message LayerNorm {
+  required Parameter gamma = 1;
+  required Parameter beta = 2;
+
+  optional Optimizer gamma_optimizer = 3;
+  optional Optimizer beta_optimizer = 4;
+}
+
+message Concatenate {}
+
+message Activation {
+  required ActivationFunction activation = 1;
+}
+
+message DotProduct {}
+
+message CosineSimilarity {}
+
+message Op {
+  required string name = 1;
+
+  oneof type {
+    FullyConnected fully_connected = 2;
+    Embedding embedding = 3;
+    RobeZ robez = 4;
+    LayerNorm layer_norm = 5;
+    Concatenate concatenate = 6;
+    Activation activation = 7;
+    DotProduct dot_product = 8;
+    CosineSimilarity cosine_similarity = 9;
+  }
+}

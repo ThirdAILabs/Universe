@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+package proto.data;
+
+message Binning {
+  required string input_column = 1;
+  required string output_column = 2;
+
+  required float inclusive_min_value = 3;
+  required float exclusive_max_value = 4;
+  required float binsize = 5;
+  required uint64 num_bins = 6;
+}
+
+message RegressionBinning {
+  required string input_column = 1;
+  required string output_column = 2;
+
+  required float min = 3;
+  required float max = 4;
+  required float binsize = 5;
+  required uint64 num_bins = 6;
+  required uint64 correct_label_radius = 7;
+}

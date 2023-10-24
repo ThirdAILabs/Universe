@@ -68,10 +68,10 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
                                       /* bias= */ hidden_bias)
-                    ->apply(input);
+                    ->applyUnary(input);
 
   if (normalize_embeddings) {
-    hidden = bolt::LayerNorm::make()->apply(hidden);
+    hidden = bolt::LayerNorm::make()->applyUnary(hidden);
   }
 
   auto sparsity = autotuneSparsity(output_dim);
@@ -79,7 +79,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   auto output = bolt::FullyConnected::make(
                     output_dim, hidden->dim(), sparsity, activation,
                     /* sampling= */ nullptr, /* use_bias= */ output_bias)
-                    ->apply(hidden);
+                    ->applyUnary(hidden);
 
   auto labels = bolt::Input::make(output_dim);
 

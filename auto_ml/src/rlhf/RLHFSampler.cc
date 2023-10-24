@@ -1,13 +1,25 @@
 #include "RLHFSampler.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/unordered_set.hpp>
-#include <cereal/types/utility.hpp>
-#include <cereal/types/vector.hpp>
+#include <proto/udt_mach.pb.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
+
+RLHFSampler::RLHFSampler(const proto::udt::RlhfSampler& rlhf_sampler)
+    : _max_docs(rlhf_sampler.max_docs()),
+      _max_samples_per_doc(rlhf_sampler.max_samples_per_doc()) {
+  for (const auto& [doc, samples] : rlhf_sampler.samples_per_doc()) {
+    if (!samples.samples().empty()) {
+      _doc_ids.insert(doc);
+    }
+    for (const auto& proto_sample : samples.samples()) {
+      RlhfSample sample = {
+          proto_sample.source(),
+          {proto_sample.targets().begin(), proto_sample.targets().end()}};
+
+      _samples_per_doc[doc].emplace_back(std::move(sample));
+    }
+  }
+}
 
 std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
   if (num_samples == 0) {
@@ -59,12 +71,23 @@ void RLHFSampler::addSample(uint32_t doc_id, const RlhfSample& sample) {
   }
 }
 
-template void RLHFSampler::serialize(cereal::BinaryInputArchive& archive);
-template void RLHFSampler::serialize(cereal::BinaryOutputArchive& archive);
+proto::udt::RlhfSampler* RLHFSampler::toProto() const {
+  auto* rlhf_sampler = new proto::udt::RlhfSampler();
 
-template <class Archive>
-void RLHFSampler::serialize(Archive& archive) {
-  archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
+  for (const auto& [doc, samples] : _samples_per_doc) {
+    proto::udt::RlhfSamples doc_samples;
+    for (const auto& [source, targets] : samples) {
+      auto* sample_proto = doc_samples.add_samples();
+      sample_proto->set_source(source);
+      *sample_proto->mutable_targets() = {targets.begin(), targets.end()};
+    }
+    rlhf_sampler->mutable_samples_per_doc()->emplace(doc, doc_samples);
+  }
+
+  rlhf_sampler->set_max_docs(_max_docs);
+  rlhf_sampler->set_max_samples_per_doc(_max_samples_per_doc);
+
+  return rlhf_sampler;
 }
 
 }  // namespace thirdai::automl::udt

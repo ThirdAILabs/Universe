@@ -3,8 +3,10 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <proto/activation.pb.h>
 #include <utils/StringManipulation.h>
 #include <cmath>
 #include <memory>
@@ -19,6 +21,13 @@ std::string nextActivationName(const std::string& name) {
 
 template <typename Impl>
 Activation<Impl>::Activation() : Op(nextActivationName(Impl::name())) {}
+
+template <typename Impl>
+Activation<Impl>::Activation(const std::string& name,
+                             const proto::bolt::Activation& act_proto)
+    : Op(name) {
+  (void)act_proto;
+}
 
 template <typename Impl>
 std::shared_ptr<Activation<Impl>> Activation<Impl>::make() {
@@ -76,6 +85,9 @@ std::optional<uint32_t> Activation<Impl>::nonzeros(
 }
 
 template <typename Impl>
+void Activation<Impl>::initOptimizer() {}
+
+template <typename Impl>
 void Activation<Impl>::disableSparseParameterUpdates() {}
 
 template <typename Impl>
@@ -100,7 +112,16 @@ void Activation<Impl>::summary(std::ostream& summary,
 }
 
 template <typename Impl>
-ComputationPtr Activation<Impl>::apply(ComputationPtr input) {
+ComputationPtr Activation<Impl>::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Activation op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+template <typename Impl>
+ComputationPtr Activation<Impl>::applyUnary(ComputationPtr input) {
   if (dim() == 0) {
     _dim = input->dim();
   } else {
@@ -110,6 +131,45 @@ ComputationPtr Activation<Impl>::apply(ComputationPtr input) {
   }
 
   return Computation::make(this->shared_from_this(), {std::move(input)});
+}
+
+template <typename Impl>
+proto::bolt::Op* Activation<Impl>::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
+
+  auto* activation = op->mutable_activation();
+  activation->set_activation(Impl::toProto());
+
+  return op;
+}
+
+template <typename Impl>
+SerializableParameters Activation<Impl>::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
+template <typename Impl>
+std::shared_ptr<Activation<Impl>> Activation<Impl>::fromProto(
+    const std::string& name, const proto::bolt::Activation& act_proto) {
+  return std::shared_ptr<Activation<Impl>>(
+      new Activation<Impl>(name, act_proto));
+}
+
+OpPtr activationOpFromProto(const std::string& name,
+                            const proto::bolt::Activation& act_proto) {
+  switch (act_proto.activation()) {
+    case proto::bolt::ActivationFunction::RELU:
+      return Activation<ReluImpl>::fromProto(name, act_proto);
+    case proto::bolt::ActivationFunction::TANH:
+      return Activation<TanhImpl>::fromProto(name, act_proto);
+    default:
+      throw std::invalid_argument("Activation function can not be used as op.");
+  }
 }
 
 template void Activation<ReluImpl>::serialize(cereal::BinaryInputArchive&);

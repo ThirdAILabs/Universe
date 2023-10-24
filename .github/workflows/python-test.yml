@@ -28,6 +28,11 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Install protobuf
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
         
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
@@ -53,6 +58,11 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Install protobuf
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
         
       - name: Build python package release version and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
@@ -77,6 +87,11 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Install protobuf
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y protobuf-compiler
         
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851

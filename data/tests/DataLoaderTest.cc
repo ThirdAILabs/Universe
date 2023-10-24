@@ -3,51 +3,12 @@
 #include <data/src/Loader.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/TransformationList.h>
+#include <data/tests/MockDataSource.h>
 #include <optional>
 #include <sstream>
 #include <unordered_set>
 
 namespace thirdai::data::tests {
-
-class MockDataSource final : public dataset::DataSource {
- public:
-  explicit MockDataSource(std::vector<std::string> lines)
-      : _lines(std::move(lines)) {}
-
-  std::string resourceName() const final { return "mock-data-source"; }
-
-  std::optional<std::vector<std::string>> nextBatch(
-      size_t target_batch_size) final {
-    std::vector<std::string> lines;
-
-    while (lines.size() < target_batch_size) {
-      if (auto line = nextLine()) {
-        lines.push_back(*line);
-      } else {
-        break;
-      }
-    }
-
-    if (lines.empty()) {
-      return std::nullopt;
-    }
-
-    return lines;
-  }
-
-  std::optional<std::string> nextLine() final {
-    if (_loc < _lines.size()) {
-      return _lines[_loc++];
-    }
-    return std::nullopt;
-  }
-
-  void restart() final { _loc = 0; }
-
- private:
-  std::vector<std::string> _lines;
-  size_t _loc = 0;
-};
 
 uint32_t tokenValue(size_t row, size_t col) { return row + col; }
 
@@ -94,9 +55,9 @@ TEST(DataLoaderTest, Streaming) {
   size_t n_rows = n_full_chunks * n_batches * batch_size +
                   partial_chunk_full_batches * batch_size + last_batch_size;
 
-  ColumnMapIterator data_iterator(getMockDataSource(n_rows),
-                                  /* delimiter= */ ',',
-                                  /* rows_per_load= */ 64);
+  auto data_iterator = CsvIterator::make(getMockDataSource(n_rows),
+                                         /* delimiter= */ ',',
+                                         /* rows_per_load= */ 64);
 
   auto transformations = TransformationList::make({
       StringToToken::make("token", "token_cast", n_rows),

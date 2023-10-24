@@ -30,6 +30,8 @@ class EuclideanContrastive final : public Loss {
 
   ComputationList labels() const final;
 
+  proto::bolt::Loss* toProto() const final;
+
  private:
   float euclideanDistanceSquared(uint32_t index_in_batch) const;
 

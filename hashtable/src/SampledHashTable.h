@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashTable.h"
+#include "proto/hashtable.pb.h"
 #include <utils/Random.h>
 #include <iostream>
 #include <memory>
@@ -72,6 +73,9 @@ class SampledHashTable final : public HashTable<uint32_t> {
                    uint32_t seed = global_random::nextSeed(),
                    uint64_t max_rand = HashTable<uint32_t>::DEFAULT_MAX_RAND);
 
+  explicit SampledHashTable(
+      const proto::hashtable::SampledHashTable& hashtable_proto);
+
   SampledHashTable(const SampledHashTable& other) = delete;
 
   SampledHashTable& operator=(const SampledHashTable& other) = delete;
@@ -127,6 +131,8 @@ class SampledHashTable final : public HashTable<uint32_t> {
   inline uint64_t tableRange() const override { return _range; };
 
   uint32_t maxElement() const;
+
+  proto::hashtable::SampledHashTable* toProto() const;
 
   void summarize(std::ostream& summary) const {
     summary << "num_tables=" << _num_tables << ", range=" << _range

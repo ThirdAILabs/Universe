@@ -104,6 +104,8 @@ std::optional<uint32_t> DlrmAttention::nonzeros(const ComputationList& inputs,
   return dim();
 }
 
+void DlrmAttention::initOptimizer() {}
+
 void DlrmAttention::summary(std::ostream& summary,
                             const ComputationList& inputs,
                             const Computation* output) const {
@@ -154,8 +156,16 @@ void DlrmAttention::embeddingDotProductBackward(
   }
 }
 
-ComputationPtr DlrmAttention::apply(ComputationPtr fc_input,
-                                    ComputationPtr emb_input) {
+ComputationPtr DlrmAttention::apply(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("DlrmAttention op expects two inputs.");
+  }
+
+  return applyBinary(inputs.at(0), inputs.at(1));
+}
+
+ComputationPtr DlrmAttention::applyBinary(ComputationPtr fc_input,
+                                          ComputationPtr emb_input) {
   uint32_t fc_dim = fc_input->dim();
   uint32_t emb_dim = emb_input->dim();
 
@@ -190,6 +200,18 @@ ComputationPtr DlrmAttention::apply(ComputationPtr fc_input,
 
   return Computation::make(shared_from_this(),
                            {std::move(fc_input), std::move(emb_input)});
+}
+
+proto::bolt::Op* DlrmAttention::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  throw std::invalid_argument("toProto is not implemented for DlrmAttention.");
+}
+
+SerializableParameters DlrmAttention::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
 }
 
 }  // namespace thirdai::bolt

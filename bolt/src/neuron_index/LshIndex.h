@@ -3,6 +3,7 @@
 #include <bolt/src/neuron_index/NeuronIndex.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <proto/neuron_index.pb.h>
 #include <memory>
 #include <random>
 
@@ -13,10 +14,16 @@ class LshIndex final : public NeuronIndex {
   LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
            hashtable::SampledHashTablePtr hash_table);
 
+  explicit LshIndex(const proto::bolt::LSHNeuronIndex& lsh_proto);
+
   static auto make(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
                    hashtable::SampledHashTablePtr hash_table) {
     return std::make_shared<LshIndex>(layer_dim, std::move(hash_fn),
                                       std::move(hash_table));
+  }
+
+  static auto fromProto(const proto::bolt::LSHNeuronIndex& lsh_proto) {
+    return std::make_shared<LshIndex>(lsh_proto);
   }
 
   void query(const BoltVector& input, BoltVector& output,
@@ -35,6 +42,8 @@ class LshIndex final : public NeuronIndex {
   const auto& hashTable() const { return _hash_table; }
 
   void insertLabelsIfNotFound() final { _insert_labels_when_not_found = true; }
+
+  proto::bolt::NeuronIndex* toProto() const;
 
   static auto cast(const NeuronIndexPtr& index) {
     return std::dynamic_pointer_cast<LshIndex>(index);

@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "hashing.proto";
+import "hashtable.proto";
+
+message LSHNeuronIndex {
+  required hashing.HashFunction hash_function = 1;
+  required hashtable.SampledHashTable hash_table = 2;
+  repeated uint32 random_neurons = 3;
+  required bool insert_labels_when_not_found = 4;
+}
+
+message RandomNeuronIndex {
+  repeated uint32 random_neurons = 1;
+}
+
+message NeuronIndex {
+  oneof index {
+    LSHNeuronIndex lsh = 1;
+    RandomNeuronIndex random = 2;
+  }
+}

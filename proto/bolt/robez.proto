@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "parameter.proto";
+import "optimizers.proto";
+
+enum EmbeddingReduction {
+  CONCAT = 0;
+  SUM = 1;
+  AVG = 2;
+}
+
+message RobeZ {
+  required uint64 num_lookups_per_token = 1;
+  required uint64 lookup_size = 2;
+  required uint64 log_embedding_block_size = 3;
+  required EmbeddingReduction reduction = 4;
+
+  optional uint64 num_tokens_per_input = 5;
+  required uint64 update_chunk_size = 6;
+  required uint32 hash_seed = 7;
+
+  required Parameter embedding_block = 8;
+
+  optional Optimizer embedding_block_optimizer = 9;
+  required bool disable_sparse_parameter_updates = 10;
+}

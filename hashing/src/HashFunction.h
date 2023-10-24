@@ -2,7 +2,9 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
+#include "proto/hashing.pb.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <stdexcept>
 
 namespace thirdai::hashing {
 
@@ -87,6 +89,11 @@ class HashFunction {
   inline uint32_t range() const { return _range; }
 
   virtual std::unique_ptr<HashFunction> copyWithNewSeeds() const = 0;
+
+  virtual proto::hashing::HashFunction* toProto() const {
+    throw std::invalid_argument(
+        "toProto is not supported for this hash function.");
+  }
 
   virtual std::string getName() const = 0;
 

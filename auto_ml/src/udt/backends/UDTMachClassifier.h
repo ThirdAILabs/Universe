@@ -37,6 +37,9 @@ class UDTMachClassifier final : public UDTBackend {
                     const std::optional<std::string>& model_config,
                     config::ArgumentMap user_args);
 
+  explicit UDTMachClassifier(const proto::udt::UDTMachClassifier& mach,
+                             bolt::ModelPtr model);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -64,6 +67,8 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  proto::udt::UDT toProto() const final;
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,
@@ -253,13 +258,6 @@ class UDTMachClassifier final : public UDTBackend {
     (void)output_range;
     return defaults::MACH_DEFAULT_NUM_REPETITIONS;
   }
-
-  UDTMachClassifier() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   std::shared_ptr<utils::Classifier> _classifier;
 

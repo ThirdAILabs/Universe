@@ -28,6 +28,8 @@ class LayerNorm final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;
@@ -39,16 +41,35 @@ class LayerNorm final : public Op,
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
-  ComputationPtr apply(const ComputationPtr& input);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyUnary(const ComputationPtr& input);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<LayerNorm> fromProto(
+      const std::string& name, const proto::bolt::LayerNorm& layer_norm_proto,
+      DeserializedParameters& parameters);
 
   const auto& gamma() const { return _gamma; }
 
   const auto& beta() const { return _beta; }
 
  private:
+  std::string gammaName() const { return name() + "_gamma"; }
+
+  std::string betaName() const { return name() + "_beta"; }
+
   LayerNorm();
 
   LayerNorm(const float* gamma, const float* beta, size_t dim);
+
+  LayerNorm(const std::string& name,
+            const proto::bolt::LayerNorm& layer_norm_proto,
+            DeserializedParameters& parameters);
 
   template <bool DENSE>
   void forward(const BoltVector& input, BoltVector& output);

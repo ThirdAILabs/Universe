@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package proto.hashing;
+
+import "universal_hash.proto";
+
+message DWTA {
+  required uint64 num_tables = 1;
+  required uint64 hashes_per_table = 2;
+  required uint64 log_binsize = 3;
+  required uint64 input_dim = 4;
+  required uint64 permutations = 5;
+
+  repeated uint32 bin_map = 6;
+  repeated uint32 positions = 7;
+
+  required uint32 random_double_hash_seed = 8;
+}
+
+message MinHash {
+  required uint64 hashes_per_table = 1;
+  required uint64 num_tables = 2;
+  required uint64 range = 3;
+  repeated UniversalHash hash_functions = 4;
+}
+
+message HashFunction {
+  oneof type {
+    DWTA dwta = 1;
+    MinHash minhash = 2;
+  }
+}

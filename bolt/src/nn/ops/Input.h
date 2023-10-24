@@ -26,6 +26,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final;
 
   void enableSparseParameterUpdates() final;
@@ -36,6 +38,13 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
+
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
 
  private:
   Input(uint32_t dim, std::optional<uint32_t> nonzeros);

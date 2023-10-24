@@ -1,8 +1,4 @@
 #include "UDTClassifier.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -11,6 +7,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -23,6 +20,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/udt.pb.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -71,6 +69,12 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       input_data_types, temporal_relationships, target_name, label_transform,
       bolt_labels, tabular_options);
 }
+
+UDTClassifier::UDTClassifier(const proto::udt::UDTClassifier& classifier,
+                             bolt::ModelPtr model)
+    : _classifier(utils::Classifier::fromProto(classifier.classifier(),
+                                               std::move(model))),
+      _featurizer(std::make_shared<Featurizer>(classifier.featurizer())) {}
 
 py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 float learning_rate, uint32_t epochs,
@@ -166,6 +170,17 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
   return _classifier->predict(_featurizer->featurizeInputBatch(samples),
                               sparse_inference, return_predicted_class,
                               /* single= */ false, top_k);
+}
+
+proto::udt::UDT UDTClassifier::toProto() const {
+  proto::udt::UDT udt;
+
+  auto* classifier = udt.mutable_classifier();
+
+  classifier->set_allocated_classifier(_classifier->toProto());
+  classifier->set_allocated_featurizer(_featurizer->toProto());
+
+  return udt;
 }
 
 std::vector<std::pair<std::string, float>> UDTClassifier::explain(
@@ -321,26 +336,4 @@ bool UDTClassifier::integerTarget() const {
   return !_featurizer->state()->containsVocab(LABEL_VOCAB);
 }
 
-template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
-                                       const uint32_t version);
-template void UDTClassifier::serialize(cereal::BinaryOutputArchive&,
-                                       const uint32_t version);
-
-template <class Archive>
-void UDTClassifier::serialize(Archive& archive, const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_CLASSIFIER_VERSION after serialization
-  // changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTClassifier,
-                     thirdai::versions::UDT_CLASSIFIER_VERSION)

@@ -38,6 +38,17 @@ float CategoricalCrossEntropy::singleGradient(float activation, float label,
   return (label - activation) / batch_size;
 }
 
+proto::bolt::Loss* CategoricalCrossEntropy::toProto() const {
+  proto::bolt::Loss* loss = new proto::bolt::Loss();
+
+  auto* cce = loss->mutable_categorical_cross_entropy();
+
+  cce->set_output(outputName());
+  cce->set_labels(labelName());
+
+  return loss;
+}
+
 template void CategoricalCrossEntropy::serialize(cereal::BinaryInputArchive&);
 template void CategoricalCrossEntropy::serialize(cereal::BinaryOutputArchive&);
 

@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "activation.proto";
+import "optimizers.proto";
+import "parameter.proto";
+
+message Embedding {
+  required uint64 dim = 1;
+  required uint64 input_dim = 2;
+  required ActivationFunction activation = 3;
+
+  required bool use_bias = 4;
+
+  required Parameter embeddings = 5;
+  required Parameter bias = 6;
+
+  optional Optimizer embeddings_optimizer = 7;
+  optional Optimizer bias_optimizer = 8;
+  required bool disable_sparse_parameter_updates = 9;
+}

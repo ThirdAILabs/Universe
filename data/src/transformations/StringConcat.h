@@ -25,7 +25,11 @@ class StringConcat final : public Transformation {
                                           std::move(separator));
   }
 
+  explicit StringConcat(const proto::data::StringConcat& string_concat);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  proto::data::Transformation* toProto() const final;
 
  private:
   std::vector<std::string> _input_column_names;

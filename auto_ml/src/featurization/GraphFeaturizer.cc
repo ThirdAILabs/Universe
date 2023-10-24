@@ -1,20 +1,21 @@
 #include "GraphFeaturizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl {
+
+using thirdai::data::Transformation;
 
 GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
                                  const std::string& target_col,
@@ -57,6 +58,17 @@ GraphFeaturizer::GraphFeaturizer(const data::ColumnDataTypes& data_types,
   _state = thirdai::data::State::make(graph_info);
 }
 
+GraphFeaturizer::GraphFeaturizer(const proto::udt::GraphFeaturizer& featurizer)
+    : _input_transform(Transformation::fromProto(featurizer.input_transform())),
+      _label_transform(Transformation::fromProto(featurizer.label_transform())),
+      _graph_builder(Transformation::fromProto(featurizer.graph_builder())),
+      _bolt_input_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_input_columns())),
+      _bolt_label_columns(thirdai::data::outputColumnsListFromProto(
+          featurizer.bolt_label_columns())),
+      _delimiter(featurizer.delimiter()),
+      _state(thirdai::data::State::fromProto(featurizer.state())) {}
+
 thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
@@ -66,7 +78,8 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 
   csv_data_source->restart();
 
-  thirdai::data::ColumnMapIterator data_iter(csv_data_source, _delimiter);
+  auto data_iter =
+      thirdai::data::CsvIterator::make(csv_data_source, _delimiter);
 
   auto transformation_list = thirdai::data::TransformationList::make(
       {_input_transform, _label_transform});
@@ -80,9 +93,9 @@ thirdai::data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
 }
 
 void GraphFeaturizer::index(const dataset::DataSourcePtr& data_source) {
-  thirdai::data::ColumnMapIterator data_iter(data_source, _delimiter);
+  auto data_iter = thirdai::data::CsvIterator::make(data_source, _delimiter);
 
-  while (auto chunk = data_iter.next()) {
+  while (auto chunk = data_iter->next()) {
     _graph_builder->apply(*chunk, *_state);
   }
 }
@@ -105,21 +118,39 @@ bolt::TensorList GraphFeaturizer::featurizeInputBatch(
 }
 
 std::string neighborsColumn(const data::ColumnDataTypes& data_types) {
+  std::optional<std::string> neighbors_col = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNeighbors(data_type)) {
-      return col_name;
+      if (neighbors_col) {
+        throw std::invalid_argument(
+            "Only a single neighbors column is allowed in GNN.");
+      }
+      neighbors_col = col_name;
     }
   }
-  throw std::invalid_argument("Neighbors column is required for GNN.");
+
+  if (!neighbors_col) {
+    throw std::invalid_argument("Neighbors column is required for GNN.");
+  }
+  return *neighbors_col;
 }
 
 std::string nodeIdColumn(const data::ColumnDataTypes& data_types) {
+  std::optional<std::string> node_id_column = std::nullopt;
   for (const auto& [col_name, data_type] : data_types) {
     if (data::asNodeID(data_type)) {
-      return col_name;
+      if (node_id_column) {
+        throw std::invalid_argument(
+            "Only a single node ID column is allowed in GNN.");
+      }
+      node_id_column = col_name;
     }
   }
-  throw std::invalid_argument("NodeID column is required for GNN.");
+
+  if (!node_id_column) {
+    throw std::invalid_argument("NodeID column is required for GNN.");
+  }
+  return *node_id_column;
 }
 
 std::pair<thirdai::data::TransformationPtr, std::string>
@@ -183,13 +214,23 @@ GraphFeaturizer::graphBuilder(const data::ColumnDataTypes& data_types) {
   return {thirdai::data::TransformationList::make(transforms), graph_info};
 }
 
-template void GraphFeaturizer::serialize(cereal::BinaryInputArchive&);
-template void GraphFeaturizer::serialize(cereal::BinaryOutputArchive&);
+proto::udt::GraphFeaturizer* GraphFeaturizer::toProto() const {
+  auto* featurizer = new proto::udt::GraphFeaturizer();
 
-template <class Archive>
-void GraphFeaturizer::serialize(Archive& archive) {
-  archive(_input_transform, _label_transform, _graph_builder,
-          _bolt_input_columns, _bolt_label_columns, _delimiter, _state);
+  featurizer->set_allocated_input_transform(_input_transform->toProto());
+  featurizer->set_allocated_label_transform(_label_transform->toProto());
+  featurizer->set_allocated_graph_builder(_graph_builder->toProto());
+
+  featurizer->set_allocated_bolt_input_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_input_columns));
+  featurizer->set_allocated_bolt_label_columns(
+      thirdai::data::outputColumnsListToProto(_bolt_label_columns));
+
+  featurizer->set_delimiter(_delimiter);
+
+  featurizer->set_allocated_state(_state->toProto());
+
+  return featurizer;
 }
 
 }  // namespace thirdai::automl

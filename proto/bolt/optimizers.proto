@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "parameter.proto";
+
+message Adam {
+  required Parameter momentum = 1;
+  required Parameter velocity = 2;
+
+  required uint64 rows = 3;
+  required uint64 cols = 4;
+
+  required float beta1 = 5;
+  required float beta2 = 6;
+  required float eps = 7;
+}
+
+message Optimizer {
+  oneof optimizer {
+    Adam adam = 1;
+  }
+}

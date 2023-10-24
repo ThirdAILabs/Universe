@@ -40,13 +40,13 @@ TEST(UpdateSparsityTests, ReallocateModelStateAfterSetSparsity) {
       /* dim= */ HIDDEN_DIM, /* input_dim= */ INPUT_DIM,
       /* sparsity= */ 0.5, /* activation= */ "relu");
 
-  auto fc_output = fc->apply(input);
+  auto fc_output = fc->applyUnary(input);
 
   auto output = FullyConnected::make(/* dim= */ N_CLASSES,
                                      /* input_dim= */ HIDDEN_DIM,
                                      /* sparsity= */ 1.0,
                                      /* activation= */ "softmax")
-                    ->apply(fc_output);
+                    ->applyUnary(fc_output);
 
   auto loss = CategoricalCrossEntropy::make(output, Input::make(N_CLASSES));
 

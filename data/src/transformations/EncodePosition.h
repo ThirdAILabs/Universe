@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/sequence.pb.h>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -30,21 +31,20 @@ class HashPositionTransform final : public Transformation {
         std::move(input_column), std::move(output_column), hash_range);
   }
 
+  explicit HashPositionTransform(
+      const proto::data::HashedPositionEncoding& hash_position);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   std::string _input_column;
   std::string _output_column;
   size_t _dim;
-
-  HashPositionTransform() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 /**
@@ -74,21 +74,20 @@ class OffsetPositionTransform final : public Transformation {
         std::move(input_column), std::move(output_column), max_num_tokens);
   }
 
+  explicit OffsetPositionTransform(
+      const proto::data::OffsetPositionEncoding& offset_position);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  proto::data::Transformation* toProto() const final;
+
  private:
   std::string _input_column;
   std::string _output_column;
   size_t _max_num_tokens;
-
-  OffsetPositionTransform() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

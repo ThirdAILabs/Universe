@@ -3,6 +3,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
+#include <proto/transformations.pb.h>
 #include <memory>
 #include <stdexcept>
 
@@ -35,8 +36,6 @@ class Transformation {
     return apply(std::move(columns), state);
   }
 
-  virtual ~Transformation() = default;
-
   virtual void buildExplanationMap(const ColumnMap& input, State& state,
                                    ExplanationMap& explanations) const {
     (void)input;
@@ -57,12 +56,16 @@ class Transformation {
     return explanations;
   }
 
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
+  virtual proto::data::Transformation* toProto() const = 0;
+
+  static std::shared_ptr<Transformation> fromProto(
+      const proto::data::Transformation& transformation);
+
+  std::string serialize() const;
+
+  static std::shared_ptr<Transformation> deserialize(const std::string& binary);
+
+  virtual ~Transformation() = default;
 };
 
 using TransformationPtr = std::shared_ptr<Transformation>;

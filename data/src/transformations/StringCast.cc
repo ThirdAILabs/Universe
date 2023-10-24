@@ -1,13 +1,11 @@
 #include "StringCast.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <proto/string_cast.pb.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <stdexcept>
@@ -149,23 +147,44 @@ void CastToValue<int64_t>::buildExplanationMap(
 }
 
 template <typename T>
-template <class Archive>
-void CastToValue<T>::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _dim);
-  if constexpr (std::is_same_v<T, int64_t>) {
-    archive(_format);
+proto::data::Transformation* CastToValue<T>::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* cast = transformation->mutable_string_cast();
+
+  cast->set_target(protoTargetType());
+
+  cast->set_input_column(_input_column_name);
+  cast->set_output_column(_output_column_name);
+
+  if (_dim) {
+    cast->set_dim(*_dim);
   }
+
+  if constexpr (std::is_same_v<decltype(_format), std::string>) {
+    cast->set_format(_format);
+  }
+
+  return transformation;
 }
 
-template void CastToValue<uint32_t>::serialize(cereal::BinaryInputArchive&);
-template void CastToValue<uint32_t>::serialize(cereal::BinaryOutputArchive&);
+template <>
+proto::data::StringCast::TargetType CastToValue<uint32_t>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TOKEN;
+}
 
-template void CastToValue<float>::serialize(cereal::BinaryInputArchive&);
-template void CastToValue<float>::serialize(cereal::BinaryOutputArchive&);
+template <>
+proto::data::StringCast::TargetType CastToValue<float>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_DECIMAL;
+}
 
-template void CastToValue<int64_t>::serialize(cereal::BinaryInputArchive&);
-template void CastToValue<int64_t>::serialize(cereal::BinaryOutputArchive&);
+template <>
+proto::data::StringCast::TargetType CastToValue<int64_t>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TIMESTAMP;
+}
 
 template class CastToValue<uint32_t>;
 template class CastToValue<float>;
@@ -264,25 +283,85 @@ void CastToArray<float>::buildExplanationMap(
 }
 
 template <typename T>
-template <class Archive>
-void CastToArray<T>::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _delimiter, _dim);
+proto::data::Transformation* CastToArray<T>::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* cast = transformation->mutable_string_cast();
+
+  cast->set_target(protoTargetType());
+
+  cast->set_input_column(_input_column_name);
+  cast->set_output_column(_output_column_name);
+  cast->set_delimiter(_delimiter);
+
+  if (_dim) {
+    cast->set_dim(*_dim);
+  }
+
+  return transformation;
 }
 
-template void CastToArray<uint32_t>::serialize(cereal::BinaryInputArchive&);
-template void CastToArray<uint32_t>::serialize(cereal::BinaryOutputArchive&);
+template <>
+proto::data::StringCast::TargetType CastToArray<uint32_t>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::StringCast_TargetType_TOKEN_ARRAY;
+}
 
-template void CastToArray<float>::serialize(cereal::BinaryInputArchive&);
-template void CastToArray<float>::serialize(cereal::BinaryOutputArchive&);
+template <>
+proto::data::StringCast::TargetType CastToArray<float>::protoTargetType()
+    const {
+  return proto::data::StringCast::TargetType::
+      StringCast_TargetType_DECIMAL_ARRAY;
+}
 
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
 
-}  // namespace thirdai::data
+char getDelimiter(const proto::data::StringCast& cast) {
+  if (!cast.has_delimiter()) {
+    throw std::runtime_error("Expected delimiter for cast to array column.");
+  }
+  return cast.delimiter();
+}
 
-CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)
+std::string getFormat(const proto::data::StringCast& cast) {
+  if (!cast.has_format()) {
+    throw std::runtime_error(
+        "Expected time format for cast to timestamp column.");
+  }
+  return cast.format();
+}
+
+TransformationPtr stringCastFromProto(const proto::data::StringCast& cast) {
+  std::optional<size_t> dim;
+  if (cast.has_dim()) {
+    dim = cast.dim();
+  }
+
+  switch (cast.target()) {
+    case proto::data::StringCast::TOKEN:
+      return std::make_shared<StringToToken>(cast.input_column(),
+                                             cast.output_column(), dim);
+
+    case proto::data::StringCast::TOKEN_ARRAY:
+      return std::make_shared<StringToTokenArray>(
+          cast.input_column(), cast.output_column(), getDelimiter(cast), dim);
+
+    case proto::data::StringCast::DECIMAL:
+      return std::make_shared<StringToDecimal>(cast.input_column(),
+                                               cast.output_column());
+
+    case proto::data::StringCast::DECIMAL_ARRAY:
+      return std::make_shared<StringToDecimalArray>(
+          cast.input_column(), cast.output_column(), getDelimiter(cast), dim);
+
+    case proto::data::StringCast::TIMESTAMP:
+      return std::make_shared<StringToTimestamp>(
+          cast.input_column(), cast.output_column(), getFormat(cast));
+
+    default:
+      throw std::runtime_error("Invalid string cast target type in fromProto.");
+  }
+}
+
+}  // namespace thirdai::data

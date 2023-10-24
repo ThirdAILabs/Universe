@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "neuron_index.proto";
+import "optimizers.proto";
+import "parameter.proto";
+import "activation.proto";
+
+message FullyConnected {
+  required uint64 dim = 1;
+  required uint64 input_dim = 2;
+  required float sparsity = 3;
+  required ActivationFunction activation = 4;
+
+  required bool use_bias = 5;
+
+  required Parameter weights = 6;
+  required Parameter bias = 7;
+
+  required uint64 rebuild_hash_tables = 8;
+  required uint64 reconstruct_hash_functions = 9;
+
+  optional NeuronIndex neuron_index = 10;
+  required bool index_frozen = 11;
+
+  optional Optimizer weight_optimizer = 12;
+  optional Optimizer bias_optimizer = 13;
+  required bool disable_sparse_parameter_updates = 14;
+}

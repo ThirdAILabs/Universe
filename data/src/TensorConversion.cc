@@ -1,6 +1,7 @@
 #include "TensorConversion.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
+#include <proto/output_columns.pb.h>
 #include <exception>
 #include <stdexcept>
 
@@ -99,6 +100,72 @@ bolt::TensorList toTensors(const ColumnMap& columns,
   return toTensorBatches(columns, columns_to_convert,
                          /* batch_size= */ columns.numRows())
       .at(0);
+}
+
+OutputColumns::OutputColumns(const proto::data::OutputColumns& output_columns)
+    : _indices(output_columns.indices()) {
+  if (output_columns.has_values()) {
+    _values = output_columns.values();
+  } else {
+    if (!output_columns.has_value_fill_type()) {
+      throw std::invalid_argument(
+          "Either values or ValueFillType must be specified.");
+    }
+
+    switch (output_columns.value_fill_type()) {
+      case proto::data::ValueFillType::ONES:
+        _value_fill_type = ValueFillType::Ones;
+        break;
+      case proto::data::ValueFillType::SUM_TO_ONE:
+        _value_fill_type = ValueFillType::SumToOne;
+        break;
+      default:
+        throw std::invalid_argument("Invalid ValueFillType in fromProto.");
+    }
+  }
+}
+
+proto::data::OutputColumns* OutputColumns::toProto() const {
+  auto* output_columns = new proto::data::OutputColumns();
+
+  output_columns->set_indices(_indices);
+  if (_values) {
+    output_columns->set_values(*_values);
+  } else {
+    switch (_value_fill_type) {
+      case ValueFillType::Ones:
+        output_columns->set_value_fill_type(proto::data::ValueFillType::ONES);
+        break;
+      case ValueFillType::SumToOne:
+        output_columns->set_value_fill_type(
+            proto::data::ValueFillType::SUM_TO_ONE);
+        break;
+    }
+  }
+
+  return output_columns;
+}
+
+proto::data::OutputColumnsList* outputColumnsListToProto(
+    const OutputColumnsList& output_columns_list) {
+  auto* output = new proto::data::OutputColumnsList();
+
+  for (const auto& output_columns : output_columns_list) {
+    output->mutable_columns()->AddAllocated(output_columns.toProto());
+  }
+
+  return output;
+}
+
+OutputColumnsList outputColumnsListFromProto(
+    const proto::data::OutputColumnsList& output_columns_list) {
+  OutputColumnsList output;
+
+  for (const auto& output_columns : output_columns_list.columns()) {
+    output.emplace_back(output_columns);
+  }
+
+  return output;
 }
 
 }  // namespace thirdai::data

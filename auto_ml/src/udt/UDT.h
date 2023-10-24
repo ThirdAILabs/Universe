@@ -412,11 +412,7 @@ class UDT {
   /**
    * Gets the internal index for UDTMachClassifier.
    */
-  dataset::mach::MachIndexPtr getIndex() {
-    licensing::entitlements().verifyFullAccess();
-
-    return _backend->getIndex();
-  }
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   /**
    * Sets the internal index for UDTMachClassifier.
@@ -442,11 +438,10 @@ class UDT {
 
   void save(const std::string& filename) const;
 
-  void saveImpl(const std::string& filename) const;
-
   void checkpoint(const std::string& filename) const;
 
-  void save_stream(std::ostream& output_stream) const;
+  void save_stream(std::ostream& output_stream,
+                   bool with_optimizer = false) const;
 
   static std::shared_ptr<UDT> load(const std::string& filename);
 
@@ -462,11 +457,6 @@ class UDT {
       const data::NumericalDataTypePtr& target_as_numerical,
       const data::SequenceDataTypePtr& target_as_sequence,
       bool has_graph_inputs);
-
-  friend class cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
 };

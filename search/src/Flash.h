@@ -10,6 +10,7 @@
 #include <dataset/src/Datasets.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <proto/udt_query_reformulation.pb.h>
 
 namespace thirdai::search {
 
@@ -19,7 +20,7 @@ namespace thirdai::search {
  * will be inserted, and if a label larger than this is inserted the insert
  * method will throw an error.
  */
-template <typename LABEL_T>
+
 class Flash {
  public:
   /**
@@ -30,6 +31,8 @@ class Flash {
    * implementation).
    **/
   explicit Flash(std::shared_ptr<hashing::HashFunction> hash_function);
+
+  explicit Flash(const proto::udt::Flash& flash);
 
   /**
    * This is the same as the single argument constructor, except the supporting
@@ -42,7 +45,7 @@ class Flash {
    * This constructor SHOULD only be called when creating temporary Flash
    * objects to serialize into.
    */
-  Flash<LABEL_T>() {}
+  Flash() {}
 
   /**
    * Delete copy constructor and assignment operator
@@ -53,7 +56,7 @@ class Flash {
   /**
    * Insert this batch into the Flash data structure.
    */
-  void addBatch(const BoltBatch& batch, const std::vector<LABEL_T>& labels,
+  void addBatch(const BoltBatch& batch, const std::vector<uint32_t>& labels,
                 licensing::TrainPermissionsToken token =
                     licensing::TrainPermissionsToken());
 
@@ -64,9 +67,11 @@ class Flash {
    * results will be returned. Returns the ids of the queries and the
    * corresponding scores.
    */
-  std::pair<std::vector<std::vector<LABEL_T>>, std::vector<std::vector<float>>>
+  std::pair<std::vector<std::vector<uint32_t>>, std::vector<std::vector<float>>>
   queryBatch(const BoltBatch& batch, uint32_t top_k,
              bool pad_zeros = false) const;
+
+  proto::udt::Flash* toProto() const;
 
  private:
   /**
@@ -81,8 +86,9 @@ class Flash {
    * the top k. Note that the input query_result will be modified (it will be
    * sorted).
    */
-  std::pair<std::vector<LABEL_T>, std::vector<float>> getTopKUsingPriorityQueue(
-      std::vector<LABEL_T>& query_result, uint32_t top_k) const;
+  std::pair<std::vector<uint32_t>, std::vector<float>>
+  getTopKUsingPriorityQueue(std::vector<uint32_t>& query_result,
+                            uint32_t top_k) const;
 
   std::shared_ptr<hashing::HashFunction> _hash_function;
 
@@ -91,7 +97,7 @@ class Flash {
 
   uint64_t _total_samples_indexed;
 
-  std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
+  std::shared_ptr<hashtable::VectorHashTable> _hashtable;
 
   friend class cereal::access;
   template <class Archive>

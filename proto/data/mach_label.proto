@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package proto.data;
+
+message MachLabel {
+  required string input_column = 1;
+  required string output_column = 2;
+}

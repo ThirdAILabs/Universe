@@ -3,6 +3,14 @@
 
 namespace thirdai::data {
 
+CountTokens::CountTokens(const proto::data::CountTokens& count_tokens)
+    : _input_column(count_tokens.input_column()),
+      _output_column(count_tokens.output_column()) {
+  if (count_tokens.has_max_tokens()) {
+    _max_tokens = count_tokens.max_tokens();
+  }
+}
+
 thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
                                                            State& state) const {
   (void)state;
@@ -26,6 +34,19 @@ thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
   columns.setColumn(/* name= */ _output_column,
                     /* column= */ new_column);
   return columns;
+}
+
+proto::data::Transformation* CountTokens::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* count_tokens = transformation->mutable_count_tokens();
+
+  count_tokens->set_input_column(_input_column);
+  count_tokens->set_output_column(_output_column);
+  if (_max_tokens) {
+    count_tokens->set_max_tokens(*_max_tokens);
+  }
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

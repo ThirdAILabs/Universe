@@ -1,12 +1,14 @@
 #include "TransformationList.h"
-#include <cereal/access.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
+
+TransformationList::TransformationList(
+    const proto::data::Transformation_List& t_list) {
+  for (const auto& transformation : t_list.transformations()) {
+    _transformations.push_back(Transformation::fromProto(transformation));
+  }
+}
 
 void TransformationList::buildExplanationMap(
     const ColumnMap& input, State& state, ExplanationMap& explanations) const {
@@ -20,37 +22,16 @@ void TransformationList::buildExplanationMap(
   }
 }
 
-void TransformationList::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
+proto::data::Transformation* TransformationList::toProto() const {
+  auto* transformation = new proto::data::Transformation();
 
-void TransformationList::save_stream(std::ostream& output_stream) const {
-  cereal::BinaryOutputArchive oarchive(output_stream);
-  oarchive(*this);
-}
+  auto* list = transformation->mutable_list();
 
-TransformationListPtr TransformationList::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
+  for (const auto& transformation : _transformations) {
+    list->mutable_transformations()->AddAllocated(transformation->toProto());
+  }
 
-TransformationListPtr TransformationList::load_stream(
-    std::istream& input_stream) {
-  cereal::BinaryInputArchive iarchive(input_stream);
-  std::shared_ptr<TransformationList> deserialize_into(
-      new TransformationList());
-  iarchive(*deserialize_into);
-  return deserialize_into;
-}
-
-template <class Archive>
-void TransformationList::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _transformations);
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::TransformationList)

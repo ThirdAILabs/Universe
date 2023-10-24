@@ -86,7 +86,7 @@ class OpConverter {
         throw std::runtime_error("Op type mismatch in apply func.");
       }
 
-      return concrete_op->apply(inputs.at(0));
+      return concrete_op->applyUnary(inputs.at(0));
     };
 
     return apply_func;

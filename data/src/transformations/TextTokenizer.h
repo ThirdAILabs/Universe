@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -30,10 +29,14 @@ class TextTokenizer final : public Transformation {
         lowercase, dim);
   }
 
+  explicit TextTokenizer(const proto::data::TextTokenizer& text);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  proto::data::Transformation* toProto() const final;
 
  private:
   static std::pair<std::vector<uint32_t>, std::vector<float>>
@@ -47,12 +50,6 @@ class TextTokenizer final : public Transformation {
 
   bool _lowercase;
   size_t _dim;
-
-  TextTokenizer() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

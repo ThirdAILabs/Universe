@@ -88,3 +88,20 @@ def test_string_hash_with_delimiter():
 
         if i < len(hashes) - 1:
             assert row[1] == hashes[i + 1][0]
+
+
+def test_string_hash_serialization():
+    N = 20
+    columns = data.ColumnMap(
+        {"str": data.columns.StringColumn([f"val_{i % N}" for i in range(2 * N)])}
+    )
+
+    transformation = data.transformations.StringHash("str", "hashes", output_range=1000)
+
+    transformation_copy = data.transformations.deserialize(transformation.serialize())
+
+    output1 = transformation(columns)
+    output2 = transformation_copy(columns)
+
+    assert output1["hashes"].data() == output2["hashes"].data()
+    assert output2["hashes"].data()[:N] == output2["hashes"].data()[N:]

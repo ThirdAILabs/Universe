@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
+#include "proto/hashing.pb.h"
 #include <utils/Random.h>
 #include <vector>
 
@@ -30,6 +31,8 @@ class DWTAHashFunction final : public HashFunction {
                    std::optional<uint32_t> permutations,
                    uint32_t seed = global_random::nextSeed());
 
+  explicit DWTAHashFunction(const proto::hashing::DWTA& dwta_proto);
+
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
 
@@ -52,6 +55,8 @@ class DWTAHashFunction final : public HashFunction {
   uint32_t getBinsize() const { return _binsize; }
 
   uint32_t getHashesPerTable() const { return _hashes_per_table; }
+
+  proto::hashing::HashFunction* toProto() const final;
 
   void save(const std::string& filename) const;
 

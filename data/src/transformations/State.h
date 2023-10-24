@@ -1,12 +1,9 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/deque.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/unordered_map.hpp>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <proto/state.pb.h>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -20,12 +17,6 @@ using dataset::mach::MachIndexPtr;
 struct ItemRecord {
   uint32_t item;
   int64_t timestamp;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(item, timestamp);
-  }
 };
 
 using ItemHistoryTracker =
@@ -63,6 +54,9 @@ class State {
 
   explicit State(automl::data::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
+  State(MachIndexPtr mach_index, automl::data::GraphInfoPtr graph)
+      : _mach_index(std::move(mach_index)), _graph(std::move(graph)) {}
+
   State() {}
 
   static std::shared_ptr<State> make(MachIndexPtr mach_index) {
@@ -74,6 +68,7 @@ class State {
   }
 
   static std::shared_ptr<State> make() { return std::make_shared<State>(); }
+  explicit State(const proto::data::State& state);
 
   const auto& machIndex() const {
     if (!_mach_index) {
@@ -124,6 +119,12 @@ class State {
     return _graph;
   }
 
+  proto::data::State* toProto() const;
+
+  static auto fromProto(const proto::data::State& state) {
+    return std::make_shared<State>(state);
+  }
+
  private:
   MachIndexPtr _mach_index = nullptr;
 
@@ -132,12 +133,6 @@ class State {
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
 
   automl::data::GraphInfoPtr _graph;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_mach_index, _vocabs, _item_history_trackers, _graph);
-  }
 };
 
 using StatePtr = std::shared_ptr<State>;

@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package proto.data;
+
+message StringCast {
+  enum TargetType {
+    TOKEN = 1;
+    TOKEN_ARRAY = 2;
+    DECIMAL = 3;
+    DECIMAL_ARRAY = 4;
+    TIMESTAMP = 5;
+  }
+
+  required TargetType target = 1;
+  required string input_column = 2;
+  required string output_column = 3;
+
+  optional uint64 dim = 4;
+  optional uint32 delimiter = 5;
+  optional string format = 6;
+}

@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "state.proto";
+import "hashing.proto";
+import "hashtable.proto";
+
+message Flash {
+  required hashing.HashFunction hash_function = 1;
+
+  required hashtable.VectorHashTable hash_table = 2;
+
+  required uint64 total_samples_indexed = 3;
+}
+
+message UDTQueryReformulation {
+  required Flash index = 1;
+
+  required data.Vocabulary phrase_id_map = 2;
+
+  optional string incorrect_column_name = 3;
+  required string correct_column_name = 4;
+
+  repeated uint32 n_grams = 5;
+
+  required uint32 delimiter = 6;
+}

@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package proto.hashing;
+
+message UniversalHash {
+  required uint32 seed = 1;
+  repeated uint64 table = 2;
+}

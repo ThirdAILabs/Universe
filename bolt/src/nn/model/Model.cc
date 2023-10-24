@@ -5,19 +5,25 @@
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Switch.h>
+#include <bolt/src/nn/ops/protobuf_utils/SerializedParameters.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/model.pb.h>
 #include <utils/UUID.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <fstream>
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -26,7 +32,8 @@
 namespace thirdai::bolt {
 
 Model::Model(ComputationList inputs, ComputationList outputs,
-             std::vector<LossPtr> losses, ComputationList additional_labels)
+             std::vector<LossPtr> losses,
+             const ComputationList& expected_labels)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -40,8 +47,11 @@ Model::Model(ComputationList inputs, ComputationList outputs,
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
-  _labels.insert(_labels.end(), additional_labels.begin(),
-                 additional_labels.end());
+  for (const auto& label : expected_labels) {
+    if (std::find(_labels.begin(), _labels.end(), label) == _labels.end()) {
+      _labels.push_back(label);
+    }
+  }
 
   _computation_order = getComputationOrder(_inputs, _outputs, _losses);
 
@@ -52,7 +62,6 @@ Model::Model(ComputationList inputs, ComputationList outputs,
   std::unordered_set<std::string> op_names;
   std::unordered_set<OpPtr> ops;
   for (const auto& comp : _computation_order) {
-    ops.insert(comp->op());
     std::string name = comp->op()->name();
 
     // Check if we have found a new op with the same name.
@@ -60,8 +69,9 @@ Model::Model(ComputationList inputs, ComputationList outputs,
       throw std::invalid_argument(
           "Found multiple Ops in model with the name '" + name +
           "'. All ops in a model must have unique names. The name of the op "
-          "can be updated with `op.name = 'op_name'`.");
+          "can be updated with `op.name = 'new_name'`.");
     }
+    ops.insert(comp->op());
     op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
@@ -74,10 +84,10 @@ Model::Model(ComputationList inputs, ComputationList outputs,
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
-                                   ComputationList additional_labels) {
-  auto model = std::shared_ptr<Model>(
-      new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                std::move(additional_labels)));
+                                   const ComputationList& additional_labels) {
+  auto model =
+      std::shared_ptr<Model>(new Model(std::move(inputs), std::move(outputs),
+                                       std::move(losses), additional_labels));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -105,6 +115,8 @@ TensorList Model::forward(const TensorList& inputs, bool use_sparsity) {
 }
 
 void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
+  requireOptimizer();
+
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -134,6 +146,8 @@ TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
 }
 
 void Model::updateParameters(float learning_rate) {
+  requireOptimizer();
+
   ++_train_steps;
   for (auto& op : _ops) {
     op->updateTrainableParameters(learning_rate, _train_steps);
@@ -314,7 +328,9 @@ void setValues(const std::vector<std::vector<float>*>& values,
   }
 }
 
-std::pair<const float*, uint64_t> Model::getFlattenedGradients() const {
+std::pair<const float*, uint64_t> Model::getFlattenedGradients() {
+  requireOptimizer();
+
   return concatenateValues(gradients());
 }
 
@@ -323,7 +339,9 @@ std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
 }
 
 void Model::setFlattenedGradients(const float* concatenated_values,
-                                  uint64_t flattened_dim) const {
+                                  uint64_t flattened_dim) {
+  requireOptimizer();
+
   setValues(gradients(), concatenated_values, flattened_dim);
 }
 
@@ -352,6 +370,197 @@ void Model::enableSparseParameterUpdates() {
   for (const auto& op : _ops) {
     op->enableSparseParameterUpdates();
   }
+}
+
+proto::bolt::ComputationGraph* Model::computationGraphToProto(
+    bool with_optimizer) const {
+  auto* graph = new proto::bolt::ComputationGraph();
+
+  // Record all of the model ops.
+  for (const auto& op : ops()) {
+    graph->mutable_ops()->AddAllocated(op->toProto(with_optimizer));
+  }
+
+  // Record the inputs to the model.
+  for (const auto& input : _inputs) {
+    auto* placeholder = graph->add_inputs();
+    placeholder->set_name(input->name());
+    placeholder->set_dim(input->dim());
+  }
+
+  // Record the labels of the model.
+  for (const auto& label : _labels) {
+    auto* placeholder = graph->add_labels();
+    placeholder->set_name(label->name());
+    placeholder->set_dim(label->dim());
+  }
+
+  // Construct a representation of the model computation graph. Ops are refered
+  // to by name, as are the inputs to a computation.
+  for (const auto& comp : _computation_order) {
+    auto* comp_proto = graph->mutable_computations()->Add();
+    comp_proto->set_name(comp->name());
+    comp_proto->set_op(comp->op()->name());
+    for (const auto& input : comp->inputs()) {
+      comp_proto->add_inputs(input->name());
+    }
+  }
+
+  // Record the loss functions the model uses.
+  for (const auto& loss : _losses) {
+    graph->mutable_losses()->AddAllocated(loss->toProto());
+  }
+
+  // Record which computations should be returned as outputs.
+  for (const auto& output : _outputs) {
+    graph->add_outputs(output->name());
+  }
+
+  return graph;
+}
+
+proto::bolt::ModelMetadata* Model::metadataToProto() const {
+  auto* metadata = new proto::bolt::ModelMetadata();
+  metadata->set_train_steps(_train_steps);
+  metadata->set_total_training_samples(_total_training_samples);
+  metadata->set_uuid(_model_uuid);
+
+  return metadata;
+}
+
+std::shared_ptr<Model> Model::fromProto(const proto::bolt::Model& model_proto,
+                                        DeserializedParameters& parameters) {
+  std::unordered_map<std::string, OpPtr> ops;
+
+  // Build a map from the name of each op to the reconstructed op object.
+  for (const auto& op_proto : model_proto.computation_graph().ops()) {
+    ops[op_proto.name()] = Op::fromProto(op_proto, parameters);
+  }
+
+  ComputationList inputs;
+  ComputationList labels;
+  std::unordered_map<std::string, ComputationPtr> computations;
+
+  const auto& computation_graph = model_proto.computation_graph();
+
+  // Create the inputs to the model.
+  for (const auto& input_proto : computation_graph.inputs()) {
+    auto input = Input::make(input_proto.dim());
+    computations[input_proto.name()] = input;
+    inputs.push_back(input);
+  }
+
+  // Create the labels for the model.
+  for (const auto& label_proto : computation_graph.labels()) {
+    auto label = Input::make(label_proto.dim());
+    computations[label_proto.name()] = label;
+    labels.push_back(label);
+  }
+
+  // Rebuild the model computation graph. The ops are uniquely identified by
+  // name, so they can be retrieved from the map of ops. Since the computations
+  // are serialized/deserialized in the execution order we know that a
+  // computation will occur after its inputs.
+  for (const auto& comp_proto : computation_graph.computations()) {
+    ComputationList op_inputs;
+    for (const auto& input : comp_proto.inputs()) {
+      op_inputs.push_back(computations.at(input));
+    }
+
+    auto op = ops.at(comp_proto.op());
+    computations[comp_proto.name()] = op->apply(op_inputs);
+  }
+
+  // Reconstruct the loss functions for the model.
+  std::vector<LossPtr> losses;
+  for (const auto& loss : computation_graph.losses()) {
+    losses.push_back(Loss::fromProto(loss, computations));
+  }
+
+  // Find the model outputs.
+  ComputationList outputs;
+  for (const auto& output : computation_graph.outputs()) {
+    outputs.push_back(computations.at(output));
+  }
+
+  auto model = Model::make(inputs, outputs, losses, labels);
+
+  model->_model_uuid = model_proto.metadata().uuid();
+  model->_train_steps = model_proto.metadata().train_steps();
+  model->_total_training_samples =
+      model_proto.metadata().total_training_samples();
+
+  return model;
+}
+
+void Model::serializeToProtoWriter(utils::ProtobufWriter& writer,
+                                   bool with_optimizer) const {
+  SerializableParameters parameters;
+  for (const auto& op : _ops) {
+    auto op_params = op->serializableParameters(with_optimizer);
+
+    parameters.insert(parameters.end(), op_params.begin(), op_params.end());
+  }
+
+  proto::bolt::Model model;
+  model.set_allocated_computation_graph(
+      computationGraphToProto(with_optimizer));
+
+  model.mutable_parameter_shard_info()->set_n_shards(
+      ParameterToShards::computeTotalShards(parameters));
+
+  model.set_allocated_metadata(metadataToProto());
+
+  writer.serialize(model);
+
+  ParameterToShards::serializeParameters(parameters, writer);
+}
+
+std::shared_ptr<Model> Model::deserializeFromProtoReader(
+    utils::ProtobufReader& reader) {
+  proto::bolt::Model model_proto;
+  reader.deserialize(model_proto);
+
+  auto parameters = parametersFromShards(
+      reader, model_proto.parameter_shard_info().n_shards());
+
+  return fromProto(model_proto, parameters);
+}
+
+void Model::serializeToStream(std::ostream& output, bool with_optimizer) const {
+  utils::ProtobufWriter writer(
+      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
+
+  serializeToProtoWriter(writer, with_optimizer);
+}
+
+std::shared_ptr<Model> Model::deserializeFromStream(std::istream& input) {
+  utils::ProtobufReader reader(
+      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
+
+  return deserializeFromProtoReader(reader);
+}
+
+void Model::serializeToFile(const std::string& filename,
+                            bool with_optimizer) const {
+  std::ofstream output = dataset::SafeFileIO::ofstream(filename);
+  serializeToStream(output, with_optimizer);
+}
+
+std::shared_ptr<Model> Model::deserializeFromFile(const std::string& filename) {
+  std::ifstream input = dataset::SafeFileIO::ifstream(filename);
+  return deserializeFromStream(input);
+}
+
+std::string Model::serializeToString(bool with_optimizer) const {
+  std::stringstream output;
+  serializeToStream(output, with_optimizer);
+  return output.str();
+}
+
+std::shared_ptr<Model> Model::deserializeFromString(const std::string& binary) {
+  std::stringstream input(binary);
+  return deserializeFromStream(input);
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
@@ -460,6 +669,15 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
   }
 }
 
+void Model::requireOptimizer() {
+  if (!_optimizer_initialized) {
+    for (auto& op : _ops) {
+      op->initOptimizer();
+    }
+    _optimizer_initialized = true;
+  }
+}
+
 inline uint32_t setBatchHelper(ComputationList& inputs,
                                const TensorList& batches,
                                const std::string& type) {
@@ -501,8 +719,9 @@ uint32_t Model::setLabels(const TensorList& label_batches) {
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
     auto fully_connected = FullyConnected::cast(output->op());
+    auto switch_op = Switch::cast(output->op());
 
-    if (fully_connected) {
+    if (fully_connected || switch_op) {
       output->addInput(label);
     }
   }

@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package proto.data;
+
+enum ValueFillType {
+  ONES = 0;
+  SUM_TO_ONE = 1;
+}
+
+message OutputColumns {
+  optional string indices = 1;
+  optional string values = 2;
+  optional ValueFillType value_fill_type = 3;
+}
+
+message OutputColumnsList {
+  repeated OutputColumns columns = 1;
+}

@@ -7,7 +7,9 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <proto/model.pb.h>
 #include <utils/UUID.h>
+#include <istream>
 #include <memory>
 #include <vector>
 
@@ -35,13 +37,14 @@ class Model : public std::enable_shared_from_this<Model> {
    * outputs, loss functions, and labels so it is ok to add additonal labels.
    */
   Model(ComputationList inputs, ComputationList outputs,
-        std::vector<LossPtr> losses, ComputationList additional_labels = {});
+        std::vector<LossPtr> losses,
+        const ComputationList& expected_labels = {});
 
  public:
-  static std::shared_ptr<Model> make(ComputationList inputs,
-                                     ComputationList outputs,
-                                     std::vector<LossPtr> losses,
-                                     ComputationList additional_labels = {});
+  static std::shared_ptr<Model> make(
+      ComputationList inputs, ComputationList outputs,
+      std::vector<LossPtr> losses,
+      const ComputationList& additional_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -187,10 +190,10 @@ class Model : public std::enable_shared_from_this<Model> {
 
   std::vector<std::vector<float>*> parameters() const;
 
-  std::pair<const float*, uint64_t> getFlattenedGradients() const;
+  std::pair<const float*, uint64_t> getFlattenedGradients();
 
   void setFlattenedGradients(const float* concatenated_values,
-                             uint64_t flattened_dim) const;
+                             uint64_t flattened_dim);
 
   std::pair<const float*, uint64_t> getFlattenedParameters() const;
 
@@ -231,6 +234,38 @@ class Model : public std::enable_shared_from_this<Model> {
   void enableSparseParameterUpdates();
 
   /**
+   * Serialization to/from a protobuf object Writer/Reader.
+   */
+  void serializeToProtoWriter(utils::ProtobufWriter& writer,
+                              bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromProtoReader(
+      utils::ProtobufReader& reader);
+
+  /**
+   * Serialization to/from a std::ostream/std::istream using protobuf.
+   */
+  void serializeToStream(std::ostream& output, bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromStream(std::istream& input);
+
+  /**
+   * Serialization to/from a file using protobuf.
+   */
+  void serializeToFile(const std::string& filename, bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromFile(
+      const std::string& filename);
+
+  /**
+   * Serialization to/from a string using protobuf.
+   */
+  std::string serializeToString(bool with_optimizer) const;
+
+  static std::shared_ptr<Model> deserializeFromString(
+      const std::string& binary);
+
+  /**
    * Helper function to save the model to a stream.
    */
   void save_stream(std::ostream& output_stream) const;
@@ -260,6 +295,11 @@ class Model : public std::enable_shared_from_this<Model> {
    * called.
    */
   void backpropagateVector(uint32_t index_in_batch, uint32_t batch_size);
+
+  /**
+   * Ensures that the optimizer is initialized for the ops in the model.
+   */
+  void requireOptimizer();
 
   /**
    * Sets the given batch as the inputs to the model.
@@ -293,6 +333,21 @@ class Model : public std::enable_shared_from_this<Model> {
   void registerWithOps();
 
   /**
+   * Converts the computation graph to a protobuf object.
+   */
+  proto::bolt::ComputationGraph* computationGraphToProto(
+      bool with_optimizer) const;
+
+  proto::bolt::ModelMetadata* metadataToProto() const;
+
+  /**
+   * Loads the model from the computation graph protobuf object, and the
+   * parameter objects.
+   */
+  static std::shared_ptr<Model> fromProto(const proto::bolt::Model& model_proto,
+                                          DeserializedParameters& parameters);
+
+  /**
    * Names the computations in the model based on the order they are executed.
    */
   static void nameComputations(ComputationList& inputs, ComputationList& comps,
@@ -316,6 +371,8 @@ class Model : public std::enable_shared_from_this<Model> {
   ComputationList _computation_order;
 
   AllocationManager _allocation_manager;
+
+  bool _optimizer_initialized = false;
 
   uint32_t _train_steps;
 

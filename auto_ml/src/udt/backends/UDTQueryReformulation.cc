@@ -1,9 +1,4 @@
 #include "UDTQueryReformulation.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashFunction.h>
@@ -22,6 +17,7 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/udt.pb.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -62,6 +58,24 @@ UDTQueryReformulation::UDTQueryReformulation(
       _n_grams.push_back(temp_ngram);
     }
   }
+  _inference_featurizer =
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
+}
+
+UDTQueryReformulation::UDTQueryReformulation(
+    const proto::udt::UDTQueryReformulation& query_reformulation)
+    : _flash_index(
+          std::make_unique<search::Flash>(query_reformulation.index())),
+      _phrase_id_map(dataset::ThreadSafeVocabulary::fromProto(
+          query_reformulation.phrase_id_map())),
+      _correct_column_name(query_reformulation.correct_column_name()),
+      _n_grams(query_reformulation.n_grams().begin(),
+               query_reformulation.n_grams().end()),
+      _delimiter(query_reformulation.delimiter()) {
+  if (query_reformulation.has_incorrect_column_name()) {
+    _incorrect_column_name = query_reformulation.incorrect_column_name();
+  }
+
   _inference_featurizer =
       dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
 }
@@ -231,6 +245,25 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
   return py::make_tuple(py::cast(phrases), py::cast(phrase_scores));
 }
 
+proto::udt::UDT UDTQueryReformulation::toProto() const {
+  proto::udt::UDT udt;
+
+  auto* query_reformulation = udt.mutable_query_reformulation();
+
+  query_reformulation->unsafe_arena_set_allocated_index(
+      _flash_index->toProto());
+  query_reformulation->set_allocated_phrase_id_map(
+      _phrase_id_map->toProtoAllocated());
+  if (_incorrect_column_name) {
+    query_reformulation->set_incorrect_column_name(*_incorrect_column_name);
+  }
+  query_reformulation->set_correct_column_name(_correct_column_name);
+  *query_reformulation->mutable_n_grams() = {_n_grams.begin(), _n_grams.end()};
+  query_reformulation->set_delimiter(_delimiter);
+
+  return udt;
+}
+
 bool UDTQueryReformulation::containsColumn(
     const dataset::DataSourcePtr& data, const std::string& column_name) const {
   auto header = data->nextLine();
@@ -307,8 +340,8 @@ std::vector<std::string> UDTQueryReformulation::idsToPhrase(
   return phrases;
 }
 
-std::unique_ptr<search::Flash<uint32_t>>
-UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
+std::unique_ptr<search::Flash> UDTQueryReformulation::defaultFlashIndex(
+    const std::string& dataset_size) {
   std::shared_ptr<hashing::HashFunction> hash_fn;
   uint32_t reservoir_size;
 
@@ -333,7 +366,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
         "'large'.");
   }
 
-  return std::make_unique<search::Flash<uint32_t>>(hash_fn, reservoir_size);
+  return std::make_unique<search::Flash>(hash_fn, reservoir_size);
 }
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
@@ -371,16 +404,4 @@ uint32_t UDTQueryReformulation::recall(
   return correct;
 }
 
-template void UDTQueryReformulation::serialize(cereal::BinaryInputArchive&);
-template void UDTQueryReformulation::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void UDTQueryReformulation::serialize(Archive& archive) {
-  archive(cereal::base_class<UDTBackend>(this), _flash_index,
-          _inference_featurizer, _phrase_id_map, _incorrect_column_name,
-          _correct_column_name, _delimiter, _n_grams);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTQueryReformulation)

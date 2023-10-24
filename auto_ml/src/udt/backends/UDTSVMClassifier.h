@@ -6,6 +6,7 @@
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/DataSource.h>
+#include <proto/udt_svm_classifier.pb.h>
 
 namespace thirdai::automl::udt {
 
@@ -14,6 +15,9 @@ class UDTSVMClassifier final : public UDTBackend {
   UDTSVMClassifier(uint32_t n_target_classes, uint32_t input_dim,
                    const std::optional<std::string>& model_config,
                    const config::ArgumentMap& user_args);
+
+  explicit UDTSVMClassifier(const proto::udt::UDTSvmClassifier& svm,
+                            bolt::ModelPtr model);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -37,6 +41,8 @@ class UDTSVMClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  proto::udt::UDT toProto() const final;
+
   ModelPtr model() const final { return _classifier->model(); }
 
   void setModel(const ModelPtr& model) final {
@@ -50,13 +56,6 @@ class UDTSVMClassifier final : public UDTBackend {
       dataset::DataSourcePtr data_source, bool shuffle,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
-
-  UDTSVMClassifier() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   utils::ClassifierPtr _classifier;
 };

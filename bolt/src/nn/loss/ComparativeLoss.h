@@ -28,6 +28,10 @@ class ComparativeLoss : public Loss {
  protected:
   ComparativeLoss() {}
 
+  const std::string& outputName() const { return _output->name(); }
+
+  const std::string& labelName() const { return _labels->name(); }
+
  private:
   /**
    * Helper functions to iterate over the activations and labels depending on

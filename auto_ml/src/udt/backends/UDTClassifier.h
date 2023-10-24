@@ -12,6 +12,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <proto/udt_classifier.pb.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -27,6 +28,9 @@ class UDTClassifier final : public UDTBackend {
                 const data::TabularOptions& tabular_options,
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
+
+  explicit UDTClassifier(const proto::udt::UDTClassifier& classifier,
+                         bolt::ModelPtr model);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -59,6 +63,8 @@ class UDTClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  proto::udt::UDT toProto() const final;
 
   std::vector<std::pair<std::string, float>> explain(
       const MapInput& sample,
@@ -121,13 +127,6 @@ class UDTClassifier final : public UDTBackend {
       const std::variant<uint32_t, std::string>& label) const;
 
   bool integerTarget() const;
-
-  UDTClassifier() {}
-
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
 
   utils::ClassifierPtr _classifier;
 

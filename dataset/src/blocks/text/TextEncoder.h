@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <proto/encoders.pb.h>
 #include <string>
 
 namespace thirdai::dataset {
@@ -21,6 +22,8 @@ class TextEncoder {
     throw std::invalid_argument(
         "Explanations are not supported for this type of encoding. ");
   }
+
+  virtual proto::data::TextEncoder* toProto() const = 0;
 
   virtual ~TextEncoder() = default;
 
@@ -64,6 +67,12 @@ class NGramEncoder : public TextEncoder {
     throw std::invalid_argument("Error in RCA");
   }
 
+  proto::data::TextEncoder* toProto() const final {
+    proto::data::TextEncoder* encoder = new proto::data::TextEncoder();
+    encoder->mutable_ngram()->set_n(_n);
+    return encoder;
+  }
+
   uint32_t n() const { return _n; }
 
  private:
@@ -86,6 +95,12 @@ class PairGramEncoder : public TextEncoder {
 
   std::vector<uint32_t> encode(const std::vector<uint32_t>& tokens) final {
     return token_encoding::pairgrams(tokens);
+  }
+
+  proto::data::TextEncoder* toProto() const final {
+    proto::data::TextEncoder* encoder = new proto::data::TextEncoder();
+    encoder->mutable_pairgram();
+    return encoder;
   }
 
  private:

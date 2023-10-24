@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+message Parameter {
+  required string name = 1;
+}
+
+message ParameterShard {
+  required string name = 1;
+
+  required uint64 num_shards = 2;
+  required uint64 shard_id = 3;
+
+  required uint64 parameter_size = 4;
+  required uint64 offset = 5;
+  required uint64 shard_size = 6;
+
+  repeated float data = 7;
+}

@@ -11,6 +11,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <proto/udt.pb.h>
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
@@ -84,6 +85,8 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual proto::udt::UDT toProto() const = 0;
+
   virtual py::object outputCorrectness(const MapInputBatch& sample,
                                        const std::vector<uint32_t>& labels,
                                        bool sparse_inference,
@@ -95,9 +98,7 @@ class UDTBackend {
     throw notSupported("output correctness");
   }
 
-  virtual ModelPtr model() const {
-    throw notSupported("accessing underlying model");
-  }
+  virtual ModelPtr model() const = 0;
 
   virtual void setModel(const ModelPtr& model) {
     (void)model;
@@ -348,14 +349,6 @@ class UDTBackend {
   static std::runtime_error notSupported(const std::string& name) {
     return std::runtime_error("Method '" + name +
                               "' is not supported for this type of model.");
-  }
-
- private:
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
   }
 };
 

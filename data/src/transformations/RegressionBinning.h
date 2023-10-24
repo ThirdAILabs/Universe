@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/binning.pb.h>
 #include <memory>
 #include <utility>
 
@@ -29,7 +30,11 @@ class RegressionBinning final : public Transformation {
         correct_label_radius);
   }
 
+  explicit RegressionBinning(const proto::data::RegressionBinning& regression);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  proto::data::Transformation* toProto() const final;
 
   float unbin(uint32_t category) const {
     return _min + category * _binsize + (_binsize / 2);
@@ -52,12 +57,6 @@ class RegressionBinning final : public Transformation {
   float _min, _max, _binsize;
   size_t _num_bins;
   uint32_t _correct_label_radius;
-
-  RegressionBinning() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

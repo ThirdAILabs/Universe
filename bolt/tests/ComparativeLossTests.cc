@@ -27,6 +27,8 @@ class LossTracker final : public ComparativeLoss {
 
   const auto& gradientCalledWith() const { return _gradient_called_with; }
 
+  proto::bolt::Loss* toProto() const final { return nullptr; }
+
  private:
   float singleLoss(float activation, float label) const override {
     const_cast<LossTracker*>(this)->_loss_called_with.insert(

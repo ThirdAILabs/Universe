@@ -10,13 +10,8 @@
 
 namespace thirdai::bolt {
 
-std::string nextInputName() {
-  static uint32_t constructed = 0;
-  return "input_" + std::to_string(++constructed);
-}
-
 Input::Input(uint32_t dim, std::optional<uint32_t> nonzeros)
-    : Op(nextInputName()), _dim(dim), _nonzeros(nonzeros) {}
+    : Op(), _dim(dim), _nonzeros(nonzeros) {}
 
 ComputationPtr Input::make(uint32_t dim) {
   return Computation::make(
@@ -58,6 +53,8 @@ std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
   return _nonzeros;
 }
 
+void Input::initOptimizer() {}
+
 void Input::disableSparseParameterUpdates() {}
 
 void Input::enableSparseParameterUpdates() {}
@@ -65,7 +62,23 @@ void Input::enableSparseParameterUpdates() {}
 void Input::summary(std::ostream& summary, const ComputationList& inputs,
                     const Computation* output) const {
   (void)inputs;
-  summary << "Input(" << name() << ") -> " << output->name();
+  summary << "Input: " << output->name() << " [dim=" << _dim << "]";
+}
+
+ComputationPtr Input::apply(const ComputationList& inputs) {
+  (void)inputs;
+  throw std::runtime_error("Input::apply should not be called directly.");
+}
+
+proto::bolt::Op* Input::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toProto should not be called on Input.");
+}
+
+SerializableParameters Input::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toProto should not be called on Input.");
 }
 
 template void Input::serialize(cereal::BinaryInputArchive&);

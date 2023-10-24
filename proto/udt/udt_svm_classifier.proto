@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "classifier.proto";
+
+message UDTSvmClassifier {
+  required Classifier classifier = 1;
+}

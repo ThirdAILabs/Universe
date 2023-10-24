@@ -2,9 +2,11 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <proto/neuron_index.pb.h>
 #include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
@@ -49,9 +51,65 @@ FullyConnectedLayer::FullyConnectedLayer(
     buildHashTables();
   }
 
-  initOptimizer();
-
   initActiveNeuronsTrackers();
+}
+
+FullyConnectedLayer::FullyConnectedLayer(
+    const proto::bolt::FullyConnected& fc_proto,
+    DeserializedParameters& parameters)
+    : _dim(fc_proto.dim()),
+      _prev_dim(fc_proto.input_dim()),
+      _sparse_dim(fc_proto.dim() * fc_proto.sparsity()),
+      _sparsity(fc_proto.sparsity()),
+      _act_func(activationFromProto(fc_proto.activation())),
+      _weights(parametersFromProto(fc_proto.weights(), parameters)),
+      _biases(parametersFromProto(fc_proto.bias(), parameters)),
+      _index_frozen(fc_proto.index_frozen()),
+      _disable_sparse_parameter_updates(
+          fc_proto.disable_sparse_parameter_updates()),
+      _should_save_optimizer(false),
+      _use_bias(fc_proto.use_bias()),
+      _prev_is_active(fc_proto.input_dim(), false),
+      _is_active(fc_proto.dim(), false) {
+  if (_weights.size() != _dim * _prev_dim) {
+    throw std::runtime_error("Weights do not have expected size in fromProto.");
+  }
+  if (_biases.size() != _dim) {
+    throw std::runtime_error("Biases do not have expected size in fromProto.");
+  }
+
+  switch (fc_proto.neuron_index().index_case()) {
+    case proto::bolt::NeuronIndex::kLsh:
+      _neuron_index = LshIndex::fromProto(fc_proto.neuron_index().lsh());
+      break;
+    case proto::bolt::NeuronIndex::kRandom:
+      _neuron_index =
+          RandomSampler::fromProto(fc_proto.neuron_index().random());
+      break;
+    case proto::bolt::NeuronIndex::INDEX_NOT_SET:
+      if (_sparsity < 1.0) {
+        _neuron_index =
+            DWTASamplingConfig::autotune(_dim, _sparsity,
+                                         /* experimental_autotune= */ false)
+                ->getNeuronIndex(_dim, _prev_dim);
+      }
+      break;
+  }
+
+  if (fc_proto.has_weight_optimizer() && fc_proto.has_bias_optimizer()) {
+    _weight_optimizer =
+        optimizerFromProto(fc_proto.weight_optimizer(), parameters);
+    if (_weight_optimizer->momentum.size() != _weights.size()) {
+      throw std::runtime_error(
+          "Weights optimizer does not have expected size in fromProto.");
+    }
+
+    _bias_optimizer = optimizerFromProto(fc_proto.bias_optimizer(), parameters);
+    if (_bias_optimizer->momentum.size() != _biases.size()) {
+      throw std::runtime_error(
+          "Bias optimizer does not expected size in fromProto.");
+    }
+  }
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
@@ -692,6 +750,47 @@ void FullyConnectedLayer::setHashTable(
 
   _neuron_index =
       LshIndex::make(_dim, std::move(hash_fn), std::move(hash_table));
+}
+
+proto::bolt::FullyConnected* FullyConnectedLayer::toProto(
+    const std::string& name, bool with_optimizer) const {
+  proto::bolt::FullyConnected* fc = new proto::bolt::FullyConnected();
+
+  fc->set_dim(_dim);
+  fc->set_input_dim(_prev_dim);
+  fc->set_sparsity(_sparsity);
+  fc->set_activation(activationToProto(_act_func));
+
+  fc->set_use_bias(_use_bias);
+
+  fc->set_allocated_weights(parametersToProto(name + "_weights"));
+  fc->set_allocated_bias(parametersToProto(name + "_biases"));
+
+  if (_neuron_index) {
+    /**
+     * We don't serialize a MachNeuronIndex here because bolt does not own the
+     * underlying MachIndex which causes issues when deserializing, since the
+     * MachIndex needs to be conistent between bolt and udt.
+     */
+    if (auto lsh_index = LshIndex::cast(_neuron_index)) {
+      fc->set_allocated_neuron_index(lsh_index->toProto());
+    } else if (auto rand_index = RandomSampler::cast(_neuron_index)) {
+      fc->set_allocated_neuron_index(rand_index->toProto());
+    }
+  }
+  fc->set_index_frozen(_index_frozen);
+
+  if (with_optimizer && _weight_optimizer && _bias_optimizer) {
+    fc->set_allocated_weight_optimizer(
+        optimizerToProto(name + "_weights", _dim, _prev_dim));
+
+    fc->set_allocated_bias_optimizer(
+        optimizerToProto(name + "_biases", /* rows= */ 1, _dim));
+  }
+
+  fc->set_disable_sparse_parameter_updates(_disable_sparse_parameter_updates);
+
+  return fc;
 }
 
 void FullyConnectedLayer::initOptimizer() {

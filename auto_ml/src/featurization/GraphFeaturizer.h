@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
@@ -8,6 +7,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/GraphInfo.h>
+#include <proto/featurizers.pb.h>
 
 namespace thirdai::automl {
 
@@ -16,6 +16,8 @@ class GraphFeaturizer {
   GraphFeaturizer(const data::ColumnDataTypes& data_types,
                   const std::string& target_col, uint32_t n_target_classes,
                   const data::TabularOptions& options);
+
+  explicit GraphFeaturizer(const proto::udt::GraphFeaturizer& featurizer);
 
   thirdai::data::LoaderPtr indexAndGetDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -30,6 +32,8 @@ class GraphFeaturizer {
   bolt::TensorList featurizeInputBatch(const MapInputBatch& samples);
 
   void clearGraph() { _state->graph()->clear(); }
+
+  proto::udt::GraphFeaturizer* toProto() const;
 
  private:
   static std::pair<thirdai::data::TransformationPtr, std::string> nodeId(
@@ -54,12 +58,6 @@ class GraphFeaturizer {
   char _delimiter;
 
   thirdai::data::StatePtr _state;
-
-  GraphFeaturizer() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 using GraphFeaturizerPtr = std::shared_ptr<GraphFeaturizer>;

@@ -1,0 +1,60 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "transformations.proto";
+import "output_columns.proto";
+import "state.proto";
+
+message TextDatasetConfig {
+  required string text_column = 1;
+  required string label_column = 2;
+  optional uint32 label_delimiter = 3;
+}
+
+message Featurizer {
+  required data.Transformation input_transform = 1;
+  required data.Transformation input_transform_non_updating = 2;
+  required data.Transformation label_transform = 3;
+
+  required data.OutputColumnsList bolt_input_columns = 4;
+  required data.OutputColumnsList bolt_label_columns = 5;
+
+  required uint32 delimiter = 6;
+
+  required data.State state = 7;
+
+  optional TextDatasetConfig text_dataset_config = 8;
+}
+
+message MachFeaturizer {
+  required Featurizer base = 1;
+  required data.Transformation doc_id_transform = 2;
+  required data.Transformation prehashed_labels_transform = 3;
+}
+
+message GraphFeaturizer {
+  required data.Transformation input_transform = 1;
+  required data.Transformation label_transform = 2;
+  required data.Transformation graph_builder = 3;
+
+  required data.OutputColumnsList bolt_input_columns = 4;
+  required data.OutputColumnsList bolt_label_columns = 5;
+
+  required uint32 delimiter = 6;
+
+  required data.State state = 7;
+}
+
+message RecurrentFeaturizer {
+  required data.Transformation augmenting_transform = 1;
+  required data.Transformation non_augmenting_transform = 2;
+  required data.Transformation recurrence_augmentation = 3;
+
+  required data.OutputColumnsList bolt_input_columns = 4;
+  required data.OutputColumnsList bolt_label_columns = 5;
+
+  required uint32 delimiter = 6;
+
+  required data.State state = 7;
+}

@@ -24,6 +24,8 @@ class DotProduct final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -35,10 +37,23 @@ class DotProduct final : public Op,
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
-  ComputationPtr apply(ComputationPtr lhs, ComputationPtr rhs);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyBinary(ComputationPtr lhs, ComputationPtr rhs);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<DotProduct> fromProto(
+      const std::string& name, const proto::bolt::DotProduct& dot_prod_proto);
 
  private:
-  DotProduct() {}
+  DotProduct();
+
+  DotProduct(const std::string& name,
+             const proto::bolt::DotProduct& dot_prod_proto);
 
   friend class cereal::access;
   template <class Archive>

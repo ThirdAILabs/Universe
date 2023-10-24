@@ -19,6 +19,12 @@ std::string nextConcatenateOpName() {
 
 Concatenate::Concatenate() : Op(nextConcatenateOpName()) {}
 
+Concatenate::Concatenate(const std::string& name,
+                         const proto::bolt::Concatenate& concat_proto)
+    : Op(name) {
+  (void)concat_proto;
+}
+
 std::shared_ptr<Concatenate> Concatenate::make() {
   return std::shared_ptr<Concatenate>(new Concatenate());
 }
@@ -105,6 +111,8 @@ std::optional<uint32_t> Concatenate::nonzeros(const ComputationList& inputs,
   return total_num_nonzeros;
 }
 
+void Concatenate::initOptimizer() {}
+
 void Concatenate::summary(std::ostream& summary, const ComputationList& inputs,
                           const Computation* output) const {
   summary << "Concatenate(" << name() << "): (";
@@ -145,6 +153,28 @@ ComputationPtr Concatenate::apply(const ComputationList& inputs) {
   }
 
   return Computation::make(shared_from_this(), inputs);
+}
+
+proto::bolt::Op* Concatenate::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  proto::bolt::Op* op = new proto::bolt::Op();
+
+  op->set_name(name());
+  op->mutable_concatenate();
+
+  return op;
+}
+
+SerializableParameters Concatenate::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
+std::shared_ptr<Concatenate> Concatenate::fromProto(
+    const std::string& name, const proto::bolt::Concatenate& concat_proto) {
+  return std::shared_ptr<Concatenate>(new Concatenate(name, concat_proto));
 }
 
 template void Concatenate::serialize(cereal::BinaryInputArchive&);

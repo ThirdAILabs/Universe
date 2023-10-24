@@ -1,7 +1,9 @@
 #include "UDTRecurrentClassifier.h"
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <auto_ml/src/featurization/RecurrentFeaturizer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -19,6 +21,14 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::fromMetricNames;
 
+static uint32_t expectMaxLength(const std::optional<uint32_t>& max_length) {
+  if (!max_length) {
+    throw std::invalid_argument(
+        "Parameter max_length must be specified for target sequence.");
+  }
+  return *max_length;
+}
+
 UDTRecurrentClassifier::UDTRecurrentClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
@@ -27,7 +37,9 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     uint32_t n_target_classes, const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _target_name(target_name), _target(target) {
+    : _target_name(target_name),
+      _max_seq_len(expectMaxLength(target->max_length)),
+      _target_delimiter(target->delimiter) {
   if (!temporal_tracking_relationships.empty()) {
     throw std::invalid_argument(
         "UDT does not support temporal tracking when doing recurrent "
@@ -53,6 +65,16 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
 }
+
+UDTRecurrentClassifier::UDTRecurrentClassifier(
+    const proto::udt::UDTRecurrentClassifier& recurrent, bolt::ModelPtr model)
+    : _model(std::move(model)),
+      _featurizer(
+          std::make_shared<RecurrentFeaturizer>(recurrent.featurizer())),
+      _target_name(recurrent.target_column()),
+      _max_seq_len(recurrent.max_seq_len()),
+      _target_delimiter(recurrent.target_delimiter()),
+      _freeze_hash_tables(recurrent.freeze_hash_tables()) {}
 
 py::object UDTRecurrentClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
@@ -134,7 +156,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
 
   std::vector<std::string> predictions;
 
-  for (uint32_t step = 0; step < _target->max_length; step++) {
+  for (uint32_t step = 0; step < _max_seq_len; step++) {
     auto output = _model
                       ->forward(_featurizer->featurizeInput(mutable_sample),
                                 sparse_inference)
@@ -153,7 +175,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
   // TODO(Geordie/Tharun): Should we join or return list instead?
-  return py::cast(text::join(predictions, {_target->delimiter}));
+  return py::cast(text::join(predictions, {_target_delimiter}));
 }
 
 struct PredictBatchProgress {
@@ -185,10 +207,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();
 
-  for (uint32_t i = 0; i < vocab->size(); i++) {
-    std::cerr << "VOCAB: " << i << " -> " << vocab->getString(i) << std::endl;
-  }
-
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
   auto mutable_samples = samples;
@@ -197,8 +215,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     sample[_target_name] = "";
   }
 
-  for (uint32_t step = 0; step < _target->max_length && !progress.allDone();
-       step++) {
+  for (uint32_t step = 0; step < _max_seq_len && !progress.allDone(); step++) {
     auto batch_activations =
         _model
             ->forward(_featurizer->featurizeInputBatch(mutable_samples),
@@ -225,17 +242,31 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   py::list output(mutable_samples.size());
   for (uint32_t i = 0; i < mutable_samples.size(); i++) {
     // TODO(Geordie/Tharun): Should we join or return list instead?
-    output[i] = text::join(all_predictions[i], {_target->delimiter});
+    output[i] = text::join(all_predictions[i], {_target_delimiter});
   }
 
   return std::move(output);
 }
 
+proto::udt::UDT UDTRecurrentClassifier::toProto() const {
+  proto::udt::UDT udt;
+
+  auto* recurrent = udt.mutable_recurrent();
+
+  recurrent->set_allocated_featurizer(_featurizer->toProto());
+  recurrent->set_freeze_hash_tables(_freeze_hash_tables);
+  recurrent->set_target_column(_target_name);
+  recurrent->set_max_seq_len(_max_seq_len);
+  recurrent->set_target_delimiter(_target_delimiter);
+
+  return udt;
+}
+
 uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
                                                   uint32_t step,
                                                   size_t vocab_size) {
-  auto begin = step * vocab_size;
-  auto end = begin + vocab_size;
+  size_t begin = step * vocab_size;
+  size_t end = begin + vocab_size;
 
   uint32_t arg_max = 0;
   float max_act = -std::numeric_limits<float>::max();
@@ -259,33 +290,9 @@ void UDTRecurrentClassifier::addPredictionToSample(
     MapInput& sample, const std::string& prediction) const {
   auto& intermediate_column = sample[_target_name];
   if (!intermediate_column.empty()) {
-    intermediate_column += _target->delimiter;
+    intermediate_column += _target_delimiter;
   }
   intermediate_column += prediction;
 }
 
-template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
-                                                const uint32_t version);
-template void UDTRecurrentClassifier::serialize(cereal::BinaryOutputArchive&,
-                                                const uint32_t version);
-
-template <class Archive>
-void UDTRecurrentClassifier::serialize(Archive& archive,
-                                       const uint32_t version) {
-  std::string thirdai_version = thirdai::version();
-  archive(thirdai_version);
-  std::string class_name = "UDT_RECURRENT_CLASSIFIER";
-  versions::checkVersion(version, versions::UDT_RECURRENT_CLASSIFIER_VERSION,
-                         thirdai_version, thirdai::version(), class_name);
-
-  // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
-  // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _target_name, _target, _model,
-          _featurizer, _freeze_hash_tables);
-}
-
 }  // namespace thirdai::automl::udt
-
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRecurrentClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTRecurrentClassifier,
-                     thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION)

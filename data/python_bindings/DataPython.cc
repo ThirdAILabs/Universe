@@ -9,6 +9,7 @@
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
+#include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/StringCast.h>
@@ -20,12 +21,14 @@
 #include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <proto/transformations.pb.h>
 #include <pybind11/attr.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -64,9 +67,21 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  py::class_<ColumnMapIterator>(dataset_submodule, "ColumnMapIterator")
+  // NOLINTNEXTLINE
+  py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
+                                                      "ColumnMapIterator");
+
+  py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
+      dataset_submodule, "CsvIterator")
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"), py::arg("rows_per_load") = 1000000);
+           py::arg("delimiter"),
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
+  py::class_<JsonIterator, std::shared_ptr<JsonIterator>, ColumnMapIterator>(
+      dataset_submodule, "JsonIterator")
+      .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
+           py::arg("data_source"), py::arg("columns"),
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
 
   py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
       .value("Ones", ValueFillType::Ones)
@@ -223,7 +238,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "Transformation")
       .def("__call__", &Transformation::applyStateless, py::arg("columns"))
       .def("__call__", &Transformation::apply, py::arg("columns"),
-           py::arg("state"));
+           py::arg("state"))
+      .def("serialize", [](const TransformationPtr& transformation) {
+        // We need to convert this to a bytes object to avoid Unicode errors in
+        // python.
+        return py::bytes(transformation->serialize());
+      });
+
+  transformations_submodule.def("deserialize", Transformation::deserialize,
+                                py::arg("binary"));
 
   py::class_<TransformationList, Transformation,
              std::shared_ptr<TransformationList>>(transformations_submodule,
@@ -379,6 +402,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "MachLabel")
       .def(py::init<std::string, std::string>(), py::arg("input_column"),
            py::arg("output_column"));
+
+  py::class_<DyadicInterval, Transformation, std::shared_ptr<DyadicInterval>>(
+      transformations_submodule, "DyadicInterval")
+      .def(py::init<std::string, std::string, std::string, size_t>(),
+           py::arg("input_column"), py::arg("output_interval_prefix"),
+           py::arg("target_column"), py::arg("n_intervals"))
+      .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
+           py::arg("columns"));
 #endif
 }
 

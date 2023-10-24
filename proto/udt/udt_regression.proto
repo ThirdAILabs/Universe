@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "featurizers.proto";
+import "model.proto";
+import "transformations.proto";
+
+message UDTRegression {
+  required Featurizer featurizer = 1;
+
+  required data.Transformation binning = 2;
+}

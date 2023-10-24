@@ -7,6 +7,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cstring>
@@ -40,6 +41,16 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
   _kernel = std::make_shared<FullyConnectedLayer>(
       config, input_dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
+
+FullyConnected::FullyConnected(const std::string& name,
+                               const proto::bolt::FullyConnected& fc_proto,
+                               DeserializedParameters& parameters)
+    : Op(name),
+      _kernel(std::make_unique<FullyConnectedLayer>(fc_proto, parameters)),
+      _rebuild_hash_tables(fc_proto.rebuild_hash_tables()),
+      _reconstruct_hash_functions(fc_proto.reconstruct_hash_functions()),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {}
 
 std::shared_ptr<FullyConnected> FullyConnected::make(
     uint32_t dim, uint32_t input_dim, float sparsity,
@@ -105,6 +116,8 @@ std::optional<uint32_t> FullyConnected::nonzeros(const ComputationList& inputs,
   return _kernel->getDim();
 }
 
+void FullyConnected::initOptimizer() { _kernel->initOptimizer(); }
+
 void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
@@ -168,7 +181,20 @@ void FullyConnected::registerModel(const std::weak_ptr<Model>& new_model) {
   }
 }
 
-ComputationPtr FullyConnected::apply(ComputationPtr input) {
+ComputationPtr FullyConnected::apply(const ComputationList& inputs) {
+  // If the layer is a sparse output then it has a second input which are the
+  // labels, so that it can always select the label neurons. This is stored as
+  // part of the computation graph and thus may be passed in here when loading a
+  // saved model, however we can discard it since these labels and layers will
+  // automatically be matched up again in when the new model is constructed.
+  if (inputs.size() != 1 && inputs.size() != 2) {
+    throw std::invalid_argument("FullyConnected op expects a single input.");
+  }
+
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr FullyConnected::applyUnary(ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
@@ -178,6 +204,45 @@ ComputationPtr FullyConnected::apply(ComputationPtr input) {
     throw std::invalid_argument(error.str());
   }
   return Computation::make(shared_from_this(), {std::move(input)});
+}
+
+proto::bolt::Op* FullyConnected::toProto(bool with_optimizer) const {
+  proto::bolt::Op* op = new proto::bolt::Op();
+  op->set_name(name());
+
+  // TODO(Nicholas) move everything into this class so we don't have to deal
+  // with the kernel stuff. This will be easier to do once protobufs are added
+  // so it doesn't break compatability.
+  auto* fc = _kernel->toProto(name(), with_optimizer);
+
+  fc->set_rebuild_hash_tables(_rebuild_hash_tables);
+  fc->set_reconstruct_hash_functions(_reconstruct_hash_functions);
+
+  op->set_allocated_fully_connected(fc);
+
+  return op;
+}
+
+SerializableParameters FullyConnected::serializableParameters(
+    bool with_optimizer) const {
+  SerializableParameters parameters = {{weightsName(), &_kernel->weights()},
+                                       {biasesName(), &_kernel->biases()}};
+  if (with_optimizer && _kernel->_weight_optimizer &&
+      _kernel->_bias_optimizer) {
+    addOptimizerParameters(*_kernel->_weight_optimizer, weightsName(),
+                           parameters);
+
+    addOptimizerParameters(*_kernel->_bias_optimizer, biasesName(), parameters);
+  }
+
+  return parameters;
+}
+
+std::shared_ptr<FullyConnected> FullyConnected::fromProto(
+    const std::string& name, const proto::bolt::FullyConnected& fc_proto,
+    DeserializedParameters& parameters) {
+  return std::shared_ptr<FullyConnected>(
+      new FullyConnected(name, fc_proto, parameters));
 }
 
 uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
@@ -264,25 +329,9 @@ void FullyConnected::load(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
-
-  _kernel->initOptimizer();
 }
 
 }  // namespace thirdai::bolt
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::FullyConnected,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::FullyConnected,
                                "thirdai::bolt::nn::ops::FullyConnected")

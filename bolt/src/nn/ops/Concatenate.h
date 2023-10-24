@@ -26,6 +26,8 @@ class Concatenate final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -37,10 +39,21 @@ class Concatenate final : public Op,
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
-  ComputationPtr apply(const ComputationList& inputs);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<Concatenate> fromProto(
+      const std::string& name, const proto::bolt::Concatenate& concat_proto);
 
  private:
   Concatenate();
+
+  Concatenate(const std::string& name,
+              const proto::bolt::Concatenate& concat_proto);
 
   std::vector<uint32_t> _input_dims;
   std::vector<uint32_t> _neuron_offsets;

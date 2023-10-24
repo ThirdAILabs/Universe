@@ -1,6 +1,4 @@
 #include "StringIDLookup.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <string>
@@ -21,6 +19,19 @@ StringIDLookup::StringIDLookup(std::string input_column_name,
       _vocab_key(std::move(vocab_key)),
       _max_vocab_size(max_vocab_size),
       _delimiter(delimiter) {}
+
+StringIDLookup::StringIDLookup(
+    const proto::data::StringIDLookup& string_id_lookup)
+    : _input_column_name(string_id_lookup.input_column()),
+      _output_column_name(string_id_lookup.output_column()),
+      _vocab_key(string_id_lookup.vocab_key()) {
+  if (string_id_lookup.has_max_vocab_size()) {
+    _max_vocab_size = string_id_lookup.max_vocab_size();
+  }
+  if (string_id_lookup.has_delimiter()) {
+    _delimiter = string_id_lookup.delimiter();
+  }
+}
 
 ColumnMap StringIDLookup::apply(ColumnMap columns, State& state) const {
   auto strings = columns.getValueColumn<std::string>(_input_column_name);
@@ -86,15 +97,23 @@ void StringIDLookup::buildExplanationMap(const ColumnMap& input, State& state,
   }
 }
 
-template void StringIDLookup::serialize(cereal::BinaryInputArchive&);
-template void StringIDLookup::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* StringIDLookup::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* string_lookup = transformation->mutable_string_id_lookup();
 
-template <class Archive>
-void StringIDLookup::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _vocab_key, _max_vocab_size, _delimiter);
+  string_lookup->set_input_column(_input_column_name);
+  string_lookup->set_output_column(_output_column_name);
+  string_lookup->set_vocab_key(_vocab_key);
+
+  if (_max_vocab_size) {
+    string_lookup->set_max_vocab_size(*_max_vocab_size);
+  }
+
+  if (_delimiter) {
+    string_lookup->set_delimiter(*_delimiter);
+  }
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::StringIDLookup)

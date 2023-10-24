@@ -25,6 +25,10 @@ class UDTRecurrentClassifier final : public UDTBackend {
                          const std::optional<std::string>& model_config,
                          const config::ArgumentMap& user_args);
 
+  explicit UDTRecurrentClassifier(
+      const proto::udt::UDTRecurrentClassifier& recurrent,
+      bolt::ModelPtr model);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -47,6 +51,8 @@ class UDTRecurrentClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  proto::udt::UDT toProto() const final;
+
   ModelPtr model() const final { return _model; }
 
   void verifyCanDistribute() const final {
@@ -56,8 +62,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
   }
 
  private:
-  UDTRecurrentClassifier() {}
-
   static void throwIfSparseInference(bool sparse_inference) {
     if (sparse_inference) {
       // TODO(Geordie): We can actually use a special case of sparse inference
@@ -79,17 +83,13 @@ class UDTRecurrentClassifier final : public UDTBackend {
   void addPredictionToSample(MapInput& sample,
                              const std::string& prediction) const;
 
-  friend cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
-
-  std::string _target_name;
-  data::SequenceDataTypePtr _target;
-
   ModelPtr _model;
 
   RecurrentFeaturizerPtr _featurizer;
+
+  std::string _target_name;
+  size_t _max_seq_len;
+  char _target_delimiter;
 
   bool _freeze_hash_tables;
 };

@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package proto.data;
+
+message ColdStart {
+  repeated string strong_columns = 1;
+  repeated string weak_columns = 2;
+  required string output_column = 3;
+  required string label_column = 4;
+
+  optional uint32 weak_min_len = 5;
+  optional uint32 weak_max_len = 6;
+  optional uint32 weak_chunk_len = 7;
+  optional uint32 weak_sample_num_words = 8;
+  required uint32 weak_sample_reps = 9;
+
+  optional uint32 strong_max_len = 10;
+  optional uint32 strong_sample_num_words = 11;
+
+  required uint32 seed = 12;
+}

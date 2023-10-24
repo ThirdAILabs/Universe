@@ -1,10 +1,21 @@
 #include "EmbeddingLayer.h"
+#include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <hashing/src/MurmurHash.h>
 #include <algorithm>
+#include <optional>
 #include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
+
+std::pair<uint64_t, uint64_t> computeBlockSizeAndNumChunks(
+    uint64_t log_block_size, uint64_t lookup_size, uint64_t chunk_size) {
+  uint64_t block_size = (1ULL << log_block_size) + lookup_size;
+  uint64_t n_chunks = (block_size + chunk_size - 1) / chunk_size;
+
+  return {n_chunks * chunk_size, n_chunks};
+}
 
 EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
@@ -35,16 +46,14 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
-  _embedding_block_size = (1ULL << _log_embedding_block_size) + _lookup_size;
-  uint64_t n_chunks =
-      (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
-  _embedding_block_size = n_chunks * _update_chunk_size;
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
   _embedding_block =
       std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
-  initOptimizer();
-
-  _embedding_chunks_used = std::vector<bool>(n_chunks, false);
+  _embedding_chunks_used = std::vector<bool>(n_emb_chunks, false);
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -53,9 +62,60 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
+EmbeddingLayer::EmbeddingLayer(const proto::bolt::RobeZ& robez_proto,
+                               DeserializedParameters& parameters)
+    : _num_lookups_per_token(robez_proto.num_lookups_per_token()),
+      _lookup_size(robez_proto.lookup_size()),
+      _total_embedding_dim(robez_proto.lookup_size() *
+                           robez_proto.num_lookups_per_token()),
+      _log_embedding_block_size(robez_proto.log_embedding_block_size()),
+      _update_chunk_size(robez_proto.update_chunk_size()),
+      _reduction(reductionFromProto(robez_proto.reduction())),
+      _num_tokens_per_input(
+          robez_proto.has_num_tokens_per_input()
+              ? std::make_optional(robez_proto.num_tokens_per_input())
+              : std::nullopt),
+      _hash_fn(robez_proto.hash_seed()),
+      _disable_sparse_parameter_updates(
+          robez_proto.disable_sparse_parameter_updates()),
+      _should_save_optimizer(false) {
+  if (_reduction == EmbeddingReductionType::CONCATENATION) {
+    if (!_num_tokens_per_input) {
+      throw std::invalid_argument(
+          "Must specify a number of tokens per input with a concatenation "
+          "reduction.");
+    }
+    _total_embedding_dim *= _num_tokens_per_input.value();
+  }
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
+
+  _embedding_block = std::make_shared<std::vector<float>>(
+      parametersFromProto(robez_proto.embedding_block(), parameters));
+
+  if (_embedding_block->size() != _embedding_block_size) {
+    throw std::runtime_error(
+        "Embedding block does not have expected size in fromProto.");
+  }
+
+  _embedding_chunks_used.assign(n_emb_chunks, false);
+
+  if (robez_proto.has_embedding_block_optimizer()) {
+    _optimizer =
+        optimizerFromProto(robez_proto.embedding_block_optimizer(), parameters);
+    if (_optimizer->momentum.size() != _embedding_block_size) {
+      throw std::runtime_error(
+          "Embedding block optimizer does not have expected size in "
+          "fromProto.");
+    }
+  }
+}
+
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
   assert(output.len == _total_embedding_dim);
-  assert(_reduction == EmbeddingReductionType::SUM ||
+  assert(_reduction != EmbeddingReductionType::CONCATENATION ||
          _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 
@@ -202,6 +262,37 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
       _optimizer->gradients[n] = 0;
     }
   }
+}
+
+proto::bolt::RobeZ* EmbeddingLayer::toProto(const std::string& name,
+                                            bool with_optimizer) const {
+  proto::bolt::RobeZ* robez = new proto::bolt::RobeZ();
+
+  robez->set_num_lookups_per_token(_num_lookups_per_token);
+  robez->set_lookup_size(_lookup_size);
+  robez->set_log_embedding_block_size(_log_embedding_block_size);
+
+  robez->set_reduction(reductionToProto(_reduction));
+
+  if (_num_tokens_per_input) {
+    robez->set_num_tokens_per_input(*_num_tokens_per_input);
+  }
+  robez->set_update_chunk_size(_update_chunk_size);
+  robez->set_hash_seed(_hash_fn.seed());
+
+  robez->set_allocated_embedding_block(
+      parametersToProto(name + "_embedding_block"));
+
+  if (with_optimizer && _optimizer) {
+    robez->set_allocated_embedding_block_optimizer(
+        optimizerToProto(name + "_embedding_block",
+                         _embedding_chunks_used.size(), _update_chunk_size));
+  }
+
+  robez->set_disable_sparse_parameter_updates(
+      _disable_sparse_parameter_updates);
+
+  return robez;
 }
 
 void EmbeddingLayer::buildLayerSummary(std::ostream& summary) const {

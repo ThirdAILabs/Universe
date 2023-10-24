@@ -1,0 +1,48 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "loss.proto";
+import "ops.proto";
+
+message Placeholder {
+  required string name = 1;
+  required uint64 dim = 2;
+}
+
+message Computation {
+  required string name = 1;
+  required string op = 2;
+  repeated string inputs = 3;
+}
+
+message ComputationGraph {
+  repeated Op ops = 1;
+
+  repeated Placeholder inputs = 2;
+  repeated Placeholder labels = 3;
+
+  repeated Computation computations = 4;
+
+  repeated Loss losses = 5;
+
+  repeated string outputs = 6;
+}
+
+message ParameterShardInfo {
+  required uint64 n_shards = 1;
+}
+
+message ModelMetadata {
+  required uint64 train_steps = 1;
+  required uint64 total_training_samples = 2;
+  required string uuid = 3;
+}
+
+message Model {
+  required ComputationGraph computation_graph = 1;
+
+  required ParameterShardInfo parameter_shard_info = 2;
+
+  required ModelMetadata metadata = 3;
+}

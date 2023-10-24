@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package proto.udt;
+
+import "featurizers.proto";
+import "classifier.proto";
+
+message UDTGraphClassifier {
+  required Classifier classifier = 1;
+  required GraphFeaturizer featurizer = 2;
+}

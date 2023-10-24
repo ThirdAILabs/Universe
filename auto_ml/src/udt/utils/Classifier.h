@@ -8,6 +8,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
+#include <proto/classifier.pb.h>
 #include <pybind11/pybind11.h>
 #include <memory>
 #include <optional>
@@ -20,6 +21,9 @@ using bolt::metrics::InputMetrics;
 class Classifier {
  public:
   Classifier(bolt::ModelPtr model, bool freeze_hash_tables);
+
+  explicit Classifier(const proto::udt::Classifier& classifier,
+                      bolt::ModelPtr model);
 
   static std::shared_ptr<Classifier> make(const bolt::ModelPtr& model,
                                           bool freeze_hash_tables) {
@@ -82,6 +86,13 @@ class Classifier {
 
   const auto& model() const { return _model; }
 
+  proto::udt::Classifier* toProto() const;
+
+  static auto fromProto(const proto::udt::Classifier& classifier,
+                        bolt::ModelPtr model) {
+    return std::make_shared<Classifier>(classifier, std::move(model));
+  }
+
  private:
   uint32_t predictedClass(const BoltVector& output);
 
@@ -92,12 +103,6 @@ class Classifier {
 
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
       const thirdai::data::LoaderPtr& dataset, const std::string& metric_name);
-
-  Classifier() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 
   bolt::ModelPtr _model;
   bolt::ComputationPtr _emb;

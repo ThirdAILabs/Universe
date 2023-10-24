@@ -1,6 +1,4 @@
 #include "Recurrence.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
@@ -38,6 +36,14 @@ static std::exception_ptr mismatchedRowSizeError(uint32_t source_row_size,
            << row_number << ".";
   return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
 }
+
+Recurrence::Recurrence(const proto::data::RecurrenceAugmentation& recurrence)
+    : _source_input_column(recurrence.source_input_column()),
+      _target_input_column(recurrence.target_input_column()),
+      _source_output_column(recurrence.source_output_column()),
+      _target_output_column(recurrence.target_output_column()),
+      _target_vocab_size(recurrence.target_vocab_size()),
+      _max_seq_len(recurrence.max_seq_len()) {}
 
 ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -153,16 +159,18 @@ uint32_t Recurrence::positionEncodedToken(uint32_t token,
   return std::min(position, _max_seq_len - 1) * totalVocabSize() + token;
 }
 
-template void Recurrence::serialize(cereal::BinaryInputArchive&);
-template void Recurrence::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* Recurrence::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* recurrence = transformation->mutable_recurrence_augmentation();
 
-template <class Archive>
-void Recurrence::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _source_input_column,
-          _target_input_column, _source_output_column, _target_output_column,
-          _target_vocab_size, _max_seq_len);
+  recurrence->set_source_input_column(_source_input_column);
+  recurrence->set_target_input_column(_target_input_column);
+  recurrence->set_source_output_column(_source_output_column);
+  recurrence->set_target_output_column(_target_output_column);
+  recurrence->set_target_vocab_size(_target_vocab_size);
+  recurrence->set_max_seq_len(_max_seq_len);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::Recurrence)

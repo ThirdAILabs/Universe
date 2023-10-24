@@ -11,6 +11,19 @@
 
 namespace thirdai::bolt {
 
+std::string nextCosineSimilarityName() {
+  static uint32_t constructed = 0;
+  return "cos_sim_" + std::to_string(++constructed);
+}
+
+CosineSimilarity::CosineSimilarity() : Op(nextCosineSimilarityName()) {}
+
+CosineSimilarity::CosineSimilarity(
+    const std::string& name, const proto::bolt::CosineSimilarity& cos_sim_proto)
+    : Op(name) {
+  (void)cos_sim_proto;
+}
+
 void CosineSimilarity::forward(const ComputationList& inputs, TensorPtr& output,
                                uint32_t index_in_batch, bool training) {
   (void)training;
@@ -86,6 +99,8 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
   return 1;
 }
 
+void CosineSimilarity::initOptimizer() {}
+
 void CosineSimilarity::summary(std::ostream& summary,
                                const ComputationList& inputs,
                                const Computation* output) const {
@@ -93,7 +108,16 @@ void CosineSimilarity::summary(std::ostream& summary,
           << ", " << inputs.at(1)->name() << " -> " << output->name();
 }
 
-ComputationPtr CosineSimilarity::apply(ComputationPtr lhs, ComputationPtr rhs) {
+ComputationPtr CosineSimilarity::apply(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("CosineSimilarity op expects two inputs.");
+  }
+
+  return applyBinary(inputs.at(0), inputs.at(1));
+}
+
+ComputationPtr CosineSimilarity::applyBinary(ComputationPtr lhs,
+                                             ComputationPtr rhs) {
   if (lhs->dim() != rhs->dim()) {
     throw std::invalid_argument(
         "Cannot take cosine similarity between tensors with different "
@@ -102,6 +126,30 @@ ComputationPtr CosineSimilarity::apply(ComputationPtr lhs, ComputationPtr rhs) {
 
   return Computation::make(shared_from_this(),
                            {std::move(lhs), std::move(rhs)});
+}
+
+proto::bolt::Op* CosineSimilarity::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  proto::bolt::Op* op = new proto::bolt::Op();
+
+  op->set_name(name());
+  op->mutable_cosine_similarity();
+
+  return op;
+}
+
+SerializableParameters CosineSimilarity::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
+std::shared_ptr<CosineSimilarity> CosineSimilarity::fromProto(
+    const std::string& name,
+    const proto::bolt::CosineSimilarity& cos_sim_proto) {
+  return std::shared_ptr<CosineSimilarity>(
+      new CosineSimilarity(name, cos_sim_proto));
 }
 
 float CosineSimilarity::magnitude(const BoltVector& a) {

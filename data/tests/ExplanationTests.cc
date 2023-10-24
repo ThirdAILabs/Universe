@@ -10,6 +10,7 @@
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
+#include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/TransformationList.h>
@@ -216,6 +217,47 @@ TEST(ExplanationTests, StringIDLookup) {
   ASSERT_EQ(explanations.explain("bbb", 0), "item 'x' from column 'aaa'");
   ASSERT_EQ(explanations.explain("bbb", 1), "item 'y' from column 'aaa'");
   ASSERT_EQ(explanations.explain("bbb", 2), "item 'z' from column 'aaa'");
+}
+
+void testTabularExplanations(bool pairgrams,
+                             const std::set<std::string>& expected) {
+  Tabular tabular({NumericalColumn("bb", 0, 2, 2)},
+                  {CategoricalColumn("aa"), CategoricalColumn("cc")}, "dd",
+                  /* cross_column_pairgrams= */ pairgrams);
+
+  ColumnMap columns({
+      {"aa", ValueColumn<std::string>::make({"apple"})},
+      {"bb", ValueColumn<std::string>::make({"1.7"})},
+      {"cc", ValueColumn<std::string>::make({"88"})},
+  });
+
+  State state;
+  auto explanations = tabular.explain(columns, state);
+
+  compareAllExplanations(explanations, "dd", expected);
+}
+
+TEST(ExplanationTests, TabularWithPairgrams) {
+  std::set<std::string> expected_msgs = {
+      "category 'apple' from column 'aa'",
+      "decimal 1.7 from column 'bb' and category 'apple' from column 'aa'",
+      "decimal 1.7 from column 'bb'",
+      "category 'apple' from column 'aa' and category '88' from column 'cc'",
+      "decimal 1.7 from column 'bb' and category '88' from column 'cc'",
+      "category '88' from column 'cc'",
+  };
+
+  testTabularExplanations(/* pairgrams= */ true, expected_msgs);
+}
+
+TEST(ExplanationTests, TabularWithoutPairgrams) {
+  std::set<std::string> expected_msgs = {
+      "category 'apple' from column 'aa'",
+      "decimal 1.7 from column 'bb'",
+      "category '88' from column 'cc'",
+  };
+
+  testTabularExplanations(/* pairgrams= */ false, expected_msgs);
 }
 
 TEST(ExplanationTests, TextTokenizer) {

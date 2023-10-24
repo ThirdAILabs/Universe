@@ -27,6 +27,8 @@ class CosineSimilarity final
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
+  void initOptimizer() final;
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -38,10 +40,24 @@ class CosineSimilarity final
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
-  ComputationPtr apply(ComputationPtr lhs, ComputationPtr rhs);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyBinary(ComputationPtr lhs, ComputationPtr rhs);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<CosineSimilarity> fromProto(
+      const std::string& name,
+      const proto::bolt::CosineSimilarity& cos_sim_proto);
 
  private:
-  CosineSimilarity() {}
+  CosineSimilarity();
+
+  CosineSimilarity(const std::string& name,
+                   const proto::bolt::CosineSimilarity& cos_sim_proto);
 
   friend class cereal::access;
   template <class Archive>

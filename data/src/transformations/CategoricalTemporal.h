@@ -27,10 +27,15 @@ class CategoricalTemporal final : public Transformation {
         include_current_row, time_lag);
   }
 
+  explicit CategoricalTemporal(
+      const proto::data::CategoricalTemporal& cat_temp);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  proto::data::Transformation* toProto() const final;
 
  private:
   ArrayColumnBasePtr<uint32_t> getItemColumn(const ColumnMap& columns) const {
@@ -50,12 +55,6 @@ class CategoricalTemporal final : public Transformation {
   bool _should_update_history;
   bool _include_current_row;
   int64_t _time_lag;
-
-  CategoricalTemporal() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

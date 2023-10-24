@@ -46,7 +46,7 @@ TEST(TrainerTest, Training) {
           /* dim= */ N_CLASSES, /* input_dim= */ N_CLASSES, /* sparsity= */ 1.0,
           /* activation= */ "softmax",
           /* sampling=*/nullptr)
-          ->apply(input);
+          ->applyUnary(input);
 
   auto label = Input::make(/* dim= */ N_CLASSES);
   auto loss = CategoricalCrossEntropy::make(output, label);

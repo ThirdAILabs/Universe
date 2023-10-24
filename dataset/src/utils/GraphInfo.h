@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <proto/state.pb.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -21,6 +22,8 @@ class GraphInfo {
  public:
   explicit GraphInfo(uint64_t feature_dim) : _feature_dim(feature_dim) {}
 
+  explicit GraphInfo(const proto::data::GraphInfo& graph);
+
   void clear();
 
   const std::vector<float>& featureVector(uint64_t node_id) const;
@@ -31,6 +34,16 @@ class GraphInfo {
                   std::vector<uint64_t> neighbors);
 
   uint64_t featureDim() const { return _feature_dim; }
+
+  const auto& nodeFeatures() const { return _node_id_to_feature_vector; }
+
+  const auto& neighbors() const { return _node_id_to_neighbors; }
+
+  proto::data::GraphInfo* toProto() const;
+
+  static auto fromProto(const proto::data::GraphInfo& graph) {
+    return std::make_shared<GraphInfo>(graph);
+  }
 
  private:
   uint64_t _feature_dim;

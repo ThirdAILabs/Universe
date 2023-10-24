@@ -17,7 +17,7 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     return std::shared_ptr<Noop>(new Noop(std::move(name), dim, num_nonzeros));
   }
 
-  ComputationPtr apply(const ComputationList& inputs) {
+  ComputationPtr apply(const ComputationList& inputs) final {
     return Computation::make(shared_from_this(), inputs);
   }
 
@@ -52,6 +52,8 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     return _dim;
   }
 
+  void initOptimizer() final {}
+
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
@@ -65,6 +67,17 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     (void)inputs;
     (void)output;
     summary << "Noop";
+  }
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final {
+    (void)with_optimizer;
+    return nullptr;
+  }
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final {
+    (void)with_optimizer;
+    return {};
   }
 
   void updateNumNonzeros(uint32_t new_num_nonzeros) {
@@ -97,6 +110,8 @@ class MockLoss final : public Loss {
   ComputationList outputsUsed() const final { return _outputs_used; }
 
   ComputationList labels() const final { return {}; }
+
+  proto::bolt::Loss* toProto() const final { return nullptr; }
 
  private:
   ComputationList _outputs_used;

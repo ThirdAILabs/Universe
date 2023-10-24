@@ -31,7 +31,7 @@ ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
         /* reconstruct_hash_functions= */ 20);
 
     input_dim_to_last_layer = dim;
-    input_to_output_layer = hidden->apply(input);
+    input_to_output_layer = hidden->applyUnary(input);
   } else {
     input_dim_to_last_layer = n_classes;
     input_to_output_layer = input;
@@ -46,7 +46,7 @@ ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
         /* activation*/ "softmax",
         /* sampling= */ nullptr);
 
-    outputs.push_back(output->apply(input_to_output_layer));
+    outputs.push_back(output->applyUnary(input_to_output_layer));
 
     auto label = Input::make(/* dim= */ n_classes);
     losses.push_back(CategoricalCrossEntropy::make(outputs.back(), label));
@@ -185,7 +185,7 @@ TEST(FullyConnectedModelTests, SparseOutput) {
                     /* sparsity= */ 1.0,
                     /* activation*/ "relu",
                     /* sampling= */ nullptr)
-                    ->apply(input);
+                    ->applyUnary(input);
 
   auto output =
       FullyConnected::make(
@@ -198,7 +198,7 @@ TEST(FullyConnectedModelTests, SparseOutput) {
                                        /* experimental_autotune=*/false),
           /* use_bias= */ true, /* rebuild_hash_tables= */ 4,
           /* reconstruct_hash_functions= */ 20)
-          ->apply(hidden);
+          ->applyUnary(hidden);
 
   auto label = Input::make(/* dim= */ N_CLASSES);
   auto model = Model::make(

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <proto/sequence.pb.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -28,7 +29,11 @@ class CountTokens final : public Transformation {
                                          std::move(output_column), max_tokens);
   }
 
+  explicit CountTokens(const proto::data::CountTokens& count_tokens);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  proto::data::Transformation* toProto() const final;
 
  private:
   std::string _input_column;

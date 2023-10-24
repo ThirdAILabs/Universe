@@ -2,6 +2,7 @@
 
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
+#include <proto/recurrence.pb.h>
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -60,7 +61,11 @@ class Recurrence final : public Transformation {
         target_vocab_size, max_sequence_length);
   }
 
+  explicit Recurrence(const proto::data::RecurrenceAugmentation& recurrence);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  proto::data::Transformation* toProto() const final;
 
   bool isEOS(uint32_t token) const;
 
@@ -87,12 +92,6 @@ class Recurrence final : public Transformation {
   std::string _target_output_column;
   size_t _target_vocab_size;
   size_t _max_seq_len;
-
-  Recurrence() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

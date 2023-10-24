@@ -3,6 +3,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <proto/hashtable.pb.h>
 #include <cassert>
 #include <limits>
 #include <memory>
@@ -27,6 +28,18 @@ SampledHashTable::SampledHashTable(uint64_t num_tables, uint64_t reservoir_size,
     _gen_rand[i] = generator();
   }
 }
+
+SampledHashTable::SampledHashTable(
+    const proto::hashtable::SampledHashTable& hashtable_proto)
+    : _num_tables(hashtable_proto.num_tables()),
+      _reservoir_size(hashtable_proto.reservoir_size()),
+      _range(hashtable_proto.range()),
+      _max_rand(hashtable_proto.gen_rand_size()),
+      _data(hashtable_proto.data().begin(), hashtable_proto.data().end()),
+      _counters(hashtable_proto.counters().begin(),
+                hashtable_proto.counters().end()),
+      _gen_rand(hashtable_proto.gen_rand().begin(),
+                hashtable_proto.gen_rand().end()) {}
 
 void SampledHashTable::insert(uint64_t n, const uint32_t* labels,
                               const uint32_t* hashes) {
@@ -188,6 +201,21 @@ uint32_t SampledHashTable::maxElement() const {
   }
 
   return max_elem;
+}
+
+proto::hashtable::SampledHashTable* SampledHashTable::toProto() const {
+  proto::hashtable::SampledHashTable* hashtable =
+      new proto::hashtable::SampledHashTable();
+
+  hashtable->set_num_tables(_num_tables);
+  hashtable->set_reservoir_size(_reservoir_size);
+  hashtable->set_range(_range);
+
+  *hashtable->mutable_data() = {_data.begin(), _data.end()};
+  *hashtable->mutable_counters() = {_counters.begin(), _counters.end()};
+  *hashtable->mutable_gen_rand() = {_gen_rand.begin(), _gen_rand.end()};
+
+  return hashtable;
 }
 
 void SampledHashTable::save(const std::string& filename) const {

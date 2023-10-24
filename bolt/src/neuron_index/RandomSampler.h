@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/neuron_index/NeuronIndex.h>
+#include <proto/neuron_index.pb.h>
 #include <random>
 
 namespace thirdai::bolt {
@@ -10,8 +11,14 @@ class RandomSampler final : public NeuronIndex {
  public:
   explicit RandomSampler(uint32_t layer_dim);
 
+  explicit RandomSampler(const proto::bolt::RandomNeuronIndex& rand_proto);
+
   static auto make(uint32_t layer_dim) {
     return std::make_shared<RandomSampler>(layer_dim);
+  }
+
+  static auto fromProto(const proto::bolt::RandomNeuronIndex& rand_proto) {
+    return std::make_shared<RandomSampler>(rand_proto);
   }
 
   void query(const BoltVector& input, BoltVector& output,
@@ -33,6 +40,12 @@ class RandomSampler final : public NeuronIndex {
   }
 
   void summarize(std::ostream& summary) const final { summary << "random"; }
+
+  proto::bolt::NeuronIndex* toProto() const;
+
+  static auto cast(const NeuronIndexPtr& index) {
+    return std::dynamic_pointer_cast<RandomSampler>(index);
+  }
 
  private:
   std::vector<uint32_t> _rand_neurons;

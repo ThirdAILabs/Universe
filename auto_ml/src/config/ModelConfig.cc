@@ -111,7 +111,7 @@ bolt::ComputationPtr buildFullyConnected(
   auto layer = bolt::FullyConnected::make(
       dim, predecessor->dim(), sparsity, activation, sampling_config, use_bias);
 
-  return layer->apply(predecessor);
+  return layer->applyUnary(predecessor);
 }
 
 /**
@@ -139,7 +139,7 @@ bolt::ComputationPtr buildRobeZ(const json& config, const ArgumentMap& args,
   auto layer = bolt::RobeZ::make(num_lookups, lookup_size, log_block_size,
                                  reduction, num_tokens_per_input);
 
-  return layer->apply(getPredecessor(config, created_comps));
+  return layer->applyUnary(getPredecessor(config, created_comps));
 }
 
 bolt::ComputationPtr buildEmbedding(const json& config, const ArgumentMap& args,
@@ -158,7 +158,7 @@ bolt::ComputationPtr buildEmbedding(const json& config, const ArgumentMap& args,
   auto layer =
       bolt::Embedding::make(dim, predecessor->dim(), activation, use_bias);
 
-  return layer->apply(predecessor);
+  return layer->applyUnary(predecessor);
 }
 
 bolt::ComputationPtr buildLayerNorm(const json& config,
@@ -168,7 +168,7 @@ bolt::ComputationPtr buildLayerNorm(const json& config,
 
   auto layer = bolt::LayerNorm::make();
 
-  return layer->apply(predecessor);
+  return layer->applyUnary(predecessor);
 }
 
 bolt::ComputationPtr buildActivation(const json& config,
@@ -181,10 +181,10 @@ bolt::ComputationPtr buildActivation(const json& config,
   std::string type = text::lower(getString(config, "activation"));
 
   if (type == "relu") {
-    return bolt::Relu::make()->apply(predecessor);
+    return bolt::Relu::make()->applyUnary(predecessor);
   }
   if (type == "tanh") {
-    return bolt::Tanh::make()->apply(predecessor);
+    return bolt::Tanh::make()->applyUnary(predecessor);
   }
 
   throw std::invalid_argument("Invalid activation type '" + type +

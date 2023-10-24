@@ -3,6 +3,7 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <proto/hashing.pb.h>
 #include <algorithm>
 #include <limits>
 #include <numeric>
@@ -58,6 +59,20 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
 
   _rand_double_hash_seed = dis(gen);
 }
+
+DWTAHashFunction::DWTAHashFunction(const proto::hashing::DWTA& dwta_proto)
+    : HashFunction(
+          dwta_proto.num_tables(),
+          1 << (dwta_proto.hashes_per_table() * dwta_proto.log_binsize())),
+      _hashes_per_table(dwta_proto.hashes_per_table()),
+      _num_hashes(dwta_proto.num_tables() * dwta_proto.hashes_per_table()),
+      _dim(dwta_proto.input_dim()),
+      _binsize(1 << dwta_proto.log_binsize()),
+      _log_binsize(dwta_proto.log_binsize()),
+      _permute(dwta_proto.permutations()),
+      _bin_map(dwta_proto.bin_map().begin(), dwta_proto.bin_map().end()),
+      _positions(dwta_proto.positions().begin(), dwta_proto.positions().end()),
+      _rand_double_hash_seed(dwta_proto.random_double_hash_seed()) {}
 
 void DWTAHashFunction::hashSingleDense(const float* values, uint32_t dim,
                                        uint32_t* output) const {
@@ -138,6 +153,24 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     }
     final_hashes[i] = index;
   }
+}
+
+proto::hashing::HashFunction* DWTAHashFunction::toProto() const {
+  proto::hashing::HashFunction* hash_fn = new proto::hashing::HashFunction();
+
+  auto* dwta = hash_fn->mutable_dwta();
+  dwta->set_num_tables(_num_tables);
+  dwta->set_hashes_per_table(_hashes_per_table);
+  dwta->set_log_binsize(_log_binsize);
+  dwta->set_input_dim(_dim);
+  dwta->set_permutations(_permute);
+
+  *dwta->mutable_bin_map() = {_bin_map.begin(), _bin_map.end()};
+  *dwta->mutable_positions() = {_positions.begin(), _positions.end()};
+
+  dwta->set_random_double_hash_seed(_rand_double_hash_seed);
+
+  return hash_fn;
 }
 
 void DWTAHashFunction::save(const std::string& filename) const {
