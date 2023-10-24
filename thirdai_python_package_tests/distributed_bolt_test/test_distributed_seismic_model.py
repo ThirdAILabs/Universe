@@ -5,68 +5,17 @@ import numpy as np
 import pytest
 from distributed_utils import setup_ray
 from ray.train import RunConfig
+from seismic_dataset_fixtures import classification_dataset, subcube_dataset
 from thirdai import bolt
 
-SUBCUBE_SHAPE = (64, 64, 64)
-PATCH_SHAPE = (16, 16, 16)
 
-
-def create_subcubes(volume, volume_name, out_dir, shape, stride):
-    x_dim, y_dim, z_dim = volume.shape
-
-    for i in range(0, x_dim, stride[0]):
-        for j in range(0, y_dim, stride[1]):
-            for k in range(0, z_dim, stride[2]):
-                if (
-                    (i + shape[0]) > x_dim
-                    or (j + shape[1]) > y_dim
-                    or (k + shape[2]) > z_dim
-                ):
-                    continue
-
-                subcube = volume[i : i + shape[0], j : j + shape[1], k : k + shape[2]]
-                subcube_name = f"{volume_name}_{i}_{j}_{k}"
-
-                np.save(os.path.join(out_dir, subcube_name), subcube)
-
-
-@pytest.fixture
-def subcube_directory():
-    subcube_dir = "./subcubes"
-    os.makedirs(subcube_dir, exist_ok=True)
-
-    volume = np.random.rand(130, 140, 150).astype(np.float32)
-
-    create_subcubes(
-        volume=volume,
-        volume_name="abc",
-        out_dir=subcube_dir,
-        shape=SUBCUBE_SHAPE,
-        stride=(32, 32, 32),
-    )
-
-    yield subcube_dir
-
-    shutil.rmtree(subcube_dir)
-
-
-@pytest.mark.distributed
-def test_distributed_seismic_model(subcube_directory):
-    emb_dim = 256
-    model = bolt.seismic.SeismicEmbedding(
-        subcube_shape=SUBCUBE_SHAPE[0],
-        patch_shape=PATCH_SHAPE[0],
-        embedding_dim=emb_dim,
-        size="small",
-        max_pool=2,
-    )
-
+def train_distributed_seismic(model, data_path, subcube_shape, emb_dim):
     scaling_config = setup_ray()
 
     log_file = "seismic_log"
     checkpoint_dir = "seismic_checkpoints"
     model.train_distributed(
-        data_path=subcube_directory,
+        data_path=data_path,
         learning_rate=0.0001,
         epochs=2,
         batch_size=8,
@@ -77,7 +26,7 @@ def test_distributed_seismic_model(subcube_directory):
     )
 
     n_cubes_to_embed = 3
-    subcubes_to_embed = np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(
+    subcubes_to_embed = np.random.rand(n_cubes_to_embed, *subcube_shape).astype(
         np.float32
     )
 
@@ -92,3 +41,45 @@ def test_distributed_seismic_model(subcube_directory):
     shutil.rmtree(checkpoint_dir)
     os.remove(log_file)
     os.remove(log_file + ".worker_1")
+
+
+@pytest.mark.distributed
+def test_distributed_seismic_embedding_model(subcube_dataset):
+    subcube_directory, subcube_shape, patch_shape = subcube_dataset
+    emb_dim = 256
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
+    train_distributed_seismic(
+        model=model,
+        data_path=subcube_directory,
+        subcube_shape=subcube_shape,
+        emb_dim=emb_dim,
+    )
+
+
+@pytest.mark.distributed
+def test_distributed_seismic_classification(classification_dataset):
+    sample_index_file, subcube_shape, patch_shape, n_classes = classification_dataset
+    emb_dim = 256
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
+    model = bolt.seismic.SeismicClassifier(model, n_classes=n_classes)
+
+    train_distributed_seismic(
+        model=model,
+        data_path=sample_index_file,
+        subcube_shape=subcube_shape,
+        emb_dim=emb_dim,
+    )

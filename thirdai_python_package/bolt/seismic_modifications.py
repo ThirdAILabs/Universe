@@ -58,9 +58,9 @@ class ClassificationSubcubeDataset(Dataset):
         return len(self.sample_index)
 
     def __getitem__(self, index):
-        subcube_path = self.sample_index["subcube"][index]
+        subcube_path = self.sample_index["subcube"].iloc[index]
         subcube = np.load(subcube_path).astype(np.float32)
-        labels = self.sample_index["labels"][index]
+        labels = self.sample_index["labels"].iloc[index]
         return subcube, labels
 
 
@@ -160,6 +160,8 @@ def train_seismic_model(
 ):
     callbacks = []
     if checkpoint_dir:
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
         callbacks = [
             bolt.seismic.Checkpoint(
                 seismic_model=seismic_model,
@@ -303,7 +305,12 @@ def train_classifier(
         )
     elif sample_index["labels"].dtype == int:
         sample_index["labels"] = sample_index["labels"].apply(lambda x: [x])
-    sample_index["subcube"] = sample_index["subcube"].apply(os.path.abspath)
+
+    if comm:
+        if not sample_index["subcube"].apply(os.path.isabs).all():
+            raise ValueError(
+                "Subcube files in sample index must be specified as absolute paths for distributed training so that they can be accessed from each worker."
+            )
 
     if comm:
         # For distributed training give each worker a seperate partition of the subcubes.
@@ -405,9 +412,6 @@ def train_distributed(
         license_state
     )
     config["licensing_lambda"] = licensing_lambda
-
-    if not os.path.exists(checkpoint_dir):
-        os.makedirs(checkpoint_dir)
 
     trainer = dist.BoltTrainer(
         train_loop_per_worker=train_loop_per_worker,
