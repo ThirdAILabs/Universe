@@ -10,6 +10,7 @@
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/DyadicInterval.h>
+#include <data/src/transformations/DyadicIntervalClassification.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
@@ -405,6 +406,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
+
+  py::class_<DyadicIntervalClassification, Transformation,
+             std::shared_ptr<DyadicIntervalClassification>>(
+      transformations_submodule, "DyadicIntervalClassification")
+      .def(py::init<std::string, std::optional<std::string>, std::string,
+                    std::string, size_t, uint32_t>(),
+           py::arg("input_column"), py::arg("prompt_column") = std::nullopt,
+           py::arg("label_column"), py::arg("output_interval_prefix"),
+           py::arg("n_intervals"), py::arg("n_classes"));
 #endif
 }
 

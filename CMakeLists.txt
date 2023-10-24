@@ -423,6 +423,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/DyadicIntervalClassification.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc

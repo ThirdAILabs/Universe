@@ -214,3 +214,55 @@ def test_dyadic_interval_inference_bidirectional():
 
     interval_4 = [[0, 1, 2, 3], [5, 6, 7], [8]]
     assert columns["interval_from_start_4"].data() == interval_4
+
+
+@pytest.mark.unit
+def test_dyadic_interval_classification_augmentation():
+    columns = data.ColumnMap(
+        {
+            "text": data.columns.TokenArrayColumn(
+                [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [20, 21, 22, 23, 24, 25]],
+                dim=100,
+            ),
+            "prompt": data.columns.TokenArrayColumn(
+                [[19, 20], [51, 52]],
+                dim=100,
+            ),
+            "label": data.columns.TokenColumn([0, 1], dim=2),
+        }
+    )
+
+    transform = data.transformations.DyadicIntervalClassification(
+        input_column="text",
+        prompt_column="prompt",
+        label_column="label",
+        output_interval_prefix="interval_",
+        n_intervals=3,
+        n_classes=2,
+    )
+
+    columns = transform(columns)
+
+    prompt = [
+        [19, 20],
+        [51, 52],
+    ]
+    assert columns["prompt"].data() == prompt
+
+    target = [0, 1]
+    assert columns["label"].data() == target
+
+    interval_1 = [[11], [25]]
+    assert columns["interval_from_end_1"].data() == interval_1
+
+    interval_2 = [
+        [10, 11],
+        [24, 25],
+    ]
+    assert columns["interval_from_end_2"].data() == interval_2
+
+    interval_4 = [
+        [8, 9, 10, 11],
+        [22, 23, 24, 25],
+    ]
+    assert columns["interval_from_end_4"].data() == interval_4
