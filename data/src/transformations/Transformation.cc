@@ -11,6 +11,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
 #include <data/src/transformations/StringCast.h>
@@ -20,7 +21,6 @@
 #include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <proto/sequence.pb.h>
 #include <proto/string_cast.pb.h>
 #include <proto/transformations.pb.h>
@@ -113,8 +113,8 @@ TransformationPtr Transformation::fromProto(
     case proto::data::Transformation::kTextTokenizer:
       return std::make_shared<TextTokenizer>(transformation.text_tokenizer());
 
-    case proto::data::Transformation::kList:
-      return std::make_shared<TransformationList>(transformation.list());
+    case proto::data::Transformation::kPipeline:
+      return std::make_shared<Pipeline>(transformation.pipeline());
 
     default:
       throw std::runtime_error("Invalid transformation type in fromProto.");

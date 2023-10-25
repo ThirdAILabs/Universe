@@ -4,7 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <utility>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 GraphInfo::GraphInfo(const proto::data::GraphInfo& graph)
     : _feature_dim(graph.feature_dim()) {
@@ -83,4 +83,4 @@ void GraphInfo::serialize(Archive& archive) {
   archive(_feature_dim, _node_id_to_feature_vector, _node_id_to_neighbors);
 }
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

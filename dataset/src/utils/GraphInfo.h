@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 class GraphConstructionError : public std::runtime_error {
  public:
@@ -60,4 +60,4 @@ class GraphInfo {
 
 using GraphInfoPtr = std::shared_ptr<GraphInfo>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

@@ -1,17 +1,16 @@
-#include "TransformationList.h"
+#include "Pipeline.h"
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
 
-TransformationList::TransformationList(
-    const proto::data::Transformation_List& t_list) {
-  for (const auto& transformation : t_list.transformations()) {
+Pipeline::Pipeline(const proto::data::Transformation_Pipeline& pipeline) {
+  for (const auto& transformation : pipeline.transformations()) {
     _transformations.push_back(Transformation::fromProto(transformation));
   }
 }
 
-void TransformationList::buildExplanationMap(
-    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
+                                   ExplanationMap& explanations) const {
   ColumnMap last_input = input;
 
   for (const auto& transformation : _transformations) {
@@ -22,13 +21,14 @@ void TransformationList::buildExplanationMap(
   }
 }
 
-proto::data::Transformation* TransformationList::toProto() const {
+proto::data::Transformation* Pipeline::toProto() const {
   auto* transformation = new proto::data::Transformation();
 
-  auto* list = transformation->mutable_list();
+  auto* pipeline = transformation->mutable_pipeline();
 
   for (const auto& transformation : _transformations) {
-    list->mutable_transformations()->AddAllocated(transformation->toProto());
+    pipeline->mutable_transformations()->AddAllocated(
+        transformation->toProto());
   }
 
   return transformation;

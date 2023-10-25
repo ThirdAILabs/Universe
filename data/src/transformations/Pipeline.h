@@ -10,15 +10,18 @@
 
 namespace thirdai::data {
 
-class TransformationList final : public Transformation {
+class Pipeline;
+using PipelinePtr = std::shared_ptr<Pipeline>;
+
+class Pipeline final : public Transformation {
  public:
-  explicit TransformationList(std::vector<TransformationPtr> transformations)
+  explicit Pipeline(std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
 
-  explicit TransformationList(const proto::data::Transformation_List& t_list);
+  explicit Pipeline(const proto::data::Transformation_Pipeline& pipeline);
 
-  static auto make(std::vector<TransformationPtr> transformations) {
-    return std::make_shared<TransformationList>(std::move(transformations));
+  static auto make(std::vector<TransformationPtr> transformations = {}) {
+    return std::make_shared<Pipeline>(std::move(transformations));
   }
 
   ColumnMap apply(ColumnMap columns, State& state) const final {
@@ -31,6 +34,12 @@ class TransformationList final : public Transformation {
     return columns;
   }
 
+  PipelinePtr then(TransformationPtr transformation) const {
+    std::vector<TransformationPtr> transformations = _transformations;
+    transformations.emplace_back(std::move(transformation));
+    return Pipeline::make(std::move(transformations));
+  }
+
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
@@ -41,7 +50,5 @@ class TransformationList final : public Transformation {
  private:
   std::vector<TransformationPtr> _transformations;
 };
-
-using TransformationListPtr = std::shared_ptr<TransformationList>;
 
 }  // namespace thirdai::data

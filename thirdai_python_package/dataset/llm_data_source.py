@@ -7,6 +7,8 @@ def tokenize_and_dump_json(tokenizer, json_obj):
     json_obj["target"] = tokenize_text(tokenizer, json_obj["target"])
     if "context" in json_obj:
         json_obj["context"] = tokenize_text(tokenizer, json_obj["context"])
+    if "prompt" in json_obj:
+        json_obj["prompt"] = tokenize_text(tokenizer, json_obj["prompt"])
     return json.dumps(json_obj)
 
 

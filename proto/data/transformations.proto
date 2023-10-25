@@ -25,7 +25,7 @@ message Transformation {
   // We use a nested message here because the List message needs to know about
   // the Transformation message since it contains them, and the Transformation
   // message needs to contain a List message as an option.
-  message List {
+  message Pipeline {
     repeated Transformation transformations = 1;
   }
 
@@ -53,6 +53,6 @@ message Transformation {
     StringIDLookup string_id_lookup = 21;
     Tabular tabular = 22;
     TextTokenizer text_tokenizer = 23;
-    List list = 24;
+    Pipeline pipeline = 24;
   }
 }

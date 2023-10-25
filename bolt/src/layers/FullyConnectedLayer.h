@@ -23,10 +23,12 @@ class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
 class FullyConnected;
+class PatchEmbedding;
 
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
   friend class FullyConnected;
+  friend class PatchEmbedding;
 
  public:
   FullyConnectedLayer() {}

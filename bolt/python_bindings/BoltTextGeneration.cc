@@ -20,7 +20,8 @@ void addTextGenerationModels(py::module_& module) {
 
   py::class_<DyadicModel, GenerativeBackend, std::shared_ptr<DyadicModel>>(
       module, "DyadicModel")
-      .def(py::init<bolt::ModelPtr>(), py::arg("model"));
+      .def(py::init<bolt::ModelPtr, bool>(), py::arg("model"),
+           py::arg("is_bidirectional") = false);
 
   py::class_<ContextualModel, GenerativeBackend,
              std::shared_ptr<ContextualModel>>(module, "ContextualModel")
@@ -45,12 +46,14 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("punctuation_repeat_threshold") = 0.8)
 #endif
       .def("generate", &GenerativeModel::generate, py::arg("input_tokens"),
+           py::arg("prompt") = std::vector<std::uint32_t>{},
            py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
       .def("streaming_generate", &GenerativeModel::streamingGenerate,
-           py::arg("input_tokens"), py::arg("prediction_chunk_size"),
-           py::arg("max_predictions"), py::arg("beam_width"),
-           py::arg("temperature") = std::nullopt)
+           py::arg("input_tokens"),
+           py::arg("prompt") = std::vector<std::uint32_t>{},
+           py::arg("prediction_chunk_size"), py::arg("max_predictions"),
+           py::arg("beam_width"), py::arg("temperature") = std::nullopt)
       .def("train", &GenerativeModel::train, py::arg("train_data"),
            py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,
            py::arg("batch_size") = 10000,

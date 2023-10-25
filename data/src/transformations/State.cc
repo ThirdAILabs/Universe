@@ -55,7 +55,7 @@ State::State(const proto::data::State& state_proto) {
   }
 
   if (state_proto.has_graph()) {
-    _graph = automl::data::GraphInfo::fromProto(state_proto.graph());
+    _graph = automl::GraphInfo::fromProto(state_proto.graph());
   }
 }
 

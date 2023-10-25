@@ -8,6 +8,7 @@ import "fully_connected.proto";
 import "embedding.proto";
 import "robez.proto";
 import "activation.proto";
+import "patch_ops.proto";
 
 message LayerNorm {
   required Parameter gamma = 1;
@@ -39,5 +40,7 @@ message Op {
     Activation activation = 7;
     DotProduct dot_product = 8;
     CosineSimilarity cosine_similarity = 9;
+    PatchEmbedding patch_emb = 10;
+    PatchSum patch_sum = 11;
   }
 }

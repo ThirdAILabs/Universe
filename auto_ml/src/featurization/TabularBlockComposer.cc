@@ -8,7 +8,7 @@
 #include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 namespace {
 
@@ -310,4 +310,4 @@ dataset::BlockPtr makeTemporalNumericalBlock(
 
 }  // namespace
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

@@ -130,7 +130,10 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
+bool hasPrompt(const std::vector<uint32_t>& dims) { return dims.size() <= 3; }
+
 bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
+    const std::vector<uint32_t>& prompt,
     const std::vector<std::vector<uint32_t>>& tokens,
     const std::vector<uint32_t>& dims) const {
   std::vector<BoltVector> lrc;
@@ -139,16 +142,24 @@ bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
   irc.reserve(tokens.size());
   std::vector<BoltVector> src;
   src.reserve(tokens.size());
+  std::vector<BoltVector> prompts;
+  prompts.reserve(tokens.size());
 
   for (const auto& sample : tokens) {
     lrc.emplace_back(_context_featurizer.lrcContext(sample));
     irc.emplace_back(_context_featurizer.ircContext(sample));
     src.emplace_back(_context_featurizer.srcContext(sample));
+    prompts.emplace_back(promptContext(prompt));
   }
-
+  if (hasPrompt(dims)) {
+    return bolt::convertBatch(
+        {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
+         BoltBatch(std::move(src))},
+        dims);
+  }
   return bolt::convertBatch(
-      {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
-       BoltBatch(std::move(src))},
+      {BoltBatch(std::move(prompts)), BoltBatch(std::move(lrc)),
+       BoltBatch(std::move(irc)), BoltBatch(std::move(src))},
       dims);
 }
 

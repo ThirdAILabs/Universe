@@ -2,6 +2,7 @@
 #include <bolt/src/utils/Timer.h>
 #include <data/src/TensorConversion.h>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -33,10 +34,7 @@ Loader::Loader(ColumnMapIteratorPtr data_iterator,
   recordReturnedColumns(_model_label_columns);
 }
 
-std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
-  logLoadStart();
-  bolt::utils::Timer timer;
-
+std::optional<ColumnMap> Loader::nextColumnMap(size_t max_batches) {
   auto [num_rows_to_load, num_rows_to_return] = determineLoadSize(max_batches);
 
   ColumnMap loaded_rows = std::move(_shuffle_buffer);
@@ -60,8 +58,6 @@ std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
   }
 
   if (loaded_rows.numRows() == 0) {
-    timer.stop();
-    logLoadEnd(/* vectors= */ 0, /* batches= */ 0, /* time= */ timer.seconds());
     return std::nullopt;
   }
 
@@ -74,11 +70,26 @@ std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
 
   _shuffle_buffer = std::move(new_buffer);
 
-  auto inputs = toTensorBatches(dataset, _model_input_columns, _batch_size);
-  auto labels = toTensorBatches(dataset, _model_label_columns, _batch_size);
+  return std::make_optional(std::move(dataset));
+}
+
+std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
+  logLoadStart();
+  bolt::utils::Timer timer;
+
+  auto dataset = nextColumnMap(max_batches);
+
+  if (!dataset) {
+    timer.stop();
+    logLoadEnd(/* vectors= */ 0, /* batches= */ 0, /* time= */ timer.seconds());
+    return std::nullopt;
+  }
+
+  auto inputs = toTensorBatches(*dataset, _model_input_columns, _batch_size);
+  auto labels = toTensorBatches(*dataset, _model_label_columns, _batch_size);
 
   timer.stop();
-  logLoadEnd(dataset.numRows(), inputs.size(), timer.seconds());
+  logLoadEnd(dataset->numRows(), inputs.size(), timer.seconds());
 
   return std::make_pair(std::move(inputs), std::move(labels));
 }

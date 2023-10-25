@@ -6,6 +6,8 @@
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
+#include <bolt/src/nn/ops/PatchEmbedding.h>
+#include <bolt/src/nn/ops/PatchSum.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <stdexcept>
 
@@ -41,6 +43,12 @@ std::shared_ptr<Op> Op::fromProto(const proto::bolt::Op& op_proto,
 
     case proto::bolt::Op::kActivation:
       return activationOpFromProto(name, op_proto.activation());
+
+    case proto::bolt::Op::kPatchEmb:
+      return PatchEmbedding::fromProto(name, op_proto.patch_emb(), parameters);
+
+    case proto::bolt::Op::kPatchSum:
+      return PatchSum::fromProto(name, op_proto.patch_sum());
 
     default:
       throw std::invalid_argument("Invalid op type in fromProto.");

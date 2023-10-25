@@ -20,7 +20,7 @@ def test_binning_transformation(serialize):
 
     columns = data.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = data.transformations.TransformationList(
+    featurizer = data.transformations.Pipeline(
         transformations=[
             data.transformations.Binning(
                 input_column="column1",
