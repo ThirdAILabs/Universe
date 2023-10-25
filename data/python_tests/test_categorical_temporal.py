@@ -94,7 +94,7 @@ def test_without_updating_history(include_current_row, serialize):
         include_current_row, should_update_history=False
     )
     if serialize:
-        # State is not stored in the transformations, and apply is const, so we 
+        # State is not stored in the transformations, and apply is const, so we
         # serialize before applying the transformation.
         updating_transformation = data.transformations.deserialize(
             updating_transformation.serialize()
