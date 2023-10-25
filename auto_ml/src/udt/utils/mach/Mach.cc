@@ -4,6 +4,7 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <auto_ml/src/udt/utils/mach/model.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
@@ -11,7 +12,39 @@
 #include <tuple>
 #include <vector>
 
-namespace thirdai::automl::udt::utils {
+namespace thirdai::automl::udt::utils::mach {
+
+namespace mach = dataset::mach;
+
+Mach::Mach(const bolt::Model& model, uint32_t num_hashes,
+           float mach_sampling_threshold, bool freeze_hash_tables,
+           data::OutputColumnsList model_input_columns,
+           std::string label_column, std::string bucket_column, bool use_rlhf,
+           uint32_t num_balancing_docs, uint32_t num_balancing_samples_per_doc)
+
+    : _model(modifyForMach(model)),
+      _emb(getEmbeddingComputation(*_model)),
+      _mach_sampling_threshold(mach_sampling_threshold),
+      _freeze_hash_tables(freeze_hash_tables),
+      _state(feat::State::make(mach::MachIndex::make(
+          /* num_buckets= */ model.outputs().front()->dim(),
+          /* num_hashes=*/num_hashes))),
+      _label_to_buckets(data::MachLabel::make(label_column, bucket_column)),
+      _bolt_input_columns(std::move(model_input_columns)),
+      _bolt_label_columns({data::OutputColumns(std::move(bucket_column),
+                                               inferLabelValueFill(model)),
+                           data::OutputColumns(std::move(label_column))}) {
+  if (use_rlhf) {
+    enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
+  }
+  updateSamplingStrategy();
+  for (const auto& columns : _bolt_input_columns) {
+    _all_bolt_columns.push_back(columns);
+  }
+  for (const auto& columns : _bolt_label_columns) {
+    _all_bolt_columns.push_back(columns);
+  }
+}
 
 void Mach::introduceEntities(const feat::ColumnMap& columns,
                              std::optional<uint32_t> num_buckets_to_sample_opt,
@@ -386,4 +419,4 @@ void Mach::serialize(Archive& archive) {
           _bolt_label_columns, _all_bolt_columns);
 }
 
-}  // namespace thirdai::automl::udt::utils
+}  // namespace thirdai::automl::udt::utils::mach

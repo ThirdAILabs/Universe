@@ -33,9 +33,7 @@
 #include <tuple>
 #include <vector>
 
-namespace thirdai::automl::udt::utils {
-
-namespace mach = dataset::mach;
+namespace thirdai::automl::udt::utils::mach {
 namespace feat = thirdai::data;
 
 using InputMetrics = bolt::metrics::InputMetrics;
@@ -43,27 +41,8 @@ using ComputationPtr = bolt::ComputationPtr;
 using CallbackPtr = bolt::callbacks::CallbackPtr;
 using DistributedCommPtr = bolt::DistributedCommPtr;
 
-static bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
-  // This defines the embedding as the second to last computatation in the
-  // computation graph.
-  auto computations = model.computationOrder();
-  return computations.at(computations.size() - 2);
-}
-
-static auto machModel(const bolt::Model& model) {
-  if (model.outputs().size() > 1 || model.labels().size() > 1 ||
-      model.losses().size() > 1) {
-    throw std::runtime_error(
-        "Mach currently only supports models with a single output, a single "
-        "label, and a single loss function.");
-  }
-  return bolt::Model::make(
-      model.inputs(), model.outputs(), model.losses(),
-      /* additional_labels= */
-      {bolt::Input::make(std::numeric_limits<uint32_t>::max())});
-}
-
-static auto allColumns(const data::OutputColumnsList& model_input_columns,
+static auto allColumns(const std::string& input_indices_column,
+                       const std::string& input_values_column,
                        const std::string& label_column,
                        const std::string& bucket_column) {
   std::vector<std::string> all_columns{label_column, bucket_column};
@@ -74,28 +53,6 @@ static auto allColumns(const data::OutputColumnsList& model_input_columns,
     }
   }
   return all_columns;
-}
-
-static auto valueFill(const bolt::Model& model) {
-  return model.losses().front()->logitsSumToOne()
-             ? data::ValueFillType::SumToOne
-             : data::ValueFillType::Ones;
-}
-
-static auto defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                         uint32_t num_buckets) {
-  auto input = bolt::Input::make(input_dim);
-  auto hidden =
-      bolt::Embedding::make(hidden_dim, input_dim, "tanh", /* bias= */ false)
-          ->apply(input);
-  auto output = bolt::FullyConnected::make(
-                    num_buckets, hidden_dim, autotuneSparsity(num_buckets),
-                    "sigmoid", /* sampling= */ nullptr, /* use_bias= */ false)
-                    ->apply(hidden);
-  auto labels = bolt::Input::make(num_buckets);
-  auto loss = bolt::BinaryCrossEntropy::make(output, labels);
-  return bolt::Model::make(/* inputs= */ {input}, /* outputs= */ {output},
-                           /* losses= */ {loss});
 }
 
 /**
@@ -117,31 +74,7 @@ class Mach {
        float mach_sampling_threshold, bool freeze_hash_tables,
        data::OutputColumnsList model_input_columns, std::string label_column,
        std::string bucket_column, bool use_rlhf, uint32_t num_balancing_docs,
-       uint32_t num_balancing_samples_per_doc)
-
-      : _model(machModel(model)),
-        _emb(getEmbeddingComputation(*_model)),
-        _mach_sampling_threshold(mach_sampling_threshold),
-        _freeze_hash_tables(freeze_hash_tables),
-        _state(feat::State::make(mach::MachIndex::make(
-            /* num_buckets= */ model.outputs().front()->dim(),
-            /* num_hashes=*/num_hashes))),
-        _label_to_buckets(data::MachLabel::make(label_column, bucket_column)),
-        _bolt_input_columns(std::move(model_input_columns)),
-        _bolt_label_columns(
-            {data::OutputColumns(std::move(bucket_column), valueFill(model)),
-             data::OutputColumns(std::move(label_column))}) {
-    if (use_rlhf) {
-      enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
-    }
-    updateSamplingStrategy();
-    for (const auto& columns : _bolt_input_columns) {
-      _all_bolt_columns.push_back(columns);
-    }
-    for (const auto& columns : _bolt_label_columns) {
-      _all_bolt_columns.push_back(columns);
-    }
-  }
+       uint32_t num_balancing_samples_per_doc);
 
   static auto make(const bolt::Model& model, uint32_t num_hashes,
                    float mach_sampling_threshold, bool freeze_hash_tables,
@@ -395,4 +328,4 @@ class Mach {
 
 using MachPtr = std::shared_ptr<Mach>;
 
-}  // namespace thirdai::automl::udt::utils
+}  // namespace thirdai::automl::udt::utils::mach

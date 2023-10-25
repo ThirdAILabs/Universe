@@ -7,7 +7,7 @@
 #include <random>
 #include <utility>
 
-namespace thirdai::automl::udt::utils {
+namespace thirdai::automl::udt::utils::mach {
 
 struct BucketScore {
   uint32_t frequency = 0;
@@ -111,4 +111,4 @@ static std::vector<uint32_t> topHashesForDoc(
 
   return new_hashes;
 }
-}  // namespace thirdai::automl::udt::utils
+}  // namespace thirdai::automl::udt::utils::mach
