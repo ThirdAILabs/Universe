@@ -32,6 +32,8 @@ class RLHFSampler {
 
   void addSample(uint32_t doc_id, const RlhfSample& sample);
 
+  void addSample(uint32_t doc_id, RlhfSample&& sample);
+
   void clear() {
     _samples_per_doc = {};
     _doc_ids = {};
