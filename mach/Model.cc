@@ -1,4 +1,7 @@
 #include "Model.h"
+#include <bolt/src/nn/ops/Input.h>
+#include <data/src/TensorConversion.h>
+#include <sstream>
 
 namespace thirdai::mach {
 
