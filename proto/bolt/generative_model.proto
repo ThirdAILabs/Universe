@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+message ContextualBackend {
+  required uint64 lrc_len = 1;
+  required uint64 irc_len = 2;
+  required uint64 src_len = 3;
+  required uint64 vocab_size = 4;
+  required bool include_position = 5;
+  required bool featurize_in_chunks = 6;
+}
+
+message DyadicBackend {}
+
+message GenerativeBackend {
+  oneof backend {
+    ContextualBackend contextual = 1;
+    DyadicBackend dyadic = 2;
+  }
+}
+
+message GenerativeModel {
+  required GenerativeBackend backend = 1;
+
+  repeated uint32 allowed_repeats = 2;
+  repeated uint32 punctuation_tokens = 3;
+  required float punctuation_repeat_threshold = 4;
+}
