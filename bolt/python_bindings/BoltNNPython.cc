@@ -405,45 +405,6 @@ void defineOps(py::module_& nn) {
            py::arg("patch_dim"))
       .def("__call__", &PatchSum::apply);
 
-  py::class_<PatchEmbedding, PatchEmbeddingPtr, Op>(nn, "PatchEmbedding")
-      .def(py::init(&PatchEmbedding::make), py::arg("emb_dim"),
-           py::arg("patch_dim"), py::arg("n_patches"),
-           py::arg("sparsity") = 1.0, py::arg("activation") = "relu",
-           py::arg("sampling_config") = nullptr, py::arg("use_bias") = true,
-           py::arg("rebuild_hash_tables") = 10,
-           py::arg("reconstruct_hash_functions") = 100)
-      .def("__call__", &PatchEmbedding::apply)
-      .def("set_weights",
-           [](PatchEmbedding& op, const NumpyArray<float>& weights) {
-             if (weights.ndim() != 2 ||
-                 weights.shape(0) != op.patchEmbeddingDim() ||
-                 weights.shape(1) != op.patchDim()) {
-               std::stringstream error;
-               error << "Expected weights to be 2D array with shape ("
-                     << op.patchEmbeddingDim() << ", " << op.patchDim() << ").";
-               throw std::invalid_argument(error.str());
-             }
-             op.setWeights(weights.data());
-           })
-      .def("set_biases",
-           [](PatchEmbedding& op, const NumpyArray<float>& biases) {
-             if (biases.ndim() != 1 ||
-                 biases.shape(0) != op.patchEmbeddingDim()) {
-               std::stringstream error;
-               error << "Expected biases to be 1D array with shape ("
-                     << op.patchEmbeddingDim() << ",).";
-               throw std::invalid_argument(error.str());
-             }
-             op.setBiases(biases.data());
-           })
-      .def("set_hash_table", &PatchEmbedding::setHashTable, py::arg("hash_fn"),
-           py::arg("hash_table"));
-
-  py::class_<PatchSum, PatchSumPtr, Op>(nn, "PatchSum")
-      .def(py::init(&PatchSum::make), py::arg("n_patches"),
-           py::arg("patch_dim"))
-      .def("__call__", &PatchSum::apply);
-
   nn.def("Input", &Input::make, py::arg("dim"));
 }
 
