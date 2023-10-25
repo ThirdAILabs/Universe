@@ -5,7 +5,7 @@
 #include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <utils/StringManipulation.h>
 

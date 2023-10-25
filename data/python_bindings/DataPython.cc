@@ -6,7 +6,6 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/DyadicInterval.h>
@@ -19,6 +18,7 @@
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/attr.h>

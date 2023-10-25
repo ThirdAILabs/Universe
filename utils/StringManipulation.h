@@ -34,11 +34,16 @@ std::string join(const std::vector<std::string>& strings,
  */
 inline std::string lower(const std::string_view& str) {
   std::string lower_name;
-  for (char c : str) {
+  for (const char c : str) {
     lower_name.push_back(std::tolower(c));
   }
   return lower_name;
 }
+
+/**
+ *Strips leading and tailing whitespace.
+ */
+void stripWhitespace(std::string& s);
 
 /**
  * Extracts an integer value from an integer string.

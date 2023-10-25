@@ -108,6 +108,17 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
+void stripWhitespace(std::string& s) {
+  auto first_valid = s.find_first_not_of(" \t\f\v\n\r");
+  auto last_valid = s.find_last_not_of(" \t\f\v\n\r");
+  if (first_valid == std::string::npos || last_valid == std::string::npos) {
+    // Whole string is whitespace.
+    s = "";
+  } else {
+    s = s.substr(first_valid, last_valid + 1 - first_valid);
+  }
+}
+
 /* HELPER METHODS FOR UNICODE STRINGS */
 
 std::wstring toUnicode(const std::string& text) {
