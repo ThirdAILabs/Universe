@@ -13,6 +13,10 @@ struct RlhfSample {
   std::vector<uint32_t> input_indices;
   std::vector<float> input_values;
   std::vector<uint32_t> mach_buckets;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 class RLHFSampler {

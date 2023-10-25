@@ -9,6 +9,14 @@
 
 namespace thirdai::data::mach {
 
+template void RlhfSample::serialize(cereal::BinaryInputArchive& archive);
+template void RlhfSample::serialize(cereal::BinaryOutputArchive& archive);
+
+template <class Archive>
+void RlhfSample::serialize(Archive& archive) {
+  archive(input_indices, input_values, mach_buckets);
+}
+
 std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
   if (num_samples == 0) {
     return {};
