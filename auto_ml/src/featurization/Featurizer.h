@@ -41,22 +41,21 @@ class TextDatasetConfig {
 
 class Featurizer {
  public:
-  Featurizer(data::ColumnDataTypes data_types,
-             const data::TemporalRelationships& temporal_relationships,
+  Featurizer(ColumnDataTypes data_types,
+             const TemporalRelationships& temporal_relationships,
              const std::string& label_column,
-             thirdai::data::TransformationPtr label_transform,
-             thirdai::data::OutputColumnsList bolt_label_columns,
-             const data::TabularOptions& options);
+             data::TransformationPtr label_transform,
+             data::OutputColumnsList bolt_label_columns,
+             const TabularOptions& options);
 
   explicit Featurizer(const proto::udt::Featurizer& featurizer);
 
-  thirdai::data::LoaderPtr getDataLoader(
-      const dataset::DataSourcePtr& data_source, size_t batch_size,
-      bool shuffle, bool verbose,
-      dataset::DatasetShuffleConfig shuffle_config =
-          dataset::DatasetShuffleConfig());
+  data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
+                                size_t batch_size, bool shuffle, bool verbose,
+                                dataset::DatasetShuffleConfig shuffle_config =
+                                    dataset::DatasetShuffleConfig());
 
-  thirdai::data::LoaderPtr getColdStartDataLoader(
+  data::LoaderPtr getColdStartDataLoader(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
@@ -75,8 +74,7 @@ class Featurizer {
   std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
       const MapInputBatch& samples);
 
-  thirdai::data::ExplanationMap explain(
-      const thirdai::data::ColumnMap& columns) {
+  data::ExplanationMap explain(const data::ColumnMap& columns) {
     return _input_transform_non_updating->explain(columns, *_state);
   }
 
@@ -102,26 +100,26 @@ class Featurizer {
   proto::udt::Featurizer* toProto() const;
 
  protected:
-  thirdai::data::LoaderPtr getDataLoaderHelper(
+  data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose, dataset::DatasetShuffleConfig shuffle_config,
-      const thirdai::data::TransformationPtr& cold_start_transform = nullptr);
+      const data::TransformationPtr& cold_start_transform = nullptr);
 
-  thirdai::data::TransformationPtr coldStartTransform(
+  data::TransformationPtr coldStartTransform(
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bool fast_approximation = false);
 
-  thirdai::data::TransformationPtr _input_transform;
-  thirdai::data::TransformationPtr _input_transform_non_updating;
-  thirdai::data::TransformationPtr _label_transform;
+  data::TransformationPtr _input_transform;
+  data::TransformationPtr _input_transform_non_updating;
+  data::TransformationPtr _label_transform;
 
-  thirdai::data::OutputColumnsList _bolt_input_columns;
-  thirdai::data::OutputColumnsList _bolt_label_columns;
+  data::OutputColumnsList _bolt_input_columns;
+  data::OutputColumnsList _bolt_label_columns;
 
   char _delimiter;
 
-  thirdai::data::StatePtr _state;
+  data::StatePtr _state;
 
   std::optional<TextDatasetConfig> _text_dataset;
 };

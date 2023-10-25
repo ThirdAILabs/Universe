@@ -6,19 +6,24 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/DyadicInterval.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/TransformationList.h>
 #include <optional>
 #include <stdexcept>
 #include <string>
 
 namespace thirdai::bolt {
 
-DyadicModel::DyadicModel(bolt::ModelPtr model) : _model(std::move(model)) {
-  size_t n_intervals = _model->inputs().size();
+DyadicModel::DyadicModel(bolt::ModelPtr model, bool is_bidirectional)
+    : _model(std::move(model)) {
+  size_t model_inputs = _model->inputs().size();
+
+  assert(!is_bidirectional || (model_inputs % 2 == 0));
+
+  size_t n_intervals = is_bidirectional ? model_inputs / 2 : model_inputs;
 
   _dyadic_transform = std::make_shared<data::DyadicInterval>(
-      "target", "interval_", "next_word", n_intervals);
+      "target", std::nullopt, "interval_", "next_word", n_intervals);
 
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument("Expected model to have a single output.");
@@ -28,12 +33,19 @@ DyadicModel::DyadicModel(bolt::ModelPtr model) : _model(std::move(model)) {
 
   for (size_t i = 0; i < n_intervals; i++) {
     _bolt_inputs.push_back(
-        data::OutputColumns("interval_" + std::to_string(1 << i)));
+        data::OutputColumns("interval_from_end_" + std::to_string(1 << i)));
+  }
+  if (is_bidirectional) {
+    for (size_t i = 0; i < n_intervals; i++) {
+      _bolt_inputs.push_back(
+          data::OutputColumns("interval_from_start_" + std::to_string(1 << i)));
+    }
   }
 }
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
-    std::vector<std::vector<uint32_t>> tokens) {
+    std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>> tokens) {
+  (void)prompt;
   data::ColumnMap data({{"target", data::ArrayColumn<uint32_t>::make(
                                        std::move(tokens), _vocab_size)}});
 
@@ -70,16 +82,22 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
   auto data_iter = data::JsonIterator::make(data, {"target"});
 
-  auto transform = data::TransformationList::make(
-      {std::make_shared<data::StringToTokenArray>("target", "target", ' ',
-                                                  _vocab_size),
-       _dyadic_transform});
+  auto transform =
+      data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
+                                "target", "target", ' ', _vocab_size),
+                            _dyadic_transform});
 
   return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
                       {data::OutputColumns("next_word")},
                       /* batch_size= */ batch_size,
                       /* shuffle= */ shuffle, /* verbose= */ true,
                       /* shuffle_buffer_size= */ 200000);
+}
+
+proto::bolt::GenerativeBackend* DyadicModel::toProto() const {
+  auto* backend = new proto::bolt::GenerativeBackend();
+  backend->mutable_dyadic();
+  return backend;
 }
 
 }  // namespace thirdai::bolt

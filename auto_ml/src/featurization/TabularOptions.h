@@ -4,7 +4,7 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <string>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 struct TabularOptions {
   uint32_t text_pairgrams_word_limit = udt::defaults::PAIRGRAM_WORD_LIMIT;
@@ -23,4 +23,4 @@ struct TabularOptions {
   }
 };
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

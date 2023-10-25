@@ -68,12 +68,8 @@ def apply_augmentation_and_unigrams(columns, augmentation):
     """
     new_columns = augmentation(columns)
 
-    featurizer = data.transformations.TransformationList(
-        transformations=[
-            data.transformations.Text(
-                input_column="data", output_indices="unigrams", dim=100000
-            )
-        ]
+    featurizer = data.transformations.Text(
+        input_column="data", output_indices="unigrams", dim=100000
     )
     columns = featurizer(new_columns)
     return columns

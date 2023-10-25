@@ -16,7 +16,7 @@ namespace thirdai::dataset {
 class NormalizedNeighborVectorsBlock final : public Block {
  public:
   explicit NormalizedNeighborVectorsBlock(ColumnIdentifier node_id_col,
-                                          automl::data::GraphInfoPtr graph_ptr)
+                                          automl::GraphInfoPtr graph_ptr)
       : _node_id_col(std::move(node_id_col)),
         _graph_ptr(std::move(graph_ptr)) {}
 
@@ -28,7 +28,7 @@ class NormalizedNeighborVectorsBlock final : public Block {
                            ColumnarInputSample& input) final;
 
   static auto make(ColumnIdentifier col,
-                   const automl::data::GraphInfoPtr& graph_ptr) {
+                   const automl::GraphInfoPtr& graph_ptr) {
     return std::make_shared<NormalizedNeighborVectorsBlock>(std::move(col),
                                                             graph_ptr);
   }
@@ -43,7 +43,7 @@ class NormalizedNeighborVectorsBlock final : public Block {
 
  private:
   ColumnIdentifier _node_id_col;
-  automl::data::GraphInfoPtr _graph_ptr;
+  automl::GraphInfoPtr _graph_ptr;
 
   NormalizedNeighborVectorsBlock() {}
 
@@ -57,7 +57,7 @@ class NormalizedNeighborVectorsBlock final : public Block {
 class NeighborTokensBlock final : public Block {
  public:
   explicit NeighborTokensBlock(ColumnIdentifier node_id_col,
-                               automl::data::GraphInfoPtr graph_ptr)
+                               automl::GraphInfoPtr graph_ptr)
       : _node_id_col(std::move(node_id_col)),
         _graph_ptr(std::move(graph_ptr)) {}
 
@@ -75,7 +75,7 @@ class NeighborTokensBlock final : public Block {
                            ColumnarInputSample& input) final;
 
   static auto make(ColumnIdentifier col,
-                   const automl::data::GraphInfoPtr& graph_ptr) {
+                   const automl::GraphInfoPtr& graph_ptr) {
     return std::make_shared<NeighborTokensBlock>(std::move(col), graph_ptr);
   }
 
@@ -89,7 +89,7 @@ class NeighborTokensBlock final : public Block {
 
  private:
   ColumnIdentifier _node_id_col;
-  automl::data::GraphInfoPtr _graph_ptr;
+  automl::GraphInfoPtr _graph_ptr;
 
   NeighborTokensBlock() {}
 
@@ -105,7 +105,7 @@ class GraphBuilderBlock final : public Block {
   explicit GraphBuilderBlock(ColumnIdentifier neighbor_col,
                              ColumnIdentifier node_id_col,
                              std::vector<ColumnIdentifier> feature_cols,
-                             automl::data::GraphInfoPtr graph_ptr)
+                             automl::GraphInfoPtr graph_ptr)
       : _node_id_col(std::move(node_id_col)),
         _neighbor_col(std::move(neighbor_col)),
         _feature_cols(std::move(feature_cols)),
@@ -125,7 +125,7 @@ class GraphBuilderBlock final : public Block {
 
   static auto make(ColumnIdentifier neighbor_col, ColumnIdentifier node_id_col,
                    std::vector<ColumnIdentifier> feature_cols,
-                   const automl::data::GraphInfoPtr& graph_ptr) {
+                   const automl::GraphInfoPtr& graph_ptr) {
     return std::make_shared<GraphBuilderBlock>(
         std::move(neighbor_col), std::move(node_id_col),
         std::move(feature_cols), graph_ptr);
@@ -149,7 +149,7 @@ class GraphBuilderBlock final : public Block {
  private:
   ColumnIdentifier _node_id_col, _neighbor_col;
   std::vector<ColumnIdentifier> _feature_cols;
-  automl::data::GraphInfoPtr _graph_ptr;
+  automl::GraphInfoPtr _graph_ptr;
 
   GraphBuilderBlock() {}
 

@@ -47,7 +47,7 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
 
   std::unordered_set<uint32_t> selected_neurons;
 
-  uint32_t label_len = labels != nullptr ? labels->len : 0;
+  uint32_t label_len = labels == nullptr || labels->isDense() ? 0 : labels->len;
   for (uint32_t i = 0; i < label_len; i++) {
     selected_neurons.insert(labels->active_neurons[i]);
   }

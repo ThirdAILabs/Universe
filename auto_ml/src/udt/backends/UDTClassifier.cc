@@ -31,15 +31,14 @@
 
 namespace thirdai::automl::udt {
 
-UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
-                             const data::UserProvidedTemporalRelationships&
-                                 temporal_tracking_relationships,
-                             const std::string& target_name,
-                             data::CategoricalDataTypePtr target,
-                             uint32_t n_target_classes, bool integer_target,
-                             const data::TabularOptions& tabular_options,
-                             const std::optional<std::string>& model_config,
-                             const config::ArgumentMap& user_args)
+UDTClassifier::UDTClassifier(
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, CategoricalDataTypePtr target,
+    uint32_t n_target_classes, bool integer_target,
+    const TabularOptions& tabular_options,
+    const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
               /* input_dim= */ tabular_options.feature_hash_range,

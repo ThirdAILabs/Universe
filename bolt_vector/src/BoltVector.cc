@@ -4,6 +4,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/cereal.hpp>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai {
 
@@ -265,6 +267,28 @@ void BoltVector::zeroOutGradients() {  // NOLINT clang-tidy thinks this should
                                        // be const.
   assert(hasGradients());
   std::fill_n(gradients, len, 0.0);
+}
+
+BoltVector BoltVector::viewChunk(size_t chunk_idx, size_t chunk_size) const {
+  if ((chunk_idx + 1) * chunk_size > len) {
+    throw std::invalid_argument(
+        "Cannot access chunk " + std::to_string(chunk_idx) +
+        " with chunk size " + std::to_string(chunk_size) +
+        " in vector of length " + std::to_string(len) + ".");
+  }
+  uint32_t* chunk_active_neurons = nullptr;
+  if (!isDense()) {
+    chunk_active_neurons = active_neurons + chunk_idx * chunk_size;
+  }
+  float* chunk_activations = activations + chunk_idx * chunk_size;
+
+  float* chunk_gradients = nullptr;
+  if (hasGradients()) {
+    chunk_gradients = gradients + chunk_idx * chunk_size;
+  }
+
+  return BoltVector(chunk_active_neurons, chunk_activations, chunk_gradients,
+                    chunk_size);
 }
 
 /**

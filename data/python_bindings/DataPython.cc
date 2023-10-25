@@ -12,13 +12,13 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <proto/transformations.pb.h>
@@ -67,9 +67,9 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  // NOLINTNEXTLINE
   py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
-                                                      "ColumnMapIterator");
+                                                      "ColumnMapIterator")
+      .def("next", &ColumnMapIterator::next);
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
@@ -103,6 +103,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("shuffle_buffer_size") = Loader::DEFAULT_SHUFFLE_BUFFER_SIZE,
            py::arg("shuffle_seed") = global_random::nextSeed())
       .def("next", &Loader::next, py::arg("max_batches") = Loader::NO_LIMIT)
+      .def("next_column_map", &Loader::nextColumnMap,
+           py::arg("max_batches") = Loader::NO_LIMIT)
       .def("all", &Loader::all);
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
@@ -248,11 +250,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   transformations_submodule.def("deserialize", Transformation::deserialize,
                                 py::arg("binary"));
 
-  py::class_<TransformationList, Transformation,
-             std::shared_ptr<TransformationList>>(transformations_submodule,
-                                                  "TransformationList")
-      .def(py::init<std::vector<TransformationPtr>>(),
-           py::arg("transformations"));
+  py::class_<Pipeline, Transformation, PipelinePtr>(transformations_submodule,
+                                                    "Pipeline")
+      .def(py::init(&Pipeline::make),
+           py::arg("transformations") = std::vector<TransformationPtr>{})
+      .def("then", &Pipeline::then, py::arg("transformation"));
 
   py::class_<StringToToken, Transformation, std::shared_ptr<StringToToken>>(
       transformations_submodule, "ToTokens")
@@ -405,9 +407,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<DyadicInterval, Transformation, std::shared_ptr<DyadicInterval>>(
       transformations_submodule, "DyadicInterval")
-      .def(py::init<std::string, std::string, std::string, size_t>(),
-           py::arg("input_column"), py::arg("output_interval_prefix"),
-           py::arg("target_column"), py::arg("n_intervals"))
+      .def(py::init<std::string, std::optional<std::string>, std::string,
+                    std::string, size_t, bool>(),
+           py::arg("input_column"), py::arg("prompt_column") = std::nullopt,
+           py::arg("output_interval_prefix"), py::arg("target_column"),
+           py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
 #endif

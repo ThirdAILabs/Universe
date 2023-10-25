@@ -162,6 +162,8 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
+    "unstructured[all-docs]",
+    "sortedcontainers",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -204,7 +206,7 @@ setup(
             "moto[server]",
             "mlflow",
             "protobuf",
-            "datasets==2.13.1",
+            "datasets",
             "torch",
             "toml",
             "psutil",

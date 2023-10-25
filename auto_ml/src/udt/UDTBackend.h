@@ -24,6 +24,8 @@ using bolt::callbacks::CallbackPtr;
 
 using bolt::ModelPtr;
 
+using Label = std::variant<uint32_t, std::string>;
+
 struct TrainOptions {
   std::optional<size_t> batch_size = std::nullopt;
   std::optional<size_t> max_in_memory_batches = std::nullopt;
@@ -86,6 +88,15 @@ class UDTBackend {
                                   std::optional<uint32_t> top_k) = 0;
 
   virtual proto::udt::UDT toProto() const = 0;
+
+  virtual py::object scoreBatch(const MapInputBatch& samples,
+                                const std::vector<std::vector<Label>>& classes,
+                                std::optional<uint32_t> top_k) {
+    (void)samples;
+    (void)classes;
+    (void)top_k;
+    throw notSupported("scoring");
+  }
 
   virtual py::object outputCorrectness(const MapInputBatch& sample,
                                        const std::vector<uint32_t>& labels,

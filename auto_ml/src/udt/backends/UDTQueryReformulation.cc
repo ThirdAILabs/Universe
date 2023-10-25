@@ -30,11 +30,12 @@ namespace thirdai::automl::udt {
 UDTQueryReformulation::UDTQueryReformulation(
     std::optional<std::string> incorrect_column_name,
     std::string correct_column_name, const std::string& dataset_size,
-    char delimiter, const std::optional<std::string>& model_config,
+    bool use_spell_checker, char delimiter,
+    const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _incorrect_column_name(std::move(incorrect_column_name)),
       _correct_column_name(std::move(correct_column_name)),
-
+      _use_spell_checker(use_spell_checker),
       _delimiter(delimiter) {
   if (model_config) {
     _flash_index = config::buildIndex(*model_config, user_args);
@@ -42,6 +43,11 @@ UDTQueryReformulation::UDTQueryReformulation(
     _flash_index = defaultFlashIndex(dataset_size);
   }
 
+  if (_use_spell_checker) {
+    _symspell_backend = std::make_shared<SymPreTrainer>(
+        SymPreTrainer(defaults::MAX_EDIT_DISTANCE, defaults::PREFIX_LENGTH,
+                      defaults::USE_WORD_SEGMENTATION));
+  }
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
   if (user_args.contains("n_grams")) {
@@ -96,26 +102,44 @@ py::object UDTQueryReformulation::train(
   (void)options;
   (void)comm;
 
-  licensing::TrainPermissionsToken token(data);
+  const licensing::TrainPermissionsToken token(data);
 
   // If the incorrect query column was specified by the user and is present in
   // the dataset, then we use both supervised and unsupervised training.
-  bool is_supervised =
+  const bool is_supervised =
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
 
-  uint32_t batch_size =
+  const uint32_t batch_size =
       options.batch_size.value_or(defaults::QUERY_REFORMULATION_BATCH_SIZE);
+
+  // Index words to Spell Checker if use_spell_checker = True
 
   auto [unsupervised_data, labels] =
       loadData(data, /* col_to_hash= */ _correct_column_name,
                /* include_labels= */ true, batch_size, options.verbose);
 
-  // If we are using supervised training then we have twice as much data to
+  if (_use_spell_checker) {
+    data->restart();
+    auto featurizer = dataset::TabularFeaturizer::make(
+        {ngramBlockList(_correct_column_name, _n_grams)},
+        /* has_header= */ true,
+        /* delimiter= */ _delimiter);
+
+    dataset::DatasetLoader dataset_loader(data, featurizer,
+                                          /* shuffle= */ false);
+
+    auto parsed_data = dataset_loader.loadAllMapInputs(
+        defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",
+        _correct_column_name);
+    _symspell_backend->pretrain(parsed_data);
+  }
+
+  // If we are using supervised training then we have twice as much data
   // insert because index each sample once using itself as the input, and once
   // using the incorrect query as the input.
-  uint32_t progress_bar_steps = is_supervised
-                                    ? unsupervised_data->numBatches() * 2
-                                    : unsupervised_data->numBatches();
+  const uint32_t progress_bar_steps = is_supervised
+                                          ? unsupervised_data->numBatches() * 2
+                                          : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ options.verbose,
       /* description = */ fmt::format("train"),
@@ -168,6 +192,8 @@ py::object UDTQueryReformulation::evaluate(
                /* include_labels= */ true,
                defaults::QUERY_REFORMULATION_BATCH_SIZE, verbose);
 
+  data->restart();
+
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ verbose,
       /* description = */ fmt::format("evaluate"),
@@ -178,19 +204,47 @@ py::object UDTQueryReformulation::evaluate(
 
   bolt::utils::Timer timer;
 
-  for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
-    auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
-        inputs->at(batch_id), /* top_k= */ top_k.value());
+  if (_use_spell_checker) {
+    auto featurizer = dataset::TabularFeaturizer::make(
+        {ngramBlockList(_incorrect_column_name.value(), _n_grams)},
+        /* has_header= */ true,
+        /* delimiter= */ _delimiter);
 
-    bar->increment();
+    dataset::DatasetLoader dataset_loader(data, featurizer,
+                                          /* shuffle= */ false);
 
-    correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
-    total_samples += phrase_ids.size();
+    auto input_candidate_batches = dataset_loader.loadAllMapInputs(
+        defaults::QUERY_REFORMULATION_BATCH_SIZE, "phrase",
+        _incorrect_column_name.value());
+
+    for (uint32_t batch_id = 0; batch_id < input_candidate_batches.size();
+         batch_id++) {
+      auto [phrase_ids, phrase_scores] =
+          queryBatchResults(input_candidate_batches[batch_id], top_k);
+      if (bar.has_value()) {
+        bar->increment();
+      }
+
+      correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
+      total_samples += input_candidate_batches[batch_id].size();
+    }
+  } else {
+    for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
+      auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
+          inputs->at(batch_id), /* top_k= */ top_k.value());
+
+      if (bar.has_value()) {
+        bar->increment();
+      }
+
+      correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
+      total_samples += phrase_ids.size();
+    }
   }
 
   timer.stop();
 
-  float recall = static_cast<float>(correctly_retrieved) / total_samples;
+  const float recall = static_cast<float>(correctly_retrieved) / total_samples;
 
   if (bar) {
     bar->close(fmt::format("evaluate | recall={} | time {}s | complete", recall,
@@ -214,6 +268,52 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                       top_k);
 }
 
+IdScorePairs UDTQueryReformulation::queryBatchResults(
+    const MapInputBatch& sample, std::optional<uint32_t> top_k) {
+  if (_use_spell_checker) {
+    QueryCandidates candidates = _symspell_backend->generateCandidates(sample);
+
+    const MapInputBatch sample_cand = candidates.getSample();
+    dataset::MapBatchRef sample_ref(sample_cand);
+    auto featurized_samples =
+        _inference_featurizer->featurize(sample_ref).at(0);
+
+    auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
+        /* batch = */ BoltBatch(std::move(featurized_samples)),
+        /* top_k = */ top_k.value());
+
+    // This aggregates the phrase_ids for generated candidates per query.
+    // iterate over range of generated candidates for a query and accumulate
+    // the topK scores
+    std::vector<std::vector<uint32_t>> all_phrase_ids;
+    std::vector<std::vector<float>> all_phrase_scores;
+    for (uint32_t query_id = 0; query_id < sample.size(); query_id++) {
+      auto [start_idx, end_idx] = candidates.getRange(query_id);
+      std::vector<std::vector<uint32_t>> query_phrase_ids(
+          phrase_ids.begin() + start_idx, phrase_ids.begin() + end_idx);
+      std::vector<std::vector<float>> query_scores(
+          phrase_scores.begin() + start_idx, phrase_scores.begin() + end_idx);
+      const std::pair<std::vector<uint32_t>, std::vector<float>>
+          accumulated_res = _symspell_backend->topKIdScorePairs(
+              query_phrase_ids, query_scores, top_k.value());
+      all_phrase_ids.push_back(accumulated_res.first);
+      all_phrase_scores.push_back(accumulated_res.second);
+    }
+    return std::make_pair(all_phrase_ids, all_phrase_scores);
+  }
+  dataset::MapBatchRef sample_ref(sample);
+  auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
+
+  auto results = _flash_index->queryBatch(
+      /* batch = */ BoltBatch(std::move(featurized_samples)),
+      /* top_k = */ top_k.value());
+
+  auto phrase_ids = std::move(results.first);
+  auto phrase_scores = std::move(results.second);
+
+  return std::pair(phrase_ids, phrase_scores);
+}
+
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
                                                bool sparse_inference,
                                                bool return_predicted_class,
@@ -223,17 +323,9 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   requireTopK(top_k);
 
-  dataset::MapBatchRef sample_ref(sample);
-
-  auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
-
-  auto results = _flash_index->queryBatch(
-      /* batch = */ BoltBatch(std::move(featurized_samples)),
-      /* top_k = */ top_k.value());
-  // We do this instead of directly asigning the elements of the tuple to avoid
-  // a omp error.
-  auto phrase_ids = std::move(results.first);
-  auto phrase_scores = std::move(results.second);
+  auto results = queryBatchResults(sample, top_k);
+  auto phrase_ids = results.first;
+  auto phrase_scores = results.second;
 
   std::vector<std::vector<std::string>> phrases(phrase_ids.size());
 
@@ -333,7 +425,7 @@ std::vector<std::string> UDTQueryReformulation::idsToPhrase(
   std::vector<std::string> phrases;
   phrases.reserve(ids.size());
 
-  for (uint32_t id : ids) {
+  for (const uint32_t id : ids) {
     phrases.push_back(_phrase_id_map->getString(id));
   }
 

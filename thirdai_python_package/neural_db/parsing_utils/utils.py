@@ -1,3 +1,5 @@
+import re
+
 import unidecode
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -77,3 +79,22 @@ def chunk_text(text: str):
     chunks = [chunk for chunk in chunks if valid_chunk(chunk)]
 
     return chunks
+
+
+def clean_text_and_remove_urls(text: str) -> str:
+    text = clean_text(text)
+    text = re.sub(r"http\S+", "", text, flags=re.MULTILINE)
+    return text
+
+
+def clean_text(text: str) -> str:
+    text = (
+        str(text)
+        .strip()
+        .replace("\r\n", " ")
+        .replace("\n", " ")
+        .replace("\t", " ")
+        .lower()
+    )
+
+    return text

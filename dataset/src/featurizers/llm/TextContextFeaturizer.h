@@ -3,9 +3,17 @@
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 
+namespace thirdai::bolt {
+
+class ContextualModel;
+
+}  // namespace thirdai::bolt
+
 namespace thirdai::dataset {
 
 class TextContextFeaturizer {
+  friend class bolt::ContextualModel;
+
  public:
   TextContextFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
                         uint32_t vocab_size, bool include_position = false)

@@ -7,7 +7,7 @@ def clean_text(text):
     return text.encode("utf-8", "replace").decode("utf-8").lower()
 
 
-def hash_file(path: str):
+def hash_file(path: str, metadata=None):
     """https://stackoverflow.com/questions/22058048/hashing-a-file-in-python"""
     BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
 
@@ -19,6 +19,9 @@ def hash_file(path: str):
             if not data:
                 break
             sha1.update(data)
+
+    if metadata:
+        sha1.update(str(metadata).encode())
 
     return sha1.hexdigest()
 

@@ -1,6 +1,6 @@
 #include "DataTypes.h"
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 dataset::TextTokenizerPtr getTextTokenizerFromString(
     const std::string& string) {

@@ -54,14 +54,19 @@ using bolt::metrics::MachRecall;
 using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
+uint32_t expectInteger(const Label& label) {
+  if (!std::holds_alternative<uint32_t>(label)) {
+    throw std::invalid_argument("Must use integer label.");
+  }
+  return std::get<uint32_t>(label);
+}
+
 UDTMachClassifier::UDTMachClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_name,
-    const data::CategoricalDataTypePtr& target_config,
+    const ColumnDataTypes& input_data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_name, const CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
-    const data::TabularOptions& tabular_options,
+    const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
@@ -299,6 +304,40 @@ proto::udt::UDT UDTMachClassifier::toProto() const {
   return udt;
 }
 
+py::object UDTMachClassifier::scoreBatch(
+    const MapInputBatch& samples,
+    const std::vector<std::vector<Label>>& classes,
+    std::optional<uint32_t> top_k) {
+  std::vector<std::unordered_set<uint32_t>> entities(classes.size());
+  for (uint32_t row = 0; row < classes.size(); row++) {
+    entities[row].reserve(classes[row].size());
+    for (const auto& entity : classes[row]) {
+      entities[row].insert(expectInteger(entity));
+    }
+  }
+
+  // sparse inference could become an issue here because maybe the entities
+  // we score wouldn't otherwise be in the top results, thus their buckets have
+  // lower similarity and don't get selected by LSH
+  auto outputs = _classifier->model()
+                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                               /* sparse_inference= */ false)
+                     .at(0);
+
+  size_t batch_size = samples.size();
+  std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
+
+  const auto& index = _mach_label_block->index();
+#pragma omp parallel for default(none) shared( \
+    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    scores[i] = index->scoreEntities(vector, entities[i], top_k);
+  }
+
+  return py::cast(scores);
+}
+
 py::object UDTMachClassifier::predictHashes(
     const MapInput& sample, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
@@ -426,13 +465,6 @@ py::object UDTMachClassifier::coldstart(
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
   return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
-}
-
-uint32_t expectInteger(const Label& label) {
-  if (!std::holds_alternative<uint32_t>(label)) {
-    throw std::invalid_argument("Must use integer label.");
-  }
-  return std::get<uint32_t>(label);
 }
 
 py::object UDTMachClassifier::entityEmbedding(const Label& label) {

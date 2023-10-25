@@ -17,9 +17,10 @@ namespace thirdai::bolt {
 
 class DyadicModel final : public GenerativeBackend {
  public:
-  explicit DyadicModel(bolt::ModelPtr model);
+  explicit DyadicModel(bolt::ModelPtr model, bool is_bidirectional = false);
 
   bolt::TensorPtr nextTokenProbs(
+      std::vector<uint32_t>& prompt,
       std::vector<std::vector<uint32_t>> tokens) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
@@ -31,6 +32,8 @@ class DyadicModel final : public GenerativeBackend {
                          const DistributedCommPtr& comm) final;
 
   bolt::ModelPtr getBoltModel() final { return _model; }
+
+  proto::bolt::GenerativeBackend* toProto() const final;
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,

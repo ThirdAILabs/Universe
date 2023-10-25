@@ -19,15 +19,14 @@ namespace thirdai::automl::udt {
 
 class UDTClassifier final : public UDTBackend {
  public:
-  UDTClassifier(const data::ColumnDataTypes& input_data_types,
-                const data::UserProvidedTemporalRelationships&
-                    temporal_tracking_relationships,
-                const std::string& target_name,
-                data::CategoricalDataTypePtr target, uint32_t n_target_classes,
-                bool integer_target,
-                const data::TabularOptions& tabular_options,
-                const std::optional<std::string>& model_config,
-                const config::ArgumentMap& user_args);
+  UDTClassifier(
+      const ColumnDataTypes& input_data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+      const std::string& target_name, CategoricalDataTypePtr target,
+      uint32_t n_target_classes, bool integer_target,
+      const TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
 
   explicit UDTClassifier(const proto::udt::UDTClassifier& classifier,
                          bolt::ModelPtr model);

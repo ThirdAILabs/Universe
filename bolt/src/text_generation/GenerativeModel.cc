@@ -1,10 +1,16 @@
 #include "GenerativeModel.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/src/text_generation/ContextualModel.h>
+#include <bolt/src/text_generation/DyadicModel.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <proto/generative_model.pb.h>
+#include <utils/ProtobufIO.h>
 #include <cmath>
 #include <optional>
 #include <queue>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -45,8 +51,7 @@ std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
 
   for (size_t pred_idx = 0; pred_idx < n_predictions; pred_idx++) {
     auto next_token_probs =
-        _generator->model()->nextTokenProbs(_candidate_sequences);
-
+        _generator->model()->nextTokenProbs(_prompt, _candidate_sequences);
     // This will be ordered such that the worst scoring sequence is on the top
     // of the queue so we can easily check if a given sequence is better than at
     // least one of the candidates already discovered.
@@ -145,20 +150,42 @@ GenerativeModel::GenerativeModel(
       _punctuation_tokens(std::move(punctuation_tokens)),
       _punctuation_repeat_threshold(punctuation_repeat_threshold) {}
 
+GenerativeModel::GenerativeModel(ModelPtr model,
+                                 const proto::bolt::GenerativeModel& config)
+    : _allowed_repeats(config.allowed_repeats().begin(),
+                       config.allowed_repeats().end()),
+      _punctuation_tokens(config.punctuation_tokens().begin(),
+                          config.punctuation_tokens().end()),
+      _punctuation_repeat_threshold(config.punctuation_repeat_threshold()) {
+  switch (config.backend().backend_case()) {
+    case proto::bolt::GenerativeBackend::kContextual:
+      _model = std::make_shared<ContextualModel>(model,
+                                                 config.backend().contextual());
+      break;
+    case proto::bolt::GenerativeBackend::kDyadic:
+      _model = std::make_shared<DyadicModel>(model);
+      break;
+    default:
+      throw std::invalid_argument("Invalid generative backend type.");
+  }
+}
+
 std::vector<uint32_t> GenerativeModel::generate(
-    const std::vector<uint32_t>& input_tokens, size_t max_predictions,
-    size_t beam_width, std::optional<float> temperature) {
-  BeamSearchDecoder decoder(shared_from_this(), input_tokens, max_predictions,
-                            max_predictions, beam_width, temperature);
+    const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
+    size_t max_predictions, size_t beam_width,
+    std::optional<float> temperature) {
+  BeamSearchDecoder decoder(shared_from_this(), std::move(prompt), input_tokens,
+                            max_predictions, max_predictions, beam_width,
+                            temperature);
 
   return decoder.next().value_or(std::vector<uint32_t>{});
 }
 
 BeamSearchDecoder GenerativeModel::streamingGenerate(
-    const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
-    size_t max_predictions, size_t beam_width,
+    const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
+    size_t prediction_chunk_size, size_t max_predictions, size_t beam_width,
     std::optional<float> temperature) {
-  return BeamSearchDecoder(shared_from_this(), input_tokens,
+  return BeamSearchDecoder(shared_from_this(), std::move(prompt), input_tokens,
                            prediction_chunk_size, max_predictions, beam_width,
                            temperature);
 }
@@ -179,6 +206,50 @@ metrics::History GenerativeModel::train(
 
   return _model->train(train_data, learning_rate, epochs, batch_size,
                        train_metrics, val_data, val_metrics, comm);
+}
+
+proto::bolt::GenerativeModel GenerativeModel::toProto() const {
+  proto::bolt::GenerativeModel config;
+  config.set_allocated_backend(_model->toProto());
+  *config.mutable_allowed_repeats() = {_allowed_repeats.begin(),
+                                       _allowed_repeats.end()};
+  *config.mutable_punctuation_tokens() = {_punctuation_tokens.begin(),
+                                          _punctuation_tokens.end()};
+  config.set_punctuation_repeat_threshold(_punctuation_repeat_threshold);
+
+  return config;
+}
+
+void GenerativeModel::serializeToStream(std::ostream& output) const {
+  utils::ProtobufWriter writer(
+      std::make_shared<google::protobuf::io::OstreamOutputStream>(&output));
+
+  writer.serialize(toProto());
+  _model->getBoltModel()->serializeToProtoWriter(writer,
+                                                 /* with_optimizer= */ false);
+}
+
+std::shared_ptr<GenerativeModel> GenerativeModel::deserializeFromStream(
+    std::istream& input) {
+  utils::ProtobufReader reader(
+      std::make_shared<google::protobuf::io::IstreamInputStream>(&input));
+
+  proto::bolt::GenerativeModel config;
+  reader.deserialize(config);
+  auto model = Model::deserializeFromProtoReader(reader);
+
+  return std::shared_ptr<GenerativeModel>(new GenerativeModel(model, config));
+}
+
+void GenerativeModel::serializeToFile(const std::string& filename) const {
+  std::ofstream output = dataset::SafeFileIO::ofstream(filename);
+  serializeToStream(output);
+}
+
+std::shared_ptr<GenerativeModel> GenerativeModel::deserializeFromFile(
+    const std::string& filename) {
+  std::ifstream input = dataset::SafeFileIO::ifstream(filename);
+  return deserializeFromStream(input);
 }
 
 void GenerativeModel::save(const std::string& filename) const {

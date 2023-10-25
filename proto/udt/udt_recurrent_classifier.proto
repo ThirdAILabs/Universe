@@ -3,7 +3,6 @@ syntax = "proto2";
 package proto.udt;
 
 import "featurizers.proto";
-import "model.proto";
 
 message UDTRecurrentClassifier {
   required RecurrentFeaturizer featurizer = 1;

@@ -13,7 +13,7 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
 
     columns = data.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = data.transformations.TransformationList(
+    featurizer = data.transformations.Pipeline(
         transformations=[
             data.transformations.StringHash(
                 input_column=column_name,

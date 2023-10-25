@@ -13,6 +13,12 @@
 
 using json = nlohmann::json;
 
+namespace thirdai::bolt {
+
+class ContextualModel;
+
+}  // namespace thirdai::bolt
+
 namespace thirdai::dataset {
 
 /**
@@ -63,6 +69,8 @@ class TextGenerationFeaturizer;
 using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 
 class TextGenerationFeaturizer final : public Featurizer {
+  friend class bolt::ContextualModel;
+
  public:
   TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
                            uint32_t vocab_size, bool include_position = false,
@@ -96,6 +104,7 @@ class TextGenerationFeaturizer final : public Featurizer {
       const std::vector<uint32_t>& context) const;
 
   bolt::TensorList featurizeInputBatch(
+      const std::vector<uint32_t>& prompt,
       const std::vector<std::vector<uint32_t>>& tokens,
       const std::vector<uint32_t>& dims) const;
 
@@ -116,7 +125,8 @@ class TextGenerationFeaturizer final : public Featurizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _context_featurizer);
+    archive(cereal::base_class<Featurizer>(this), _context_featurizer,
+            _featurize_in_chunks);
   }
 
   /**

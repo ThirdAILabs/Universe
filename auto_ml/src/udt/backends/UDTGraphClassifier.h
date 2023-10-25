@@ -10,9 +10,9 @@ namespace thirdai::automl::udt {
 
 class UDTGraphClassifier final : public UDTBackend {
  public:
-  UDTGraphClassifier(const data::ColumnDataTypes& data_types,
+  UDTGraphClassifier(const ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
-                     bool integer_target, const data::TabularOptions& options);
+                     bool integer_target, const TabularOptions& options);
 
   explicit UDTGraphClassifier(const proto::udt::UDTGraphClassifier& graph,
                               bolt::ModelPtr model);

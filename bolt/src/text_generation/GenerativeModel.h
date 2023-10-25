@@ -8,15 +8,18 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
+#include <proto/generative_model.pb.h>
 #include <memory>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace thirdai::bolt {
 
 class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
+      std::vector<uint32_t>& prompt,
       std::vector<std::vector<uint32_t>> tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
@@ -28,6 +31,8 @@ class GenerativeBackend {
                                  const DistributedCommPtr& comm) = 0;
 
   virtual ModelPtr getBoltModel() = 0;
+
+  virtual proto::bolt::GenerativeBackend* toProto() const = 0;
 
   virtual ~GenerativeBackend() = default;
 
@@ -44,6 +49,7 @@ class GenerativeModel;
 class BeamSearchDecoder {
  public:
   BeamSearchDecoder(std::shared_ptr<GenerativeModel> generator,
+                    std::vector<uint32_t> prompt,
                     const std::vector<uint32_t>& input_tokens,
                     size_t prediction_chunk_size, size_t max_predictions,
                     size_t beam_width, std::optional<float> temperature)
@@ -54,6 +60,7 @@ class BeamSearchDecoder {
         _beam_width(beam_width),
         _temperature(temperature),
         _candidate_sequences({input_tokens}),
+        _prompt(std::move(prompt)),
         _sequence_scores({0.0}) {}
 
   std::optional<std::vector<uint32_t>> next();
@@ -78,6 +85,7 @@ class BeamSearchDecoder {
   // nextTokenProbs directly, instead of having to split apart the sequences and
   // scores.
   std::vector<std::vector<uint32_t>> _candidate_sequences;
+  std::vector<uint32_t> _prompt;
   std::vector<double> _sequence_scores;
 };
 
@@ -90,6 +98,8 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
                   std::unordered_set<uint32_t> punctuation_tokens,
                   float punctuation_repeat_threshold);
 
+  GenerativeModel(ModelPtr model, const proto::bolt::GenerativeModel& config);
+
  public:
   static auto make(std::shared_ptr<GenerativeBackend> model,
                    std::unordered_set<uint32_t> allowed_repeats,
@@ -101,12 +111,13 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
   }
 
   std::vector<uint32_t> generate(
-      const std::vector<uint32_t>& input_tokens, size_t max_predictions,
-      size_t beam_width, std::optional<float> temperature = std::nullopt);
+      const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
+      size_t max_predictions, size_t beam_width,
+      std::optional<float> temperature = std::nullopt);
 
   BeamSearchDecoder streamingGenerate(
-      const std::vector<uint32_t>& input_tokens, size_t prediction_chunk_size,
-      size_t max_predictions, size_t beam_width,
+      const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
+      size_t prediction_chunk_size, size_t max_predictions, size_t beam_width,
       std::optional<float> temperature = std::nullopt);
 
   // TODO(Nicholas): should we add max_in_memory_batches option?
@@ -134,6 +145,16 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
 
   bolt::ModelPtr getBoltModel() { return _model->getBoltModel(); }
 
+  void serializeToStream(std::ostream& output) const;
+
+  static std::shared_ptr<GenerativeModel> deserializeFromStream(
+      std::istream& input);
+
+  void serializeToFile(const std::string& filename) const;
+
+  static std::shared_ptr<GenerativeModel> deserializeFromFile(
+      const std::string& filename);
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<GenerativeModel> load(const std::string& filename);
@@ -144,6 +165,8 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       std::istream& input_stream);
 
  private:
+  proto::bolt::GenerativeModel toProto() const;
+
   std::shared_ptr<GenerativeBackend> _model;
 
   std::unordered_set<uint32_t> _allowed_repeats;
