@@ -10,6 +10,7 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -63,6 +64,14 @@ class State {
       : _mach_index(std::move(mach_index)) {}
 
   explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
+
+  static auto make(MachIndexPtr mach_index) {
+    return std::make_shared<State>(std::move(mach_index));
+  }
+
+  static auto make(automl::GraphInfoPtr graph) {
+    return std::make_shared<State>(std::move(graph));
+  }
 
   State() {}
 
