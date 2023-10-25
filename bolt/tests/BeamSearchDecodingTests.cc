@@ -44,6 +44,8 @@ class MockBackend final : public GenerativeBackend {
   }
 
   ModelPtr getBoltModel() final { return nullptr; }
+
+  proto::bolt::GenerativeBackend* toProto() const final { return nullptr; }
 };
 
 TEST(BeamSearchDecoding, GreedySearch) {
