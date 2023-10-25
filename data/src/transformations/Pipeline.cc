@@ -7,6 +7,23 @@
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
+Pipeline::Pipeline(const proto::data::Transformation_Pipeline& pipeline) {
+  for (const auto& transformation : pipeline.transformations()) {
+    _transformations.push_back(Transformation::fromProto(transformation));
+  }
+}
+
+proto::data::Transformation* Pipeline::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* list = transformation->mutable_pipeline();
+
+  for (const auto& transformation : _transformations) {
+    list->mutable_transformations()->AddAllocated(transformation->toProto());
+  }
+
+  return transformation;
+}
 
 void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
                                    ExplanationMap& explanations) const {
