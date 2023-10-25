@@ -17,28 +17,21 @@ VariableLengthColdStart::VariableLengthColdStart(
       _output_column_name(std::move(output_column_name)),
       _covering_min_length(config.covering_min_length),
       _covering_max_length(config.covering_max_length),
+      _max_covering_samples(config.max_covering_samples),
       _slice_min_length(config.slice_min_length),
       _slice_max_length(config.slice_max_length),
+      _num_slices(config.num_slices),
       _add_whole_doc(config.add_whole_doc),
       _prefilter_punctuation(config.prefilter_punctuation),
-      _num_slices(config.num_slices),
       _strong_sample_num_words(config.strong_sample_num_words),
-      _forced_num_phrases_per_doc(config.forced_num_phrases_per_doc),
       _word_removal_probability(config.word_removal_probability),
       _seed(seed) {
   validateGreaterThanZero(_covering_min_length, "covering_min_length");
   validateGreaterThanZero(_covering_max_length, "covering_max_length");
   validateGreaterThanZero(_slice_min_length, "slice_min_length");
-  validateGreaterThanZero(_covering_min_length, "covering_min_length");
-  validateGreaterThanZero(_num_slices, "num_slices");
 
   if (_slice_max_length) {
     validateGreaterThanZero(*_slice_max_length, "slice_max_length");
-  }
-
-  if (_forced_num_phrases_per_doc) {
-    validateGreaterThanZero(*_forced_num_phrases_per_doc,
-                            "forced_num_phrases_per_doc");
   }
 
   if (_word_removal_probability < 0 or _word_removal_probability > 1.0) {
@@ -51,7 +44,8 @@ VariableLengthColdStart::VariableLengthColdStart(
         "covering_min_length must be < covering_max_length.");
   }
 
-  if (_slice_min_length >= _slice_max_length) {
+  if (_slice_max_length.has_value() &&
+      _slice_min_length >= *_slice_max_length) {
     throw std::invalid_argument("slice_min_length must be < slice_max_length.");
   }
 }
@@ -135,9 +129,30 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     std::string& strong_text, std::string& weak_text) const {
   std::vector<std::string> strong_phrase =
       cold_start::getStrongPhrase(strong_text);
+  std::cout << "STRONG PHRASE: " << std::endl;
+  for (auto word : strong_phrase) {
+    std::cout << word << " ";
+  }
+  std::cout << std::endl;
   std::vector<std::vector<std::string>> phrases = getWeakPhrases(weak_text);
+  std::cout << "WEAK PHRASES: " << std::endl;
+  for (auto phrase : phrases) {
+    for (auto word : phrase) {
+      std::cout << word << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
   cold_start::mergeStrongWithWeak(phrases, strong_phrase,
                                   _strong_sample_num_words, _seed);
+  std::cout << "MERGED PHRASES: " << std::endl;
+  for (auto phrase : phrases) {
+    for (auto word : phrase) {
+      std::cout << word << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
 
   std::mt19937 rng(_seed);
   std::uniform_real_distribution<float> dist(0.0, 1.0);
@@ -156,7 +171,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   }
 
   if (_add_whole_doc) {
-    output_samples.push_back(strong_text + weak_text);
+    output_samples.push_back(strong_text + " " + weak_text);
   }
 
   return output_samples;
@@ -173,31 +188,37 @@ std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
   std::vector<std::vector<std::string>> phrases;
 
   addCoveringPhrases(words, phrases, _covering_min_length, _covering_max_length,
-                     _seed);
+                     _max_covering_samples, _seed);
 
-  // if we're forcing less phrases than we have, remove until we reach the
-  // number we want
-  if (_forced_num_phrases_per_doc &&
-      phrases.size() > *_forced_num_phrases_per_doc) {
-    std::shuffle(phrases.begin(), phrases.end(), std::mt19937{_seed});
-    phrases.resize(*_forced_num_phrases_per_doc);
-    return phrases;
+  std::cout << "COVERING PHRASES: " << std::endl;
+  for (auto phrase : phrases) {
+    for (auto word : phrase) {
+      std::cout << word << " ";
+    }
+    std::cout << std::endl;
   }
-
-  uint32_t slices_needed = _forced_num_phrases_per_doc.has_value()
-                               ? *_forced_num_phrases_per_doc - phrases.size()
-                               : _num_slices;
+  std::cout << std::endl;
 
   addRandomSlicePhrases(words, phrases, _slice_min_length, _slice_max_length,
-                        slices_needed, _seed);
+                        _num_slices, _seed);
+
+  std::cout << "SLICE PHRASES: " << std::endl;
+  for (auto phrase : phrases) {
+    for (auto word : phrase) {
+      std::cout << word << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
 
   return phrases;
 }
 
-static void addCoveringPhrases(const std::vector<std::string>& words,
-                               std::vector<std::vector<std::string>> phrases,
-                               uint32_t min_len, uint32_t max_len,
-                               uint32_t seed) {
+void VariableLengthColdStart::addCoveringPhrases(
+    const std::vector<std::string>& words,
+    std::vector<std::vector<std::string>>& phrases, uint32_t min_len,
+    uint32_t max_len, std::optional<uint32_t> max_covering_samples,
+    uint32_t seed) {
   std::mt19937 rng(seed);
   std::uniform_int_distribution<uint32_t> dist(min_len, max_len);
 
@@ -213,13 +234,18 @@ static void addCoveringPhrases(const std::vector<std::string>& words,
     phrases.push_back(phrase);
     start_pos += phrase_size;
   }
+
+  if (max_covering_samples.has_value() &&
+      *max_covering_samples < phrases.size()) {
+    std::shuffle(phrases.begin(), phrases.end(), std::mt19937{seed});
+    phrases.resize(*max_covering_samples);
+  }
 }
 
-static void addRandomSlicePhrases(const std::vector<std::string>& words,
-                                  std::vector<std::vector<std::string>> phrases,
-                                  uint32_t min_len,
-                                  std::optional<uint32_t> max_len_opt,
-                                  uint32_t num_slices, uint32_t seed) {
+void VariableLengthColdStart::addRandomSlicePhrases(
+    const std::vector<std::string>& words,
+    std::vector<std::vector<std::string>>& phrases, uint32_t min_len,
+    std::optional<uint32_t> max_len_opt, uint32_t num_slices, uint32_t seed) {
   std::mt19937 rng(seed);
   uint32_t max_len = max_len_opt.has_value()
                          ? std::min<uint32_t>(words.size(), *max_len_opt)

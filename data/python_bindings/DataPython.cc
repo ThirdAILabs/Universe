@@ -19,6 +19,7 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/attr.h>
@@ -390,6 +391,46 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_text"), py::arg("weak_text"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+
+  py::class_<VariableLengthColdStart, Transformation,
+             std::shared_ptr<VariableLengthColdStart>>(
+      transformations_submodule, "VariableLengthColdStart")
+      .def(py::init(
+               [](std::vector<std::string> strong_column_names,
+                  std::vector<std::string> weak_column_names,
+                  std::string label_column_name, std::string output_column_name,
+                  uint32_t covering_min_length, uint32_t covering_max_length,
+                  std::optional<uint32_t> max_covering_samples,
+                  uint32_t slice_min_length,
+                  std::optional<uint32_t> slice_max_length, uint32_t num_slices,
+                  bool add_whole_doc, bool prefilter_punctuation,
+                  uint32_t strong_sample_num_words,
+                  float word_removal_probability, uint32_t seed) {
+                 return std::make_shared<VariableLengthColdStart>(
+                     std::move(strong_column_names),
+                     std::move(weak_column_names), std::move(label_column_name),
+                     std::move(output_column_name),
+                     VariableLengthConfig(
+                         covering_min_length, covering_max_length,
+                         max_covering_samples, slice_min_length,
+                         slice_max_length, num_slices, add_whole_doc,
+                         prefilter_punctuation, strong_sample_num_words,
+                         word_removal_probability),
+                     seed);
+               }),
+           py::arg("strong_columns"), py::arg("weak_columns"),
+           py::arg("label_column"), py::arg("output_column"),
+           py::arg("covering_min_length") = 3,
+           py::arg("covering_max_length") = 40,
+           py::arg("max_covering_samples") = std::nullopt,
+           py::arg("slice_min_length") = 3,
+           py::arg("slice_max_length") = std::nullopt,
+           py::arg("num_slices") = 5, py::arg("add_whole_doc") = true,
+           py::arg("prefilter_punctuation") = true,
+           py::arg("strong_sample_num_words") = 3,
+           py::arg("word_removal_probability") = 0, py::arg("seed") = 42803)
+      .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
+           py::arg("strong_text"), py::arg("weak_text"));
 
   py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
       transformations_submodule, "MachLabel")
