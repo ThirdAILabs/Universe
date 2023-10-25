@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package proto.bolt;
+
+import "fully_connected.proto";
+
+message PatchEmbedding {
+  required FullyConnected kernel = 1;
+  required uint64 n_patches = 2;
+}
+
+message PatchSum {
+  required uint64 n_patches = 1;
+  required uint64 patch_dim = 2;
+}
