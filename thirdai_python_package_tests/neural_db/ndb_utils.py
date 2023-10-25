@@ -88,13 +88,11 @@ all_connectorDoc_getter = [
         chunk_size=3,
         save_credentials=True,
     ),
-    lambda: ndb.SharePoint(
-        ctx=ClientContext(
-            "https://iitkgpacin.sharepoint.com/sites/TestSite2"
-        ).with_user_credentials(
-            username="gautamsharma95.95@kgpian.iitkgp.ac.in", password="MICROSOFT@5fast"
-        )
-    ),
+    # lambda: ndb.SharePoint(
+    #     ctx=ClientContext(
+    #         "site_url"
+    #     )
+    # ),
 ]
 
 all_doc_getters = [
