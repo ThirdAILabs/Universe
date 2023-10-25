@@ -5,8 +5,10 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/mach/RLHFSampler.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <unordered_map>
@@ -84,6 +86,23 @@ class State {
     _mach_index = std::move(new_index);
   }
 
+  mach::RLHFSampler& rlhfSampler() {
+    if (!_rlhf_sampler) {
+      throw std::invalid_argument(
+          "Transformation state does not contain RLHFSampler.");
+    }
+    return *_rlhf_sampler;
+  }
+
+  void setRlhfSampler(mach::RLHFSampler&& sampler) {
+    if (_rlhf_sampler) {
+      std::cout << "Transformation state already contains RLHFSampler. The "
+                   "existing RLHFSampler will be overwritten."
+                << std::endl;
+    }
+    _rlhf_sampler = std::move(sampler);
+  }
+
   bool containsVocab(const std::string& key) const {
     return _vocabs.count(key);
   }
@@ -116,6 +135,8 @@ class State {
  private:
   MachIndexPtr _mach_index = nullptr;
 
+  std::optional<mach::RLHFSampler> _rlhf_sampler;
+
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
@@ -125,7 +146,8 @@ class State {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_mach_index, _vocabs, _item_history_trackers, _graph);
+    archive(_mach_index, _rlhf_sampler, _vocabs, _item_history_trackers,
+            _graph);
   }
 };
 
