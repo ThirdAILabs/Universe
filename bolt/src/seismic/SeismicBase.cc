@@ -15,6 +15,7 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt/src/utils/Timer.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -103,12 +104,18 @@ Dataset SeismicBase::convertToBatches(const NumpyArray& array,
   return batches;
 }
 
-template void SeismicBase::serialize(cereal::BinaryInputArchive&);
-template void SeismicBase::serialize(cereal::BinaryOutputArchive&);
+template void SeismicBase::serialize(cereal::BinaryInputArchive&, uint32_t);
+template void SeismicBase::serialize(cereal::BinaryOutputArchive&, uint32_t);
 
 template <class Archive>
-void SeismicBase::serialize(Archive& archive) {
+void SeismicBase::serialize(Archive& archive, uint32_t version) {
+  // Adding a version in case we need to add custom logic to ensure
+  // compatability in the future.
+  (void)version;
   archive(_model, _emb, _input_shape_data);
 }
 
 }  // namespace thirdai::bolt::seismic
+
+CEREAL_CLASS_VERSION(thirdai::bolt::seismic::SeismicBase,
+                     thirdai::versions::SEISMIC_MODEL_VERSION)

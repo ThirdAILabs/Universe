@@ -51,7 +51,14 @@ class UnsupervisedSubcubeDataset(Dataset):
 
 
 class ClassificationSubcubeDataset(Dataset):
-    def __init__(self, sample_index):
+    def __init__(self, sample_index: pd.DataFrame):
+        if (
+            "labels" not in sample_index.columns
+            or "subcube" not in sample_index.columns
+        ):
+            raise ValueError(
+                "Expected sample index to contain the columns 'labels' and 'subcube'."
+            )
         self.sample_index = sample_index
 
     def __len__(self):
@@ -208,6 +215,10 @@ def train_seismic_model(
 
             metrics = seismic_model.train_on_patches(
                 subcubes,
+                # We call this label or metadata becuase in supervised training this will contain
+                # the labels, but in unsupervised training we just use it to pass in metadata
+                # about the subcube. Doing it this way saves having to duplicate a lot of code for
+                # this method.
                 label_or_metadata,
                 learning_rate=learning_rate,
                 batch_size=batch_size,
@@ -294,10 +305,6 @@ def train_classifier(
     comm=None,
 ):
     sample_index = pd.read_csv(sample_index_file)
-    if "labels" not in sample_index.columns or "subcube" not in sample_index.columns:
-        raise ValueError(
-            "Expected sample index to contain the columns 'labels' and 'subcube'."
-        )
     sample_index = sample_index.sample(frac=1.0)
     if sample_index["labels"].dtype == object:
         sample_index["labels"] = sample_index["labels"].apply(

@@ -10,7 +10,7 @@ from thirdai import bolt
 
 @pytest.mark.unit
 @pytest.mark.parametrize("max_pool", [None, 2])
-def test_seismic_model(subcube_dataset, max_pool):
+def test_seismic_embedding_model(subcube_dataset, max_pool):
     subcube_directory, subcube_shape, patch_shape = subcube_dataset
     emb_dim = 100
     model = bolt.seismic.SeismicEmbedding(
@@ -68,7 +68,7 @@ def test_seismic_classifier(classification_dataset):
     sample_index, subcube_shape, patch_shape, n_classes = classification_dataset
 
     emb_dim = 100
-    model = bolt.seismic.SeismicEmbedding(
+    emb_model = bolt.seismic.SeismicEmbedding(
         subcube_shape=subcube_shape[0],
         patch_shape=patch_shape[0],
         embedding_dim=emb_dim,
@@ -76,7 +76,7 @@ def test_seismic_classifier(classification_dataset):
         max_pool=2,
     )
 
-    classifier = bolt.seismic.SeismicClassifier(model, n_classes=n_classes)
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=n_classes)
 
     classifier.train(
         sample_index_file=sample_index,

@@ -52,8 +52,6 @@ class SeismicEmbedding final : public SeismicBase {
   // granularities.
   size_t _label_cube_dim = 32;
 
-  size_t _n_output_classes;
-
   SeismicEmbedding() {}
 
   friend class cereal::access;

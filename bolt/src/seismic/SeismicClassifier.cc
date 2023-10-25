@@ -14,8 +14,9 @@ namespace thirdai::bolt::seismic {
 
 SeismicClassifier::SeismicClassifier(
     const std::shared_ptr<SeismicBase>& emb_model, size_t n_classes)
-    : SeismicBase(emb_model->inputShapeData(),
-                  addClassifierHead(emb_model->getModel(), n_classes)) {}
+    : SeismicBase(
+          /* input_shape_data= */ emb_model->inputShapeData(),
+          /* model= */ addClassifierHead(emb_model->getModel(), n_classes)) {}
 
 metrics::History SeismicClassifier::trainOnPatches(
     const NumpyArray& subcubes, std::vector<std::vector<uint32_t>> labels,

@@ -40,7 +40,6 @@ SeismicEmbedding::SeismicEmbedding(InputShapeData input_shape_data,
   if (getModel()->labelDims().size() != 1) {
     throw std::invalid_argument("Expected model to only have 1 output layer.");
   }
-  _n_output_classes = labelDim();
 }
 
 std::shared_ptr<SeismicEmbedding> SeismicEmbedding::make(
@@ -81,6 +80,8 @@ Dataset SeismicEmbedding::makeLabelBatches(
 
   Dataset label_batches;
 
+  size_t n_output_classes = labelDim();
+
   for (size_t batch = 0; batch < n_batches; batch++) {
     size_t start = batch * batch_size;
     size_t end = std::min(start + batch_size, subcube_metadata.size());
@@ -92,7 +93,7 @@ Dataset SeismicEmbedding::makeLabelBatches(
     for (size_t i = start; i < end; i++) {
       auto labels =
           seismicLabelsFromMetadata(subcube_metadata[i], subcubeShape(),
-                                    _label_cube_dim, _n_output_classes);
+                                    _label_cube_dim, n_output_classes);
 
       indices.insert(indices.end(), labels.begin(), labels.end());
 
@@ -105,7 +106,7 @@ Dataset SeismicEmbedding::makeLabelBatches(
     }
 
     auto tensor = Tensor::sparse(std::move(indices), std::move(values),
-                                 std::move(lens), _n_output_classes);
+                                 std::move(lens), n_output_classes);
 
     label_batches.push_back({tensor});
   }
@@ -185,8 +186,7 @@ template void SeismicEmbedding::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void SeismicEmbedding::serialize(Archive& archive) {
-  archive(cereal::base_class<SeismicBase>(this), _label_cube_dim,
-          _n_output_classes);
+  archive(cereal::base_class<SeismicBase>(this), _label_cube_dim);
 }
 
 }  // namespace thirdai::bolt::seismic

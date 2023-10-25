@@ -75,7 +75,7 @@ class SeismicBase {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive, uint32_t version);
 };
 
 class Checkpoint final : public callbacks::Callback {
