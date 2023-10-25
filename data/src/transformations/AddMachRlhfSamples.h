@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 namespace thirdai::data {
 
 class AddMachRlhfSamples final : public Transformation {
@@ -8,6 +9,14 @@ class AddMachRlhfSamples final : public Transformation {
   AddMachRlhfSamples(std::string input_indices_column,
                      std::string input_values_column, std::string label_column,
                      std::string mach_buckets_column);
+
+  static auto make(std::string input_indices_column,
+                   std::string input_values_column, std::string label_column,
+                   std::string mach_buckets_column) {
+    return std::make_shared<AddMachRlhfSamples>(
+        std::move(input_indices_column), std::move(input_values_column),
+        std::move(label_column), std::move(mach_buckets_column));
+  }
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
